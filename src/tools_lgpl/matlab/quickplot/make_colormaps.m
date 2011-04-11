@@ -1,5 +1,5 @@
 %MAKE_COLORMAPS
-%   Script to create a plot of all colour maps in the colormaps directory
+%   Script to create a plot of all colour maps in the colormaps directory.
 
 %   $Id$
 
