@@ -39,7 +39,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		// the splashscreen you could use a different extension.
 		// Is assumed it is in the same folder as this program 
 		// If it is not you can call splash.SetFullPath
-		_T("d3d_qp.exe") 
+		_T("d3d_qp.exec") 
 		) ;
 #ifdef _DEBUG
 	// In debug mode you may wish to a specify a full path to the application as it may not 
