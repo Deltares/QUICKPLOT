@@ -44,6 +44,7 @@ function [xo,yo,po,mo,to,lo]=int_lntri(xi,yi,TRI,X,Y)
 %   $HeadURL$
 %   $Id$
 
+TRI  = double(TRI); % fix in case TRI is provided as int32 (not supported by tsearch)
 ntri = size(TRI,1);
 edge = TRI(:,[1 1 2 2 3 3]);
 edge = reshape(edge,[ntri*3 2]);
