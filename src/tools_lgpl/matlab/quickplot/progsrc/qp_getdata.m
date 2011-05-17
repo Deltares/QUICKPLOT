@@ -73,10 +73,10 @@ varargout{1}=0;
 % Determine file type for calling the appropriate function
 %
 X=varargin;
-if ~isempty(X) & isempty(X{1})
+if ~isempty(X) && isempty(X{1})
    ui_message('warning','Empty file information supplied, cancelling operation.')
    return
-elseif ~isempty(X) & isstruct(X{1}) & isfield(X{1},'FileType')
+elseif ~isempty(X) && isstruct(X{1}) && isfield(X{1},'FileType')
    Info=X{1};
    X=X(2:end);
 else
@@ -140,9 +140,9 @@ try
          % Check for domain index ... add if necessary
          %
          if ~isempty(X)
-            if isequal(X{1},'domains') | ...
-                  isequal(X{1},'dimensions') | ...
-                  isequal(X{1},'locations') | ...
+            if isequal(X{1},'domains') || ...
+                  isequal(X{1},'dimensions') || ...
+                  isequal(X{1},'locations') || ...
                   isequal(X{1},'quantities')
                %
                % [Success,Dimensions]            = QP_GETDATA(FI,'dimensions')
@@ -174,12 +174,12 @@ try
                   varargout{1}=OK;
                   return
                end
-            elseif ischar(X{1}) & length(X)==1
+            elseif ischar(X{1}) && length(X)==1
                %
                % Cannot understand input.
                %
                error('Invalid input or incorrect number of arguments.')
-            elseif isnumeric(X{1}) & isequal(size(X{1}),[1 1])
+            elseif isnumeric(X{1}) && isequal(size(X{1}),[1 1])
                %
                % [Success,DataProps ]            = QP_GETDATA(FI,Domain)
                % [Success,DataProps ]            = QP_GETDATA(FI,Domain,DimMask)
@@ -213,7 +213,7 @@ try
                %
                if length(X)>1
                   if ~ischar(X{2})
-                     error(sprintf('Encountered %s instead of command string.',class(X{2})))
+                     error('Encountered %s instead of command string.',class(X{2}))
                   else
                      calltype=X{2};
                   end
@@ -232,7 +232,7 @@ try
             calltype='getprops2';
             X={0};
          end
-         if ~isempty(X) & isnumeric(X{end}) & isequal(size(X{end}),[1 5])
+         if ~isempty(X) && isnumeric(X{end}) && isequal(size(X{end}),[1 5])
             %
             % [Success,DataProps ]            = QP_GETDATA(FI,Domain,DimMask)
             %
@@ -252,13 +252,13 @@ try
             % If DataFld is indicated by a character string (name) replace
             % it by an element of the DataProps structure ...
             %
-            if length(X)>2 & ischar(X{2}) & ischar(X{3})
+            if length(X)>2 && ischar(X{2}) && ischar(X{3})
                X{2}=qp_datafield_name2prop(FI,X{1},X{2});
             end
             %
             % Add T array if not specified ...
             %
-            if length(X)>=1 & isequal(X{end},'times')
+            if length(X)>=1 && isequal(X{end},'times')
                %
                % [Success,Times     ]            = QP_GETDATA(FI,Domain,DataFld,'times')
                %
@@ -490,9 +490,9 @@ end
 %
 if dic
    triangles = 0;
-   if isfield(X{2},'Tri') & X{2}.Tri
+   if isfield(X{2},'Tri') && X{2}.Tri
       triangles = 1;
-   elseif isfield(X{2},'Geom') & strcmp(X{2}.Geom,'TRI')
+   elseif isfield(X{2},'Geom') && strcmp(X{2}.Geom,'TRI')
       triangles = 1;
    end
    if triangles
