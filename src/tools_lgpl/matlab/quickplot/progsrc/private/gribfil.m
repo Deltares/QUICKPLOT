@@ -179,6 +179,19 @@ for ib = 1:nT
         Ans.Val(ib,:) = reshape(val1(idx{M_}),[1 nM]);
     end
     %
+    % reshape if a single timestep is selected ...
+    if DimFlag(T_) && isequal(size(idx{T_}),[1 1])
+        Flds = {'Val','XComp','YComp'};
+        for f = 1:length(Flds)
+            fld = Flds{f};
+            if isfield(Ans,fld)
+                sz=size(Ans.(fld));
+                sz=[sz(2:end) 1];
+                Ans.(fld)=reshape(Ans.(fld),sz);
+            end
+        end
+    end
+%
     firstblock = 0;
 end
 Ans.XUnits = 'deg';
