@@ -150,7 +150,7 @@ switch cmd
                return
             end
             savedir=pn;
-            [p,f,e,v]=fileparts(fn);
+            [p,f,e]=fileparts(fn);
             if isempty(e)
                e=['.' ext];
             end
@@ -179,7 +179,7 @@ switch cmd
             return
          end
          savedir=pn;
-         [p,f,e,v]=fileparts(fn);
+         [p,f,e]=fileparts(fn);
          if isempty(e)
             fn=[fn '.avi'];
          end
@@ -193,7 +193,7 @@ switch cmd
             return
          end
          savedir=pn;
-         [p,f,e,v]=fileparts(fn);
+         [p,f,e]=fileparts(fn);
          n='';
          while length(f)>0 & ismember(f(end),'0123456789')
             n=[f(end),n];
