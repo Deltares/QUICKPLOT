@@ -56,7 +56,7 @@ function varargout=qp_unitconversion(unit1,unit2,varargin)
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

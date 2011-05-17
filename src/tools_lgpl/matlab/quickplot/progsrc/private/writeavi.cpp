@@ -30,7 +30,7 @@
  *   Stichting Deltares. All rights reserved.
  *
  *-------------------------------------------------------------------------------
- *   http://www.delftsoftware.com
+ *   http://www.deltaressystems.com
  *   $HeadURL: https://repos.deltares.nl/repos/ds/trunk/src/tools/matlab/Delft3D-toolbox/progsrc/private/writeavi.cpp $
  *   $Id: writeavi.cpp 14474 2011-01-07 12:56:41Z jagers $
  */

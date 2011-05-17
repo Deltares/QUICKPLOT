@@ -40,7 +40,7 @@ function [xo,yo,po,mo,to,lo]=int_lntri(xi,yi,TRI,X,Y)
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

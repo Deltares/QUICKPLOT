@@ -29,7 +29,7 @@ function Prop=qp_datafield_name2prop(FI,Domain,Name)
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

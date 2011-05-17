@@ -27,7 +27,7 @@ function hNew=gensurface(hOld,Ops,Parent,Val,X,Y,Z)
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

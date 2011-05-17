@@ -39,7 +39,7 @@ function G = read_ecom_modelgrid(FileName)
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

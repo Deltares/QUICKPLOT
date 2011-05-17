@@ -38,7 +38,7 @@ function Data = map2golder(mapfile,TSelect,ZGolder,golderfile)
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

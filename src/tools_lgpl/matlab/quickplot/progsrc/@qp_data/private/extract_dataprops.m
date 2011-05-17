@@ -27,7 +27,7 @@ function [timdep,nval,stagger,PlotDim] = extract_dataprops(A,V,vDims,gDims)
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

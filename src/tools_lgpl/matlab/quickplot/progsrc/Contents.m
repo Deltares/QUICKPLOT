@@ -91,7 +91,7 @@
 %   wildstrmatch        - Find matching strings using wildcards.
 
 %   @(#)Deltares, Delft3D-MATLAB interface, Version <VERSION>, <CREATIONDATE>
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

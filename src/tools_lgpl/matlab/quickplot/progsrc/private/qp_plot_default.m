@@ -27,7 +27,7 @@ function [hNew,Thresholds,Param]=qp_plot_default(hNew,Parent,Param,data,Ops,Prop
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

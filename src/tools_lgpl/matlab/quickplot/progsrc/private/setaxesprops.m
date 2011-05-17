@@ -27,7 +27,7 @@ function setaxesprops(Parent,FullAxesType,dimension1,dimension2,dimension3)
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

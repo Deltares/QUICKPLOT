@@ -27,7 +27,7 @@ function [DomainNr,Props,subf,selected,stats,Ops]=qp_interface_update_options(mf
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

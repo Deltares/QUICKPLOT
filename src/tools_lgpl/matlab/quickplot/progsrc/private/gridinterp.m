@@ -27,7 +27,7 @@ function [x,y]=gridinterp(DataInCell,DimK,ReqLoc,x,y)
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

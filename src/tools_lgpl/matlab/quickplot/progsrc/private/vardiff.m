@@ -47,7 +47,7 @@ function out=vardiff(var1,var2,fid,formatflag,var1name,var2name)
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

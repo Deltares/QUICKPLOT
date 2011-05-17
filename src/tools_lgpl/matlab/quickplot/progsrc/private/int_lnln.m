@@ -30,7 +30,7 @@ function [xo,yo]=int_lnln(x1,y1,x2,y2,path)
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

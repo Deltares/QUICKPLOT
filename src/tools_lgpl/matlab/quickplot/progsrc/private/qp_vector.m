@@ -27,7 +27,7 @@ function l=qp_vector(vectorstyle,x,y,z,xc,yc,zc,varargin)
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

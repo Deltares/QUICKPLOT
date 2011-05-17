@@ -27,7 +27,7 @@ function [hNew,Thresholds,Param]=qp_plot_pnt(hNew,Parent,Param,data,Ops,Props)
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

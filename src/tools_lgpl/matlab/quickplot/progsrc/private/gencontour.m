@@ -27,7 +27,7 @@ function hNew=gencontour(hOld,Ops,Parent,X,Y,Z,Thresholds,Param)
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

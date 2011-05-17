@@ -27,7 +27,7 @@ function H=qp_toolbarpush(hP,cmd,sep,tooltip,prog)
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

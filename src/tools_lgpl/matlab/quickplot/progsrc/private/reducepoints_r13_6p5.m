@@ -27,7 +27,7 @@ function I = reducepoints_r13_6p5(thresh,X,Y,Z);
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

@@ -27,7 +27,7 @@ function DataProps=auto_map_detect(FI,DataProps,nm,k,SkipGroup,SkipElem)
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

@@ -27,7 +27,7 @@ function [hNewVec,Error,FileInfo]=qp_plot(PlotState)
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 

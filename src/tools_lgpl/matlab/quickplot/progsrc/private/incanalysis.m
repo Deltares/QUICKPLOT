@@ -58,7 +58,7 @@ function Vals = incanalysis(D,valtype,q,t1,t2,iclass)
 %   Stichting Deltares. All rights reserved.                                     
 %                                                                               
 %-------------------------------------------------------------------------------
-%   http://www.delftsoftware.com
+%   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 
