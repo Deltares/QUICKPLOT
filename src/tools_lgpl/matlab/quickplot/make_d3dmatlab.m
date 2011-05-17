@@ -31,17 +31,18 @@ if ~exist('progsrc','dir')
 end
 V=version; V=str2num(V(1));
 
+tdir = 'delft3d_matlab';
 sourcedir=[pwd,filesep,'progsrc'];
-targetdir=[pwd,filesep,'wl_d3d'];
+targetdir=[pwd,filesep,tdir];
 qpversion=read_identification(sourcedir,'d3d_qp.m');
 disp(['Delft3D-MATLAB interface version: ' qpversion]);
 T=round(clock);
 TStr=[datestr(datenum(T(1),T(2),T(3),T(4),T(5),T(6)),3) sprintf(' %2.2i %i %2.2i:%2.2i:%2.2i',T([3 1 4 5 6]))];
 disp(['Current date and time           : ' TStr]);
 
-disp('Creating wl_d3d directory ...');
-if ~exist('wl_d3d','dir')
-    [success,message] = mkdir('wl_d3d');
+disp(['Creating ',tdir,' directory ...']);
+if ~exist(tdir,'dir')
+    [success,message] = mkdir(tdir);
     if ~success
         err=message;
         return
@@ -56,17 +57,14 @@ fstrrep([targetdir,filesep,'d3d_qp.m'],'<VERSION>',qpversion)
 fstrrep([targetdir,filesep,'Contents.m'],'<VERSION>',qpversion)
 fstrrep([targetdir,filesep,'Contents.m'],'<CREATIONDATE>',TStr)
 
-%
-% Add the source directory to the search path such that MATLAB will
-% recognize d3d_qp as a function instead of a variable.
-%
-addpath(sourcedir)
+disp('Stripping files ...');
+svnstripfile(targetdir)
 
 %disp('Pcoding files ...');
 %pmfile('dir',targetdir,targetdir,'-verbose')
 
 disp('Cleaning up directory ...');
-cd wl_d3d
+cd(tdir)
 addpath(rootdir)
 X={ '*.asv'
     '*.bak'
