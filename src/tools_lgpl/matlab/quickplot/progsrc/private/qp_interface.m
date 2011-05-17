@@ -80,7 +80,8 @@ m1=qp_uimenu(mfig,'&Window', ...
     'dock','Dock Plot &Options',0,1,0});
 %=============
 m1=qp_uimenu(mfig,'&Help', ...
-    {'deltaresweb','&Deltares Online',1,1,0
+    {'deltaresweb','&Deltares Systems',1,1,0
+    'deltaresweboss','Deltares &Open Source',1,1,0
     'aboutmatlab','About &MATLAB',1,1,1
     'about','&About Delft3D-QUICKPLOT',1,1,1});
 %=============

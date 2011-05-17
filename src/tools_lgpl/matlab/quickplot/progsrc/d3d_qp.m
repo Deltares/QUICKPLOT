@@ -3885,12 +3885,17 @@ try
                 'defaultaxescolor','boundingbox','v6zoombehavior'}
             qp_prefs(UD,mfig,cmd,cmdargs);
             
-        case 'deltaresweb'
+        case {'deltaresweb','deltaresweboss'}
             ops={};
             if matlabversionnumber>5
                 ops={'-browser'};
             end
-            site='http://www.deltaressystems.com';
+            switch cmd
+                case 'deltaresweboss'
+                    site='http://oss.deltares.nl';
+                otherwise
+                    site='http://www.deltaressystems.com';
+            end
             try
                 stat=web(site,ops{:});
             catch
