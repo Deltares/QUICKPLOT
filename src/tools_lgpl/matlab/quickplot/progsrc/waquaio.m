@@ -1563,7 +1563,11 @@ switch field
         uflg=wp(:,3)>0; uind=sub2ind(sznm,wp(uflg,2)-minn,wp(uflg,1)-minm);
         vflg=wp(:,4)>0; vind=sub2ind(sznm,wp(vflg,2)-minn,wp(vflg,1)-minm);
         udam(uind)=1;
+        udam(1,:)=0;
+        udam(nm==1 | nm([1 1:end-1],:)==1)=0;
         vdam(vind)=1;
+        vdam(:,1)=0;
+        vdam(nm==1 | nm(:,[1 1:end-1])==1)=0;
         if nargout==2
             varargout={udam vdam};
         else
