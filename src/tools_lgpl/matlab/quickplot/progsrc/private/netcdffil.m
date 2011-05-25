@@ -271,6 +271,7 @@ if ~isempty(Info.Z) && Props.hasCoords
     %
     Attribs = {CoordInfo.Attribute.Name};
     j=strmatch('formula_terms',Attribs,'exact');
+    formula = '';
     if ~isempty(j)
         formula = CoordInfo.Attribute(j).Value;
         FormulaTerms = multiline(formula,' ','cell');
@@ -285,6 +286,20 @@ if ~isempty(Info.Z) && Props.hasCoords
         FormulaTerms = reshape(FormulaTerms,2,length(FormulaTerms)/2)';
     end
     %
+    j=strmatch('positive',Attribs,'exact');
+    if ~isempty(j)
+        switch lower(CoordInfo.Attribute(j).Value)
+            case 'up'
+                signup = 1;
+            case 'down'
+                signup = -1;
+            otherwise
+                ui_message('warning',sprintf('Unknown value for attribute ''positive'': %s',CoordInfo.Attribute(j).Value))
+                signup = 1;
+        end
+    else
+        signup = 1;
+    end
     j=strmatch('standard_name',Attribs,'exact');
     if ~isempty(j)
         standard_name = CoordInfo.Attribute(j).Value;
@@ -409,10 +424,20 @@ if ~isempty(Info.Z) && Props.hasCoords
                     end
                 end
             otherwise
-                error(sprintf('%s not yet implemented',standard_name))
+                if ~isempty(formula)
+                   ui_message('warning',sprintf('Formula for %s not implemented',standard_name))
+                end
+                [Z, status] = netcdf_get(FI,CoordInfo,Props.Dimension,idx);
+                if signup<0
+                    Z=-Z;
+                end
+                Z = expand_hdim(Z,szData,hdim);
         end
     else
         [Z, status] = netcdf_get(FI,CoordInfo,Props.Dimension,idx);
+        if signup<0
+            Z=-Z;
+        end
         Z = expand_hdim(Z,szData,hdim);
     end
     %--------------------------------------------------------------------
