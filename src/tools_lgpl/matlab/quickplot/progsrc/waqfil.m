@@ -1,16 +1,17 @@
 function S = waqfil(cmd,file,varargin)
-%WAQFIL Read various Delwaq files.
+%WAQFIL Read various Delwaq binary files.
 %
-%   FI = WAQFIL('open',FILENAME,...extra arguments...)
-%   Opens the specified file and reads a part or all of the
-%   data.
+%   FI = WAQFIL('open',FILENAME,...extra arguments...) opens the specified
+%   file and reads a part or all of the data. Important (meta)data is
+%   returned as the structure FI. This routine does not support .his, .bal
+%   and .map files; use the DELWAQ function for those files.
 %
-%   Data = WAQFIL('read',FI,...extra arguments...)
-%   Reads additional data from the file.
+%   Data = WAQFIL('read',FI,...extra arguments...) reads additional data
+%   from the file previously opened using a WAQFIL('open',...) call.
 %
-%   This function call supports the following file types
-%   (the extra arguments for the open call are indicated
-%   after the list of file name extensions).
+%   This function call supports the following file types (the extra
+%   arguments for the open call are indicated after the list of file name
+%   extensions).
 %
 %   Volume, salinity, temperature, and shear stress files
 %     * .vol, .sal, .tem, .vdf, .tau files: NSeg
@@ -35,6 +36,8 @@ function S = waqfil(cmd,file,varargin)
 %
 %   table files
 %     * .lgt files                        : -
+%
+%   See also: DELWAQ, QPFOPEN. 
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               

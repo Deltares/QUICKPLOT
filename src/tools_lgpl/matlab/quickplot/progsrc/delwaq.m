@@ -31,6 +31,8 @@ function [Out1,Out2]=delwaq(cmd,varargin)
 %   adds the data to a Delwaq HIS/MAP file. The size of the data
 %   matrix should be
 %       NSubstance x NSegment x NTime.
+%
+%   See also: WAQFIL, QPFOPEN. 
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               

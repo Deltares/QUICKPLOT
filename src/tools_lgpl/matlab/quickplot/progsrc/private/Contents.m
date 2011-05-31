@@ -43,7 +43,6 @@
 %   telemac                     - Read Telemac selafin files.
 %   trtarea                     - Read Delft3D trachytope/WAQUA ecotope area files.
 %   unibest                     - Read Unibest files.
-%   waqfil                      - Read various Delwaq files.
 %   waqua                       - Read SIMONA SDS files (low level).
 %
 % Special graphics routines

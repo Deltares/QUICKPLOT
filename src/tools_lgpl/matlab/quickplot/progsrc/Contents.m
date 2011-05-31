@@ -128,3 +128,4 @@
 %   qpsi                - Get tag object of the current QuickPlot item.
 %   tricontourf         - Filled contour plot for triangulated data.
 %   waquaio             - Read SIMONA SDS file.
+%   waqfil              - Read various Delwaq files.
