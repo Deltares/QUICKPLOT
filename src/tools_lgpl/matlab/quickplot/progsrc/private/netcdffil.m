@@ -880,11 +880,11 @@ for d=1:Info.Rank
 end
 %
 fliporder = ~getpref('SNCTOOLS','PRESERVE_FVD',false);
-if fliporder
-   reverse=Info.Rank:-1:1;
-else
+%if fliporder
+%   reverse=Info.Rank:-1:1;
+%else
    reverse=1:Info.Rank;
-end
+%end
 %
 loadtype = 'double';
 if Info.Nctype == nc_char
@@ -916,16 +916,16 @@ else
         end
     end
     %
-    if fliporder
-        start_coord = fliplr(start_coord);
-        count_coord = fliplr(count_coord);
-    end
+    %if fliporder
+    %    start_coord = fliplr(start_coord);
+    %    count_coord = fliplr(count_coord);
+    %end
     %
     Data = nc_varget(FI.FileName,FI.Dataset(varid+1).Name,start_coord,count_coord);
     if length(count_coord)>1
         Data = reshape(Data,count_coord);
     end
-    Data=Data(RS_netcdf{reverse});
+    %Data=Data(RS_netcdf{reverse});
 end
 %
 reverse=[reverse Info.Rank+1:5];
