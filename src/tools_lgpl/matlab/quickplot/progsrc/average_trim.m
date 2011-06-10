@@ -5,7 +5,7 @@ function average_trim(source,target,varargin)
 %    the results in a TRIM file called TRIM_Target. The file names may
 %    include absolute or relative paths. If the target files exist, they
 %    will be overwritten.
-% 
+%
 %    Examples:
 %    average_trim('trim-source','trim-target')
 %    average_trim('d:\sourcedir\trim-x','p:\targetdir\trim-x')
@@ -62,33 +62,93 @@ function average_trim(source,target,varargin)
 %   $HeadURL$
 %   $Id$
 
+if isstandalone && nargin>2
+   %
+   % In standalone (executable) mode, the arguments can be given on the
+   % command line. In that case all arguments will be strings. This will
+   % not work for time steps, so let's convert all arguments to numbers
+   % that can be converted to numbers. 
+   %
+   for i = 1:length(varargin)
+      if ischar(varargin{i}) % may be non-string if embedded in a bigger tool
+         val = str2num(varargin{i});
+         if ~isempty(val)
+            varargin{i} = val;
+         end
+      end
+   end
+end
+
 if nargin<1
    [source,p] = uigetfile({'trim-*.dat','Delft3D-FLOW map file'},'Select existing Delft3D-FLOW map file');
-   source = [p source];
+   source = fullfile(p,source);
 end
-S=vs_use(source);
+S=vs_use(source,'quiet');
 
 if nargin<2
    [target,p] = uiputfile([p 'trim-*.dat'],'Specify name for processed Delft3D-FLOW map file');
-   target = [p target];
+   target = fullfile(p,target);
    [p,target] = fileparts(target); % strip off file extension
-   target = [p target];
+   target = fullfile(p,target);
 end
 targetdat = [target '.dat'];
 targetdef = [target '.def'];
-if exist(targetdat,'file') | exist(targetdef,'file')
+if exist(targetdat,'file') || exist(targetdef,'file')
    errordlg({'The .DAT and .DEF files for processed data should not yet exist.',targetdat,targetdef},'Fatal Error','modal')
    return
 end
 T=vs_ini(targetdat,targetdef);
 
-average='mean';
-times = 0;
+average='unspecified';
+times = 'unspecified';
 for i = 1:length(varargin)
    if ischar(varargin{i})
       average = varargin{i};
    elseif isnumeric(varargin{i})
       times = varargin{i};
+   end
+end
+if strcmp(average,'unspecified')
+   if isstandalone
+      average = questdlg('Operation','Which operation to perform?','mean','max','min','mean');
+      if isempty(average)
+         return
+      end
+   else
+      average = 'mean';
+   end
+end
+if isequal(times,'unspecified')
+   if isstandalone
+      accepted = 0;
+      Info = vs_disp(S,'map-series',[]);
+      Tmax = Info.SizeDim;
+      times = [1 Tmax];
+      while ~accepted
+         prompt = {'First time step:','Last time step:'};
+         name   = 'Period';
+         nlines = 1;
+         def    = {num2str(times(1)) num2str(times(2))};
+         answer = inputdlg(prompt,name,nlines,def);
+         if isempty(answer)
+            return
+         end
+         accepted = 1;
+         times(1) = str2double(answer{1});
+         if times(1)<1 || times(1)>Tmax || times(1)~=round(times(1))
+            accepted = 0;
+            uiwait(warndlg('Invalid start time step: reset to 1','Warning','modal'))
+            times(1) = 1;
+         end
+         times(2) = str2double(answer{2});
+         if times(2)<times(1) || times(2)>Tmax || times(2)~=round(times(2))
+            accepted = 0;
+            uiwait(warndlg(sprintf('Invalid end time step: reset to %i',Tmax),'Warning','modal'))
+            times(2) = Tmax;
+         end
+      end
+   else
+      times = 0;
    end
 end
 
@@ -123,9 +183,50 @@ for g=1:length(grps)
       % Only floating point data sets can be averaged
       %
       if Info.TypeVal==5
-         Data = vs_let(S,grps{g},{times},elms{e});
-         Data = feval(average,Data); % average in first (=time) direction
+         try
+            %
+            % The fastest way is to process all time steps at once, but
+            % this may cause an out-of-memory error.
+            %
+            Data = vs_let(S,grps{g},{times},elms{e});
+            Data = feval(average,Data); % average in first (=time) direction
+         catch err
+            switch err.identifier
+               case {'MATLAB:pmaxsize','MATLAB:nomem'}
+                  %
+                  % The data set is too big. Need to process the time steps
+                  % individually.
+                  %
+                  Data = [];
+                  for t = times
+                     DataT = vs_let(S,grps{g},{t},elms{e});
+                     if isempty(Data)
+                        Data = DataT;
+                     else
+                        switch average
+                           case 'max'
+                              Data = max(Data,DataT);
+                           case 'min'
+                              Data = min(Data,DataT);
+                           case 'mean'
+                              Data = Data+DataT;
+                           otherwise
+                              error('Command ''%s'' not supported',average);
+                        end
+                     end
+                  end
+                  if strcmp(average,'mean')
+                     Data = Data/length(times);
+                  end
+               otherwise
+                  retrow(err)
+            end
+         end
          T = vs_put(T,grps{g},elms{e},Data);
       end
    end
+end
+
+if isstandalone
+   fprintf('\nProcessing completed successfully.\n');
 end
