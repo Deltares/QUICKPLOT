@@ -5,7 +5,7 @@ function average_trim(source,target,varargin)
 %    the results in a TRIM file called TRIM_Target. The file names may
 %    include absolute or relative paths. If the target files exist, they
 %    will be overwritten.
-%
+% 
 %    Examples:
 %    average_trim('trim-source','trim-target')
 %    average_trim('d:\sourcedir\trim-x','p:\targetdir\trim-x')
