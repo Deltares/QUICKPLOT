@@ -676,8 +676,10 @@ for i = 1:length(Out)
 end
 %
 OutCoords = [];
-for m = unique(matchDims)
-    OutCoords = [OutCoords Out(matchDims==m) Dummy];
+if ~isempty(matchDims)
+   for m = unique(matchDims)
+      OutCoords = [OutCoords Out(matchDims==m) Dummy];
+   end
 end
 Out = [OutCoords OutNoCoords];
 %
