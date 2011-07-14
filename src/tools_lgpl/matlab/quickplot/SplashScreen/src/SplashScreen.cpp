@@ -120,7 +120,7 @@ HANDLE CSplashScreen::LaunchWpfApplication()
 	STARTUPINFO si = { 0 };
 	si.cb = sizeof(si);
 	PROCESS_INFORMATION pi = { 0 };
-	CreateProcess(szApplicationPath, GetCommandLine(), NULL, NULL, FALSE, 0, NULL, szCurrentFolder, &si, &pi);
+	CreateProcess(szApplicationPath, GetCommandLine(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
 
 	return pi.hProcess;
 }
