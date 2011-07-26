@@ -222,7 +222,7 @@ for i=1:length(gNamesMatch)
                         if LDiffFound
                             if verbose
                                 DiffFound=LDiffFound;
-                                if Quantify && strcmp(reason,'differ')
+                                if Quantify && strcmp(reason,'differ') && eInfo1.TypeVal~=1
                                    if any(xor(isnan(eData1(:)),isnan(eData2(:))))
                                       dMax  = NaN;
                                       iMax  = find(xor(isnan(eData1(:)),isnan(eData2(:))));
@@ -261,7 +261,7 @@ for i=1:length(gNamesMatch)
                     if LDiffFound && Quantify && strcmp(reason,'differ')
                        fprintf(fid,'Data of element %s of group %s %s.\n',eNamesMatch{j},gNamesMatch{i},reason);
                        fprintf(fid,['Maximum absolute difference %g located at index: (',repmat('%i,',1,length(szData)-1) '%i)\n'],dAMax,lAMax{:});
-                       if ~isnan(dAMax)
+                       if ~isnan(dAMax) && eInfo1.TypeVal==5
                           fprintf(fid,['Maximum relative difference %g located at index: (',repmat('%i,',1,length(szData)-1) '%i)\n'],dRMax,lRMax{:});
                        end
                     end
@@ -287,7 +287,7 @@ for i=1:length(gNamesMatch)
                         if verbose
                             fprintf(fid,'Data of element %s of group %s %s.\n',eNamesMatch{j},gNamesMatch{i},reason);
                             DiffFound=LDiffFound;
-                            if Quantify && strcmp(reason,'differ')
+                            if Quantify && strcmp(reason,'differ') && eInfo1.TypeVal~=1
                                szData = size(eData1);
                                if any(xor(isnan(eData1(:)),isnan(eData2(:))))
                                   dMax  = NaN;
@@ -303,12 +303,14 @@ for i=1:length(gNamesMatch)
                                   [lMax{1:length(szData)}]=ind2sub(szData,iMax(1));
                                   fprintf(fid,['Maximum absolute difference %g located at index: (',repmat('%i,',1,length(szData)-1) '%i)\n'],dMax,lMax{:});
                                   %
-                                  dData = 2*dData./abs(eData1+eData2);
-                                  dMax  = max(dData(:));
-                                  iMax  = find(dData==dMax);
-                                  lMax  = {};
-                                  [lMax{1:length(szData)}]=ind2sub(szData,iMax(1));
-                                  fprintf(fid,['Maximum relative difference %g located at index: (',repmat('%i,',1,length(szData)-1) '%i)\n'],dMax,lMax{:});
+                                  if  eInfo1.TypeVal==5
+                                     dData = 2*dData./abs(eData1+eData2);
+                                     dMax  = max(dData(:));
+                                     iMax  = find(dData==dMax);
+                                     lMax  = {};
+                                     [lMax{1:length(szData)}]=ind2sub(szData,iMax(1));
+                                     fprintf(fid,['Maximum relative difference %g located at index: (',repmat('%i,',1,length(szData)-1) '%i)\n'],dMax,lMax{:});
+                                  end
                                end
                             end
                         else
