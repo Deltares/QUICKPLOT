@@ -3,13 +3,18 @@ function out=vs_diff(VS1,VS2,varargin)
 %   VS_DIFF(VS1,VS2) displays the names of the groups/elements that are
 %   different.
 %
-%   VS_DIFF(VS1,VS2,FID) writes the information to an already opened text
+%   VS_DIFF(VS1,VS2,'Quantify') indicates the absolute and relative
+%   differences for the elements that are different.
+%
+%   VS_DIFF(...,FID) writes the information to an already opened text
 %   file with handle FID.
 %
 %   Diff=VS_DIFF(VS1,VS2) returns 1 if there are differences, 0 if there
-%   are none. In this case no listing is produced.
+%   are none. In this case no detailed printed listing is produced.
 %
-%   VS_DIFF(...,'FailOnNaN') marks Not-a-number values as not equal.
+%   VS_DIFF(...,'FailOnNaN') marks Not-a-Number values as not equal. By
+%   default two files are considered equal if they have NaNs at exactly the
+%   same locations.
 %
 %   Example
 %      F1 = vs_use('trim-xx1.dat','trim-xx1.def');
@@ -50,6 +55,7 @@ function out=vs_diff(VS1,VS2,varargin)
 
 fid=1;
 FailOnNaN=0;
+Quantify=0;
 if nargin<2
     error('At least two input arguments required.')
 elseif nargin>2
@@ -58,6 +64,8 @@ elseif nargin>2
             switch lower(varargin{i})
                 case 'failonnan'
                     FailOnNaN = 1;
+                 case 'quantify'
+                    Quantify = 1;
                 otherwise
                     error(sprintf('Unknown input argument: %s',varargin{i}))
             end
@@ -118,7 +126,7 @@ for i=1:length(gNamesMatch)
             out=DiffFound;
             return
         end
-    elseif ~isequal(gInfo1,gInfo2) & fullcheck
+    elseif ~isequal(gInfo1,gInfo2) && fullcheck
         DiffFound=1;
         if verbose
             fprintf(fid,'Group properties differ for: %s\n',gNamesMatch{i});
@@ -173,7 +181,7 @@ for i=1:length(gNamesMatch)
                     out=DiffFound;
                     return
                 end
-            elseif ~isequal(eInfo1,eInfo2) & fullcheck
+            elseif ~isequal(eInfo1,eInfo2) && fullcheck
                 DiffFound=1;
                 if verbose
                     fprintf(fid,'Properties of element %s of group %s differ.\n',eNamesMatch{j},gNamesMatch{i});
@@ -183,11 +191,15 @@ for i=1:length(gNamesMatch)
                 end
             else % compare data
                 NBytes=prod(gInfo1.SizeDim)*prod(eInfo1.SizeDim)*8; % size of eData1 (not correct for complex and char arrays)
-                if (NBytes>5e6) & gInfo1.VarDim % above 5MB, use variable dimension if possible
+                if (NBytes>5e6) && gInfo1.VarDim % above 5MB, use variable dimension if possible
                     gSel=cell(fid,gInfo1.NDim);
                     for k=1:gInfo1.NDim
                         gSel{k}=0;
                     end
+                    dAMax = 0;
+                    dRMax = 0;
+                    szData = [gInfo1.SizeDim eInfo1.SizeDim];
+                    szData(gInfo1.NDim)=1;
                     for k=1:gInfo1.SizeDim(gInfo1.VarDim)
                         gSel{gInfo1.VarDim}=k;
                         eData1=vs_let(VS1,gNamesMatch{i},gSel,eNamesMatch{j},'quiet','nowarn');
@@ -209,14 +221,49 @@ for i=1:length(gNamesMatch)
                         end
                         if LDiffFound
                             if verbose
-                                fprintf(fid,'Data of element %s of group %s at step %i %s.\n',eNamesMatch{j},gNamesMatch{i},k,reason);
                                 DiffFound=LDiffFound;
-                                break
+                                if Quantify && strcmp(reason,'differ')
+                                   if any(xor(isnan(eData1(:)),isnan(eData2(:))))
+                                      dMax  = NaN;
+                                      iMax  = find(xor(isnan(eData1(:)),isnan(eData2(:))));
+                                      [lAMax{1:length(szData)}] = ind2sub(szData,iMax(1));
+                                      lAMax{gInfo1.VarDim} = k;
+                                      break
+                                   else
+                                      dData = abs(eData1-eData2);
+                                      dMax  = max(dData(:));
+                                      if dMax>dAMax
+                                         dAMax = dMax;
+                                         iMax  = find(dData==dMax);
+                                         [lAMax{1:length(szData)}] = ind2sub(szData,iMax(1));
+                                         lAMax{gInfo1.VarDim} = k;
+                                      end
+                                      %
+                                      dData = 2*dData./abs(eData1+eData2);
+                                      dMax  = max(dData(:));
+                                      if dMax>dRMax
+                                         dRMax = dMax;
+                                         iMax  = find(dData==dMax);
+                                         [lRMax{1:length(szData)}] = ind2sub(szData,iMax(1));
+                                         lRMax{gInfo1.VarDim} = k;
+                                      end
+                                   end
+                                else
+                                   fprintf(fid,'Data of element %s of group %s at step %i %s.\n',eNamesMatch{j},gNamesMatch{i},k,reason);
+                                   break
+                                end
                             else
                                 out=LDiffFound;
                                 return
                             end
                         end
+                    end
+                    if LDiffFound && Quantify && strcmp(reason,'differ')
+                       fprintf(fid,'Data of element %s of group %s %s.\n',eNamesMatch{j},gNamesMatch{i},reason);
+                       fprintf(fid,['Maximum absolute difference %g located at index: (',repmat('%i,',1,length(szData)-1) '%i)\n'],dAMax,lAMax{:});
+                       if ~isnan(dAMax)
+                          fprintf(fid,['Maximum relative difference %g located at index: (',repmat('%i,',1,length(szData)-1) '%i)\n'],dRMax,lRMax{:});
+                       end
                     end
                 else
                     eData1=vs_let(VS1,gNamesMatch{i},eNamesMatch{j},'quiet','nowarn');
@@ -240,6 +287,30 @@ for i=1:length(gNamesMatch)
                         if verbose
                             fprintf(fid,'Data of element %s of group %s %s.\n',eNamesMatch{j},gNamesMatch{i},reason);
                             DiffFound=LDiffFound;
+                            if Quantify && strcmp(reason,'differ')
+                               szData = size(eData1);
+                               if any(xor(isnan(eData1(:)),isnan(eData2(:))))
+                                  dMax  = NaN;
+                                  iMax  = find(xor(isnan(eData1(:)),isnan(eData2(:))));
+                                  lMax  = {};
+                                  [lMax{1:length(szData)}]=ind2sub(szData,iMax(1));
+                                  fprintf(fid,['Maximum absolute difference %g located at index: (',repmat('%i,',1,length(szData)-1) '%i)\n'],dMax,lMax{:});
+                               else
+                                  dData = abs(eData1-eData2);
+                                  dMax  = max(dData(:));
+                                  iMax  = find(dData==dMax);
+                                  lMax  = {};
+                                  [lMax{1:length(szData)}]=ind2sub(szData,iMax(1));
+                                  fprintf(fid,['Maximum absolute difference %g located at index: (',repmat('%i,',1,length(szData)-1) '%i)\n'],dMax,lMax{:});
+                                  %
+                                  dData = 2*dData./abs(eData1+eData2);
+                                  dMax  = max(dData(:));
+                                  iMax  = find(dData==dMax);
+                                  lMax  = {};
+                                  [lMax{1:length(szData)}]=ind2sub(szData,iMax(1));
+                                  fprintf(fid,['Maximum relative difference %g located at index: (',repmat('%i,',1,length(szData)-1) '%i)\n'],dMax,lMax{:});
+                               end
+                            end
                         else
                             out=LDiffFound;
                             return
