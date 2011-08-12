@@ -61,6 +61,7 @@
 %   landboundary        - Read/write land boundary files.
 %   mdf                 - Manipulate Delft3D-FLOW mdf files.
 %   samples             - Read/write sample data from file.
+%   shape               - Read ESRI shape files.
 %   tekal               - Read/write for Tekal files.
 %   tekal2tba           - Parses comments of a TEKAL to determine tidal analysis data.
 %   trirst              - Read/write Delft3D-FLOW restart file.

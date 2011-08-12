@@ -35,7 +35,6 @@
 %   read_ecom_corners           - Read ECOMSED corners grid file.
 %   read_ecom_modelgrid         - Read ECOMSED grid file.
 %   readswan                    - Read SWAN 1D and 2D spectral files.
-%   shape                       - Read ESRI shape files.
 %   shapewrite                  - Write ESRI shape files.
 %   sobek                       - Read and plot SOBEK topology.
 %   swan                        - Read/write SWAN files.
