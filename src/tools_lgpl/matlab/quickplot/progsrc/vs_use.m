@@ -1011,6 +1011,9 @@ else
 end
 %
 fidat = fopen(data_file,'r','b');
+if fidat<0
+    error('Unable to open file: %s',data_file)
+end
 Header=char(fread(fidat,[1 HeaderLength],'uchar'));
 %
 eoh = ftell(fidat);
