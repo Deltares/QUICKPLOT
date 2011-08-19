@@ -80,7 +80,7 @@ switch cmd
             filterspec=[tmpfn,tmpext];
          else
             if strcmp(cmd,'openldb')
-               filtertbl={'*.ldb;*.gen;*.bna;*.shp'                       'Land Boundary Files'         'tekal'};
+               filtertbl={'*.ldb;*.pol;*.gen;*.bna;*.shp'                 'Land Boundary Files'         'tekal'};
             else
                filtertbl={'*.dat;*.ada;*.hda'                             'Delft3D Output Files'        'nefis'
                   '*.grd;*.rgf'                                          'Delft3D Grid Files'          'wlgrid'};
@@ -95,8 +95,8 @@ switch cmd
                   '*.his;*.map;*.plo;*.psf'                              'Delwaq Binary Files'         'delwaqbin'
                   '*.tim'                                                'Delwaq Time Series Input Files' 'DelwaqTimFile'
                   '*.arc;*.am?;*.asc'                                    'ARC-Grid Files'              'arcgrid'
-                  '*.tek;*.ann;*.ldb;*.spl;*.tka;*.tkp;*.tkf'            'Tekal Data Files'            'tekal'
-                  '*.shp;*.ldb;*.gen;*.bna'                              'Shape and Land Boundary Files' {'shape','BNA File','ArcInfoUngenerate'}
+                  '*.tek;*.ann;*.ldb;*.pol;*.spl;*.tka;*.tkp;*.tkf'      'Tekal Data Files'            'tekal'
+                  '*.shp;*.ldb;*.pol;*.gen;*.bna'                        'Shape and Land Boundary Files' {'shape','BNA File','ArcInfoUngenerate'}
                   '*.jpg;*.jpeg;*.bmp;*.tif;*.tiff;*.png;*.pcx;*.xwd'    'Bitmap Files'                'bitmap'
                   '*.hdr'                                                'BIL/HDR Files'               'bil/hdr'
                   '*.fun;*.daf'                                          'Unibest Files'               'unibest'
@@ -182,7 +182,7 @@ switch cmd
                trytp='fls';
             case {'.grib','.grib1','.grib2'}
                trytp='grib';
-            case {'.tek','.ann','.ldb','.spl','.tka','.tkp','.tkf'}
+            case {'.tek','.ann','.ldb','.pol','.spl','.tka','.tkp','.tkf'}
                trytp='tekal';
             case {'.xyz'}
                trytp='samples';
@@ -597,7 +597,7 @@ switch cmd
                      can_be_ldb=0;
                      can_be_kub=0;
                      switch lower(ex)
-                        case '.ldb'
+                        case {'.ldb','.pol'}
                            can_be_ldb=1;
                            for i=1:length(FI.Field)
                               if length(FI.Field(i).Size)~=2
@@ -634,7 +634,7 @@ switch cmd
                            if ~exist([ppn pfn])
                               cp=pwd;
                               cd(pn);
-                              [pfn,ppn]=uigetfile('*.ldb','Select matching polygon file ...');
+                              [pfn,ppn]=uigetfile('*.ldb;*.pol','Select matching polygon file ...');
                               cd(cp);
                            end
                            if ~ischar(pfn)
