@@ -60,16 +60,26 @@ while 1
       end
       GridFileName=[gpn gfn];
    end
-   ex='';
    [pn,fn,ex]=fileparts(GridFileName);
    trytp = lower(ex);
+   switch trytp
+      case {'.lga','.cco'} % multiple extensions supported
+         trytp = '.lga';
+      case {'.m2b','.arc'} % multiple extensions supported
+         trytp = '.m2b';
+      case {'.grd','.geo'} % single extension cases
+         %trytp = trytp;
+      otherwise
+         trytp = '.lga';
+   end
    trytp0 = trytp;
    CouldReadGridData = 0;
+   GetError = 0;
    while 1
       GridSize=[NaN NaN];
       GridSeg=NaN;
       switch trytp
-         case {'.lga','.cco'}
+         case '.lga'
             try
                G=delwaq('open',GridFileName);
                GridSeg=G.NoSeg;
@@ -78,7 +88,7 @@ while 1
             catch
                trytp = '.grd';
             end
-         case {'.grd'}
+         case '.grd'
             try
                G=wlgrid('open',GridFileName);
                GridSize=size(G.X);
@@ -86,7 +96,7 @@ while 1
             catch
                trytp = '.m2b';
             end
-         case {'.m2b','.arc'}
+         case '.m2b'
             try
                G=arcgrid('read',GridFileName);
                GridSeg=max(G.Data(:));
@@ -98,7 +108,7 @@ while 1
             catch
                trytp = '.geo';
             end
-         case {'.geo'}
+         case '.geo'
             try
                G=telemac('open',GridFileName);
                GridSeg=G.Discr.NPnts;
@@ -107,14 +117,14 @@ while 1
                G.Index=(1:GridSeg)';
                CouldReadGridData = 1;
             catch
-               trytp = 'unknown';
+               trytp = '.lga';
             end
-         otherwise
-            trytp0 = 'unknown';
-            trytp = '.lga';
       end
-      if CouldReadGridData | isequal(trytp,trytp0)
+      if CouldReadGridData || GetError
          break
+      end
+      if isequal(trytp,trytp0) % gone full circle
+         GetError = 1;
       end
    end
    if CouldReadGridData
@@ -122,10 +132,10 @@ while 1
          %
          % Number of segments given.
          %
-         if MapSeg==GridSeg | ... % exact match for ordinary map files
+         if MapSeg==GridSeg || ... % exact match for ordinary map files
                MapSeg==GridSeg+PerLayer % one shift for PART map files with sediment layer
             break
-         elseif round(MapSeg/GridSeg)==MapSeg/GridSeg & GridSeg>0 % data amount matches multiple layers
+         elseif round(MapSeg/GridSeg)==MapSeg/GridSeg && GridSeg>0 % data amount matches multiple layers
             G.MNK(3) = MapSeg/GridSeg;
             G.Index = repmat(G.Index,[1 1 G.MNK(3)]);
             for k=2:G.MNK(3)
@@ -145,5 +155,7 @@ while 1
             ui_message('error',sprintf('Grid size (%ix%i) does not match data size (%ix%i)',GridSize,MapSeg));
          end
       end
+   else
+      ui_message('error',lasterr);
    end
 end

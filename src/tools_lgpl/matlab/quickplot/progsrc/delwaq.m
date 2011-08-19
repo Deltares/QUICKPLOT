@@ -523,7 +523,7 @@ MN=fread(fid,[1 2],'int32');
 S.XY0=fread(fid,[1 2],'float32');
 X=fread(fid,[1 3],'int32');
 if ~isequal(MN([2 1]),S.MNK(1:2)) | X(3)~=S.MNK(3)
-    error('Size in CCO file does not match size in LGA file.')
+    error(sprintf('Size in CCO file [%i %i %i] does not match size in LGA file [%i %i %i].',MN([2 1]),X(3),S.MNK))
 end
 %
 % Skip next nine records. No idea what they were meant to do.
