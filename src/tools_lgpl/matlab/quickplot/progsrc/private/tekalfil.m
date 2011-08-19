@@ -469,7 +469,7 @@ switch FI.FileType
                                         DP={'field X'    'sSEG' 'x' [0 5 1 0 0]  0          1       i       0       0          []      {}  };
                                         DP{1}=sprintf('%s',FI.Field(i).Name);
                                         if FI.Field(i).Size(2)==2
-                                            if strcmp(lower(e),'.ldb')
+                                            if strcmp(lower(e),'.ldb') || strcmp(lower(e),'.pol')
                                                 DP([2 3 4 6 9])={'POLYL' 'xy' [0 0 1 0 0] 0 1};
                                             else
                                                 DP{9}=1;
