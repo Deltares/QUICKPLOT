@@ -100,43 +100,43 @@ if ~simplexyz
     end
     [X,n,er]=sscanf(str,'%g');
     Params={};
+    while ~isempty(er)
+       [Param,n,er,ni]=sscanf(str,' "%[^"]%["]',2);
+       if isempty(er) && n==2
+          Params{end+1}=Param(1:end-1);
+       else
+          [Param,n,er]=sscanf(str,' %s',1);
+          if isempty(er) && n==1
+             error('Reading line: %s\nIf this line contains a parameter name, then it should be enclosed by double quotes.',str);
+             %Params{end+1}=Param; %<--- makes it impossible to distinguish
+             %certain observation files from Tekal file format. For example:
+             %B001
+             %160 4 16 10
+             %1.0 2.0 3.0 4.0
+             % :   :   :   :
+          else
+             break
+          end
+       end
+       str=str(ni:end);
+       if ~isempty(str)
+          er='scan remainder of line';
+       else
+          cloc=ftell(fid);
+          str=fgetl(fid);
+          [X,n,er]=sscanf(str,'%g');
+       end
+    end
+    [X,n,er]=sscanf(str,'%g');
     if ~isempty(er)
-        while 1
-            [Param,n,er,ni]=sscanf(str,' "%[^"]%["]',2);
-            if isempty(er) && n==2
-                Params{end+1}=Param(1:end-1);
-            else
-                [Param,n,er]=sscanf(str,' %s',1);
-                if isempty(er) && n==1
-                    error('Parameter names should be enclosed by double quotes.');
-                    %Params{end+1}=Param; %<--- makes it impossible to distinguish
-                    %certain observation files from Tekal file format. For example:
-                    %B001
-                    %160 4 16 10
-                    %1.0 2.0 3.0 4.0
-                    % :   :   :   :
-                else
-                    break
-                end
-            end
-            str=str(ni:end);
-            if isempty(str)
-                break
-            end
-        end
-        cloc=ftell(fid);
-        str=fgetl(fid);
-        [X,n,er]=sscanf(str,'%g');
-        if ~isempty(er)
-            error('Error interpreting file');
-        elseif n<3
-            error('Not enough values for sample data (X,Y,Value1,...)')
-        end
-        str=fgetl(fid);
-        [X,n2]=sscanf(str,'%g');
-        if n2~=n && ~feof(fid)
-            error('Number of values per line should be constant.')
-        end
+       error('Unable to data values on line: %s',str);
+    elseif n<3
+       error('Not enough values for sample data (X,Y,Value1,...)')
+    end
+    str=fgetl(fid);
+    [X,n2]=sscanf(str,'%g');
+    if n2~=n && ~feof(fid)
+       error('Number of values per line should be constant.')
     end
     if length(Params)<n
         for i=(length(Params)+1):n
