@@ -8,6 +8,17 @@ function cleanup(X)
 %   $Id$
 
 if isunix
+    % linux rm command is not recursive
+    d = dir;
+    for id=1:length(d)
+        if d(id).isdir && ~isequal(d(id).name(1),'.')
+            % recursively call cleanup
+            cd(d(id).name)
+            cleanup(X);
+            cd ..
+        end
+    end
+    % finally process this directory
     for i=1:length(X(:))
         unix(['rm -rf ' X{i}]);
     end
