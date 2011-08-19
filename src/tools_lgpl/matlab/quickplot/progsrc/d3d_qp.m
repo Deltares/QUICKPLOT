@@ -3374,6 +3374,7 @@ try
                         %Disable listeners
                         mmgr = uigetmodemanager(gcbf);
                         set(mmgr.WindowListenerHandles,'Enable','off');
+                        %'MATLAB:modes:mode:InvalidPropertySet'
                     end
                     set(gcbf,'windowbuttondownfcn','d3d_qp zoomdown');
                     if v72
@@ -3392,6 +3393,7 @@ try
                         %Disable listeners
                         mmgr = uigetmodemanager(gcbf);
                         set(mmgr.WindowListenerHandles,'Enable','off');
+                        %'MATLAB:modes:mode:InvalidPropertySet'
                     end
                     set(gcbf,'windowbuttondownfcn','d3d_qp zoomdown');
                     if v72
