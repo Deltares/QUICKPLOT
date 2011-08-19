@@ -173,7 +173,7 @@ while 1
             FileInfo.Field(variable).Size=dim;
             if (length(dim)>2) & prod(FileInfo.Field(variable).Size(3:end))~=FileInfo.Field(variable).Size(1)
                 % MN   n   M    should be interpreted as    MN   n   M   N (=MN/M)
-                if rem(FileInfo.Field(variable).Size(1),prod(FileInfo.Field(variable).Size(3:end)))==0
+                if prod(FileInfo.Field(variable).Size(3:end))>0 && rem(FileInfo.Field(variable).Size(1),prod(FileInfo.Field(variable).Size(3:end)))==0
                     FileInfo.Field(variable).Size(end+1)=FileInfo.Field(variable).Size(1)/prod(FileInfo.Field(variable).Size(3:end));
                 else
                     Sz = FileInfo.Field(variable).Size;
