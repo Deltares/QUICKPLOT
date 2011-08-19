@@ -101,17 +101,17 @@ if fid<0
 end
 str = fread(fid,[1 inf],'*char');
 fclose(fid);
-entry = strfind(char(12),str);
+entry = strfind(str,char(12));
 %
 substr = str(1:entry(1)-1);
-lines = strfind(char(10),substr);
+lines = strfind(substr,char(10));
 updatestr = substr(lines(3)+1:lines(4)-1);
 updatenr = str2double(updatestr);
 %
 j = 0;
 for i=1:length(entry)-1
     substr = str(entry(i)+2:entry(i+1)-1);
-    lines = strfind(char(10),substr);
+    lines = strfind(substr,char(10));
     if strcmp(substr(lines(1)+1:lines(2)-1),'file')
         j = j+1;
         entries(j).filename = substr(1:lines(1)-1);
@@ -142,7 +142,7 @@ else
     Ids = [];
     for keyw = {'Id','Date','Author','Revision','HeadURL'}
         kw = keyw{1};
-        Ids = cat(2,Ids,strfind(['$' kw '$'],file1));
+        Ids = cat(2,Ids,strfind(file1,['$' kw '$']));
     end
     Ids = sort(Ids);
     for i = 1:length(Ids)
@@ -150,7 +150,7 @@ else
         if ~strcmp(file2(Ids(i)+(0:length(kw))),['$' kw])
             break
         else
-            Amp = strfind('$',file2(Ids(i)+1:end));
+            Amp = strfind(file2(Ids(i)+1:end),'$');
             if isempty(Amp)
                 break
             else
