@@ -60,7 +60,7 @@ function average_trim(source,target,varargin)
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
-%   $Id$
+%   $Id: average_trim.m 587 2011-06-10 15:39:29Z jagers -- modified version to make MATLAB 6.5 compatible$
 
 if isstandalone && nargin>2
    %
@@ -190,8 +190,9 @@ for g=1:length(grps)
             %
             Data = vs_let(S,grps{g},{times},elms{e});
             Data = feval(average,Data); % average in first (=time) direction
-         catch err
-            switch err.identifier
+         catch
+            [LASTMSG, LASTID] = lasterr;
+            switch LASTID
                case {'MATLAB:pmaxsize','MATLAB:nomem'}
                   %
                   % The data set is too big. Need to process the time steps
@@ -219,7 +220,7 @@ for g=1:length(grps)
                      Data = Data/length(times);
                   end
                otherwise
-                  retrow(err)
+                  rethrow(lasterror)
             end
          end
          T = vs_put(T,grps{g},elms{e},Data);
