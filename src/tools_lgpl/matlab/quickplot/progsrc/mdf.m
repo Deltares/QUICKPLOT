@@ -1,4 +1,4 @@
-function Out = mdf(cmd,varargin)
+function varargout = mdf(cmd,varargin)
 %MDF Manipulate Delft3D-FLOW mdf files.
 %   MDF_STRUCT = MDF('read',FILENAME) read mdf file and various attribute
 %   files into structure.
@@ -44,15 +44,125 @@ function Out = mdf(cmd,varargin)
 
 switch lower(cmd)
     case 'read'
-        Out = mdfread(varargin{:});
+        varargout{1} = mdfread(varargin{:});
     case 'rotate'
-        Out = mdfrotate(varargin{:});
+        varargout{1} = mdfrotate(varargin{:});
+    case 'clip'
+        [varargout{1:max(1,nargout)}] = mdfclip(varargin{:});
     case 'write'
         mdfwrite(varargin{:});
     otherwise
         error('Command ''%s'' not supported.',cmd)
 end
 
+
+function varargout = mdfclip(MDF1,varargin)
+% MDFCLIP(MDF,MASK)
+% MDFCLIP(MDF,MMIN,MMAX,NMIN,NMAX
+% MDFCLIP(MDF,MLIM,NLIM)
+%
+mnkmax = inifile('get',MDF1.mdf,'','MNKmax');
+switch nargin
+    case 2
+        % MDFCLIP(MDF,MASK)
+        mask = varargin{1};
+        if ~isnumeric(mask) && ~islogical(mask)
+            error('MASK array should be logical or numeric')
+        elseif ~isequal(size(mask),mnkmax(1:2))
+            error('MASK argument should be size %i x %i.',mnkmax(1:2))
+        end
+    case 3
+        % MDFCLIP(MDF,MLIM,NLIM)
+        mask = zeros(mnkmax(1:2));
+        mlim = varargin{1};
+        if ~isnumeric(mlim) || ~isequal(size(mlim),[1 2])
+            error('Invalid MLIM argument.')
+        end
+        nlim = varargin{2};
+        if ~isnumeric(nlim) || ~isequal(size(nlim),[1 2])
+            error('Invalid NLIM argument.')
+        end
+        mask(mlim(1):mlim(2),nlim(1):nlim(2))=1;
+    case 5
+        % MDFCLIP(MDF,MMIN,MMAX,NMIN,NMAX
+        mask = zeros(mnkmax(1:2));
+        mmin = varargin{1};
+        if ~isnumeric(mmin) || ~isequal(size(mmin),[1 1])
+            error('Invalid MMIN argument.')
+        end
+        mmax = varargin{2};
+        if ~isnumeric(mmax) || ~isequal(size(mmax),[1 1])
+            error('Invalid MMAX argument.')
+        end
+        nmin = varargin{3};
+        if ~isnumeric(nmin) || ~isequal(size(nmin),[1 1])
+            error('Invalid NMIN argument.')
+        end
+        nmax = varargin{4};
+        if ~isnumeric(nmax) || ~isequal(size(nmax),[1 1])
+            error('Invalid NMAX argument.')
+        end
+        mask(mmin:mmax,nmin:nmax)=1;
+    otherwise
+        error('Invalid input arguments for mdf(''clip'',...)')
+end
+%
+% find mask numbers; replace NaNs by 0; exclude 0 from domain number list
+%
+mask(isnan(mask)) = 0;
+mask([1 end],:) = 0;
+mask(:,[1 end]) = 0;
+domains = unique(mask(:));
+domains(domains==0)=[];
+%
+if nargout<length(domains)
+    warning('More domains indicated in MASK array than output arguments.')
+    domains = domains(1:nargout);
+end
+varargout = cell(1,length(domains));
+for i = 1:length(domains)
+    mask1 = mask==domains(i);
+    MDF2 = MDF1;
+    %
+    MAct = find(any(mask1,2));
+    mmin = MAct(1)-1;
+    mmax = MAct(end)+1;
+    NAct = find(any(mask1,1));
+    nmin = NAct(1)-1;
+    nmax = NAct(end)+1;
+    %
+    cmask = ~mask1(mmin:mmax,nmin:nmax);
+    gmask = cmask([2:end end],[2:end end])&cmask(:,[2:end end])&cmask([2:end end],:)&cmask;
+    %
+    MDF2.mdf = inifile('set',MDF2.mdf,'','MNKmax',[mmax-mmin+1 nmax-nmin+1 mnkmax(3)]);
+    MDF2.grd.X = MDF2.grd.X(mmin:mmax-1,nmin:nmax-1);
+    MDF2.grd.X(gmask(1:end-1,1:end-1))=MDF2.grd.MissingValue;
+    MDF2.grd.Y = MDF2.grd.Y(mmin:mmax-1,nmin:nmax-1);
+    MDF2.grd.Y(gmask(1:end-1,1:end-1))=MDF2.grd.MissingValue;
+    MDF2.grd.Enclosure = enclosure('extract',MDF2.grd.X,MDF2.grd.Y);
+    %
+    if isfield(MDF2,'dep')
+        MDF2.dep = MDF2.dep(mmin:mmax,nmin:nmax);
+        %
+        dpsopt = upper(getstring(inifile('get',MDF2.mdf,'','Dpsopt','DEFAULT')));
+        if strcmp(dpsopt,'DP')
+            MDF2.dep(cmask)=-999;
+        else
+            MDF2.dep(gmask)=-999;
+        end
+    end
+    %
+    varargout{i} = MDF2;
+end
+
+
+function string = getstring(hashedstring)
+hashes = findstr(hashedstring,'#');
+if isempty(hashes)
+    string = deblank(hashedstring);
+else
+    string = deblank(hashedstring(hashes(1)+1:hashes(2)-1));
+end
 
 function [M2,N2] = rotate(M1,N1,MMAX)
 if nargin==2
