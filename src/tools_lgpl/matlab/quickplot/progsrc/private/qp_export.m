@@ -719,7 +719,8 @@ for f=1:ntim
             if fid<0
                 error(['Could not create or open: ',filename])
             end
-            fprintf(fid,'"%s"\n',vars{:});
+            fprintf(fid,'"%s" ',vars{:});
+            fprintf(fid,'\n');
             Format=repmat(' %14.6f',1,size(expdata,1));
             Format=[Format(2:end) '\n'];
             fprintf(fid,Format,expdata);
