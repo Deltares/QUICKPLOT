@@ -93,7 +93,7 @@ switch cmd
         end
         ext=cmd(5:end);
         if isempty(ext)
-            [PATH,NAME,EXT,VER] = fileparts(filename);
+            [PATH,NAME,EXT] = fileparts(filename);
             ext=lower(EXT(2:end));
         end
         switch ext
