@@ -120,26 +120,29 @@ switch NVal
         %
         hNew = zeros(length(LEN_BF)+1,1);
         for i=1:length(LEN_BF)
-            nbf = sum(len_bf==LEN_BF(i));
-            xd = repmat(NaN,LEN_BF(i),nbf);
-            yd = xd;
-            cl = repmat(NaN,1,nbf);
+            LBF = LEN_BF(i);
+            nbf = sum(len_bf==LBF);
+            xyd = repmat(NaN,LBF*nbf,2);
+            cl = repmat(NaN,nbf,1);
             %
             k = 1;
             for j=1:length(len_bf)
-                if len_bf(j)==LEN_BF(i)
+                if len_bf(j)==LBF
                     range = bf(j,1):bf(j,2)-1;
-                    xd(:,k)=data.X(range);
+                    trange = (k-1)*LBF+(1:LBF);
+                    xyd(trange,1)=data.X(range);
                     if lines_to_do
                         data.X(bf(j,1):bf(j,2)) = NaN;
                     end
-                    yd(:,k)=data.Y(range);
-                    cl(1,k)=data.Val(range(1));
+                    xyd(trange,2)=data.Y(range);
+                    cl(k,1)=data.Val(range(1));
                     k=k+1;
                 end
             end
             %
-            hNew(i)=patch(xd,yd,cl(1,:), ...
+            hNew(i)=patch('vertices',xyd, ...
+               'faces',reshape(1:LBF*nbf,[LBF nbf])', ...
+               'facevertexcdata',cl, ...
                 'edgecolor','none', ...
                 'facecolor','flat', ...
                 'linestyle',Ops.linestyle, ...

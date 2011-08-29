@@ -195,7 +195,7 @@ hdim = hdim==2;
 %
 if Props.hasCoords
     coordname={'X','Y'};
-    if Props.ClosedPoly
+    if Props.ClosedPoly && DataInCell
         coordname={'XBounds','YBounds'};
     end
 else
@@ -627,9 +627,10 @@ else
             Insert.hasCoords=1;
             if ~Insert.DimFlag(N_) % 1D data set or unstructured data set
                 if ~isempty(Info.XBounds) && ~isempty(Info.YBounds)
-                    Insert.Geom = 'POLYL';
+                    Insert.Geom = 'POLYG';
                     Insert.ClosedPoly = 1;
                     Insert.Coords = 'xy';
+                    Insert.DataInCell = 1;
                 elseif Insert.DimFlag(K_)
                     Insert.Geom = 'PNT+';
                     Insert.Coords = 'xy+z';

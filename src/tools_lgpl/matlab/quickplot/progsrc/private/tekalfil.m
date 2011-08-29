@@ -609,7 +609,7 @@ switch FI.FileType
         DataProps={'line'                      'POLYL' 'xy' [0 0 1 0 0]  0          0       0       0       1          []      {}  };
         switch FI.ShapeTpName
             case {'polygon','polygonz','polygonm'}
-                DataProps{1}='polygon';
+                DataProps([1:2 5])={'polygon' 'POLYG' 2};
             case {'point','pointz','pointm'}
                 DataProps([1:2 9])={'point' 'PNT' 0};
         end

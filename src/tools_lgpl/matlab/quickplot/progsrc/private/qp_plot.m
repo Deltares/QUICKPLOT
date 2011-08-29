@@ -104,6 +104,7 @@ elseif isfield(Ops,'MNK') && Ops.MNK
     Props.MNK=1.5;
 end
 
+DataInCell=0;
 if Props.NVal==-1
     data=[];
 else
@@ -111,8 +112,9 @@ else
         [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'griddefdata',SubField{:},SubSelected{:});
     else
         switch Ops.presentationtype
-            case {'patches','patches with lines','patch centred vector'}
+            case {'patches','patches with lines','patch centred vector','polygons'}
                 [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'gridcelldata',SubField{:},SubSelected{:});
+                DataInCell=1;
             otherwise
                 [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'griddata',SubField{:},SubSelected{:});
         end
@@ -818,12 +820,15 @@ else
         elseif isfield(Props,'Geom')
             geom=Props.Geom;
         end
+        if strcmp(geom,'POLYG') && ~DataInCell
+            geom='PNT';
+        end
         switch geom
             case 'SEG'
                 [hNew{d},Thresholds,Param]=qp_plot_seg(plotargs{:});
             case 'PNT'
                 [hNew{d},Thresholds,Param]=qp_plot_pnt(plotargs{:});
-            case 'POLYL'
+            case {'POLYL','POLYG'}
                 [hNew{d},Thresholds,Param]=qp_plot_polyl(plotargs{:});
             otherwise
                 [hNew{d},Thresholds,Param]=qp_plot_default(plotargs{:});

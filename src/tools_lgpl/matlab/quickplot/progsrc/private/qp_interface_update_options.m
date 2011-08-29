@@ -201,8 +201,8 @@ switch getvalstr(MW.VSelType)
 end
 set(setdiff(UD.Options.Handles,gcbo),'enable','off','backgroundcolor',Inactive)
 switch geometry
-   case {'POLYL'}
-      Spatial = 1;
+   case {'POLYL','POLYG'}
+      Spatial = 2;
 end
 Ops.spatial=Spatial;
 Ops.spatialh=SpatialH;
@@ -506,6 +506,7 @@ switch geometry
         defaultaxestype='X-Y';
         lineproperties=1;
         %MultipleColors=1;
+        data2d=1;
     case {'TRI','TRI+'}
         switch Spatial
             case 1
@@ -536,6 +537,10 @@ switch geometry
         end
     case 'QUAD'
     case 'POLYG'
+        defaultaxestype='X-Y';
+        lineproperties=1;
+        %MultipleColors=1;
+        data2d=1;
     case 'GEN2D'
     case 'GEN-2D'
     case 'sQUAD+'
@@ -748,7 +753,6 @@ if vectors & ~isempty(strmatch(axestype,{'X-Z' 'X-Y-Z'},'exact'))
 end
 
 if (nval==1 && data2d) || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') % || (nval==0 & ~DimFlag(ST_))
-    set(findobj(OH,'tag','presenttype'),'enable','on')
     switch nvalstr
         case 'strings'
             if multiple(T_)
@@ -780,29 +784,44 @@ if (nval==1 && data2d) || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean')
                         PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                     end
                 case 1
-                    PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
+                    switch geometry
+                        case {'POLYG'}
+                            PrsTps={'polygons';'markers';'values'};
+                        otherwise
+                            PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
+                    end
                 case 2
-                    PrsTps={'patches';'patches with lines'};
+                    switch geometry
+                        case {'POLYG'}
+                           PrsTps={'polygons'};
+                       otherwise
+                          PrsTps={'patches';'patches with lines'};
+                    end
             end
     end
-    pt=findobj(OH,'tag','presenttype=?');
-    pPrsTps=get(pt,'string');
-    if isequal(pPrsTps,PrsTps)
-        set(pt,'enable','on','backgroundcolor',Active)
-        p=get(pt,'value');
+    if length(PrsTps)==1
+       p=1;
     else
-        % try to find an exact match when switching presentation type strings
-        p=get(pt,'value');
-        if iscellstr(pPrsTps),
-            p=pPrsTps{p};
-        else
-            p=pPrsTps(p,:);
-        end
-        p=strmatch(p,PrsTps,'exact');
-        if isempty(p),
-            p=1;
-        end
-        set(pt,'enable','on','value',1,'string',PrsTps,'value',p,'backgroundcolor',Active)
+       set(findobj(OH,'tag','presenttype'),'enable','on')
+       pt=findobj(OH,'tag','presenttype=?');
+       pPrsTps=get(pt,'string');
+       if isequal(pPrsTps,PrsTps)
+          set(pt,'enable','on','backgroundcolor',Active)
+          p=get(pt,'value');
+       else
+          % try to find an exact match when switching presentation type strings
+          p=get(pt,'value');
+          if iscellstr(pPrsTps),
+             p=pPrsTps{p};
+          else
+             p=pPrsTps(p,:);
+          end
+          p=strmatch(p,PrsTps,'exact');
+          if isempty(p),
+             p=1;
+          end
+          set(pt,'enable','on','value',1,'string',PrsTps,'value',p,'backgroundcolor',Active)
+       end
     end
     Ops.presentationtype=lower(PrsTps{p});
     switch Ops.presentationtype
@@ -818,6 +837,9 @@ if (nval==1 && data2d) || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean')
             %
             Ops.numformat='%g';
             Ops.thinningmode='?';
+            if strcmp(geometry,'POLYG')
+                geometry='PNT';
+            end
         case {'contour lines','coloured contour lines','contour patches','contour patches with lines'}
             set(findobj(OH,'tag','thresholds'),'enable','on')
             set(findobj(OH,'tag','thresholds=?'),'enable','on','backgroundcolor',Active)
@@ -845,6 +867,9 @@ if (nval==1 && data2d) || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean')
                     markerflatfill=1;
                     %
                     Ops.thinningmode='?';
+            end
+            if strcmp(geometry,'POLYG')
+                geometry='PNT';
             end
         case 'patches'
             if strcmp(nvalstr,'boolean')
@@ -958,10 +983,17 @@ if SingleColor
 end
 
 Ops.facecolour='none';
-if isfield(Props,'ClosedPoly') & isequal(Props.ClosedPoly,1)
-    fpoly=findobj(OH,'tag','fillpolygons');
-    set(fpoly,'enable','on')
-    if get(fpoly,'value')
+if isfield(Props,'ClosedPoly')
+    if isequal(Props.ClosedPoly,1) && ~strcmp(geometry,'PNT')
+        fpoly=findobj(OH,'tag','fillpolygons');
+        set(fpoly,'enable','on')
+        fillpoly=get(fpoly,'value');
+    elseif isequal(Props.ClosedPoly,2)
+        fillpoly=1;
+    else
+        fillpoly=0;
+    end
+    if fillpoly
         if MultipleColors
             Ops.facecolour='yes';
         else
@@ -989,8 +1021,10 @@ end
 if ismember(geometry,{'PNT'}) & ~multiple(T_) & nval>=0 & nval<4
     Ops.linestyle='none';
     Ops.linewidth=0.5;
-    usesmarker = 1;
-    forcemarker = 1;
+    if ~strcmp(Ops.presentationtype,'values')
+        usesmarker = 1;
+        forcemarker = 1;
+    end
 elseif nval==0 | nval==4 | lineproperties
     set(findobj(OH,'tag','linestyle'),'enable','on')
     lns=findobj(OH,'tag','linestyle=?');
