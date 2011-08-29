@@ -195,9 +195,14 @@ hdim = hdim==2;
 %
 if Props.hasCoords
     coordname={'X','Y'};
+    if Props.ClosedPoly
+        coordname={'XBounds','YBounds'};
+    end
 else
     coordname={};
 end
+%
+firstbound = 1;
 for iCoord = 1:length(coordname)
     vdim = getfield(Info,coordname{iCoord});
     if isempty(vdim)
@@ -205,7 +210,17 @@ for iCoord = 1:length(coordname)
     end
     CoordInfo = FI.Dataset(vdim);
     CoordAttribs = {CoordInfo.Attribute.Name};
-    [Coord, status] = netcdf_get(FI,CoordInfo,Props.Dimension,idx);
+    %
+    dims = Props.Dimension;
+    dimvals = idx;
+    isbounds = strcmp(coordname{iCoord}(2:end),'Bounds');
+    if isbounds
+        dims{end+1} = CoordInfo.Dimension{1};
+        id = strmatch(dims{end},{FI.Dimension.Name});
+        dimvals{end+1} = 1:FI.Dimension(id).Length;
+        coordname{iCoord}=coordname{iCoord}(1);
+    end
+    [Coord, status] = netcdf_get(FI,CoordInfo,dims,dimvals);
     Coord = expand_hdim(Coord,szData,hdim);
     %
     %--------------------------------------------------------------------
@@ -215,7 +230,7 @@ for iCoord = 1:length(coordname)
     if ~isempty(active_id)
         activevar = CoordInfo.Attribute(active_id).Value;
         [Active, status] = netcdf_get(FI,activevar,Props.Dimension,idx);
-        Coord(Active~=1)=NaN; % Active~=1 excludes boundary points, Active==0 includes boundary points
+        Coord(Active~=1,:)=NaN; % Active~=1 excludes boundary points, Active==0 includes boundary points
     end
     %--------------------------------------------------------------------
     %
@@ -247,6 +262,29 @@ for iCoord = 1:length(coordname)
     if removeTime
         szCoord = size(Coord);
         Coord = reshape(Coord,[szCoord(2:end) 1]);
+    end
+    %
+    if isbounds
+        if size(Coord,2)==2
+            Coord(:,end+1) = NaN;
+        else
+            Coord(:,end+1:end+2) = NaN;
+            for j=1:size(Coord,1)
+                for k=1:size(Coord,2)
+                    if isnan(Coord(j,k))
+                        Coord(j,k) = Coord(j,1);
+                        break
+                    end
+                end
+            end
+        end
+        if firstbound
+            repeat = repmat((1:size(Coord,1))',1,size(Coord,2))';
+            Ans.Val = Ans.Val(repeat(:));
+            firstbound = 0;
+        end
+        Coord = Coord';
+        Coord = Coord(:);
     end
     %
     Ans = setfield(Ans,coordname{iCoord},Coord);
@@ -488,8 +526,8 @@ varargout={Ans FI};
 function Out=infile(FI,domain)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
-PropNames={'Name'                   'Units' 'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVal' 'SubFld' 'MNK' 'varid'  'Dimension' 'hasCoords' 'VectorDef'};
-DataProps={'dummy field'            ''      ''     ''      [0 0 0 0 0]  0           0      []       0     []          {}          0         0};
+PropNames={'Name'                   'Units' 'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVal' 'SubFld' 'MNK' 'varid'  'Dimension' 'hasCoords' 'VectorDef' 'ClosedPoly'};
+DataProps={'dummy field'            ''      ''     ''      [0 0 0 0 0]  0           0      []       0     []          {}          0         0          0};
 Out=cell2struct(DataProps,PropNames,2);
 %Out.MName='M';
 %Out.NName='N';
@@ -529,12 +567,17 @@ else
     %
     for ivar=1:nvars
         Insert=Out(1);
+        %
+        % Get variable attributes
+        %
         Info = FI.Dataset(ivar);
         if isfield(Info.Attribute,'Name')
             Attribs = {Info.Attribute.Name};
         else
             Attribs = {};
         end
+        %
+        % Show long name, or standard name, or variable name
         %
         j = strmatch('long_name',Attribs,'exact');
         if ~isempty(j)
@@ -548,6 +591,8 @@ else
             end
         end
         %
+        % Show units
+        %
         j = strmatch('units',Attribs,'exact');
         if ~isempty(j)
             Insert.Units = Info.Attribute(j).Value;
@@ -555,8 +600,12 @@ else
             Insert.Units = '';
         end
         %
+        % Scalar variables by default
+        %
         Insert.NVal = 1;
         Insert.Dimension = cell(1,5);
+        %
+        % Link to dimension variables
         %
         for i=1:5
             if ~isnan(Info.TSMNK(i))
@@ -565,8 +614,9 @@ else
             end
         end
         %
+        % Any extra dimensions are wrapped into the subfields.
+        %
         if ~isempty(Info.SubFieldDim)
-            %Insert.Name = [Insert.Name ' (incomplete assignment)'];
             Insert.SubFld={};
             for d = Info.SubFieldDim+1
                 Insert.SubFld(end+1,1:2) = {FI.Dimension(d).Name FI.Dimension(d).Length};
@@ -575,8 +625,12 @@ else
         %
         if ~isempty(Info.X) && ~isempty(Info.Y)
             Insert.hasCoords=1;
-            if ~Insert.DimFlag(N_) % 1D data set
-                if Insert.DimFlag(K_)
+            if ~Insert.DimFlag(N_) % 1D data set or unstructured data set
+                if ~isempty(Info.XBounds) && ~isempty(Info.YBounds)
+                    Insert.Geom = 'POLYL';
+                    Insert.ClosedPoly = 1;
+                    Insert.Coords = 'xy';
+                elseif Insert.DimFlag(K_)
                     Insert.Geom = 'PNT+';
                     Insert.Coords = 'xy+z';
                 else
@@ -966,22 +1020,23 @@ if ~isempty(Info.Attribute)
     missval = strmatch('_FillValue',Attribs,'exact');
     if ~isempty(missval)
         missval = Info.Attribute(missval).Value;
-        Data(Data==missval)=NaN;
+        if missval>0
+            Data(Data>=missval)=NaN;
+        else
+            Data(Data<=missval)=NaN;
+        end
     else
         % NCL standard or general standard?
         % The following are the default settings for _FillValue by type: 
         %
-        % logical   : -1
-        % byte      : 0xff (hex), 0377 (octal)
-        % short     : -99
-        % integer   : -999
-        % long      : -9999
-        % float     : -999
-        % double    : -9999
-        % graphic   : -9999
-        % file      : -9999
-        % character : 0 or '\0' for those who know C
-        % string    : "missing"
+        switch Info.Datatype
+            case 'short'
+                Data(Data<=-32767)=NaN;
+            case 'int'
+                Data(Data<=-2147483647)=NaN;
+            case {'float','double'}
+                Data(Data>=9.9692099683868690e+36)=NaN;
+        end
     end
 end
 

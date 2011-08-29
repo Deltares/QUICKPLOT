@@ -69,7 +69,9 @@ nvars = length(nc.Dataset);
 [nc.Dataset(1:nvars).Type] = deal('unknown');
 [nc.Dataset(1:nvars).Coordinates] = deal({});
 [nc.Dataset(1:nvars).X] = deal([]);
+[nc.Dataset(1:nvars).XBounds] = deal([]);
 [nc.Dataset(1:nvars).Y] = deal([]);
+[nc.Dataset(1:nvars).YBounds] = deal([]);
 [nc.Dataset(1:nvars).Z] = deal([]);
 [nc.Dataset(1:nvars).Time] = deal([]);
 [nc.Dataset(1:nvars).Station] = deal([]);
@@ -477,6 +479,14 @@ for ivar = 1:nvars
         else
             Info.TSMNK(3) = iDims(1);
         end
+        %
+        % If X coordinates have been defined, check whether bounds have been given.
+        %
+        coordAttribs = {nc.Dataset(Info.X).Attribute.Name}';
+        j = strmatch('bounds',coordAttribs,'exact');
+        if ~isempty(j)
+            Info.XBounds = strmatch(nc.Dataset(Info.X).Attribute(j).Value,varNames);
+        end
     end
     if ~isempty(Info.Y)
         iDim = {nc.Dataset(Info.Y).Dimid};
@@ -507,6 +517,14 @@ for ivar = 1:nvars
             Info.TSMNK(4) = iDim(1);
         elseif ~isempty(iDims)
             Info.TSMNK(4) = iDims(1);
+        end
+        %
+        % If Y coordinates have been defined, check whether bounds have been given.
+        %
+        coordAttribs = {nc.Dataset(Info.Y).Attribute.Name}';
+        j = strmatch('bounds',coordAttribs,'exact');
+        if ~isempty(j)
+            Info.YBounds = strmatch(nc.Dataset(Info.Y).Attribute(j).Value,varNames);
         end
     end
     %

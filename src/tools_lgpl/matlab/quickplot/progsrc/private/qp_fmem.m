@@ -996,7 +996,5 @@ switch cmd
 end
 if isempty(FI)
    lasttp=[];
-else
-    FI.FileType=lasttp;
 end
 qp_settings('LastFileType',lasttp)

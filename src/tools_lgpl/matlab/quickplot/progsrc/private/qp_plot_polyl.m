@@ -99,36 +99,49 @@ switch NVal
         else
             bs=[1 length(vNaN)];
         end
+        %
         fill = ~strcmp(Ops.facecolour,'none');
-        hNew = zeros(size(bs,1),1);
-        for i=1:size(bs,1)
-            from=bs(i,1);
-            to=bs(i,2);
-            ecol='flat';
-            fcol='none';
-            if fill & data.X(from)==data.X(to) & ...
-                    data.Y(from)==data.Y(to)
-                ecol='none';
-                fcol='flat';
-                vl=from;
-            elseif from>1
-                from=from-1;
-                data.X(from)=NaN;
-                data.Y(from)=NaN;
-                data.Val(from)=NaN;
-                vl=from:to;
-            else
-                to=to+1;
-                data.X(to)=NaN;
-                data.Y(to)=NaN;
-                data.Val(to)=NaN;
-                vl=from:to;
+        if fill
+            i = data.X(bs(:,1))==data.X(bs(:,2)) & ...
+                data.Y(bs(:,1))==data.Y(bs(:,2));
+            bf = bs(i,:);
+            bs = bs(~i,:);
+        else
+            bf = zeros(0,2);
+        end
+        %
+        % Determine line and patch sizes
+        %
+        len_bs = bs(:,2)-bs(:,1)+1;
+        len_bf = bf(:,2)-bf(:,1);
+        LEN_BF = unique(len_bf);
+        %
+        % Now create objects
+        %
+        hNew = zeros(length(LEN_BF)+1,1);
+        for i=1:length(LEN_BF)
+            xd = repmat(NaN,LEN_BF(i),1);
+            yd = xd;
+            cl = xd;
+            %
+            k = 1;
+            for j=1:length(len_bf)
+                if len_bf(j)==LEN_BF(i)
+                    range = bf(j,1):bf(j,2)-1;
+                    xrange = bf(j,1):bf(j,2);
+                    xd(:,k)=data.X(range);
+                    data.X(xrange) = NaN;
+                    yd(:,k)=data.Y(range);
+                    data.Y(xrange) = NaN;
+                    cl(:,k)=data.Val(range);
+                    data.Val(xrange) = NaN;
+                    k=k+1;
+                end
             end
-            hNew(i)=patch(data.X(from:to), ...
-                data.Y(from:to), ...
-                data.Val(vl), ...
-                'edgecolor',ecol, ...
-                'facecolor',fcol, ...
+            %
+            hNew(i)=patch(xd,yd,cl, ...
+                'edgecolor','none', ...
+                'facecolor','flat', ...
                 'linestyle',Ops.linestyle, ...
                 'linewidth',Ops.linewidth, ...
                 'marker',Ops.marker, ...
@@ -136,6 +149,26 @@ switch NVal
                 'markerfacecolor',Ops.markerfillcolour, ...
                 'parent',Parent);
         end
+        %
+        if ~isempty(len_bs)
+            gap2 = isnan(data.X) & [1;isnan(data.X(1:end-1))];
+            data.X(gap2,:)=[];
+            data.Y(gap2,:)=[];
+            data.Val(gap2,:)=[];
+            %
+            hNew(length(LEN_BF)+1)=patch(data.X,data.Y,data.Val, ...
+                'edgecolor','flat', ...
+                'facecolor','none', ...
+                'linestyle',Ops.linestyle, ...
+                'linewidth',Ops.linewidth, ...
+                'marker',Ops.marker, ...
+                'markeredgecolor',Ops.markercolour, ...
+                'markerfacecolor',Ops.markerfillcolour, ...
+                'parent',Parent);
+        else
+            hNew = hNew(1:end-1);
+        end
+        %
         set(Parent,'layer','top')
         set(get(Parent,'title'),'string',{PName,TStr})
     case {2,3}
