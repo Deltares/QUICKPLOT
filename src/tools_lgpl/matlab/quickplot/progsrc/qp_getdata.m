@@ -232,7 +232,7 @@ try
             calltype='getprops2';
             X={0};
          end
-         if ~isempty(X) && isnumeric(X{end}) && isequal(size(X{end}),[1 5])
+         if ~isempty(X) && isnumeric(X{end}) && isequal(size(X{end}),[1 5]) && isequal(calltype,'getprops2')
             %
             % [Success,DataProps ]            = QP_GETDATA(FI,Domain,DimMask)
             %

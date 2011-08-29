@@ -32,14 +32,16 @@ function tp = qp_gettype(Info)
 %   $HeadURL$
 %   $Id$
 
-if isfield(Info,'FileType')
+if isfield(Info,'qp_filetype')
+    tp=Info.qp_filetype;
+elseif isfield(Info,'FileType')
     tp=Info.FileType;
-    %
-    % In case of a NEFIS file, use the subtype ...
-    %
-    if strcmp(lower(tp),'nefis')
-        tp=Info.SubType;
-    end
 else
     tp = 'unknown filetype';
+end
+%
+% In case of a NEFIS file, use the subtype ...
+%
+if strcmp(lower(tp),'nefis')
+    tp=Info.SubType;
 end

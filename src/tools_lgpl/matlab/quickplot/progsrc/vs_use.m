@@ -124,7 +124,7 @@ elseif strcmp(filename,'lastread')
       VSout=VSKeep;
    else
       if isstruct(VSKeep)
-         fprintf('%s\n',VSKeep.FileName);
+         fprintf('%s%s\n',VSKeep.FileName,VSKeep.DatExt);
       else
          fprintf('None opened so far.\n');
       end
