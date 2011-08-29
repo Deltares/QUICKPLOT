@@ -110,36 +110,36 @@ switch NVal
             bf = zeros(0,2);
         end
         %
-        % Determine line and patch sizes
+        % Determine patch sizes
         %
-        len_bs = bs(:,2)-bs(:,1)+1;
         len_bf = bf(:,2)-bf(:,1);
         LEN_BF = unique(len_bf);
+        lines_to_do = ~isempty(bs);
         %
         % Now create objects
         %
         hNew = zeros(length(LEN_BF)+1,1);
         for i=1:length(LEN_BF)
-            xd = repmat(NaN,LEN_BF(i),1);
+            nbf = sum(len_bf==LEN_BF(i));
+            xd = repmat(NaN,LEN_BF(i),nbf);
             yd = xd;
-            cl = xd;
+            cl = repmat(NaN,1,nbf);
             %
             k = 1;
             for j=1:length(len_bf)
                 if len_bf(j)==LEN_BF(i)
                     range = bf(j,1):bf(j,2)-1;
-                    xrange = bf(j,1):bf(j,2);
                     xd(:,k)=data.X(range);
-                    data.X(xrange) = NaN;
+                    if lines_to_do
+                        data.X(bf(j,1):bf(j,2)) = NaN;
+                    end
                     yd(:,k)=data.Y(range);
-                    data.Y(xrange) = NaN;
-                    cl(:,k)=data.Val(range);
-                    data.Val(xrange) = NaN;
+                    cl(1,k)=data.Val(range(1));
                     k=k+1;
                 end
             end
             %
-            hNew(i)=patch(xd,yd,cl, ...
+            hNew(i)=patch(xd,yd,cl(1,:), ...
                 'edgecolor','none', ...
                 'facecolor','flat', ...
                 'linestyle',Ops.linestyle, ...
@@ -150,7 +150,7 @@ switch NVal
                 'parent',Parent);
         end
         %
-        if ~isempty(len_bs)
+        if lines_to_do
             gap2 = isnan(data.X) & [1;isnan(data.X(1:end-1))];
             data.X(gap2,:)=[];
             data.Y(gap2,:)=[];
