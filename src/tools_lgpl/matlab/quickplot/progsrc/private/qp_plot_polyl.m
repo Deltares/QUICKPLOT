@@ -156,8 +156,11 @@ switch NVal
         if lines_to_do
             gap2 = isnan(data.X) & [1;isnan(data.X(1:end-1))];
             data.X(gap2,:)=[];
+            data.X(end+1)=NaN;
             data.Y(gap2,:)=[];
+            data.Y(end+1)=NaN;
             data.Val(gap2,:)=[];
+            data.Val(end+1)=NaN;
             %
             hNew(length(LEN_BF)+1)=patch(data.X,data.Y,data.Val, ...
                 'edgecolor','flat', ...
