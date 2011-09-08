@@ -215,7 +215,7 @@ for iCoord = 1:length(coordname)
     dimvals = idx;
     isbounds = strcmp(coordname{iCoord}(2:end),'Bounds');
     if isbounds
-        dims{end+1} = CoordInfo.Dimension{1};
+        dims{end+1} = setdiff(CoordInfo.Dimension,dims(~cellfun('isempty',dims)));
         id = strmatch(dims{end},{FI.Dimension.Name});
         dimvals{end+1} = 1:FI.Dimension(id).Length;
         coordname{iCoord}=coordname{iCoord}(1);
