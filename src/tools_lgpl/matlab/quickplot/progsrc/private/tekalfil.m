@@ -149,17 +149,17 @@ end
 allidx=zeros(size(sz));
 for i=[ST_ M_ N_ K_]
     if DimFlag(i)
-        if isequal(idx{i},0) | isequal(idx{i},1:sz(i))
+        if isequal(idx{i},0) || isequal(idx{i},1:sz(i))
             idx{i}=1:sz(i);
             allidx(i)=1;
-        elseif ~isequal(idx{i},idx{i}(1):idx{i}(end)) & i~=ST_
-            error(sprintf('Only scalars or ranges allowed for index %i',i));
+        elseif ~isequal(idx{i},idx{i}(1):idx{i}(end)) && i~=ST_ && ~isequal(FI.FileType,'ESRI-Shape')
+            error('Only scalars or ranges allowed for index %i',i);
         end
     end
 end
 
 if max(idx{T_})>sz(T_)
-    error(sprintf('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_)))
+    error('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_))
 end
 
 x=[];
@@ -171,7 +171,7 @@ val2=[];
 % read grid and data ...
 already_selected = 0;
 blck = Props.Block;
-if isempty(Props.SubFld) & ~isempty(Props.Select)
+if isempty(Props.SubFld) && ~isempty(Props.Select)
     Props.SubFld = 1;
 end
 switch FI.FileType
@@ -197,7 +197,7 @@ switch FI.FileType
                 end
             end
             Data = cat(1,Data{:});
-        elseif isfield(FI,'combinelines') & FI.combinelines % LDB
+        elseif isfield(FI,'combinelines') && FI.combinelines % LDB
             Data=tekal('read',FI,0);
             for i=1:length(Data)-1
                 Data{i}(end+1,:)=NaN;
@@ -254,11 +254,11 @@ switch FI.FileType
                 j=j+1;
                 %
                 T0 = FI.Table(i).Data(:,1);
-                if isfield(FI.Table(i),'RefTime') & ~isempty(FI.Table(i).RefTime)
+                if isfield(FI.Table(i),'RefTime') && ~isempty(FI.Table(i).RefTime)
                     T0=FI.Table(i).RefTime+T0*FI.Table(i).TimeUnit;
                 end
                 %
-                if isfield(FI.Table(i),'MetricCoords') & ~isempty(FI.Table(i).MetricCoords)
+                if isfield(FI.Table(i),'MetricCoords') && ~isempty(FI.Table(i).MetricCoords)
                     x(j)=FI.Table(i).MetricCoords(1);
                     y(j)=FI.Table(i).MetricCoords(2);
                 end
@@ -299,11 +299,11 @@ if XYRead
             x=Data{1}(idx{M_},1);
             y=Data{1}(idx{M_},2);
         end
-    elseif DimFlag(M_) & DimFlag(N_) & DimFlag(K_)
+    elseif DimFlag(M_) && DimFlag(N_) && DimFlag(K_)
         x=Data(idx{[M_ N_ K_]},1);
         y=Data(idx{[M_ N_ K_]},2);
         z=Data(idx{[M_ N_ K_]},3);
-    elseif DimFlag(M_) & DimFlag(N_)
+    elseif DimFlag(M_) && DimFlag(N_)
         x=Data(idx{[M_ N_]},1);
         y=Data(idx{[M_ N_]},2);
     elseif DimFlag(M_)
@@ -318,7 +318,7 @@ if XYRead
                 y=Data(idx{M_},2);
             end
         end
-    elseif DimFlag(ST_) & ~isempty(x)
+    elseif DimFlag(ST_) && ~isempty(x)
         SToutofrange = idx{ST_}>sz(ST_);
         idx{ST_}(SToutofrange)=1;
         x=x(idx{ST_});
@@ -356,9 +356,9 @@ elseif Props.Time
             val1=Data(idx{T_},idx{ST_}+2);
             val1(:,SToutofrange)=NaN;
     end
-elseif DimFlag(M_) & DimFlag(N_) & DimFlag(K_)
+elseif DimFlag(M_) && DimFlag(N_) && DimFlag(K_)
     val1=Data(idx{[M_ N_ K_]},idx{ST_}+3);
-elseif DimFlag(M_) & DimFlag(N_)
+elseif DimFlag(M_) && DimFlag(N_)
     val1=Data(idx{[M_ N_]},idx{ST_}+2);
     if size(val1,3)>1
         val2=val1(:,:,2);
@@ -423,7 +423,7 @@ varargout={Ans FI};
 
 
 % -----------------------------------------------------------------------------
-function Out=infile(FI,domain);
+function Out=infile(FI,domain)
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'                       'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVal' 'Block' 'Time' 'ClosedPoly' 'SubFld' 'Select'};
 DataProps={'field X'                    ''     ''       [0 0 0 0 0]    0          1       0       0       0          []      {}  };
@@ -438,7 +438,7 @@ switch FI.FileType
             for i=1:length(FI.Field.ColLabels)
                 DataProps(2+i,end) = {i};
             end
-        elseif isfield(FI,'combinelines') & FI.combinelines
+        elseif isfield(FI,'combinelines') && FI.combinelines
             DataProps={'line'              'POLYL' 'xy'    [0 0 1 0 0]   0           0       0       0       1          []      {}  };
         else
             [p,f,e]=fileparts(FI.FileName);
@@ -450,9 +450,9 @@ switch FI.FileType
                                 Col1 = lower(FI.Field(i).ColLabels{1});
                                 if length(FI.Field(i).ColLabels)>=2
                                     Col2 = lower(FI.Field(i).ColLabels{2});
-                                    if isequal(Col1,'date') & isequal(Col2,'time')
+                                    if isequal(Col1,'date') && isequal(Col2,'time')
                                         Col1='date and time';
-                                    elseif isequal(Col1,'yymmdd') & isequal(Col2,'hhmmss')
+                                    elseif isequal(Col1,'yymmdd') && isequal(Col2,'hhmmss')
                                         Col1='date and time';
                                     end
                                 end
@@ -469,7 +469,7 @@ switch FI.FileType
                                         DP={'field X'    'sSEG' 'x' [0 5 1 0 0]  0          1       i       0       0          []      {}  };
                                         DP{1}=sprintf('%s',FI.Field(i).Name);
                                         if FI.Field(i).Size(2)==2
-                                            if strcmp(lower(e),'.ldb') || strcmp(lower(e),'.pol')
+                                            if strcmpi(e,'.ldb') || strcmpi(e,'.pol')
                                                 DP([2 3 4 6 9])={'POLYL' 'xy' [0 0 1 0 0] 0 1};
                                             else
                                                 DP{9}=1;
@@ -550,7 +550,7 @@ switch FI.FileType
                                         DP{1}=sprintf('%s',FI.Field(i).Name);
                                     end
                                     %
-                                    if size(DataProps,1)>0 & strcmp(DataProps{end,1},DP{1})
+                                    if size(DataProps,1)>0 && strcmp(DataProps{end,1},DP{1})
                                         if DataProps{end,6}~=1
                                             continue
                                         end
@@ -606,7 +606,7 @@ switch FI.FileType
     case {'BNA File','ArcInfoUngenerate'}
         DataProps={'line'                      'POLYL' 'xy' [0 0 1 0 0]  0          0       0       0       1          []      {}  };
     case 'ESRI-Shape'
-        DataProps={'line'                      'POLYL' 'xy' [0 0 1 0 0]  0          0       0       0       1          []      {}  };
+        DataProps={'line'                      'POLYL' 'xy' [0 0 6 0 0]  0          0       0       0       1          []      {}  };
         switch FI.ShapeTpName
             case {'polygon','polygonz','polygonm'}
                 DataProps([1:2 5])={'polygon' 'POLYG' 2};
@@ -673,7 +673,7 @@ switch length(Props.Select)
             'x component, phase','y component, phase', ...
             'amplitude','eccentricity','phase','inclination'};
 end
-if nargin>2 & f~=0
+if nargin>2 && f~=0
     subf=subf(f);
 end
 % -----------------------------------------------------------------------------
@@ -692,7 +692,7 @@ switch FI.FileType
         end
         if isfield(FI,'plotonpoly')
             sz(M_)=FI.Field.Size(1);
-        elseif isfield(FI,'combinelines') & FI.combinelines
+        elseif isfield(FI,'combinelines') && FI.combinelines
             szi=cat(1,FI.Field.Size);
             sz(M_)=sum(szi(:,1))+length(FI.Field)-1;
         elseif strcmp(FI.Field(blck).DataTp,'annotation')
@@ -704,7 +704,7 @@ switch FI.FileType
                 sz(N_)=1;
             end
         else
-            if Props.DimFlag(M_) & Props.DimFlag(N_)
+            if Props.DimFlag(M_) && Props.DimFlag(N_)
                 sz(M_)=FI.Field(blck).Size(3);
                 sz(N_)=FI.Field(blck).Size(4);
                 if Props.DimFlag(K_)
@@ -770,14 +770,14 @@ if Props.Time
                 T = [];
                 for i=1:length(FI.Table)
                     T0 = FI.Table(i).Data(:,1);
-                    if isfield(FI.Table(i),'RefTime') & ~isempty(FI.Table(i).RefTime)
+                    if isfield(FI.Table(i),'RefTime') && ~isempty(FI.Table(i).RefTime)
                         T0=FI.Table(i).RefTime+T0*FI.Table(i).TimeUnit;
                     end
                     T = union(T,T0);
                 end
             end
     end
-    if nargin>2 & ~isequal(t,0)
+    if nargin>2 && ~isequal(t,0)
         T=T(t);
     end
     T=T(:);
@@ -812,7 +812,7 @@ switch FI.FileType
             end
         end
 end
-if nargin>2 & ~isequal(t,0)
+if nargin>2 && ~isequal(t,0)
     S=S{t};
 end
 % -----------------------------------------------------------------------------
@@ -827,7 +827,7 @@ Active=[1 1 1];
 NewFI=FI;
 cmd=lower(cmd);
 cmdargs={};
-switch cmd,
+switch cmd
     case 'initialize'
         OK=optfig(mfig);
         if isfield(FI,'combinelines')
@@ -838,8 +838,8 @@ switch cmd,
         f=findobj(mfig,'tag','combinelines');
         if nargin>3
             Log=varargin{1};
-            if ~isequal(Log,0) & ~isequal(Log,1)
-                error(sprintf('Invalid argument specified for %s.',cmd));
+            if ~isequal(Log,0) && ~isequal(Log,1)
+                error('Invalid argument specified for %s.',cmd)
             end
             combinelines=Log;
         else

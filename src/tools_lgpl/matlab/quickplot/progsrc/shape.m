@@ -1,18 +1,26 @@
 function varargout=shape(cmd,varargin)
 %SHAPE Read ESRI shape files.
+%   FI = SHAPE('open',FILENAME) opens the ESRI shape file FILENAME and
+%   returns a file information data structure to be used in the SHAPE read
+%   command described below.
 %
-%   FI = SHAPE('open','filename')
-%   Open the ESRI shape file and return a File Information Structure to
-%   be used in the SHAPE read command described below.
+%   data = SHAPE('read',FI,OBJECTNR,DATATYPE) reads data from the ESRI
+%   shape file. The input arguments are to be specified as follows:
+%      FI            - file information data structure as obtained from
+%                      SHAPE open file command (explained above).
+%      OBJECTNR      - list of object numbers in shape file to be
+%                      retrieved; use 0 to load all objects
+%      DATATYPE      - currently supported: 'point' or 'polyline'
+
+% To be added shortly:
 %
-%   data = SHAPE('read',FI,objectnumbers,datatype)
-%   Read data from the ESRI shape file. The input arguments are to be
-%   specified as follows:
-%      FI            - File Information Structure as obtained from SHAPE
-%                      open file command (explained above).
-%      objectnumbers - list of object numbers in shape file to be
-%                      retreived; use 0 to load all objects
-%      datatype      - currently supported: 'points' or 'lines'
+%   SHAPE('write',FILENAME,DATATYPE,XYCELL) % 'polyline', 'polygon'
+%   SHAPE('write',FILENAME,DATATYPE,XYVERTICES,INDEXFACES) % 'polyline', 'polygon'
+%   SHAPE('write',FILENAME,'patches',X,Y) % X,Y 2D
+%   SHAPE('write',FILENAME,'point',XY) % NVALx2
+%
+%   SHAPE('write',FILENAME,...,LABELS,VALUES) % NVAL or size(X)-1 for patches
+%   SHAPE('write',FILENAME,'contourf',X,Y,LABEL,VALUES)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -44,8 +52,8 @@ function varargout=shape(cmd,varargin)
 %   $HeadURL$
 %   $Id$
 
-if nargin==0,
-    if nargout>0,
+if nargin==0
+    if nargout>0
         varargout=cell(1,nargout);
     end
     return
@@ -58,8 +66,10 @@ switch lower(cmd)
     case {'read'}
         [Data,Obj]=Local_read_shape(varargin{:});
         varargout={Data,Obj};
+    case {'write'}
+        shapewrite(varargin{:})
     otherwise
-        error('Unknown command')
+        error('Unknown command: %s',cmd)
 end
 
 
@@ -67,7 +77,7 @@ function S=Local_open_shape(filename)
 S.Check='NotOK';
 S.FileType='ESRI-Shape';
 
-if (nargin==0) | strcmp(filename,'?')
+if (nargin==0) || strcmp(filename,'?')
     [fname,fpath]=uigetfile('*.shp','Select shape file');
     if ~ischar(fname)
         return
@@ -76,13 +86,13 @@ if (nargin==0) | strcmp(filename,'?')
 end
 
 [p,n,e]=fileparts(filename);
-if strcmp(lower(e),'.shx')
+if strcmpi(e,'.shx')
     % change from .shx into .shp but keep the case the same
     filename(end)=filename(end)-'X'+'P';
     e(end)=e(end)-'X'+'P';
 end
-if ~strcmp(lower(e),'.shp')
-    if isempty(e) & exist([filename '.shp'])
+if ~strcmpi(e,'.shp')
+    if isempty(e) && exist([filename '.shp'])
         filename=[filename '.shp'];
         e='.shp';
     else
@@ -152,13 +162,19 @@ if exist([S.FileBase '.shx'])
 end
 
 while ~feof(fid)
-    if Index && NShapes<size(S.Idx,2), fseek(fid,S.Idx(1,NShapes+1),-1); end
+    if Index && NShapes<size(S.Idx,2)
+       fseek(fid,S.Idx(1,NShapes+1),-1);
+    end
     [NrSize,k]=fread(fid,2,'int32');
-    if k==0, break; end
+    if k==0
+       break
+    end
     NrSize=int32_byteflip(NrSize);
     ShapeTp=fread(fid,1,'int32');
     NShapes=NShapes+1;
-    if ~Index, S.Idx(NShapes)=ftell(fid)-12; end
+    if ~Index
+       S.Idx(NShapes)=ftell(fid)-12;
+    end
     switch ShapeTp
         case 0 % null shape
             % nothing to read
@@ -266,18 +282,18 @@ end
 
 
 function [Out,Obj]=Local_read_shape(S,shapes,datatype)
-if ~isfield(S,'FileType') | ~strcmp(S.FileType,'ESRI-Shape')
+if ~isfield(S,'FileType') || ~strcmp(S.FileType,'ESRI-Shape')
     error('No shape file specified.')
 end
 if isequal(shapes,0)
     shapes=1:S.NShapes;
-elseif min(shapes(:))<1 | max(shapes(:))>S.NShapes | ~isequal(shapes,round(shapes))
+elseif min(shapes(:))<1 || max(shapes(:))>S.NShapes || ~isequal(shapes,round(shapes))
     error('Invalid shape number.')
 else
     shapes=shapes(:)'; % make sure shapes is a row vector, otherwise Matlab will do just one step in the loop!
 end
 switch datatype
-    case 'points'
+    case {'point','points'}
         fid=fopen([S.FileBase S.ShapeExt],'r','l');
         fseek(fid,S.Idx(1,shapes(1)),-1);
         TNPnt=0;
@@ -385,7 +401,7 @@ switch datatype
                     fread(fid,NrSize(2)-2,'int16');
             end
         end
-    case 'lines'
+    case {'polyline','lines'}
         fid=fopen([S.FileBase S.ShapeExt],'r','l');
         fseek(fid,S.Idx(1,shapes(1)),-1);
         TNPnt=0;
@@ -525,11 +541,4 @@ switch datatype
 end
 try
     fclose(fid);
-catch
 end
-
-
-function [X,j]=readint32b(fid,N)
-[Tmp,j]=fread(fid,4*N,'uint8');
-j=j/4;
-X=sscanf(sprintf('%0.2x',Tmp),'%8x',[1 N]);

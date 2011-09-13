@@ -1,4 +1,4 @@
-function [DomainNr,Props,subf,selected,stats,Ops]=qp_interface_update_options(mfig,UD);
+function [DomainNr,Props,subf,selected,stats,Ops]=qp_interface_update_options(mfig,UD)
 %QP_INTERFACE_UPDATE_OPTIONS Update QuickPlot user interface options.
 
 %----- LGPL --------------------------------------------------------------------
@@ -752,7 +752,7 @@ if vectors & ~isempty(strmatch(axestype,{'X-Z' 'X-Y-Z'},'exact'))
     end
 end
 
-if (nval==1 && data2d) || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') % || (nval==0 & ~DimFlag(ST_))
+if (nval==1 && data2d) || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') || strcmp(geometry,'POLYG') % || (nval==0 & ~DimFlag(ST_))
     switch nvalstr
         case 'strings'
             if multiple(T_)
@@ -762,8 +762,13 @@ if (nval==1 && data2d) || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean')
             end
         case 'boolean'
             PrsTps={'patches'};
-        case 'none'
-            PrsTps={'grid','grid with numbers'};
+       case 'none'
+          switch geometry
+             case {'POLYG'}
+                PrsTps={'polygons'};
+             otherwise
+                PrsTps={'grid','grid with numbers'};
+          end
         otherwise
             if isfield(Props,'DataInCell')
                 dic=Props.DataInCell;

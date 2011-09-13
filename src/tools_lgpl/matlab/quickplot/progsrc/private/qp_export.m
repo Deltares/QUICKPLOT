@@ -644,6 +644,139 @@ for f=1:ntim
                                 end
                             end
                             cLabels={'Min','Max'};
+                            %
+                            inside = false(length(xy));
+                            s = warning('query','MATLAB:inpolygon:ModelingWorld');
+                            warning('off','MATLAB:inpolygon:ModelingWorld')
+                            for i=1:length(xy)
+                               for j=1:length(xy)
+                                  if i~=j
+                                     inside(i,j) = all(inpolygon(xy{i}(:,1),xy{i}(:,2),xy{j}(:,1),xy{j}(:,2)));
+                                  end
+                               end
+                            end
+                            warning(s);
+                            %
+                            changed = 1;
+                            while changed
+                               changed = 0;
+                               outerpolys = find(~any(inside,2));
+                               for i = 1:length(outerpolys)
+                                  outerpoly = outerpolys(i);
+                                  %
+                                  % find polygons that fit inside this
+                                  % polygon, but not in any other.
+                                  %
+                                  inpoly = find(inside(:,outerpoly));
+                                  biggestinnerpolys = inpoly(sum(inside(inpoly,:),2)==1);
+                                  for j = 1:length(biggestinnerpolys)
+                                     biggestinnerpoly = biggestinnerpolys(j);
+                                     %
+                                     % remove biggestinnerpoly from this
+                                     % outerpoly. We should distinguish two
+                                     % cases:
+                                     %  - simple case in which the inner
+                                     %    polygon is strictly inside the
+                                     %    outer polygon. The polygon should
+                                     %    then just be appended as second
+                                     %    part/hole.
+                                     %  - the inner polygon may be partly
+                                     %    aligned with the outer polygon
+                                     %    and this case should be handled
+                                     %    by cutting away part of the
+                                     %    polygon.
+                                     %
+                                     xy1 = xy{outerpoly};
+                                     xy2 = flipud(xy{biggestinnerpoly});
+                                     %
+                                     [aligned,index] = ismember(xy2,xy1,'rows');
+                                     %
+                                     if ~any(aligned)
+                                        %
+                                        % simple case
+                                        %
+                                        xy{outerpoly}=[xy1;xy2];
+                                     else
+                                        %
+                                        % partial alignment
+                                        %
+                                        npnt1 = size(xy1,1);
+                                        npnt2 = size(xy2,1);
+                                        %
+                                        % make sure that the first point is
+                                        % the first aligned point
+                                        %
+                                        if ~aligned(1)
+                                           %
+                                           % find first point aligned
+                                           % (could be implemented in
+                                           % recent MATLAB versions using
+                                           % find first).
+                                           %
+                                           i2 = 1;
+                                           while ~aligned(i2)
+                                              i2 = i2+1;
+                                           end
+                                           %
+                                           % renumber such that first point
+                                           % aligned becomes first point.
+                                           %
+                                           renumber = [i2:npnt2 2:i2];
+                                           xy2 = xy2(renumber,:);
+                                           aligned = aligned(renumber);
+                                           index = index(renumber);
+                                        end
+                                        %
+                                        % determine last point aligned
+                                        %
+                                        i2 = 1;
+                                        i1 = index(i2);
+                                        if i1==1
+                                           i1 = npnt1;
+                                        end
+                                        while isequal(xy2(i2+1,:),xy1(i1-1,:))
+                                           i2 = i2+1;
+                                           i1 = i1-1;
+                                           if i1==1 % wrap around if necessary
+                                              i1 = npnt1;
+                                           end
+                                        end
+                                        %
+                                        % determine first point aligned
+                                        %
+                                        j2 = npnt2;
+                                        j1 = index(j2);
+                                        if j1==npnt1
+                                           j1 = 1;
+                                        end
+                                        while isequal(xy2(j2-1,:),xy1(j1+1,:))
+                                           j2 = j2-1;
+                                           j1 = j1+1;
+                                           if j1==npnt1 % wrap around if necessary
+                                              j1 = 1;
+                                           end
+                                        end
+                                        %
+                                        % now stick the non-aligned parts
+                                        % of the two polygons together
+                                        %
+                                        xy{outerpoly}=[xy2(i2:j2,:);xy1(j1+1:i1,:)];
+                                     end
+                                     %
+                                     % polygons inside biggestinnerpoly don't
+                                     % fit inside outerpoly anymore.
+                                     %
+                                     inside(inside(:,biggestinnerpoly),outerpoly)=0;
+                                     %
+                                     % biggestinnerpoly itself doesn't fit
+                                     % inside outerpoly anymore.
+                                     %
+                                     inside(biggestinnerpoly,outerpoly)=0;
+                                     changed = 1;
+                                  end
+                               end
+                            end
+                            %
                             shapewrite(filename,xy,cLabels,cv)
                         case 'vector'
                             x1=get(hNew(2),'xdata')';

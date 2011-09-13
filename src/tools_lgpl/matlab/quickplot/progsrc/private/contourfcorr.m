@@ -146,8 +146,8 @@ nv = nv(zi);
 % replace any NaN with low numbers as well.
 
 zz=[ repmat(NaN,1,nz+2) ; repmat(NaN,mz,1) z repmat(NaN,mz,1) ; repmat(NaN,1,nz+2)];
-kk=find(isnan(zz(:)));
-zz(kk)=minz-1e4*(maxz-minz)+zeros(size(kk));
+kk=isnan(zz(:));
+zz(kk)=-inf; %use -inf instead of finite value minz-1e4*(maxz-minz);
 
 xx0 = [2*x0(:,1)-x0(:,2), x0, 2*x0(:,nz0)-x0(:,nz0-1)];
 yy0 = [2*y0(1,:)-y0(2,:); y0; 2*y0(mz0,:)-y0(mz0-1,:)];

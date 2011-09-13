@@ -80,7 +80,7 @@ if ischar(IN{1})
         case 'polygon'
             DataType=5;
         otherwise
-            error(sprintf('Unknown shape identification: %s',IN{1}))
+            error('Unknown shape identification: %s',IN{1})
     end
     IN=IN(2:end);
 end
@@ -88,7 +88,9 @@ if iscell(IN{1})
     XY=IN{1}(:);
     NShp=length(XY);
     for i=1:NShp
-        if size(XY{i},2)~=2, error('Invalid number of columns in XY'); end
+        if size(XY{i},2)~=2
+           error('Invalid number of columns in XY')
+        end
     end
     Patch=[];
     switch length(IN)
@@ -152,7 +154,7 @@ else
         ValLbl=ValLbl(:)';
         for i=1:length(ValLbl)
             if length(ValLbl{i})>10
-                warning(sprintf('Label %i: ''%s'' truncated to ''%s''.',i,ValLbl{i},ValLbl{i}(1:10)));
+                warning('Label %i: ''%s'' truncated to ''%s''.',i,ValLbl{i},ValLbl{i}(1:10));
                 ValLbl{i}=ValLbl{i}(1:10);
             end
         end
@@ -173,15 +175,35 @@ switch DataType
         %
         % close polygons and remove double points
         %
+        NParts = ones(length(XY),1);
+        Start  = zeros(length(XY),1);
         if iscell(XY)
-            for i=1:NShp
-                if ~isequal(XY{i}(end,:),XY{i}(1,:))
-                    XY{i}(end+1,:)=XY{i}(1,:);
-                end
-                XY{i}(all(abs(diff(XY{i}))<1e-8,2),:)=[]; % remove double values
-                if ~isequal(XY{i}(end,:),XY{i}(1,:))
-                    XY{i}(end,:)=XY{i}(1,:);
-                end
+           for i=1:NShp
+              j = 1;
+              while ~isequal(XY{i}(end,:),XY{i}(j,:))
+                 % check if polygon consists of multiple parts
+                 Matching = all(XY{i}(j+1:end,:)-repmat(XY{i}(j,:),size(XY{i},1)-j,1)==0,2);
+                 if any(Matching)
+                    NParts(i) = NParts(i)+1;
+                    j = j+min(find(Matching))+1;
+                 else
+                    XY{i}(end+1,:)=XY{i}(j,:);
+                 end
+              end
+              XY{i}(all(abs(diff(XY{i}))<1e-8,2),:)=[]; % remove double values
+              NParts(i) = 1;
+              j = 1;
+              while ~isequal(XY{i}(end,:),XY{i}(j,:))
+                 % check if polygon consists of multiple parts
+                 Matching = all(XY{i}(j+1:end,:)-repmat(XY{i}(j,:),size(XY{i},1)-j,1)==0,2);
+                 if any(Matching)
+                    NParts(i) = NParts(i)+1;
+                    j = j+min(find(Matching))+1;
+                    Start(i,NParts(i)) = j-1;
+                 else
+                    XY{i}(end,:)=XY{i}(j,:);
+                 end
+              end
             end
         else
             if ~isequal(Patch(:,end),Patch(:,1))
@@ -193,21 +215,19 @@ switch DataType
         %
         if iscell(XY)
             for i=NShp:-1:1
-                if size(XY{i},1)<=2,
+                if size(XY{i},1)<=2
                     XY(i)=[];
                     Val(i,:)=[]; % remove associated data
+                    NParts(i,:)=[];
                 end
             end
             NShp=length(XY);
         end
 end
 if length(filename)>3
-    if strcmp(lower(filename(end-3:end)),'.shp')
-        filename=filename(1:end-4);
-    elseif strcmp(lower(filename(end-3:end)),'.shx')
-        filename=filename(1:end-4);
-    elseif strcmp(lower(filename(end-3:end)),'.dbf')
-        filename=filename(1:end-4);
+    switch lower(filename(end-3:end))
+       case {'.shp','.shx','.dbf'}
+          filename=filename(1:end-4);
     end
 end
 shapenm=[filename,'.shp'];
@@ -348,13 +368,13 @@ elseif iscell(XY)
     NPntAll=cellfun('size',XY,1);
     Admin = zeros(2,NShp);
     Admin(1,:) = 1:NShp;
-    Admin(2,:) = 24+8*NPntAll';
+    Admin(2,:) = 22+2*NParts'+8*NPntAll';
     nBytes = Admin(2,:)*2;
     Admin = int32_byteflip(Admin);
     Admin(3,:)=DataType;
     for i=1:NShp
         xy=XY{i};
-        if checkclockwise & (DataType==5) & (clockwise(xy(:,1),xy(:,2))<0)
+        if checkclockwise && (DataType==5) && (clockwise(xy(:,1),xy(:,2))<0)
             xy=flipud(xy);
         end
         NPnt=NPntAll(i);
@@ -364,7 +384,7 @@ elseif iscell(XY)
         ranges(3)=max(xy(:,1));
         ranges(4)=max(xy(:,2));
         fwrite(fid,ranges,'float64');
-        fwrite(fid,[1 NPnt 0],'int32'); % one part, N points, part starting at point 0
+        fwrite(fid,[NParts(i) NPnt Start(i,1:NParts(i))],'int32'); % # parts, # points total, starting offset for each part
         fwrite(fid,xy','float64');
     end
 else
@@ -378,7 +398,7 @@ else
     for i=1:NShp
         ind=Patch(i,:);
         xy=XY(ind,:);
-        if checkclockwise & (DataType==5) & (clockwise(xy(:,1),xy(:,2))<0)
+        if checkclockwise && (DataType==5) && (clockwise(xy(:,1),xy(:,2))<0)
             xy=flipud(xy);
         end
         fwrite(fid,Admin(:,i),'int32');
@@ -387,7 +407,7 @@ else
         ranges(3)=max(xy(:,1));
         ranges(4)=max(xy(:,2));
         fwrite(fid,ranges,'float64');
-        fwrite(fid,[1 NPnt 0],'int32'); % one part, N points, part starting at point 0
+        fwrite(fid,[1 NPnt 0],'int32'); % one part, # points, single part starting at point 0
         fwrite(fid,xy','float64');
     end
 end
@@ -395,12 +415,13 @@ fidx_data = [strtidx+cumsum([0 nBytes(1:end-1)+8]); nBytes]/2;
 fwrite(fidx,fidx_data,'int32');
 flid=ftell(fid);
 fclose(fid);
+%
 fid=fopen(shapenm,'r+','b');
 fseek(fid,24,-1);
 fwrite(fid,flid/2,'int32');
 fclose(fid);
+%
 flidx=ftell(fidx);
 fseek(fidx,24,-1);
 fwrite(fidx,flidx/2,'int32');
 fclose(fidx);
-

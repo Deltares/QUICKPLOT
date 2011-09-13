@@ -158,7 +158,7 @@ for i=5:-1:3
           elseif isfield(Props,'Geom')
              geom=Props.Geom;
           end
-          if ~strcmp(geom,'POLYL')
+          if ~strcmp(geom,'POLYL') && ~strcmp(geom,'POLYG')
              if isfield(data,'X') && size(data(d).X,i-di)>1
                 data(d).X=mean(data(d).X,i-di);
              end
