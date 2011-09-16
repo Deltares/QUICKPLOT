@@ -1180,7 +1180,11 @@ if ~isempty(i)
     [Ins(:).BedLayer]=deal(0);
     if strcmp(subtype,'map')
         bedlayer = 0;
-        noseg_ifbedlayer = FI.Grid.NoSegPerLayer*(FI.Grid.MNK(3)+1);
+        if isfield(FI.Grid,'NoSegPerLayer')
+           noseg_ifbedlayer = FI.Grid.NoSegPerLayer*(FI.Grid.MNK(3)+1);
+        else % e.g. in case of Telemac
+           noseg_ifbedlayer = prod(FI.Grid.MNK+[0 0 1]);
+        end
         if isbinary
             bedlayer = FI.DwqBin.NumSegm==noseg_ifbedlayer;
         else
