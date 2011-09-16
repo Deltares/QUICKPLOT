@@ -1180,11 +1180,12 @@ if ~isempty(i)
     [Ins(:).BedLayer]=deal(0);
     if strcmp(subtype,'map')
         bedlayer = 0;
+        noseg_ifbedlayer = FI.Grid.NoSegPerLayer*(FI.Grid.MNK(3)+1);
         if isbinary
-            bedlayer = FI.DwqBin.NumSegm==prod(FI.Grid.MNK+[0 0 1]);
+            bedlayer = FI.DwqBin.NumSegm==noseg_ifbedlayer;
         else
             Info = vs_disp(FI.Nfs,feval(casemod,[DELWAQ '_RESULTS']),feval(casemod,'SUBST_001'));
-            bedlayer = Info.SizeDim==prod(FI.Grid.MNK+[0 0 1]);
+            bedlayer = Info.SizeDim==noseg_ifbedlayer;
         end
         if bedlayer
             nVal=length(Ins);
