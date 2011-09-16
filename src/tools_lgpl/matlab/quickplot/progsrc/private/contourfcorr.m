@@ -147,7 +147,12 @@ nv = nv(zi);
 
 zz=[ repmat(NaN,1,nz+2) ; repmat(NaN,mz,1) z repmat(NaN,mz,1) ; repmat(NaN,1,nz+2)];
 kk=isnan(zz(:));
-zz(kk)=-inf; %use -inf instead of finite value minz-1e4*(maxz-minz);
+zz(kk)=-realmax;
+% using -realmax instead of
+% * -inf since this seems to result in contours drawn at value+eps rather
+%   than value-eps at least for the example given above in R2009B
+% * minz-1e4*(maxz-minz) since this moves contours too far in the direction
+%   of NaN missing data points.
 
 xx0 = [2*x0(:,1)-x0(:,2), x0, 2*x0(:,nz0)-x0(:,nz0-1)];
 yy0 = [2*y0(1,:)-y0(2,:); y0; 2*y0(mz0,:)-y0(mz0-1,:)];
