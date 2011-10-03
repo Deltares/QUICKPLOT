@@ -240,9 +240,12 @@ if DataRead
     end
 
     elidx(~DimFlag(2:end))=[];
-
     if ~isempty(Props.SubFld) % sed.fraction
-        elidx(end+1)={Props.SubFld}; % extra dimension automatically dropped after reading
+        if iscell(Props.SubFld)
+            elidx=cat(2,elidx,Props.SubFld); % last dimensions automatically dropped after reading
+        else
+            elidx(end+1)={Props.SubFld}; % last dimension automatically dropped after reading
+        end
     end
 
     if Props.NVal==0

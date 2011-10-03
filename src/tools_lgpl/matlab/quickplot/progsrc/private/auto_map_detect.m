@@ -77,15 +77,8 @@ for i=1:length(Grps)
                 if k==1
                     if Info.NDim==2
                         [DataProps,fld] = addprop(DataProps,fld,oldprops,ediscr,'',Grps{i},Elms{j},[]);
-                    elseif Info.NDim==3
-                        for l=1:sz(3)
-                            if sz(3)>1
-                                Str=sprintf('%s (%i)',ediscr,l);
-                            else
-                                Str=ediscr;
-                            end
-                            [DataProps,fld] = addprop(DataProps,fld,oldprops,Str,'',Grps{i},Elms{j},l);
-                        end
+                    elseif Info.NDim>=3
+                        [DataProps,fld] = addpropmulti(DataProps,fld,oldprops,ediscr,'',Grps{i},Elms{j},sz(3:Info.NDim));
                     end
                 else
                     if sz(3)==k
@@ -98,28 +91,14 @@ for i=1:length(Grps)
                     if isempty(loc3d)
                         if sz(3)==0
                             [DataProps,fld] = addprop(DataProps,fld,oldprops,ediscr,'',Grps{i},Elms{j},[]);
-                        else
-                            for l=1:sz(3)
-                                if sz(3)>1
-                                    Str=sprintf('%s (%i)',ediscr,l);
-                                else
-                                    Str=ediscr;
-                                end
-                                [DataProps,fld] = addprop(DataProps,fld,oldprops,Str,'',Grps{i},Elms{j},l);
-                            end
+                        elseif Info.NDim>=3
+                            [DataProps,fld] = addpropmulti(DataProps,fld,oldprops,ediscr,'',Grps{i},Elms{j},sz(3:Info.NDim));
                         end
                     else
                         if Info.NDim==3
                             [DataProps,fld] = addprop(DataProps,fld,oldprops,ediscr,loc3d,Grps{i},Elms{j},[]);
-                        elseif Info.NDim==4
-                            for l=1:sz(4)
-                                if sz(4)>1
-                                    Str=sprintf('%s (%i)',ediscr,l);
-                                else
-                                    Str=ediscr;
-                                end
-                                [DataProps,fld] = addprop(DataProps,fld,oldprops,Str,loc3d,Grps{i},Elms{j},l);
-                            end
+                        elseif Info.NDim>=4
+                            [DataProps,fld] = addpropmulti(DataProps,fld,oldprops,ediscr,loc3d,Grps{i},Elms{j},sz(4:Info.NDim));
                         end
                     end
                 end
@@ -127,6 +106,20 @@ for i=1:length(Grps)
         end
     end
     [DataProps,fld] = addsep(DataProps,fld,oldprops);
+end
+
+function [DataProps,fld] = addpropmulti(DataProps,fld,oldprops,ediscr,loc3d,Grp,Elm,sz)
+nel = prod(sz);
+ndim = length(sz);
+for e=1:nel
+    [x{1:ndim}] = ind2sub(sz,e);
+    if nel>1
+        Str=sprintf('%i, ',x{:});
+        Str=sprintf('%s (%s)',ediscr,Str(1:end-2));
+    else
+        Str=ediscr;
+    end
+    [DataProps,fld] = addprop(DataProps,fld,oldprops,Str,loc3d,Grp,Elm,x);
 end
 
 function [DataProps,fld] = addprop(DataProps,fld,oldprops,ediscr,loc3d,Grp,Elm,subf)

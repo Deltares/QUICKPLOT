@@ -175,6 +175,13 @@ if DataRead
     elidx=idx(2:end);
 
     elidx(~DimFlag(2:end))=[];
+    if ~isempty(Props.SubFld)
+        if iscell(Props.SubFld)
+            elidx=cat(2,elidx,Props.SubFld); % last dimensions automatically dropped after reading
+        else
+            elidx(end+1)={Props.SubFld}; % last dimension automatically dropped after reading
+        end
+    end
 
     if Props.NVal~=0
         [val1,Chk]=vs_let(FI,Props.Group,{idx{T_}},Props.Val1,elidx,'quiet');
