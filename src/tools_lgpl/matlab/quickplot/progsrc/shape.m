@@ -11,42 +11,68 @@ function varargout=shape(cmd,varargin)
 %      OBJECTNR      - list of object numbers in shape file to be
 %                      retrieved; use 0 to load all objects
 %      DATATYPE      - currently supported: 'point' or 'polyline'
+%
+%   SHAPE('write',FILENAME,DATATYPE,XY,PATCHES) writes patches to a shape
+%   file triplet (FILENAME.shp,FILENAME.shx,FILENAME.dbf) based on XY an
+%   N x 3 matrix of X and Y co-ordinates and PATCHES an Ni x NP matrix of
+%   point indices: each of the Ni rows of the matrix represents one
+%   polygon/polyline with NP points. The string DATATYPE should read
+%   'polygon' (default value if skipped) or 'polyline' and thus determines
+%   the shape file type. All polygons/polylines contain the same number of
+%   points. Use the following alternative if the number of points varies.
+%
+%   SHAPE('write',FILENAME,DATATYPE,XYCell) also writes patches to a shape
+%   file triplet. Here, XYCell should be a cell array of which each element
+%   is a Ni x 2 array defining the polygon consisting of Ni points (X,Y)
+%   co-ordinates. The string DATATYPE should again read 'polygon' (default
+%   value if skipped) or 'polyline'.
+%
+%   SHAPE('write',FILENAME,'point',XY) write points to a shape file
+%   triplet. XY should be an Ni x 2 matrix.
+%
+%   SHAPE('write',...,LABELS,VALUES) writes data associated with the
+%   polygons to the dBase file: FILENAME.dbf. VALUES should be an Ni x M
+%   matrix where Ni equals the number of polygons/polylines/points and M is
+%   the number of values per polygon. LABELS should be a cell array of
+%   length M; if LABELS is skipped then the default labels are 'Val_1',
+%   'Val_2', etc. are used. Note that the label length is restricted to a
+%   maximum of 10 characters.
 
 % To be added shortly:
 %
-%   SHAPE('write',FILENAME,DATATYPE,XYCELL) % 'polyline', 'polygon'
-%   SHAPE('write',FILENAME,DATATYPE,XYVERTICES,INDEXFACES) % 'polyline', 'polygon'
-%   SHAPE('write',FILENAME,'patches',X,Y) % X,Y 2D
-%   SHAPE('write',FILENAME,'point',XY) % NVALx2
+%   [XYVERTICES,INDEXFACES,VALUES] = MATRIX2PATCH(X,Y,V)
+%   where X and Y are M x N dimensional arrays, V is a (M-1) x (N-1) x NVAL
+%   array. The returned arrays can be used in the SHAPE call.
 %
-%   SHAPE('write',FILENAME,...,LABELS,VALUES) % NVAL or size(X)-1 for patches
-%   SHAPE('write',FILENAME,'contourf',X,Y,LABEL,VALUES)
+%   XYCELL = MATRIX2PATCH(X,Y,V,LEVELS)
+%   where X, Y and V are M x N dimensional arrays. The returned arrays can be
+%   used in the SHAPE call.
 
 %----- LGPL --------------------------------------------------------------------
-%                                                                               
-%   Copyright (C)  Stichting Deltares, 2011.                                     
-%                                                                               
-%   This library is free software; you can redistribute it and/or                
-%   modify it under the terms of the GNU Lesser General Public                   
-%   License as published by the Free Software Foundation version 2.1.                         
-%                                                                               
-%   This library is distributed in the hope that it will be useful,              
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of               
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU            
-%   Lesser General Public License for more details.                              
-%                                                                               
-%   You should have received a copy of the GNU Lesser General Public             
-%   License along with this library; if not, see <http://www.gnu.org/licenses/>. 
-%                                                                               
-%   contact: delft3d.support@deltares.nl                                         
-%   Stichting Deltares                                                           
-%   P.O. Box 177                                                                 
-%   2600 MH Delft, The Netherlands                                               
-%                                                                               
-%   All indications and logos of, and references to, "Delft3D" and "Deltares"    
-%   are registered trademarks of Stichting Deltares, and remain the property of  
-%   Stichting Deltares. All rights reserved.                                     
-%                                                                               
+%
+%   Copyright (C)  Stichting Deltares, 2011.
+%
+%   This library is free software; you can redistribute it and/or
+%   modify it under the terms of the GNU Lesser General Public
+%   License as published by the Free Software Foundation version 2.1.
+%
+%   This library is distributed in the hope that it will be useful,
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%   Lesser General Public License for more details.
+%
+%   You should have received a copy of the GNU Lesser General Public
+%   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+%
+%   contact: delft3d.support@deltares.nl
+%   Stichting Deltares
+%   P.O. Box 177
+%   2600 MH Delft, The Netherlands
+%
+%   All indications and logos of, and references to, "Delft3D" and "Deltares"
+%   are registered trademarks of Stichting Deltares, and remain the property of
+%   Stichting Deltares. All rights reserved.
+%
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
@@ -163,17 +189,17 @@ end
 
 while ~feof(fid)
     if Index && NShapes<size(S.Idx,2)
-       fseek(fid,S.Idx(1,NShapes+1),-1);
+        fseek(fid,S.Idx(1,NShapes+1),-1);
     end
     [NrSize,k]=fread(fid,2,'int32');
     if k==0
-       break
+        break
     end
     NrSize=int32_byteflip(NrSize);
     ShapeTp=fread(fid,1,'int32');
     NShapes=NShapes+1;
     if ~Index
-       S.Idx(NShapes)=ftell(fid)-12;
+        S.Idx(NShapes)=ftell(fid)-12;
     end
     switch ShapeTp
         case 0 % null shape
