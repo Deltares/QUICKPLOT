@@ -120,6 +120,9 @@ for i = 1:length(t)
     if ~isempty(varargin)
         OneTime = OneTime(rows,cols);
     end
+    if isfield(Structure.Header,'nodata_value')
+       OneTime(OneTime==Structure.Header.nodata_value)=NaN;
+    end
     if i == 1
         Data = zeros([length(t) size(OneTime)]);
     end

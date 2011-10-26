@@ -187,8 +187,8 @@ if XYRead
     Ans.X=x;
     Ans.Y=y;
     if ~isempty(grid_unit)
-        Ans.XUnit = grid_unit;
-        Ans.YUnit = grid_unit;
+        Ans.XUnits = grid_unit;
+        Ans.YUnits = grid_unit;
     end
 end
 if Props.NVal==0

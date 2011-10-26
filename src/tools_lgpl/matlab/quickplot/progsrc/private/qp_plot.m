@@ -694,7 +694,8 @@ end
 % If horizontal units is degrees, change to longitude and latitude plot
 % type.
 %
-if isfield(data,'XUnits') && strcmp(data(1).XUnits,'deg')
+if isfield(data,'XUnits') && ...
+        (strcmp(data(1).XUnits,'deg') || strcmp(data(1).XUnits,'degree'))
     switch Ops.axestype
         case 'X-Y'
             Ops.axestype='Lon-Lat';
