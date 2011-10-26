@@ -87,6 +87,7 @@
 %   average_trim        - Average fields of a TRIM file.
 %   clipgrid            - Clip a grid away from the inside/outside of a polygon.
 %   degstr              - Convert degree values to string representation.
+%   floodmask           - Find connected points in an array.
 %   qp_unitconversion   - Convert unit strings.
 %   ustrcmpi            - Find a unique string.
 %   wildstrmatch        - Find matching strings using wildcards.
