@@ -209,7 +209,11 @@ for iCoord = 1:length(coordname)
         continue
     end
     CoordInfo = FI.Dataset(vdim);
-    CoordAttribs = {CoordInfo.Attribute.Name};
+    if isempty(CoordInfo.Attribute)
+       CoordAttribs = {};
+    else
+       CoordAttribs = {CoordInfo.Attribute.Name};
+    end
     %
     dims = Props.Dimension;
     dimvals = idx;
