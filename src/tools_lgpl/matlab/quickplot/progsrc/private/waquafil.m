@@ -556,6 +556,13 @@ if strcmp(sdstype,'TRIWAQ')
             ui_message('warning',{'Number of fields in MIN/MAX data unexpected.','Data may be interpreted incorrectly!'})
         end
         maxmin = reshape(maxmin(21:end),[nflds+4 nflds 2]);
+        % for some SDS files, maxmin(1:nflds+3,:,:) seems to contain the
+        % indices of the fields within the CHAR arrays, however, for other
+        % SDS files the variable seems to contain only 0/1 flags indicating
+        % whether a quantity is included. So, we cannot rely on the values
+        % to be present. First reset indices, and then recalculate them.
+        maxmin = maxmin(1:nflds+3,:,:)~=0;
+        maxmin = cumsum(maxmin,1).*maxmin;
         %
         maxmin_quant = {'time','water level','velocity in m direction','velocity in n direction','velocity magnitude','salinity','temperature','constituent concentration','velocity in x direction','velocity in y direction'};
         maxmin_var = {'','SEP','UP','VP','MGN','SAL','TEMP','RP'};
