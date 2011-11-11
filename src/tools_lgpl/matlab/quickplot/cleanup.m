@@ -28,7 +28,7 @@ else
         if isdir(X{i})
             [s,msg]=dos(['rmdir /s/q ' X{i}]);
         else
-            [s,msg]=dos(['del /f/q ' X{i}]);
+            [s,msg]=dos(['del /s/f/q ' X{i}]);
         end
         if s~=0
             if isdir(X{i})

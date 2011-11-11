@@ -18,6 +18,8 @@ while ~found
         case 1
             SvnVersion = '../../../../third_party_open/subversion/bin/win32/svnversion.exe';
         case 2
+            SvnVersion = SvnVersion(4:end); % one level less deep
+        case 2
             svnbin = getenv('SVN_BIN_PATH');
             SvnVersion = [svnbin filesep 'svnversion.exe'];
         case 3
