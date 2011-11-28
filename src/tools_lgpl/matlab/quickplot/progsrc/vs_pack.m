@@ -60,11 +60,6 @@ function [VSNEW,ErrMsg]=vs_pack(varargin)
 vs_debug=1;
 ErrMsg='';
 INP=varargin;
-quiet=1;
-if (length(INP)>0) & isequal(INP{end},'quiet')
-   quiet=0;
-   INP(end)=[];
-end
 VS=[];
 for i=1:length(INP)
    if isstruct(INP{i})

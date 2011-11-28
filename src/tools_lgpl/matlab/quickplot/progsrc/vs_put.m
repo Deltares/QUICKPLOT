@@ -62,9 +62,9 @@ function [VSNEW,ErrMsg]=vs_put(varargin)
 ErrMsg='';
 defaultVS=0;
 INP=varargin;
-quiet=1;
+showwaitbar=isenvironment('MATLAB');
 if (length(INP)>0) & isequal(INP{end},'quiet')
-   quiet=0;
+   showwaitbar=0;
    INP(end)=[];
 end
 VS=[];
@@ -389,7 +389,7 @@ i=strmatch(gName,{VS.GrpDat(:).Name},'exact');
 j=strmatch(eName,{VS.ElmDef(:).Name},'exact');
 eName={eName};
 eIndex={eIndex};
-quiet=0;
+showwaitbar=0;
 write='write';
 Writing='Writing';
 Fwrite='fwrite';
@@ -498,7 +498,7 @@ try
 
    fidat=0; % make sure that the file handle is defined in case of a crash
 
-   if quiet
+   if showwaitbar
       if jn>0  % all elements
          hWaitBar = waitbar(0,sprintf('%s %s. Please wait ...',Writing,gName));
       else % one element
@@ -756,7 +756,7 @@ try
       end
    end
 
-   if quiet
+   if showwaitbar
       Alpha2=NRCells*VarDimCntMax;
       Alpha3=0.02*Alpha2;
       if Alpha2>0
@@ -927,7 +927,7 @@ try
                else
                   IdxCell=Cell;
                end
-               if quiet % can be placed outside Cell loop to speed up reading of small groups/cells
+               if showwaitbar % can be placed outside Cell loop to speed up reading of small groups/cells
                   NewRefresh=Alpha1+Cell; % <-- in that case replace Cell by NrCells
                   if NewRefresh>Alpha4
                      waitbar(NewRefresh*Alpha2);
@@ -1071,7 +1071,7 @@ try
       fprintf(vs_debug,'\ndone.\n');
    end
    fclose(fidat);
-   if quiet
+   if showwaitbar
       delete(hWaitBar);
       drawnow;
    end
@@ -1095,7 +1095,7 @@ catch
    if fidat>0 % close file if open
       fclose(fidat);
    end
-   if quiet & ishandle(hWaitBar) % delete waitbar if exists
+   if showwaitbar & ishandle(hWaitBar) % delete waitbar if exists
       delete(hWaitBar);
    end
    error(lasterr); % error out

@@ -103,11 +103,11 @@ end
 gNameDefault = '>>no group specified<<';
 eNameDefault = '>>no element specified<<';
 
+showwaitbar=isenvironment('MATLAB');
 if INPlen==0
     vs_debug=0;
     cmdhelp=0;
     vs_warning=1;
-    quiet=1;
     VS=vs_use('lastread');
     if ~isstruct(VS)
         error('No NEFIS file specified.');
@@ -130,10 +130,9 @@ else
             break
         end
     end
-    quiet=1;
     for i=1:length(INP)
         if isequal(INP{i},'quiet')
-            quiet=0;
+            showwaitbar=0;
             INP(i)=[];
             break
         end
@@ -882,7 +881,7 @@ try
 
     fidat=0; % make sure that the file handle is defined in case of a crash
 
-    if quiet
+    if showwaitbar
         if jn>0  % all elements
             hWaitBar = waitbar(0,['Reading ',deblank(gName),'. Please wait ...']);
         else % one element
@@ -1181,7 +1180,7 @@ try
         end
     end
 
-    if quiet
+    if showwaitbar
         Alpha2=NRCells*VarDimCntMax;
         Alpha3=0.02*Alpha2;
         if Alpha2>0
@@ -1282,7 +1281,7 @@ try
                     else
                         IdxCell=Cell;
                     end
-                    if quiet % can be placed outside Cell loop to speed up reading of small groups/cells
+                    if showwaitbar % can be placed outside Cell loop to speed up reading of small groups/cells
                         NewRefresh=Alpha1+Cell; % <-- in that case replace Cell by NrCells
                         if NewRefresh>Alpha4
                             waitbar(NewRefresh*Alpha2);
@@ -1418,7 +1417,8 @@ try
         fprintf(vs_debug,'done.\n');
     end
     fclose(fidat);
-    if quiet, delete(hWaitBar)
+    if showwaitbar
+        delete(hWaitBar)
         drawnow;
     end
     Success=1;
@@ -1437,7 +1437,7 @@ catch % end of catch
     if fidat>0 % close file if open
         fclose(fidat);
     end
-    if quiet & ishandle(hWaitBar) % delete waitbar if exists
+    if showwaitbar & ishandle(hWaitBar) % delete waitbar if exists
         delete(hWaitBar);
     end
     error(lasterr) % error out

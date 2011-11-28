@@ -37,6 +37,13 @@ function I = isstandalone
 %   $Id$
 
 I=0;
+%
+% if this is not MATLAB then it cannot be standalone/deployed.
+%
+if ~isenvironment('MATLAB')
+   return
+end
+
 lastmsg = lasterr;
 try
     %

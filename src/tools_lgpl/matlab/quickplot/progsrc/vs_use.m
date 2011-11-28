@@ -80,7 +80,7 @@ if (nargin==1) & isstruct(varargin{1}) % vs_use(Struct) % to refresh 'lastread'
 end
 
 INP=varargin;
-showwaitbar=1;
+showwaitbar=isenvironment('MATLAB');
 for i=1:length(INP)
    if isequal(INP{i},'quiet')
       showwaitbar=0;
