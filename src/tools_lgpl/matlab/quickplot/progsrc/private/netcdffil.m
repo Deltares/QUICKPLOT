@@ -148,7 +148,7 @@ end
 %
 removeTime = 0;
 for ii=1:length(Props.varid)
-    [data, status] = netcdf_get(FI,Props.varid(ii),Props.Dimension,idx);
+    [data, status] = qp_netcdf_get(FI,Props.varid(ii),Props.Dimension,idx);
     szData = size(data);
     %
     if Props.DimFlag(T_) && length(idx{T_})==1
@@ -224,7 +224,7 @@ for iCoord = 1:length(coordname)
         dimvals{end+1} = 1:FI.Dimension(id).Length;
         coordname{iCoord}=coordname{iCoord}(1);
     end
-    [Coord, status] = netcdf_get(FI,CoordInfo,dims,dimvals);
+    [Coord, status] = qp_netcdf_get(FI,CoordInfo,dims,dimvals);
     Coord = expand_hdim(Coord,szData,hdim);
     %
     %--------------------------------------------------------------------
@@ -233,7 +233,7 @@ for iCoord = 1:length(coordname)
     active_id = strmatch('active',CoordAttribs,'exact');
     if ~isempty(active_id)
         activevar = CoordInfo.Attribute(active_id).Value;
-        [Active, status] = netcdf_get(FI,activevar,Props.Dimension,idx);
+        [Active, status] = qp_netcdf_get(FI,activevar,Props.Dimension,idx);
         Coord(Active~=1,:)=NaN; % Active~=1 excludes boundary points, Active==0 includes boundary points
     end
     %--------------------------------------------------------------------
@@ -252,7 +252,7 @@ for iCoord = 1:length(coordname)
                 actvarid = strmatch(maskvar,{FI.Dataset.Name}');
                 ActiveInfo = FI.Dataset(actvarid);
                 if ~isempty(ActiveInfo)
-                    [Active, status] = netcdf_get(FI,ActiveInfo,Props.Dimension,idx);
+                    [Active, status] = qp_netcdf_get(FI,ActiveInfo,Props.Dimension,idx);
                     activeloaded = 1;
                 end
             end
@@ -283,8 +283,8 @@ for iCoord = 1:length(coordname)
             end
         end
         if firstbound
-            repeat = repmat((1:size(Coord,1))',1,size(Coord,2))';
-            Ans.Val = Ans.Val(repeat(:));
+            Ans.Val = repmat(Ans.Val,1,size(Coord,2))';
+            Ans.Val = Ans.Val(:);
             firstbound = 0;
         end
         Coord = Coord';
@@ -347,9 +347,9 @@ if ~isempty(Info.Z) && Props.hasCoords
         standard_name = CoordInfo.Attribute(j).Value;
         switch standard_name
             case 'atmosphere_sigma_coordinate'
-                [sigma  , status] = netcdf_get(FI,FormulaTerms{1,2},Props.Dimension,idx);
-                [ps     , status] = netcdf_get(FI,FormulaTerms{2,2},Props.Dimension,idx);
-                [ptop   , status] = netcdf_get(FI,FormulaTerms{3,2},Props.Dimension,idx);
+                [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.Dimension,idx);
+                [ps     , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.Dimension,idx);
+                [ptop   , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.Dimension,idx);
                 Z = zeros(szData);
                 for t=1:size(Z,1)
                     for k=1:length(sigma)
@@ -358,10 +358,10 @@ if ~isempty(Info.Z) && Props.hasCoords
                 end
             case 'atmosphere_hybrid_sigma_pressure_coordinate'
                 if isequal(FormulaTerms{1,1},'a:')
-                    [a      , status] = netcdf_get(FI,FormulaTerms{1,2},Props.Dimension,idx);
-                    [b      , status] = netcdf_get(FI,FormulaTerms{2,2},Props.Dimension,idx);
-                    [ps     , status] = netcdf_get(FI,FormulaTerms{3,2},Props.Dimension,idx);
-                    [p0     , status] = netcdf_get(FI,FormulaTerms{4,2},Props.Dimension,idx);
+                    [a      , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.Dimension,idx);
+                    [b      , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.Dimension,idx);
+                    [ps     , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.Dimension,idx);
+                    [p0     , status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.Dimension,idx);
                     Z = zeros(szData);
                     for t=1:size(Z,1)
                         for k=1:length(a)
@@ -369,9 +369,9 @@ if ~isempty(Info.Z) && Props.hasCoords
                         end
                     end
                 else
-                    [ap     , status] = netcdf_get(FI,FormulaTerms{1,2},Props.Dimension,idx);
-                    [b      , status] = netcdf_get(FI,FormulaTerms{2,2},Props.Dimension,idx);
-                    [ps     , status] = netcdf_get(FI,FormulaTerms{3,2},Props.Dimension,idx);
+                    [ap     , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.Dimension,idx);
+                    [b      , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.Dimension,idx);
+                    [ps     , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.Dimension,idx);
                     Z = zeros(szData);
                     for t=1:size(Z,1)
                         for k=1:length(ap)
@@ -380,10 +380,10 @@ if ~isempty(Info.Z) && Props.hasCoords
                     end
                 end
             case 'atmosphere_hybrid_height_coordinate'
-                [tau     , status] = netcdf_get(FI,FormulaTerms{1,2},Props.Dimension,idx);
-                [eta     , status] = netcdf_get(FI,FormulaTerms{2,2},Props.Dimension,idx);
-                [ztop    , status] = netcdf_get(FI,FormulaTerms{3,2},Props.Dimension,idx);
-                [zsurface, status] = netcdf_get(FI,FormulaTerms{4,2},Props.Dimension,idx);
+                [tau     , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.Dimension,idx);
+                [eta     , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.Dimension,idx);
+                [ztop    , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.Dimension,idx);
+                [zsurface, status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.Dimension,idx);
                 Z = zeros(szData);
                 for t=1:size(Z,1)
                     for k=1:length(tau)
@@ -391,12 +391,12 @@ if ~isempty(Info.Z) && Props.hasCoords
                     end
                 end
             case 'atmosphere_sleve_coordinate'
-                [a       , status] = netcdf_get(FI,FormulaTerms{1,2},Props.Dimension,idx);
-                [b1      , status] = netcdf_get(FI,FormulaTerms{2,2},Props.Dimension,idx);
-                [b2      , status] = netcdf_get(FI,FormulaTerms{3,2},Props.Dimension,idx);
-                [ztop    , status] = netcdf_get(FI,FormulaTerms{4,2},Props.Dimension,idx);
-                [zsurf1  , status] = netcdf_get(FI,FormulaTerms{5,2},Props.Dimension,idx);
-                [zsurf2  , status] = netcdf_get(FI,FormulaTerms{6,2},Props.Dimension,idx);
+                [a       , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.Dimension,idx);
+                [b1      , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.Dimension,idx);
+                [b2      , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.Dimension,idx);
+                [ztop    , status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.Dimension,idx);
+                [zsurf1  , status] = qp_netcdf_get(FI,FormulaTerms{5,2},Props.Dimension,idx);
+                [zsurf2  , status] = qp_netcdf_get(FI,FormulaTerms{6,2},Props.Dimension,idx);
                 Z = zeros(szData);
                 for t=1:size(Z,1)
                     for k=1:length(a)
@@ -404,9 +404,9 @@ if ~isempty(Info.Z) && Props.hasCoords
                     end
                 end
             case 'ocean_sigma_coordinate'
-                [sigma  , status] = netcdf_get(FI,FormulaTerms{1,2},Props.Dimension,idx);
-                [eta    , status] = netcdf_get(FI,FormulaTerms{2,2},Props.Dimension,idx);
-                [depth  , status] = netcdf_get(FI,FormulaTerms{3,2},Props.Dimension,idx);
+                [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.Dimension,idx);
+                [eta    , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.Dimension,idx);
+                [depth  , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.Dimension,idx);
                 Z = zeros(szData);
                 for t=1:size(Z,1)
                     for k=1:length(sigma)
@@ -414,12 +414,12 @@ if ~isempty(Info.Z) && Props.hasCoords
                     end
                 end
             case 'ocean_s_coordinate'
-                [s      , status] = netcdf_get(FI,FormulaTerms{1,2},Props.Dimension,idx);
-                [eta    , status] = netcdf_get(FI,FormulaTerms{2,2},Props.Dimension,idx);
-                [depth  , status] = netcdf_get(FI,FormulaTerms{3,2},Props.Dimension,idx);
-                [a      , status] = netcdf_get(FI,FormulaTerms{4,2},Props.Dimension,idx);
-                [b      , status] = netcdf_get(FI,FormulaTerms{5,2},Props.Dimension,idx);
-                [depth_c, status] = netcdf_get(FI,FormulaTerms{6,2},Props.Dimension,idx);
+                [s      , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.Dimension,idx);
+                [eta    , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.Dimension,idx);
+                [depth  , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.Dimension,idx);
+                [a      , status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.Dimension,idx);
+                [b      , status] = qp_netcdf_get(FI,FormulaTerms{5,2},Props.Dimension,idx);
+                [depth_c, status] = qp_netcdf_get(FI,FormulaTerms{6,2},Props.Dimension,idx);
                 C = (1-b)*sinh(a*s)/sinh(a) + b*(tanh(a*(s+0.5))/(2*tanh(0.5*a))-0.5);
                 Z = zeros(szData);
                 for t=1:size(Z,1)
@@ -428,12 +428,12 @@ if ~isempty(Info.Z) && Props.hasCoords
                     end
                 end
             case 'ocean_sigma_z_coordinate'
-                [sigma  , status] = netcdf_get(FI,FormulaTerms{1,2},Props.Dimension,idx);
-                [eta    , status] = netcdf_get(FI,FormulaTerms{2,2},Props.Dimension,idx);
-                [depth  , status] = netcdf_get(FI,FormulaTerms{3,2},Props.Dimension,idx);
-                [depth_c, status] = netcdf_get(FI,FormulaTerms{4,2},Props.Dimension,idx);
-                [nsigma , status] = netcdf_get(FI,FormulaTerms{5,2},Props.Dimension,idx);
-                [zlev   , status] = netcdf_get(FI,FormulaTerms{6,2},Props.Dimension,idx);
+                [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.Dimension,idx);
+                [eta    , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.Dimension,idx);
+                [depth  , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.Dimension,idx);
+                [depth_c, status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.Dimension,idx);
+                [nsigma , status] = qp_netcdf_get(FI,FormulaTerms{5,2},Props.Dimension,idx);
+                [zlev   , status] = qp_netcdf_get(FI,FormulaTerms{6,2},Props.Dimension,idx);
                 K=idx{K_};
                 Z = zeros(szData);
                 for t=1:size(Z,1)
@@ -446,13 +446,13 @@ if ~isempty(Info.Z) && Props.hasCoords
                     end
                 end
             case 'ocean_double_sigma_coordinate'
-                [sigma  , status] = netcdf_get(FI,FormulaTerms{1,2},Props.Dimension,idx);
-                [depth  , status] = netcdf_get(FI,FormulaTerms{2,2},Props.Dimension,idx);
-                [z1     , status] = netcdf_get(FI,FormulaTerms{3,2},Props.Dimension,idx);
-                [z2     , status] = netcdf_get(FI,FormulaTerms{4,2},Props.Dimension,idx);
-                [a      , status] = netcdf_get(FI,FormulaTerms{5,2},Props.Dimension,idx);
-                [href   , status] = netcdf_get(FI,FormulaTerms{6,2},Props.Dimension,idx);
-                [k_c    , status] = netcdf_get(FI,FormulaTerms{7,2},Props.Dimension,idx);
+                [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.Dimension,idx);
+                [depth  , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.Dimension,idx);
+                [z1     , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.Dimension,idx);
+                [z2     , status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.Dimension,idx);
+                [a      , status] = qp_netcdf_get(FI,FormulaTerms{5,2},Props.Dimension,idx);
+                [href   , status] = qp_netcdf_get(FI,FormulaTerms{6,2},Props.Dimension,idx);
+                [k_c    , status] = qp_netcdf_get(FI,FormulaTerms{7,2},Props.Dimension,idx);
                 K=idx{K_};
                 Z = zeros(szData);
                 for t=1:size(Z,1)
@@ -469,14 +469,14 @@ if ~isempty(Info.Z) && Props.hasCoords
                 if ~isempty(formula)
                    ui_message('warning',sprintf('Formula for %s not implemented',standard_name))
                 end
-                [Z, status] = netcdf_get(FI,CoordInfo,Props.Dimension,idx);
+                [Z, status] = qp_netcdf_get(FI,CoordInfo,Props.Dimension,idx);
                 if signup<0
                     Z=-Z;
                 end
                 Z = expand_hdim(Z,szData,hdim);
         end
     else
-        [Z, status] = netcdf_get(FI,CoordInfo,Props.Dimension,idx);
+        [Z, status] = qp_netcdf_get(FI,CoordInfo,Props.Dimension,idx);
         if signup<0
             Z=-Z;
         end
@@ -890,162 +890,6 @@ end
 
 
 % -----------------------------------------------------------------------------
-function [Data, errmsg] = netcdf_get(FI,var,RequestDims,RequestedSubset)
-errmsg='';
-%
-if isempty(var)
-    errmsg='Variable name is empty.';
-    error(errmsg)
-elseif ischar(var)
-    var = strmatch(var,{FI.Dataset.Name},'exact')-1;
-elseif isstruct(var)
-    var = var.Varid;
-end
-Info = FI.Dataset(var+1);
-varid = Info.Varid;
-if isempty(Info)
-    errmsg=sprintf('Variable ''%s'' not found in file.',Info.Name);
-    error(errmsg)
-end
-%
-rank=Info.Rank;
-N=length(RequestDims);
-permuted=zeros(1,N);
-for d=1:N
-    DName=RequestDims{d};
-    if ~isempty(DName)
-        d_netcdf=strmatch(DName,Info.Dimension,'exact');
-        if isempty(d_netcdf)
-            %
-            % requested dimension does not occur in NetCDF source
-            % use higher dimensions to fill in these dimensions.
-            %
-            rank=rank+1;
-            permuted(d)=rank;
-        else
-            %
-            % requested dimension occurs in NetCDF source
-            %
-            permuted(d)=d_netcdf;
-        end
-    end
-end
-%
-for d=1:Info.Rank
-    if all(permuted~=d)
-        errmsg=sprintf('Dimension ''%s'' of ''%s'' could not be matched to any of the requested dimensions: ',Info.Dimension{d},Info.Name);
-        errmsg=cat(2,errmsg,sprintf('''%s'', ',RequestDims{permuted~=0}));
-        errmsg(end-1:end)=[];
-        error(errmsg)
-    end
-end
-%
-fliporder = ~getpref('SNCTOOLS','PRESERVE_FVD',false);
-%if fliporder
-%   reverse=Info.Rank:-1:1;
-%else
-   reverse=1:Info.Rank;
-%end
-%
-loadtype = 'double';
-if Info.Nctype == nc_char
-    loadtype = 'text';
-end
-if isempty(Info.Dimid)
-    Data = nc_varget(FI.FileName,FI.Dataset(varid+1).Name);
-elseif nargin==3
-    Data = nc_varget(FI.FileName,FI.Dataset(varid+1).Name);
-else
-    %
-    % Convert data subset in QP dimension order to NetCDF dimension order
-    %
-    RS_netcdf=cell(1,Info.Rank);
-    start_coord=zeros(1,Info.Rank);
-    count_coord=zeros(1,Info.Rank);
-    %
-    % The following block selection procedure is inefficient if a relatively
-    % limited number of values is requested compared to full range of
-    % indices, e.g. [1 2 100]
-    %
-    for d=1:N
-        p=permuted(d);
-        if p>0 && p<=Info.Rank
-            RS_netcdf(p)=RequestedSubset(d);
-            start_coord(p)=min(RS_netcdf{p})-1;
-            count_coord(p)=max(RS_netcdf{p})-start_coord(p);
-            RS_netcdf{p}=RS_netcdf{p}-start_coord(p);
-        end
-    end
-    %
-    %if fliporder
-    %    start_coord = fliplr(start_coord);
-    %    count_coord = fliplr(count_coord);
-    %end
-    %
-    Data = nc_varget(FI.FileName,FI.Dataset(varid+1).Name,start_coord,count_coord);
-    if length(count_coord)>1
-        Data = reshape(Data,count_coord);
-    end
-    %Data=Data(RS_netcdf{reverse});
-end
-%
-reverse=[reverse Info.Rank+1:5];
-permuted(permuted==0)=[];
-if length(permuted)>1
-    Data=permute(Data,reverse(permuted));
-end
-%
-if ~isempty(Info.Attribute)
-    Attribs = {Info.Attribute.Name};
-    %
-    missval = strmatch('missing_value',Attribs,'exact');
-    if ~isempty(missval)
-        missval = Info.Attribute(missval).Value;
-        Data(Data==missval)=NaN;
-    end
-    %
-    missval = strmatch('valid_min',Attribs,'exact');
-    if ~isempty(missval)
-        missval = Info.Attribute(missval).Value;
-        Data(Data<missval)=NaN;
-    end
-    %
-    missval = strmatch('valid_max',Attribs,'exact');
-    if ~isempty(missval)
-        missval = Info.Attribute(missval).Value;
-        Data(Data>missval)=NaN;
-    end
-    %
-    missval = strmatch('valid_range',Attribs,'exact');
-    if ~isempty(missval)
-        missval = Info.Attribute(missval).Value;
-        Data(Data<missval(1) | Data>missval(2))=NaN;
-    end
-    %
-    missval = strmatch('_FillValue',Attribs,'exact');
-    if ~isempty(missval)
-        missval = Info.Attribute(missval).Value;
-        if missval>0
-            Data(Data>=missval)=NaN;
-        else
-            Data(Data<=missval)=NaN;
-        end
-    else
-        % NCL standard or general standard?
-        % The following are the default settings for _FillValue by type: 
-        %
-        switch Info.Datatype
-            case 'short'
-                Data(Data<=-32767)=NaN;
-            case 'int'
-                Data(Data<=-2147483647)=NaN;
-            case {'float','double'}
-                Data(Data>=9.9692099683868690e+36)=NaN;
-        end
-    end
-end
-
-
 function Coord = expand_hdim(Coord,szData,hdim)
 szC = size(Coord);
 if length(szC)<length(hdim)
