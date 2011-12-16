@@ -91,6 +91,7 @@ Set.print_method              = 2;
 Set.print_DPI                 = 150;
 Set.print_colour              = 1;
 Set.print_inverthardcopy      = 1;
+Set.organizationname          = 'Deltares';
 if isfield(Set,param)
     val=getfield(Set,param);
 elseif ~iscell(defval)

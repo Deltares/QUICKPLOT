@@ -32,12 +32,12 @@ function qp_figurebars(fig)
 %   $Id$
 
 m1=qp_uimenu(fig,'&File', ...
-    {'newfigure','&New...',1,1,0,'N'
-    'openfigure','&Open...',1,1,0,'O'
-    'savefigure','&Save',1,1,1,'S'
-    'saveasfigure','Save &As...',1,1,0,''
+    {'newfigure','&New Figure...',1,1,0,'N'
+    'openfigure','&Open Figure...',1,1,0,'O'
+    'savefigure','&Save Figure',1,1,1,'S'
+    'saveasfigure','Save Figure &As...',1,1,0,''
     'printfigure','&Print/Export...',1,1,1,'P'
-    'closefigure','&Close',1,1,1,'C'});
+    'closefigure','&Close Figure',1,1,1,'C'});
 set(m1(1),'tag','QuickPlotFile')
 
 m1=qp_uimenu(fig,'&Edit', ...

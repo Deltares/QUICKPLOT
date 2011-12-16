@@ -884,7 +884,7 @@ if ~isempty(basicaxestype)
     else
         dimension3 = PName;
     end
-    setaxesprops(Parent,basicaxestype,dimension1,dimension2,dimension3);
+    setaxesprops(Parent,Ops.axestype,dimension1,dimension2,dimension3);
 end
 %==========================================================================
 % End of actual plotting

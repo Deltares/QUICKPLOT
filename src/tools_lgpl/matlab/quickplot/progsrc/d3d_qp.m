@@ -1465,7 +1465,7 @@ try
                             Props.MNK=1.5;
                         end
                         switch Ops.presentationtype
-                            case {'patches','patches with lines'}
+                            case {'patches','patches with lines','polygons'}
                                 [Chk,data,Info]=qp_getdata(Info,DomainNr,Props,'gridcelldata',subf{:},selected{:});
                             otherwise
                                 [Chk,data,Info]=qp_getdata(Info,DomainNr,Props,'griddata',subf{:},selected{:});
@@ -1955,7 +1955,10 @@ try
         case 'update_addtoplot'
             qv=findobj(mfig,'tag','quickview');
             atp= findobj(mfig,'tag','addtoplot');
-            if ~isempty(UD.PlotMngr.CurrentAxes) && ishandle(UD.PlotMngr.CurrentAxes) && strcmp(get(qv,'enable'),'on')
+            multi = get(UD.PlotMngr.FigAll,'value') | get(UD.PlotMngr.AxAll,'value');
+            if ~multi && ~isempty(UD.PlotMngr.CurrentAxes) ...
+                    && ishandle(UD.PlotMngr.CurrentAxes) ...
+                    && strcmp(get(qv,'enable'),'on')
                 axestype=getappdata(UD.PlotMngr.CurrentAxes,'AxesType');
                 %
                 % Temporarily replace Lon-Lat by X-Y.
@@ -2534,7 +2537,8 @@ try
                 'enable',figlistenable,'backgroundcolor',figlistcolour);
             set(UD.PlotMngr.ClsFig,'enable',figlistenable);
             d3d_qp refreshaxs
-            
+            d3d_qp update_addtoplot
+
         case 'refreshaxs'
             FigIDs=get(UD.PlotMngr.FigList,'userdata');
             if isempty(FigIDs)
@@ -2619,6 +2623,7 @@ try
                 'enable',axlistenable,'backgroundcolor',axlistcolour);
             set(UD.PlotMngr.DelAx,'enable',axlistenable);
             d3d_qp refreshitems
+            d3d_qp update_addtoplot
             
         case 'refreshitems'
             AxIDs=get(UD.PlotMngr.AxList,'userdata');
@@ -3884,7 +3889,8 @@ try
                 'gridviewbackgroundcolor','gridviewgridcolor', ...
                 'gridviewselectioncolor','gridviewlandboundarycolor', ...
                 'defaultfigurecolor','gridviewshowindices','changefont', ...
-                'defaultaxescolor','boundingbox','v6zoombehavior'}
+                'defaultaxescolor','boundingbox','v6zoombehavior', ...
+                'organizationname'}
             qp_prefs(UD,mfig,cmd,cmdargs);
             
         case {'deltaresweb','deltaresweboss'}

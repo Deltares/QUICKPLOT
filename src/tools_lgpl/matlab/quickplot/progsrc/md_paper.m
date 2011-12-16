@@ -236,6 +236,13 @@ switch lower(cmd)
 end
 
 
+function organization=getorg
+try
+    organization = qp_settings('organizationname'); 
+catch
+    organization = 'Deltares';
+end
+
 function hBorder=SimpleBorder(Orientation,varargin)
 if ~isempty(varargin)
     if isempty(varargin{1}),
@@ -244,7 +251,7 @@ if ~isempty(varargin)
         PlotText=[varargin{1},' (',locDateStr,')'];
     end
 else
-    PlotText=['Deltares (',locDateStr,')'];
+    PlotText=[getorg ' (',locDateStr,')'];
 end
 %
 [ax,fg,allchld,allax,xmax,ymax,hBorder]=CreateBorderAxes('a4letter',Orientation);
@@ -362,7 +369,7 @@ else
                 1 4 4
                 7 5 6];
             Bold=[0 0 0 0 0 0 1];
-            PlotText={' '  ' '  ' '  ' '  ' '  ' '  'Deltares'};
+            PlotText={' '  ' '  ' '  ' '  ' '  ' '  getorg};
         case {'2box','spankracht'}
             Border=0;
             Margin=[3 1 1 1];

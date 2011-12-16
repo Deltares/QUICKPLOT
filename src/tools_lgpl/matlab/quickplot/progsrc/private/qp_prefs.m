@@ -34,6 +34,11 @@ function qp_prefs(UD,mfig,cmd,cmdargs)
 switch cmd
     case 'preferences'
         qp_preferences_interface;
+        
+    case 'organizationname'
+        orgn=findobj(gcbf,'tag','organizationname');
+        name=deblank2(get(orgn,'string'));
+        qp_settings('organizationname',name);
 
     case 'prefpane'
         currentpane = get(gcbf,'userdata');
@@ -154,5 +159,4 @@ switch cmd
             UICONTROL = findall(figs,'type','uicontrol');
             set(UICONTROL,uicontrolfont)
         end
-        % -------------------------------------- end preferences ------------
 end

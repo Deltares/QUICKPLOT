@@ -370,8 +370,20 @@ if nval==2 | nval==3
             if (multiple(M_) + multiple(N_) == 1) & (multiple(K_) == 1) & MNK
                 Ops.MNK=1;
             end
-        case {'magnitude','angle (radians)','angle (degrees)','x component','y component','z component'}
+        case {'magnitude','x component','y component','z component'}
             vectors=0;
+        case 'angle (radians)'
+            vectors=0;
+            if ~isequal(Ops.units,'**Hide**')
+                actualunits='radians';
+                Ops.units=actualunits;
+            end
+        case 'angle (degrees)'
+            vectors=0;
+            if ~isequal(Ops.units,'**Hide**')
+                actualunits='degrees';
+                Ops.units=actualunits;
+            end
         case {'magnitude in plane','m component','n component','normal component'}
             vectors=0;
             Ops.MNK=1;
