@@ -169,9 +169,13 @@ while (ii < size(CS,2)),
     nl=CS(2,ii);
     ncurves = ncurves + 1;
     I(ncurves) = ii;
-    xp=CS(1,ii+(1:nl));  % First patch
-    yp=CS(2,ii+(1:nl));
-    Area(ncurves)=sum( diff(xp).*(yp(1:nl-1)+yp(2:nl))/2 );
+    if nl==1
+        Area(ncurves) = 0;
+    else
+        xp=CS(1,ii+(1:nl));  % First patch
+        yp=CS(2,ii+(1:nl));
+        Area(ncurves)=sum( diff(xp).*(yp(1:nl-1)+yp(2:nl))/2 );
+    end
     ii = ii + nl + 1;
 end
 
