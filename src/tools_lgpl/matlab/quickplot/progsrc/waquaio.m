@@ -52,6 +52,9 @@ function varargout=waquaio(sds,exper,field,varargin)
 %   * transtat    : concentration station names
 %   * trancrs-u   : u-transport crosssection names
 %   * trancrs-v   : v-transport crosssection names
+%   * mn-transtat : mn-coordinates of conc. station names
+%   * mn-trancrs-u: mn-coordinates of u-transport crosssec.
+%   % mn-trancrs-v: mn-coordinates of v-transport crosssec.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -229,7 +232,8 @@ elseif ismember(field,{'transtat','trancrs-u','trancrs-v', ...
         'z-sbstat','z-sbstati','z-sbstatc','wl-xy', ...
         'q-barp','wl-lbarp','vel-lbarp','wl-hbarp','vel-hbarp', ...
         'vel-barp','hg-barp','enl-barp','sl-bar','gl-bar','wd-bar', ...
-        'barriers','barrierpoints'})
+        'barriers','barrierpoints','mn-transtat','mn-trancrs-u', ...
+        'mn-trancrs-v'})
     stationdata = 1;
 elseif length(field)>8 & strcmp(field(1:8),'stsubst:')
     stationdata = 1;
@@ -318,6 +322,22 @@ switch field
     %
     % -------------------------------------------------------------------
     %
+    case {'mn-transtat','mn-trancrs-u','mn-trancrs-v'}
+        switch field
+            case 'mn-transtat'
+                MN=waqua('readsds',sds,exper,'CHECKPOINTS_TRANS_IPOLPT');
+                MN=reshape(MN,[length(MN)/2 2]);
+            case 'mn-trancrs-u'
+                MN=waqua('readsds',sds,exper,'CHECKPOINTS_TRANS_ICROSU');
+                MN=reshape(MN,[length(MN)/3 3]);
+                MN=MN(:,[1 2 1 3]);
+            case 'mn-trancrs-v'
+                MN=waqua('readsds',sds,exper,'CHECKPOINTS_TRANS_ICROSV');
+                MN=reshape(MN,[length(MN)/3 3]);
+                MN=MN(:,[2 1 3 1]);
+        end
+        varargout = {MN};
+        return
     case {'transtat','trancrs-u','trancrs-v'}
         iconta=waqua('readsds',sds,exper,'CONTROL_TRANS_ICONTA');
         % ref. "substances"
