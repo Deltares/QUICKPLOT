@@ -798,6 +798,8 @@ if (nval==1 && data2d) || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean')
                         end
                     elseif isequal(geometry,'PNT')
                         PrsTps={'markers';'values'};
+                    elseif isequal(geometry,'POLYL')
+                        PrsTps={'polylines'};
                     else
                         PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                     end
@@ -897,6 +899,9 @@ if (nval==1 && data2d) || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean')
         case 'labels'
             plotstexts=1;
             SingleColor=1;
+        case 'polylines'
+            markerflatfill=nval>0;
+            edgeflatcolour=nval>0;
         case 'grid with numbers'
             plotstexts=1;
     end
