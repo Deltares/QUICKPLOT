@@ -166,6 +166,8 @@ switch DataType
         %
         % remove double points
         %
+        NParts = ones(length(XY),1);
+        Start  = zeros(length(XY),1);
         if iscell(XY)
             for i=1:NShp
                 XY{i}(all(abs(diff(XY{i}))<1e-8,2),:)=[]; % remove double values

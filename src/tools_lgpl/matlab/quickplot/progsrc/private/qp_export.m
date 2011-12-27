@@ -779,10 +779,28 @@ for f=1:ntim
                             %
                             shapewrite(filename,xy,cLabels,cv)
                         case 'vector'
-                            x1=get(hNew(2),'xdata')';
-                            y1=get(hNew(2),'ydata')';
-                            x2=get(hNew(3),'xdata')';
-                            y2=get(hNew(3),'ydata')';
+                            x1=get(hNew(2),'xdata');
+                            y1=get(hNew(2),'ydata');
+                            x2=get(hNew(3),'xdata');
+                            y2=get(hNew(3),'ydata');
+                            switch get(hNew(2),'type')
+                               case 'line'
+                                  x1=x1';
+                                  x2=x2';
+                                  y1=y1';
+                                  y2=y2';
+                                  values={};
+                               case 'patch'
+                                  x1=x1(:,1);
+                                  x2=x2(:,1);
+                                  y1=y1(:,1);
+                                  y2=y2(:,1);
+                                  v1=get(hNew(2),'cdata');
+                                  v2=get(hNew(3),'cdata');
+                                  cv=[v1(1:4:end,1);v2(1:3:end,1)];
+                                  UD=get(hNew(3),'userdata');
+                                  values={{UD.PlotState.Ops.vectorcolour} cv};
+                            end
                             xy=[x1 y1; x2 y2];
                             seps=[0;find(isnan(xy(:,1)))];
                             %
@@ -794,7 +812,7 @@ for f=1:ntim
                                 end
                             end
                             %
-                            shapewrite(filename,'polyline',xy_cell);
+                            shapewrite(filename,'polyline',xy_cell,values{:});
                     end
                     delete(TempFg);
             end
