@@ -252,8 +252,9 @@ if ~isempty(Units)
         qp_settings('UnitSystem',systems{system})
         user_units=Units;
         dunit=findobj(OH,'tag','dataunits=!');
-        set(dunit,'enable','inactive', ...
-            'backgroundcolor',Inactive)
+        set(dunit,'backgroundcolor','r') % needed to get next line working properly R2011b
+        set(dunit,'backgroundcolor',Inactive)
+        set(dunit,'enable','inactive')
         set(dunit,'string',user_units)
         actualunits=user_units;
     elseif system==length(systems)
@@ -1192,7 +1193,12 @@ end
 
 if ~isempty(strfind(axestype,'Val'))
     if ~isempty(strfind(Props.Name,'level'))
-        axestype=strrep(axestype,'Val','Z');
+        % only convert to elevation if unit is equivalent to m or
+        % dimensionless
+        if ~ischar(qp_unitconversion(Units,'m')) || ...
+                ~ischar(qp_unitconversion(Units,''))
+            axestype=strrep(axestype,'Val','Z');
+        end
     end
     axestype=strrep(axestype,'Val',['Val [',actualunits,']']);
 end
