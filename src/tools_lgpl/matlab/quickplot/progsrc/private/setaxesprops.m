@@ -31,14 +31,14 @@ function setaxesprops(Parent,FullAxesType,dimension1,dimension2,dimension3)
 %   $HeadURL$
 %   $Id$
 
-AxesType=strtok(FullAxesType);
+AxesType=full2basic_axestype(FullAxesType);
 if ~ishandle(Parent)
 else
     if isappdata(Parent,'AxesType')
         if ~isequal(getappdata(Parent,'AxesType'),FullAxesType)
             warning(sprintf('AxesType mismatch: %s (set) vs. %s (new).',getappdata(Parent,'AxesType'),FullAxesType))
             FullAxesType = getappdata(Parent,'AxesType');
-            AxesType=strtok(FullAxesType);
+            AxesType = full2basic_axestype(FullAxesType);
         end
     end
     if nargin<3
@@ -210,4 +210,14 @@ else
     da = get(Parent,'dataaspectratio');
     da(2) = da(1)*ratio;
     set(Parent,'dataaspectratio',da)
+end
+
+
+function axestype = full2basic_axestype(axestype)
+unitsloc=strfind(axestype,' [');
+for i=length(unitsloc):-1:1
+    unitsclose=strfind(axestype(unitsloc(i):end),']');
+    if ~isempty(unitsclose)
+        axestype(:,unitsloc(i)+(0:max(unitsclose)-1))=[];
+    end
 end

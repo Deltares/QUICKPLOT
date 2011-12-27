@@ -3185,6 +3185,7 @@ try
                 end
             end
             d3d_qp refreshaxs
+            d3d_qp update_addtoplot
             
         case 'selectedaxes'
             AxesHandles=get(UD.PlotMngr.AxList,'userdata');
