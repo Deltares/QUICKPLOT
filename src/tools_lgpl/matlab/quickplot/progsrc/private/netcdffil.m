@@ -767,6 +767,12 @@ for i = length(OutCoords)+(1:length(OutNoCoords))
 end
 %
 for i = 1:length(Out)
+   if strcmp(Out(i).Geom,'PNT')
+      Out(i).Name = [Out(i).Name ' (points)'];
+   end
+end
+%
+for i = 1:length(Out)
     if ~isempty(Out(i).varid)
         Info = FI.Dataset(Out(i).varid(1)+1);
         for j = 1:length(Info.Attribute)

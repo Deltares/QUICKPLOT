@@ -428,7 +428,7 @@ switch subtype
                     z(:,:,:,i) = z1;
                 end
                 %
-                if isfield(FI,'Grid') && isequal(FI.Grid.FileType,'Serafin')
+                if isequal(idx{N_},0) % unstructured data sets
                     z=-z(:,idx{M_},1,idxK_);
                 else
                     z=-z(:,idx{[M_ N_]},idxK_);
@@ -471,7 +471,7 @@ T=[];
 if ~isempty(Props.SubFld)
     elidx(end+1)={Props.SubFld}; % last dimension automatically dropped after reading
 end
-if strcmp(Props.Name,'grid')
+if strcmp(Props.Name,'grid') & ~strcmp(Props.Geom,'POLYG')
     if isequal(FI.FileType,'DelwaqLGA')
         L=FI.Index(:,:,1);
     else
@@ -889,7 +889,8 @@ else
     Type=lower(LocFI.SubType);
 end
 plotfile=0;
-triangular=0;
+includegrid=1;
+enablegridview=1;
 switch Type
     case {'delwaqlga'}
         DataProps={'grid'          ''     '' 'xy'     [0 0 1 1 0]  0         0     ''       'd'   'd'       ''      ''               ''              ''    []       0 0
@@ -978,14 +979,15 @@ switch Type
             if isfield(FI.Grid,'FileType') 
                 switch FI.Grid.FileType
                     case {'Serafin'} % triangular
-                        triangular=1;
+                        includegrid=0;
+                        enablegridview=0;
                         DataProps{3}='TRI';
                         DataProps{4}='xy';
                         DataProps{5}(M_)=6;
                         DataProps{5}(N_)=0;
                         DataProps{6}=0;
                     case {'netCDF'} % polygon bounds
-                        triangular=1;
+                        enablegridview=0;
                         DataProps{3}='POLYG';
                         DataProps{4}='xy';
                         DataProps{5}(M_)=6;
@@ -1393,14 +1395,18 @@ if ~isempty(i)
     %end
     Out=Ins;
 end
-if isfield(FI,'Grid') && ~isempty(FI.Grid) && ~triangular
+if isfield(FI,'Grid') && ~isempty(FI.Grid) && includegrid
     Out=Out([1 1 1 1:length(Out)]);
     Out(1).Name='grid';
     Out(1).Units='';
     Out(1).DimFlag=Out(4).DimFlag;
     Out(1).DimFlag(T_)=0;
     Out(1).DimFlag(K_)=0;
-    Out(1).DataInCell=0;
+    if strcmp(FI.Grid.FileType,'netCDF')
+       Out(1).DataInCell=2;
+    else
+       Out(1).DataInCell=0;
+    end
     Out(1).NVal=0;
     Out(1).SubFld=[];
     Out(1).Loc='d';
@@ -1417,7 +1423,7 @@ if isfield(FI,'Grid') && ~isempty(FI.Grid) && ~triangular
        hask = hask | Out(i).DimFlag(K_);
     end
     %
-    Out(2).DimFlag(K_)=1;
+    Out(2).DimFlag(K_)=hask; %1
     %Out(2).DimFlag(T_)=0; % switch off time, but keep it 3D
     Out(2).DataInCell=1;
     Out(2).NVal=1;
@@ -1460,7 +1466,7 @@ if isPartFile(FI)
 end
 
 % enable GridView
-if (strcmp(subtype,'map') || strcmp(subtype,'plot')) && isfield(FI,'Grid') && ~isempty(FI.Grid) && ~triangular
+if (strcmp(subtype,'map') || strcmp(subtype,'plot')) && isfield(FI,'Grid') && ~isempty(FI.Grid) && enablegridview
    [Out.UseGrid] = deal(1);
 end
 % -----------------------------------------------------------------------------

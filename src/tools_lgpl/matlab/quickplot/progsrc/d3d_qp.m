@@ -3821,6 +3821,7 @@ try
             set(MW.QuickV,'enable','off')
             set(MW.Add2Plot,'enable','off')
             set(UOH,'enable','off','visible','off','backgroundcolor',Inactive)
+            set(findobj(UOH,'tag','dataunits=?'),'value',1)
             set(findobj(UOH,'tag','plotcoordinate=?'),'value',1,'string',{' '})
             set(findobj(UOH,'tag','component=?'),'value',1,'string',{' '})
             set(findobj(UOH,'tag','numformat=?'),'string','%.2f')
@@ -3832,6 +3833,7 @@ try
             set(findobj(UOH,'tag','vecscalem=?'),'value',1)
             set(findobj(UOH,'tag','vectorstyle=?'),'value',1)
             set(findobj(UOH,'tag','1vecunit=?'),'userdata',1,'string','1')
+            set(findobj(UOH,'tag','fillpolygons'),'value',0)
             
             set(findobj(UOH,'tag','linewidth=?'),'userdata',0.5,'string','0.5')
             set(findobj(UOH,'tag','vertscalem=?'),'value',1)

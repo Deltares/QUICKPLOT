@@ -1266,7 +1266,7 @@ if (multiple(M_) & (multiple(N_) | triangles)) & ~multiple(K_) & ~multiple(T_)
     if ~isequal(Ops.presentationtype,'continuous shades')
         ExpTypes{end+1}='ARCview shape';
     end
-elseif strcmp(geometry,'POLYL')
+elseif strcmp(geometry,'POLYL') | strcmp(geometry,'POLYG')
     ExpTypes{end+1}='ARCview shape';
     ExpTypes{end+1}='landboundary file';
 end

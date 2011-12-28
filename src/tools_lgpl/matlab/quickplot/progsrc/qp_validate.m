@@ -49,7 +49,7 @@ end
 currdir=pwd;
 logid=-1;
 logname='validation_log.html';
-sc={'<font color=FF0000>Failed</font>','<font color=00AA00>Successful</font>'};
+sc={'<font color=FF0000>Failed</font> (open <a href="reference">reference folder</a>)','<font color=00AA00>Successful</font>'};
 AnyFail=0;
 NTested=0;
 NFailed=0;
@@ -345,7 +345,10 @@ try
                                     DiffFound = -1;
                                  end
                               else
-                                 DiffFound = -1;
+                                 % new data structure misses some fields
+                                 % that were included in the old
+                                 % (reference) data structure
+                                 DiffFound = 1;
                               end
                            else
                               newfields='';
