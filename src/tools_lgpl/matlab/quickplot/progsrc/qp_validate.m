@@ -141,6 +141,8 @@ try
                ensure_directory('logfiles');
             end
             logs=dir(['logfiles' fs '*.qplog']);
+            logm=dir(['logfiles' fs '*.m']);
+            logs=cat(1,logs,logm);
             %
             % check for reference directory...
             %
