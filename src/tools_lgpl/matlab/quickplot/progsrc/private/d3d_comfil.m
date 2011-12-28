@@ -330,10 +330,13 @@ if DataRead
 
     elidx(~DimFlag(2:end))=[];
     if ~isempty(Props.SubFld) % e.g. sed.fraction
-        if iscell(Props.SubFld)
-            elidx=cat(2,elidx,Props.SubFld); % last dimensions automatically dropped after reading
-        else
-            elidx(end+1)={Props.SubFld}; % last dimension automatically dropped after reading
+       % last dimensions automatically dropped after reading
+       if iscell(Props.SubFld)
+          elidx=cat(2,elidx,Props.SubFld);
+       else
+          for i=1:length(Props.SubFld)
+             elidx(end+1)={Props.SubFld(i)};
+           end
         end
     end
 
