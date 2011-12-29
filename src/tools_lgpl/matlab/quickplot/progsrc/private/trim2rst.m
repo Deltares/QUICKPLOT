@@ -48,53 +48,71 @@ end
 if ischar(trim)
     trim=vs_use(trim);
 end
-if ~isstruct(trim) | ~isfield(trim,'SubType') | ~isequal(trim.SubType,'Delft3D-trim')
+if ~isstruct(trim) || ~isfield(trim,'SubType') || ~isequal(trim.SubType,'Delft3D-trim')
     error('Invalid TRIM-file specified.');
 end
 if ~ischar(rst)
     error('Invalid restart file name specified.');
 end
 
+%
+% decide whether we are going to write a binary tri-rst file or an ascii
+% ini initial conditions file.
+%
+[p,f,e]=fileparts(rst);
+if strcmpi(e,'.ini') && ~strncmpi('tri-rst',f,7)
+    fileformat = 'ini';
+else
+    fileformat = 'rst';
+end
 C=vs_get(trim,'map-series',{i},'*','nowarn');
 
 c={};
 c{1}=C.S1';
 i=1;
 kmax=size(C.U1,3);
-for k=1:kmax,
+for k=1:kmax
     i=i+1;
     c{i}=C.U1(:,:,k)';
 end
-for k=1:kmax,
+for k=1:kmax
     i=i+1;
     c{i}=C.V1(:,:,k)';
 end
-if isfield(C,'R1') & ~isequal(size(C.R1),[1 1])
+if isfield(C,'R1') && ~isequal(size(C.R1),[1 1])
     for s=1:size(C.R1,4)
-        for k=1:kmax,
+        for k=1:kmax
             i=i+1;
             c{i}=C.R1(:,:,k,s)';
         end
     end
 end
-if isfield(C,'RTUR1') & ~isequal(size(C.RTUR1),[1 1])
-    for s=1:size(C.RTUR1,4)
-        for k=1:kmax+1,
-            i=i+1;
-            c{i}=C.RTUR1(:,:,k,s)';
+if strcmp(fileformat,'rst')
+    %
+    % turbulence parameters and HLES depth averaged velocities are only
+    % written to binary restart file
+    %
+    if isfield(C,'RTUR1') && ~isequal(size(C.RTUR1),[1 1])
+        for s=1:size(C.RTUR1,4)
+            for k=1:kmax+1
+                i=i+1;
+                c{i}=C.RTUR1(:,:,k,s)';
+            end
         end
     end
-end
-if isfield(C,'UMNLDF') & ~isequal(size(C.UMNLDF),[1 1]) & ~isempty(C.UMNLDF)
-    i=i+1;
-    c{i}=C.UMNLDF';
-    i=i+1;
-    c{i}=C.VMNLDF';
+    if isfield(C,'UMNLDF') && ~isequal(size(C.UMNLDF),[1 1]) && ~isempty(C.UMNLDF)
+        i=i+1;
+        c{i}=C.UMNLDF';
+        i=i+1;
+        c{i}=C.VMNLDF';
+    else
+        i=i+1;
+        c{i}=0*C.S1';
+        i=i+1;
+        c{i}=0*C.S1';
+    end
+    
+    trirst('write',rst,c{:})
 else
-    i=i+1;
-    c{i}=0*C.S1';
-    i=i+1;
-    c{i}=0*C.S1';
+    wldep('write',rst,'format','%16.7e',c{:})
 end
-
-trirst('write',rst,c{:})

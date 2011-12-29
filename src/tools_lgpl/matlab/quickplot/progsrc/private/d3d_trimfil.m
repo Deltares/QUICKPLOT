@@ -93,7 +93,7 @@ switch cmd
         [XYRead,DataRead,DataInCell]=gridcelldata(cmd);
 end
 
-if DataInCell==0.5 & strcmp(Props.ReqLoc,'z')
+if DataInCell==0.5 && strcmp(Props.ReqLoc,'z')
     DataInCell = 1;
 end
 
@@ -129,7 +129,7 @@ end
 % select appropriate spatial indices ...
 
 %================== NEFIS SPECIFIC CODE ===================================
-if DimFlag(M_)& DimFlag(N_)
+if DimFlag(M_)&& DimFlag(N_)
     sz([M_ N_])=sz([N_ M_]);
     idx([M_ N_])=idx([N_ M_]);
 end
@@ -140,7 +140,7 @@ ind=cell(1,5);
 ind{2}=1;
 for i=[M_ N_ K_]
     if DimFlag(i)
-        if isequal(idx{i},0) | isequal(idx{i},1:sz(i))
+        if isequal(idx{i},0) || isequal(idx{i},1:sz(i))
             idx{i}=1:sz(i);
             allidx(i)=1;
         elseif ~isequal(idx{i},idx{i}(1):idx{i}(end))
@@ -177,7 +177,7 @@ XYRead = XYRead & ~strcmp(Props.Loc,'NA');
 if XYRead
 
     %======================== SPECIFIC CODE ===============================
-    if DimFlag(M_) & DimFlag(N_)
+    if DimFlag(M_) && DimFlag(N_)
         [x,Chk]=vs_get(FI,'map-const','XCOR',idx([M_ N_]),'quiet');
         [y,Chk]=vs_get(FI,'map-const','YCOR',idx([M_ N_]),'quiet');
         %    x((x==0) & (y==0)) = NaN;
@@ -204,7 +204,7 @@ if XYRead
         x=repmat(x,[1 1 1 nk]);
         y=reshape(y,[1 size(y)]);
         y=repmat(y,[1 1 1 nk]);
-    elseif fixedlayers & (DimFlag(K_) | computeDZ)
+    elseif fixedlayers && (DimFlag(K_) || computeDZ)
         [h,Chk]=vs_let(FI,'map-const','ZK','quiet');
         h(1)=-inf;
         h(end)=inf;
@@ -263,9 +263,9 @@ if XYRead
             y=reshape(y,[1 size(y)]);
             y=repmat(y,[1 1 1 length(idxK_)]);
         end
-    elseif DimFlag(K_) & strcmp(Props.Loc3D,'b')
+    elseif DimFlag(K_) && strcmp(Props.Loc3D,'b')
         dp=readdps(FI,idx);
-        if ~DataInCell & length(idx{K_})>1
+        if ~DataInCell && length(idx{K_})>1
             error('Plot type not yet supported for underlayers')
         end
         [dz,Chk]=vs_let(FI,'map-sed-series',{idx{T_}},'THLYR',[idx([M_ N_]) {0}],'quiet');
@@ -380,8 +380,8 @@ if DataRead
         case {'cum. erosion/sedimentation','initial bed level','bed level in water level points','cumulative mass error'}
             DepthInZeta=DataInCell | strcmp(Props.ReqLoc,'z');
     end
-    if isequal(subforig,'s') | isequal(subforig,'sb')
-        if isequal(Props.SubFld,length(subf)) & length(subf)>1
+    if isequal(subforig,'s') || isequal(subforig,'sb')
+        if isequal(Props.SubFld,length(subf)) && length(subf)>1
             Props.SubFld = 1:length(subf)-1;
         end
     end
@@ -394,7 +394,7 @@ if DataRead
     end
 
     elidx(~DimFlag(2:end))=[];
-    if (Props.NVal==0) | DepthInZeta
+    if (Props.NVal==0) || DepthInZeta
         val1=[];
     else
         [val1,Chk]=vs_let(FI,Props.Group,{idx{T_}},Props.Val1,elidx,'quiet');
@@ -421,7 +421,7 @@ if DataRead
         val2=val2+val2r;
         val2r=[];
     end
-    if isequal(subforig,'s') | isequal(subforig,'sb')
+    if isequal(subforig,'s') || isequal(subforig,'sb')
         if length(Props.SubFld)>1
             val1=sum(val1,ndims(val1)); % sum of all fractions
             val2=sum(val2,ndims(val2)); % sum of all fractions
@@ -473,7 +473,7 @@ if DataRead
                 end
             end
         case {'initial bed level','bed level in water level points'}
-            if DepthInZeta, %strcmp(Props.Val1,'DPSED') | DataInCell
+            if DepthInZeta, %strcmp(Props.Val1,'DPSED') || DataInCell
                 val1=readdps(FI,idx,strcmp(Props.Name,'initial bed level'));
                 Props.Loc='z';
             else
@@ -547,7 +547,7 @@ if DataRead
         val3(val3==-999)=NaN;
     end
 
-    if DataInCell & isequal(Props.ReqLoc,'d')
+    if DataInCell && isequal(Props.ReqLoc,'d')
         Props.ReqLoc='z';
     end
     % combine vectors components ...
@@ -555,12 +555,12 @@ if DataRead
         [val1,val2]=dir2uv(val1,val2);
     end
     % data interpolation ...
-    if isequal(Props.Loc,'d') & isequal(Props.ReqLoc,'z')
+    if isequal(Props.Loc,'d') && isequal(Props.ReqLoc,'z')
         val1=interp2cen(val1,'t');
         if ~isempty(val2)
             val2=interp2cen(val2,'t');
         end
-    elseif isequal(Props.Loc,'u') & isequal(Props.ReqLoc,'z')
+    elseif isequal(Props.Loc,'u') && isequal(Props.ReqLoc,'z')
         if fixedlayers
             val1(val1==0)=NaN;
             val2(val2==0)=NaN;
@@ -584,7 +584,7 @@ if DataRead
     end
 
     % combine vectors components ...
-    if isequal(Props.VecType,'u') & Props.MNK<=1
+    if isequal(Props.VecType,'u') && Props.MNK<=1
         % rotate n,m components into x,y direction ...
         [alf,Chk] = vs_get(FI,'map-const','ALFAS',idx([M_ N_]),'quiet');
         if ischar(alf)
@@ -684,7 +684,7 @@ if XYRead
     end
 end
 
-if Props.NVal>0 & ~strcmp(Props.Loc,'NA')
+if Props.NVal>0 && ~strcmp(Props.Loc,'NA')
     szz=[size(val1) 1]; % extent szx for the case that dataset in K dir. is 1
     szz1=szz([1:2 4:end]);
     szz1(2)=szz(2)*szz(3);
@@ -711,11 +711,11 @@ end
 if 1%~all(allidx(DimMask & DimFlag))
     if XYRead
         if DataInCell
-            if DimFlag(M_) & DimFlag(N_) & DimFlag(K_)
+            if DimFlag(M_) && DimFlag(N_) && DimFlag(K_)
                 z=z(:,ind{[M_ N_]},:);
             end
         else
-            if DimFlag(M_) & DimFlag(N_)
+            if DimFlag(M_) && DimFlag(N_)
                 if DimFlag(K_)
                     x=x(:,ind{[M_ N_]},:);
                     y=y(:,ind{[M_ N_]},:);
@@ -744,7 +744,7 @@ end
 
 %================== NEFIS SPECIFIC CODE ===================================
 % permute n and m dimensions into m and n if necessary
-if DimFlag(M_) & DimFlag(N_)
+if DimFlag(M_) && DimFlag(N_)
     perm=[2 1 3];
     if XYRead
         if DimFlag(K_)
@@ -787,7 +787,7 @@ if DimFlag(ST_)
 end
 
 % reshape if a single timestep is selected ...
-if ~DimFlag(T_) | (DimFlag(T_) & isequal(size(idx{T_}),[1 1]))
+if ~DimFlag(T_) || (DimFlag(T_) && isequal(size(idx{T_}),[1 1]))
     sz=size(x); sz=[sz(2:end) 1];
     if DimFlag(K_)
         x=reshape(x,sz);
@@ -820,7 +820,7 @@ if XYRead
     Ans.XUnits='m';
     Ans.YUnits='m';
     Info=vs_disp(FI,'map-const','XZ');
-    if isstruct(Info) & isequal(Info.ElmUnits,'[  DEG  ]')
+    if isstruct(Info) && isequal(Info.ElmUnits,'[  DEG  ]')
         Ans.XUnits='deg';
         Ans.YUnits='deg';
     end
@@ -1053,16 +1053,16 @@ for i=size(Out,1):-1:1
         Info2=[];
     end
     if ~isempty(strmatch('---',Out(i).Name))
-    elseif ~isstruct(Info) | any(Info.SizeDim==0)
+    elseif ~isstruct(Info) || any(Info.SizeDim==0)
         % remove references to non-stored data fields
         Out(i)=[];
-    elseif Out(i).NVal>1 & Out(i).NVal<4 & ~isstruct(Info2)
+    elseif Out(i).NVal>1 && Out(i).NVal<4 && ~isstruct(Info2)
         % remove references to non-stored data fields
         Out(i)=[];
-    elseif isequal(Info.SizeDim,1) & ~strcmp(Out(i).Loc,'NA')
+    elseif isequal(Info.SizeDim,1) && ~strcmp(Out(i).Loc,'NA')
         % remove references to non-stored data fields
         Out(i)=[];
-    elseif strcmp(Out(i).Name,'froude number') | strcmp(Out(i).Name,'head')
+    elseif strcmp(Out(i).Name,'froude number') || strcmp(Out(i).Name,'head')
         Info2=vs_disp(FI,Out(i).Group,'S1');
         if ~isstruct(Info2)
             Out(i)=[];
@@ -1075,7 +1075,7 @@ for i=size(Out,1):-1:1
         end
     elseif strcmp(Out(i).Name,'d.a. velocity fluctuations')
         Info=vs_disp(FI,'map-series','U1');
-        if ~isstruct(Info) | length(Info.SizeDim)<3
+        if ~isstruct(Info) || length(Info.SizeDim)<3
             Out(i)=[];
         elseif ~isequal(Info.SizeDim(3),1) % only for kmax==1
             Out(i)=[];
@@ -1083,13 +1083,13 @@ for i=size(Out,1):-1:1
             Out(i).Val1='U1';
             Out(i).Val2='V1';
         end
-    elseif strcmp(Out(i).Name,'initial bed level') | strcmp(Out(i).Name,'bed level in water level points')
+    elseif strcmp(Out(i).Name,'initial bed level') || strcmp(Out(i).Name,'bed level in water level points')
         [nfltp,Chk]=vs_get(FI,'map-const','DRYFLP','quiet');
         nfltp=lower(deblank(nfltp));
         if isequal(nfltp,'dp')
             Out(i).Loc='z';
             Out(i).ReqLoc='z';
-        elseif isfield(FI,'dps') & isequal(FI.dps,'dp')
+        elseif isfield(FI,'dps') && isequal(FI.dps,'dp')
             Out(i).Loc='z';
             Out(i).ReqLoc='z';
         end
@@ -1115,7 +1115,7 @@ if ischar(lstci), lstci=0; end
 [ltur,Chk]=vs_get(FI,'map-const','LTUR','quiet');
 if ischar(ltur), ltur=0; end
 i=strmatch('--constituents',{Out.Name},'exact');
-if (lstci>0) & ~isempty(i)
+if (lstci>0) && ~isempty(i)
     Ins=Out(i*ones(lstci,1));
     for j=1:lstci
         Ins(j).Name=names{j};
@@ -1125,7 +1125,7 @@ if (lstci>0) & ~isempty(i)
     Out=insstruct(Out,i,Ins);
 end
 i=strmatch('--constituents flux',{Out.Name},'exact');
-if (lstci>0) & ~isempty(i)
+if (lstci>0) && ~isempty(i)
     Ins=Out(i*ones(lstci,1));
     for j=1:lstci
         Ins(j).Name=[names{j} ' flux'];
@@ -1138,7 +1138,7 @@ if (lstci>0) & ~isempty(i)
     Out=insstruct(Out,i,Ins);
 end
 i=strmatch('--constituents cumulative flux',{Out.Name},'exact');
-if (lstci>0) & ~isempty(i)
+if (lstci>0) && ~isempty(i)
     Ins=Out(i*ones(lstci,1));
     for j=1:lstci
         Ins(j).Name=[names{j} ' cumulative flux'];
@@ -1151,7 +1151,7 @@ if (lstci>0) & ~isempty(i)
     Out=insstruct(Out,i,Ins);
 end
 i=strmatch('--turbquant',{Out.Name});
-if (ltur>0) & ~isempty(i)
+if (ltur>0) && ~isempty(i)
     Ins=Out(i*ones(ltur,1));
     for j=1:ltur
         Ins(j).Name=names{lstci+j};
@@ -1191,7 +1191,7 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 sz=[0 0 0 0 0];
 
 %======================== SPECIFIC CODE ===================================
-if Props.DimFlag(M_) & Props.DimFlag(N_)
+if Props.DimFlag(M_) && Props.DimFlag(N_)
     Info=vs_disp(FI,'map-const','XCOR');
     sz([N_ M_])=Info.SizeDim;
 end
@@ -1384,16 +1384,16 @@ for i = size(Out,1):-1:1
         Info2 = vs_disp(FI,Out(i).Group,Out(i).Val2);
     end
     if ~isempty(strmatch('---',Out(i).Name))
-    elseif ~isstruct(Info) | any(Info.SizeDim==0)
+    elseif ~isstruct(Info) || any(Info.SizeDim==0)
         % remove references to non-stored data fields
         Out(i) = [];
-    elseif ~isempty(Out(i).Val2) & ~isstruct(Info2)
+    elseif ~isempty(Out(i).Val2) && ~isstruct(Info2)
         % remove references to non-stored data fields
         Out(i) = [];
-    elseif isequal(Info.SizeDim,1) & ~isempty(Out(i).Stagger)
+    elseif isequal(Info.SizeDim,1) && ~isempty(Out(i).Stagger)
         % remove references to non-stored data fields
         Out(i) = [];
-    elseif strcmp(Out(i).Name,'froude number') | strcmp(Out(i).Name,'head')
+    elseif strcmp(Out(i).Name,'froude number') || strcmp(Out(i).Name,'head')
         Info2 = vs_disp(FI,Out(i).Group,'S1');
         if ~isstruct(Info2)
             Out(i) = [];
@@ -1406,7 +1406,7 @@ for i = size(Out,1):-1:1
         end
     elseif strcmp(Out(i).Name,'d.a. velocity fluctuations')
         Info = vs_disp(FI,'map-series','U1');
-        if ~isstruct(Info) | length(Info.SizeDim)<3
+        if ~isstruct(Info) || length(Info.SizeDim)<3
             Out(i) = [];
         elseif ~isequal(Info.SizeDim(3),1) % only for kmax==1
             Out(i) = [];
@@ -1414,12 +1414,12 @@ for i = size(Out,1):-1:1
             Out(i).Val1 = 'U1';
             Out(i).Val2 = 'V1';
         end
-    elseif strcmp(Out(i).Name,'initial bed level') | strcmp(Out(i).Name,'bed level in cell centers')
+    elseif strcmp(Out(i).Name,'initial bed level') || strcmp(Out(i).Name,'bed level in cell centers')
         [nfltp,Chk] = vs_get(FI,'map-const','DRYFLP','quiet');
         nfltp = lower(deblank(nfltp));
         if isequal(nfltp,'dp')
             Out(i).Stagger = 'Faces2D';
-        elseif isfield(FI,'dps') & isequal(FI.dps,'dp')
+        elseif isfield(FI,'dps') && isequal(FI.dps,'dp')
             Out(i).Stagger = 'Faces2D';
         end
     end
@@ -1452,7 +1452,7 @@ if ischar(ltur)
     ltur = 0;
 end
 i = strmatch('--constituents',{Out.Name},'exact');
-if (lstci>0) & ~isempty(i)
+if (lstci>0) && ~isempty(i)
     Ins = Out(i*ones(lstci,1));
     for j = 1:lstci
         Ins(j).Name = names{j};
@@ -1462,7 +1462,7 @@ if (lstci>0) & ~isempty(i)
     Out = insstruct(Out,i,Ins);
 end
 i = strmatch('--constituents flux',{Out.Name},'exact');
-if (lstci>0) & ~isempty(i)
+if (lstci>0) && ~isempty(i)
     Ins = Out(i*ones(lstci,1));
     for j = 1:lstci
         Ins(j).Name = [names{j} ' flux'];
@@ -1475,7 +1475,7 @@ if (lstci>0) & ~isempty(i)
     Out = insstruct(Out,i,Ins);
 end
 i = strmatch('--constituents cumulative flux',{Out.Name},'exact');
-if (lstci>0) & ~isempty(i)
+if (lstci>0) && ~isempty(i)
     Ins = Out(i*ones(lstci,1));
     for j = 1:lstci
         Ins(j).Name = [names{j} ' cumulative flux'];
@@ -1488,7 +1488,7 @@ if (lstci>0) & ~isempty(i)
     Out = insstruct(Out,i,Ins);
 end
 i = strmatch('--turbquant',{Out.Name});
-if (ltur>0) & ~isempty(i)
+if (ltur>0) && ~isempty(i)
     Ins = Out(i*ones(ltur,1));
     for j = 1:ltur
         Ins(j).Name = names{lstci+j};
@@ -1512,7 +1512,7 @@ for i = 1:length(Out)
 end
 
 Info=vs_disp(FI,'map-const','XZ');
-if isstruct(Info) & isequal(Info.ElmUnits,'[  DEG  ]')
+if isstruct(Info) && isequal(Info.ElmUnits,'[  DEG  ]')
     Out(1).Name = 'longitude';
     Out(1).Unit = 'deg';
     Out(2).Name = 'latitude';
@@ -1690,7 +1690,7 @@ NewFI = FI;
 %
 Info=vs_disp(FI,'map-const','ZK');
 fixedlayers=0;
-if isstruct(Info) & Info.SizeDim>1
+if isstruct(Info) && Info.SizeDim>1
     fixedlayers = 1;
 end
 %
@@ -2109,7 +2109,7 @@ if ischar(Props.SubFld)
     switch Props.SubFld
         case {'s','sb','s1','sb1'}
             Info=vs_disp(FI,'map-const','NAMSED');
-            if isstruct(Info) & ismember(Props.SubFld,{'sb','sb1'})
+            if isstruct(Info) && ismember(Props.SubFld,{'sb','sb1'})
                 [names,Chk]=vs_get(FI,'map-const','NAMSED','quiet');
                 subf=cellstr(names);
             else
@@ -2119,12 +2119,12 @@ if ischar(Props.SubFld)
                 i_sed=strmatch('sediment',lnames);
                 subf=names(i_sed);
             end
-            if length(subf)>1 & Props.SubFld(end)~='1'
+            if length(subf)>1 && Props.SubFld(end)~='1'
                 subf{end+1}='sum of all fractions';
             end
     end
 end
-if nargin>2 & f~=0
+if nargin>2 && f~=0
     subf=subf(f);
 end
 % -------------------------------------------------------------------------
@@ -2228,7 +2228,7 @@ end
 % represent the real initial bed level ... so, we cannot rely on
 % it. If we do, we may come to incorrect conclusions.
 %
-if dps0==0 | dps0==1
+if dps0==0 || dps0==1
     dp0a=readdps(FI,tmpidx);
 end
 %
@@ -2239,7 +2239,7 @@ end
 % by Delft3D. This results in minor scattered differences that may
 % disturb the user ...
 %
-if dps0==0 | dps0==2
+if dps0==0 || dps0==2
     dp0b=readdps(FI,tmpidx,1);
 end
 %
@@ -2296,7 +2296,7 @@ Info2=vs_disp(FI,'map-sed-series','DPSED');
 % first time of the map-sed-series group is equal to 0, but that works only
 % if tstart equals 0 and, thus, an alternative is still needed.
 %
-if isstruct(Info) & ~DP0
+if isstruct(Info) && ~DP0
     %
     % Simple case: read DPS directly
     %
@@ -2349,7 +2349,7 @@ else
     % exist, then we have a very old, rare, TRIM file. In that case use the
     % following approach.
     %
-    if isstruct(Info2) & ~DP0
+    if isstruct(Info2) && ~DP0
         dp0=dp;
         [dp,Chk]=vs_let(FI,'map-sed-series',{idx{T_}},'DPSED',idx([M_ N_]),'quiet');
         if Chk
@@ -2456,7 +2456,10 @@ switch cmd,
         if matlabversionnumber<6
             filterspec='tri-rst.*';
         else
-            filterspec = {'tri-rst.*' 'restart binary file';'trim-*.dat' 'restart map file'};
+            filterspec = ...
+                {'tri-rst.*' 'restart binary file (tri-rst.*)'
+                'trim-*.dat' 'restart map file (trim-*.dat)'
+                '*.ini' 'initial conditions file (*.ini)'};
         end
         [f,p]=uiputfile(filterspec,'Specify restart file name');
         cd(cwd);
@@ -2469,7 +2472,7 @@ switch cmd,
             end
             Ht=findobj(mfig,'tag','Erestart');
             t=get(Ht,'userdata');
-            if ustrcmpi('tri-rst',f)>0 | (ustrcmpi('.dat',e)<0 & ~isempty(e))
+            if ustrcmpi('tri-rst',f)>0 || (ustrcmpi('.dat',e)<0 && ~isempty(e))
                 trim2rst(FI,t,pf);
             else
                 pf = fullfile(p,f);
@@ -2526,7 +2529,7 @@ switch cmd,
         t=round(t);
         Info=vs_disp(FI,'map-series',[]);
         Nt=Info.SizeDim;
-        if t<0 | t>Nt
+        if t<0 || t>Nt
             t=get(Ht,'userdata');
         end
         set(Ht,'string',sprintf('%i',t),'userdata',t)

@@ -1294,10 +1294,19 @@ if ~isempty(ExpTypes)
     pet=get(expt,'value');
     petStr=pExpTypes{pet};
     et=strmatch(petStr,ExpTypes,'exact');
-    if isempty(et),
+    if isempty(et)
         et=1;
     end
     set(expt,'enable','on','value',1,'string',ExpTypes,'value',et,'backgroundcolor',Active);
+    %
+    switch ExpTypes{et}
+        case {'QuickIn file','-QuickIn file'}
+            set(findobj(OH,'tag','expformat'),'enable','on');
+            expf=findobj(OH,'tag','expformat=?');
+            set(expf,'enable','on');
+            Ops.expformat=get(expf,'string');
+    end
+    %
     set(findobj(OH,'tag','exportdata'),'enable','on');
     Ops.exporttype=ExpTypes{et};
 end

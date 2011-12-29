@@ -386,7 +386,7 @@ for f=1:ntim
             end
             switch expType
                 case 'quickin file'
-                    wldep('write',filename,expdata);
+                    wldep('write',filename,'format',Ops.expformat,expdata);
                 case 'delft3d-mor field file'
                     wlfdep('write',filename,expdata.Data);
                 case 'simona box file'

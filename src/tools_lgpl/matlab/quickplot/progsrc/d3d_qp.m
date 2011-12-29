@@ -1750,8 +1750,8 @@ try
                 writelog(logfile,logtype,cmd,get(cb,'value'));
             end
             
-        case {'numformat'}
-            cv=findobj(UOH,'tag','numformat=?');
+        case {'numformat','expformat'}
+            cv=findobj(UOH,'tag',[cmd '=?']);
             if isempty(cmdargs)
                 Str=get(cv,'string');
             else
@@ -3875,6 +3875,7 @@ try
             set(findobj(UOH,'tag','colbarhorz'),'value',0)
             set(findobj(UOH,'tag','clippingvals=?'),'userdata',-999,'string','-999')
             set(findobj(UOH,'tag','exporttype=?'),'value',1,'string',{' '})
+            set(findobj(UOH,'tag','expformat=?'),'string','%16.7e')
             
             d3d_qp updatedomains
             
