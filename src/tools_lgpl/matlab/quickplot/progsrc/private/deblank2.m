@@ -35,7 +35,7 @@ function s1 = deblank2(s)
 %   $HeadURL$
 %   $Id$
 
-if ~isempty(s) & ~isstr(s) & ~iscellstr(s)
+if ~isempty(s) & ~ischar(s) & ~iscellstr(s)
     warning('Input must be a string.')
 end
 
