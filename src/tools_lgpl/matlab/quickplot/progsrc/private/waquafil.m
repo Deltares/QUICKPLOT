@@ -547,6 +547,11 @@ else
     error('Unknown SDS type: cannot locate grid dimension characteristics.')
 end
 %
+maxmin_quant = {'time','water level','velocity in m direction','velocity in n direction','velocity magnitude','salinity','temperature','constituent concentration','velocity in x direction','velocity in y direction'};
+maxmin_var = {'','SEP','UP','VP','MGN','SAL','TEMP','RP'};
+maxmin_qcons = 8;
+maxmin_unit = {'min','m','m/s','m/s','m/s','kg/m^3','degC','','m/s','m/s'};
+nflds = 0;
 if strcmp(sdstype,'TRIWAQ')
     [Subs,SubsUnit]=waquaio(FI,eName,'substances');
     if waqua('exists',FI,eName,'CONTROL_DERIVED_MAXVALUES_INDICES')
@@ -563,11 +568,6 @@ if strcmp(sdstype,'TRIWAQ')
         % to be present. First reset indices, and then recalculate them.
         maxmin = maxmin(1:nflds+3,:,:)~=0;
         maxmin = cumsum(maxmin,1).*maxmin;
-        %
-        maxmin_quant = {'time','water level','velocity in m direction','velocity in n direction','velocity magnitude','salinity','temperature','constituent concentration','velocity in x direction','velocity in y direction'};
-        maxmin_var = {'','SEP','UP','VP','MGN','SAL','TEMP','RP'};
-        maxmin_qcons = 8;
-        maxmin_unit = {'min','m','m/s','m/s','m/s','kg/m^3','degC','','m/s','m/s'};
     end
 end
 %
@@ -622,47 +622,49 @@ for j=1:length(Out1)
                 end
                 OutIn = [];
             case {'--maxmin'}
-                var = OutIn.Char(28:end);
-                f = strmatch(var,maxmin_var,'exact');
-                MAMI_upper = OutIn.Char(18:20);
-                MAMI_lower = lower(OutIn.Char(18:20));
-                MAMI_index = strmatch(MAMI_upper,{'MAX','MIN'});
-                for f2 = 1:nflds+3
-                    if f2==maxmin_qcons
-                        cf2 = length(Subs);
-                    else
-                        cf2 = 1;
-                    end
-                    for c2 = 1:cf2
-                        if maxmin(f2,f-1,MAMI_index)>0 % note shift in second dimension because 'time' is not included in second dimension
-                            if f==f2
-                                if f==maxmin_qcons
-                                    if c==c2
-                                        OutIn.Name  = [MAMI_lower,'imum ',Subs{c}];
-                                        OutIn.Units = SubsUnit{c};
+                if nflds>0
+                    var = OutIn.Char(28:end);
+                    f = strmatch(var,maxmin_var,'exact');
+                    MAMI_upper = OutIn.Char(18:20);
+                    MAMI_lower = lower(OutIn.Char(18:20));
+                    MAMI_index = strmatch(MAMI_upper,{'MAX','MIN'});
+                    for f2 = 1:nflds+3
+                        if f2==maxmin_qcons
+                            cf2 = length(Subs);
+                        else
+                            cf2 = 1;
+                        end
+                        for c2 = 1:cf2
+                            if maxmin(f2,f-1,MAMI_index)>0 % note shift in second dimension because 'time' is not included in second dimension
+                                if f==f2
+                                    if f==maxmin_qcons
+                                        if c==c2
+                                            OutIn.Name  = [MAMI_lower,'imum ',Subs{c}];
+                                            OutIn.Units = SubsUnit{c};
+                                        else
+                                            OutIn.Name  = [Subs{c2},' at ',MAMI_lower,'imum ',Subs{c}];
+                                            OutIn.Units = SubsUnit{c2};
+                                        end
                                     else
-                                        OutIn.Name  = [Subs{c2},' at ',MAMI_lower,'imum ',Subs{c}];
-                                        OutIn.Units = SubsUnit{c2};
+                                        OutIn.Name  = [MAMI_lower,'imum ',maxmin_quant{f}];
+                                        OutIn.Units = maxmin_unit{f};
                                     end
                                 else
-                                    OutIn.Name  = [MAMI_lower,'imum ',maxmin_quant{f}];
-                                    OutIn.Units = maxmin_unit{f};
+                                    if f==maxmin_qcons
+                                        OutIn.Name  = [maxmin_quant{f2},' at ',MAMI_lower,'imum ',Subs{c}];
+                                        OutIn.Units = maxmin_unit{f2};
+                                    elseif f2==maxmin_qcons
+                                        OutIn.Name  = [Subs{c2},' at ',MAMI_lower,'imum ',maxmin_quant{f}];
+                                        OutIn.Units = SubsUnit{c2};
+                                    else
+                                        OutIn.Name  = [maxmin_quant{f2},' at ',MAMI_lower,'imum ',maxmin_quant{f}];
+                                        OutIn.Units = maxmin_unit{f2};
+                                    end
                                 end
-                            else
-                                if f==maxmin_qcons
-                                    OutIn.Name  = [maxmin_quant{f2},' at ',MAMI_lower,'imum ',Subs{c}];
-                                    OutIn.Units = maxmin_unit{f2};
-                                elseif f2==maxmin_qcons
-                                    OutIn.Name  = [Subs{c2},' at ',MAMI_lower,'imum ',maxmin_quant{f}];
-                                    OutIn.Units = SubsUnit{c2};
-                                else
-                                    OutIn.Name  = [maxmin_quant{f2},' at ',MAMI_lower,'imum ',maxmin_quant{f}];
-                                    OutIn.Units = maxmin_unit{f2};
-                                end
+                                OutIn.WaqIO = sprintf('%s-%i',OutIn.Char,maxmin(f2,f-1,MAMI_index));
+                                i=i+1;
+                                Out(i)=OutIn;
                             end
-                            OutIn.WaqIO = sprintf('%s-%i',OutIn.Char,maxmin(f2,f-1,MAMI_index));
-                            i=i+1;
-                            Out(i)=OutIn;
                         end
                     end
                 end
