@@ -99,6 +99,10 @@ F={'Delft3D-com'                'd3d_comfil'
     'bil/hdr'                    'bilhdrfil'
     'QP Data Resource Object'    'resourceobject'
     'ecomsed-binary'             'ecomsedfil'
+    'MikeFM mesh'                'flexmeshfil'
+    'EasyMesh mesh'              'flexmeshfil'
+    'Triangle mesh'              'flexmeshfil'
+    'Adcirc 14 mesh'             'flexmeshfil'
     'diff'                       'difffil'
     '<user defined variables>'   'usrdeffil'   };
 
@@ -149,6 +153,7 @@ F={'Delft3D-com'                'd3d_comfil'
 %#function resourceobject
 %#function ecomsedfil
 %#function difffil
+%#function flexmeshfil
 
 tp=qp_gettype(Info);
 %

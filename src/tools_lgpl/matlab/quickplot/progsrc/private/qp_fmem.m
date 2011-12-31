@@ -41,7 +41,7 @@ FileFromCall=0;
 Otherargs={};
 switch cmd
    case {'open','openldb','opennew','openurl'}
-      if strcmp(cmd,'opennew') | strcmp(cmd,'openldb')
+      if strcmp(cmd,'opennew') || strcmp(cmd,'openldb')
          targetdir=varargin{1};
          filterspec='';
       elseif nargin>1
@@ -54,9 +54,9 @@ switch cmd
       DoDS=0;
       if strcmp(cmd,'openurl')
          DoDS=1;
-      elseif length(filterspec)>7 & isequal(lower(filterspec(1:7)),'http://')
+      elseif length(filterspec)>7 && isequal(lower(filterspec(1:7)),'http://')
          DoDS=1;
-      elseif isempty(targetdir) | (exist(targetdir)~=7)
+      elseif isempty(targetdir) || exist(targetdir)~=7
          targetdir=pwd;
       end
       filtertbl={};
@@ -71,7 +71,7 @@ switch cmd
             FileName=filterspec;
          end
          FileFromCall=1;
-      elseif ~isempty(filterspec) & exist(filterspec)==2
+      elseif ~isempty(filterspec) && exist(filterspec)==2
          FileName=filterspec;
          FileFromCall=1;
       else
@@ -80,13 +80,11 @@ switch cmd
             filterspec=[tmpfn,tmpext];
          else
             if strcmp(cmd,'openldb')
-               filtertbl={'*.ldb;*.pol;*.gen;*.bna;*.shp'                 'Land Boundary Files'         'tekal'};
+               filtertbl={'*.ldb;*.pol;*.gen;*.bna;*.shp'                'Land Boundary Files'         'tekal'};
             else
-               filtertbl={'*.dat;*.ada;*.hda'                             'Delft3D Output Files'        'nefis'
-                  '*.grd;*.rgf'                                          'Delft3D Grid Files'          'wlgrid'};
-               
-               filtertbl=cat(1,filtertbl, ...
-                  {'*.bct;*.bcc;*.bcb'                                   'Delft3D-FLOW Bound. Cond. Files' 'bct'
+               filtertbl={'*.dat;*.ada;*.hda'                            'Delft3D Output Files'        'nefis'
+                  '*.grd;*.rgf;*.mesh;*.node;*.ele;*.n;*.e;*.14'         'Delft3D Grid and Other Mesh Files' {'wlgrid','mikemesh','adcircmesh','nodelemesh'}
+                  '*.bct;*.bcc;*.bcb'                                    'Delft3D-FLOW Bound. Cond. Files' 'bct'
                   '*.am?;*.spw;*.wnd'                                    'Delft3D/SOBEK Meteo Files'   'asciiwind'
                   'gcmplt.*;gcmtsr.*'                                    'ECOMSED Binary Files'        'ecomsed-binary'
                   '*.xyz'                                                'Sample Files'                'samples'
@@ -94,7 +92,7 @@ switch cmd
                   'sds-*'                                                'Simona SDS Files'            'waquasds'
                   '*.his;*.map;*.plo;*.psf'                              'Delwaq Binary Files'         'delwaqbin'
                   '*.tim'                                                'Delwaq Time Series Input Files' 'DelwaqTimFile'
-                  '*.arc;*.am?;*.asc'                                    'ARC-Grid Files'              'arcgrid'
+                  '*.arc;*.am?;*.asc'                                    'ARC/INFO Ascii Grid Files'              'arcgrid'
                   '*.tek;*.ann;*.ldb;*.pol;*.spl;*.tka;*.tkp;*.tkf'      'Tekal Data Files'            'tekal'
                   '*.shp;*.ldb;*.pol;*.gen;*.bna'                        'Shape and Land Boundary Files' {'shape','BNA File','ArcInfoUngenerate'}
                   '*.jpg;*.jpeg;*.bmp;*.tif;*.tiff;*.png;*.pcx;*.xwd'    'Bitmap Files'                'bitmap'
@@ -108,7 +106,7 @@ switch cmd
                   '*.seq'                                                'AukePC Files'                'aukepc'
                   '*.stu;*.pst'                                          'JSPost Files'                'JSPost'
                   '*.mat'                                                'MATLAB Files (Exported from QP)' 'matlab'
-               });
+               };
                
                %  '*.dmp'                                                'CFX4 Dump Files'           'CFX dmp'
                [dum,Reorder] = sort(filtertbl(:,2));
@@ -158,22 +156,26 @@ switch cmd
          trytp='morf';
       elseif strmatch('bagdpt',lower(fn))
          trytp='bagdpt';
-      elseif strcmp('gcmplt',lower(fn)) | strcmp('gcmtsr',lower(fn))
+      elseif strcmp('gcmplt',lower(fn)) || strcmp('gcmtsr',lower(fn))
          trytp='ecomsed-binary';
-      elseif strcmp('network.ntw',lower([fn en])) | strcmp('deptop.1',lower([fn en]))
+      elseif strcmp('network.ntw',lower([fn en])) || strcmp('deptop.1',lower([fn en]))
          trytp='sobek1d';
       else
          switch lower(en)
             case {'.grd','.rgf'}
                trytp='wlgrid';
+             case {'.n','.e','.node','.ele'}
+                 trytp='nodelemesh';
+             case {'.14'}
+                 trytp='adcircmesh';
+             case {'.mesh'}
+                 trytp='mikemesh';
             case {'.mat'}
                trytp='matlab';
             case {'.map'}
                trytp='pcraster';
             case {'.his','.plo','.psf','.bal'}
                trytp='delwaqbin';
-            case {'.dt0','.ct0','.dt1','.ct1','.dt2','.ct2','.dfs0','.dfs1','.dfs2','.dfs3'}
-               trytp='mike0';
             case {'.arc','.amc','.amd','.amh','.amp','.amt','.amu','.amv'}
                trytp='arcgrid';
             case {'.spw','.wnd'}
@@ -275,7 +277,7 @@ switch cmd
                   end
                end
                
-               if isfield(FI,'SubType') & (strcmp(FI.SubType,'Delft3D-trim') | strcmp(FI.SubType,'Delft3D-com') | strcmp(FI.SubType,'Delft3D-trih'))
+               if isfield(FI,'SubType') && (strcmp(FI.SubType,'Delft3D-trim') || strcmp(FI.SubType,'Delft3D-com') || strcmp(FI.SubType,'Delft3D-trih'))
                   FI.Options=1;
                end
                trytp='matlab';
@@ -289,7 +291,7 @@ switch cmd
                end
                if ~isempty(FI)
                   f=fieldnames(FI);
-                  if length(f)==1 & strcmp(lower(f{1}),'data')
+                  if length(f)==1 && strcmp(lower(f{1}),'data')
                      FI=getfield(FI,f{1});
                      FI.FileName=FileName;
                      Tp=trytp;
@@ -350,7 +352,7 @@ switch cmd
                catch
                   FI = [];
                end
-               if DoDS & isempty(FI)
+               if DoDS && isempty(FI)
                   trytp='';
                   try1=0;
                else
@@ -448,7 +450,7 @@ switch cmd
                      [pn,fn,fne]=fileparts(FI.FileName);
                      if isequal(lower(fne),'.bal')
                         FI.balancefile=1;
-                     elseif length(FI.FileName)>7 & ...
+                     elseif length(FI.FileName)>7 && ...
                            isequal(lower(FI.FileName(end-6:end)),'bal.his')
                         FI.balancefile=1;
                      end
@@ -521,7 +523,7 @@ switch cmd
                            [gfn,gpn]=uigetfile([mpn filesep '*.grd'],'Select matching grid file ...');
                            gridspec = [gpn gfn];
                         end
-                        if ~ischar(gridspec) | isempty(gridspec)
+                        if ~ischar(gridspec) || isempty(gridspec)
                            error('ASCIIWIND of type ''meteo_on_flow_grid'' requires grid specification.')
                         end
                         FI.Header.grid_file=wlgrid('open',gridspec);
@@ -579,6 +581,33 @@ switch cmd
                   end
                   FI.FileType='wlgrid';
                   FI.Options=1;
+                  Tp=FI.FileType;
+               end
+               trytp='nodelemesh';
+            case 'nodelemesh'
+               try
+                  FI=nodelemesh('open',FileName);
+               end
+               if ~isempty(FI)
+                  FI.Options=0;
+                  Tp=FI.FileType;
+               end
+               trytp='adcircmesh';
+            case 'adcircmesh'
+               try
+                  FI=adcircmesh('open',FileName);
+               end
+               if ~isempty(FI)
+                  FI.Options=0;
+                  Tp=FI.FileType;
+               end
+               trytp='mikemesh';
+            case 'mikemesh'
+               try
+                  FI=mikemesh('open',FileName);
+               end
+               if ~isempty(FI)
+                  FI.Options=0;
                   Tp=FI.FileType;
                end
                trytp='tekal';
@@ -711,7 +740,7 @@ switch cmd
                   FI=bct_io('read',FileName);
                end
                if ~isempty(FI)
-                  if ~isfield(FI,'Check') | strcmp(FI.Check,'NotOK')
+                  if ~isfield(FI,'Check') || strcmp(FI.Check,'NotOK')
                      FI=[];
                   else
                      Tp='Bct';
@@ -767,7 +796,7 @@ switch cmd
                try
                   FI=imfinfo(FileName);
                end
-               if ~isempty(FI) & isstruct(FI)
+               if ~isempty(FI) && isstruct(FI)
                   FI_temp.FileInfo=FI;
                   FI=FI_temp;
                   FI_temp=[];
@@ -776,7 +805,7 @@ switch cmd
                   %
                   i=find(ismember(FileName,'1234567890'));
                   slash=max(find(FileName==filesep));
-                  if ~isempty(i) & slash<max(i)
+                  if ~isempty(i) && slash<max(i)
                      lasti = max(i);
                      firsti = lasti;
                      while ismember(firsti-1,i)
@@ -829,7 +858,7 @@ switch cmd
                      fclose(fid);
                      if length(Coords)==6
                         FI.Loc = [Coords(5)-Coords(1)/2 Coords(6)-Coords(4)/2+Coords(4)*FI.FileInfo.Height Coords(1)*FI.FileInfo.Width -Coords(4)*FI.FileInfo.Height];
-                        if Coords(2)~=0 | Coords(3)~=0
+                        if Coords(2)~=0 || Coords(3)~=0
                            ui_message('warning',{'Bitmap distortion not yet supported.','Distortion factors reset to 0.'})
                         end
                      end
@@ -952,7 +981,7 @@ switch cmd
                ui_message('error',sprintf('Error while opening\n%s\nas %s:\n%s',FileName,usertrytp,lasterr))
             end
             break
-         elseif ~try1 & isempty(trytp)
+         elseif ~try1 && isempty(trytp)
             if isempty(filtertbl)
                if DoDS
                   Message=sprintf('Error while opening\n%s\nUnable to make connection.',FileName);
