@@ -2,6 +2,7 @@
 %   Private functions.
 %
 % Data data access functions
+%   adcircmesh                  - Read an Adcirc fort.14 mesh topology file.
 %   ai_ungen                    - Read/write ArcInfo (un)generate files.
 %   arcgrid                     - Read/write operations for arcgrid files.
 %   asciiwind                   - Read operations for ascii wind files.
@@ -18,6 +19,7 @@
 %   delwaqt0                    - Parse Delwaq T0 string.
 %   dbase                       - Read data from a dBase file.
 %   delwaqtimfile               - Reads in a Delwaq .tim input file (Lex Yacc type).
+%   flexmeshfil                 - QP support for various unstructured mesh files.
 %   fls                         - Read Delft-FLS and SOBEK2D incremental files.
 %   getlds                      - Get LDS information from SDS file.
 %   grib_disp                   - Display meta-info from grib file
@@ -28,10 +30,13 @@
 %   jspost                      - Read JSPost files.
 %   map2golder                  - Convert bed stratigraphy into Golder input file.
 %   mike                        - Read/write DHI Mike files.
+%   mikemesh                    - Read a DHI Mike FM mesh topology file.
 %   morf                        - Read Delft3D-MOR morf files.
 %   nc_interpret                - Interpret the netCDF data based on conventions.
+%   nodelemesh                  - Read a node/element mesh topology files.
 %   pcraster                    - Read/write PC-Raster files.
 %   qnhls                       - Read/write Quickin HLS files.
+%   qp_netcdf_get               - Get data from netcdf file and reshape.
 %   read_ecom_corners           - Read ECOMSED corners grid file.
 %   read_ecom_modelgrid         - Read ECOMSED grid file.
 %   readswan                    - Read SWAN 1D and 2D spectral files.

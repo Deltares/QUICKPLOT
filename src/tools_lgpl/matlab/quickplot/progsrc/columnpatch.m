@@ -1,5 +1,5 @@
 function hOut = columnpatch(X,Y,Val)
-%   COLUMNPATH Create stacked patches plot.
+%COLUMNPATCH Create stacked patches plot.
 %   COLUMNPATCH(X,Y,C) adds a series of patches to the current axes, one
 %   patch for every value of M x N matrix C. The patches will be ordered in
 %   columns; the corresponding data may be stored per column or row. If the

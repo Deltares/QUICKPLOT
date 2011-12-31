@@ -102,12 +102,15 @@
 %   calldll             - Calls a DLL.
 %   cellarea            - Compute surface area of grid cells.
 %   clrmap              - Creates a colormap based on a few colors.
+%   columnpatch         - Create stacked patches plot.
 %   convertnval         - Convert NVal between string and number.
 %   dimprint            - Convert dimension structure into string for printing.
 %   face2surf           - Construct surface data from values at patch face centers.
 %   grib                - Read GRIB files. (BETA VERSION)
+%   isenvironment       - Checks the code evaluation environment.
 %   matlabversionnumber - Obtain the MATLAB version number.
 %   md_colormap         - Colour map editor.
+%   pathdistance        - Computes the distance along a path.
 %   printdims           - Display dimension information.
 %   qck_anim            - Helper function for QuickPlot Animations.
 %   qp_colorbar         - Display color bar (color scale).
@@ -130,4 +133,4 @@
 %   qpsi                - Get tag object of the current QuickPlot item.
 %   tricontourf         - Filled contour plot for triangulated data.
 %   waquaio             - Read SIMONA SDS file.
-%   waqfil              - Read various Delwaq files.
+%   waqfil              - Read various Delwaq binary files.
