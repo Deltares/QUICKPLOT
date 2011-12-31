@@ -9,7 +9,7 @@ function Info=bct_io(cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %
-%   Copyright (C)  Stichting Deltares, 2011.
+%   Copyright (C) 2011-2012 Stichting Deltares.
 %
 %   This library is free software; you can redistribute it and/or
 %   modify it under the terms of the GNU Lesser General Public

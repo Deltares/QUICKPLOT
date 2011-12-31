@@ -6,7 +6,7 @@ function [xo,yo]=int_lnln(x1,y1,x2,y2,path)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C)  Stichting Deltares, 2011.                                     
+%   Copyright (C) 2011-2012 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   

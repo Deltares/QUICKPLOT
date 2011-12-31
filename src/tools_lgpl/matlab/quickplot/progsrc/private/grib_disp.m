@@ -12,43 +12,37 @@ function grib_disp(FI,varargin)
 %   * type: 'disp'  display all meta-info from grib file
 %           'list'  generate list with one line per block
 %
-% See also: GRIB, GRIB_FIND
+%   See also: GRIB, GRIB_FIND
 
-%% Copyright
-%   --------------------------------------------------------------------
-%   Copyright (C) 2006-2009 Deltares
-%       Gerben de Boer
-%
-%       gerben.deboer@deltares.nl	
-%
-%       Deltares
-%       P.O. Box 177
-%       2600 MH Delft
-%       The Netherlands
-%
-%   This library is free software: you can redistribute it and/or
-%   modify it under the terms of the GNU Lesser General Public
-%   License as published by the Free Software Foundation, either
-%   version 2.1 of the License, or (at your option) any later version.
-%
-%   This library is distributed in the hope that it will be useful,
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-%   Lesser General Public License for more details.
-%
-%   You should have received a copy of the GNU Lesser General Public
-%   License along with this library. If not, see <http://www.gnu.org/licenses/>.
-%   --------------------------------------------------------------------
-
-%% Version <http://svnbook.red-bean.com/en/1.5/svn.advanced.props.special.keywords.html>
-% changed G.J. de Boer(g.j.deboer@tudelft.nl) 11th March 2006
-
-% $Id$
-% $Date$
-% $Author$
-% $Revision$
-% $HeadURL$
-% $Keywords: $
+%----- LGPL --------------------------------------------------------------------
+%                                                                               
+%   Copyright (C) 2011-2012 Stichting Deltares.                                     
+%                                                                               
+%   This library is free software; you can redistribute it and/or                
+%   modify it under the terms of the GNU Lesser General Public                   
+%   License as published by the Free Software Foundation version 2.1.                         
+%                                                                               
+%   This library is distributed in the hope that it will be useful,              
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of               
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU            
+%   Lesser General Public License for more details.                              
+%                                                                               
+%   You should have received a copy of the GNU Lesser General Public             
+%   License along with this library; if not, see <http://www.gnu.org/licenses/>. 
+%                                                                               
+%   contact: delft3d.support@deltares.nl                                         
+%   Stichting Deltares                                                           
+%   P.O. Box 177                                                                 
+%   2600 MH Delft, The Netherlands                                               
+%                                                                               
+%   All indications and logos of, and references to, "Delft3D" and "Deltares"    
+%   are registered trademarks of Stichting Deltares, and remain the property of  
+%   Stichting Deltares. All rights reserved.                                     
+%                                                                               
+%-------------------------------------------------------------------------------
+%   http://www.deltaressystems.com
+%   $HeadURL$
+%   $Id$
 
 % TO DO: optionally write disp or list to file rather than to screen
 
