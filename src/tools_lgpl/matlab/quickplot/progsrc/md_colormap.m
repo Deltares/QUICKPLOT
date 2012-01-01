@@ -286,6 +286,7 @@ switch cmd
         end
     case 'name'
         S.Name=get(gcbo,'string');
+        setappdata(gcbo,'NameChanged',1)
     case 'colorspace'
         spaces=get(gcbo,'string');
         value=get(gcbo,'value');
@@ -343,11 +344,20 @@ switch cmd
             f=[f '.clrmap'];
         end
         filename=[p f];
+        %
+        Nm=findobj(F,'tag','name');
+        if ~getappdata(Nm,'NameChanged')
+            [pp,ff,ee]=fileparts(f);
+            S.Name = ff;
+        end
+        %
         try
             clrmap('write',filename,S);
         catch
             ui_message('error',lasterr);
         end
+        set(Nm,'string',S.Name)
+        setappdata(Nm,'NameChanged',0)
         return
     case 'export'
         [f,p]=uiputfile('*.hls');
@@ -435,6 +445,7 @@ switch cmd
         Un=findobj(F,'tag','uniform');
         set(Un,'value',uniform)
         Nm=findobj(F,'tag','name');
+        setappdata(Nm,'NameChanged',0)
         if isfield(S,'Name')
             set(Nm,'string',S.Name);
         else
@@ -763,7 +774,7 @@ uicontrol('Parent',h0, ...
     'Horizontalalignment','left', ...
     'Style','text', ...
     'Enable','on');
-uicontrol('Parent',h0, ...
+Nm = uicontrol('Parent',h0, ...
     'BackgroundColor',Active, ...
     'Callback','md_colormap name', ...
     'Position',[51 voffset 330 20], ...
@@ -772,7 +783,7 @@ uicontrol('Parent',h0, ...
     'Style','edit', ...
     'Enable','on', ...
     'tag','name');
-
+setappdata(Nm,'NameChanged',0)
 %=====
 
 if matlabversionnumber > 5.01
