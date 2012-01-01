@@ -154,7 +154,37 @@ if waqua('exists',sds,exper,'MESH_IDIMEN')
     dim.kmax=dimen(18);
     dim.sz=[dim.nmax dim.mmax];
     dim.npnt=dimen(5);
-else
+elseif waqua('exists',sds,exper,'MESH01_GENERAL_DIMENSIONS')
+    dimen=waqua('readsds',sds,exper,'MESH01_GENERAL_DIMENSIONS');
+    %  1: typgrd
+    %  2: ndim2
+    %  3: mmax
+    %  4: nmax
+    %  5: kmax
+    %  6: npoint
+    %  7: ncel
+    %  8: typcel
+    %  9: typcoor
+    % 10: inpelm
+    % 11: mettyp : 0=cart (planar), 1=sph, 10=rot pole
+    % 13: itmzon
+    % 14: isumtm
+    % 20: nuspnt
+    % 21: ncurvs
+    % 22: nsurfs
+    % 23: nvols
+    % 24: nelgrp
+    % 25: unique
+    % 26: lennam
+    % 27: namuse
+    % 40: iadlnd
+    % 41: conditions
+    % 42: poscon
+    dim.nmax=dimen(3);
+    dim.mmax=dimen(4);
+    dim.spheric=dimen(11);
+    curvl = 1+2*min(1,dim.spheric);
+ else
     dimen=waqua('readsds',sds,exper,'MESH01_SPECIFIC_IDIMEN');
     %  1: MMAX
     %  2: NMAX
@@ -1041,10 +1071,13 @@ if ~waqua('exists',sds,exper,'MESH_IDIMEN')
             y0 = coords(5);
             dx = coords(1);
             dy = coords(2);
-            lat = coords(8);
-            lon = coords(9);
-            x = x0+repmat(dy*m',1,length(n));
-            y = y0+repmat(dx*n,length(m),1);
+            x = x0+repmat(dx*(m'-1),1,length(n));
+            y = y0+repmat(dy*(n-1),length(m),1);
+            if dim.spheric==10
+               latsp = coords(8);%*1000*pi/180;
+               lonsp = coords(9);%*1000*pi/180;
+               [x,y]=qp_proj_rotatepole(x,y,lonsp,latsp,0);
+            end
             varargout = {x y};
         case {'wind','press'}
             [t,n,m]=local_argin(argin);

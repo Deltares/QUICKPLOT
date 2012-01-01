@@ -194,6 +194,10 @@ if returngrid
                 dj = (0:Grid.Nj-1)/(Grid.Nj-1);
                 %Grid.Di = (Grid.Longitude2-Grid.Longitude1)/(Grid.Ni-1)
                 di = (0:Grid.Ni-1)'/(Grid.Ni-1);
+                lon1
+                lat1
+                (lon2-lon1)*di(2)
+                (lat2-lat1)*dj(2)
                 lat = repmat(lat1+(lat2-lat1)*dj,Grid.Ni,1      );
                 lon = repmat(lon1+(lon2-lon1)*di,1      ,Grid.Nj);
             else
@@ -243,25 +247,7 @@ if returngrid
     
     %% If appropriate, rotate grid
     if Grid.Rotated
-        d2r = pi/180;
-        x = cos(lat*d2r).*cos(lon*d2r);
-        y = cos(lat*d2r).*sin(lon*d2r);
-        z = sin(lat*d2r);
-        %
-        latsp = Grid.LatitudeSP/1000;
-        dlat = latsp + 90;
-        x1 = cos(dlat*d2r)*x - sin(dlat*d2r)*z;
-        y1 = y;
-        z1 = sin(dlat*d2r)*x + cos(dlat*d2r)*z;
-        %
-        lonsp = Grid.LongitudeSP/1000;
-        dlon = lonsp;
-        x = cos(dlon*d2r)*x1 - sin(dlon*d2r)*y1;
-        y = sin(dlon*d2r)*x1 + cos(dlon*d2r)*y1;
-        z = z1;
-        %
-        lon = atan2(y,x)/d2r;
-        lat = atan2(z,sqrt(x.^2+y.^2))/d2r;
+        [lon,lat]=qp_proj_rotatepole(lon,lat,Grid.LongitudeSP/1000,Grid.LatitudeSP/1000,1);
     end
 end
 
