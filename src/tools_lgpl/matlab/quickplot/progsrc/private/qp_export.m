@@ -645,6 +645,12 @@ for f=1:ntim
                             end
                             cLabels={'Min','Max'};
                             %
+                            for i=length(xy):-1:1
+                                if size(xy{i},1)==1
+                                    xy(i) = [];
+                                    cv(i,:) = [];
+                                end
+                            end
                             inside = false(length(xy));
                             s = warning('query','MATLAB:inpolygon:ModelingWorld');
                             warning('off','MATLAB:inpolygon:ModelingWorld')
