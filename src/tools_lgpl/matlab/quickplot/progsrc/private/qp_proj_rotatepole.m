@@ -40,12 +40,12 @@ x = cos(lat*d2r).*cos(lon*d2r);
 y = cos(lat*d2r).*sin(lon*d2r);
 z = sin(lat*d2r);
 %
-rlat = latsp*d2r + pi/2
+rlat = latsp*d2r + pi/2;
 x1 = cos(rlat)*x - sin(rlat)*z;
 y1 = y;
 z1 = sin(rlat)*x + cos(rlat)*z;
 %
-rlon = lonsp*d2r
+rlon = lonsp*d2r;
 x = cos(rlon)*x1 - sin(rlon)*y1;
 y = sin(rlon)*x1 + cos(rlon)*y1;
 z = z1;

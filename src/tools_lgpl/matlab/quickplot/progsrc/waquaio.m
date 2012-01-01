@@ -1071,8 +1071,20 @@ if ~waqua('exists',sds,exper,'MESH_IDIMEN')
             y0 = coords(5);
             dx = coords(1);
             dy = coords(2);
-            x = x0+repmat(dx*(m'-1),1,length(n));
-            y = y0+repmat(dy*(n-1),length(m),1);
+            if strcmp(field,'zgrid')
+                shft = 1.5;
+            else
+                shft = 1;
+            end
+            x = x0+repmat(dx*(m'-shft),1,length(n));
+            y = y0+repmat(dy*(n-shft),length(m),1);
+            if strcmp(field,'zgrid')
+                x([1 end],:) = NaN;
+                y([1 end],:) = NaN;
+            else
+                x(end,:) = NaN;
+                y(end,:) = NaN;
+            end
             if dim.spheric==10
                latsp = coords(8);%*1000*pi/180;
                lonsp = coords(9);%*1000*pi/180;

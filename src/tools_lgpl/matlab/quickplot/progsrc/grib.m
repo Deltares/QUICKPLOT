@@ -194,10 +194,6 @@ if returngrid
                 dj = (0:Grid.Nj-1)/(Grid.Nj-1);
                 %Grid.Di = (Grid.Longitude2-Grid.Longitude1)/(Grid.Ni-1)
                 di = (0:Grid.Ni-1)'/(Grid.Ni-1);
-                lon1
-                lat1
-                (lon2-lon1)*di(2)
-                (lat2-lat1)*dj(2)
                 lat = repmat(lat1+(lat2-lat1)*dj,Grid.Ni,1      );
                 lon = repmat(lon1+(lon2-lon1)*di,1      ,Grid.Nj);
             else
