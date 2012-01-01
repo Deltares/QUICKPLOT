@@ -180,8 +180,8 @@ elseif waqua('exists',sds,exper,'MESH01_GENERAL_DIMENSIONS')
     % 40: iadlnd
     % 41: conditions
     % 42: poscon
-    dim.nmax=dimen(3);
-    dim.mmax=dimen(4);
+    dim.nmax=dimen(4);
+    dim.mmax=dimen(3);
     dim.spheric=dimen(11);
     curvl = 1+2*min(1,dim.spheric);
  else
@@ -1076,14 +1076,14 @@ if ~waqua('exists',sds,exper,'MESH_IDIMEN')
             else
                 shft = 1;
             end
-            x = x0+repmat(dx*(m'-shft),1,length(n));
-            y = y0+repmat(dy*(n-shft),length(m),1);
+            x = x0+repmat(dx*(m-shft),length(n),1);
+            y = y0+repmat(dy*(n'-shft),1,length(m));
             if strcmp(field,'zgrid')
-                x([1 end],:) = NaN;
-                y([1 end],:) = NaN;
+                x(:,[1 end]) = NaN;
+                y(:,[1 end]) = NaN;
             else
-                x(end,:) = NaN;
-                y(end,:) = NaN;
+                x(:,end) = NaN;
+                y(:,end) = NaN;
             end
             if dim.spheric==10
                latsp = coords(8);%*1000*pi/180;
@@ -1093,23 +1093,22 @@ if ~waqua('exists',sds,exper,'MESH_IDIMEN')
             varargout = {x y};
         case {'wind','press'}
             [t,n,m]=local_argin(argin);
-            nm = reshape(1:dim.mmax*dim.nmax,dim.nmax,dim.mmax);
+            nm = reshape(1:dim.mmax*dim.nmax,dim.mmax,dim.nmax)';
             nm = nm(n,m);
-            nm = nm(:);
             %
             nmmax = dim.nmax*dim.mmax;
             switch field
                 case 'wind'
-                    windu = waqua('readsds',sds,exper,'SOLUTION_WIND',t,nm);
+                    windu = waqua('readsds',sds,exper,'SOLUTION_WIND',t,1:nmmax);
                     time = refdate+windu.SimTime/1440;
-                    windu = reshape(windu.Data,[length(m) length(n)]);
-                    windv = waqua('readsds',sds,exper,'SOLUTION_WIND',t,nmmax+nm);
-                    windv = reshape(windv.Data,[length(m) length(n)]);
+                    windu = windu.Data(nm);
+                    windv = waqua('readsds',sds,exper,'SOLUTION_WIND',t,nmmax+(1:nmmax));
+                    windv = windv.Data(nm);
                     varargout = {windu windv time};
                 case 'press'
-                    press = waqua('readsds',sds,exper,'SOLUTION_PRESS',t,nm);
+                    press = waqua('readsds',sds,exper,'SOLUTION_PRESS',t,1:nmmax);
                     time = refdate+press.SimTime/1440;
-                    press = reshape(press.Data,[length(m) length(n)]);
+                    press = press.Data(nm);
                     varargout = {press time};
             end
     end
