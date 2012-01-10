@@ -114,6 +114,11 @@ try
     Values = sscanf(Line,'%i',2);
     nElm = Values(1);
     nNodes = Values(2);
+    if nNodes==0
+       error('Invalid mesh: number of nodes = 0')
+    elseif nElm==0
+       error('Invalid mesh: number of elements = 0')
+    end
     %
     Coords = readmat(fid,4,nNodes,'node coordinates');
     if ~isequal(Coords(1,:),1:nNodes)

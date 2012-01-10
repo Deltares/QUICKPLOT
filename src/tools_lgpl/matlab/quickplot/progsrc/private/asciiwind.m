@@ -266,7 +266,7 @@ while ~feof(fid)
             break
         case ''
             fclose(fid);
-            error('Missing comment symbol or keyword assignment.')
+            error('Error reading line:\n%s\nMissing comment symbol or keyword assignment.',value)
         otherwise
             %value = value;
     end

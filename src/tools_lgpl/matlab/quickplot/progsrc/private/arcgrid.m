@@ -229,15 +229,15 @@ if ~isempty(Times)
             fid=fopen([Structure.FileBase '.' amv],'r');
             if fid>0
                 Structure.Extension=char('AMUV'+lwc([1:3 3]));
+                fclose(fid);
             end
-            fclose(fid);
         case 'amv'
             amu=char('AMU'+lwc);
             fid=fopen([Structure.FileBase '.' amu],'r');
             if fid>0
                 Structure.Extension=char('AMUV'+lwc([1:3 3]));
+                fclose(fid);
             end
-            fclose(fid);
     end
     %
     return
