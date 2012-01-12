@@ -132,7 +132,7 @@ for i=[M_ N_ K_]
     end
 end
 
-if max(idx{T_})>sz(T_) && ~(isequal(idx{T_},1) && sz(T_)==0)
+if ~isempty(idx{T_}) && max(idx{T_})>sz(T_) && ~(isequal(idx{T_},1) && sz(T_)==0)
     error('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_))
 end
 

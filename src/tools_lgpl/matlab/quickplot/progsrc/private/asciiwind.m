@@ -317,8 +317,8 @@ if strcmp(Structure.Header.filetype,'meteo_on_equidistant_grid')
     yllcenter_given = isfield(Structure.Header,'y_llcenter');
     xllcorner_given = isfield(Structure.Header,'x_llcorner');
     yllcorner_given = isfield(Structure.Header,'y_llcorner');
-    xll_given = xllcenter_given || xllcorner_given;
-    yll_given = yllcenter_given || yllcorner_given;
+    xll_given = xllcenter_given | xllcorner_given;
+    yll_given = yllcenter_given | yllcorner_given;
     if ~xll_given
         fclose(fid);
         error('Missing X coordinate data in file "%s"',Structure.FileName)
@@ -470,7 +470,7 @@ fclose(fid);
 %
 if ~vector && ...
         Structure.Header.n_quantity==1 && ...
-        strcmp(F.Header.quantity{1}(2:end),'_wind')
+        strcmp(Structure.Header.quantity{1}(2:end),'_wind')
     [p,f,e] = fileparts(Structure.FileName);
     switch lower(e)
         case '.amu'
