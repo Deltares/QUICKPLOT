@@ -243,7 +243,10 @@ lat = asin(z_grid_eye)*180/pi;
 lon = atan2(y_grid_eye,x_grid_eye)*180/pi;
 
 
-function Structure=Local_open_file(filename)
+function Structure=Local_open_file(filename,vector)
+if nargin<2
+    vector = 0;
+end
 Structure.Check='NotOK';
 Structure.FileType='asciiwind';
 
@@ -464,6 +467,41 @@ Structure.Data(itime+1:end) = [];
 Structure.NVal = nval/Structure.Header.n_quantity;
 Structure.Check = 'OK';
 fclose(fid);
+%
+if ~vector && ...
+        Structure.Header.n_quantity==1 && ...
+        strcmp(F.Header.quantity{1}(2:end),'_wind')
+    [p,f,e] = fileparts(Structure.FileName);
+    switch lower(e)
+        case '.amu'
+            FileName2 = Structure.FileName;
+            FileName2(end) = FileName2(end)+1; %u->v
+        case '.amv'
+            FileName2 = Structure.FileName;
+            FileName2(end) = FileName2(end)-1; %v->u
+    end
+    vector = 1;
+    try
+        S2 = Local_open_file(FileName2,vector);
+        if isequal(S2.Check,'OK')
+            if S2.Header.n_cols~=Structure.Header.n_cols || ...
+                    S2.Header.n_rows~=Structure.Header.n_rows
+                ui_message('','Grid dimensions in wind files for x and y don''t match.')
+            elseif S2.Header.x_llcorner~=Structure.Header.x_llcorner || ...
+                    S2.Header.y_llcorner~=Structure.Header.y_llcorner || ...
+                    S2.Header.dx~=Structure.Header.dx || ...
+                    S2.Header.dy~=Structure.Header.dy
+                ui_message('','Grid locations in wind files for x and y don''t match.')
+            elseif ~isequal(S2.Header.value_pos,Structure.Header.value_pos)
+                ui_message('','Data locations in wind files for x and y don''t match.')
+            elseif ~isequal(S2.Data,Structure.Data)
+                ui_message('','Times in wind files for x and y don''t match.')
+            else
+                Structure.Vector = S2;
+            end
+        end
+    end
+end
 
 
 function Line = fgetl_noncomment(fid)

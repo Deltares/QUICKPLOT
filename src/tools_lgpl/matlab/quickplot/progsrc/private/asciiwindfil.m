@@ -127,13 +127,13 @@ for i=[M_ N_ K_]
             idx{i}=1:sz(i);
             allidx(i)=1;
         elseif ~isequal(idx{i},idx{i}(1):idx{i}(end))
-            error(sprintf('Only scalars or ranges allowed for index %i',i))
+            error('Only scalars or ranges allowed for index %i',i)
         end
     end
 end
 
-if max(idx{T_})>sz(T_) & ~(isequal(idx{T_},1) & sz(T_)==0)
-    error(sprintf('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_)))
+if max(idx{T_})>sz(T_) && ~(isequal(idx{T_},1) && sz(T_)==0)
+    error('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_))
 end
 
 % read grid ...
@@ -165,7 +165,22 @@ if DataRead && Props.NVal>0
         otherwise
             %nothing to do
     end
-    val1 = asciiwind('read',FI,Props.Q,idx{T_},idx{[M_ N_]});
+    val1 = asciiwind('read',FI,Props.Q(1),idx{T_},idx{[M_ N_]});
+    if Props.NVal==2
+        if length(Props.Q)==2
+            val2 = asciiwind('read',FI,Props.Q(2),idx{T_},idx{[M_ N_]});
+        else
+            val2 = asciiwind('read',FI.Vector,1,idx{T_},idx{[M_ N_]});
+        end
+        if strcmp(FI.Header.quantity{Props.Q(1)},'wind_speed') % and direction
+            d2r  = pi/180;
+            val2 = val2*d2r;
+            valx = -val1.*sin(val2);
+            val2 = -val1.*cos(val2);
+            val1 = valx;
+            valx = [];
+        end
+    end
 else
     Props.NVal=0;
 end
@@ -179,6 +194,9 @@ if length(idx{T_}) <= 1
     if DataRead && Props.NVal>0
         szx = [size(val1) 1];
         val1 = reshape(val1,szx(2:end));
+        if ~isempty(val2)
+            val2 = reshape(val2,szx(2:end));
+        end
     end
 end
 
@@ -230,13 +248,46 @@ end
 %
 Out(2+(1:FI.Header.n_quantity)) = Out(3);
 ntimes = length(FI.Data);
+processed = zeros(1,FI.Header.n_quantity);
 for q = 1:FI.Header.n_quantity
+    if processed(q)
+        continue
+    end
     Out(2+q).Name  = FI.Header.quantity{q};
     Out(2+q).Units = FI.Header.unit{q};
     Out(2+q).Q     = q;
     if ntimes==0
         Out(2+q).DimFlag(1) = 0;
     end
+    if isfield(FI,'Vector')
+        Out(2+q).Name = 'wind velocity';
+        Out(2+q).NVal = 2;
+    else
+        switch Out(2+q).Name
+            case 'x_wind'
+                name2 = 'y_wind';
+            case 'y_wind'
+                name2 = 'x_wind';
+            case 'wind_speed'
+                name2 = 'wind_from_direction';
+            otherwise
+                continue
+        end
+        q2 = find(strncmp(name2,FI.Header.quantity,length(name2)));
+        if ~isempty(q2)
+            Out(2+q).Name = 'wind velocity';
+            Out(2+q).NVal = 2;
+            if strcmp(name2,'x_wind')
+                Out(2+q).Q    = [q2 q];
+            else
+                Out(2+q).Q    = [q q2];
+            end
+            processed(q2) = 1;
+        end
+    end
+end
+if any(processed)
+    Out(2+find(processed)) = [];
 end
 %--- set UseGrid options ...
 [Out(:).UseGrid]=deal(1);
