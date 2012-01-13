@@ -82,33 +82,7 @@ switch cmd
             if strcmp(cmd,'openldb')
                filtertbl={'*.ldb;*.pol;*.gen;*.bna;*.shp'                'Land Boundary Files'         'tekal'};
             else
-               filtertbl={'*.dat;*.ada;*.hda'                            'Delft3D Output Files'        'nefis'
-                  '*.grd;*.rgf;*.mesh;*.node;*.ele;*.n;*.e;*.14'         'Delft3D Grid and Other Mesh Files' {'wlgrid','mikemesh','adcircmesh','nodelemesh'}
-                  '*.bct;*.bcc;*.bcb'                                    'Delft3D-FLOW Bound. Cond. Files' 'bct'
-                  '*.am?;*.spw;*.wnd'                                    'Delft3D/SOBEK Meteo Files'   'asciiwind'
-                  'gcmplt.*;gcmtsr.*'                                    'ECOMSED Binary Files'        'ecomsed-binary'
-                  '*.xyz'                                                'Sample Files'                'samples'
-                  '*.nc;*.grib;*.grib1;*.grib2'                          'NetCDF and GRIB Files'       {'NetCDF','grib'}
-                  'sds-*'                                                'Simona SDS Files'            'waquasds'
-                  '*.his;*.map;*.plo;*.psf'                              'Delwaq Binary Files'         'delwaqbin'
-                  '*.tim'                                                'Delwaq Time Series Input Files' 'DelwaqTimFile'
-                  '*.arc;*.am?;*.asc'                                    'ARC/INFO Ascii Grid Files'              'arcgrid'
-                  '*.tek;*.ann;*.ldb;*.pol;*.spl;*.tka;*.tkp;*.tkf'      'Tekal Data Files'            'tekal'
-                  '*.shp;*.ldb;*.pol;*.gen;*.bna'                        'Shape and Land Boundary Files' {'shape','BNA File','ArcInfoUngenerate'}
-                  '*.jpg;*.jpeg;*.bmp;*.tif;*.tiff;*.png;*.pcx;*.xwd'    'Bitmap Files'                'bitmap'
-                  '*.hdr'                                                'BIL/HDR Files'               'bil/hdr'
-                  '*.fun;*.daf'                                          'Unibest Files'               'unibest'
-                  '*.sp1;*.sp2;*.s1d;*.s2d'                              'SWAN Spectral Files'         'SWAN spectral'
-                  '*.slf;*.out;*.res'                                    'Telemac Files'               'telemac'
-                  'DEFTOP.1;NETWORK.NTW;*.inc;*.crs;*.bin'               'Sobek Network and FLS Files' 'sobek1d'
-                  '*.dt0;*.dt1;*.dt2;*.dfs0;*.dfs1;*.dfs2;*.dfs3;*.dfsu' 'Mike Data Files'             'mike0'
-                  '*.map'                                                'PC-Raster Map Files'         'pcraster'
-                  '*.seq'                                                'AukePC Files'                'aukepc'
-                  '*.stu;*.pst'                                          'JSPost Files'                'JSPost'
-                  '*.mat'                                                'MATLAB Files (Exported from QP)' 'matlab'
-               };
-               
-               %  '*.dmp'                                                'CFX4 Dump Files'           'CFX dmp'
+               filtertbl = qp_filefilters('selected');
                [dum,Reorder] = sort(filtertbl(:,2));
                filtertbl=cat(1,filtertbl(Reorder,:),{'*.*','All Files' 'anyfile'});
             end

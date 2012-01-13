@@ -159,4 +159,22 @@ switch cmd
             UICONTROL = findall(figs,'type','uicontrol');
             set(UICONTROL,uicontrolfont)
         end
+        
+    case 'filefilterselection'
+        filsel=findobj(gcbf,'tag','filefilterselection');
+        ifilters=get(filsel,'value');
+        if length(ifilters)>15
+           ui_message('error','For stability reasons, please select at most 15 filters.')
+           % make sure ui_message isn't on top of the preferences dialog
+           set(gcbf,'visible','off') % hide it
+           figure(gcbf) % and show again
+           %
+           set(filsel,'value',get(filsel,'userdata'))
+        else
+           set(filsel,'userdata',ifilters)
+           filters=get(filsel,'string');
+           filterstring=sprintf('"%s",',filters{ifilters});
+           filterstring(end)=[];
+           qp_settings('filefilterselection',filterstring);
+        end
 end

@@ -1,5 +1,17 @@
 function valo=qp_settings(param,val)
 %QP_SETTINGS Routine to store and retreive settings.
+%   VAL = QP_SETTINGS(PARAM,DEFVAL) obtain the value of parameter
+%   Options/PARAM. If no specific value has been set by the user/system
+%   then the default value DEFVAL will be returned. The DEFVAL argument is
+%   optional; if no DEFVAL is provided, the function will result in an
+%   error if no value has been set by the user/system.
+%
+%   VAL = QP_SETTINGS({GRP PARAM},DEFVAL) uses the key in the group GRP
+%   rather than the default group 'Options'.
+%
+%   QP_SETTINGS(PARAM,VAL) set value of parameter Options/PARAM to VAL.
+%
+%   QP_SETTINGS({GRP PARAM},VAL) set value of GRP/PARAM to VAL.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -92,6 +104,7 @@ Set.print_DPI                 = 150;
 Set.print_colour              = 1;
 Set.print_inverthardcopy      = 1;
 Set.organizationname          = 'Deltares';
+Set.filefilterselection       = '"ARC/INFO Ascii Grid Files","Delft3D Grid Files","Delft3D Output Files","Delft3D-FLOW Bound. Cond. Files","Delft3D/SOBEK Meteo Files","Delwaq Binary Files","Delwaq Time Series Input Files","NetCDF Files","Sample Files","Simona SDS Files","Sobek Networks","Tekal Data Files"';
 if isfield(Set,param)
     val=getfield(Set,param);
 elseif ~iscell(defval)
