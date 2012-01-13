@@ -46,6 +46,8 @@ switch cmd
         varargout{1} = Local_open_file(varargin{:});
     case 'read'
         varargout{1} = Local_read_file(varargin{:});
+    case 'merge'
+        varargout{1} = merge_files(varargin{:});
     case 'grid'
         [varargout{1:3}] = Local_get_grid(varargin{:});
     otherwise
@@ -483,23 +485,53 @@ if ~vector && ...
     vector = 1;
     try
         S2 = Local_open_file(FileName2,vector);
-        if isequal(S2.Check,'OK')
-            if S2.Header.n_cols~=Structure.Header.n_cols || ...
-                    S2.Header.n_rows~=Structure.Header.n_rows
-                ui_message('','Grid dimensions in wind files for x and y don''t match.')
-            elseif S2.Header.x_llcorner~=Structure.Header.x_llcorner || ...
-                    S2.Header.y_llcorner~=Structure.Header.y_llcorner || ...
-                    S2.Header.dx~=Structure.Header.dx || ...
-                    S2.Header.dy~=Structure.Header.dy
-                ui_message('','Grid locations in wind files for x and y don''t match.')
-            elseif ~isequal(S2.Header.value_pos,Structure.Header.value_pos)
-                ui_message('','Data locations in wind files for x and y don''t match.')
-            elseif ~isequal(S2.Data,Structure.Data)
+        Structure = merge_files(Structure,S2);
+    end
+end
+
+
+function S = merge_files(S,S2)
+if isequal(S2.Check,'OK')
+    if isequal(S2.Header.quantity{1},S.Header.quantity{1})
+        ui_message('','The two wind files should not both contain: %s.',S.Header.quantity{1})
+    elseif ~isequal(S2.Header.filetype,S.Header.filetype)
+        ui_message('','Grid types of wind files for x and y don''t match.')
+    elseif strcmp(S2.Header.filetype,'meteo_on_equidistant_grid')
+        if S2.Header.n_cols~=S.Header.n_cols || ...
+                S2.Header.n_rows~=S.Header.n_rows
+            ui_message('','Grid dimensions in wind files for x and y don''t match.')
+        elseif S2.Header.x_llcorner~=S.Header.x_llcorner || ...
+                S2.Header.y_llcorner~=S.Header.y_llcorner || ...
+                S2.Header.dx~=S.Header.dx || ...
+                S2.Header.dy~=S.Header.dy
+            ui_message('','Grid locations in wind files for x and y don''t match.')
+        elseif  ~isequal(S2.Header.value_pos,S.Header.value_pos)
+            ui_message('','Data locations in wind files for x and y don''t match.')
+        elseif  ~isequal(S2.Data,S.Data)
+            ui_message('','Times in wind files for x and y don''t match.')
+        else
+            S.Vector = S2;
+        end
+    elseif strcmp(S2.Header.filetype,'meteo_on_curvilinear_grid')
+        if ~isequal(S2.Header.grid_file,S.Header.grid_file)
+            ui_message('','Grids of wind files for x and y don''t match.')
+        else
+            T1 = rmfield(S.Data,'offset');
+            T2 = rmfield(S2.Data,'offset');
+            if ~isequal(T2,T1)
                 ui_message('','Times in wind files for x and y don''t match.')
             else
-                Structure.Vector = S2;
+                % the two grids were proven to be equal; however, since the
+                % two grids were read independently, the data is stored
+                % twice in memory. MATLAB's memory management should
+                % keep only one copy in memory if we do the following:
+                S2.Header.grid_file = S.Header.grid_file;
+                %
+                S.Vector = S2;
             end
         end
+    else
+        S.Vector = S2;
     end
 end
 

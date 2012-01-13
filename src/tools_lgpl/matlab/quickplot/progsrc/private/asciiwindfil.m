@@ -169,8 +169,11 @@ if DataRead && Props.NVal>0
     if Props.NVal==2
         if length(Props.Q)==2
             val2 = asciiwind('read',FI,Props.Q(2),idx{T_},idx{[M_ N_]});
-        else
+        elseif FI.Header.quantity{1}(1)=='x'
             val2 = asciiwind('read',FI.Vector,1,idx{T_},idx{[M_ N_]});
+        else
+            val2 = val1;
+            val1 = asciiwind('read',FI.Vector,1,idx{T_},idx{[M_ N_]});
         end
         if strcmp(FI.Header.quantity{Props.Q(1)},'wind_speed') % and direction
             d2r  = pi/180;

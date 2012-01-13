@@ -82,7 +82,7 @@ switch cmd
             if strcmp(cmd,'openldb')
                filtertbl={'*.ldb;*.pol;*.gen;*.bna;*.shp'                'Land Boundary Files'         'tekal'};
             else
-               filtertbl = qp_filefilters('selected');
+               filtertbl = qp_filefilters('selected+');
                [dum,Reorder] = sort(filtertbl(:,2));
                filtertbl=cat(1,filtertbl(Reorder,:),{'*.*','All Files' 'anyfile'});
             end
@@ -507,6 +507,46 @@ switch cmd
                         Otherargs{1}=gridspec;
                      end
                      Tp=FI.FileType;
+                  end
+                  if FI.Header.n_quantity==1 && ...
+                          strcmp(FI.Header.quantity{1}(2:end),'_wind')
+                      if FileFromCall
+                          if nargin>2
+                              veccomp2=varargin{2};
+                          else
+                              veccomp2='';
+                          end
+                      else
+                          switch lower(FI.Header.quantity{1}(1))
+                              case 'x'
+                                  Y='y';
+                              case 'y'
+                                  Y='x';
+                              otherwise
+                                  Y='';
+                          end
+                          if ~isempty(Y)
+                              ft = qp_filefilters('asciiwind');
+                              ft(2,:) = {'*.*' 'All Files' 'anyfile'};
+                              targetdir=fileparts(FI.FileName);
+                              %
+                              currentdir=pwd;
+                              cd(targetdir);
+                              [gfn,gpn]=uigetfile(ft(:,1:2),sprintf('Select matching %s-component wind file ...',Y));
+                              cd(currentdir);
+                              %
+                              veccomp2 = [gpn gfn];
+                          else
+                              veccomp2 = '';
+                          end
+                      end
+                      if ~isempty(veccomp2)
+                          FI2=asciiwind('open',veccomp2);
+                          FI=asciiwind('merge',FI,FI2);
+                          if isfield(FI,'Vector')
+                              Otherargs{1}=veccomp2;
+                          end
+                      end
                   end
                catch
                   FI=[];
