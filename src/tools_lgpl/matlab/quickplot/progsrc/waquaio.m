@@ -1,6 +1,6 @@
 function varargout=waquaio(sds,exper,field,varargin)
 %WAQUAIO Read SIMONA SDS file.
-%   [...]=WAQUAIO(SDS,'Exp','Field',TStep,Station,M,N,K)
+%   [...]=WAQUAIO(SDS,'Exp','Field',TStep,Station,N,M,K)
 %   supported fields and associated output arguments
 %
 %     FIELD    | OUTPUT ARGUMENTS
@@ -42,9 +42,16 @@ function varargout=waquaio(sds,exper,field,varargin)
 %
 %   * weirs    : udam,vdam,uhgh,vhgh: locations and heights of weirs
 %
-%   * flowstat-wl : waterlevel station names
-%   * wlstat      : waterlevel at station
-%   * flowstat-cur: current station names
+%   * flowstat-wl : water level station names
+%   * xy-wl       : water level station xy coordinates
+%   * wlstat      : water level at station
+%   * flowstat-uv : current station names
+%   * xy-uv       : current station xy coordinates
+%   * uv-stat     : velocity at current station
+%                   (U,V components in X,Y direction)
+%   * uv0-stat    : velocity at current station
+%                   (U,V components direction as on file - depends on
+%                    NO_BACKTRANSFORM keyword in SIMINP file)
 %   * flowcrs-u   : u-discharge crosssection names
 %   * flowcrs-v   : v-discharge crosssection names
 %
@@ -201,7 +208,7 @@ field=lower(field);
 %
 % If non-curvilinear, simplify xyveloc to veloc
 %
-if curvl~=1 & curvl~=3 & strcmp(field,'xyveloc')
+if curvl~=1 && curvl~=3 && strcmp(field,'xyveloc')
     field='veloc';
 end
 
@@ -209,6 +216,9 @@ end
 % Determine whether we are dealing with a 2D or 3D array or a variable at a
 % station. But first, handle the special cases ...
 %
+if isequal(field,'flowstat-cur')
+    field = 'flowstat-uv';
+end
 if isequal(field,'curvl')
     varargout = {curvl};
     return
@@ -256,16 +266,16 @@ elseif isequal(field,'substances')
     end
     return
 elseif ismember(field,{'transtat','trancrs-u','trancrs-v', ...
-        'flowstat-wl','flowstat-cur','flowcrs-u','flowcrs-v', ...
+        'flowstat-wl','flowstat-uv','flowcrs-u','flowcrs-v', ...
         'wlstat','wl-stat','u-stat','v-stat','uv-stat','w-stat', ...
         'mq-stat','cq-stat','z-stat','z-stati','z-statc', ...
-        'z-sbstat','z-sbstati','z-sbstatc','wl-xy', ...
+        'z-sbstat','z-sbstati','z-sbstatc','wl-xy','uv-xy', ...
         'q-barp','wl-lbarp','vel-lbarp','wl-hbarp','vel-hbarp', ...
         'vel-barp','hg-barp','enl-barp','sl-bar','gl-bar','wd-bar', ...
         'barriers','barrierpoints','mn-transtat','mn-trancrs-u', ...
-        'mn-trancrs-v'})
+        'mn-trancrs-v','uv0-stat'})
     stationdata = 1;
-elseif length(field)>8 & strcmp(field(1:8),'stsubst:')
+elseif length(field)>8 && strcmp(field(1:8),'stsubst:')
     stationdata = 1;
 else
     stationdata = 0;
@@ -296,12 +306,12 @@ else
 end
 %
 [day,r]=strtok(itdate);
-day=str2num(day);
+day=str2double(day);
 [month,r]=strtok(r);
 month=ustrcmpi(month,{'jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'});
-[year,r]=strtok(r);
-year=str2num(year);
-if ~(isempty(day) | isempty(month) | isempty(year))
+year=strtok(r);
+year=str2double(year);
+if ~(isempty(day) || isempty(month) || isempty(year))
     refdate=datenum(year,month,day);
 else
     refdate=1;
@@ -395,10 +405,10 @@ switch field
         data=data';
         varargout={data};
 
-    case {'flowstat-wl','flowstat-cur','flowcrs-u','flowcrs-v','wlstat', ...
+    case {'flowstat-wl','flowstat-uv','flowcrs-u','flowcrs-v','wlstat', ...
             'wl-stat','u-stat','v-stat','uv-stat','w-stat','mq-stat', ...
-            'cq-stat','z-stat','z-stati','z-statc', ...
-            'z-sbstat','z-sbstati','z-sbstatc','wl-xy', ...
+            'cq-stat','z-stat','z-stati','z-statc','uv0-stat', ...
+            'z-sbstat','z-sbstati','z-sbstatc','wl-xy','uv-xy', ...
             'q-barp','wl-lbarp','vel-lbarp','wl-hbarp','vel-hbarp', ...
             'vel-barp','hg-barp','enl-barp','sl-bar','gl-bar','wd-bar', ...
             'barriers','barrierpoints'}
@@ -443,19 +453,25 @@ switch field
         end
         barrierfields = {'q-barp','wl-lbarp','wl-hbarp','vel-lbarp','vel-hbarp', ...
             'vel-barp','hg-barp','enl-barp'};
+        statmax=-1;
+        stationi_org = stationi;
         switch field
-            case {'wlstat','wl-stat','wl-xy'}
+            case {'wlstat','wl-stat','wl-xy','uv-xy'}
                 stoffset=0;
                 krange=1;
+                statmax=nowl;
             case 'umag-stat'
                 stoffset=nowl;
                 krange=1+(0:kmax-1)*nocur;
-            case {'u-stat','uv-stat'}
+                statmax=nocur;
+            case {'u-stat','uv-stat','uv0-stat'}
                 stoffset=nowl+nocur*kmax;
                 krange=1+(0:kmax-1)*nocur;
+                statmax=nocur;
             case 'v-stat'
                 stoffset=nowl+nocur*kmax*2;
                 krange=1+(0:kmax-1)*nocur;
+                statmax=nocur;
             case 'mq-stat'
                 stoffset=nowl+nocur*kmax*3;
                 krange=1;
@@ -468,6 +484,7 @@ switch field
                 % cumulative u cross-sections. Add the ntra skip to
                 % the indices for v cross-sections.
                 stationi(stationi>ntra) = stationi(stationi>ntra)+ntra;
+                statmax=ntra+ntrav;
             case 'cq-stat'
                 stoffset=nowl+nocur*kmax*3+ntra;
                 krange=1;
@@ -480,11 +497,13 @@ switch field
                 % instaneous v cross-sections. Add the ntrav skip to
                 % the indices for v cross-sections.
                 stationi(stationi>ntra) = stationi(stationi>ntra)+ntrav;
+                statmax=ntra+ntrav;
             case barrierfields
-                ibar = strmatch(field,barrierfields,'exact');
+                ibar = find(strcmp(field,barrierfields));
                 stoffset=nowl+nocur*kmax*3+ntra*2+ntrav*2+nbaruv*(ibar-1);
                 krange=1;
                 field='barrierdata';
+                statmax=nbaruv;
             case {'sl-bar','gl-bar','wd-bar'}
                 switch field
                     case 'psl-bar'
@@ -506,12 +525,15 @@ switch field
                 krange=1;
                 field='barrierdata';
                 ARRAY='TIMEHISTORIES_FLOW_RRSBAH';
+                statmax=nbaruv;
             case 'w-stat'
                 stoffset=nowl+nocur*kmax*3+ntra*2+ntrav*2+nbaruv*nbarpar+nocur*(kmax+1);
                 krange=1+(0:kmax-1)*nocur;
+                statmax=nocur;
             case {'z-stat','z-stati','z-statc'}
                 stoffset=nowl+nocur*kmax*3+ntra*2+ntrav*2+nbaruv*nbarpar+nocur*(2*kmax+1);
                 krange=1+(0:kmax)*nocur;
+                statmax=nocur;
             case {'z-sbstat','z-sbstati','z-sbstatc'}
                 iconta=waqua('readsds',sds,exper,'CONTROL_TRANS_ICONTA');
                 icontb=waqua('readsds',sds,exper,'CONTROL_TRANS_ICONTB');
@@ -524,9 +546,16 @@ switch field
                 ARRAY='TIMEHISTORIES_TRANS';
                 stoffset=lmax*(nopol*kmax+3*ntra+3*ntrav);
                 krange=1+(0:kmax)*nopol;
+                statmax=nopol;
         end
-        if strcmpi(field(end-1:end),'xy')
-            ARRAY='CHECKPOINTS_FLOW_IWLPT';
+        if stationi_org<1 || stationi_org>statmax || stationi_org~=round(stationi_org)
+            if statmax==0
+                error('Station index %g invalid: no stations for ''%s'' in data file',stationi_org,field)
+            elseif statmax==1
+                error('Station index %g invalid: only one station in data file for ''%s''',stationi_org,field)
+            else
+                error('Station index %g invalid: should be integer in range 1:%i',stationi_org,statmax)
+            end
         end
         switch field
             % nowl       : waterlevels
@@ -538,7 +567,13 @@ switch field
             % nocur*(k+1): zcurw
             % nocur*k    : zcurwp
             % nocur*(k+1): zkcur
-            case {'wl-xy'}
+            case {'wl-xy','uv-xy'}
+                switch field
+                    case 'wl-xy'
+                        ARRAY='CHECKPOINTS_FLOW_IWLPT';
+                    case 'uv-xy'
+                        ARRAY='CHECKPOINTS_FLOW_ICURPT';
+                end
                 stationi=local_argin(argin);
                 MN=waqua('readsds',sds,exper,ARRAY);
                 MN=reshape(MN,[length(MN)/2 2]);
@@ -558,10 +593,39 @@ switch field
                     otherwise
                         varargout={factor*data.Data(:,stoffset+(stationi-1)+krange(k)) refdate+data.SimTime/1440};
                 end
-            case {'uv-stat'}
+            case {'uv-stat','uv0-stat'}
                 data=waqua('readsds',sds,exper,'TIMEHISTORIES_FLOW_TIMHIS',tstep);
-                varargout={data.Data(:,stoffset+(stationi-1)+krange(k)) ...
-                    data.Data(:,stoffset+nocur*kmax+(stationi-1)+krange(k)) refdate+data.SimTime/1440};
+                U = data.Data(:,stoffset+(stationi-1)+krange(k));
+                V = data.Data(:,stoffset+nocur*kmax+(stationi-1)+krange(k));
+                Time = refdate+data.SimTime/1440;
+                % U and V are given in X and Y direction if itraflg=1
+                % otherwise U and V are in M and N direction
+                icontb=waqua('readsds',sds,exper,'CONTROL_FLOW_ICONTB');
+                itraflg = icontb(7);
+                if itraflg~=1 && strcmp(field,'uv-stat')
+                    % convert U and V from M and N directions into X and Y
+                    % directions; for this we'll need to determine the
+                    % local grid orientation. Let's first get the
+                    % surrounding grid coordinates ...
+                    MN = waqua('readsds',sds,exper,'CHECKPOINTS_FLOW_ICURPT');
+                    MN = reshape(MN,[nocur 2]);
+                    M = MN(stationi,1);
+                    N = MN(stationi,2);
+                    [x,y]=waqua_get_spatial(sds,exper,'dgrid',dim,refdate,{[N-1 N] [M-1 M]});
+                    % now determine the orientation of the grid; this
+                    % computation is (like in Delft3D) based on only the
+                    % direction of the M-line assuming an ortogonal grid.
+                    dx = mean(x(:,2) - x(:,1));
+                    dy = mean(y(:,2) - y(:,1));
+                    len = sqrt(dx^2+dy^2);
+                    dx = dx/len;
+                    dy = dy/len;
+                    % and finally rotate the velocity vectors
+                    Ux = U*dx-V*dy;
+                    V  = V*dx+U*dy;
+                    U  = Ux;
+                end
+                varargout={U V Time};
             case {'barriers','barrierpoints'}
                 stationi=local_argin(argin);
                 %
@@ -624,7 +688,7 @@ switch field
                 stationi=local_argin(argin);
                 sts=waqua('readsds',sds,exper,'CHECKPOINTS_FLOW_NAMCHK');
                 switch field
-                    case {'flowstat-wl','wlstat','wl-stat','wl-xy'}
+                    case 'flowstat-wl'
                         sts=deblank(sts(1:nowl));
                         empty=cellfun('isempty',sts);
                         if any(empty)
@@ -634,7 +698,7 @@ switch field
                                 sts{i}=sprintf('(M=%i,N=%i)',MN(i,:));
                             end
                         end
-                    case {'flowstat-cur','umag-stat','u-stat','v-stat','uv-stat'}
+                    case 'flowstat-uv'
                         sts=deblank(sts(nowl+(1:nocur)));
                         empty=cellfun('isempty',sts);
                         if any(empty)
@@ -657,14 +721,11 @@ switch field
         end
 
     otherwise
-        if length(field)>8 & strcmp(field(1:8),'stsubst:')
+        if length(field)>8 && strcmp(field(1:8),'stsubst:')
             Subs=lower(waquaio(sds,exper,'substances'));
             sbs=field(9:end);
-            s=strmatch(sbs,Subs,'exact');
-            if isempty(s)
-                s=strmatch(sbs,Subs);
-            end
-            if isequal(size(s),[1 1])
+            s=ustrcmpi(sbs,Subs);
+            if s>0
                 iconta=waqua('readsds',sds,exper,'CONTROL_TRANS_ICONTA');
                 icontb=waqua('readsds',sds,exper,'CONTROL_TRANS_ICONTB');
                 % ref. "substances"
@@ -679,10 +740,10 @@ switch field
                 data=waqua('readsds',sds,exper,'TIMEHISTORIES_TRANS',tstep);
                 varargout={data.Data(:,stoffset+krange(k)) refdate+data.SimTime/1440};
             else
-                error(sprintf('Invalid substance name: %s',sbs))
+                error('Invalid substance name: %s',sbs)
             end
         else
-            error(sprintf('Unknown field: %s',field))
+            error('Unknown field: %s',field)
         end
 end
 
@@ -1356,7 +1417,7 @@ switch field
                     U=u.Data;
                     V=v.Data;
                 end
-                if isempty(U) | isempty(V)
+                if isempty(U) || isempty(V)
                     varargout={[] [] refdate+u.SimTime/1440};
                     return
                 end
@@ -1531,7 +1592,7 @@ switch field
                 end
         end
         %
-        if strcmp(field,'veloc0') | (nargout==4)
+        if strcmp(field,'veloc0') || (nargout==4)
             %
             % Define nmk if needed
             %
@@ -1756,7 +1817,7 @@ switch field
         CZY(CZY>1e7)=NaN;
         varargout={CZX CZY refdate+data.SimTime/1440};
     otherwise
-        if length(field)>25 & strcmp(field(1:25),'incremental_output_timidx') %e.g. incremental_output_timidx-3
+        if length(field)>25 && strcmp(field(1:25),'incremental_output_timidx') %e.g. incremental_output_timidx-3
             [tstep,n,m]=local_argin(argin);
             %-----
             Times = waqua('read',sds,exper,'CONTROL_FLOW_INCREMENTAL_TIMES');
@@ -1766,7 +1827,7 @@ switch field
             maxbuf = Index(1,tstep);
             %-----
             separator = strfind(field,'-');
-            Qplot = str2num(field(separator+1:end)); % incremental_output_timidx-3 --> 3
+            Qplot = str2double(field(separator+1:end)); % incremental_output_timidx-3 --> 3
             VAL = zeros(nmax,mmax);
             for buf = 1:maxbuf
                %
@@ -1797,7 +1858,7 @@ switch field
             VAL = VAL(n,m);
             VAL(VAL==0) = NaN;
             varargout={VAL refdate+(Times(1)+(tstep-1)*Times(2))/1440};
-        elseif length(field)>17 & strcmp(field(1:17),'solution_derived_') %e.g. solution_derived_maxvalues_sep-3
+        elseif length(field)>17 && strcmp(field(1:17),'solution_derived_') %e.g. solution_derived_maxvalues_sep-3
             [n,m]=local_argin(argin);
             nm=nm(n,m);
             num_n = length(n);
@@ -1806,7 +1867,7 @@ switch field
             sact=sact(n,m);
             %-----
             separator = strfind(field,'-');
-            i = str2num(field(separator+1:end)); % solution_derived_maxvalues_sep-3 --> 3
+            i = str2double(field(separator+1:end)); % solution_derived_maxvalues_sep-3 --> 3
             field = upper(field(1:separator-1)); % solution_derived_maxvalues_sep-3 --> SOLUTION_DERIVED_MAXVALUES_SEP
             VAL=waqua('readsds',sds,exper,field,[],(i-1)*npnt+(1:npnt));
             if ~isempty(VAL)
@@ -1817,14 +1878,11 @@ switch field
             end
             VAL(~sact)=NaN;
             varargout={VAL};
-        elseif length(field)>6 & strcmp(field(1:6),'subst:')
+        elseif length(field)>6 && strcmp(field(1:6),'subst:')
             Subs=lower(waquaio(sds,exper,'substances'));
             sbs=field(7:end);
-            s=strmatch(sbs,Subs,'exact');
-            if isempty(s)
-                s=strmatch(sbs,Subs);
-            end
-            if isequal(size(s),[1 1])
+            s=ustrsmpi(sbs,Subs);
+            if s>0
                 [tstep,n,m,k]=local_argin(argin);
                 nm=nm(n,m);
                 sznm=size(nm);
@@ -1853,10 +1911,10 @@ switch field
                 end
                 varargout={SUBS refdate+subs.SimTime/1440};
             else
-                error(sprintf('Invalid substance name: %s',sbs))
+                error('Invalid substance name: %s',sbs)
             end
         else
-            error(sprintf('Unknown field: %s',field))
+            error('Unknown field: %s',field)
         end
 end
 %==========================================================================
@@ -1876,7 +1934,7 @@ function [nm,sact]=getspace(sds,exper,dim)
 nm=waqua('readsds',sds,exper,'MESH_LGRID');
 nm=reshape(nm,dim.sz);
 %
-sact=logical(zeros(dim.sz));
+sact=false(dim.sz);
 irogeo=waqua('readsds',sds,exper,'MESH_IROGEO');
 irogeo=reshape(irogeo,[3 length(irogeo)/3]);
 for i=1:dim.num_irogeo_rows

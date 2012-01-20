@@ -60,7 +60,7 @@ if (ischar(Str) && size(Str,1)>1) || (iscellstr(Str) && length(Str)>1) % multipl
       return
    end
 else
-   if ischar(StrSet) & ~iscellstr(StrSet)
+   if ischar(StrSet) && ~iscellstr(StrSet)
       StrSet=cellstr(StrSet);
    end
 end

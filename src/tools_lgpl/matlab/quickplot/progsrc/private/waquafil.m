@@ -77,14 +77,14 @@ else
 end
 
 cmd=lower(cmd);
-switch cmd,
-    case 'size',
+switch cmd
+    case 'size'
         varargout={getsize(FI,Props)};
-        return;
-    case 'times',
+        return
+    case 'times'
         varargout={readtim(FI,Props,varargin{:})};
         return
-    case 'stations',
+    case 'stations'
         if Props.DimFlag(ST_)~=0
             S=readsts(FI,Props);
             varargout={S};
@@ -117,7 +117,7 @@ if DimFlag(T_)
     end
 end
 
-if length(idx{T_})>1 & ~DimFlag(ST_)
+if length(idx{T_})>1 && ~DimFlag(ST_)
     error('Loading data for multiple timesteps is currently not yet supported for Waqua SDS files.');
 end
 
@@ -130,7 +130,7 @@ end
 % select appropriate spatial indices ...
 
 %================== NEFIS SPECIFIC CODE =======================================
-if DimFlag(M_)& DimFlag(N_)
+if DimFlag(M_)&& DimFlag(N_)
     sz([M_ N_])=sz([N_ M_]);
     idx([M_ N_])=idx([N_ M_]);
 end
@@ -139,17 +139,17 @@ end
 allidx=zeros(size(sz));
 for i=[M_ N_ K_]
     if DimFlag(i)
-        if isequal(idx{i},0) | isequal(idx{i},1:sz(i))
+        if isequal(idx{i},0) || isequal(idx{i},1:sz(i))
             idx{i}=1:sz(i);
             allidx(i)=1;
         elseif ~isequal(idx{i},idx{i}(1):idx{i}(end))
-            error(sprintf('Only scalars or ranges allowed for index %i',i));
+            error('Only scalars or ranges allowed for index %i',i)
         end
     end
 end
 
 if max(idx{T_})>sz(T_)
-    error(sprintf('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_)))
+    error('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_))
 end
 
 gidx = idx;
@@ -178,11 +178,11 @@ z=[];
 val={};
 if XYRead
     %======================== SPECIFIC CODE =======================================
-    if DimFlag(M_) & DimFlag(N_)
+    if DimFlag(M_) && DimFlag(N_)
         if DimFlag(K_)
             zgidx = gidx;
             zgidx([M_ N_]) = idx([M_ N_]);
-            if strcmp(Props.Loc3D,'c') & ~DataInCell
+            if strcmp(Props.Loc3D,'c') && ~DataInCell
                 zgrid = 'zgrid3dc';
             else
                 zgrid = 'zgrid3di';
@@ -248,7 +248,7 @@ if DataRead
         case 'roughness Chezy C'
             Props.NVal=4;
             ThinDam=1;
-        case 'stations'
+        case {'water level stations','velocity stations'}
             Props.NVal=2;
         case {'velocity','horizontal velocity'}
             if Props.MNK>1,
@@ -264,7 +264,7 @@ if DataRead
         case 2
             [val{1:2+readT}]=waquaio(FI,Props.Exper,Props.WaqIO,idx{DimFlag~=0});
         case 3
-            if strcmp(Props.WaqIO,'veloc') & isfield(Props,'MNK') & (Props.MNK>1)
+            if strcmp(Props.WaqIO,'veloc') && isfield(Props,'MNK') && (Props.MNK>1)
                 [val{1:3+readT}]=waquaio(FI,Props.Exper,'veloc0',idx{DimFlag~=0},1);
             else
                 [val{1:3+readT}]=waquaio(FI,Props.Exper,Props.WaqIO,idx{DimFlag~=0});
@@ -279,11 +279,13 @@ if DataRead
                 [val{3:4+readT}]=waquaio(FI,Props.Exper,Props.WaqIO,idx{DimFlag~=0});
             end
     end
-    if strcmp(Props.Name,'stations')
-        x=val{1};
-        y=val{2};
-        val={deblank(waquaio(FI,Props.Exper,'flowstat-wl',idx{DimFlag~=0}))};
-        Props.NVal=1;
+    switch Props.Name,
+        case {'water level stations','velocity stations'}
+            x=val{1};
+            y=val{2};
+            CHAR = ['flowstat-' Props.WaqIO(1:2)];
+            val={deblank(waquaio(FI,Props.Exper,CHAR,idx{DimFlag~=0}))};
+            Props.NVal=1;
     end
     if readT
         T=val(end);
@@ -300,7 +302,7 @@ if DataRead
             % data in z-points
             Props.ReqLoc='z';
         end
-        if isequal(Props.Loc,'d') & isequal(Props.ReqLoc,'z')
+        if isequal(Props.Loc,'d') && isequal(Props.ReqLoc,'z')
             val{1}=interp2cen(val{1},'t');
         end
     end
@@ -326,7 +328,7 @@ end
 
 %================== NEFIS SPECIFIC CODE =======================================
 % permute n and m dimensions into m and n if necessary
-if DimFlag(M_) & DimFlag(N_)
+if DimFlag(M_) && DimFlag(N_)
     perm=[2 1 3];
     if XYRead
         if DimFlag(K_)
@@ -356,7 +358,7 @@ if DimFlag(ST_)
 end
 
 % reshape if a single timestep is selected ...
-if ~DimFlag(T_) | (DimFlag(T_) & isequal(size(idx{T_}),[1 1]))
+if ~DimFlag(T_) || (DimFlag(T_) && isequal(size(idx{T_}),[1 1]))
     sz=size(x); sz=[sz(2:end) 1];
     if DimFlag(K_)
         x=reshape(x,sz);
@@ -366,7 +368,7 @@ if ~DimFlag(T_) | (DimFlag(T_) & isequal(size(idx{T_}),[1 1]))
             z=reshape(z,sz);
         end
     end
-    if DataRead & Props.NVal>0
+    if DataRead && Props.NVal>0
         sz=size(val{1}); sz=[sz(2:end) 1];
         for i=1:length(val)
             val{i}=reshape(val{i},sz);
@@ -431,13 +433,13 @@ varargout={Ans FI};
 
 
 % -----------------------------------------------------------------------------
-function Domains=domains(FI);
+function Domains=domains(FI)
 Domains={FI.Experiment.Name};
 % -----------------------------------------------------------------------------
 
 
 % -----------------------------------------------------------------------------
-function Out=infile(FI,domain);
+function Out=infile(FI,domain)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'                    'Units' 'DimFlag' 'DataInCell' 'MNK' 'NVal' 'Loc' 'ReqLoc' 'Loc3D' 'Exper' 'WaqIO'     'zWaqIO'   'Char'};
@@ -506,7 +508,8 @@ DataProps={'depth grid'               ''       [0 0 1 1 0]  0        0      0   
     'bed shear stress'                'N/m^2'  [1 0 1 1 0]  1        0      2     'z'   'z'       ''     ''      'wstress'   ''         'SOLUTION_WAVES_STRESS'
     'bed level'                       'm'      [0 0 1 1 0]  1        0      1     'd'   'd'       ''     ''      'height'    ''         'MESH_H'
     '-------'                         ''       [0 0 0 0 0]  0        0      0     ''    ''        ''     ''      ''          ''         ''
-    'stations'                        ''       [0 0 1 0 0]  0        0      4     ''    ''        ''     ''      'wl-xy'     ''         'CHECKPOINTS_FLOW_IWLPT'
+    'water level stations'            ''       [0 0 1 0 0]  0        0      4     ''    ''        ''     ''      'wl-xy'     ''         'CHECKPOINTS_FLOW_IWLPT'
+    'velocity stations'               ''       [0 0 1 0 0]  0        0      4     ''    ''        ''     ''      'uv-xy'     ''         'CHECKPOINTS_FLOW_ICURPT'
     '-------'                         ''       [0 0 0 0 0]  0        0      0     ''    ''        ''     ''      ''          ''         ''
     'water level (station)'           'm'      [1 5 0 0 0]  0        0      1     ''    ''        ''     ''      'wl-stat'   ''         'TIMEHISTORIES_FLOW_TIMHIS'
     'horizontal velocity (station)'   'm/s'    [1 5 0 0 1]  0        0      2     ''    ''        'c'    ''      'uv-stat'   'z-stat'   'TIMEHISTORIES_FLOW_TIMHIS'
@@ -575,7 +578,7 @@ for j=1:length(Out1)
     OutIn=Out1(j);
     OutIn.Exper=eName;
     if isempty(OutIn.Char)
-    elseif isempty(strmatch(OutIn.Char,chars,'exact')) % waqua('exists',FI,FI.Experiment(e).Name,OutIn.Char)
+    elseif ~any(strcmp(OutIn.Char,chars)) % waqua('exists',FI,FI.Experiment(e).Name,OutIn.Char)
         OutIn=[];
     else
         switch OutIn.Name
@@ -683,13 +686,13 @@ for j=1:length(Out1)
                     end
                     for s=1:length(Subs)-1
                         OutIn.WaqIO=[nm Subs{s}];
-                        OutIn.Name=[fliplr(deblank(fliplr(deblank(lower(Subs{s}))))) ct];
+                        OutIn.Name=[deblank2(lower(Subs{s})) ct];
                         OutIn.Exper=eName;
                         i=i+1;
                         Out(i)=OutIn;
                     end
                     OutIn.WaqIO=[nm Subs{end}];
-                    OutIn.Name=[fliplr(deblank(fliplr(deblank(lower(Subs{end}))))) ct];
+                    OutIn.Name=[deblank2(lower(Subs{end})) ct];
                 end
             case {'velocity (barrier)','flow-through height (barrier)','energy loss (barrier)'}
                 dimen=waqua('readsds',FI,eName,'MESH_IDIMEN');
@@ -715,10 +718,10 @@ for j=1:length(Out1)
         end
         if ~isempty(OutIn)
             sz=getsize(FI,OutIn);
-            if sz(ST_)<1 & OutIn.DimFlag(ST_)
+            if sz(ST_)<1 && OutIn.DimFlag(ST_)
                 OutIn=[];
             end
-            if sz(T_)<1 & ~isempty(OutIn) & OutIn.DimFlag(T_)
+            if sz(T_)<1 && ~isempty(OutIn) && OutIn.DimFlag(T_)
                 OutIn=[];
             end
         end
@@ -754,10 +757,12 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 sz=[0 0 0 0 0];
 
 %======================== SPECIFIC CODE =======================================
-if strcmp(Props.Name,'stations')
-    S=deblank(waquaio(FI,Props.Exper,'flowstat-wl'));
+if strcmp(Props.Name,'water level stations') || ...
+        strcmp(Props.Name,'velocity stations')
+    CHAR = ['flowstat-' Props.WaqIO(1:2)];
+    S=deblank(waquaio(FI,Props.Exper,CHAR));
     sz(M_)=length(S);
-elseif Props.DimFlag(M_) | Props.DimFlag(N_) | Props.DimFlag(K_)
+elseif Props.DimFlag(M_) || Props.DimFlag(N_) || Props.DimFlag(K_)
     if waqua('exists',FI,Props.Exper,'MESH_IDIMEN')
         dimen=waqua('readsds',FI,Props.Exper,'MESH_IDIMEN');
         if Props.DimFlag(M_)
@@ -781,9 +786,9 @@ elseif Props.DimFlag(M_) | Props.DimFlag(N_) | Props.DimFlag(K_)
 end
 if Props.DimFlag(T_)
     ExpName=Props.Exper;
-    e=strmatch(ExpName,{FI.Experiment.Name},'exact');
+    e=strcmp(ExpName,{FI.Experiment.Name});
     CharName={FI.Experiment(e).Char.Name}';
-    c=strmatch(Props.Char,CharName,'exact');
+    c=strcmp(Props.Char,CharName);
     if strcmp(Props.Char,'INCREMENTAL_OUTPUT_TIMIDX')
         sz(T_)=FI.Entry(FI.Experiment(e).Char(c).DataIndex).BlockSize/3;
     else
@@ -837,7 +842,7 @@ switch Props.WaqIO
     case {'wlstat','wl-stat'}
         S=deblank(waquaio(FI,Props.Exper,'flowstat-wl'));
     case {'umag-stat','u-stat','v-stat','uv-stat','z-stat','w-stat'}
-        S=deblank(waquaio(FI,Props.Exper,'flowstat-cur'));
+        S=deblank(waquaio(FI,Props.Exper,'flowstat-uv'));
     case {'mq-stat','cq-stat'}
         Su=deblank(waquaio(FI,Props.Exper,'flowcrs-u'));
         Sv=deblank(waquaio(FI,Props.Exper,'flowcrs-v'));
@@ -847,7 +852,7 @@ switch Props.WaqIO
     case {'sl-bar','gl-bar','wd-bar'}
         S=deblank(waquaio(FI,Props.Exper,'barriers'));
     otherwise
-        if ~isempty(strmatch('stsubst',Props.WaqIO))
+        if ~any(strcmp('stsubst',Props.WaqIO))
             S=deblank(waquaio(FI,Props.Exper,'transtat'));
         end
 end
