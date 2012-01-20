@@ -456,6 +456,18 @@ switch field
         statmax=-1;
         stationi_org = stationi;
         switch field
+            case 'flowstat-wl'
+                statmax=nowl;
+            case 'flowstat-uv'
+                statmax=nocur;
+            case 'flowcrs-u'
+                statmax=ntra;
+            case 'flowcrs-v'
+                statmax=ntrav;
+            case 'barriers'
+                statmax=dim.nsluv;
+            case 'barrierpoints'
+                statmax=nbaruv;
             case {'wlstat','wl-stat','wl-xy','uv-xy'}
                 stoffset=0;
                 krange=1;
@@ -548,13 +560,17 @@ switch field
                 krange=1+(0:kmax)*nopol;
                 statmax=nopol;
         end
-        if stationi_org<1 || stationi_org>statmax || stationi_org~=round(stationi_org)
-            if statmax==0
-                error('Station index %g invalid: no stations for ''%s'' in data file',stationi_org,field)
-            elseif statmax==1
-                error('Station index %g invalid: only one station in data file for ''%s''',stationi_org,field)
-            else
-                error('Station index %g invalid: should be integer in range 1:%i',stationi_org,statmax)
+        if ~isequal(stationi_org,':')
+            if stationi_org<1 || stationi_org>statmax || stationi_org~=round(stationi_org)
+                if statmax<0
+                    error('The variable statmax has not been set for ''%s''',field)
+                elseif statmax==0
+                    error('Station index %g invalid: no stations for ''%s'' in data file',stationi_org,field)
+                elseif statmax==1
+                    error('Station index %g invalid: only one station in data file for ''%s''',stationi_org,field)
+                else
+                    error('Station index %g invalid: should be integer in range 1:%i',stationi_org,statmax)
+                end
             end
         end
         switch field
