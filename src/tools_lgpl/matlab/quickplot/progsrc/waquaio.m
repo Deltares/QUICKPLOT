@@ -1897,7 +1897,7 @@ switch field
         elseif length(field)>6 && strcmp(field(1:6),'subst:')
             Subs=lower(waquaio(sds,exper,'substances'));
             sbs=field(7:end);
-            s=ustrsmpi(sbs,Subs);
+            s=ustrcmpi(sbs,Subs);
             if s>0
                 [tstep,n,m,k]=local_argin(argin);
                 nm=nm(n,m);
