@@ -1005,22 +1005,8 @@ switch cmd
                ui_message('error',Message)
                break
             else
-                i=1;
-                while i<=size(filtertbl,1)
-                    trytp = filtertbl{i,3};
-                    if iscell(trytp)
-                        ntype = length(trytp);
-                        index = [1:i-1 repmat(i,1,ntype) i+1:size(filtertbl,1)];
-                        filtertbl = filtertbl(index,:);
-                        for j=1:ntype
-                            filtertbl{i+j-1,2} = [filtertbl{i+j-1,2} ': ' trytp{j}];
-                            filtertbl{i+j-1,3} = trytp{j};
-                        end
-                        i=i+j-1;
-                    end
-                    i=i+1;
-                end
-                [trytp,try_i]=ui_type(filtertbl(1:end-1,2),'windowtitle','Specify file format');
+                filtertbl = qp_filefilters('all');
+                [trytp,try_i]=ui_type(filtertbl(:,2),'windowtitle','Specify file format');
             end
             if isempty(trytp)
                break

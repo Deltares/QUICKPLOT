@@ -18,30 +18,30 @@ function varargout=ai_ungen(cmd,varargin)
 %   AI_UNGEN(...,'-1') doesn't write line segments of length 1.
 
 %----- LGPL --------------------------------------------------------------------
-%                                                                               
-%   Copyright (C) 2011-2012 Stichting Deltares.                                     
-%                                                                               
-%   This library is free software; you can redistribute it and/or                
-%   modify it under the terms of the GNU Lesser General Public                   
-%   License as published by the Free Software Foundation version 2.1.                         
-%                                                                               
-%   This library is distributed in the hope that it will be useful,              
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of               
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU            
-%   Lesser General Public License for more details.                              
-%                                                                               
-%   You should have received a copy of the GNU Lesser General Public             
-%   License along with this library; if not, see <http://www.gnu.org/licenses/>. 
-%                                                                               
-%   contact: delft3d.support@deltares.nl                                         
-%   Stichting Deltares                                                           
-%   P.O. Box 177                                                                 
-%   2600 MH Delft, The Netherlands                                               
-%                                                                               
-%   All indications and logos of, and references to, "Delft3D" and "Deltares"    
-%   are registered trademarks of Stichting Deltares, and remain the property of  
-%   Stichting Deltares. All rights reserved.                                     
-%                                                                               
+%
+%   Copyright (C) 2011-2012 Stichting Deltares.
+%
+%   This library is free software; you can redistribute it and/or
+%   modify it under the terms of the GNU Lesser General Public
+%   License as published by the Free Software Foundation version 2.1.
+%
+%   This library is distributed in the hope that it will be useful,
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%   Lesser General Public License for more details.
+%
+%   You should have received a copy of the GNU Lesser General Public
+%   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+%
+%   contact: delft3d.support@deltares.nl
+%   Stichting Deltares
+%   P.O. Box 177
+%   2600 MH Delft, The Netherlands
+%
+%   All indications and logos of, and references to, "Delft3D" and "Deltares"
+%   are registered trademarks of Stichting Deltares, and remain the property of
+%   Stichting Deltares. All rights reserved.
+%
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
@@ -85,11 +85,8 @@ end
 fid=fopen(filename,'r');
 T.FileName=filename;
 T.FileType='ArcInfoUngenerate';
+T.SubType='unknown';
 T.Check='NotOK';
-i=0;
-ok=0;
-SegPrev=[];
-Points=0;
 
 %Ungenerate with ANNO option writes:
 %
@@ -99,67 +96,225 @@ Points=0;
 %X,Y
 %..
 %END
-
+%
+% id=-999999 for islands
+autoclose=0;
+Line=fgetl(fid);
+[id,nval,err,irem]=sscanf(Line,'%f%*[ ,]');
+switch nval
+    case 5
+        % ID, BottomLeftX, BottomLeftY, TopRightX, TopRightY
+        T.SubType='rectangle';
+        fseek(fid,0,-1);
+    case 4
+        % ID, CenterX, CenterY, Radius
+        T.SubType='circle';
+        fseek(fid,0,-1);
+    case 3
+        % point
+        % ID, X, Y
+        %
+        % polygon with label point
+        % ID, X, Y
+        % X, Y
+        % X, Y
+        % X, Y
+        % END
+        Line2=fgetl(fid);
+        [id2,nval2,err2,irem2]=sscanf(Line2,'%f%*[ ,]');
+        switch nval2
+            case 2
+                T.SubType='polygon';
+                fseek(fid,0,-1);
+            case 3
+                T.SubType='point';
+                fseek(fid,0,-1);
+            case 0
+                if strcmpi(strtok(Line2(irem2:end)),'END')
+                    T.SubType='point';
+                    fseek(fid,0,-1);
+                end
+        end
+    case 1
+        % polyline
+        % ID
+        % X, Y
+        % X, Y
+        % END
+        %
+        % polygon with auto label
+        % ID, AUTO
+        % X, Y
+        % X, Y
+        % END
+        switch upper(strtok(Line(irem:end)))
+            case ''
+                T.SubType='line';
+            case 'AUTO'
+                T.SubType='polygon';
+        end
+        fseek(fid,0,-1);
+    case 0
+        switch upper(strtok(Line(irem:end)))
+            case 'CLOSE'
+                autoclose=1;
+                T.SubType='line'; % set to polygon at the end
+            case 'BOX'
+                T.SubType='box'; % set to rectangle at the end
+            case 'DONUT'
+                T.SubType='donut';
+        end
+end
+%
+i=1;
+finalEND=false;
 while ~feof(fid)
-    if isempty(SegPrev)
-        Line=fgetl(fid);
-        id=sscanf(Line,'%f%*[ ,]'); % id=-999999 for islands
-        if length(id)>1
-            Points=1;
-        end
-    end
-    if isempty(id)
-        END=sscanf(Line,' %[eE]%[nN]%[dD]',3);
-        if ~isempty(END) && ~isequal(upper(END),'END')
-            fclose(fid);
-            error('Missing closing END statement in file.');
-        end
-        ok=1;
+    start=ftell(fid);
+    Line=fgetl(fid);
+    [id,nval,err,irem]=sscanf(Line,'%f%*[ ,]');
+    if nval==0 && strcmpi(Line(irem:end),'END')
+        finalEND=true;
         break
     end
+    switch T.SubType
+        case 'point'
+            switch nval
+                case 3
+                    T.Seg(i).ID=id(1);
+                    T.Seg(i).Coord=id(2:3)';
+                otherwise
+                    fclose(fid);
+                    error('Unable to read %s data on line: %s.',T.SubType,Line)
+            end
+        case 'line'
+            switch nval
+                case 1
+                    T.Seg(i).ID=id;
+                    T.Seg(i).Coord=fscanf(fid,'%f%*[ ,]%f\n',[2 inf])';
+                    if autoclose && ~isequal(T.Seg(i).Coord(end,:),T.Seg(i).Coord(1,:))
+                        T.Seg(i).Coord=T.Seg(i).Coord([1:end 1],:);
+                    end
+                case 2
+                    i=i-1;
+                    fseek(fid,start,-1);
+                    Coord=fscanf(fid,'%f%*[ ,]%f\n',[2 inf])';
+                    if autoclose && ~isequal(Coord(end,:),Coord(1,:))
+                        Coord=Coord([1:end 1],:);
+                    end
+                    T.Seg(i).Coord=[T.Seg(i).Coord; NaN NaN; Coord];
+                otherwise
+                    fclose(fid);
+                    error('Unable to read %s data on line: %s.',T.SubType,Line)
+            end
+            Line=fgetl(fid);
+            if ~strcmp(deblank(Line),'END')
+                fclose(fid);
+                error('Unexpected string: %s.',Line)
+            end
+        case 'polygon'
+            T.Seg(i).ID=id(1);
+            switch nval
+                case 1
+                    T.Seg(i).LabelPoint='AUTO';
+                    T.Seg(i).Coord=fscanf(fid,'%f%*[ ,]%f\n',[2 inf])';
+                case 2
+                    i=i-1;
+                    fseek(fid,start,-1);
+                    Coord=fscanf(fid,'%f%*[ ,]%f\n',[2 inf])';
+                    if autoclose && ~isequal(Coord(end,:),Coord(1,:))
+                        Coord=Coord([1:end 1],:);
+                    end
+                    T.Seg(i).Coord=[T.Seg(i).Coord; NaN NaN; Coord];
+                case 3
+                    T.Seg(i).LabelPoint=id(2:3)';
+                    T.Seg(i).Coord=fscanf(fid,'%f%*[ ,]%f\n',[2 inf])';
+                otherwise
+                    fclose(fid);
+                    error('Unable to read %s data on line: %s.',T.SubType,Line)
+            end
+            Line=fgetl(fid);
+            if ~strcmp(deblank(Line),'END')
+                fclose(fid);
+                error('Unexpected string: %s.',Line)
+            end
+        case 'rectangle'
+            switch nval
+                case 5
+                    T.Seg(i).ID=id(1);
+                    T.Seg(i).Coord=id(2:5)';
+                otherwise
+                    fclose(fid);
+                    error('Unable to read %s data on line: %s.',T.SubType,Line)
+            end
+        case 'box'
+            switch nval
+                case 4
+                    T.Seg(i).ID=id(1);
+                    T.Seg(i).Coord=[id(2:3);id(2:3)+id(4)]';
+                case 5
+                    T.Seg(i).ID=id(1);
+                    T.Seg(i).Coord=[id(2:3);id(2:3)+id(4:5)]';
+                otherwise
+                    fclose(fid);
+                    error('Unable to read %s data on line: %s.',T.SubType,Line)
+            end
+        case 'circle'
+            switch nval
+                case 4
+                    T.Seg(i).ID=id(1);
+                    T.Seg(i).Coord=id(2:4)';
+                otherwise
+                    fclose(fid);
+                    error('Unable to read %s data on line: %s.',T.SubType,Line)
+            end
+        case 'donut'
+            switch nval
+                case 5
+                    T.Seg(i).ID=id(1);
+                    T.Seg(i).Coord=id(2:5)';
+                otherwise
+                    fclose(fid);
+                    error('Unable to read %s data on line: %s.',T.SubType,Line)
+            end
+    end
     i=i+1;
-    if Points
-        T.Seg(i).ID=id(1);
-        T.Seg(i).Coord=id(2:end)';
-        SegPrev=[];
-    else
-        T.Seg(i).ID=id;
-        T.Seg(i).Coord=fscanf(fid,'%f%*[ ,]%f\n',[2 inf])';
-        if ~isempty(SegPrev)
-            T.Seg(i).Coord=cat(1,SegPrev,T.Seg(i).Coord);
-            SegPrev=[];
-        end
-        END=fscanf(fid,'%[eE]%[nN]%[dD]',3);
-        if isempty(END)
-            id=T.Seg(i).Coord(end-1,1);
-            SegPrev(1,1)=T.Seg(i).Coord(end-1,2);
-            SegPrev(1,2)=T.Seg(i).Coord(end,1);
-            T.Seg(i).Coord=T.Seg(i).Coord(1:end-2,:);
-        elseif ~isequal(upper(END),'END')
-            fclose(fid);
-            error('Unexpected string: %s.',END)
-        else
-            fgetl(fid);
-        end
-    end
-    if feof(fid)
-        ok=1;
-    end
 end
 fclose(fid);
-if ~ok
+switch T.SubType
+    case 'box'
+        T.SubType='rectangle';
+    case 'line'
+        if autoclose
+            T.SubType='polygon';
+        end
+end
+if ~finalEND
     error('Missing closing END statement in file.');
 end
 T.Check='OK';
 %
 % Compute total number of points
 %
-nel=0;
-for i=1:length(T.Seg)
-    nel=nel+size(T.Seg(i).Coord,1)+1;
+switch T.SubType
+    case 'point'
+        nel=length(T.Seg);
+    case {'line','polygon'}
+        nel=0;
+        for i=1:length(T.Seg)
+            nel=nel+size(T.Seg(i).Coord,1)+1;
+        end
+    case 'rectangle'
+        nel=length(T.Seg)*(4+2);
+    case 'circle'
+        nel=length(T.Seg)*(NPointPerCircle+2);
+    case 'donut'
+        nel=length(T.Seg)*(2*(NPointPerCircle+1)+1);
 end
-nel=nel-1;
-T.TotalNPnt=nel;
+T.TotalNPnt=nel-1;
+
+
+function N=NPointPerCircle
+N=36;
 
 
 function Data=Local_read_file(varargin)
@@ -173,9 +328,27 @@ nel=T.TotalNPnt;
 
 Data=repmat(NaN,nel,2);
 offset=0;
+alpha=2*pi*[0:NPointPerCircle-1 0]'/NPointPerCircle;
+sina=sin(alpha);
+cosa=cos(alpha);
 for i=1:length(T.Seg)
-    t1=size(T.Seg(i).Coord,1);
-    Data(offset+(1:t1),:)=T.Seg(i).Coord;
+    Coord=T.Seg(i).Coord;
+    switch T.SubType
+        case 'point'
+            Data(offset+1,:)=Coord;
+            offset=offset+1;
+            continue
+        case {'line','polygon'}
+        case 'rectangle'
+            Coord=[Coord(1:2);Coord([1 4]);Coord(3:4);Coord([3 2]);Coord(1:2)];
+        case 'circle'
+            Coord=[Coord(1)+Coord(3)*sina Coord(2)+Coord(3)*cosa];
+        case 'donut'
+            Coord=[Coord(1)+Coord(4)*sina Coord(2)+Coord(4)*cosa
+                Coord(1)+Coord(3)*sina Coord(2)+Coord(3)*cosa];
+    end
+    t1=size(Coord,1);
+    Data(offset+(1:t1),:)=Coord;
     offset=offset+t1+1;
 end
 
