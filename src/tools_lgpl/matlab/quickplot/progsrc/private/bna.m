@@ -19,103 +19,107 @@ function varargout=bna(cmd,varargin)
 %      Doesn't write line segments of length 1.
 
 %----- LGPL --------------------------------------------------------------------
-%                                                                               
-%   Copyright (C) 2011-2012 Stichting Deltares.                                     
-%                                                                               
-%   This library is free software; you can redistribute it and/or                
-%   modify it under the terms of the GNU Lesser General Public                   
-%   License as published by the Free Software Foundation version 2.1.                         
-%                                                                               
-%   This library is distributed in the hope that it will be useful,              
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of               
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU            
-%   Lesser General Public License for more details.                              
-%                                                                               
-%   You should have received a copy of the GNU Lesser General Public             
-%   License along with this library; if not, see <http://www.gnu.org/licenses/>. 
-%                                                                               
-%   contact: delft3d.support@deltares.nl                                         
-%   Stichting Deltares                                                           
-%   P.O. Box 177                                                                 
-%   2600 MH Delft, The Netherlands                                               
-%                                                                               
-%   All indications and logos of, and references to, "Delft3D" and "Deltares"    
-%   are registered trademarks of Stichting Deltares, and remain the property of  
-%   Stichting Deltares. All rights reserved.                                     
-%                                                                               
+%
+%   Copyright (C) 2011-2012 Stichting Deltares.
+%
+%   This library is free software; you can redistribute it and/or
+%   modify it under the terms of the GNU Lesser General Public
+%   License as published by the Free Software Foundation version 2.1.
+%
+%   This library is distributed in the hope that it will be useful,
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%   Lesser General Public License for more details.
+%
+%   You should have received a copy of the GNU Lesser General Public
+%   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+%
+%   contact: delft3d.support@deltares.nl
+%   Stichting Deltares
+%   P.O. Box 177
+%   2600 MH Delft, The Netherlands
+%
+%   All indications and logos of, and references to, "Delft3D" and "Deltares"
+%   are registered trademarks of Stichting Deltares, and remain the property of
+%   Stichting Deltares. All rights reserved.
+%
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 
-if nargout>0,
+if nargout>0
     varargout=cell(1,nargout);
-end;
-if nargin==0,
-    return;
-end;
-switch cmd,
-    case 'open',
+end
+if nargin==0
+    return
+end
+switch cmd
+    case 'open'
         Out=Local_open_file(varargin{:});
         varargout{1}=Out;
-    case 'read',
+    case 'read'
         Out=Local_read_file(varargin{:});
-        if nargout==1,
+        if nargout==1
             varargout{1}=Out;
-        elseif nargout>1,
+        elseif nargout>1
             varargout{1}=Out(:,1);
             varargout{2}=Out(:,2);
-        end;
-    case 'write',
+        end
+    case 'write'
         Local_write_file(varargin{:});
-    otherwise,
-        error(sprintf('Unknown command: %s.',cmd));
-end;
+    otherwise
+        error('Unknown command: %s.',cmd)
+end
 
 
-function T=Local_open_file(filename);
+function T=Local_open_file(filename)
 T=[];
 if nargin==0,
     [fn,fp]=uigetfile('*.bna');
     if ~ischar(fn),
-        return;
-    end;
+        return
+    end
     filename=[fp fn];
-end;
+end
 
 fid=fopen(filename,'r');
-T.FileName=filename;
-T.FileType='BNA File';
-T.Check='NotOK';
-i=0;
-Points=0;
-while ~feof(fid)
-    Line=fgetl(fid);
-    %
-    % Scan segment header line
-    %
-    DQuotes=strfind(Line,'"');
-    i=i+1;
-    T.Seg(i).ID1=Line((DQuotes(1)+1):(DQuotes(2)-1));
-    T.Seg(i).ID2=Line((DQuotes(3)+1):(DQuotes(4)-1));
-    NPnt=sscanf(Line((DQuotes(4)+1):end),'%*[ ,]%i');;
-    T.Seg(i).NPnt=NPnt;
-    NPnt=abs(NPnt);
-    %
-    % Store offset to read data later
-    %
-    T.Seg(i).Offset=ftell(fid);
-    %
-    % Read data
-    %
-    T.Seg(i).Coord=fscanf(fid,'%f%*[ ,]%f',[2 NPnt])';
-    %
-    % Read remainder of last line
-    %
-    fgetl(fid);
+try
+    T.FileName=filename;
+    T.FileType='BNA File';
+    T.Check='NotOK';
+    i=0;
+    while ~feof(fid)
+        Line=fgetl(fid);
+        %
+        % Scan segment header line
+        %
+        DQuotes=strfind(Line,'"');
+        i=i+1;
+        T.Seg(i).ID1=Line((DQuotes(1)+1):(DQuotes(2)-1));
+        T.Seg(i).ID2=Line((DQuotes(3)+1):(DQuotes(4)-1));
+        NPnt=sscanf(Line((DQuotes(4)+1):end),'%*[ ,]%i');
+        T.Seg(i).NPnt=NPnt;
+        NPnt=abs(NPnt);
+        %
+        % Store offset to read data later
+        %
+        T.Seg(i).Offset=ftell(fid);
+        %
+        % Read data
+        %
+        T.Seg(i).Coord=fscanf(fid,'%f%*[ ,]%f',[2 NPnt])';
+        %
+        % Read remainder of last line
+        %
+        fgetl(fid);
+    end
+    fclose(fid);
+    T.Check='OK';
+catch
+    fclose(fid);
+    rethrow(lasterror)
 end
-fclose(fid);
-T.Check='OK';
 %
 % Compute total number of points
 %
@@ -126,9 +130,8 @@ end
 nel=nel-1;
 T.TotalNPnt=nel;
 
-function Data=Local_read_file(varargin);
-Data=[];
-if nargin==1 & isstruct(varargin{1})
+function Data=Local_read_file(varargin)
+if nargin==1 && isstruct(varargin{1})
     T=varargin{1};
 else
     T=Local_open_file(varargin{:});
@@ -145,5 +148,5 @@ for i=1:length(T.Seg)
 end
 
 
-function Local_write_file(varargin);
+function Local_write_file(varargin)
 ai_ungen('write',varargin{:},'BNA');

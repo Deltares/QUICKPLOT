@@ -13,30 +13,30 @@ function [x,y,z]=samples(cmd,varargin)
 %     arrays to file.
 
 %----- LGPL --------------------------------------------------------------------
-%                                                                               
-%   Copyright (C) 2011-2012 Stichting Deltares.                                     
-%                                                                               
-%   This library is free software; you can redistribute it and/or                
-%   modify it under the terms of the GNU Lesser General Public                   
-%   License as published by the Free Software Foundation version 2.1.                         
-%                                                                               
-%   This library is distributed in the hope that it will be useful,              
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of               
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU            
-%   Lesser General Public License for more details.                              
-%                                                                               
-%   You should have received a copy of the GNU Lesser General Public             
-%   License along with this library; if not, see <http://www.gnu.org/licenses/>. 
-%                                                                               
-%   contact: delft3d.support@deltares.nl                                         
-%   Stichting Deltares                                                           
-%   P.O. Box 177                                                                 
-%   2600 MH Delft, The Netherlands                                               
-%                                                                               
-%   All indications and logos of, and references to, "Delft3D" and "Deltares"    
-%   are registered trademarks of Stichting Deltares, and remain the property of  
-%   Stichting Deltares. All rights reserved.                                     
-%                                                                               
+%
+%   Copyright (C) 2011-2012 Stichting Deltares.
+%
+%   This library is free software; you can redistribute it and/or
+%   modify it under the terms of the GNU Lesser General Public
+%   License as published by the Free Software Foundation version 2.1.
+%
+%   This library is distributed in the hope that it will be useful,
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%   Lesser General Public License for more details.
+%
+%   You should have received a copy of the GNU Lesser General Public
+%   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+%
+%   contact: delft3d.support@deltares.nl
+%   Stichting Deltares
+%   P.O. Box 177
+%   2600 MH Delft, The Netherlands
+%
+%   All indications and logos of, and references to, "Delft3D" and "Deltares"
+%   are registered trademarks of Stichting Deltares, and remain the property of
+%   Stichting Deltares. All rights reserved.
+%
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
@@ -88,69 +88,74 @@ catch
 end
 if ~simplexyz
     fid=fopen(filename,'r');
-    cloc=0;
-    str=fgetl(fid);
-    while ischar(str) && ~isempty(str) && str(1)=='*'
-        cloc=ftell(fid);
+    try
+        cloc=0;
         str=fgetl(fid);
-    end
-    if ~ischar(str)
-        fclose(fid);
-        error([filename,' does not contain samples.']);
-    end
-    [X,n,er]=sscanf(str,'%g');
-    Params={};
-    while ~isempty(er)
-       [Param,n,er,ni]=sscanf(str,' "%[^"]%["]',2);
-       if isempty(er) && n==2
-          Params{end+1}=Param(1:end-1);
-       else
-          [Param,n,er]=sscanf(str,' %s',1);
-          if isempty(er) && n==1
-             error('Reading line: %s\nIf this line contains a parameter name, then it should be enclosed by double quotes.',str);
-             %Params{end+1}=Param; %<--- makes it impossible to distinguish
-             %certain observation files from Tekal file format. For example:
-             %B001
-             %160 4 16 10
-             %1.0 2.0 3.0 4.0
-             % :   :   :   :
-          else
-             break
-          end
-       end
-       str=str(ni:end);
-       if ~isempty(str)
-          er='scan remainder of line';
-       else
-          cloc=ftell(fid);
-          str=fgetl(fid);
-          [X,n,er]=sscanf(str,'%g');
-       end
-    end
-    [X,n,er]=sscanf(str,'%g');
-    if ~isempty(er)
-       error('Unable to data values on line: %s',str);
-    elseif n<3
-       error('Not enough values for sample data (X,Y,Value1,...)')
-    end
-    str=fgetl(fid);
-    [X,n2]=sscanf(str,'%g');
-    if n2~=n && ~feof(fid)
-       error('Number of values per line should be constant.')
-    end
-    if length(Params)<n
-        for i=(length(Params)+1):n
-            Params{i}=sprintf('Parameter %i',i);
+        while ischar(str) && ~isempty(str) && str(1)=='*'
+            cloc=ftell(fid);
+            str=fgetl(fid);
         end
-    elseif length(Params)>n
-        Params=Params(1:n);
-    end
-    if n==0
+        if ~ischar(str)
+            fclose(fid);
+            error('%s does not contain samples.',filename);
+        end
+        [X,n,er]=sscanf(str,'%g');
+        Params={};
+        while ~isempty(er)
+            [Param,n,er,ni]=sscanf(str,' "%[^"]%["]',2);
+            if isempty(er) && n==2
+                Params{end+1}=Param(1:end-1);
+            else
+                [Param,n,er]=sscanf(str,' %s',1);
+                if isempty(er) && n==1
+                    error('Reading line: %s\nIf this line contains a parameter name, then it should be enclosed by double quotes.',str);
+                    %Params{end+1}=Param; %<--- makes it impossible to distinguish
+                    %certain observation files from Tekal file format. For example:
+                    %B001
+                    %160 4 16 10
+                    %1.0 2.0 3.0 4.0
+                    % :   :   :   :
+                else
+                    break
+                end
+            end
+            str=str(ni:end);
+            if ~isempty(str)
+                er='scan remainder of line';
+            else
+                cloc=ftell(fid);
+                str=fgetl(fid);
+                [X,n,er]=sscanf(str,'%g');
+            end
+        end
+        [X,n,er]=sscanf(str,'%g');
+        if ~isempty(er)
+            error('Unable to data values on line: %s',str);
+        elseif n<3
+            error('Not enough values for sample data (X,Y,Value1,...)')
+        end
+        str=fgetl(fid);
+        [X,n2]=sscanf(str,'%g');
+        if n2~=n && ~feof(fid)
+            error('Number of values per line should be constant.')
+        end
+        if length(Params)<n
+            for i=(length(Params)+1):n
+                Params{i}=sprintf('Parameter %i',i);
+            end
+        elseif length(Params)>n
+            Params=Params(1:n);
+        end
+        if n==0
+            fclose(fid);
+            error('Number of values cannot be zero.')
+        end
         fclose(fid);
-        error('Number of values cannot be zero.')
+    catch
+        fclose(fid);
+        rethrow(lasterror)
     end
-    fclose(fid);
-
+    
     xyz.XYZ=asciiload(filename,'seek',cloc);
     xyz.Params=Params;
     xyz.FileType='samples';

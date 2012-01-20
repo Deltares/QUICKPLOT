@@ -1,22 +1,21 @@
-function varargout=ai_ungen(cmd,varargin),
+function varargout=ai_ungen(cmd,varargin)
 %AI_UNGEN Read/write ArcInfo (un)generate files.
+%   INFO=AI_UNGEN('open',FILENAME) opens the specified file and reads its
+%   contents. It returns a structure to be used in AI_UNGEN('read',...)
+%   calls.
 %
-%   FileInfo=AI_UNGEN('open',FileName)
-%      Opens the specified file and reads its contents.
+%   [X,Y]=AI_UNGEN('read',INFO) returns the X and Y data in the file. If
+%   instead of the INFO structure a file name is provided then the
+%   indicated file is opened and the data is returned. If only one output
+%   argument is requested then both X and Y coordinates are returned in the
+%   same array: XY=AI_UNGEN('read',INFO)
 %
-%   XY=AI_UNGEN('read',FileInfo)
-%   [X,Y]=AI_UNGEN('read',FileInfo)
-%      Returns the X and Y data in the file. If instead of the FileInfo
-%      structure a file name is provided then the indicated file is
-%      opened and the data is returned.
+%   AI_UNGEN('write',FILENAME,X,Y) writes the line segments to file. X,Y
+%   should either contain NaN separated line segments or X,Y cell arrays
+%   containing the line segments. Alternatively, one may provide X and Y
+%   coordinates in one array: AI_UNGEN('write',FILENAME,XY)
 %
-%   AI_UNGEN('write',FileName,XY)
-%   AI_UNGEN('write',FileName,X,Y)
-%      Writes the line segments to file. X,Y should either
-%      contain NaN separated line segments or X,Y cell arrays
-%      containing the line segments.
-%   AI_UNGEN(...,'-1')
-%      Doesn't write line segments of length 1.
+%   AI_UNGEN(...,'-1') doesn't write line segments of length 1.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -48,40 +47,40 @@ function varargout=ai_ungen(cmd,varargin),
 %   $HeadURL$
 %   $Id$
 
-if nargout>0,
+if nargout>0
     varargout=cell(1,nargout);
-end;
-if nargin==0,
-    return;
-end;
-switch cmd,
-    case 'open',
+end
+if nargin==0
+    return
+end
+switch cmd
+    case 'open'
         Out=Local_open_file(varargin{:});
         varargout{1}=Out;
-    case 'read',
+    case 'read'
         Out=Local_read_file(varargin{:});
-        if nargout==1,
+        if nargout==1
             varargout{1}=Out;
-        elseif nargout>1,
+        elseif nargout>1
             varargout{1}=Out(:,1);
             varargout{2}=Out(:,2);
-        end;
-    case 'write',
+        end
+    case 'write'
         Local_write_file(varargin{:});
-    otherwise,
+    otherwise
         uiwait(msgbox('unknown command','modal'));
-end;
+end
 
 
-function T=Local_open_file(filename);
+function T=Local_open_file(filename)
 T=[];
-if nargin==0,
+if nargin==0
     [fn,fp]=uigetfile('*.gen');
-    if ~ischar(fn),
-        return;
-    end;
+    if ~ischar(fn)
+        return
+    end
     filename=[fp fn];
-end;
+end
 
 fid=fopen(filename,'r');
 T.FileName=filename;
@@ -91,17 +90,27 @@ i=0;
 ok=0;
 SegPrev=[];
 Points=0;
+
+%Ungenerate with ANNO option writes:
+%
+%ID, LEVEL, SYMBOL, HEIGHT
+%TEXT
+%X,Y
+%X,Y
+%..
+%END
+
 while ~feof(fid)
     if isempty(SegPrev)
         Line=fgetl(fid);
-        id=sscanf(Line,'%f%*[ ,]');
+        id=sscanf(Line,'%f%*[ ,]'); % id=-999999 for islands
         if length(id)>1
             Points=1;
         end
     end
-    if isempty(id),
+    if isempty(id)
         END=sscanf(Line,' %[eE]%[nN]%[dD]',3);
-        if ~isempty(END) & ~isequal(upper(END),'END')
+        if ~isempty(END) && ~isequal(upper(END),'END')
             fclose(fid);
             error('Missing closing END statement in file.');
         end
@@ -116,7 +125,7 @@ while ~feof(fid)
     else
         T.Seg(i).ID=id;
         T.Seg(i).Coord=fscanf(fid,'%f%*[ ,]%f\n',[2 inf])';
-        if ~isempty(SegPrev),
+        if ~isempty(SegPrev)
             T.Seg(i).Coord=cat(1,SegPrev,T.Seg(i).Coord);
             SegPrev=[];
         end
@@ -128,12 +137,14 @@ while ~feof(fid)
             T.Seg(i).Coord=T.Seg(i).Coord(1:end-2,:);
         elseif ~isequal(upper(END),'END')
             fclose(fid);
-            error('Unexpected characters.');
+            error('Unexpected string: %s.',END)
         else
-            dummy=fgetl(fid);
+            fgetl(fid);
         end
     end
-    if feof(fid), ok=1; end
+    if feof(fid)
+        ok=1;
+    end
 end
 fclose(fid);
 if ~ok
@@ -151,9 +162,8 @@ nel=nel-1;
 T.TotalNPnt=nel;
 
 
-function Data=Local_read_file(varargin);
-Data=[];
-if nargin==1 & isstruct(varargin{1})
+function Data=Local_read_file(varargin)
+if nargin==1 && isstruct(varargin{1})
     T=varargin{1};
 else
     T=Local_open_file(varargin{:});
@@ -170,38 +180,37 @@ for i=1:length(T.Seg)
 end
 
 
-function Local_write_file(varargin);
-
+function Local_write_file(varargin)
 j=0;
 RemoveLengthOne=0;
 XYSep=0;
 BNA=0;
 filename='';
 for i=1:nargin
-    if ischar(varargin{i}) & strcmp(varargin{i},'-1')
+    if ischar(varargin{i}) && strcmp(varargin{i},'-1')
         RemoveLengthOne=1;
-    elseif ischar(varargin{i}) & strcmp(varargin{i},'BNA')
+    elseif ischar(varargin{i}) && strcmp(varargin{i},'BNA')
         BNA=1;
-    elseif ischar(varargin{i}) & isempty(filename)
+    elseif ischar(varargin{i}) && isempty(filename)
         filename=varargin{i};
     elseif j==0
         Data1=varargin{i};
         j=j+1;
-    elseif (isnumeric(varargin{i}) | iscell(varargin{i})) & j==1
+    elseif (isnumeric(varargin{i}) || iscell(varargin{i})) && j==1
         Data2=varargin{i};
         XYSep=1; % x and y supplied separately?
     else
-        error(sprintf('Invalid input argument %i',i+2))
+        error('Invalid input argument %i',i+2)
     end
 end
 
 if isempty(filename)
     [fn,fp]=uiputfile('*.*');
     if ~ischar(fn),
-        return;
-    end;
+        return
+    end
     filename=[fp fn];
-end;
+end
 
 if isnumeric(Data1) % convert to column vectors
     if XYSep
@@ -214,9 +223,9 @@ if isnumeric(Data1) % convert to column vectors
     end
 end
 
-if iscell(Data1),
+if iscell(Data1)
     j=0;
-    for i=1:length(Data1),
+    for i=1:length(Data1)
         if XYSep
             Length=length(Data1{i}(:));
         else
@@ -225,7 +234,7 @@ if iscell(Data1),
             end
             Length=size(Data1{i},1);
         end
-        if ~(isempty(Data1{i}) | (RemoveLengthOne & Length==1)), % remove lines of length 0 (and optionally 1)
+        if ~(isempty(Data1{i}) || (RemoveLengthOne && Length==1)) % remove lines of length 0 (and optionally 1)
             j=j+1;
             T.Seg(j).ID = j;
             if XYSep
@@ -233,13 +242,13 @@ if iscell(Data1),
             else
                 T.Seg(j).Coord = Data1{i};
             end
-        end;
-    end;
-elseif ~isstruct(Data1),
+        end
+    end
+elseif ~isstruct(Data1)
     I=[0; find(isnan(Data1(:,1))); size(Data1,1)+1];
     j=0;
-    for i=1:(length(I)-1),
-        if I(i+1)>(I(i)+1+RemoveLengthOne), % remove lines of length 0  (and optionally 1)
+    for i=1:(length(I)-1)
+        if I(i+1)>(I(i)+1+RemoveLengthOne) % remove lines of length 0  (and optionally 1)
             j=j+1;
             T.Seg(j).ID = j;
             if XYSep
@@ -247,11 +256,11 @@ elseif ~isstruct(Data1),
             else
                 T.Seg(j).Coord = Data1((I(i)+1):(I(i+1)-1),:);
             end
-        end;
-    end;
+        end
+    end
 else
     T=Data1;
-end;
+end
 
 fid=fopen(filename,'w');
 for j=1:length(T.Seg)
@@ -273,7 +282,11 @@ for j=1:length(T.Seg)
         fprintf(fid,'%d\n',id);
     end
     fprintf(fid,'%f, %f\n',transpose(T.Seg(j).Coord));
-    if ~BNA, fprintf(fid,'END\n'); end
+    if ~BNA
+        fprintf(fid,'END\n');
+    end
 end
-if ~BNA, fprintf(fid,'END\n'); end
+if ~BNA
+    fprintf(fid,'END\n');
+end
 fclose(fid);
