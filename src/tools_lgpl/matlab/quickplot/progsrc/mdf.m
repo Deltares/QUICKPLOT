@@ -249,10 +249,13 @@ if isfield(MDF2,'bnd')
     MDF2.bnd.MN(:,3:4) = rotate(MDF2.bnd.MN(:,3:4),MMAX);
     %
     for i = 1:length(MDF2.bnd.Name)
-        if ~isempty(strfind('CQTR',MDF2.bnd.BndType(i)))
+        if any('CQTRN'==MDF2.bnd.BndType(i))
+            if MDF2.bnd.BndType(i)=='R'
+                warning('Riemann data may need adjustment: sign of velocity component changes')
+            end
             % if along N axis, then change sign of flux
             if MDF2.bnd.MN(i,1)~=MDF2.bnd.MN(i,3)
-                switch MDF2.bnd.Forcing
+                switch MDF2.bnd.Forcing(i)
                     case 'T'
                         for j = 1:length(MDF2.bct.Table)
                             if strcmp(MDF2.bct.Table(j).Location,MDF2.bnd.Name{i})
