@@ -222,7 +222,9 @@ if isfield(MDF2,'dep')
     else
         % data at grid points: dummy row only at high M and N
         szM = size(MDF2.dep,1);
-        MDF2.dep = [fliplr(MDF2.dep(:,1:end-1)');repmat(-999,1,szM)];
+        szN = size(MDF2.dep,2);
+%        MDF2.dep = [fliplr(MDF2.dep(:,1:end-1)');repmat(-999,1,szM)];
+        MDF2.dep = [rot90(MDF2.dep(1:end-1,1:end-1),-1) repmat(-999,szN-1,1); repmat(-999,1,szM)];
     end
 end
 %
