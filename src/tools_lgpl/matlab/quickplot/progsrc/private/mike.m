@@ -64,7 +64,7 @@ switch cmd
                 Out=Local_read_mike_new(varargin{:});
         end
     otherwise
-        uiwait(msgbox('unknown command','modal'));
+        error('unknown command: %s',var2str(cmd))
 end
 
 function S=Local_open_mike(filename)
@@ -81,7 +81,7 @@ end
 % Filename: has it an extension?
 lastdot=max(strfind(filename,'.'));
 lastsep=max(strfind(filename,filesep));
-if ~isempty(lastdot) & (isempty(lastsep) | (lastdot>lastsep)) % has extension!
+if ~isempty(lastdot) && (isempty(lastsep) || (lastdot>lastsep)) % has extension!
     file_ext=filename(lastdot:end);
     filename=filename(1:(lastdot-1));
 else
@@ -115,7 +115,7 @@ if isunix
         S.FileName=filename;
     end
 else % PCWIN
-    if (length(filename)<2) | (~isequal(filename(1:2),'\\') & ~isequal(filename(2),':'))
+    if (length(filename)<2) || (~isequal(filename(1:2),'\\') && ~isequal(filename(2),':'))
         filename=[pwd '\' filename];
         S.FileName=filename;
     end
@@ -138,8 +138,7 @@ def_file=[filename S.Def];
 % Check existence of dat file
 % =====================================================
 if exist(dat_file)~=2
-    fprintf('Datafile "%s" does not exist.\n',dat_file);
-    return
+    error('Datafile "%s" does not exist.',dat_file)
 end
 
 % =====================================================
@@ -147,12 +146,12 @@ end
 % =====================================================
 fidef=fopen(def_file,'r','l');
 if fidef<0
-    fprintf('Cannot open definition file.\n');
-    return
+    error('Cannot open definition file: %s.',def_file)
 end
 
 BS=fread(fidef,1,'int32'); % 600
 if ~isequal(BS,600)
+    fclose(fidef);
     fidef=fopen(def_file,'r','b');
     S.Format='b';
     BS=fread(fidef,1,'int32'); % 600
@@ -202,7 +201,7 @@ end
 S.DataField(1).Data=X;
 
 BS=fread(fidef,1,'int32'); % 436
-X=char(fread(fidef,[1 436],'uchar'));
+X=fread(fidef,[1 436],'*char');
 BS=fread(fidef,1,'int32'); % 436
 
 S.Description=deblank(X(1:40));
@@ -229,7 +228,7 @@ file=[filename S.Dat];
 % Check existence of file
 % =====================================================
 if exist(file)~=2
-    error(sprintf('File "%s" does not exist.',file))
+    error('File "%s" does not exist.',file)
 end
 
 % =====================================================
@@ -237,15 +236,15 @@ end
 % =====================================================
 fid=fopen(file,'r','l');
 if fid<0
-    error(sprintf('Cannot open file: %s.',file))
+    error('Cannot open file: %s.',file)
 end
 
-X=char(fread(fid,[1 64],'uchar'));
+X=fread(fid,[1 64],'*char');
 if ~strcmp(X,'DHI_DFS_ MIKE Zero - this file contains binary data, do not edit')
     error('Invalid start of MIKE Zero file.')
 end
 
-X=char(fread(fid,[1 17],'uchar')); %  FOpenFileCreate
+X=fread(fid,[1 17],'*char'); %  FOpenFileCreate
 
 X=fread(fid,1,'uchar'); %<end of text>
 
@@ -313,7 +312,7 @@ while 1
         case 3
             N=fread(fid,1,'int32');
             %fprintf('%i: %i uchar\n',Typ,N);
-            Info.Data{end+1}=char(fread(fid,[1 N],'uchar'));
+            Info.Data{end+1}=fread(fid,[1 N],'*char');
         case {4,5}
             N=fread(fid,1,'int32');
             %fprintf('%i: %i int32\n',Typ,N);
@@ -438,7 +437,7 @@ while 1
             %fprintf('%i <--\n',Typ);
             return
         otherwise
-            error(sprintf('Unknown type %i',Typ))
+            error('Unknown type %i',Typ)
     end
 end
 Info.Check='OK';
@@ -447,7 +446,7 @@ function Data=Local_read_mike(S,varargin)
 Data=[];
 
 IN=varargin;
-if length(IN)>0 & iscell(IN{end})
+if ~isempty(IN) && iscell(IN{end})
     subscr=IN{end};
     if length(subscr)~=S.NumCoords,
         error('Invalid number of indices.');
@@ -461,7 +460,6 @@ switch length(IN)
     case 0
         if S.NumItems==1
             Item=1;
-            Info=S.Item(Item);
             TimeStep=max(1,S.NumTimeSteps);
         else
             error('No item specified.')
@@ -469,7 +467,6 @@ switch length(IN)
     case 1 % TimeStep or Item
         if S.NumItems==1
             Item=1;
-            Info=S.Item(Item);
             TimeStep=IN{1};
         else
             Item=IN{1};
@@ -479,7 +476,6 @@ switch length(IN)
                     error('Invalid item name')
                 end
             end
-            Info=S.Item(Item);
             TimeStep=max(1,S.NumTimeSteps);
         end
     case 2
@@ -490,7 +486,6 @@ switch length(IN)
                 error('Invalid item name')
             end
         end
-        Info=S.Item(Item);
         TimeStep=IN{2};
     otherwise
         error('Too many input arguments.')

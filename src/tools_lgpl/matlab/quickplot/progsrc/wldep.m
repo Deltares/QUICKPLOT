@@ -111,7 +111,8 @@ switch cmd
             if nargout==1
                 varargout{1}=Dep;
             else
-                for i=1:max(1,nargout)
+                varargout = cell(1,max(1,nargout));
+                for i=1:length(varargout)
                     varargout{i}=Dep(i).Data;
                 end
             end
@@ -126,7 +127,7 @@ switch cmd
             varargout{1}=Out;
         end
     otherwise
-        error('Unknown command')
+        error('Unknown command: %s',var2str(cmd))
 end
 
 
@@ -150,7 +151,7 @@ if nargin<3
 else
     multiple=strcmp(option,'multiple');
     if ~multiple
-        warning('Unknown option.')
+        error('Unknown 3rd argument: %s.',var2str(option))
     end
 end
 
@@ -164,74 +165,78 @@ end
 
 fid=fopen(filename);
 if fid<0
-    error(['Cannot open ',filename,'.'])
+    error('Cannot open %s.',filename)
 end
-if isstruct(dimvar) % new grid format G.X, G.Y, G.Enclosure
-    dim=size(dimvar.X)+1;
-elseif iscell(dimvar) % old grid format {X Y Enclosure}
-    dim=size(dimvar{1})+1;
-else
-    dim=dimvar;
-end
-i=1;
-More=1;
-while 1
-    %
-    % Skip lines starting with *
-    %
-    line='*';
-    cl=0;
-    while ~isempty(line) && line(1)=='*'
-        if cl>0
-            DP(i).Comment{cl,1}=line;
-        end
-        cl=cl+1;
-        currentpoint=ftell(fid);
-        line=fgetl(fid);
-    end
-    fseek(fid,currentpoint,-1);
-    %
-    [DP(i).Data,NRead]=fscanf(fid,'%f',dim);
-    if NRead==0 % accept dredging input files containing 'keyword' on the first line ...
-        str=fscanf(fid,['''%[^' char(10) char(13) ''']%['']']);
-        if ~isempty(str) && isequal(str(end),'''')
-            [DP(i).Data,NRead]=fscanf(fid,'%f',dim);
-            DP(i).Keyword=str(1:end-1);
-        end
-    end
-    DP(i).Data=DP(i).Data;
-    %
-    % Read remainder of last line
-    %
-    Rem=fgetl(fid);
-    if ~ischar(Rem)
-        Rem='';
+try
+    if isstruct(dimvar) % new grid format G.X, G.Y, G.Enclosure
+        dim=size(dimvar.X)+1;
+    elseif iscell(dimvar) % old grid format {X Y Enclosure}
+        dim=size(dimvar{1})+1;
     else
-        Rem=deblank(Rem);
+        dim=dimvar;
     end
-    if NRead<prod(dim)
-        if strcmp(Rem,'')
-            Str=sprintf('Not enough data in the file for complete field %i (only %i out of %i values).',i,NRead,prod(dim));
-            if i==1 % most probably wrong file format
-                error(Str)
-            else
-                warning(Str)
+    i=1;
+    while 1
+        %
+        % Skip lines starting with *
+        %
+        line='*';
+        cl=0;
+        while ~isempty(line) && line(1)=='*'
+            if cl>0
+                DP(i).Comment{cl,1}=line;
             end
-        else
-            error(sprintf('Invalid string while reading data: %s',Rem));
+            cl=cl+1;
+            currentpoint=ftell(fid);
+            line=fgetl(fid);
         end
+        fseek(fid,currentpoint,-1);
+        %
+        [DP(i).Data,NRead]=fscanf(fid,'%f',dim);
+        if NRead==0 % accept dredging input files containing 'keyword' on the first line ...
+            str=fscanf(fid,['''%[^' char(10) char(13) ''']%['']']);
+            if ~isempty(str) && isequal(str(end),'''')
+                [DP(i).Data,NRead]=fscanf(fid,'%f',dim);
+                DP(i).Keyword=str(1:end-1);
+            end
+        end
+        DP(i).Data=DP(i).Data;
+        %
+        % Read remainder of last line
+        %
+        Rem=fgetl(fid);
+        if ~ischar(Rem)
+            Rem='';
+        else
+            Rem=deblank(Rem);
+        end
+        if NRead<prod(dim)
+            if isempty(Rem)
+                Str=sprintf('Not enough data in the file for complete field %i (only %i out of %i values).',i,NRead,prod(dim));
+                if i==1 % most probably wrong file format
+                    error(Str)
+                else
+                    warning(Str)
+                end
+            else
+                error('Invalid string while reading data: %s',Rem)
+            end
+        end
+        pos=ftell(fid);
+        if isempty(fscanf(fid,'%f',1))
+            break % no more data (at least not readable)
+        elseif ~multiple
+            fprintf('More data in the file. Use ''multiple'' option to read all fields.\n');
+            break % don't read data although there seems to be more ...
+        end
+        fseek(fid,pos,-1);
+        i=i+1;
     end
-    pos=ftell(fid);
-    if isempty(fscanf(fid,'%f',1))
-        break % no more data (at least not readable)
-    elseif ~multiple
-        fprintf('More data in the file. Use ''multiple'' option to read all fields.\n');
-        break % don't read data although there seems to be more ...
-    end
-    fseek(fid,pos,-1);
-    i=i+1;
+    fclose(fid);
+catch
+    fclose(fid);
+    rethrow(lasterror)
 end
-fclose(fid);
 if ~multiple
     DP=DP.Data;
 end
@@ -245,7 +250,6 @@ function OK=Local_depwrite(filename,varargin)
 %    or: depwrite('filename',Struct)
 %        where Struct is a structure vector with one field: Data
 
-OK=0;
 fid=fopen(filename,'w');
 Keyword='';
 interactive = length(varargin)==1;

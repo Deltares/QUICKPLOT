@@ -20,30 +20,30 @@ function varargout = incremental(cmd,varargin)
 %   See also INCANALYSIS, FLS.
 
 %----- LGPL --------------------------------------------------------------------
-%                                                                               
-%   Copyright (C) 2011-2012 Stichting Deltares.                                     
-%                                                                               
-%   This library is free software; you can redistribute it and/or                
-%   modify it under the terms of the GNU Lesser General Public                   
-%   License as published by the Free Software Foundation version 2.1.                         
-%                                                                               
-%   This library is distributed in the hope that it will be useful,              
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of               
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU            
-%   Lesser General Public License for more details.                              
-%                                                                               
-%   You should have received a copy of the GNU Lesser General Public             
-%   License along with this library; if not, see <http://www.gnu.org/licenses/>. 
-%                                                                               
-%   contact: delft3d.support@deltares.nl                                         
-%   Stichting Deltares                                                           
-%   P.O. Box 177                                                                 
-%   2600 MH Delft, The Netherlands                                               
-%                                                                               
-%   All indications and logos of, and references to, "Delft3D" and "Deltares"    
-%   are registered trademarks of Stichting Deltares, and remain the property of  
-%   Stichting Deltares. All rights reserved.                                     
-%                                                                               
+%
+%   Copyright (C) 2011-2012 Stichting Deltares.
+%
+%   This library is free software; you can redistribute it and/or
+%   modify it under the terms of the GNU Lesser General Public
+%   License as published by the Free Software Foundation version 2.1.
+%
+%   This library is distributed in the hope that it will be useful,
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%   Lesser General Public License for more details.
+%
+%   You should have received a copy of the GNU Lesser General Public
+%   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+%
+%   contact: delft3d.support@deltares.nl
+%   Stichting Deltares
+%   P.O. Box 177
+%   2600 MH Delft, The Netherlands
+%
+%   All indications and logos of, and references to, "Delft3D" and "Deltares"
+%   are registered trademarks of Stichting Deltares, and remain the property of
+%   Stichting Deltares. All rights reserved.
+%
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
@@ -70,177 +70,181 @@ fid=fopen(filename,'r');
 if fid<0
     return
 end
-
-FileInfo.FileName=filename;
-
-Line=fgetnel(fid); % /* runid or MAIN DIMENSIONS ...
-if strcmp(Line(1:2),'/*')
-    Line=fgetnel(fid);
-end
-
-% FLS file:
-% MAIN DIMENSIONS                MMAX   NMAX
-%
-% SOBEK overland file:
-% INC1.0
-%
-% SIMONA file:
-% CLASSES OF INCREMENTAL FILE    H           Z           U           V           M           A
-
-switch Line(1:3)
-    case 'INC'
-        FileInfo.Type = 'SOBEK';
-        FileInfo.Sobek=str2num(Line(4:end));
+try
+    FileInfo.FileName=filename;
+    
+    Line=fgetnel(fid); % /* runid or MAIN DIMENSIONS ...
+    if strcmp(Line(1:2),'/*')
         Line=fgetnel(fid);
-        % DOMAIN                        NUMBER   ID
-    case 'MAI'
-        FileInfo.Type = 'FLS';
-        FileInfo.Sobek=0;
-    case 'CLA'
-        FileInfo.Type = 'SIMONA';
-end
-
-if ~isequal(FileInfo.Type,'SIMONA')
-    dmn=1;
-    while dmn
-        if FileInfo.Sobek
-            Line=fgetnel(fid);
-            %                              <NUMBER> 'ID'
-            [T,Rem]=strtok(Line);
-            FileInfo.Domain(dmn).Number=str2num(T); % <NUMBER>
-            Quote=strfind(Rem,'''');
-            FileInfo.Domain(dmn).Id=deblank(Rem(Quote(1)+1:Quote(end)-1));
-            Line=fgetnel(fid);
-            % MAIN DIMENSIONS                MMAX   NMAX
-        end
-        
-        Line=fgetnel(fid); %                               <MMAX> <NMAX>
-        X=sscanf(Line,'%i',2);
-        FileInfo.Domain(dmn).NRows=X(1);
-        FileInfo.Domain(dmn).NCols=X(2);
-        
-        if FileInfo.Sobek
-            fgetnel(fid);
-            % GRID                           DX      DY      X0      Y0
-            Line=fgetnel(fid);
-            %                               <DX>    <DY>    <XO>    <Y0>
-            X=sscanf(Line,'%f',4);
-            FileInfo.Domain(dmn).XCellSize=X(1);
-            FileInfo.Domain(dmn).YCellSize=X(2);
-            FileInfo.Domain(dmn).XCorner=X(3);
-            FileInfo.Domain(dmn).YCorner=X(4);
-            Line=fgetnel(fid);
-            % domain                        END
-        else
-            fgetnel(fid);
-            % GRID                           DX      X0      Y0
-            Line=fgetnel(fid);
-            %                               <DX>    <X0>    <Y0>
-            X=sscanf(Line,'%f',3);
-            FileInfo.Domain(dmn).XCellSize=X(1);
-            FileInfo.Domain(dmn).YCellSize=X(1);
-            FileInfo.Domain(dmn).XCorner=X(2);
-            FileInfo.Domain(dmn).YCorner=X(3);
-        end
-        
-        if FileInfo.Sobek
+    end
+    
+    % FLS file:
+    % MAIN DIMENSIONS                MMAX   NMAX
+    %
+    % SOBEK overland file:
+    % INC1.0
+    %
+    % SIMONA file:
+    % CLASSES OF INCREMENTAL FILE    H           Z           U           V           M           A
+    
+    switch Line(1:3)
+        case 'INC'
+            FileInfo.Type = 'SOBEK';
+            FileInfo.Sobek=str2double(Line(4:end));
             Line=fgetnel(fid);
             % DOMAIN                        NUMBER   ID
-            if strcmp(Line(1:6),'DOMAIN')
-                dmn=dmn+1;
+        case 'MAI'
+            FileInfo.Type = 'FLS';
+            FileInfo.Sobek=0;
+        case 'CLA'
+            FileInfo.Type = 'SIMONA';
+    end
+    
+    if ~isequal(FileInfo.Type,'SIMONA')
+        dmn=1;
+        while dmn
+            if FileInfo.Sobek
+                Line=fgetnel(fid);
+                %                              <NUMBER> 'ID'
+                [T,Rem]=strtok(Line);
+                FileInfo.Domain(dmn).Number=str2double(T); % <NUMBER>
+                Quote=strfind(Rem,'''');
+                FileInfo.Domain(dmn).Id=deblank(Rem(Quote(1)+1:Quote(end)-1));
+                fgetnel(fid);
+                % MAIN DIMENSIONS                MMAX   NMAX
+            end
+            
+            Line=fgetnel(fid); %                               <MMAX> <NMAX>
+            X=sscanf(Line,'%i',2);
+            FileInfo.Domain(dmn).NRows=X(1);
+            FileInfo.Domain(dmn).NCols=X(2);
+            
+            if FileInfo.Sobek
+                fgetnel(fid);
+                % GRID                           DX      DY      X0      Y0
+                Line=fgetnel(fid);
+                %                               <DX>    <DY>    <XO>    <Y0>
+                X=sscanf(Line,'%f',4);
+                FileInfo.Domain(dmn).XCellSize=X(1);
+                FileInfo.Domain(dmn).YCellSize=X(2);
+                FileInfo.Domain(dmn).XCorner=X(3);
+                FileInfo.Domain(dmn).YCorner=X(4);
+                Line=fgetnel(fid);
+                % domain                        END
+            else
+                fgetnel(fid);
+                % GRID                           DX      X0      Y0
+                Line=fgetnel(fid);
+                %                               <DX>    <X0>    <Y0>
+                X=sscanf(Line,'%f',3);
+                FileInfo.Domain(dmn).XCellSize=X(1);
+                FileInfo.Domain(dmn).YCellSize=X(1);
+                FileInfo.Domain(dmn).XCorner=X(2);
+                FileInfo.Domain(dmn).YCorner=X(3);
+            end
+            
+            if FileInfo.Sobek
+                Line=fgetnel(fid);
+                % DOMAIN                        NUMBER   ID
+                if strcmp(Line(1:6),'DOMAIN')
+                    dmn=dmn+1;
+                else
+                    dmn=0;
+                end
             else
                 dmn=0;
             end
-        else
-            dmn=0;
         end
-    end
-    
-    if ~FileInfo.Sobek
-        Line=fgetnel(fid);
-    end
-    
-    if strcmp(upper(Line(1:min(length(Line),5))),'START')
-        % START TIME T0: 1996.01.01 10:00:00
-        FileInfo.StartTime=sscanf(Line,'%*[ 0A-z]: %i.%i.%i %i:%i:%i',6)';
-        Line=fgetnel(fid);
-    end
-    
-    % The following record is not part of any standard (neither FLS nor Sobek)
-    if strcmp(upper(Line(1:min(length(Line),9))),'TIME UNIT')
-        % TIME UNIT
-        FileInfo.TimeUnit=sscanf(Line(10:end),'%s');
-        Line=fgetnel(fid);
-    end
-else
-    FileInfo.Domain(1).NRows = DomainSize(1);
-    FileInfo.Domain(1).NCols = DomainSize(2);
-end
-
-% FLS file:
-% CLASSES OF INCREMENTAL FILE    H       C       Z       U       V
-%
-% SOBEK overland file:
-% CLASSES OF INCREMENTAL FILE    Waterdepth(m) Velocity(m/s)  Waterlevel(m) U-velocity(m/s)  V-velocity(m/s)
-%
-% SIMONA file:
-% CLASSES OF INCREMENTAL FILE    H           Z           U           V           M           A
-if strcmp(FileInfo.Type,'SIMONA')
-    NQuant=6;
-else
-    NQuant=5;
-end
-Names = Line(29:end);
-for i=1:NQuant
-    [FileInfo.Quant(i).Name,Names] = strtok(Names);
-    FileInfo.Quant(i).Class=[];
-end
-Line=fgetnel(fid);
-while ~isempty(Line) & strcmp(Line(1),' ')
-    X=sscanf(Line,'%f',[1 NQuant]);
-    if length(X)<NQuant
-        break
-    end % empty line of spaces?
-    for i=1:NQuant
-        if X(i)~=-999
-            FileInfo.Quant(i).Class(end+1)=X(i);
+        
+        if ~FileInfo.Sobek
+            Line=fgetnel(fid);
         end
-    end
-    Line=fgetnel(fid); % Line of class boundaries, or ENDCLASSES
-end
-
-FileInfo.StartData=ftell(fid);
-for i=1:NQuant
-    FileInfo.Quant(i).Time=-inf;
-    FileInfo.Quant(i).Offset=FileInfo.StartData;
-    %  FileInfo.Quant(i).NEntries=0;
-    if ~isempty(FileInfo.Quant(i).Class)
-        FileInfo.Quant(i).Field=cell(1,length(FileInfo.Domain));
-        for dmn=1:length(FileInfo.Domain)
-            FileInfo.Quant(i).Field{dmn}=repmat(NaN,FileInfo.Domain(dmn).NRows,FileInfo.Domain(dmn).NCols);
+        
+        if strcmpi(Line(1:min(length(Line),5)),'START')
+            % START TIME T0: 1996.01.01 10:00:00
+            FileInfo.StartTime=sscanf(Line,'%*[ 0A-z]: %i.%i.%i %i:%i:%i',6)';
+            Line=fgetnel(fid);
+        end
+        
+        % The following record is not part of any standard (neither FLS nor Sobek)
+        if strcmpi(Line(1:min(length(Line),9)),'TIME UNIT')
+            % TIME UNIT
+            FileInfo.TimeUnit=sscanf(Line(10:end),'%s');
+            Line=fgetnel(fid);
         end
     else
-        FileInfo.Quant(i).Field=[];
+        FileInfo.Domain(1).NRows = DomainSize(1);
+        FileInfo.Domain(1).NCols = DomainSize(2);
     end
+    
+    % FLS file:
+    % CLASSES OF INCREMENTAL FILE    H       C       Z       U       V
+    %
+    % SOBEK overland file:
+    % CLASSES OF INCREMENTAL FILE    Waterdepth(m) Velocity(m/s)  Waterlevel(m) U-velocity(m/s)  V-velocity(m/s)
+    %
+    % SIMONA file:
+    % CLASSES OF INCREMENTAL FILE    H           Z           U           V           M           A
+    if strcmp(FileInfo.Type,'SIMONA')
+        NQuant=6;
+    else
+        NQuant=5;
+    end
+    Names = Line(29:end);
+    for i=1:NQuant
+        [FileInfo.Quant(i).Name,Names] = strtok(Names);
+        FileInfo.Quant(i).Class=[];
+    end
+    Line=fgetnel(fid);
+    while ~isempty(Line) && strcmp(Line(1),' ')
+        X=sscanf(Line,'%f',[1 NQuant]);
+        if length(X)<NQuant
+            break
+        end % empty line of spaces?
+        for i=1:NQuant
+            if X(i)~=-999
+                FileInfo.Quant(i).Class(end+1)=X(i);
+            end
+        end
+        Line=fgetnel(fid); % Line of class boundaries, or ENDCLASSES
+    end
+    
+    FileInfo.StartData=ftell(fid);
+    for i=1:NQuant
+        FileInfo.Quant(i).Time=-inf;
+        FileInfo.Quant(i).Offset=FileInfo.StartData;
+        %  FileInfo.Quant(i).NEntries=0;
+        if ~isempty(FileInfo.Quant(i).Class)
+            FileInfo.Quant(i).Field=cell(1,length(FileInfo.Domain));
+            for dmn=1:length(FileInfo.Domain)
+                FileInfo.Quant(i).Field{dmn}=repmat(NaN,FileInfo.Domain(dmn).NRows,FileInfo.Domain(dmn).NCols);
+            end
+        else
+            FileInfo.Quant(i).Field=[];
+        end
+    end
+    
+    if strcmp(FileInfo.Type,'SIMONA')
+        Line = lower(fgetl(fid));
+        X = sscanf(Line,'%i, %i, time= %f',3);
+        StartTime = X(3)/60;
+    else
+        StartTime=fscanf(fid,'%f',1);
+    end
+    if ~isempty(StartTime)
+        FileInfo.Begin=StartTime;
+        FileInfo.End=GetLastTime(fid);
+        FileInfo.DisplayStep=0.25; % time step for displaying INCREMENTAL file <-------------
+    end
+    if strcmp(FileInfo.Type,'SIMONA')
+        FileInfo.End=FileInfo.End/60;
+    end
+    fclose(fid);
+    FileInfo.Check='OK';
+catch
+    fclose(fid);
+    rethrow(lasterror)
 end
-
-if strcmp(FileInfo.Type,'SIMONA')
-    Line = lower(fgetl(fid));
-    X = sscanf(Line,'%i, %i, time= %f',3);
-    StartTime = X(3)/60;
-else
-    StartTime=fscanf(fid,'%f',1);
-end
-if ~isempty(StartTime)
-    FileInfo.Begin=StartTime;
-    FileInfo.End=GetLastTime(fid);
-    FileInfo.DisplayStep=0.25; % time step for displaying INCREMENTAL file <-------------
-end
-if strcmp(FileInfo.Type,'SIMONA')
-    FileInfo.End=FileInfo.End/60;
-end
-fclose(fid);
-FileInfo.Check='OK';
 
 
 function LastTime=GetLastTime(fid)
@@ -248,13 +252,13 @@ fseek(fid,0,1);
 while 1
     Chunk=min(ftell(fid),1000);
     fseek(fid,-Chunk,0);
-    Str=char(fread(fid,[1 Chunk],'uchar'));
+    Str=fread(fid,[1 Chunk],'*char');
     LastPoint=max(strfind(Str,'.'));
     if isempty(LastPoint)
         fseek(fid,-Chunk,0); % continue with next chunk
     else
         fseek(fid,-Chunk+LastPoint-10,0);
-        Str=char(fread(fid,[1 30],'uchar'));
+        Str=fread(fid,[1 30],'*char');
         break
     end
 end
@@ -309,33 +313,33 @@ for first=1:-1:0
         switch FileInfo.Type
             case 'SOBEK'
                 % .08333 0 1 2
-                % 13 14 1 
-                % 13 15 4 
-                % 13 16 5 
-                % 14 15 1 
-                % 20 22 0 
-                % 21 21 0 
+                % 13 14 1
+                % 13 15 4
+                % 13 16 5
+                % 14 15 1
+                % 20 22 0
+                % 21 21 0
                 % .08333 0 1 3
-                % 30 77 0 
+                % 30 77 0
                 nr0 = 4;
                 ti = 1;
                 qi = 3;
                 [X,nr]=fscanf(fid,'%f %i %i %i',4);
             case 'FLS'
                 % .1223 0 1
-                % 13 185 2 
-                % 14 185 8 
-                % 15 205 2 
-                % 17 185 9 
-                % 30 205 3 
-                % 32 193 3  
+                % 13 185 2
+                % 14 185 8
+                % 15 205 2
+                % 17 185 9
+                % 30 205 3
+                % 32 193 3
                 nr0 = 3;
                 ti = 1;
                 qi = 3;
                 [X,nr]=fscanf(fid,'%f %i %i',3);
             case 'SIMONA'
-                % 360,    1, time=   360.000, field=h     
-                % 360,    2, time=   360.000, field=zeta  
+                % 360,    1, time=   360.000, field=h
+                % 360,    2, time=   360.000, field=zeta
                 % 360, 1,    2,  174, 2
                 % 360, 2,    2,  174, 9
                 % 360, 1,    2,  175, 2
@@ -373,7 +377,7 @@ for first=1:-1:0
         end
         %
         ntim = Data.Domain(d).Quant(q).NTim+1;
-        if nr>nr0-1 | ntim==1
+        if nr>nr0-1 || ntim==1
             nr = nr/nr0;
             Data.Domain(d).Quant(q).NTim = ntim;
             %
@@ -567,7 +571,7 @@ end
 while t<=Time
     if X(qi)==-1
         % first time do nothing ...
-    elseif strcmp(FileInfo.Type,'SIMONA') | X(qi)==Field
+    elseif strcmp(FileInfo.Type,'SIMONA') || X(qi)==Field
         % apply changes and track offset
         switch FileInfo.Type
             case 'SIMONA'
@@ -675,6 +679,6 @@ end
 function Line=fgetnel(Fid)
 % get the next non-empty line from the Input
 Line='';
-while ~feof(Fid) & isempty(Line)
+while ~feof(Fid) && isempty(Line)
     Line=fgetl(Fid);
 end

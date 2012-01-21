@@ -1,67 +1,55 @@
 function varargout=cfx(cmd,varargin)
 % CFX File operations for CFX file.
+%     FILEDATA = CFX('open',FILENAME) opens an ascii or binary CFX4 dump
+%     (.dmp), geometry (.geo), or output print file and determines the file
+%     contents.
 %
-%        FileData = cfx('open',filename);
-%           Reads and checks data from a CFX .dmp file.
+%     DATA = CFX('read',FILEDATA,VARIABLE,DMTYPE,I,PH,T) reads the data for
+%     the VARIABLE for one or more domains from a CFX dump file for
+%     specified time and phase.
+%        domain type    : DMTYPE = 'block' or 'patch'
+%        domain numbers : I
+%        time index     : T
+%        phase number   : PH
+%     For single phase PH flow the phase value may be skipped: ...,I,T).
+%     For multi phase flows the phase PH has to be specified in order to
+%     specify a time index T (otherwise T = last index and PH = 1). If time
+%     index T is not specified the last index is taken.
 %
-%        Data = cfx('read',FileData,Variable,DmType,i,PH,T);
-%           Reads a Variable for one or more domains from a
-%           CFX dump file (ascii or binary) for specified time
-%           and phase.
-%             DmType         : 'block' or 'patch'
-%             domain numbers : i
-%             time index     : T
-%             phase number   : PH
-%           For single phase PH flow the phase value may be
-%           skipped: ...,i,T). For multi phase flows the phase
-%           PH has to be specified in order to specify a time
-%           index T (otherwise T = last index and PH = 1).
-%           If time index T is not specified the last index
-%           is taken.
+%     DATA = CFX('read',FILEDATA,VARIABLE,PH,T) reads the data for the
+%     VARIABLE for all blocks from a CFX dump file for specified time and
+%     phase. For single phase PH flow the phase value may be skipped:
+%     ...,I,T). For multi phase flows the phase PH has to be specified in
+%     order to specify a time index T (otherwise T = last index and PH =
+%     1). If time index T is not specified the last index is taken.
 %
-%        Data = cfx('read',FileData,Variable,PH,T);
-%           Reads a Variable for all blocks from a CFX dump
-%           file (ascii or binary) for specified time and phase.
-%           For single phase PH flow the phase value may be
-%           skipped: ...,i,T). For multi phase flows the phase
-%           PH has to be specified in order to specify a time
-%           index T (otherwise T = last index and PH = 1).
-%           If time index T is not specified the last index
-%           is taken.
+%     DATA = CFX('read',FILEDATA,'entry',I) reads data from record I of a
+%     CFX dump file.
 %
-%        Data = cfx('read',FileData,'entry',i);
-%           Reads data from record i of a CFX dump file.
+%     VARIABLES = CFX('vars',FILEDATA,DMTYPE) returns all acceptable
+%     variable names for the specified domain. Default DMTYPE = 'block'.
+%     Note: Valid variable names are the names of the active variable as
+%           used by CFX and the additional variables 'X COORDINATES','Y
+%           COORDINATES', 'Z COORDINATES' for both blocks and patches and
+%           'U CONVECTION','V CONVECTION','W CONVECTION' for blocks only.
+%           When reading coordinates all specified phase and time
+%           parameters are ignored.
 %
-%        Variables = cfx('vars',FileData,DmType);
-%           Returns all acceptable variable names for the
-%           specified domain. Default DmType = 'block'.
-%           Note: Valid variable names are the names of the
-%           active variable as used by CFX and the additional
-%           variables 'X COORDINATES','Y COORDINATES',
-%           'Z COORDINATES' for both blocks and patches and
-%           'U CONVECTION','V CONVECTION','W CONVECTION'
-%            for blocks only. When reading coordinates all
-%           specified phase and time parameters are ignored.
+%     [X,Y,Z] = CFX('read',FILEDATA,B) reads the X,Y,Z coordinates of
+%     the selected blocks B from a CFX geometry file. If B is not specified
+%     all blocks are read.
 %
-%        FileData = cfx('open',filename);
-%           Reads and checks data from a CFX .geo file.
-%        [X,Y,Z] = cfx('read',FileData,B);
-%           Reads a x,y,z coordinates of blocks B from
-%            a CFX geometry file. If B is not specified
-%            all blocks are read.
-%        FileData2 = cfx('write',FileName,FileData,X,Y,Z);
-%           Writes a CFX geometry file.
+%     FILEDATA = CFX('write',FILENAME,DATAIN,X,Y,Z) writes a CFX geometry
+%     file. DATAIN should have the same structure as a FILEDATA object
+%     returned from a CFX open call for .geo file.
 %
-%        FileData = cfx('open',filename);
-%           Reads and checks data from a CFX output file.
-%        Data = cfx('read',FileData,'block',B,D);
-%           Reads a dataset D of domain i from the CFX output
-%           file. The domain type can be either 'block' or
-%           'patch'. The dataset can be indicated a string
-%           or an index.
-%        Data = cfx('read',FileData,'monitoring point');
-%           Reads the data for the monitoring point from the
-%           CFX output file.
+%     DATA = CFX('read',FILEDATA,DMTYPE,B,D) reads a dataset D of domain B
+%     from the CFX output file. The domain type DMTYPE can be either
+%     'block' or 'patch'. The dataset can be indicated a string or an
+%     index.
+%
+%     DATA = CFX('read',FILEDATA,'monitoring point') reads the data for the
+%     monitoring point from the CFX output file.
 
 % (c) copyright 2000-2010 H.R.A.Jagers, bert.jagers@deltares.nl
 
@@ -119,7 +107,7 @@ switch cmd
             varargout{1}=[];
         else
             FD=varargin{1};
-            if ~isstruct(FD) | ~isfield(FD,'FileType')
+            if ~isstruct(FD) || ~isfield(FD,'FileType')
                 error('Invalid input argument for reading.')
             end
             switch lower(FD.FileType)
@@ -141,7 +129,7 @@ switch cmd
             varargout{1}='';
         else
             FD=varargin{1};
-            if ~isstruct(FD) | ~isfield(FD,'FileType')
+            if ~isstruct(FD) || ~isfield(FD,'FileType')
                 error('Invalid input argument.')
             end
             switch lower(FD.FileType)
@@ -229,13 +217,13 @@ S=Sin;
 i=0;
 while ~feof(fid)
     fread(fid,1,'int32'); %43
-    Str=deblank(char(fread(fid,[1 30],'char')));
+    Str=deblank(fread(fid,[1 30],'*char'));
     if strcmp(Str,'END OF FILE')
         break
     end
     i=i+1;
     S.Entry(i).Name=Str;
-    S.Entry(i).DataType=char(fread(fid,1,'char'));
+    S.Entry(i).DataType=fread(fid,1,'*char');
     S.Entry(i).Size=fread(fid,[1 3],'int32');
     fread(fid,1,'int32'); %43
     S.Entry(i).Loc=ftell(fid);
@@ -426,9 +414,9 @@ for i=1:NumTimes
     end
     % skip the field RESULTS AT END OF TIME STEP
     EntryNr=EntryNr+1;
-    if (i==1) | MovingGrid
+    if (i==1) || MovingGrid
         if ~strcmp(S.Entry(EntryNr).Name,'ARRAY XNN'),
-            error(sprintf('Missing ARRAY XNN field for time step %i.',i))
+            error('Missing ARRAY XNN field for time step %i.',i)
         else
             % read XNN
             S.XEntry(i)=EntryNr;
@@ -444,7 +432,7 @@ for i=1:NumTimes
         % skip PHASE NUMBER
         EntryNr=EntryNr+1;
         for var=1:S.NumVars
-            if (phase==1) & (i==1)
+            if (phase==1) && (i==1)
                 % read VARIABLE NAME
                 fseek(fid,S.Entry(EntryNr).Loc,-1);
                 if BinaryDmpFile
@@ -508,7 +496,7 @@ switch nargin
         Phase=1;
         TimeStepNr=length(FileInfo.TimeStepNum);
     case 3
-        if ischar(Variable) & ischar(Block) % Variable, Block
+        if ischar(Variable) && ischar(Block) % Variable, Block
             Phase=1;
             TimeStepNr=length(FileInfo.TimeStepNum);
             switch lower(Block)
@@ -519,7 +507,7 @@ switch nargin
                 otherwise
                     error(['Could not interpret: ' Block '.'])
             end
-        elseif ischar(Variable) & strcmp(upper(Variable),'ENTRY') % 'ENTRY' EntryNr
+        elseif ischar(Variable) && strcmpi(Variable,'ENTRY') % 'ENTRY' EntryNr
             EntryNr=Block;
             fid=fopen(FileInfo.FileName,'r','b');
             fseek(fid,FileInfo.Entry(EntryNr).Loc,-1);
@@ -607,7 +595,7 @@ switch upper(Block)
                     NriCB=0;
                     for i=1:x
                         for b=1:FileInfo.NumBlocks
-                            if (i==x) & ismember(b,BlockNr)
+                            if (i==x) && ismember(b,BlockNr)
                                 [Data{b},NriCB]=Local_read_bindmp_datapart(fid,'R',FileInfo.Block(b).IJK1,NriCB);
                                 Data{b}=reshape(Data{b},[FileInfo.Block(b).I+1 FileInfo.Block(b).J+1 FileInfo.Block(b).K+1]);
                             else
@@ -619,7 +607,7 @@ switch upper(Block)
                     NoCL=FileInfo.Entry(EntryNr).NPerLine;
                     for i=1:x
                         for b=1:FileInfo.NumBlocks
-                            if (i==x) & ismember(b,BlockNr)
+                            if (i==x) && ismember(b,BlockNr)
                                 [Data{b},NoCL]=Local_read_ascdmp_datapart(fid,'R', ...
                                     [FileInfo.Block(b).IJK1 FileInfo.Entry(EntryNr).Length], ...
                                     NoCL,FileInfo.Entry(EntryNr).NPerLine);
@@ -648,7 +636,7 @@ switch upper(Block)
                     NriCB=0;
                     for i=1:x
                         for b=1:FileInfo.NumBlocks
-                            if (i==x) & ismember(b,BlockNr)
+                            if (i==x) && ismember(b,BlockNr)
                                 [Data{b},NriCB]=Local_read_bindmp_datapart(fid,'R',FileInfo.Block(b).IJK,NriCB);
                                 Data{b}=reshape(Data{b},[FileInfo.Block(b).I FileInfo.Block(b).J FileInfo.Block(b).K]);
                             else
@@ -660,7 +648,7 @@ switch upper(Block)
                     NoCL=FileInfo.Entry(EntryNr).Length;
                     for i=1:x
                         for b=1:FileInfo.NumBlocks
-                            if (i==x) & ismember(b,BlockNr)
+                            if (i==x) && ismember(b,BlockNr)
                                 [Data{b},NoCL]=Local_read_ascdmp_datapart(fid,'R', ...
                                     [FileInfo.Block(b).IJK FileInfo.Entry(EntryNr).Length], ...
                                     NoCL,FileInfo.Entry(EntryNr).NPerLine);
@@ -828,7 +816,7 @@ switch DataType
         Mi=1;
         for i=1:Size(3)
             NBytes=fread(fid,1,'int32');
-            M(Mi+(1:(NBytes))-1)=char(fread(fid,NBytes,'char'));
+            M(Mi+(1:(NBytes))-1)=fread(fid,NBytes,'*char');
             Mi=Mi+NBytes;
             NBytes=fread(fid,1,'int32');
         end
@@ -862,7 +850,6 @@ function [NriCB]=Local_skip_bindmp_datapart(fid,DataType,Size,NriCB)
 if nargin==3
     NriCB=0;
 end
-M=[];
 switch DataType
     case 'C'
         Mi=1;
@@ -1040,7 +1027,7 @@ for i=1:floor(Size(1)/NpL)
     fgetl(fid); % skip whole lines
 end
 Size(1)=Size(1)-NpL*floor(Size(1)/NpL);
-if (NoCL>Size(1)) & (Size(1)>0)
+if (NoCL>Size(1)) && (Size(1)>0)
     % skip part of last line
     switch DataType
         case 'C'
@@ -1089,73 +1076,80 @@ end
 function Structure=Local_interpret_geo_file(filename)
 Structure.Check='NotOK';
 
-if nargin==0,
+if nargin==0
     [fn,fp]=uigetfile('*.geo');
-    if ~ischar(fn),
-        return;
-    end;
+    if ~ischar(fn)
+        return
+    end
     filename=[fp fn];
-end;
+end
 fid=fopen(filename);
-
+if fid<0
+    error('Unable to open %s.',filename)
+end
 Structure.FileName=filename;
 Structure.FileType='geo';
 
-Line=fgetl(fid); % /* GEOMETRY FILE FOR CFX-4 FROM CFX-MESHIMPORT */
-
-Line=fgetl(fid); %       4     47     18  32800  39380  /* NBLOCK,NPATCH,NGLUE,NELEM,NPOINT */
-X=sscanf(Line,'%i',5);
-Structure.NBlock=X(1);
-Structure.NPatch=X(2);
-Structure.NGlue=X(3);
-Structure.NElement=X(4);
-Structure.NPPoint=X(5);
-
-Line=fgetl(fid); % /* BLOCK NAMES AND SIZE (NI,NJ,NK) */
-for i=1:Structure.NBlock
-    Line=fgetl(fid); %BLOCK-NUMBER-1                       190      50      18
-    Structure.Block(i).Name=deblank(Line(1:32));
-    X=sscanf(Line(33:end),'%i',3);
-    Structure.Block(i).I=X(1);
-    Structure.Block(i).J=X(2);
-    Structure.Block(i).K=X(3);
+try
+    fgetl(fid); % /* GEOMETRY FILE FOR CFX-4 FROM CFX-MESHIMPORT */
+    
+    Line=fgetl(fid); %       4     47     18  32800  39380  /* NBLOCK,NPATCH,NGLUE,NELEM,NPOINT */
+    X=sscanf(Line,'%i',5);
+    Structure.NBlock=X(1);
+    Structure.NPatch=X(2);
+    Structure.NGlue=X(3);
+    Structure.NElement=X(4);
+    Structure.NPPoint=X(5);
+    
+    fgetl(fid); % /* BLOCK NAMES AND SIZE (NI,NJ,NK) */
+    for i=1:Structure.NBlock
+        Line=fgetl(fid); %BLOCK-NUMBER-1                       190      50      18
+        Structure.Block(i).Name=deblank(Line(1:32));
+        X=sscanf(Line(33:end),'%i',3);
+        Structure.Block(i).I=X(1);
+        Structure.Block(i).J=X(2);
+        Structure.Block(i).K=X(3);
+    end
+    
+    fgetl(fid); % /* PATCH TYPE, NAME, NO., RANGE, DIREC, BLK. NO., AND LABEL */
+    for i=1:Structure.NPatch
+        Line=fgetl(fid); %BLKBDY  GLUE-PATCH----1HIGH-J-BLK----1           1
+        Structure.Patch(i).Type=deblank(Line(1:8));
+        Structure.Patch(i).Name=deblank(Line(9:42));
+        % i==sscanf(Line(43:end),'%i',1);
+        Line=fgetl(fid); %     1    40    20    20     1    10    2       1       1
+        X=sscanf(Line,'%i',9);
+        Structure.Patch(i).Imin=X(1);
+        Structure.Patch(i).Imax=X(2);
+        Structure.Patch(i).Jmin=X(3);
+        Structure.Patch(i).Jmax=X(4);
+        Structure.Patch(i).Kmin=X(5);
+        Structure.Patch(i).Kmax=X(6);
+        Structure.Patch(i).Direc=X(7);
+        Structure.Patch(i).Block=X(8);
+        Structure.Patch(i).Label=X(9);
+    end
+    
+    fgetl(fid); % /* BLOCK TO BLOCK GLUEING INFORMATION */
+    for i=1:Structure.NGlue
+        Line=fgetl(fid); %       1      2      1      2      3      1
+        X=sscanf(Line,'%i',6);
+        Structure.Glue(i).Data=X;
+    end
+    
+    for b=1:Structure.NBlock
+        fgetl(fid); % /* VERTEX CO-ORDS (X,Y,Z) FOR BLOCK     1 */
+        Structure.Block(b).Start=ftell(fid);
+        % (I+1)*(J+1)*(K+1) vertices
+        X=fscanf(fid,'%f');
+    end
+    
+    Line=fgetl(fid); % /* *** LAST LINE OF GRID FILE *** */
+    fclose(fid);
+catch
+    fclose(fid);
+    rethrow(lasterror)
 end
-
-Line=fgetl(fid); % /* PATCH TYPE, NAME, NO., RANGE, DIREC, BLK. NO., AND LABEL */
-for i=1:Structure.NPatch
-    Line=fgetl(fid); %BLKBDY  GLUE-PATCH----1HIGH-J-BLK----1           1
-    Structure.Patch(i).Type=deblank(Line(1:8));
-    Structure.Patch(i).Name=deblank(Line(9:42));
-    % i==sscanf(Line(43:end),'%i',1);
-    Line=fgetl(fid); %     1    40    20    20     1    10    2       1       1
-    X=sscanf(Line,'%i',9);
-    Structure.Patch(i).Imin=X(1);
-    Structure.Patch(i).Imax=X(2);
-    Structure.Patch(i).Jmin=X(3);
-    Structure.Patch(i).Jmax=X(4);
-    Structure.Patch(i).Kmin=X(5);
-    Structure.Patch(i).Kmax=X(6);
-    Structure.Patch(i).Direc=X(7);
-    Structure.Patch(i).Block=X(8);
-    Structure.Patch(i).Label=X(9);
-end
-
-Line=fgetl(fid); % /* BLOCK TO BLOCK GLUEING INFORMATION */
-for i=1:Structure.NGlue
-    Line=fgetl(fid); %       1      2      1      2      3      1
-    X=sscanf(Line,'%i',6);
-    Structure.Glue(i).Data=X;
-end
-
-for b=1:Structure.NBlock
-    Line=fgetl(fid); % /* VERTEX CO-ORDS (X,Y,Z) FOR BLOCK     1 */
-    Structure.Block(b).Start=ftell(fid);
-    % (I+1)*(J+1)*(K+1) vertices
-    X=fscanf(fid,'%f');
-end
-
-Line=fgetl(fid); % /* *** LAST LINE OF GRID FILE *** */
-fclose(fid);
 if strcmp(Line,'/* *** LAST LINE OF GRID FILE *** */')
     Structure.Check='OK';
 end
@@ -1163,9 +1157,9 @@ end
 
 function Structure=Local_write_geo_file(FileName,Structure,X,Y,Z)
 
-if nargin<5,
-    error('Not enough input arguments');
-end;
+if nargin<5
+    error('Not enough input arguments')
+end
 
 fid=fopen(FileName,'w');
 
@@ -1235,11 +1229,11 @@ Structure.FileType='fo';
 
 % scan for version
 Line=fgetl(fid);
-Structure.Version=str2num(Line(5:7));
+Structure.Version=str2double(Line(5:7));
 
 % scan for problem title
 Line=fgetl(fid);
-while (length(Line)<30) | ~strcmp(Line(1:30),'                           ***')
+while (length(Line)<30) || ~strcmp(Line(1:30),'                           ***')
     Line=fgetl(fid);
     if feof(fid)
         fclose(fid);
@@ -1259,8 +1253,8 @@ while ~strcmp(Line,' TOPOLOGY  ')
 end
 
 % read topology
-Line=fgetl(fid); % empty line
-Line=fgetl(fid); %    BLOCK      NI      NJ      NK    BLOCK NAME
+fgetl(fid); % empty line
+fgetl(fid); %    BLOCK      NI      NJ      NK    BLOCK NAME
 Line=fgetl(fid);
 while ~isempty(Line)
     X=sscanf(Line,'%i',4);
@@ -1272,7 +1266,7 @@ while ~isempty(Line)
     Structure.Block(Nr).NDatasets=0;
     Line=fgetl(fid); % BLOCK INFO or EMPTY LINE
 end
-Line=fgetl(fid); % PATCH   IST   IFN   JST   JFN   KST   KFN    WALL   BLOCK  GROUP NO.  TYPE    PATCH NAME
+fgetl(fid); % PATCH   IST   IFN   JST   JFN   KST   KFN    WALL   BLOCK  GROUP NO.  TYPE    PATCH NAME
 Line=fgetl(fid);
 while ~isempty(Line)
     X=sscanf(Line,'%i',7);
@@ -1286,7 +1280,7 @@ while ~isempty(Line)
     Structure.Patch(Nr).Wall=shrinkStr(Line(46:51));
     X=sscanf(Line(52:70),'%i',2);
     Structure.Patch(Nr).Block=X(1);
-    Strcuture.Patch(Nr).Group=X(2);
+    Structure.Patch(Nr).Group=X(2);
     Structure.Patch(Nr).Type=shrinkStr(Line(71:79));
     Structure.Patch(Nr).Name=shrinkStr(Line(80:end));
     Structure.Patch(Nr).NDatasets=0;
@@ -1297,17 +1291,17 @@ end
 Line=fgetl(fid);
 STEP=0;
 monitordata=0;
-while length(Line)<7 | ~strcmp(Line(1:7),' *-*-*-')
-    if length(Line)>10 & strcmp(Line(1:10),'==========')
+while length(Line)<7 || ~strcmp(Line(1:7),' *-*-*-')
+    if length(Line)>10 && strcmp(Line(1:10),'==========')
         monitordata=1;
     end
-    if length(Line)>10 & strcmp(Line(1:10),'MONITORING')
+    if length(Line)>10 && strcmp(Line(1:10),'MONITORING')
         monitordata=1;
     end
     if monitordata
         monitordata=0;
-        STEP=STEP+1
-        if length(Line)>10 & strcmp(Line(1:10),'==========')
+        STEP=STEP+1;
+        if length(Line)>10 && strcmp(Line(1:10),'==========')
             Line=fgetl(fid); %        STEP NUMBER     1      TIME =  1.000E-03      TIME STEP = 1.00E-03
             %sscanf(Line,' STEP NUMBER %i TIME = %f TIME STEP = %f');
             Structure.Monitoring.Time(STEP)=sscanf(Line,' STEP NUMBER %*i TIME = %f');
@@ -1316,23 +1310,23 @@ while length(Line)<7 | ~strcmp(Line(1:7),' *-*-*-')
         end
         mp=0;
         while 1
-            if length(Line)>10 & strcmp(Line(1:10),'MONITORING')
+            if length(Line)>10 && strcmp(Line(1:10),'MONITORING')
                 break
             end
-            if length(Line)>7 & strcmp(Line(1:7),' *-*-*-')
+            if length(Line)>7 && strcmp(Line(1:7),' *-*-*-')
                 break
             end
             Line=fgetl(fid);
         end
-        while length(Line)>10 & strcmp(Line(1:10),'MONITORING')
+        while length(Line)>10 && strcmp(Line(1:10),'MONITORING')
             if STEP==1
-                Structure.Monitoring.I=str2num(Line(22:24));
-                Structure.Monitoring.J=str2num(Line(26:28));
-                Structure.Monitoring.K=str2num(Line(30:32));
+                Structure.Monitoring.I=str2double(Line(22:24));
+                Structure.Monitoring.J=str2double(Line(26:28));
+                Structure.Monitoring.K=str2double(Line(30:32));
                 Structure.Monitoring.Block=shrinkStr(Line(45:end));
             end
-            Line=fgetl(fid); % ITER  I--------------ABSOLUTE RESIDUAL SOURCE SUMS--------------I I-------------FIELD VALUES AT MONITORING POINT-------------I
-            Line=fgetl(fid); %   NO.   UMOM      VMOM      WMOM      MASS      TKIN      EDIS      U VEL.    V VEL.    W VEL.    PRESS.      K        EPS.
+            fgetl(fid); % ITER  I--------------ABSOLUTE RESIDUAL SOURCE SUMS--------------I I-------------FIELD VALUES AT MONITORING POINT-------------I
+            fgetl(fid); %   NO.   UMOM      VMOM      WMOM      MASS      TKIN      EDIS      U VEL.    V VEL.    W VEL.    PRESS.      K        EPS.
             if mp==0
                 Structure.Monitoring.Start(STEP)=ftell(fid);
                 Structure.Monitoring.Iter(STEP)=0;
@@ -1357,9 +1351,8 @@ while length(Line)<7 | ~strcmp(Line(1:7),' *-*-*-')
 end
 
 % interpret block data
-NBlock=1;
 % *-*-*-  BLOCK-NUMBER-1                     PLANE K =  1         U  VELOCITY     (M/S)        -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-while ~feof(fid) & strcmp(Line(1:7),' *-*-*-')
+while ~feof(fid) && strcmp(Line(1:7),' *-*-*-')
     BlockName=shrinkStr(Line(10:40));
     NBlock=strmatch(BlockName,{Structure.Block(:).Name},'exact');
     if ~isequal(size(NBlock),[1 1])
@@ -1382,7 +1375,7 @@ while ~feof(fid) & strcmp(Line(1:7),' *-*-*-')
         end
     end
     Structure.Block(NBlock).NDatasets=NValue;
-    while isempty(Line) & ~feof(fid)
+    while isempty(Line) && ~feof(fid)
         Line=fgetl(fid);
     end
 end
@@ -1391,10 +1384,10 @@ end
 for NPatch=1:length(Structure.Patch)
     if strcmp(Structure.Patch(NPatch).Type,'WALL')
         % WALL PATCH NAME: WALL1                              BLOCK NAME: BLOCK-NUMBER-1
-        while ~feof(fid) & ((length(Line)<7) | ~strcmp(Line(1:7),' *-*-*-'))
+        while ~feof(fid) && ((length(Line)<7) || ~strcmp(Line(1:7),' *-*-*-'))
             Line=fgetl(fid);
         end
-        while ~feof(fid) & length(Line)>7 & strcmp(Line(1:7),' *-*-*-')
+        while ~feof(fid) && length(Line)>7 && strcmp(Line(1:7),' *-*-*-')
             NValue=Structure.Patch(NPatch).NDatasets+1;
             % *-*-*-  WALL1                            LOW K  PLANE AT K =  1               PRESSURE  (PA)         -*-*-*-*-*-*-*-*-*-*-*-*-*-*
             Structure.Patch(NPatch).Data(NValue).Name=shrinkStr(Line(70:102));
@@ -1411,7 +1404,7 @@ for NPatch=1:length(Structure.Patch)
                 Line=fgetl(fid);
             end
             Structure.Patch(NPatch).NDatasets=NValue;
-            while isempty(Line) & ~feof(fid)
+            while isempty(Line) && ~feof(fid)
                 Line=fgetl(fid);
             end
         end
@@ -1462,8 +1455,7 @@ Data=[];
 switch upper(Entry)
     case 'BLOCK'
         if nargin<4
-            uiwait(msgbox('Insufficient parameters.','modal'));
-            return
+            error('Insufficient parameters.')
         end
         if Nr<=length(FileInfo.Block)
             if ischar(Field)
@@ -1475,22 +1467,21 @@ switch upper(Entry)
                     Field=strmatch(Field,Fields);
                 end
             end
-            if isnumeric(Field) & isequal(size(Field),[1 1]) & (Field>0) & (Field==round(Field)) & (Field<=FileInfo.Block(Nr).NDatasets)
+            if isnumeric(Field) && isequal(size(Field),[1 1]) && (Field>0) && (Field==round(Field)) && (Field<=FileInfo.Block(Nr).NDatasets)
                 Data=Read_block_fo_file(FileInfo.FileName, ...
                     FileInfo.Block(Nr).Data(Field).Start, ...
                     FileInfo.Block(Nr).I, ...
                     FileInfo.Block(Nr).J, ...
                     FileInfo.Block(Nr).K);
             else
-                uiwait(msgbox('Invalid data field indicator.','modal'));
+                error('Invalid data field indicator.')
             end
         else
-            uiwait(msgbox('Invalid block number.','modal'));
+            error('Invalid block number.')
         end
     case 'PATCH'
         if nargin<4
-            uiwait(msgbox('Insufficient parameters.','modal'));
-            return
+            error('Insufficient parameters.')
         end
         if Nr<=length(FileInfo.Patch)
             if ischar(Field)
@@ -1502,7 +1493,7 @@ switch upper(Entry)
                     Field=strmatch(Field,Fields);
                 end
             end
-            if isnumeric(Field) & isequal(size(Field),[1 1]) & (Field>0) & (Field==round(Field)) & (Field<=FileInfo.Patch(Nr).NDatasets)
+            if isnumeric(Field) && isequal(size(Field),[1 1]) && (Field>0) && (Field==round(Field)) && (Field<=FileInfo.Patch(Nr).NDatasets)
                 Data=Read_patch_fo_file(FileInfo.FileName, ...
                     FileInfo.Patch(Nr).Data(Field).Start, ...
                     FileInfo.Patch(Nr).Imax-FileInfo.Patch(Nr).Imin+1, ...
@@ -1510,15 +1501,14 @@ switch upper(Entry)
                     FileInfo.Patch(Nr).Kmax-FileInfo.Patch(Nr).Kmin+1, ...
                     FileInfo.Patch(Nr).Wall(end));
             else
-                uiwait(msgbox('Invalid data field indicator.','modal'));
+                error('Invalid data field indicator.')
             end
         else
-            uiwait(msgbox('Invalid patch number.','modal'));
+            error('Invalid patch number.')
         end
     case 'MONITORING POINT'
         if nargin<2
-            uiwait(msgbox('Insufficient parameters.','modal'));
-            return
+            error('Insufficient parameters.')
         elseif nargin==2
             Nr=1;
         end
@@ -1527,7 +1517,7 @@ switch upper(Entry)
                 FileInfo.Monitoring(Nr).Start, ...
                 FileInfo.Monitoring(Nr).Iter);
         else
-            uiwait(msgbox('Invalid monitoring point number.','modal'));
+            error('Invalid monitoring point number.')
         end
 end
 
@@ -1544,18 +1534,18 @@ for k=1:K
     NTotal=I+2;
     i=0;
     while NTotal>0
-        Line=fgetl(fid);
-        Line=fgetl(fid);
+        fgetl(fid);
+        fgetl(fid);
         DataPart=fscanf(fid,'%f',[min(12,NTotal)+1 J+2]);
         Data(i+(1:min(12,NTotal)),:,k)=DataPart(2:end,:);
-        Line=fgetl(fid); % read end of line of last data line
-        Line=fgetl(fid);
-        Line=fgetl(fid);
+        fgetl(fid); % read end of line of last data line
+        fgetl(fid);
+        fgetl(fid);
         i=i+min(12,NTotal);
         NTotal=NTotal-12;
     end
     for i=1:5
-        Line=fgetl(fid);
+        fgetl(fid);
     end
 end
 fclose(fid);
@@ -1583,13 +1573,13 @@ Data=zeros(I,J);
 NTotal=I;
 i=0;
 while NTotal>0
-    Line=fgetl(fid);
-    Line=fgetl(fid);
+    fgetl(fid);
+    fgetl(fid);
     DataPart=fscanf(fid,'%f',[min(12,NTotal)+1 J]);
     Data(i+(1:min(12,NTotal)),:)=DataPart(2:end,:);
-    Line=fgetl(fid); % read end of line of last data line
-    Line=fgetl(fid);
-    Line=fgetl(fid);
+    fgetl(fid); % read end of line of last data line
+    fgetl(fid);
+    fgetl(fid);
     i=i+min(12,NTotal);
     NTotal=NTotal-12;
 end
@@ -1611,7 +1601,6 @@ Data=zeros(sum(NIter),nCol);
 
 j=0;
 for i=1:length(Location)
-    i
     Nread=0;
     fseek(fid,Location(i),-1);
     TMP=transpose(fscanf(fid,'%f',[nCol inf]));
@@ -1621,12 +1610,12 @@ for i=1:length(Location)
     Nread=Nread+szTMP;
     while szTMP<NIter % another block of data to be read ...
         Line=fgetl(fid);
-        if (length(Line)<10) | ~strcmp(Line(1:10),'MONITORING')
+        if (length(Line)<10) || ~strcmp(Line(1:10),'MONITORING')
             fclose(fid);
             return
         end
-        Line=fgetl(fid);
-        Line=fgetl(fid);
+        fgetl(fid);
+        fgetl(fid);
         TMP=transpose(fscanf(fid,'%f',[nCol inf]));
         szTMP=size(TMP,1);
         Data(j+(1:szTMP),:)=TMP;

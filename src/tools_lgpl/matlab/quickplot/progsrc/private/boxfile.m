@@ -1,4 +1,4 @@
-function varargout=boxfile(cmd,varargin),
+function varargout=boxfile(cmd,varargin)
 %BOXFILE Read/write SIMONA box files.
 %   BOXFILE can be used to read and write Waqua/Triwaq
 %   field files used for depth and roughness data.
@@ -16,56 +16,56 @@ function varargout=boxfile(cmd,varargin),
 %   Missing values (NaN's) are replaced by 999.999.
 
 %----- LGPL --------------------------------------------------------------------
-%                                                                               
-%   Copyright (C) 2011-2012 Stichting Deltares.                                     
-%                                                                               
-%   This library is free software; you can redistribute it and/or                
-%   modify it under the terms of the GNU Lesser General Public                   
-%   License as published by the Free Software Foundation version 2.1.                         
-%                                                                               
-%   This library is distributed in the hope that it will be useful,              
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of               
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU            
-%   Lesser General Public License for more details.                              
-%                                                                               
-%   You should have received a copy of the GNU Lesser General Public             
-%   License along with this library; if not, see <http://www.gnu.org/licenses/>. 
-%                                                                               
-%   contact: delft3d.support@deltares.nl                                         
-%   Stichting Deltares                                                           
-%   P.O. Box 177                                                                 
-%   2600 MH Delft, The Netherlands                                               
-%                                                                               
-%   All indications and logos of, and references to, "Delft3D" and "Deltares"    
-%   are registered trademarks of Stichting Deltares, and remain the property of  
-%   Stichting Deltares. All rights reserved.                                     
-%                                                                               
+%
+%   Copyright (C) 2011-2012 Stichting Deltares.
+%
+%   This library is free software; you can redistribute it and/or
+%   modify it under the terms of the GNU Lesser General Public
+%   License as published by the Free Software Foundation version 2.1.
+%
+%   This library is distributed in the hope that it will be useful,
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%   Lesser General Public License for more details.
+%
+%   You should have received a copy of the GNU Lesser General Public
+%   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+%
+%   contact: delft3d.support@deltares.nl
+%   Stichting Deltares
+%   P.O. Box 177
+%   2600 MH Delft, The Netherlands
+%
+%   All indications and logos of, and references to, "Delft3D" and "Deltares"
+%   are registered trademarks of Stichting Deltares, and remain the property of
+%   Stichting Deltares. All rights reserved.
+%
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 
-if nargin==0,
-    if nargout>0,
+if nargin==0
+    if nargout>0
         varargout=cell(1,nargout);
-    end;
-    return;
-end;
+    end
+    return
+end
 
-switch cmd,
-    case 'read',
+switch cmd
+    case 'read'
         varargout={Local_depread(varargin{:})};
-    case 'write',
+    case 'write'
         Out=Local_depwrite(varargin{:});
-        if nargout>0,
+        if nargout>0
             varargout{1}=Out;
-        end;
-    otherwise,
-        error('Unknown command');
-end;
+        end
+    otherwise
+        error('Unknown command: %s',var2str(cmd))
+end
 
 
-function DP=Local_depread(filename,dimvar),
+function DP=Local_depread(filename,dimvar)
 %    DEPTH=BOXFILE('read',FILENAME)
 %    read the data from the boxfile. This call uses
 %    creates a matrix that tightly fits the data.
@@ -78,112 +78,112 @@ DP=[];
 
 dim=[];
 if nargin==2
-    if isstruct(dimvar), % new grid format G.X, G.Y, G.Enclosure
+    if isstruct(dimvar) % new grid format G.X, G.Y, G.Enclosure
         dim=size(dimvar.X)+1;
-    elseif iscell(dimvar), % old grid format {X Y Enclosure}
+    elseif iscell(dimvar) % old grid format {X Y Enclosure}
         dim=size(dimvar{1})+1;
-    else,
+    else
         dim=dimvar;
-    end;
+    end
 end
 
-if strcmp(filename,'?'),
+if strcmp(filename,'?')
     [fname,fpath]=uigetfile('*.*','Select depth file');
-    if ~ischar(fname),
-        return;
-    end;
+    if ~ischar(fname)
+        return
+    end
     filename=[fpath,fname];
-end;
+end
 
 fid=fopen(filename,'r');
-if fid<0,
-    error(['Cannot open ',filename,'.']);
-end;
-
+if fid<0
+    error('Cannot open %s.',filename)
+end
 % BOX: MNMN  =  (   2,    2 ;   38,    6) Variable_var =
 % BOX MNMN=(   1,   1; 201,  10), LAYER=   1 VARIAble_val=
-loc = ftell(fid);
-S = '#';
-while ~isempty(S) & S(1) == '#'
-    loc = ftell(fid);
-    S = fgetl(fid);
-end
-
-separators = sprintf('\\/=(),:;\t');
-i=0;
-while ~feof(fid)
-    i=i+1;
-    %
-    S = upper(S);
-    S(ismember(S,separators))=' ';
-    [MNMN,nread,errortext,inext]=sscanf(S,' BOX MNMN %d %d %d %d',[1 4]);
-    if nread ~= 4
-        error('BOX keyword or MNMN indices not found.');
-    end
-    %
-    S = S(inext:end);
-    [LAYER,nread,errortext,inext]=sscanf(S,' LAYER %d',1);
-    if nread == 0
-        LAYER = 0;
-    else
-        S = S(inext:end);
-    end
-    %
-    if isempty(S)
-        loc = ftell(fid);
+try
+    S = '#';
+    while ~isempty(S) && S(1) == '#'
         S = fgetl(fid);
+    end
+    
+    separators = sprintf('\\/=(),:;\t');
+    i=0;
+    while ~feof(fid)
+        i=i+1;
+        %
         S = upper(S);
         S(ismember(S,separators))=' ';
-    end
-    [VALUES,S] = strtok(S);
-    if length(VALUES)<4
-        error('Invalid VALUE type encountered in BOX file')
-    end
-    %
-    data{i,1} = MNMN;
-    data{i,2} = VALUES(1:4);
-    switch VALUES(1:4)
-        case 'CONS' %CONST_VALUES
-            vals = sscanf(S,'%f',1);
-            if isempty(vals)
-                [vals,nread] = fscanf(fid,'%f',1);
-            end
-            data{i,3} = vals;
-        case 'CORN' %CORNER_VALUES
-            vals = sscanf(S,'%f',[1 4]);
-            if isempty(vals)
-                vals =[];
-            end
-            while length(vals)<4
-                [xvals,nread] = fscanf(fid,'%f%*[ ,]',[1 4-length(vals)]);
-                vals = [vals xvals];
-            end
-            data{i,3} = vals;
-        case 'VARI' %VARIABLE_VALUES
-            nval2read = (MNMN(4)-MNMN(2)+1)*(MNMN(3)-MNMN(1)+1);
-            vals = sscanf(S,'%f',[1 nval2read]);
-            if isempty(vals)
-                vals =[];
-            end
-            while length(vals)<nval2read
-                [xvals,nread] = fscanf(fid,'%f%*[ ,]',[1 nval2read-length(vals)]);
-                vals = [vals xvals];
-            end
-            data{i,3} = reshape(vals,[MNMN(4)-MNMN(2)+1 MNMN(3)-MNMN(1)+1])';
-        otherwise
-            error(sprintf('Unkown VALUE type ''%s'' encountered in BOX file',VALUES))
-    end
-    %
-    S = fgetl(fid);
-    if isempty(deblank(S))
-        S = '#';
-    end
-    while isequal(S,'#')
+        [MNMN,nread,errortext,inext]=sscanf(S,' BOX MNMN %d %d %d %d',[1 4]);
+        if nread ~= 4
+            error('BOX keyword or MNMN indices not found.');
+        end
+        %
+        S = S(inext:end);
+        [LAYER,nread,errortext,inext]=sscanf(S,' LAYER %d',1);
+        if nread == 0
+            LAYER = 0;
+        else
+            S = S(inext:end);
+        end
+        %
+        if isempty(S)
+            S = fgetl(fid);
+            S = upper(S);
+            S(ismember(S,separators))=' ';
+        end
+        [VALUES,S] = strtok(S);
+        if length(VALUES)<4
+            error('Invalid VALUE type encountered in BOX file')
+        end
+        %
+        data{i,1} = MNMN;
+        data{i,2} = VALUES(1:4);
+        switch VALUES(1:4)
+            case 'CONS' %CONST_VALUES
+                vals = sscanf(S,'%f',1);
+                if isempty(vals)
+                    vals = fscanf(fid,'%f',1);
+                end
+                data{i,3} = vals;
+            case 'CORN' %CORNER_VALUES
+                vals = sscanf(S,'%f',[1 4]);
+                if isempty(vals)
+                    vals =[];
+                end
+                while length(vals)<4
+                    xvals = fscanf(fid,'%f%*[ ,]',[1 4-length(vals)]);
+                    vals = [vals xvals];
+                end
+                data{i,3} = vals;
+            case 'VARI' %VARIABLE_VALUES
+                nval2read = (MNMN(4)-MNMN(2)+1)*(MNMN(3)-MNMN(1)+1);
+                vals = sscanf(S,'%f',[1 nval2read]);
+                if isempty(vals)
+                    vals =[];
+                end
+                while length(vals)<nval2read
+                    xvals = fscanf(fid,'%f%*[ ,]',[1 nval2read-length(vals)]);
+                    vals = [vals xvals];
+                end
+                data{i,3} = reshape(vals,[MNMN(4)-MNMN(2)+1 MNMN(3)-MNMN(1)+1])';
+            otherwise
+                error('Unkown VALUE type ''%s'' encountered in BOX file',VALUES)
+        end
+        %
         S = fgetl(fid);
+        if isempty(deblank(S))
+            S = '#';
+        end
+        while isequal(S,'#')
+            S = fgetl(fid);
+        end
     end
+    fclose(fid);
+catch
+    fclose(fid);
+    rethrow(lasterror)
 end
-fclose(fid);
-
 if isempty(dim)
     maxM=0;
     maxN=0;
@@ -201,16 +201,15 @@ for i=1:size(data,1)
 end
 
 
-function OK=Local_depwrite(filename,DP),
+function OK=Local_depwrite(filename,DP)
 %    BOXFILE('write',FILENAME,MATRIX)
 %    write the MATRIX to the file in boxfile format.
 %    Missing values (NaN's) are replaced by 999.999.
 
-OK=0;
 fid=fopen(filename,'w');
-if fid<0,
-    error(['Cannot open ',filename,'.']);
-end;
+if fid<0
+    error('Cannot open %s.',filename)
+end
 
 % BOX: MNMN  =  (   2,    2 ;   38,    6) Variable_var =
 NpL=5;
