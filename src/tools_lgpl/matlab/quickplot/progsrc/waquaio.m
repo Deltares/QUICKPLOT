@@ -31,16 +31,19 @@ function varargout=waquaio(sds,exper,field,varargin)
 %   * disch    : Qu,Qv,time or Qu,Qv,w,time
 %                (QU,QV components in KSI,ETA direction in waterlevel points)
 %   * disch0   : unprocessed discharges in velocity points
-%   * dischpot : QP,time (discharge potential)
-%   * chezy    : chezy-u,chezy-v
+%   * dischpot : discharge potential,time
+%   * chezy    : Chézy KSI direction at U point,Chézy ETA direction at V point
 %
-%   * energy   : turbulent kinetic energy
-%   * dissip   : energy dissipation
-%   * vdiffu   : vertical eddy diffusivity
+%   * energy   : turbulent kinetic energy, time
+%   * dissip   : energy dissipation, time
+%   * vdiffu   : vertical eddy diffusivity, time
 %
 %   * subst:<substance name>  : substance field, time
 %
 %   * weirs    : udam,vdam,uhgh,vhgh: locations and heights of weirs
+%
+%   * wind     : wind vector, time
+%   * press    : pressure, time
 %
 %   * flowstat-wl : water level station names
 %   * xy-wl       : water level station xy coordinates
@@ -64,30 +67,30 @@ function varargout=waquaio(sds,exper,field,varargin)
 %   % mn-trancrs-v: mn-coordinates of v-transport crosssec.
 
 %----- LGPL --------------------------------------------------------------------
-%                                                                               
-%   Copyright (C) 2011-2012 Stichting Deltares.                                     
-%                                                                               
-%   This library is free software; you can redistribute it and/or                
-%   modify it under the terms of the GNU Lesser General Public                   
-%   License as published by the Free Software Foundation version 2.1.                         
-%                                                                               
-%   This library is distributed in the hope that it will be useful,              
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of               
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU            
-%   Lesser General Public License for more details.                              
-%                                                                               
-%   You should have received a copy of the GNU Lesser General Public             
-%   License along with this library; if not, see <http://www.gnu.org/licenses/>. 
-%                                                                               
-%   contact: delft3d.support@deltares.nl                                         
-%   Stichting Deltares                                                           
-%   P.O. Box 177                                                                 
-%   2600 MH Delft, The Netherlands                                               
-%                                                                               
-%   All indications and logos of, and references to, "Delft3D" and "Deltares"    
-%   are registered trademarks of Stichting Deltares, and remain the property of  
-%   Stichting Deltares. All rights reserved.                                     
-%                                                                               
+%
+%   Copyright (C) 2011-2012 Stichting Deltares.
+%
+%   This library is free software; you can redistribute it and/or
+%   modify it under the terms of the GNU Lesser General Public
+%   License as published by the Free Software Foundation version 2.1.
+%
+%   This library is distributed in the hope that it will be useful,
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%   Lesser General Public License for more details.
+%
+%   You should have received a copy of the GNU Lesser General Public
+%   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+%
+%   contact: delft3d.support@deltares.nl
+%   Stichting Deltares
+%   P.O. Box 177
+%   2600 MH Delft, The Netherlands
+%
+%   All indications and logos of, and references to, "Delft3D" and "Deltares"
+%   are registered trademarks of Stichting Deltares, and remain the property of
+%   Stichting Deltares. All rights reserved.
+%
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
@@ -191,7 +194,7 @@ elseif waqua('exists',sds,exper,'MESH01_GENERAL_DIMENSIONS')
     dim.mmax=dimen(3);
     dim.spheric=dimen(11);
     curvl = 1+2*min(1,dim.spheric);
- else
+else
     dimen=waqua('readsds',sds,exper,'MESH01_SPECIFIC_IDIMEN');
     %  1: MMAX
     %  2: NMAX
@@ -242,7 +245,7 @@ elseif isequal(field,'substances')
         % 15: IBLHIT = 1 (blocked transport history data present), 0 (not present)
         % 16: NUTHBT = num time instances in blocked hist. data
         nsrc=iconta(2);
-
+        
         icontb=waqua('readsds',sds,exper,'CONTROL_TRANS_ICONTB');
         %  1: KTEMP = temperature model type (1: rad.according to model,
         %                                2: rad. time series, 3:excess temp.)
@@ -256,7 +259,7 @@ elseif isequal(field,'substances')
         %  9: LTUR = num turbulence variables
         % 10: NWRTUR = write flag turb. quantities SDS file (1 = yes)
         lmax=icontb(2);
-
+        
         data=waqua('readsds',sds,exper,'PROBLEM_TRANS_NAMPRB');
         nams=data(1+nsrc+(1:lmax))';
         unt=data(1+nsrc+lmax+(1:lmax))';
@@ -384,7 +387,7 @@ switch field
         nopol=iconta(3);
         ntra=iconta(4);
         ntrav=iconta(5);
-
+        
         data=waqua('readsds',sds,exper,'CHECKPOINTS_TRANS_NAMCHK');
         switch field
             case 'transtat'
@@ -404,7 +407,7 @@ switch field
         end
         data=data';
         varargout={data};
-
+        
     case {'flowstat-wl','flowstat-uv','flowcrs-u','flowcrs-v','wlstat', ...
             'wl-stat','u-stat','v-stat','uv-stat','w-stat','mq-stat', ...
             'cq-stat','z-stat','z-stati','z-statc','uv0-stat', ...
@@ -440,7 +443,7 @@ switch field
         nocur=iconta(7);
         ntra=iconta(8);
         ntrav=iconta(9);
-
+        
         factor=1;
         ARRAY='TIMEHISTORIES_FLOW_TIMHIS';
         if waqua('size',sds,exper,'TIMEHISTORIES_FLOW_TIMHIS') > ...
@@ -735,7 +738,7 @@ switch field
                 %
                 varargout={sts(stationi)};
         end
-
+        
     otherwise
         if length(field)>8 && strcmp(field(1:8),'stsubst:')
             Subs=lower(waquaio(sds,exper,'substances'));
@@ -806,7 +809,7 @@ end
 %           'dps       (p:lgrid=mnmaxk)' 'Z'
 %
 % 'SOLUTION_DRYWET' 'int'
-%           'khu       (p:lgrid=mnmaxk)' 'U' 
+%           'khu       (p:lgrid=mnmaxk)' 'U'
 %           'khv       (p:lgrid=mnmaxk)' 'V'
 %
 % 'LAYER_INTERFACES' 'real'
@@ -1163,27 +1166,28 @@ if ~waqua('exists',sds,exper,'MESH_IDIMEN')
                 y(:,end) = NaN;
             end
             if dim.spheric==10
-               latsp = coords(8);%*1000*pi/180;
-               lonsp = coords(9);%*1000*pi/180;
-               [x,y]=qp_proj_rotatepole(x,y,lonsp,latsp,0);
+                latsp = coords(8);%*1000*pi/180;
+                lonsp = coords(9);%*1000*pi/180;
+                [x,y]=qp_proj_rotatepole(x,y,lonsp,latsp,0);
             end
             varargout = {x y};
         case {'wind','press'}
-            [t,n,m]=local_argin(argin);
+            [tstep,n,m]=local_argin(argin);
             nm = reshape(1:dim.mmax*dim.nmax,dim.mmax,dim.nmax)';
             nm = nm(n,m);
             %
             nmmax = dim.nmax*dim.mmax;
             switch field
                 case 'wind'
-                    windu = waqua('readsds',sds,exper,'SOLUTION_WIND',t,1:nmmax);
+                    % waqua wind file: wind in x/y direction
+                    windu = waqua('readsds',sds,exper,'SOLUTION_WIND',tstep,1:nmmax);
                     time = refdate+windu.SimTime/1440;
                     windu = windu.Data(nm);
-                    windv = waqua('readsds',sds,exper,'SOLUTION_WIND',t,nmmax+(1:nmmax));
+                    windv = waqua('readsds',sds,exper,'SOLUTION_WIND',tstep,nmmax+(1:nmmax));
                     windv = windv.Data(nm);
                     varargout = {windu windv time};
                 case 'press'
-                    press = waqua('readsds',sds,exper,'SOLUTION_PRESS',t,1:nmmax);
+                    press = waqua('readsds',sds,exper,'SOLUTION_PRESS',tstep,1:nmmax);
                     time = refdate+press.SimTime/1440;
                     press = press.Data(nm);
                     varargout = {press time};
@@ -1217,7 +1221,7 @@ switch field
         %  8: DLAMBD = GridCellAngle X dir. (Deg.)
         %  9: DFI = GridCellAngle Y dir. (Deg.)
         % 10: REARTH = Radius of Earth
-
+        
         %data=waqua('readsds',sds,exper,'MESH_CURVIL');
         % CURVIL: GUU, GVV, XDEP, YDEP, XZETA, YZETA, XU, YU, XV, YV
         switch field
@@ -1246,7 +1250,27 @@ switch field
         X(:,m==mmax) = NaN;
         Y(:,m==mmax) = NaN;
         varargout={X Y};
+        
+    case 'wind'
+        [tstep,n,m]=local_argin(argin);
+        % waqua result file: wind interpolated to u/v point
+        windu = waqua('readsds',sds,exper,'FORCINGS_SVWP_WINDU',tstep);
+        time = refdate+windu.SimTime/1440;
+        windu = windu.Data(nm);
+        windv = waqua('readsds',sds,exper,'FORCINGS_SVWP_WINDV',tstep);
+        windv = windv.Data(nm);
+        %
+        [windu,windv]=uv2xy(sds,exper,dim,n,m,nm,1,windu,windv);
+        varargout = {windu windv time};
 
+    case 'press'
+        [tstep,n,m]=local_argin(argin);
+        nm=nm(n,m);
+        press = waqua('readsds',sds,exper,'FORCINGS_SVWP_PRESSURE',tstep);
+        time = refdate+press.SimTime/1440;
+        press = press.Data(nm);
+        varargout = {press time};
+        
     case {'zgrid3d','ugrid3d','vgrid3d','zgrid3di','ugrid3di','vgrid3di','zgrid3dc','ugrid3dc','vgrid3dc'}
         [tstep,n,m,k]=local_argin(argin);
         nm=nm(n,m);
@@ -1277,7 +1301,7 @@ switch field
         %  8: DLAMBD = GridCellAngle X dir. (Deg.)
         %  9: DFI = GridCellAngle Y dir. (Deg.)
         % 10: REARTH = Radius of Earth
-
+        
         %data=waqua('readsds',sds,exper,'MESH_CURVIL');
         % CURVIL: GUU, GVV, XDEP, YDEP, XZETA, YZETA, XU, YU, XV, YV
         switch field
@@ -1313,19 +1337,18 @@ switch field
         for i=1:num_k
             ik = k(i);
             if strcmp(layer,'i')
-               Z(:,:,i) = z(nm+(ik-1)*npnt);
+                Z(:,:,i) = z(nm+(ik-1)*npnt);
             else
-               Z(:,:,i) = (z(nm+(ik-1)*npnt) + z(nm+ik*npnt))/2;
+                Z(:,:,i) = (z(nm+(ik-1)*npnt) + z(nm+ik*npnt))/2;
             end
         end
         X=repmat(X,[1 1 num_k]);
         Y=repmat(Y,[1 1 num_k]);
         varargout={X Y Z refdate+data.SimTime/1440};
-
+        
     case {'depth','height','depth_wl_points'}
         [n,m]=local_argin(argin);
         nm=nm(n,m);
-        sznm=size(nm);
         if strcmp(field,'depth_wl_points')
             %DPS_FLOW only for Waqua
             data=waqua('readsds',sds,exper,'DPS_FLOW');
@@ -1349,11 +1372,10 @@ switch field
             otherwise
                 varargout={Dep};
         end
-
+        
     case {'drywet'}
         [tstep,n,m]=local_argin(argin);
         nm=nm(n,m);
-        sznm=size(nm);
         %-----
         thd=waqua('readsds',sds,exper,'SOLUTION_DRYWET',tstep);
         if ~isempty(thd.Data)
@@ -1368,20 +1390,15 @@ switch field
             THDv=[];
         end
         varargout={THDu THDv refdate+thd.SimTime/1440};
-
+        
     case {'veloc','veloc0','disch','disch0','udisch','udisch0','dischpot','xyveloc','xyudisch','wforce','wdir','wvec','wstress','stokes'}
         [tstep,n,m,k]=local_argin(argin);
         if ischar(n), n=1:nmax; end
         if ischar(m), m=1:mmax; end
         nmfull=nm;
-        if strcmp(field,'dischpot')
-            num_n = nmax;
-            num_m = mmax;
-        else
+        if ~strcmp(field,'dischpot')
             nm=nmfull(n,m);
             sact=sact(n,m);
-            num_n = length(n);
-            num_m = length(m);
         end
         sznm=size(nm);
         psznm=prod(sznm);
@@ -1475,9 +1492,12 @@ switch field
                         U=UU(nm);
                         V=VV(nm);
                     case {'disch','udisch'}
-                        UU(inact)=NaN; VV(inact)=NaN;
+                        UU(inact)=NaN;
+                        VV(inact)=NaN;
                         ndm=nm([1 1:(nmax-1)],:);
                         nmd=nm(:,[1 1:(mmax-1)]);
+                        U = zeros([sznm num_k]);
+                        V = U;
                         for i=1:num_k
                             ik = k(i);
                             nms=(ik-1)*npnt;
@@ -1529,6 +1549,8 @@ switch field
                 ndm=nmfull(max(1,n-1),m);
                 nmd=nmfull(n,max(1,m-1));
                 UU(inact)=NaN; VV(inact)=NaN;
+                U = zeros([sznm num_k]);
+                V = U;
                 for i=1:num_k
                     ik=k(i);
                     nms=(ik-1)*npnt;
@@ -1539,67 +1561,7 @@ switch field
         %
         switch field
             case {'xyveloc','xyudisch','wforce','wdir','wvec'}
-                % ALGORITHM COPIED FROM 
-                % simona\src\postproc\waqview\routines\velocity_zeta.F90 
-                %--------------
-                % Read geometry ...
-                %
-                %data=waqua('readsds',sds,exper,'MESH_CURVIL');
-                %data(npnt*(0:(9+sph_dupl*10))+1)=NaN;
-                % CURVIL: GUU, GVV, XDEP, YDEP, XZETA, YZETA, XU, YU, XV, YV
-                %
-                % Extend index range to get all relevant geometry information ...
-                %
-                n_   = [max(1,n(1)-1) n];
-                m_   = [max(1,m(1)-1) m];
-                nm_  = nmfull(n_,m_);
-                ndm  = nmfull(max(1,n_-1),m_);
-                nmd  = nmfull(n_,max(1,m_-1));
-                ndmd = nmfull(max(1,n_-1),max(1,m_-1));
-                
-                % get coordinates of corner points ...
-                xh    = waqua('readsds',sds,exper,'MESH_CURVIL',0,(sph_dupl*10+2)*npnt+(1:npnt));
-                yh    = waqua('readsds',sds,exper,'MESH_CURVIL',0,(sph_dupl*10+3)*npnt+(1:npnt));
-                xh(1) = NaN;
-                yh(1) = NaN;
-                %
-                x1 = 0.5*(xh(nmd)+xh(ndmd));
-                y1 = 0.5*(yh(nmd)+yh(ndmd));
-                x2 = 0.5*(xh(nm_)+xh(ndm));
-                y2 = 0.5*(yh(nm_)+yh(ndm));
-                dx = x2-x1;
-                dy = y2-y1;
-                if dim.spheric
-                    dx = dx.*cos((y1+y2)/2); % NOTE: lat/lon in radians in SIMONA
-                end
-                alf = atan2(dy,dx);
-                cosalf = cos(alf(2:end,2:end));
-                sinalf = sin(alf(2:end,2:end));
-                %
-                % Now generate the data for the range selected by the user ...
-                %
-                ndm = nmfull(max(1,n-1),m);
-                nmd = nmfull(n,max(1,m-1));
-                %
-                UU = zeros([sznm num_k]);
-                VV = UU;
-                for i=1:num_k
-                    ik = k(i);
-                    nms=(ik-1)*npnt;
-                    %
-                    uu = subscriptreshape(U,nm+nms);
-                    ud = subscriptreshape(U,nmd+nms);
-                    vv = subscriptreshape(V,nm+nms);
-                    vd = subscriptreshape(V,ndm+nms);
-                    %
-                    ugem = 0.5*(ud+uu);
-                    vgem = 0.5*(vd+vv);
-                    %
-                    UU(:,:,i) = cosalf.*ugem - sinalf.*vgem;
-                    VV(:,:,i) = sinalf.*ugem + cosalf.*vgem;
-                end
-                U = UU;
-                V = VV;
+                [U,V]=uv2xy(sds,exper,dim,n,m,nmfull,k,U,V);
                 %
                 if strcmp(field,'wvec')
                     tmp=waqua('readsds',sds,exper,'COEFF_FLOW_WAVES',tstep,2*npnt+(1:npnt));
@@ -1648,9 +1610,6 @@ switch field
         %
         [tstep,n,m]=local_argin(argin);
         nm=nm(n,m);
-        num_n = length(n);
-        num_m = length(m);
-        sznm=size(nm);
         sact=sact(n,m);
         %-----
         switch field
@@ -1684,12 +1643,11 @@ switch field
             VAR=VAR+(U.^2+V.^2)/(2*9.81);
         end
         varargout={VAR refdate+var.SimTime/1440};
-
+        
     case {'weirs'}
         [n,m]=local_argin(argin);
         nm=nm(n,m);
         sznm=size(nm);
-        sact=sact(n,m);
         %-----
         wp=waqua('readsds',sds,exper,'MESH_WEIPOS');
         wp=reshape(wp,[length(wp)/4 4]);
@@ -1723,12 +1681,10 @@ switch field
             vhgh(vind)=-wh(vflg,4);
             varargout={udam vdam uhgh vhgh};
         end
-
+        
     case {'dissip','energy','vdiffu','pressure'}
         [tstep,n,m,k]=local_argin(argin);
         nm=nm(n,m);
-        num_n = length(n);
-        num_m = length(m);
         sznm=size(nm);
         psznm=prod(sznm);
         sact=sact(n,m);
@@ -1768,12 +1724,10 @@ switch field
         VAR(~sact,:)=NaN;
         VAR=reshape(VAR,[sznm num_k]);
         varargout={VAR refdate+var.SimTime/1440};
-
+        
     case 'chezy'
         [tstep,n,m]=local_argin(argin);
         nm=nm(n,m);
-        sznm=size(nm);
-        sact=sact(n,m);
         %-----
         rcgenb=waqua('readsds',sds,exper,'COEFF_GENERAL_RCGENB');
         %  1: AG = gravity accel
@@ -1787,7 +1741,7 @@ switch field
         %  9: CDV2 = upper bound linear drag
         % 10: DYNVIS = dynamic viscosity water
         ag=rcgenb(1);
-
+        
         rconta=waqua('readsds',sds,exper,'CONTROL_FLOW_RCONTA');
         %  1: DTMIN = (full) integration step in minutes
         %  3: TSTART = simulation start time (min)
@@ -1820,7 +1774,7 @@ switch field
         % 64: CEPS3 = constant extended k-eps model
         % 65: VTURB = 0 (stnd), 1 (RNG), 2 (ext) k-eps model
         dtmin=rconta(1);
-
+        
         data=waqua('readsds',sds,exper,'SOLUTION_FLOW_CZ',tstep);
         czx=data.Data(1:npnt);
         czy=data.Data(npnt+(1:npnt));
@@ -1846,30 +1800,30 @@ switch field
             Qplot = str2double(field(separator+1:end)); % incremental_output_timidx-3 --> 3
             VAL = zeros(nmax,mmax);
             for buf = 1:maxbuf
-               %
-               % Don't read all buffers at once because that quickly leads
-               % to OUT OF MEMORY problems. Therefore, read one buffer at a
-               % time.
-               %
-               Vals = waqua('read',sds,exper,'INCREMENTAL_OUTPUT_CLSVAL',buf);
-               Vals = Vals.Data;
-               Vals = reshape(Vals,[2 size(Vals,2)/2]);
-               M = floor(Vals(1,:)/256); % m index
-               N = floor(Vals(2,:)/256); % n index
-               Q = Vals(1,:)-256*M; % quantity
-               C = Vals(2,:)-256*N; % class
-               %
-               range = 1:max(Index(3,Index(1,:)==buf));
-               %
-               % select only those entries that refer to the requested
-               % quantity.
-               %
-               range = range(Q(range)==Qplot);
-               %
-               mt = M(range);
-               nt = N(range);
-               ct = C(range);
-               VAL(nt+nmax*(mt-1)) = ct;
+                %
+                % Don't read all buffers at once because that quickly leads
+                % to OUT OF MEMORY problems. Therefore, read one buffer at a
+                % time.
+                %
+                Vals = waqua('read',sds,exper,'INCREMENTAL_OUTPUT_CLSVAL',buf);
+                Vals = Vals.Data;
+                Vals = reshape(Vals,[2 size(Vals,2)/2]);
+                M = floor(Vals(1,:)/256); % m index
+                N = floor(Vals(2,:)/256); % n index
+                Q = Vals(1,:)-256*M; % quantity
+                C = Vals(2,:)-256*N; % class
+                %
+                range = 1:max(Index(3,Index(1,:)==buf));
+                %
+                % select only those entries that refer to the requested
+                % quantity.
+                %
+                range = range(Q(range)==Qplot);
+                %
+                mt = M(range);
+                nt = N(range);
+                ct = C(range);
+                VAL(nt+nmax*(mt-1)) = ct;
             end
             VAL = VAL(n,m);
             VAL(VAL==0) = NaN;
@@ -1877,9 +1831,6 @@ switch field
         elseif length(field)>17 && strcmp(field(1:17),'solution_derived_') %e.g. solution_derived_maxvalues_sep-3
             [n,m]=local_argin(argin);
             nm=nm(n,m);
-            num_n = length(n);
-            num_m = length(m);
-            sznm=size(nm);
             sact=sact(n,m);
             %-----
             separator = strfind(field,'-');
@@ -1901,7 +1852,6 @@ switch field
             if s>0
                 [tstep,n,m,k]=local_argin(argin);
                 nm=nm(n,m);
-                sznm=size(nm);
                 sact=sact(n,m);
                 num_n = length(n);
                 num_m = length(m);
@@ -1963,3 +1913,65 @@ function S = subscriptreshape(U,nm)
 % that case U(nm) is a row vector if U is a row vector and a column vector
 % if U is a column vector.
 S = reshape(U(nm),size(nm));
+
+
+function [UU,VV]=uv2xy(sds,exper,dim,n,m,nmfull,k,U,V)
+% ALGORITHM COPIED FROM
+% simona\src\postproc\waqview\routines\velocity_zeta.F90
+%--------------
+%
+% Extend index range to get all relevant geometry information ...
+%
+nm   = nmfull(n,m);
+n_   = [max(1,n(1)-1) n];
+m_   = [max(1,m(1)-1) m];
+nm_  = nmfull(n_,m_);
+ndm  = nmfull(max(1,n_-1),m_);
+nmd  = nmfull(n_,max(1,m_-1));
+ndmd = nmfull(max(1,n_-1),max(1,m_-1));
+%
+npnt = dim.npnt;
+num_k = length(k);
+sznm = size(nm);
+
+% get coordinates of corner points ...
+xh    = waqua('readsds',sds,exper,'MESH_CURVIL',0,(dim.sph_dupl*10+2)*npnt+(1:npnt));
+yh    = waqua('readsds',sds,exper,'MESH_CURVIL',0,(dim.sph_dupl*10+3)*npnt+(1:npnt));
+xh(1) = NaN;
+yh(1) = NaN;
+%
+x1 = 0.5*(xh(nmd)+xh(ndmd));
+y1 = 0.5*(yh(nmd)+yh(ndmd));
+x2 = 0.5*(xh(nm_)+xh(ndm));
+y2 = 0.5*(yh(nm_)+yh(ndm));
+dx = x2-x1;
+dy = y2-y1;
+if dim.spheric
+    dx = dx.*cos((y1+y2)/2); % NOTE: lat/lon in radians in SIMONA
+end
+alf = atan2(dy,dx);
+cosalf = cos(alf(2:end,2:end));
+sinalf = sin(alf(2:end,2:end));
+%
+% Now generate the data for the range selected by the user ...
+%
+ndm = nmfull(max(1,n-1),m);
+nmd = nmfull(n,max(1,m-1));
+%
+UU = zeros([sznm num_k]);
+VV = UU;
+for i=1:num_k
+    ik = k(i);
+    nms=(ik-1)*npnt;
+    %
+    uu = subscriptreshape(U,nm+nms);
+    ud = subscriptreshape(U,nmd+nms);
+    vv = subscriptreshape(V,nm+nms);
+    vd = subscriptreshape(V,ndm+nms);
+    %
+    ugem = 0.5*(ud+uu);
+    vgem = 0.5*(vd+vv);
+    %
+    UU(:,:,i) = cosalf.*ugem - sinalf.*vgem;
+    VV(:,:,i) = sinalf.*ugem + cosalf.*vgem;
+end
