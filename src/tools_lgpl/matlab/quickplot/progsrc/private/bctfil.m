@@ -166,10 +166,8 @@ sz(T_)=size(FI.Table(Props.Fld).Data,1);
 % -----------------------------------------------------------------------------
 function T=readtim(FI,Props,t)
 %======================== SPECIFIC CODE =======================================
-T0=tdelft3d(FI.Table(Props.Fld).ReferenceTime,0);
 if t==0
-    T=T0+FI.Table(Props.Fld).Data(:,1)/1440;
-else
-    T=T0+FI.Table(Props.Fld).Data(t,1)/1440;
+    t=':';
 end
+T=bct_io('times',FI,Props.Fld,t);
 % -----------------------------------------------------------------------------

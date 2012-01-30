@@ -5,7 +5,19 @@ function Info=bct_io(cmd,varargin)
 %   Table structure that list the data of each time series stored in that
 %   particular file.
 %
-%   BCT_IO('WRITE',FILENAME,INFO)
+%   BCT_IO('WRITE',FILENAME,INFO) writes the time-series data to the
+%   specified file. The INFO structure should be similar to the one
+%   obtained from a BCT_IO('OPEN',...) call.
+%
+%   DATE = BCT_IO('TIMES',INFO,I) returns a vector DATE containing the
+%   dates associated with table I of file INFO.
+%
+%   DATE = BCT_IO('TIMES',INFO,I,IDX) returns DATE(IDX) rather than the
+%   full date vector.
+%
+%   INFO2 = BCT_IO('CLIP',INFO,T1,T2) clips all time series such that the
+%   period of T1 until T2 is still covered. If T2 is missing, then only
+%   time series segment the includes T1 is preserved.
 
 %----- LGPL --------------------------------------------------------------------
 %
@@ -38,6 +50,10 @@ function Info=bct_io(cmd,varargin)
 %   $Id$
 
 switch lower(cmd)
+    case 'clip'
+        Info=Local_clip_bct(varargin{:});
+    case 'times'
+        Info=getTableTimes(varargin{:});
     case 'read'
         Info=Local_read_bct(varargin{:});
     case 'write'
@@ -51,6 +67,64 @@ switch lower(cmd)
         error('Unknown bct_io command: ''%s''.',cmd)
 end
 
+
+function Info=Local_clip_bct(Info,t1,t2)
+if nargin<3
+    t2=t1;
+end
+for i=1:length(Info.Table)
+    T=getTableTimes(Info,i);
+    iKeep = T>=t1 & T<=t2;
+    Keep = find(iKeep);
+    if isempty(Keep)
+        first = min(find(T>=t2));
+        iKeep(first)=1;
+        if first>1
+            iKeep(first-1)=1;
+        end
+    else
+        first = min(Keep);
+        if T(first)>t1 && first>1
+            iKeep(first-1)=1;
+        end
+        last = max(Keep);
+        if T(last)<t2 && last<length(iKeep)
+            iKeep(last+1)=1;
+        end
+    end
+    Info.Table(i).Data = Info.Table(i).Data(iKeep,:);
+end
+
+function T=getTableTimes(Info,i,t)
+if nargin<3
+    t=':';
+end
+Tab=Info.Table(i);
+switch length(Tab.ReferenceTime)
+    case 0
+        T0=0; % from model
+    case 1
+        T0=tdelft3d(Tab.ReferenceTime,0);
+    case 2
+        T0=tdelft3d(Tab.ReferenceTime(1),Tab.ReferenceTime(2));
+end
+switch Tab.TimeUnit
+    case 'decades'
+        f=10*365;
+    case 'years'
+        f=365;
+    case 'days'
+        f=1;
+    case 'hours'
+        f=24;
+    case 'minutes'
+        f=24*60;
+    case 'seconds'
+        f=24*60*60;
+    case 'ddhhmmss'
+    case {'date','absolute'}
+end
+T=T0+Tab.Data(t,1)/f;
 
 function Info=Local_read_bct(filename)
 
@@ -81,7 +155,7 @@ try
             case 'time-function'
                 Info.Table(i).TimeFunction=deblank(strextract(remainder));
             case 'reference-time'
-                Info.Table(i).ReferenceTime=sscanf(remainder,'%i',1);
+                Info.Table(i).ReferenceTime=sscanf(remainder,'%i',[1 2]);
             case 'time-unit'
                 Info.Table(i).TimeUnit=deblank(strextract(remainder));
             case 'interpolation'
@@ -104,7 +178,7 @@ try
                     Info.Table(i).Parameter(NPar).Unit=deblank(strextract(Part2));
                 end
             case 'records-in-table'
-                NRec=fscanf(fid,'%i',1);
+                NRec=sscanf(remainder,'%i',1);
             otherwise
                 if NPar==0
                     error('No parameter keywords found before data.')
