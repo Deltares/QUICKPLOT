@@ -100,6 +100,8 @@ switch lower(cmd)
         [varargout{1:nargout}] = grib_find(varargin{:});
     case 'time'
         varargout{1} = grib_time(varargin{:});
+    otherwise
+        error('Unknown command: %s',var2str(cmd))
 end
 
 %% grib_read

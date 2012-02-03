@@ -1,22 +1,26 @@
 function varargout=bna(cmd,varargin)
 %BNA Read/write for ArcInfo (un)generate files.
+%   FILEINFO = BNA('open',FILENAME) opens the specified file, reads its
+%   contents and returns a structure describing the data.
 %
-%   FileInfo=BNA('open',FileName)
-%      Opens the specified file and reads its contents.
+%   [X,Y] = BNA('read',FILEINFO) returns the X and Y data of all lines in
+%   the file. If instead of the FILEINFO structure -- as obtained from a
+%   BNA('open',...) call -- a file name is provided then the indicated file
+%   is first opened. If only one output argument is requested then a Nx2
+%   array is returned with X data in the first column and Y data in the
+%   second column.
 %
-%   XY=BNA('read',FileInfo)
-%   [X,Y]=BNA('read',FileInfo)
-%      Returns the X and Y data in the file. If instead of the FileInfo
-%      structure a file name is provided then the indicated file is
-%      opened and the data is returned.
+%   BNA('write',FILENAME,X,Y) writes the (X,Y) coordinates as line segments
+%   to the indicated file. X and Y should either be vectors of equal length
+%   (optionally containing NaN values to separate line segments) or cell
+%   arrays of equal length where each cell contains one line segment.
+%   Instead of two variables X and Y, one may also provide a Nx2 array or a
+%   cell array containing N(i)x2 arrays containing X and Y coordinates as
+%   columns.
 %
-%   BNA('write',FileName,XY)
-%   BNA('write',FileName,X,Y)
-%      Writes the line segments to file. X,Y should either
-%      contain NaN separated line segments or X,Y cell arrays
-%      containing the line segments.
-%   BNA(...,'-1')
-%      Doesn't write line segments of length 1.
+%   BNA('write',...,'-1') does not write line segments of length 1.
+%
+%   See also LANDBOUNDARY.
 
 %----- LGPL --------------------------------------------------------------------
 %
@@ -99,6 +103,9 @@ try
         T.Seg(i).ID1=Line((DQuotes(1)+1):(DQuotes(2)-1));
         T.Seg(i).ID2=Line((DQuotes(3)+1):(DQuotes(4)-1));
         NPnt=sscanf(Line((DQuotes(4)+1):end),'%*[ ,]%i');
+        if isempty(NPnt)
+            error('Unable to determine number of points in data block %i.',i)
+        end
         T.Seg(i).NPnt=NPnt;
         NPnt=abs(NPnt);
         %
@@ -112,7 +119,10 @@ try
         %
         % Read remainder of last line
         %
-        fgetl(fid);
+        Line=fgetl(fid);
+        if ~isempty(deblank(Line))
+            error('Unexpected data found at end of BNA record %i: "%s"\n',i,Line(1:min(100,end)))
+        end
     end
     fclose(fid);
     T.Check='OK';

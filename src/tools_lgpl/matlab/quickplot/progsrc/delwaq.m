@@ -90,7 +90,7 @@ function [Out1,Out2]=delwaq(cmd,varargin)
 %   $HeadURL$
 %   $Id$
 
-switch cmd
+switch lower(cmd)
     case 'open'
         if nargout>1
             error('Too many output arguments.')
@@ -101,7 +101,7 @@ switch cmd
     case 'write'
         Out1=Local_delwaq_write(varargin{:});
     otherwise
-        error(sprintf('Unknown command: %s.',cmd))
+        error('Unknown command: %s',var2str(cmd))
 end
 
 
@@ -112,7 +112,7 @@ S.FileType='DelwaqMAP';
 %
 % Ask for filename if none given
 %
-if (nargin==0) | strcmp(filename,'?')
+if (nargin==0) || strcmp(filename,'?')
     [fname,fpath]=uigetfile('*.*','Select Delwaq file');
     if ~ischar(fname)
         return
@@ -205,7 +205,7 @@ try
     % Determine the number of substances.
     %
     Nsubs=fread(fid,1,'int32');
-    if isempty(Nsubs) | Nsubs==0
+    if isempty(Nsubs) || Nsubs==0
         error('Number of substances equals zero or invalid Delwaq file.');
     end
     %
@@ -553,8 +553,8 @@ end
 MN=fread(fid,[1 2],'int32');
 S.XY0=fread(fid,[1 2],'float32');
 X=fread(fid,[1 3],'int32');
-if ~isequal(MN([2 1]),S.MNK(1:2)) | X(3)~=S.MNK(3)
-    error(sprintf('Size in CCO file [%i %i %i] does not match size in LGA file [%i %i %i].',MN([2 1]),X(3),S.MNK))
+if ~isequal(MN([2 1]),S.MNK(1:2)) || X(3)~=S.MNK(3)
+    error('Size in CCO file [%i %i %i] does not match size in LGA file [%i %i %i].',MN([2 1]),X(3),S.MNK)
 end
 %
 % Skip next nine records. No idea what they were meant to do.
@@ -630,7 +630,7 @@ FormatType='unknown';
 %
 fid=fopen(filename,'r','b');
 if fid<0
-    error(sprintf('Cannot open file: %s.',filename))
+    error('Cannot open file: %s.',filename)
 end
 %
 % Read uint32 values and interpret as block sizes.
@@ -696,8 +696,6 @@ fclose(fid);
 
 function [OTime,Data]=Local_delwaq_read(S,Subs,Seg,Time)
 % LOCAL_DELWAQ_READ  Read data from HIS/MAP/PLO file.
-OTime=[];
-Data=[];
 if nargin<4
     Time=0;
     if nargin<3
@@ -715,7 +713,7 @@ end
 %
 if ~isnumeric(Time)
     error('Invalid timestep')
-elseif isequal(Time(:),(1:S.NTimes)') | isequal(Time,0)
+elseif isequal(Time(:),(1:S.NTimes)') || isequal(Time,0)
     if isequal(Time,1)
         tim=1;
         ntim=1;
@@ -731,7 +729,15 @@ end
 % Subs can be either a substance name or number (0 for all substances)
 %
 NSubs=length(S.SubsName);
-if ischar(Subs)
+if iscellstr(Subs)
+    subs=zeros(1,numel(Subs));
+    for i=1:numel(Subs)
+        subs(i)=ustrcmpi(Subs{i},S.SubsName);
+        if subs(i)<0
+            error('Non-unique substance name: %s.',Subs{i})
+        end
+    end
+elseif ischar(Subs)
     subs=ustrcmpi(Subs,S.SubsName);
     if subs<0
         error('Non-unique substance name.')
@@ -749,7 +755,20 @@ nsubs=length(subs);
 %
 % Seg can be either a segment number (or name if appropriate) (0 for all segments)
 %
-if ischar(Seg)
+if iscellstr(Seg)
+    switch S.FileType
+        case 'DelwaqHIS'
+            seg=zeros(1,numel(Seg));
+            for i=1:numel(Seg)
+                seg(i)=ustrcmpi(Seg{i},S.SegmentName);
+                if seg(i)<0
+                    error('Non-unique segment name: %s.',Seg{i})
+                end
+            end
+        otherwise
+            error('No names available for segments.')
+    end
+elseif ischar(Seg)
     switch S.FileType
         case 'DelwaqHIS'
             seg=ustrcmpi(Seg,S.SegmentName);
@@ -804,9 +823,9 @@ if tim==0
     % reading. In case of multiple segments, read them one by one since
     % reading all of them may require far too much memory.
     %
-    if nsubs==0 | nseg==0
+    if nsubs==0 || nseg==0
         Data=zeros(nsubs,nseg,S.NTimes);
-    elseif nsubs>1 & nseg>1
+    elseif nsubs>1 && nseg>1
         fseek(fid,S.DataStart+FormRecSize+4,-1);
         Data=local_fread(fid,can_use_skip,[NTot S.NTimes],'float32',4+2*FormRecSize);
         Data=reshape(Data,NSubs,NSeg,S.NTimes);
@@ -846,8 +865,8 @@ else
         % filter after reading. In case of multiple segments, read them one
         % by one since reading all of them may require far too much memory.
         %
-        if nsubs==0 | nseg==0
-        elseif nsubs>1 & nseg>1
+        if nsubs==0 || nseg==0
+        elseif nsubs>1 && nseg>1
             tmpData=fread(fid,[NSubs NSeg],'float32');
             Data(:,:,ti)=tmpData(subs,seg);
         elseif nsubs>1
@@ -1020,13 +1039,13 @@ end
 % Verify data size.
 %
 if size(Data,1)~=Nsubs
-    error(sprintf('Number of data rows (%i) does not match number of substances (%i).',size(Data,1),Nsubs))
+    error('Number of data rows (%i) does not match number of substances (%i).',size(Data,1),Nsubs)
 end
 if size(Data,2)~=Nseg
-    error(sprintf('Number of data columns (%i) does not match number of segments (%i).',size(Data,2),Nseg))
+    error('Number of data columns (%i) does not match number of segments (%i).',size(Data,2),Nseg)
 end
 if size(Data,3)~=length(Time)
-    error(sprintf('Number of times (%i) does not match data fields (%i).',length(Time),size(Data,3)))
+    error('Number of times (%i) does not match data fields (%i).',length(Time),size(Data,3))
 end
 %
 % In case of file creation, write header records.
@@ -1034,12 +1053,12 @@ end
 if Initialise
     fid=fopen(S.FileName,'w',S.ByteOrder);
     if fid<0
-        error(sprintf('Cannot open file: %s',S.FileName))
+        error('Cannot open file: %s',S.FileName)
     end
     %
     % Create header (including time indicator on fourth line).
     %
-    Header=str2mat(Header);
+    Header=char(Header);
     if size(Header,2)<40
         Header(1,40)=' ';
     elseif size(Header,2)>40
@@ -1053,7 +1072,6 @@ if Initialise
     if ~isempty(RefTime)
         S.T0=RefTime(1);
         S.TStep=RefTime(2)/(24*3600);
-        sf = 1;
         ClockUnit='S';
         if (round(RefTime(2)/(24*3600))*24*3600==RefTime(2))
             ClockUnit='D';
@@ -1069,10 +1087,10 @@ if Initialise
         if length(dTstr)>8
             dTstr = sprintf('%8.2g',RefTime(2));
         end
-        RT = str2num(dTstr);
+        RT = str2double(dTstr);
         if RT~=RefTime(2)
             S.TStep = RT;
-            warning(sprintf('Time scale rounded to %g seconds.',RT))
+            warning('Time scale rounded to %g seconds.',RT)
         end
         Header(4,:)=sprintf('T0: %4i-%2.2i-%2.2i %2i:%2.2i:%2.2i  (scu=%s%c)',round(datevec(RefTime(1))),dTstr,ClockUnit);
     end
@@ -1101,7 +1119,7 @@ if Initialise
     %
     % Write substance names.
     %
-    SubsNames=str2mat(SubsNames);
+    SubsNames=char(SubsNames);
     if size(SubsNames,2)<20
         SubsNames(1,20)=' ';
         SubsNames(SubsNames==0)=' ';
@@ -1113,7 +1131,7 @@ if Initialise
     fwrite(fid,SubsNames','uchar');
     switch S.FormatType
         case 'formatted4'
-            fwrite(fid,[20*Nsubs],'int32');
+            fwrite(fid,20*Nsubs,'int32');
     end
     %
     % In case of a HIS file, write segment names.

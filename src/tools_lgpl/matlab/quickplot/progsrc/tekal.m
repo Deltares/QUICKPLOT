@@ -74,7 +74,7 @@ if nargin==0
     end
     return
 end
-switch cmd
+switch lower(cmd)
     case 'open'
         Out=Local_open_file(varargin{:});
     case 'read'
@@ -86,14 +86,14 @@ switch cmd
     case 'write'
         Out=Local_write_file(varargin{:});
     otherwise
-        uiwait(msgbox('unknown command','modal'));
+        error('Unknown command: %s',var2str(cmd))
 end
 
 function FileInfo=Local_open_file(varargin)
 FileInfo.Check='NotOK';
 TryToCorrect=0;
 LoadData=0;
-LoadField=0;
+nSkipDataLines=0;
 if nargin==0
     [fn,fp]=uigetfile('*.*');
     if ~ischar(fn)
@@ -104,14 +104,18 @@ else
     filename=varargin{1};
 end
 INP=varargin(2:end);
-for i=1:length(INP)
-    if strcmp(INP{i},'autocorrect')
-        TryToCorrect=1;
-    elseif strcmp(INP{i},'loaddata')
-        LoadData=1;
-    else
-        LoadField=INP{i};
+i=1;
+while i<=length(INP)
+    switch lower(INP{i})
+        case 'autocorrect'
+            TryToCorrect=1;
+        case 'loaddata'
+            LoadData=1;
+        case 'nskipdatalines'
+            nSkipDataLines=INP{i+1};
+            i=i+1;
     end
+    i=i+1;
 end
 
 variable=0;
@@ -119,7 +123,7 @@ fid=fopen(filename);
 if fid<0
     error('Cannot open file ...')
 end
-
+%
 FileInfo.FileName=filename;
 FileInfo.FileType='tekal';
 ErrorFound=0;
@@ -138,11 +142,11 @@ while 1
 
     % check if we are dealing with a non-Tekal binary file ...
     % Tabs (char 9) are acceptable!
-    if feof(fid) & length(line)==1 & line==26
+    if feof(fid) && length(line)==1 && line==26
         break
-    elseif any(line<32 & line~=9) & ~TryToCorrect
+    elseif any(line<32 & line~=9) && ~TryToCorrect
         fclose(fid);
-        error(sprintf('Invalid line: %s',line))
+        error('Invalid line: %s',line)
     end
 
     % remove empty spaces
@@ -152,6 +156,8 @@ while 1
     if isempty(line)
     elseif line(1)=='*' % comment
         Cmnt{end+1,1}=line;
+    elseif nSkipDataLines>0
+        nSkipDataLines=nSkipDataLines-1;
     else
         % if not, it must be a variable name
         variable=variable+1;
@@ -165,32 +171,39 @@ while 1
             dim=sscanf(line,['%f' space],[1 inf]);
             if ~isequal(dim,round(dim))
                 fclose(fid);
-                error(sprintf('Error reading data dimensions from line: %s',line))
+                error('Error reading data dimensions from line: %s',line)
             end
         end
         if ~isempty(dim)
             dim(dim==-999)=inf;
             FileInfo.Field(variable).Size=dim;
-            if (length(dim)>2) & prod(FileInfo.Field(variable).Size(3:end))~=FileInfo.Field(variable).Size(1)
+            if (length(dim)>2) && prod(FileInfo.Field(variable).Size(3:end))~=FileInfo.Field(variable).Size(1)
                 % MN   n   M    should be interpreted as    MN   n   M   N (=MN/M)
                 if prod(FileInfo.Field(variable).Size(3:end))>0 && rem(FileInfo.Field(variable).Size(1),prod(FileInfo.Field(variable).Size(3:end)))==0
                     FileInfo.Field(variable).Size(end+1)=FileInfo.Field(variable).Size(1)/prod(FileInfo.Field(variable).Size(3:end));
                 else
                     Sz = FileInfo.Field(variable).Size;
-                    error(sprintf(['Field %i labelled ''%s''\n' ...
+                    error(['Field %i labelled ''%s''\n' ...
                         'Specified dimension: %s\n' ...
                         'Number of rows (%i) is not integer multiple of reshape dimensions (%s).'], ...
                     variable, ...
                     FileInfo.Field(variable).Name, ...
                     sprintf('%i ',Sz), ...
                     Sz(1), ...
-                    deblank(sprintf('%i ',Sz(3:end)))))
+                    deblank(sprintf('%i ',Sz(3:end))))
                 end
             end
             if length(dim)>1
                 dim=dim([2 1]);
             else
-                dim=[1 dim];
+                % auto detect number of values per line
+                here = ftell(fid);
+                line = fgetl(fid);
+                fseek(fid,here,-1);
+                values = sscanf(line,'%f');
+                nvalues = max(1,length(values));
+                FileInfo.Field(variable).Size=[dim nvalues];
+                dim=[nvalues dim];
             end
             FileInfo.Field(variable).ColLabels=getcollabels(dim(1),Cmnt);
             FileInfo.Field(variable).Offset=ftell(fid);
@@ -215,7 +228,7 @@ while 1
                             Tkn=find(diff([0 ~ismember(line,[' ,' char(9)])])==1);
                             Data{1}(:,i)=sscanf(line,['%f' space],dim(1)-1);
                             Str=deblank(line(Tkn(dim(1)):end));
-                            if Str(1)=='''' & Str(end)==''''
+                            if Str(1)=='''' && Str(end)==''''
                                 Str=Str(2:end-1);
                             end
                             Data{2}{i}=Str;
@@ -230,7 +243,7 @@ while 1
                     end
                 else % all numerics; use %f a bit faster than the scan-string above
                     % check number of values per line,
-                    if (length(FileInfo.Field(variable).Size)>1) & (N<dim(1))
+                    if (length(FileInfo.Field(variable).Size)>1) && (N<dim(1))
                         Msg=sprintf('Actual number of values per line %i does not match indicated number\nof values per line %i.',N,dim(1));
                         if ~TryToCorrect
                             fclose(fid);
@@ -316,13 +329,13 @@ while 1
                     FileInfo.Field(variable).Data=Data;
 
                     % read closing end of line
-                    line=fgetl(fid);
+                    fgetl(fid);
                 end
             end
         else
-            if ~isempty(line) & ischar(line) & ~TryToCorrect
+            if ~isempty(line) && ischar(line) && ~TryToCorrect
                 fclose(fid);
-                error(sprintf('Cannot determine field size from %s',line))
+                error('Cannot determine field size from %s',line)
             end
             % remove field
             FileInfo.Field(variable)=[];
@@ -333,7 +346,7 @@ while 1
 end
 fclose(fid);
 if ~isfield(FileInfo,'Field')
-    error(sprintf('File is empty: %s',FileInfo.FileName))
+    error('File is empty: %s',FileInfo.FileName)
 end
 if ~ErrorFound
     FileInfo.Check='OK';
@@ -352,7 +365,7 @@ if ischar(var)
         var=varnr;
     end
 end
-if var==0 | length(var)~=1
+if var==0 || length(var)~=1
     if var==0
         var=1:length(FileInfo.Field);
     end
@@ -361,7 +374,7 @@ if var==0 | length(var)~=1
     end
     return
 end
-if isfield(FileInfo.Field(var),'Data') & ~isempty(FileInfo.Field(var).Data)
+if isfield(FileInfo.Field(var),'Data') && ~isempty(FileInfo.Field(var).Data)
     Data=FileInfo.Field(var).Data;
 else %if ~isnan(FileInfo.Field(var).Offset)
     fid=fopen(FileInfo.FileName);
@@ -378,7 +391,7 @@ else %if ~isnan(FileInfo.Field(var).Offset)
                 Tkn=find(diff([0 ~ismember(line,[' ,' char(9)])])==1);
                 Data{1}(:,i)=sscanf(line,'%f%*[ ,]',dim(1)-1);
                 Str=deblank(line(Tkn(dim(1)):end));
-                if Str(1)=='''' & Str(end)==''''
+                if Str(1)=='''' && Str(end)==''''
                     Str=Str(2:end-1);
                 end
                 Data{2}{i}=Str;
@@ -450,7 +463,7 @@ if isstruct(FileInfo)
                 NewFileInfo.Field(i).Comments=FileInfo.Field(i).Comments;
             end
             for c=1:length(NewFileInfo.Field(i).Comments)
-                if isempty(NewFileInfo.Field(i).Comments{c}) | NewFileInfo.Field(i).Comments{c}(1)~='*'
+                if isempty(NewFileInfo.Field(i).Comments{c}) || NewFileInfo.Field(i).Comments{c}(1)~='*'
                     NewFileInfo.Field(i).Comments{c}=['*' NewFileInfo.Field(i).Comments{c}];
                 end
                 fprintf(fid,'%s\n',NewFileInfo.Field(i).Comments{c});
@@ -467,7 +480,7 @@ if isstruct(FileInfo)
         fprintf(fid,' %i',NewFileInfo.Field(i).Size); fprintf(fid,'\n');
         NewFileInfo.Field(i).Offset=ftell(fid);
 
-        if length(NewFileInfo.Field(i).ColLabels)>1 & strcmp(NewFileInfo.Field(i).ColLabels(1),'Date') & strcmp(NewFileInfo.Field(i).ColLabels(2),'Time')
+        if length(NewFileInfo.Field(i).ColLabels)>1 && strcmp(NewFileInfo.Field(i).ColLabels(1),'Date') & strcmp(NewFileInfo.Field(i).ColLabels(2),'Time')
             Format=['%08i %06i' repmat(' %.15g',1,size(FileInfo.Field(i).Data,2)-2) '\n'];
         else
             Format=[repmat(' %.15g',1,size(FileInfo.Field(i).Data,2)) '\n'];
@@ -511,9 +524,9 @@ ColLabels(1:ncol,1)={''};
 if ~isempty(Cmnt)
     for i=1:length(Cmnt)
         [Tk,Rm]=strtok(Cmnt{i}(2:end));
-        if (length(Cmnt{i})>10) & strcmp(lower(Tk),'column')
+        if (length(Cmnt{i})>10) && strcmpi(Tk,'column')
             [a,c,err,idx]=sscanf(Rm,'%i%*[ :=]%c',2);
-            if (c==2) & a(1)<=ncol & a(1)>0
+            if (c==2) && a(1)<=ncol && a(1)>0
                 ColLabels{a(1)}=deblank(Rm(idx-1:end));
             end
         end

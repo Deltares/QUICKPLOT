@@ -830,7 +830,7 @@ cmdargs={};
 switch cmd
     case 'initialize'
         OK=optfig(mfig);
-        if isfield(FI,'combinelines')
+        if FI.can_be_ldb
             f=findobj(mfig,'tag','combinelines');
             set(f,'value',FI.combinelines,'enable','on')
         end

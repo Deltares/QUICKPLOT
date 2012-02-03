@@ -59,7 +59,7 @@ switch lower(cmd)
             Local_write_samples(varargin{:});
         end
     otherwise
-        uiwait(msgbox('unknown command','modal'));
+        error('Unknown command: %s',var2str(cmd)) 
 end
 
 function xyz=Local_read_samples(filename)

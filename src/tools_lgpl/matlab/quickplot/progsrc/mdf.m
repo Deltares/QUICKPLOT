@@ -52,7 +52,7 @@ switch lower(cmd)
     case 'write'
         mdfwrite(varargin{:});
     otherwise
-        error('Command ''%s'' not supported.',cmd)
+        error('Unknown command: %s',var2str(cmd)) 
 end
 
 
