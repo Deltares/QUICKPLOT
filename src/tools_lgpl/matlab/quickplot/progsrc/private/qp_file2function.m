@@ -104,6 +104,7 @@ F={'Delft3D-com'                'd3d_comfil'
     'Triangle mesh'              'flexmeshfil'
     'Adcirc 14 mesh'             'flexmeshfil'
     'diff'                       'difffil'
+    'shipma'                     'shipmafil'
     '<user defined variables>'   'usrdeffil'   };
 
 %

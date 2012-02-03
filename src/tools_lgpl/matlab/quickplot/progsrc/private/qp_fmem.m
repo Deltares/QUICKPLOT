@@ -637,23 +637,26 @@ switch cmd
                   else
                      Tp='Tekal';
                      [pn,fn,ex]=fileparts(FI.FileName);
-                     can_be_ldb=0;
+                     FI.can_be_ldb=1;
+                     FI.combinelines=0;
+                     for i=1:length(FI.Field)
+                         if length(FI.Field(i).Size)~=2
+                             FI.can_be_ldb=0;
+                         elseif FI.Field(i).Size(2)~=2
+                             FI.can_be_ldb=0;
+                         elseif ~strcmp(FI.Field(i).DataTp,'numeric')
+                             FI.can_be_ldb=0;
+                         end
+                         if ~FI.can_be_ldb
+                             break
+                         end
+                     end
                      can_be_kub=0;
                      switch lower(ex)
                         case {'.ldb','.pol'}
-                           can_be_ldb=1;
-                           for i=1:length(FI.Field)
-                              if length(FI.Field(i).Size)~=2
-                                 can_be_ldb=0;
-                              elseif FI.Field(i).Size(2)~=2
-                                 can_be_ldb=0;
-                              elseif ~strcmp(FI.Field(i).DataTp,'numeric')
-                                 can_be_ldb=0;
-                              end
-                              if ~can_be_ldb
-                                 break
-                              end
-                           end
+                            if FI.can_be_ldb
+                                FI.combinelines=1;
+                            end
                         case '.kub'
                            can_be_kub=1;
                            if length(FI.Field)>1
@@ -664,9 +667,7 @@ switch cmd
                               can_be_kub=0;
                            end
                      end
-                     if can_be_ldb
-                        FI.combinelines=1;
-                     elseif can_be_kub
+                     if can_be_kub
                         ppn = '';
                         if nargin>2
                            pfn=varargin{2};
@@ -699,7 +700,7 @@ switch cmd
                            FI.plotonpoly=pfile;
                         end
                      end
-                     FI.Options=can_be_ldb;
+                     FI.Options=FI.can_be_ldb;
                   end
                end
                trytp='shape';
@@ -965,6 +966,14 @@ switch cmd
                      Tp=trytp;
                   end
                end
+               trytp='shipma';
+            case 'shipma'
+               try
+                  FI=shipma('open',FileName);
+               end
+               if ~isempty(FI)
+                  Tp=trytp;
+               end
                trytp='unibest';
             case 'unibest'
                try
@@ -1013,6 +1022,9 @@ switch cmd
             end
             usertrytp=trytp;
             trytp=filtertbl{try_i,3};
+            if trytp(1)=='>'
+               trytp=trytp(2:end);
+            end
             userasked=1;
             lasterr('');
          end

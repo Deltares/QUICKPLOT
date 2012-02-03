@@ -58,6 +58,7 @@ filtertbl={...
     '*.arc;*.am?;*.asc'                                    'ARC/INFO Ascii Grid Files'         'arcgrid'
     '*.map'                                                'PC-Raster Files'                   'pcraster'
     '*.hdr'                                                'BIL/HDR Files'                     'bil/hdr'
+    '*.ldb;*.pol'                                          'Land Boundary and Polygon Files'   '>tekal'
     '*.tek;*.ann;*.ldb;*.pol;*.spl;*.tka;*.tkp;*.tkf'      'Tekal Data Files'                  'tekal'
     '*.shp'                                                'Shape Files'                       'shape'
     '*.gen'                                                'ArcInfo Ungenerate Files'          'ArcInfoUngenerate'
@@ -71,6 +72,7 @@ filtertbl={...
     '*.inc;*.crs;*.bin'                                    'FLS Files'                         'fls'
     '*.seq'                                                'AukePC Files'                      'aukepc'
     '*.mat'                                                'MATLAB Files (Exported from QP)'   'matlab'
+    '*.sma'                                                'Shipma Project Files'              'shipma'
     '*.dmp'                                                'CFX4 Dump Files'                   'CFX dmp'
     };
 
