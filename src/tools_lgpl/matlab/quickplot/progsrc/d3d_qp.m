@@ -2498,8 +2498,8 @@ try
                     else
                         FigNm=deblank(FigNms(FigVal,:));
                     end
-                    i=strmatch(FigNm,fignames,'exact');
-                    if isempty(i)
+                    i=ustrcmpi(FigNm,fignames);
+                    if i<0
                         i=1;
                     end
                 else
