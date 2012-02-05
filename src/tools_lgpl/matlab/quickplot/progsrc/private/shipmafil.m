@@ -91,7 +91,8 @@ switch cmd
         varargout={{}};
         return
     case 'plot'
-        varargout={[] FI}; 
+        selfplot(FI,Props); 
+        varargout={[] FI};
         return
     otherwise
         [XYRead,DataRead,DataInCell]=gridcelldata(cmd);
@@ -104,18 +105,26 @@ idx={[] [] 0 0 0};
 fidx=find(DimFlag);
 idx(fidx(1:length(varargin)))=varargin;
 
-
-x=[];
-y=[];
-
 % read data ...
+[T,val1] = delwaq('read',FI.Cases.Data(domain).TimeSeries,Props.Var,1,idx{1});
 
 % generate output ...
-if XYRead
-    Ans.X=x;
-    Ans.Y=y;
-end
 if Props.NVal==0
+    switch Props.Name
+        case 'ship track'
+            Ans.X = squeeze(val1(1,1,:));
+            Ans.Y = squeeze(val1(2,1,:));
+        case 'ship'
+            ship = FI.Cases.Data(domain).ShipNr;
+            icontour = ustrcmpi('contour',{FI.Ships(ship).Data.Props.Quant});
+            contour = FI.Ships(ship).Data.Props(icontour).Value;
+            alf = val1(3)*pi/180;
+            Ans.X = contour(:,1)*sin(alf)+contour(:,2)*cos(alf)+val1(1);
+            Ans.Y = -contour(:,2)*sin(alf)+contour(:,1)*cos(alf)+val1(2);
+    end
+    Ans.XUnits = 'm';
+    Ans.YUnits = 'm';
+    Ans.Time = T;
 elseif Props.NVal==1
     Ans.Val=val1;
 else
@@ -128,22 +137,69 @@ varargout={Ans FI};
 % -----------------------------------------------------------------------------
 
 
+% -----------------------------------------------------------------------------
+function selfplot(FI,Props)
+d3d_qp('newfigure','3 plots, vertical - portrait','3 plots, vertical - portrait')
+qpsa('upper plot')
+d3d_qp('selectfield','n1')
+d3d_qp('linestyle','-')
+d3d_qp('addtoplot')
+qpsa('lower plot')
+d3d_qp('selectfield','rudder1')
+d3d_qp('addtoplot')
+%--------
+d3d_qp('newfigure','2 plots, vertical - portrait','2 plots, vertical - portrait')
+set(qpsa('upper plot'),'ydir','reverse')
+d3d_qp('selectfield','swept path port')
+d3d_qp('linestyle','-')
+d3d_qp('addtoplot')
+d3d_qp('selectfield','swept path stb.')
+d3d_qp('linestyle','--')
+d3d_qp('addtoplot')
+%--------
+d3d_qp('selectfield','default figures')
+% -----------------------------------------------------------------------------
+
+
+% -----------------------------------------------------------------------------
 function Out=domains(FI)
 Out=FI.Cases.Names;
 if ~iscell(Out)
     Out = {Out};
 end
+% -----------------------------------------------------------------------------
+
 
 % -----------------------------------------------------------------------------
 function Out=infile(FI,domain)
 
 %======================== SPECIFIC CODE =======================================
-PropNames={'Name'                       'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc' 'Loc3D' 'Fld' 'Prm'};
-DataProps={'default figures'            [0 0 0 0 0] 0           -1    ''        ''    ''       ''      ''    ''
-    '-------'                    [0 0 0 0 0] 0           0     ''        ''    ''       ''      ''    ''
-    'ship track'                 [0 0 0 0 0] 0           1     ''        ''    ''       ''      ''    ''   };
-%======================== SPECIFIC CODE DIMENSIONS ============================
+PropNames={'Name'               'Units' 'DimFlag'   'DataInCell' 'NVal' 'Geom'   'Coords' 'ClosedPoly' 'Domain' 'Var'   };
+DataProps={'default figures'    ''      [0 0 0 0 0] 0            -2     ''       ''       0            domain   0       
+    '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            domain   0       
+    'ship track'                ''      [1 0 0 0 0] 0             0     'PNT'    'xy'     0            domain   0       
+    'ship'                      ''      [1 0 0 0 0] 0             0     'POLYG'  'xy'     1            domain   0       
+    '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            domain   0       
+    'his-data'                  ''      [1 0 0 0 0] 0             1     ''       ''       0            domain   0       };
 Out=cell2struct(DataProps,PropNames,2);
+%======================== SPECIFIC CODE DIMENSIONS ============================
+hisvars = FI.Cases.Data(domain).TimeSeries.SubsName;
+startVal = length(Out)-1;
+nVal = length(hisvars);
+Out = cat(1,Out(1:startVal),repmat(Out(end),nVal,1));
+for i=1:nVal
+    var = hisvars{i};
+    uStart = strfind(var,'[');
+    Out(startVal+i).Name = deblank(var(1:uStart-1));
+    Out(startVal+i).Units = var(uStart+1:end-1);
+    Out(startVal+i).Var = i;
+end
+%
+[dummy,iCoords,reordered]=intersect(hisvars,{'x [m]','y [m]'});
+Out(3).Var = iCoords;
+[dummy,iCoords,reordered]=intersect(hisvars,{'x [m]','y [m]','Heading [deg]'});
+[dummy,i]=sort(reordered);
+Out(4).Var = iCoords(i);
 % -----------------------------------------------------------------------------
 
 
@@ -153,6 +209,9 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 sz=[0 0 0 0 0];
 
 %======================== SPECIFIC CODE =======================================
+if Props.DimFlag(T_)
+    sz(T_) = FI.Cases.Data(Props.Domain).TimeSeries.NTimes;
+end
 % -----------------------------------------------------------------------------
 
 

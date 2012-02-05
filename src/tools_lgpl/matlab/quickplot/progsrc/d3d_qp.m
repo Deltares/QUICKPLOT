@@ -1505,9 +1505,11 @@ try
                         selected{T_}=T(1);
                     end
                     
-                    if strcmp(cmd,'quickview')
-                        UDplot.ProgID='QuickPlot';
-                        
+                    if Props.NVal==-2
+                        % selfplotfig will create its own figure
+                        Parent=0;
+                        pfig=[];
+                    elseif strcmp(cmd,'quickview')
                         pfig=qp_createfig('quick','');
                         ax=findall(pfig,'type','axes');
                         for i=length(ax):-1:1

@@ -105,7 +105,7 @@ elseif isfield(Ops,'MNK') && Ops.MNK
 end
 
 DataInCell=0;
-if Props.NVal==-1
+if Props.NVal<0
     data=[];
 else
     if isfield(Ops,'extend2edge') && Ops.extend2edge
@@ -782,7 +782,10 @@ end
 %==========================================================================
 % Begin of actual plotting
 %==========================================================================
-if NVal==-1
+if NVal==-2
+    [Chk,hNewVec,FileInfo]=qp_getdata(FileInfo,Domain,Props,'plot',Parent,Ops,SubField{:},SubSelected{:});
+    return
+elseif NVal==-1
     [Chk,hNewVec,FileInfo]=qp_getdata(FileInfo,Domain,Props,'plot',Parent,Ops,SubField{:},SubSelected{:});
     hNew{1}=hNewVec;
     hObsolete=setdiff(hOld{1},hNew{1});

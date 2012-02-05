@@ -34,6 +34,8 @@ function [NVal,NValStr,NValBasic]=convertnval(NValIn)
 NVal=NValIn;
 NValStr=NValIn;
 switch NValIn
+   case -2
+      NValStr='selfplotfig';
    case -1
       NValStr='selfplot';
    case 0
@@ -50,6 +52,8 @@ switch NValIn
       NValStr='boolean';
    case 6
       NValStr='discrete';
+   case 'selfplotfig'
+      NVal=-2;
    case 'selfplot'
       NVal=-1;
    case 'none'

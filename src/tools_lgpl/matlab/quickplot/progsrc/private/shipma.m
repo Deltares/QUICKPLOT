@@ -77,8 +77,9 @@ FI.Pilots = getMembers(Children(5));
 FI.TugScenarios = getMembers(Children(6));
 FI.Cases = getMembers(Children(7));
 FI.Cases.Data = getCaseData(FI.Cases.XML,ProjFolder);
-1
-
+for i=1:length(FI.Cases.Data)
+    FI.Cases.Data(i).ShipNr = ustrcmpi(FI.Cases.Data(i).ShipId,{FI.Ships.Names});
+end
 
 function S = getMembers(Node)
 S.XML = getChildren(Node);
@@ -112,6 +113,12 @@ nCases = length(Cases);
 Data(nCases).Props = [];
 for i = 1:nCases
     CaseName = char(Cases(i).getAttribute('key'));
+    %
+    CaseProps = getChildren(Cases(i));
+    CaseDef = getChildren(CaseProps(5));
+    CaseComposition = getChildren(CaseDef(2));
+    Data(i).ShipId = char(CaseComposition(1).getTextContent);
+    %
     FileName = fullfile(UnzipFolder,'shi_Cases',['shi_' CaseName],'Shi_results','Wor_workDir','embCtnt','containedFiles','track.his');
     Data(i).TimeSeries = delwaq('open',FileName);
 end
