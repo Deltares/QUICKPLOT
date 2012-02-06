@@ -154,6 +154,7 @@ F={'Delft3D-com'                'd3d_comfil'
 %#function resourceobject
 %#function ecomsedfil
 %#function difffil
+%#function shipmafil
 %#function flexmeshfil
 
 tp=qp_gettype(Info);
