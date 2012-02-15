@@ -124,8 +124,7 @@ function ax = Local_subplot(fig,nrows, ncols, thisPlot)
 %   an m-by-n matrix of small axes, selects the p-th axes for
 %   for the current plot, and returns the axis handle.  The axes
 %   are counted along the top row of the Figure window, then the
-%   second row, etc. If overlapping axes objects are encountered
-%   the user will be ask whether they should be deleted.
+%   second row, etc.
 
 % This is the percent offset from the subplot grid of the plotbox.
 PERC_OFFSET_L = 2*0.09;
@@ -168,5 +167,11 @@ if height <= 0.5*totalheight/nrows
 end
 
 % create the axis:
+if isappdata(fig,'MaximumPlotExtent')
+    plotbox = getappdata(fig,'MaximumPlotExtent');
+else
+    plotbox = [0 0 1 1];
+end
+position = [plotbox(1:2) 0 0] + position.*plotbox([3 4 3 4]);
 ax = axes('parent',fig,'units','normal','Position', position);
 set(ax,'units',get(fig,'defaultaxesunits'))

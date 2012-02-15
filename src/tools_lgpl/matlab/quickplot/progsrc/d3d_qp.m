@@ -176,6 +176,8 @@ try
                try
                   CloseSplashScreen;
                end
+            else
+                check_nonprivate_files
             end
             d3d_qp updatedomains
             d3d_qp refreshfigs
@@ -1513,7 +1515,9 @@ try
                         pfig=qp_createfig('quick','');
                         ax=findall(pfig,'type','axes');
                         for i=length(ax):-1:1
-                            if isappdata(ax(i),'NonDataObject')
+                            if strcmp(get(ax(i),'tag'),'scribeOverlay')
+                                ax(i)=[];
+                            elseif isappdata(ax(i),'NonDataObject')
                                 ax(i)=[];
                             elseif isappdata(ax(i),'AxesType')
                                 ax(i)=[];
@@ -2563,7 +2567,9 @@ try
                 else
                     Axs=findall(Fig,'type','axes');
                     for i=length(Axs):-1:1
-                        if isappdata(Axs(i),'NonDataObject')
+                        if strcmp(get(Axs(i),'tag'),'scribeOverlay')
+                            Axs(i)=[];
+                        elseif isappdata(Axs(i),'NonDataObject')
                             Axs(i)=[];
                         end
                     end
@@ -3934,4 +3940,35 @@ if ~ischar(cmd)
     catch
         ui_message('error','Unknown command in d3d_qp: <cmd2 not defined>')
     end
+end
+
+function check_nonprivate_files
+thisfile=mfilename('fullpath');
+thisdir=fileparts(thisfile);
+d=dir([thisdir filesep '*.m']);
+names={d.name};
+for i=length(names):-1:1
+    if ~strcmpi(names{i},'contents.m')
+        file=which(names{i});
+        filedir=fileparts(file);
+        if isequal(filedir,thisdir)
+            names(i)=[];
+        else
+            names{i}=sprintf('%s overruled by %s.',names{i},file);
+        end
+    else
+        names(i)=[];
+    end
+end
+if ~isempty(names)
+    fprintf('%s\n','ERROR: Function name conflict detected.', ...
+        'This may cause QUICKPLOT to not function properly.', ...
+        'QUICKPLOT is unable to access some of its functions in:', ...
+        thisdir, ...
+        '', ...
+        'The following functions are inaccessible:', ...
+        names{:}, ...
+        '', ...
+        'Please remove the overruling functions.')
+    beep
 end

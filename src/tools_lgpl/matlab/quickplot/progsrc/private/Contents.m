@@ -51,7 +51,6 @@
 %
 % Special graphics routines
 %   balanceplot                 - Create a balance plot.
-%   classbar                    - Converts a color bar into a classbar.
 %   colquiver                   - Color quiver plot.
 %   contourfcorr                - Filled contour plot (corrected).
 %   getnormpos                  - Select an area (using normalized units).

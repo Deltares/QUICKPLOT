@@ -72,6 +72,7 @@
 %   xyveloc             - Reads X,Y,U,V from a trim- or com-file.
 %
 % Special plot routines
+%   classbar            - Converts a color bar into a classbar.
 %   drawgrid            - Plots the grid.
 %   md_clock            - Create a clock or calendar.
 %   md_paper            - Add border to plot.

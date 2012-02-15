@@ -109,7 +109,7 @@ function hBorder=md_paper(cmd,varargin)
 %   $Id$
 
 
-if nargin==0,
+if nargin==0
     cmd='portrait';
 end
 
@@ -446,7 +446,7 @@ else
 end
 PType=orientation(1:end-1);
 %
-for i=1:length(PlotText),
+for i=1:length(PlotText)
     if i<=length(Strings)
         PlotText{i}=Strings{i};
     end
@@ -518,13 +518,14 @@ switch Orientation
         %
         plotbox=[Margin(1)+0.1 Margin(2)+VRange+0.1 ...
             xmax-Margin(1)-Margin(3)-0.2 ymax-VRange-Margin(2)-Margin(4)-0.2];
+        plotbox=plotbox./[xmax ymax xmax ymax];
         for i=1:length(allax)
             set(allax(i),'units','normalized');
             pos_i=get(allax(i),'position');
-            n_pos_i(1)=(plotbox(1)+pos_i(1)*plotbox(3))/xmax;
-            n_pos_i(2)=(plotbox(2)+pos_i(2)*plotbox(4))/ymax;
-            n_pos_i(3)=pos_i(3)*plotbox(3)/xmax;
-            n_pos_i(4)=pos_i(4)*plotbox(4)/ymax;
+            n_pos_i(1)=plotbox(1)+pos_i(1)*plotbox(3);
+            n_pos_i(2)=plotbox(2)+pos_i(2)*plotbox(4);
+            n_pos_i(3)=pos_i(3)*plotbox(3);
+            n_pos_i(4)=pos_i(4)*plotbox(4);
             set(allax(i),'position',n_pos_i);
         end
     case 'landscape'
@@ -587,16 +588,20 @@ switch Orientation
         %
         plotbox=[Margin(2)+VRange+0.1 Margin(3)+0.1 ...
             xmax-VRange-Margin(2)-Margin(4)-0.2 ymax-Margin(1)-Margin(3)-0.2];
+        plotbox=plotbox./[xmax ymax xmax ymax];
         for i=1:length(allax)
             set(allax(i),'units','normalized');
             pos_i=get(allax(i),'position');
-            n_pos_i(1)=(plotbox(1)+pos_i(1)*plotbox(3))/xmax;
-            n_pos_i(2)=(plotbox(2)+pos_i(2)*plotbox(4))/ymax;
-            n_pos_i(3)=pos_i(3)*plotbox(3)/xmax;
-            n_pos_i(4)=pos_i(4)*plotbox(4)/ymax;
+            n_pos_i(1)=plotbox(1)+pos_i(1)*plotbox(3);
+            n_pos_i(2)=plotbox(2)+pos_i(2)*plotbox(4);
+            n_pos_i(3)=pos_i(3)*plotbox(3);
+            n_pos_i(4)=pos_i(4)*plotbox(4);
             set(allax(i),'position',n_pos_i);
         end
+    otherwise
+        plotbox=[0 0 1 1];
 end
+setappdata(fg,'MaximumPlotExtent',plotbox)
 AdjustFigPos(ax,fg,Orientation)
 set(fg,'children',[allchld;hBorder]);
 
