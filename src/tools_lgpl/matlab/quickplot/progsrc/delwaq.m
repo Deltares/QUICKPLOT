@@ -49,8 +49,8 @@ function [Out1,Out2]=delwaq(cmd,varargin)
 %      % copy a Delwaq MAP file if one time step fits in memory
 %      F     = delwaq('open',INFILE);
 %      for it = 1:F.NTimes
-%         [t,d] = delwaq('read',F,it,0,0);
-%         if i==1
+%         [t,d] = delwaq('read',F,0,0,it);
+%         if it==1
 %            F2 = delwaq('write',OUTFILE,F.Header,F.SubsName, ...
 %                    [F.T0 F.TStep*3600*24],t,d);
 %         else
