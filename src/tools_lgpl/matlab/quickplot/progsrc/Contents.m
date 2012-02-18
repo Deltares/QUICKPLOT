@@ -132,6 +132,7 @@
 %   arbcross            - Arbitrary cross-section through grid.
 %   delwaq              - Read/write Delwaq files.
 %   qpsi                - Get tag object of the current QuickPlot item.
+%   tricontour          - Contour plot for triangulated data.
 %   tricontourf         - Filled contour plot for triangulated data.
 %   waquaio             - Read SIMONA SDS file.
 %   waqfil              - Read various Delwaq binary files.

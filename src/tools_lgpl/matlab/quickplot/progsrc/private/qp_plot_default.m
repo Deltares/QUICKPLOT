@@ -215,6 +215,7 @@ switch NVal
 
         if spatialh==2 && spatial==2
             if isfield(data,'TRI')
+                set(Parent,'NextPlot','add');
                 switch Ops.presentationtype
                     case {'patches','patches with lines'}
                         if FirstFrame
@@ -272,29 +273,39 @@ switch NVal
                         end
 
                     case {'contour lines','coloured contour lines','contour patches','contour patches with lines'}
-                        %data.Val(isnan(s) | isnan(data.Z))=NaN;
-                        %ms=max(s(:));
-                        %mz=max(data.Z(:));
-                        %mv=max(data.Val(:));
-                        %miv=min(data.Val(:));
-                        %Thresholds=compthresholds(Ops,[miv mv],LocStartClass);
-                        %s(isnan(s))=ms;
-                        %data.Z(isnan(data.Z))=mz;
-                        %if mv==miv
-                        %   s(end+1,:)=ms;
-                        %   data.Z(end+1,:)=mz;
-                        %   amv=abs(mv);
-                        %   if ~amv
-                        %      amv=1;
-                        %   end
-                        %   data.Val(end+1,:)=mv+0.01*amv;
-                        %   Thresholds=mv+[0 0.01*amv];
-                        %end
-                        %hNew=gencontour(hNew,Ops,Parent,s,data.Z,data.Val,Thresholds,Param);
-                        %if mv==miv
-                        %   Thresholds=[mv mv];
-                        %end
-                        %Param.ChangeCLim=0;
+                        mv=max(data.Val(:));
+                        miv=min(data.Val(:));
+                        Thresholds=compthresholds(Ops,[miv mv],LocStartClass);
+                        if miv<Thresholds(1)
+                            Thresholds = [-inf Thresholds];
+                        end
+                        XYZ=squeeze(data.XYZ);
+                        switch Ops.presentationtype
+                            case 'contour lines'
+                                hNew=tricontour(data.TRI,XYZ(:,1),XYZ(:,2),data.Val(:),Thresholds,'k');
+                                set(hNew,'color',Ops.colour,'linestyle',Ops.linestyle,'marker',Ops.marker,'markeredgecolor',Ops.markercolour,'markerfacecolor',Ops.markerfillcolour)
+                            case 'coloured contour lines'
+                                hNew=tricontour(data.TRI,XYZ(:,1),XYZ(:,2),data.Val(:),Thresholds);
+                                for i=1:length(hNew)
+                                    c=get(hNew(i),'cdata');
+                                    set(hNew(i),'cdata',0*c+i)
+                                end
+                            case 'contour patches'
+                                hNew=tricontourf(data.TRI,XYZ(:,1),XYZ(:,2),data.Val(:),Thresholds,'clevel','index','zplane',0);
+                                for i=1:length(hNew)
+                                    c=get(hNew(i),'cdata');
+                                    set(hNew(i),'cdata',0*c+i)
+                                end
+                            case 'contour patches with lines'
+                                hNew1=tricontourf(data.TRI,XYZ(:,1),XYZ(:,2),data.Val(:),Thresholds,'clevel','index','zplane',0);
+                                for i=1:length(hNew)
+                                    c=get(hNew(i),'cdata');
+                                    set(hNew(i),'cdata',0*c+i)
+                                end
+                                hNew2=tricontour(data.TRI,XYZ(:,1),XYZ(:,2),data.Val(:),Thresholds,'k');
+                                set(hNew2,'color',Ops.colour,'linestyle',Ops.linestyle,'marker',Ops.marker,'markeredgecolor',Ops.markercolour,'markerfacecolor',Ops.markerfillcolour)
+                                hNew = [hNew1 hNew2];
+                        end
                 end
                 set(get(Parent,'title'),'string',{PName,TStr})
             else

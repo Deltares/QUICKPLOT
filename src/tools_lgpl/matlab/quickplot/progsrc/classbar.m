@@ -222,7 +222,7 @@ if ~iscell(Format)
         end
     else
         for i=1:NTh
-            if isnan(sTh(i))
+            if isnan(sTh(i)) || isequal(sTh(i),-inf)
                 tckL{i}='';
             else
                 tckL{i}=sprintf(Format,sTh(i));

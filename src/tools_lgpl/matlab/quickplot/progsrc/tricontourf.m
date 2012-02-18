@@ -1,6 +1,5 @@
-function H=tricontourf(tri,x,y,z,v,varargin),
+function H=tricontourf(tri,x,y,z,v,varargin)
 %TRICONTOURF Filled contour plot for triangulated data.
-%
 %   TRICONTOURF(TRI,X,Y,Z,Levels) fills the areas between (and above
 %   the highest and below the lowest) the contours specified in the
 %   Levels array. The contour lines can be plotted using the
@@ -91,14 +90,14 @@ if mod(nargin-5-i0,2)~=0
 else
     for i=(1+i0):2:length(varargin)
         switch lower(varargin{i})
-            case {'z','zp','zpl','zpla','zplan','zplane'}
+            case 'zplane'
                 ZPlane=varargin{i+1};
-                if ~isnumeric(ZPlane) | ~isequal(size(ZPlane),[1 1])
+                if ~isnumeric(ZPlane) || ~isequal(size(ZPlane),[1 1])
                     error('Invalid ZPlane option.')
                 end
-            case {'r','re','ret','retu','retur','return'}
-                getdata=strmatch('data',varargin{i+1});
-            case {'c','cl','cle','clev','cleve','clevel'}
+            case 'return'
+                getdata=strcmp('data',varargin{i+1});
+            case 'clevel'
                 switch lower(varargin{i+1})
                     case {'min','max','index'}
                         clevelname=lower(varargin{i+1});
@@ -106,7 +105,7 @@ else
                         error('Invalid CLevel name')
                 end
             otherwise
-                error(sprintf('Invalid option %i: %s.',i,varargin{i}(:)'))
+                error('Invalid option %i: %s.',i,varargin{i}(:)')
         end
     end
 end
