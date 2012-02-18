@@ -969,7 +969,7 @@ switch cmd
                trytp='shipma';
             case 'shipma'
                try
-                  FI=shipma('open',FileName);
+                   FI=shipma('open',FileName);
                end
                if ~isempty(FI)
                   Tp=trytp;

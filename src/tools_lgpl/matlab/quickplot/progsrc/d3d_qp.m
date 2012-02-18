@@ -70,7 +70,7 @@ if (nargout~=0)
         return
     elseif isstandalone % allow standalone auto start ...
         outdata=[];
-    elseif isempty(strmatch(cmd,{'loaddata','selectedfigure','selectedaxes','selecteditem'}))
+    elseif ~any(strcmp(cmd,{'loaddata','selectedfigure','selectedaxes','selecteditem'}))
         error('Too many output arguments.');
     end
 end
@@ -78,7 +78,7 @@ end
 if isempty(gcbf) || ~strcmp(get(gcbf,'tag'),'Delft3D-QUICKPLOT')
     mfig=findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
     
-    if isempty(mfig) && isempty(strmatch(cmd,{'initialize','initialize_background','closefigure','printfigure','dayok'},'exact'))
+    if isempty(mfig) && ~any(strcmp(cmd,{'initialize','initialize_background','closefigure','printfigure','dayok'}))
         d3d_qp
         mfig=findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
         if isempty(mfig)

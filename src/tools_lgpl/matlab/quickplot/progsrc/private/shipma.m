@@ -1,4 +1,4 @@
-function FI = shipma(cmd,FileName)
+function FI = shipma(cmd,varargin)
 %SHIPMA Read Shipma project (and embedded) files. (BETA VERSION)
 %   STRUCT = SHIPMA('open',FILENAME) opens the specified Shipma file, and
 %   (partly) reads the associated embedded data files.
@@ -37,14 +37,79 @@ function FI = shipma(cmd,FileName)
 
 switch lower(cmd)
     case 'open'
-        FI = LocalShipmaOpen(FileName);
+        FI = LocalShipmaOpen(varargin{:});
+    case 'openpar'
+        FI = LocalShipmaParameterOpen(varargin{:});
     otherwise
         error('Unknown command: %s',var2str(cmd)) 
 end
 
 
+function FI = LocalShipmaParameterOpen(FileName,SubType)
+FI.FileName = FileName;
+[p,f,e] = fileparts(FileName);
+if nargin<2
+    e = lower(e);
+    switch e
+        case '.cur'
+            SubType = 'current';
+        case '.wav'
+            SubType = 'waves';
+        case '.wnd'
+            SubType = 'wind';
+        otherwise
+            SubType = 'unknown';
+    end
+end
+FI.SubType = SubType;
+fid = fopen(FileName,'r');
+i = 0;
+while ~feof(fid)
+    Line = fgetl(fid);
+    if ~isempty(Line) && Line(1)~='*'
+        if i==0
+            i = i+1;
+            switch SubType
+                case 'current'
+                    FI.WaterLevel = sscanf(Line,'%f',1);
+                    continue
+                case 'waves'
+                    FI.WavePeriod = sscanf(Line,'%f',1);
+                    continue
+            end
+        end
+        ScaleFactor = sscanf(Line,'%f',1);
+        break
+    end
+end
+Data = fscanf(fid,'%f',[4 inf])';
+FI.XY = Data(:,1:2);
+switch SubType
+    case 'current'
+        FI.CurrentMagnitude = Data(:,3)*ScaleFactor;
+        FI.CurrentToDir     = Data(:,4); % 0 = current to north
+    case 'waves'
+        FI.WaveHeight = Data(:,3)*ScaleFactor;
+        FI.WaveToDir  = Data(:,4);
+    case 'wind'
+        FI.WindMagnitude = Data(:,3)*ScaleFactor;
+        FI.WindFromDir   = Data(:,4); % 0 = wind from north
+end
+fclose(fid);
+
+
+
 function FI = LocalShipmaOpen(FileName)
 FI.FileName = FileName;
+%
+% First check whether this is an XML file to prevent the error message:
+% [Fatal Error] FileName:1:1: Content is not allowed in prolog.
+fid = fopen(FileName,'r');
+firstchar = fread(fid,1,'*char');
+fclose(fid);
+if ~isequal(firstchar,'<')
+    error('Shipma Project File should start with "<".')
+end
 %
 [p,f,e]=fileparts(FI.FileName);
 FI.UnzipFolder = [p filesep f '_' e(2:end) '.emb'];
@@ -71,25 +136,38 @@ ProjFolder = fullfile(FI.UnzipFolder,['shi_' FI.ProjectName]);
 FI.Ships = getMembers(Children(1));
 FI.Ships.Data = getShipData(FI.Ships.XML);
 FI.Sceneries = getMembers(Children(2));
+FI.Sceneries.Data = getSceneryData(FI.Sceneries.XML,ProjFolder);
 FI.Environments = getMembers(Children(3));
+FI.Environments = getEnvironmentData(FI.Environments,ProjFolder);
 FI.Manoeuvres = getMembers(Children(4));
 FI.Pilots = getMembers(Children(5));
 FI.TugScenarios = getMembers(Children(6));
 FI.Cases = getMembers(Children(7));
 FI.Cases.Data = getCaseData(FI.Cases.XML,ProjFolder);
-for i=1:length(FI.Cases.Data)
-    FI.Cases.Data(i).ShipNr = ustrcmpi(FI.Cases.Data(i).ShipId,{FI.Ships.Names});
+Data = FI.Cases.Data;
+for i=1:length(Data)
+    Data(i).shipNr    = ustrcmpi(Data(i).shipId,{FI.Ships.Names});
+    Data(i).windNr    = ustrcmpi(Data(i).windId,{FI.Environments.Winds.Names});
+    Data(i).wavesNr   = ustrcmpi(Data(i).wavesId,{FI.Environments.Waves.Names});
+    Data(i).currentNr = ustrcmpi(Data(i).currentId,{FI.Environments.Currents.Names});
+    Data(i).swellNr   = ustrcmpi(Data(i).swellId,{FI.Environments.Swells.Names});
+    Data(i).sceneryNr = ustrcmpi(Data(i).sceneryId,{FI.Sceneries.Names});
 end
+FI.Cases.Data = Data;
+
 
 function S = getMembers(Node)
 S.XML = getChildren(Node);
-S.Names = getName(S.XML);
+S.Names = getName(S.XML,true);
 
 
-function Name = getName(Node)
+function Name = getName(Node,forceCell)
 nNode = length(Node);
 if nNode==1
     Name = char(Node.getAttribute('key'));
+    if nargin>1 && forceCell
+        Name = {Name};
+    end
 else
     Name = cell(1,nNode);
     for i = 1:nNode
@@ -108,6 +186,93 @@ end
 Children = [c{:}];
 
 
+function Env = getEnvironmentData(Env,UnzipFolder)
+for i = 1:length(Env.Names)
+    envInstances = getChildren(Env.XML(i));
+    if isempty(envInstances)
+        envNames = {};
+    else
+        envNames = getName(envInstances,true);
+    end
+    %
+    envData = [];
+    nInstances = length(envInstances);
+    for j = 1:nInstances
+        instanceParam = getChildren(envInstances(j));
+        instanceParamName = getName(instanceParam,true);
+        p = 0;
+        for ip = 1:length(instanceParamName)
+            iPN = instanceParamName{ip};
+            switch iPN
+                case {'simpleSelected','fileSelected'}
+                    envData(j).(iPN) = getbool(instanceParam(ip));
+                case 'file'
+                    FileDir = fullfile(UnzipFolder,'shi_Environment',['shi_' Env.Names{i}],['shi_' envNames{j}],'Emb_file','embCtnt');
+                    embFiles = dir(FileDir);
+                    FileName = fullfile(FileDir,embFiles(3).name);
+                    envData(j).file = FileName;
+                case 'originalPath'
+                    % skip
+                case 'description'
+                    envData(j).description = char(instanceParam(ip).getTextContent);
+                otherwise
+                    p = p+1;
+                    envData(j).Props(p).Quant = instanceParamName{ip};
+                    unit = char(instanceParam(ip).getNodeName);
+                    val = char(instanceParam(ip).getTextContent);
+                    switch unit
+                        case 'Double'
+                            envData(j).Props(p).Unit = '';
+                            envData(j).Props(p).Value = str2double(val);
+                        otherwise
+                            envData(j).Props(p).Unit = unit;
+                            envData(j).Props(p).Value = str2double(val);
+                    end
+            end
+        end
+    end
+    %
+    Env.(Env.Names{i}).XML   = envInstances;
+    Env.(Env.Names{i}).Names = envNames;
+    Env.(Env.Names{i}).Data  = envData;
+end
+
+
+function bool = getbool(XML)
+bool = char(XML.getTextContent);
+switch bool
+    case 'true'
+        bool = true;
+    case 'false'
+        bool = false;
+end
+
+function Data = getSceneryData(Sceneries,UnzipFolder)
+nSceneries = length(Sceneries);
+Data(nSceneries).fairwayContourFile = [];
+Data(nSceneries).banksuctionFile = [];
+Data(nSceneries).bottomFile  = [];
+Data(nSceneries).description = [];
+for i = 1:nSceneries
+    SceneryName = char(Sceneries(i).getAttribute('key'));
+    %
+    SceneProps = getChildren(Sceneries(i));
+    ScenePropNames = getName(SceneProps,true);
+    for ip = 1:length(ScenePropNames)
+        switch ScenePropNames{ip}
+            case {'fairwayContourFile','banksuctionFile','bottomFile'}
+                % ### data is contained in an embedded file ###
+                FileDir = fullfile(UnzipFolder,'shi_Sceneries',['shi_' SceneryName],['Emb_' ScenePropNames{ip}],'embCtnt');
+                embFiles = dir(FileDir);
+                FileName = fullfile(FileDir,embFiles(3).name);
+                Data(i).(ScenePropNames{ip}) = FileName;
+            case 'description'
+                Data(i).description = char(SceneProps(ip).getTextContent);
+        end
+    end
+end
+
+
 function Data = getCaseData(Cases,UnzipFolder)
 nCases = length(Cases);
 Data(nCases).Props = [];
@@ -117,7 +282,17 @@ for i = 1:nCases
     CaseProps = getChildren(Cases(i));
     CaseDef = getChildren(CaseProps(5));
     CaseComposition = getChildren(CaseDef(2));
-    Data(i).ShipId = char(CaseComposition(1).getTextContent);
+    CaseCompositionNames = getName(CaseComposition,true);
+    for ic = 1:length(CaseCompositionNames)
+        switch CaseCompositionNames{ic}
+            case {'shipId','windId','wavesId','currentId','swellId','sceneryId'}
+                Data(i).(CaseCompositionNames{ic}) = char(CaseComposition(ic).getTextContent);
+            case {'windIsSelected','wavesIsSelected', ...
+                    'currentIsSelected','swellIsSelected', ...
+                    'sceneryIsSelected'}
+                Data(i).(CaseCompositionNames{ic}) = getbool(CaseComposition(ic));
+        end
+    end
     %
     FileName = fullfile(UnzipFolder,'shi_Cases',['shi_' CaseName],'Shi_results','Wor_workDir','embCtnt','containedFiles','track.his');
     Data(i).TimeSeries = delwaq('open',FileName);

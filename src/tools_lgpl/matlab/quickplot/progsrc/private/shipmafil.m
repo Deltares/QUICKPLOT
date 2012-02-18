@@ -106,16 +106,27 @@ fidx=find(DimFlag);
 idx(fidx(1:length(varargin)))=varargin;
 
 % read data ...
-[T,val1] = delwaq('read',FI.Cases.Data(domain).TimeSeries,Props.Var,1,idx{1});
+if all(Props.Var>=0)
+    [T,val1] = delwaq('read',FI.Cases.Data(domain).TimeSeries,Props.Var,1,idx{1});
+else
+    T=[];
+end
 
 % generate output ...
 if Props.NVal==0
     switch Props.Name
+        case 'fairway contour'
+            [Ans.X,Ans.Y] = landboundary('read',FI.Sceneries.Data(FI.Cases.Data.sceneryNr).fairwayContourFile);
+        case 'bank suction lines'
+            bsFI = tekal('open',FI.Sceneries.Data(FI.Cases.Data.sceneryNr).banksuctionFile,'nskipdatalines',1);
+            XY = tekal('read',bsFI,1:2);
+            Ans.X = [XY{1}(:,1);NaN;XY{2}(:,1)];
+            Ans.Y = [XY{1}(:,2);NaN;XY{2}(:,2)];
         case 'ship track'
             Ans.X = squeeze(val1(1,1,:));
             Ans.Y = squeeze(val1(2,1,:));
         case 'ship'
-            ship = FI.Cases.Data(domain).ShipNr;
+            ship = FI.Cases.Data(domain).shipNr;
             icontour = ustrcmpi('contour',{FI.Ships(ship).Data.Props.Quant});
             contour = FI.Ships(ship).Data.Props(icontour).Value;
             alf = val1(3)*pi/180;
@@ -124,14 +135,49 @@ if Props.NVal==0
     end
     Ans.XUnits = 'm';
     Ans.YUnits = 'm';
-    Ans.Time = T;
 elseif Props.NVal==1
-    Ans.Val=val1;
+    switch Props.Name
+        case 'depth'
+            btFI = samples('read',FI.Sceneries.Data(FI.Cases.Data.sceneryNr).bottomFile);
+            Ans.XYZ = reshape(btFI.XYZ,[1 size(btFI.XYZ,1) 1 3]);
+            Ans.TRI = delaunay(btFI.XYZ(:,1),btFI.XYZ(:,2));
+            Ans.Val = btFI.XYZ(:,3);
+        case 'speed'
+            Ans.Val = sqrt(val1(1,:).^2 + val1(2,:).^2)';
+        otherwise
+            Ans.Val = val1;
+    end
 else
-    Ans.XComp=val1;
-    Ans.YComp=val2;
+    switch Props.Name
+        case 'wind'
+            wFI = shipma('openpar',FI.Environments.Winds(FI.Cases.Data.windNr).Data.file,'wind');
+            Ans.XYZ = reshape(wFI.XY,[1 size(wFI.XY,1) 1 2]);
+            Ans.TRI = delaunay(wFI.XY(:,1),wFI.XY(:,2));
+            toDir = wFI.WindFromDir*pi/180-pi;
+            Ans.XComp = wFI.WindMagnitude.*sin(toDir);
+            Ans.YComp = wFI.WindMagnitude.*cos(toDir);
+        case 'waves'
+            wFI = shipma('openpar',FI.Environments.Waves(FI.Cases.Data.wavesNr).Data.file,'waves');
+            Ans.XYZ = reshape(wFI.XY,[1 size(wFI.XY,1) 1 2]);
+            Ans.TRI = delaunay(wFI.XY(:,1),wFI.XY(:,2));
+            toDir = wFI.WaveToDir*pi/180;
+            Ans.XComp = wFI.WaveHeight.*sin(toDir);
+            Ans.YComp = wFI.WaveHeight.*cos(toDir);
+        case 'current'
+            wFI = shipma('openpar',FI.Environments.Currents(FI.Cases.Data.currentNr).Data.file,'current');
+            Ans.XYZ = reshape(wFI.XY,[1 size(wFI.XY,1) 1 2]);
+            Ans.TRI = delaunay(wFI.XY(:,1),wFI.XY(:,2));
+            toDir = wFI.CurrentToDir*pi/180;
+            Ans.XComp = wFI.CurrentMagnitude.*sin(toDir);
+            Ans.YComp = wFI.CurrentMagnitude.*cos(toDir);
+        otherwise
+            Ans.XComp = val1;
+            Ans.YComp = val2;
+    end
 end
-Ans.Time=T;
+if ~isempty(T)
+    Ans.Time = T;
+end
 
 varargout={Ans FI};
 % -----------------------------------------------------------------------------
@@ -139,13 +185,73 @@ varargout={Ans FI};
 
 % -----------------------------------------------------------------------------
 function selfplot(FI,Props)
+d3d_qp('newfigure','1 plot - portrait','1 plot - portrait')
+d3d_qp('selectfield','depth')
+d3d_qp('colourmap','navdepth')
+d3d_qp('presenttype','patches')
+d3d_qp('colbarhorz',1)
+d3d_qp('climmode','manual')
+d3d_qp('climmax',20)
+d3d_qp('addtoplot')
+d3d_qp('selectfield','fairway contour')
+d3d_qp('linestyle','-')
+d3d_qp('colour',[ 0 0 0 ])
+d3d_qp('fillpolygons',1)
+d3d_qp('facecolour',[ 1 1 0.2 ])
+d3d_qp('addtoplot')
+d3d_qp('selectfield','ship track')
+d3d_qp('allt',1)
+d3d_qp('addtoplot')
+a=d3d_qp('loaddata');
+d3d_qp('selectfield','ship')
+d3d_qp('allt',0)
+d3d_qp('editt',1)
+d3d_qp('facecolour',[ 1 0 0 ])
+d3d_qp('addtoplot')
+xrange = [min(a.X) max(a.X)];
+xrange = xrange + [-1 1]*0.1*diff(xrange);
+yrange = [min(a.Y) max(a.Y)];
+yrange = yrange + [-1 1]*0.1*diff(yrange);
+fac = 1.25;
+yrange = mean(yrange)+[-1 1]*max(diff(xrange)*fac,diff(yrange))/2;
+xrange = mean(xrange)+[-1 1]*diff(yrange)/fac/2;
+set(qpsa,'xlim',xrange,'ylim',yrange)
+set(qpsa,'drawmode','fast')
+set(qpsf,'renderer','painters')
+%--------
+d3d_qp('newfigure','1 plot - portrait','1 plot - portrait')
+d3d_qp('selectfield','current')
+d3d_qp('component','magnitude')
+d3d_qp('climmode','automatic')
+d3d_qp('colourmap','revhot')
+d3d_qp('addtoplot')
+d3d_qp('component','vector')
+d3d_qp('colourvectors',0)
+d3d_qp('thinfld','distance')
+d3d_qp('thindist',diff(xrange)/100)
+d3d_qp('addtoplot')
+d3d_qp('selectfield','fairway contour')
+d3d_qp('facecolour',[ 1 1 0.2 ])
+d3d_qp('addtoplot')
+d3d_qp('selectfield','ship')
+d3d_qp('facecolour',[ 1 0 0 ])
+d3d_qp('allt',0)
+d3d_qp('addtoplot')
+set(qpsa,'xlim',xrange,'ylim',yrange)
+set(qpsa,'drawmode','fast')
+set(qpsf,'renderer','painters')
+%--------
 d3d_qp('newfigure','3 plots, vertical - portrait','3 plots, vertical - portrait')
 qpsa('upper plot')
-d3d_qp('selectfield','n1')
+d3d_qp('allt',1)
+d3d_qp('selectfield','propeller speed')
 d3d_qp('linestyle','-')
 d3d_qp('addtoplot')
+qpsa('middle plot')
+d3d_qp('selectfield','speed')
+d3d_qp('addtoplot')
 qpsa('lower plot')
-d3d_qp('selectfield','rudder1')
+d3d_qp('selectfield','rudder angle')
 d3d_qp('addtoplot')
 %--------
 d3d_qp('newfigure','2 plots, vertical - portrait','2 plots, vertical - portrait')
@@ -179,7 +285,16 @@ DataProps={'default figures'    ''      [0 0 0 0 0] 0            -2     ''      
     '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            domain   0       
     'ship track'                ''      [1 0 0 0 0] 0             0     'PNT'    'xy'     0            domain   0       
     'ship'                      ''      [1 0 0 0 0] 0             0     'POLYG'  'xy'     1            domain   0       
+    'fairway contour'           ''      [0 0 1 0 0] 0             0     'POLYG'  'xy'     1            domain   -1       
+    'bank suction lines'        ''      [0 0 1 0 0] 0             0     'POLYL'  'xy'     0            domain   -1       
     '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            domain   0       
+    'wind'                      'm/s'   [0 0 1 0 0] 0             2     'TRI'    'xy'     0            domain   -1       
+    'waves'                     'm'     [0 0 1 0 0] 0             2     'TRI'    'xy'     0            domain   -1       
+    'swell'                     'm'     [0 0 1 0 0] 0             1     'TRI'    'xy'     0            domain   -1       
+    'current'                   'm/s'   [0 0 1 0 0] 0             2     'TRI'    'xy'     0            domain   -1       
+    'depth'                     'm'     [0 0 1 0 0] 0             1     'TRI'    'xy'     0            domain   -1       
+    '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            domain   0       
+    'speed'                     'm/s'   [1 0 0 0 0] 0             1     ''       ''       0            domain   0
     'his-data'                  ''      [1 0 0 0 0] 0             1     ''       ''       0            domain   0       };
 Out=cell2struct(DataProps,PropNames,2);
 %======================== SPECIFIC CODE DIMENSIONS ============================
@@ -190,16 +305,60 @@ Out = cat(1,Out(1:startVal),repmat(Out(end),nVal,1));
 for i=1:nVal
     var = hisvars{i};
     uStart = strfind(var,'[');
-    Out(startVal+i).Name = deblank(var(1:uStart-1));
-    Out(startVal+i).Units = var(uStart+1:end-1);
+    name = translate(deblank(var(1:uStart-1)));
+    unit = var(uStart+1:end-1);
+    %
+    hisvars{i} = name;
+    Out(startVal+i).Name = name;
+    Out(startVal+i).Units = unit;
     Out(startVal+i).Var = i;
 end
 %
-[dummy,iCoords,reordered]=intersect(hisvars,{'x [m]','y [m]'});
-Out(3).Var = iCoords;
-[dummy,iCoords,reordered]=intersect(hisvars,{'x [m]','y [m]','Heading [deg]'});
-[dummy,i]=sort(reordered);
-Out(4).Var = iCoords(i);
+for i = length(Out):-1:1
+    switch Out(i).Name
+        case 'x'
+            Out(i)=[];
+        case 'y'
+            Out(i)=[];
+        case 'wind'
+            if FI.Cases.Data(domain).windNr<0
+                Out(i)=[];
+            elseif ~FI.Environments.Winds(FI.Cases.Data(domain).windNr).Data.fileSelected
+                Out(i)=[];
+            end
+        case 'waves'
+            if FI.Cases.Data(domain).wavesNr<0
+                Out(i)=[];
+            elseif ~FI.Environments.Waves(FI.Cases.Data(domain).wavesNr).Data.fileSelected
+                Out(i)=[];
+            end
+        case 'swell'
+            if FI.Cases.Data(domain).swellNr<0
+                Out(i)=[];
+            elseif ~FI.Environments.Swells(FI.Cases.Data(domain).swellNr).Data.fileSelected
+                Out(i)=[];
+            end
+        case 'current'
+            if FI.Cases.Data(domain).currentNr<0
+                Out(i)=[];
+            elseif ~FI.Environments.Currents(FI.Cases.Data(domain).currentNr).Data.fileSelected
+                Out(i)=[];
+            end
+        case 'speed'
+            u = find(strcmpi('u',hisvars));
+            v = find(strcmpi('v',hisvars));
+            Out(i).Var = [u v];
+        case 'ship track'
+            x = find(strcmpi('x',hisvars));
+            y = find(strcmpi('y',hisvars));
+            Out(i).Var = [x y];
+        case 'ship'
+            x = find(strcmpi('x',hisvars));
+            y = find(strcmpi('y',hisvars));
+            dir = find(strcmpi('Heading',hisvars));
+            Out(i).Var = [x y dir];
+    end
+end
 % -----------------------------------------------------------------------------
 
 
@@ -223,3 +382,14 @@ if t==0
 end
 T=[];
 % -----------------------------------------------------------------------------
+
+
+function s2 = translate(s1)
+table = {'n1' 'propeller speed'
+    'rudder1' 'rudder angle'};
+is1 = strcmpi(s1,table(:,1));
+if ~any(is1)
+    s2 = s1;
+else
+    s2 = table{is1,2};
+end

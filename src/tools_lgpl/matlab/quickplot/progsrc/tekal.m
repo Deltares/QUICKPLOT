@@ -365,7 +365,7 @@ if ischar(var)
         var=varnr;
     end
 end
-if var==0 || length(var)~=1
+if length(var)~=1 || var==0
     if var==0
         var=1:length(FileInfo.Field);
     end
