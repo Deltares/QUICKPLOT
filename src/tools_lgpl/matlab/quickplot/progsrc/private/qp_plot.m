@@ -837,6 +837,11 @@ if ~isempty(basicaxestype)
         dimension1 = '';
     elseif isequal(axestype{1},'Val')
         dimension1 = PName;
+    elseif isequal(axestype{1},'Distance')
+        dimension1 = 'distance';
+        if isfield(data,'XUnits') && ~isempty(data(1).XUnits)
+            dimension1 = [dimension1 ' (' data(1).XUnits ')'];
+        end
     else
         dimension1 = diststr;%'distance';
         if isfield(Ops,'plotcoordinate') && strcmp(Ops.plotcoordinate,'y coordinate')

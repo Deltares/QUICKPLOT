@@ -3336,7 +3336,7 @@ try
                                 'xtick',get(ax,'xtick'), ...
                                 'xticklabel',get(ax,'xticklabel'))
                             set(ax,'xticklabel','')
-                        case {'X-Time-Val','X-Time-Val'}
+                        case {'X-Time-Val'}
                             set(ax,'yticklabelmode','auto','ytickmode','auto');
                             tick(ax,'y','autodate');
                         case {'Lon-Lat','Lon-Lat-Val','Lon-Lat-Z'}

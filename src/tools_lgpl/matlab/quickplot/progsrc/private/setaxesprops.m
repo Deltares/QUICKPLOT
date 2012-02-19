@@ -36,7 +36,7 @@ if ~ishandle(Parent)
 else
     if isappdata(Parent,'AxesType')
         if ~isequal(getappdata(Parent,'AxesType'),FullAxesType)
-            warning(sprintf('AxesType mismatch: %s (set) vs. %s (new).',getappdata(Parent,'AxesType'),FullAxesType))
+            warning('AxesType mismatch: %s (set) vs. %s (new).',getappdata(Parent,'AxesType'),FullAxesType)
             FullAxesType = getappdata(Parent,'AxesType');
             AxesType = full2basic_axestype(FullAxesType);
         end
@@ -57,15 +57,15 @@ else
     % such that the label contents will not be overwritten.
     %
     xlab=get(Parent,'xlabel');
-    if ~isempty(get(xlab,'string')) & isempty(get(xlab,'userdata'))
+    if ~isempty(get(xlab,'string')) && isempty(get(xlab,'userdata'))
         xlab=[];
     end
     ylab=get(Parent,'ylabel');
-    if ~isempty(get(ylab,'string')) & isempty(get(ylab,'userdata'))
+    if ~isempty(get(ylab,'string')) && isempty(get(ylab,'userdata'))
         ylab=[];
     end
     zlab=get(Parent,'zlabel');
-    if ~isempty(get(zlab,'string')) & isempty(get(zlab,'userdata'))
+    if ~isempty(get(zlab,'string')) && isempty(get(zlab,'userdata'))
         zlab=[];
     end
     %

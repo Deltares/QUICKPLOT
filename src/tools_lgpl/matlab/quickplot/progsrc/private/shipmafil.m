@@ -145,7 +145,9 @@ elseif Props.NVal==1
         case 'speed'
             Ans.Val = sqrt(val1(1,:).^2 + val1(2,:).^2)';
         otherwise
-            Ans.Val = val1;
+            Ans.X = val1(2,:)';
+            Ans.XUnits = 'm';
+            Ans.Val = val1(1,:)';
     end
 else
     switch Props.Name
@@ -256,6 +258,7 @@ d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig C',texts)
 qpsa('upper plot')
 d3d_qp('allt',1)
 d3d_qp('selectfield','propeller speed')
+d3d_qp('axestype','Distance-Val')
 d3d_qp('linestyle','-')
 d3d_qp('addtoplot')
 qpsa('middle plot')
@@ -307,13 +310,14 @@ DataProps={'default figures'    ''      [0 0 0 0 0] 0            -2     ''      
     'depth'                     'm'     [0 0 1 0 0] 0             1     'TRI'    'xy'     0            domain   -1       
     '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            domain   0       
     'speed'                     'm/s'   [9 0 0 0 0] 0             1     ''       ''       0            domain   0
-    'his-data'                  ''      [9 0 0 0 0] 0             1     ''       ''       0            domain   0       };
+    'his-data'                  ''      [9 0 0 0 0] 0             1     'PNT'    'd'      0            domain   0       };
 Out=cell2struct(DataProps,PropNames,2);
 %======================== SPECIFIC CODE DIMENSIONS ============================
 hisvars = FI.Cases.Data(domain).TimeSeries.SubsName;
 startVal = length(Out)-1;
 nVal = length(hisvars);
 Out = cat(1,Out(1:startVal),repmat(Out(end),nVal,1));
+track = find(strcmpi('track [m]',hisvars));
 for i=1:nVal
     var = hisvars{i};
     uStart = strfind(var,'[');
@@ -323,7 +327,7 @@ for i=1:nVal
     hisvars{i} = name;
     Out(startVal+i).Name = name;
     Out(startVal+i).Units = unit;
-    Out(startVal+i).Var = i;
+    Out(startVal+i).Var = [i track];
 end
 %
 for i = length(Out):-1:1
@@ -396,7 +400,8 @@ T = delwaq('read',FI.Cases.Data(domain).TimeSeries,1,1,t);
 
 function s2 = translate(s1)
 table = {'n1' 'propeller speed'
-    'rudder1' 'rudder angle'};
+    'rudder1' 'rudder angle'
+    'track' 'track distance'};
 is1 = strcmpi(s1,table(:,1));
 if ~any(is1)
     s2 = s1;

@@ -50,17 +50,17 @@ if isfield(Props,'Geom') && ~isempty(Props.Geom)
     geometry=Props.Geom;
     coordinates=Props.Coords;
 else
-    if DimFlag(M_) & DimFlag(N_)
+    if DimFlag(M_) && DimFlag(N_)
         geometry='sQUAD';
         coordinates='xy';
-    elseif DimFlag(M_) | DimFlag(N_)
+    elseif DimFlag(M_) || DimFlag(N_)
         geometry='sSEG';
         coordinates='x';
     else
         geometry='PNT';
         coordinates='';
     end
-    if isfield(Props,'Tri') & isequal(Props.Tri,1)
+    if isfield(Props,'Tri') && isequal(Props.Tri,1)
         geometry='TRI';
         coordinates='xy';
     end
@@ -108,8 +108,8 @@ allk=0;
 onek=isequal(get(MW.MaxK,'userdata'),1);
 if all(~DimFlag([M_ N_ K_]))
     if DimFlag(ST_)
-        if alls | length(selected{ST_})>1
-            if isfield(Props,'Coords') & isequal(Props.Coords,'xy')
+        if alls || length(selected{ST_})>1
+            if isfield(Props,'Coords') && isequal(Props.Coords,'xy')
                 Spatial=2;
                 SpatialH=2;
             end
@@ -144,7 +144,7 @@ else
             if any(DimFlag([M_ N_]))
                 for m_=[M_ N_]
                     if DimFlag(m_)
-                        if isequal(selected{m_},0) | length(selected{m_})>1
+                        if isequal(selected{m_},0) || length(selected{m_})>1
                             Spatial=Spatial+1;
                             SpatialH=SpatialH+1;
                         end
@@ -152,7 +152,7 @@ else
                 end
             end
             %
-            if isequal(geometry,'TRI') | isequal(geometry,'TRI+')
+            if isequal(geometry,'TRI') || isequal(geometry,'TRI+')
                 if SpatialH==1
                     SpatialH = 2;
                     Spatial = 2;
@@ -192,7 +192,7 @@ switch getvalstr(MW.VSelType)
         end
         %maxk=get(MW.MaxK,'userdata');
         if DimFlag(K_)
-            if isequal(selected{K_},0) | length(selected{K_})>1
+            if isequal(selected{K_},0) || length(selected{K_})>1
                 Spatial=Spatial+1;
                 SpatialV=SpatialV+1;
             end
@@ -297,20 +297,20 @@ Ops.presentationtype='';
 Ops.vectorcomponent='';
 Ops.MNK=0;
 [nval,nvalstr]=convertnval(Props.NVal);
-if nval==2 | nval==3
+if nval==2 || nval==3
     vectors=1;
     set(findobj(OH,'tag','component'),'enable','on');
     compon=findobj(OH,'tag','component=?');
-    if DimFlag(M_) & (DimFlag(N_) | triangles)
+    if DimFlag(M_) && (DimFlag(N_) || triangles)
         if MNK<2
             if MNK>0
-                if DimFlag(K_) & DimFlag(M_) & DimFlag(N_)
+                if DimFlag(K_) && DimFlag(M_) && DimFlag(N_)
                     compList={'vector','vector (split x,y)','vector (split m,n)','patch centred vector','magnitude','magnitude in plane','angle (radians)','angle (degrees)','x component','y component','z component','m component','n component'};
                     if SpatialH ~=2
                         ii=strmatch('magnitude in plane',compList,'exact');
                         compList(ii)=[];
                     end
-                    if Spatial==2 & SpatialH==1
+                    if Spatial==2 && SpatialH==1
                         compList{end+1}='normal component';
                     end
                 else
@@ -322,7 +322,7 @@ if nval==2 | nval==3
         else
             compList={'vector','patch centred vector','magnitude','m component','n component'};
         end
-    elseif DimFlag(M_) & DimFlag(K_)
+    elseif DimFlag(M_) && DimFlag(K_)
         compList={'vector','patch centred vector','magnitude','x component','z component'};
     else
         switch nvalstr
@@ -368,7 +368,7 @@ if nval==2 | nval==3
     switch Ops.vectorcomponent
         case {'vector','patch centred vector','vector (split x,y)','vector (split m,n)'}
             Ops.presentationtype=Ops.vectorcomponent;
-            if (multiple(M_) + multiple(N_) == 1) & (multiple(K_) == 1) & MNK
+            if (multiple(M_) + multiple(N_) == 1) && (multiple(K_) == 1) && MNK
                 Ops.MNK=1;
             end
         case {'magnitude','x component','y component','z component'}
@@ -394,7 +394,7 @@ if nval==2 | nval==3
             return
     end
 end
-if (nval==2 | nval==3) & ~vectors
+if (nval==2 || nval==3) && ~vectors
     nval=1;
 end
 
@@ -411,6 +411,9 @@ elseif Spatial+multiple(ST_)==0
         if multiple(T_)
             lineproperties=1;
             defaultaxestype='Time-Val';
+            if isequal(coordinates,'d')
+                axestype={'Time-Val','Distance-Val'};
+            end
         else
             plotstexts=1;
             Ops.numformat='%g';
@@ -425,7 +428,7 @@ elseif Spatial+multiple(ST_)==0
 end
 switch geometry
     case 'PNT'
-        if multiple(ST_) | multiple(M_)
+        if multiple(ST_) || multiple(M_)
             defaultaxestype='X-Y';
             Spatial=2;
             Ops.spatial=2;
@@ -490,7 +493,7 @@ switch geometry
                     MultipleColors=0;
                     lineproperties=1;
                     defaultaxestype='X-Val';
-                elseif nval==2 | nval==3
+                elseif nval==2 || nval==3
                     data2d=1;
                     defaultaxestype='X-Y';
                 else %nval==4
@@ -510,7 +513,7 @@ switch geometry
             case {0,1}
                 defaultaxestype='X-Y';
                 lineproperties=1;
-                if nval==1 & SpatialH>0
+                if nval==1 && SpatialH>0
                     edgeflatcolour=1;
                     markerflatfill=1;
                 end
@@ -528,7 +531,7 @@ switch geometry
                     lineproperties=1;
                     defaultaxestype='Val-Z';
                 elseif SpatialH==1
-                    if nval==0 | vectors
+                    if nval==0 || vectors
                         defaultaxestype='X-Y';
                     elseif nval==1
                         MultipleColors=0;
@@ -588,7 +591,6 @@ switch geometry
                 end
         end
     case 'SEG+'
-    case 'TRI+'
     case 'QUAD+'
     case 'POLY+'
     case 'GEN2D+'
@@ -622,23 +624,23 @@ defaultaxestype=axestype;
 
 coords={'path distance','reverse path distance','x coordinate','y coordinate'};
 if strfind(axestype,'Y')
-    if isfield(Props,'MName') & ~isempty(Props.MName)
+    if isfield(Props,'MName') && ~isempty(Props.MName)
         axestype = strrep(axestype,'X',Props.MName);
     end
-    if isfield(Props,'NName') & ~isempty(Props.NName)
+    if isfield(Props,'NName') && ~isempty(Props.NName)
         axestype = strrep(axestype,'Y',Props.NName);
     end
 else
-    if isfield(Props,'MName') & ~isempty(Props.MName) & multiple(M_)
+    if isfield(Props,'MName') && ~isempty(Props.MName) && multiple(M_)
         axestype = strrep(axestype,'X',Props.MName);
         coords={'x coordinate'};
-    elseif isfield(Props,'NName') & ~isempty(Props.NName)
+    elseif isfield(Props,'NName') && ~isempty(Props.NName)
         axestype = strrep(axestype,'X',Props.NName);
         coords={'y coordinate'};
     end
 end
 
-if isequal(defaultaxestype,'X-Val') | isequal(defaultaxestype,'X-Z')
+if isequal(defaultaxestype,'X-Val') || isequal(defaultaxestype,'X-Z')
     pd=findobj(OH,'tag','plotcoordinate=?');
     prev_coords=get(pd,'string');
     i=get(pd,'value');
@@ -687,7 +689,7 @@ Ops.vectorscalingmode='';
 Ops.vectorscale=1;
 Ops.thresholds='none';
 Ops.vectorcolour='';
-if vectors & ~isempty(strmatch(axestype,{'X-Y','X-Y-Z','X-Y-Val','X-Z'},'exact'))
+if vectors && ~isempty(strmatch(axestype,{'X-Y','X-Y-Z','X-Y-Val','X-Z'},'exact'))
     set(findobj(OH,'tag','vectorstyle'),'enable','on')
     vstyle=findobj(OH,'tag','vectorstyle=?');
     set(vstyle,'enable','on','backgroundcolor',Active)
@@ -749,7 +751,7 @@ if vectors & ~isempty(strmatch(axestype,{'X-Y','X-Y-Z','X-Y-Val','X-Z'},'exact')
 end
 
 Ops.verticalscalingmode='unrestricted';
-if vectors & ~isempty(strmatch(axestype,{'X-Z' 'X-Y-Z'},'exact'))
+if vectors && ~isempty(strmatch(axestype,{'X-Z' 'X-Y-Z'},'exact'))
     set(findobj(OH,'tag','vertscalem'),'enable','on')
     vsm=findobj(OH,'tag','vertscalem=?');
     set(vsm,'enable','on','backgroundcolor',Active)
@@ -989,7 +991,7 @@ end
 
 Ops.thresholddistribution='linear';
 if ~strcmp(Ops.thresholds,'none')
-    if isempty(Ops.thresholds) | (isequal(size(Ops.thresholds),[1 1]) & isequal(Ops.thresholds,round(Ops.thresholds)) & Ops.thresholds>0)
+    if isempty(Ops.thresholds) || (isequal(size(Ops.thresholds),[1 1]) && isequal(Ops.thresholds,round(Ops.thresholds)) && Ops.thresholds>0)
         thrd=findobj(OH,'tag','threshdistr=?');
         set(thrd,'enable','on','backgroundcolor',Active)
         thrdStr=get(thrd,'string'); % linear, logarithmic, anti-logarithmic
@@ -1042,14 +1044,14 @@ if plotstexts
     end
 end
 
-if ismember(geometry,{'PNT'}) & ~multiple(T_) & nval>=0 & nval<4
+if ismember(geometry,{'PNT'}) && ~multiple(T_) && nval>=0 && nval<4
     Ops.linestyle='none';
     Ops.linewidth=0.5;
     if ~strcmp(Ops.presentationtype,'values')
         usesmarker = 1;
         forcemarker = 1;
     end
-elseif nval==0 | nval==4 | lineproperties
+elseif nval==0 || nval==4 || lineproperties
     set(findobj(OH,'tag','linestyle'),'enable','on')
     lns=findobj(OH,'tag','linestyle=?');
     set(lns,'enable','on','backgroundcolor',Active)
@@ -1068,14 +1070,14 @@ if usesmarker
     set(mrk,'enable','on','backgroundcolor',Active)
     mrkrs=get(mrk,'string');
     imrk=get(mrk,'value');
-    if forcemarker & ismember('none',mrkrs)
+    if forcemarker && ismember('none',mrkrs)
         inone=strmatch('none',mrkrs);
         if imrk==inone
             set(mrk,'value',1)
         end
         mrkrs(inone)=[];
         set(mrk,'string',mrkrs)
-    elseif ~forcemarker & ~ismember('none',mrkrs)
+    elseif ~forcemarker && ~ismember('none',mrkrs)
         mrkrs{end+1}='none';
         imrk=length(mrkrs); % select no by marker by default
         set(mrk,'string',mrkrs,'value',imrk);
@@ -1101,7 +1103,7 @@ if usesmarker
         else
             set(mc,'style','checkbox')
         end
-        if get(mc,'value') | forcemarkercolor
+        if get(mc,'value') || forcemarkercolor
             mc=findobj(OH,'tag','markercolour=?');
             clr=get(mc,'userdata');
             set(mc,'enable','on','backgroundcolor',clr)
@@ -1116,7 +1118,7 @@ if usesmarker
                 set(mc,'enable','on','backgroundcolor',clr)
                 Ops.markerfillcolour=clr;
             end
-            if ~strcmp(Ops.markerfillcolour,'flat') & ~strcmp(Ops.markercolour,'auto')
+            if ~strcmp(Ops.markerfillcolour,'flat') && ~strcmp(Ops.markercolour,'auto')
                 MultipleColors=0 | edgeflatcolour;
             end
         else
@@ -1215,7 +1217,7 @@ Ops.axestype=axestype;
 %
 
 Ops.clippingvalues=[];
-if (nval==1 | ~isempty(Ops.vectorcolour) | Ops.colourdams) & (lineproperties | data2d)
+if (nval==1 || ~isempty(Ops.vectorcolour) || Ops.colourdams) && (lineproperties || data2d)
     set(findobj(OH,'tag','clippingvals'),'enable','on')
     set(findobj(OH,'tag','clippingvals=?'),'enable','on','backgroundcolor',Active)
     Ops.clippingvalues=get(findobj(OH,'tag','clippingvals=?'),'userdata');
@@ -1234,11 +1236,11 @@ end
 %---- Export option
 
 ExpTypes={};
-if (Spatial<=1) & nval>0
+if (Spatial<=1) && nval>0
     ExpTypes{end+1}='csv file (time series)';
     ExpTypes{end+1}='Tekal file (time series)';
 end
-if (allm & alln) & ~multiple(K_) & ~multiple(T_)
+if (allm && alln) && ~multiple(K_) && ~multiple(T_)
     ExpTypes{end+1}='grid file';
     ExpTypes{end+1}='grid file (old format)';
 end
@@ -1263,19 +1265,19 @@ if (allm && alln) && ~multiple(K_) && ~multiple(T_)
         ExpTypes{end+1}='-SIMONA box file';
     end
 end
-if (multiple(M_) & (multiple(N_) | triangles)) & ~multiple(K_) & ~multiple(T_)
+if (multiple(M_) && (multiple(N_) || triangles)) && ~multiple(K_) && ~multiple(T_)
     if ~isequal(Ops.presentationtype,'continuous shades')
         ExpTypes{end+1}='ARCview shape';
     end
-elseif strcmp(geometry,'POLYL') | strcmp(geometry,'POLYG')
+elseif strcmp(geometry,'POLYL') || strcmp(geometry,'POLYG')
     ExpTypes{end+1}='ARCview shape';
     ExpTypes{end+1}='landboundary file';
 end
-if ((length(selected{T_})<11 & ~allt) | (maxt<11 & allt)) & nval>0 & (multiple(M_) | multiple(N_) | multiple(K_))
+if ((length(selected{T_})<11 && ~allt) || (maxt<11 && allt)) && nval>0 && (multiple(M_) || multiple(N_) || multiple(K_))
     ExpTypes{end+1}='Tekal file';
     ExpTypes{end+1}='Tecplot file';
 end
-if (multiple(M_) | multiple(N_) | multiple(K_)) & ~multiple(T_) & nval>0
+if (multiple(M_) || multiple(N_) || multiple(K_)) && ~multiple(T_) && nval>0
     ExpTypes{end+1}='sample file';
 end
 if nval>=0
@@ -1330,10 +1332,10 @@ set(qv,'string',viewstr);
 if nval==-1
     set(qv,'enable','on')
     set(findobj(mfig,'tag','loaddata'),'enable','off')
-elseif ~any(DimFlag) & nval==0
+elseif ~any(DimFlag) && nval==0
     set(qv,'enable','off')
     set(findobj(mfig,'tag','loaddata'),'enable','off')
-elseif (Spatial==3) | (multiple(K_) & DimFlag(N_) & nval==2) % cannot plot 3D volumes and vector datasets containing no vertical component
+elseif (Spatial==3) || (multiple(K_) && DimFlag(N_) && nval==2) % cannot plot 3D volumes and vector datasets containing no vertical component
     set(qv,'enable','off')
 else
     set(qv,'enable','on')

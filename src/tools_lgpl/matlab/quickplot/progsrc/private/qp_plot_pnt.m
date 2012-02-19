@@ -95,15 +95,23 @@ switch NVal
         set(get(Parent,'title'),'string',{PName TStr})
     case 1
         if multiple(T_)
+            switch strtok(Ops.axestype)
+                case 'Distance-Val'
+                    x = data.X;
+                    xdate = 0;
+                otherwise
+                    x = data.Time;
+                    xdate = Props.DimFlag(T_)~=5;
+            end
             if FirstFrame
-                hNew=line(data.Time,data.Val, ...
+                hNew=line(x,data.Val, ...
                     'parent',Parent, ...
                     Ops.LineParams{:});
-                if Props.DimFlag(T_)~=5
+                if xdate
                     tick(Parent,'x','autodate')
                 end
             else
-                set(hNew,'xdata',data.Time,'ydata',data.Val);
+                set(hNew,'xdata',x,'ydata',data.Val);
             end
             if ~isempty(stn)
                 Str=stn;
