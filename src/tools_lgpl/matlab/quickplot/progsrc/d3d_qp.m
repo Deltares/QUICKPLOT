@@ -3579,7 +3579,7 @@ try
             end
             if ~isempty(cmd)
                 [pn,fn,ex]=fileparts(fopen(runfil));
-                runningtype=lower(ex(2:end));
+                runningtype= ex(2:end);
                 logfilerun=findobj(mfig,'tag','run','type','uimenu');
                 if ~isempty(get(logfilerun,'callback'))
                     set(logfilerun,'callback','');
@@ -3631,42 +3631,42 @@ try
                             blockcomment=0;
                         end
                     end
-                    cmdstr=fgetl(runfil);
+                    cmdstr=deblank(fgetl(runfil));
                     if ~ischar(cmdstr)
                         break
                     end
                 end
                 cmdargs={};
                 if ischar(cmdstr) && ~isempty(cmdstr)
-                    switch runningtype
-                        case 'm'
+                    if strcmpi(runningtype,'m') || cmdstr(1)=='>'
+                        if cmdstr(1)=='>'
+                            cmdstr = cmdstr(2:end);
+                        end
+                        try
+                            eval(cmdstr)
+                        catch
+                            errmsg=multiline(lasterr,'cell');
+                            ui_message('error',errmsg)
+                            fclose(runfil);
+                            cmd='';
+                        end
+                    else
+                        [cmd,cmdargs]=qp_cmdstr(cmdstr);
+                        if strcmp(cmd,'run')
+                            d3d_qp(cmd,cmdargs{:});
+                        else
                             try
-                                eval(cmdstr)
+                                d3d_qp(cmd,cmdargs{:});
                             catch
                                 errmsg=multiline(lasterr,'cell');
-                                ui_message('error',errmsg)
-                                fclose(runfil);
-                                cmd='';
-                            end
-                        otherwise
-                            [cmd,cmdargs]=qp_cmdstr(cmdstr);
-                            if ~isempty(cmd)
-                                if strcmp(cmd,'run')
-                                    d3d_qp(cmd,cmdargs{:});
+                                if isstandalone
+                                    i=1;
                                 else
-                                    try
-                                        d3d_qp(cmd,cmdargs{:});
-                                    catch
-                                        errmsg=multiline(lasterr,'cell');
-                                        if isstandalone
-                                            i=1;
-                                        else
-                                            i=2;
-                                        end
-                                        ui_message('error',errmsg(i:end))
-                                    end
+                                    i=2;
                                 end
+                                ui_message('error',errmsg(i:end))
                             end
+                        end
                     end
                 else
                     fclose(runfil);

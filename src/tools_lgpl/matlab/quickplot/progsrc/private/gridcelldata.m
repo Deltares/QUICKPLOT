@@ -63,5 +63,5 @@ switch cmd
         DataRead=1;
         DataInCell=0.5;
     otherwise
-        error(sprintf('Unknown command argument: %s',cmd))
+        error('Unknown command argument: %s',cmd)
 end

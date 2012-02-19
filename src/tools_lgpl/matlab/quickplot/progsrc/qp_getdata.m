@@ -253,7 +253,7 @@ try
             % it by an element of the DataProps structure ...
             %
             if length(X)>2 && ischar(X{2}) && ischar(X{3})
-               X{2}=qp_datafield_name2prop(FI,X{1},X{2});
+               X{2}=qp_datafield_name2prop(Info,X{1},X{2});
             end
             %
             % Add T array if not specified ...
@@ -322,7 +322,7 @@ try
             %
             calltype='objdata';
             if ischar(X{2})
-               X{2}=qp_datafield_name2prop(FI,'NEW_RESOURCE_CALL',X{2});
+               X{2}=qp_datafield_name2prop(Info,'NEW_RESOURCE_CALL',X{2});
             end
             X=cat(2,{[]},X);
             [varargout{2:3}]=feval(Fcn,FI,X{:});
@@ -358,7 +358,7 @@ try
             % it by an element of the DataProps structure ...
             %
             if ischar(X{2})
-               X{2}=qp_datafield_name2prop(FI,X{1},X{2});
+               X{2}=qp_datafield_name2prop(Info,X{1},X{2});
             end
             %
             calltype=X{3};

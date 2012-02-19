@@ -105,6 +105,13 @@ idx={[] [] 0 0 0};
 fidx=find(DimFlag);
 idx(fidx(1:length(varargin)))=varargin;
 
+sz=getsize(FI,Props);
+if DimFlag(T_)
+   if isempty(idx{T_})
+      idx{T_}=sz(T_);
+   end
+end
+
 % read data ...
 if all(Props.Var>=0)
     [T,val1] = delwaq('read',FI.Cases.Data(domain).TimeSeries,Props.Var,1,idx{1});

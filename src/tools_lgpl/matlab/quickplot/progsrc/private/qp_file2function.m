@@ -163,15 +163,15 @@ tp=qp_gettype(Info);
 % the file type is not included in the table, show an appropriate error
 % message and return with empty function name.
 %
-id = strmatch(lower(tp),lower(F(:,1)),'exact');
+id = strcmpi(tp,F(:,1));
 Fcn = '';
-if isempty(id)
+if ~any(id)
     FileType = Info.FileType;
     previousMessage = 0;
     if isempty(MissingFileTypes)
         MissingFileTypes = {FileType};
     else
-        if ~isempty(strmatch(FileType,MissingFileTypes,'exact'))
+        if any(strcmpi(FileType,MissingFileTypes))
             previousMessage = 1;
         else
             MissingFileTypes{end+1}=FileType;
