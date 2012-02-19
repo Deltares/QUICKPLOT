@@ -294,9 +294,11 @@ for i = 1:nCases
         end
     end
     %
-    FileName = fullfile(UnzipFolder,'shi_Cases',['shi_' CaseName],'Shi_results','Wor_workDir','embCtnt','containedFiles','track.his');
+    CaseDir = fullfile(UnzipFolder,'shi_Cases',['shi_' CaseName],'Shi_results','Wor_workDir','embCtnt','containedFiles');
+    FileName = fullfile(CaseDir,'track.his');
     Data(i).TimeSeries = delwaq('open',FileName);
     Data(i).TimeSeries.T0 = 0; % overrule header information
+    Data(i).trackFile = fullfile(CaseDir,'track.trk');
 end
 
 

@@ -258,7 +258,9 @@ switch NVal
                     case 'continuous shades'
 
                         if size(data.XYZ,4)==2
-                            data.XYZ = cat(4,data.XYZ,data.Val);
+                            sz = size(data.XYZ);
+                            sz(4) = 1;
+                            data.XYZ = cat(4,data.XYZ,reshape(data.Val,sz));
                         end
                         data.XYZ=squeeze(data.XYZ);
                         if FirstFrame

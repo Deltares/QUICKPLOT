@@ -61,10 +61,10 @@ end
 FacesIndex=(1:length(Val))';
 %
 plot_using_patch=0;
-if strcmp(Ops.markercolour,'auto') & hasvals
+if strcmp(Ops.markercolour,'auto') && hasvals
     plot_using_patch=1;
 end
-if strcmp(Ops.markerfillcolour,'flat') & hasvals
+if strcmp(Ops.markerfillcolour,'flat') && hasvals
     plot_using_patch=1;
 end
 

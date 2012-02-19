@@ -69,4 +69,6 @@ switch Type
         T = [h(:) m(:) s(:)]';
         TStr = multiline(sprintf('%2i:%02i:%02i\n',T));
         TStr(end,:) = [];
+    otherwise
+        TStr = '';
 end

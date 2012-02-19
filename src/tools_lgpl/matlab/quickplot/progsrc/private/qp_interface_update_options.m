@@ -1051,7 +1051,7 @@ if ismember(geometry,{'PNT'}) && ~multiple(T_) && nval>=0 && nval<4
         usesmarker = 1;
         forcemarker = 1;
     end
-elseif nval==0 || nval==4 || lineproperties
+elseif lineproperties || nval==0 %|| nval==4
     set(findobj(OH,'tag','linestyle'),'enable','on')
     lns=findobj(OH,'tag','linestyle=?');
     set(lns,'enable','on','backgroundcolor',Active)
@@ -1331,9 +1331,6 @@ qv=findobj(mfig,'tag','quickview');
 set(qv,'string',viewstr);
 if nval==-1
     set(qv,'enable','on')
-    set(findobj(mfig,'tag','loaddata'),'enable','off')
-elseif ~any(DimFlag) && nval==0
-    set(qv,'enable','off')
     set(findobj(mfig,'tag','loaddata'),'enable','off')
 elseif (Spatial==3) || (multiple(K_) && DimFlag(N_) && nval==2) % cannot plot 3D volumes and vector datasets containing no vertical component
     set(qv,'enable','off')

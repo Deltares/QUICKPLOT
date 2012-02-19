@@ -123,12 +123,35 @@ end
 if Props.NVal==0
     switch Props.Name
         case 'fairway contour'
-            [Ans.X,Ans.Y] = landboundary('read',FI.Sceneries.Data(FI.Cases.Data.sceneryNr).fairwayContourFile);
+            [Ans.X,Ans.Y] = landboundary('read',FI.Sceneries.Data(FI.Cases.Data(domain).sceneryNr).fairwayContourFile);
         case 'bank suction lines'
-            bsFI = tekal('open',FI.Sceneries.Data(FI.Cases.Data.sceneryNr).banksuctionFile,'nskipdatalines',1);
+            bsFI = tekal('open',FI.Sceneries.Data(FI.Cases.Data(domain).sceneryNr).banksuctionFile,'nskipdatalines',1);
             XY = tekal('read',bsFI,1:2);
             Ans.X = [XY{1}(:,1);NaN;XY{2}(:,1)];
             Ans.Y = [XY{1}(:,2);NaN;XY{2}(:,2)];
+        case 'desired ship track'
+            [Ans.X,Ans.Y] = landboundary('read',FI.Cases.Data(domain).trackFile);
+        case 'distance ticks'
+            [x,y] = landboundary('read',FI.Cases.Data(domain).trackFile);
+            d = pathdistance(x,y);
+            dtick = (0:500:max(d))';
+            xtick = interp1(d,x,dtick);
+            ytick = interp1(d,y,dtick);
+            itick = floor(interp1(d,1:length(d),dtick));
+            dx = diff(x);
+            dy = diff(y);
+            ds = sqrt(dx.^2+dy.^2);
+            dx = dx./ds;
+            dy = dy./ds;
+            width = 100;
+            x0 = [xtick-width*dy(itick) xtick+width*dy(itick)];
+            y0 = [ytick+width*dx(itick) ytick-width*dx(itick)];
+            x0 = x0';
+            x0(3,:) = NaN;
+            y0 = y0';
+            y0(3,:) = NaN;
+            Ans.X = x0;
+            Ans.Y = y0;
         case 'ship track'
             Ans.X = squeeze(val1(1,1,:));
             Ans.Y = squeeze(val1(2,1,:));
@@ -145,35 +168,50 @@ if Props.NVal==0
 elseif Props.NVal==1
     switch Props.Name
         case 'depth'
-            btFI = samples('read',FI.Sceneries.Data(FI.Cases.Data.sceneryNr).bottomFile);
+            btFI = samples('read',FI.Sceneries.Data(FI.Cases.Data(domain).sceneryNr).bottomFile);
             Ans.XYZ = reshape(btFI.XYZ,[1 size(btFI.XYZ,1) 1 3]);
             Ans.TRI = delaunay(btFI.XYZ(:,1),btFI.XYZ(:,2));
             Ans.Val = btFI.XYZ(:,3);
         case 'speed'
+            Ans.X = val1(3,:)';
+            Ans.XUnits = 'm';
             Ans.Val = sqrt(val1(1,:).^2 + val1(2,:).^2)';
         otherwise
             Ans.X = val1(2,:)';
             Ans.XUnits = 'm';
             Ans.Val = val1(1,:)';
     end
+elseif Props.NVal==4
+    switch Props.Name
+        case 'distance tick labels'
+            [x,y] = landboundary('read',FI.Cases.Data(domain).trackFile);
+            d = pathdistance(x,y);
+            dtick = (0:500:max(d))';
+            Ans.X = interp1(d,x,dtick);
+            Ans.Y = interp1(d,y,dtick);
+            Ans.Val = cell(size(dtick));
+            for i = 1:length(dtick)
+                Ans.Val{i} = sprintf('%i',dtick(i));
+            end
+    end
 else
     switch Props.Name
         case 'wind'
-            wFI = shipma('openpar',FI.Environments.Winds(FI.Cases.Data.windNr).Data.file,'wind');
+            wFI = shipma('openpar',FI.Environments.Winds(FI.Cases.Data(domain).windNr).Data.file,'wind');
             Ans.XYZ = reshape(wFI.XY,[1 size(wFI.XY,1) 1 2]);
             Ans.TRI = delaunay(wFI.XY(:,1),wFI.XY(:,2));
             toDir = wFI.WindFromDir*pi/180-pi;
             Ans.XComp = wFI.WindMagnitude.*sin(toDir);
             Ans.YComp = wFI.WindMagnitude.*cos(toDir);
         case 'waves'
-            wFI = shipma('openpar',FI.Environments.Waves(FI.Cases.Data.wavesNr).Data.file,'waves');
+            wFI = shipma('openpar',FI.Environments.Waves(FI.Cases.Data(domain).wavesNr).Data.file,'waves');
             Ans.XYZ = reshape(wFI.XY,[1 size(wFI.XY,1) 1 2]);
             Ans.TRI = delaunay(wFI.XY(:,1),wFI.XY(:,2));
             toDir = wFI.WaveToDir*pi/180;
             Ans.XComp = wFI.WaveHeight.*sin(toDir);
             Ans.YComp = wFI.WaveHeight.*cos(toDir);
         case 'current'
-            wFI = shipma('openpar',FI.Environments.Currents(FI.Cases.Data.currentNr).Data.file,'current');
+            wFI = shipma('openpar',FI.Environments.Currents(FI.Cases.Data(domain).currentNr).Data.file,'current');
             Ans.XYZ = reshape(wFI.XY,[1 size(wFI.XY,1) 1 2]);
             Ans.TRI = delaunay(wFI.XY(:,1),wFI.XY(:,2));
             toDir = wFI.CurrentToDir*pi/180;
@@ -215,8 +253,13 @@ d3d_qp('colour',[ 0 0 0 ])
 d3d_qp('fillpolygons',1)
 d3d_qp('facecolour',[ 1 1 0.2 ])
 d3d_qp('addtoplot')
-d3d_qp('selectfield','ship track')
-d3d_qp('allt',1)
+d3d_qp('selectfield','desired ship track')
+d3d_qp('addtoplot')
+d3d_qp('selectfield','distance ticks')
+d3d_qp('addtoplot')
+d3d_qp('selectfield','distance tick labels')
+d3d_qp('presenttype','labels')
+d3d_qp('fontsize',6)
 d3d_qp('addtoplot')
 a=d3d_qp('loaddata');
 d3d_qp('selectfield','ship')
@@ -239,6 +282,7 @@ texts{1} = 'Track plot and currents';
 d3d_qp('newfigure','1 plot - portrait','SHIPMA Fig B',texts)
 d3d_qp('selectfield','current')
 d3d_qp('component','magnitude')
+d3d_qp('presenttype','contour patches')
 d3d_qp('thresholds',0:0.05:0.25)
 d3d_qp('colourmap','revhot')
 d3d_qp('addtoplot')
@@ -251,6 +295,14 @@ d3d_qp('addtoplot')
 d3d_qp('selectfield','fairway contour')
 d3d_qp('colour',[ 0 0 0 ])
 d3d_qp('facecolour',[ 1 1 0.2 ])
+d3d_qp('addtoplot')
+d3d_qp('selectfield','desired ship track')
+d3d_qp('addtoplot')
+d3d_qp('selectfield','distance ticks')
+d3d_qp('addtoplot')
+d3d_qp('selectfield','distance tick labels')
+d3d_qp('presenttype','labels')
+d3d_qp('fontsize',6)
 d3d_qp('addtoplot')
 d3d_qp('selectfield','ship')
 d3d_qp('facecolour',[ 1 0 0 ])
@@ -305,10 +357,13 @@ function Out=infile(FI,domain)
 PropNames={'Name'               'Units' 'DimFlag'   'DataInCell' 'NVal' 'Geom'   'Coords' 'ClosedPoly' 'Domain' 'Var'   };
 DataProps={'default figures'    ''      [0 0 0 0 0] 0            -2     ''       ''       0            domain   0       
     '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            domain   0       
+    'desired ship track'        ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            domain   -1       
+    'distance ticks'            ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            domain   -1       
+    'distance tick labels'      ''      [0 0 0 0 0] 0             4     'sQUAD'  'xy'     0            domain   -1       
     'ship track'                ''      [9 0 0 0 0] 0             0     'PNT'    'xy'     0            domain   0       
     'ship'                      ''      [9 0 0 0 0] 0             0     'POLYG'  'xy'     1            domain   0       
-    'fairway contour'           ''      [0 0 1 0 0] 0             0     'POLYG'  'xy'     1            domain   -1       
-    'bank suction lines'        ''      [0 0 1 0 0] 0             0     'POLYL'  'xy'     0            domain   -1       
+    'fairway contour'           ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            domain   -1       
+    'bank suction lines'        ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            domain   -1       
     '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            domain   0       
     'wind'                      'm/s'   [0 0 1 0 0] 0             2     'TRI'    'xy'     0            domain   -1       
     'waves'                     'm'     [0 0 1 0 0] 0             2     'TRI'    'xy'     0            domain   -1       
@@ -316,7 +371,7 @@ DataProps={'default figures'    ''      [0 0 0 0 0] 0            -2     ''      
     'current'                   'm/s'   [0 0 1 0 0] 0             2     'TRI'    'xy'     0            domain   -1       
     'depth'                     'm'     [0 0 1 0 0] 0             1     'TRI'    'xy'     0            domain   -1       
     '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            domain   0       
-    'speed'                     'm/s'   [9 0 0 0 0] 0             1     ''       ''       0            domain   0
+    'speed'                     'm/s'   [9 0 0 0 0] 0             1     'PNT'    'd'      0            domain   0
     'his-data'                  ''      [9 0 0 0 0] 0             1     'PNT'    'd'      0            domain   0       };
 Out=cell2struct(DataProps,PropNames,2);
 %======================== SPECIFIC CODE DIMENSIONS ============================
@@ -370,7 +425,7 @@ for i = length(Out):-1:1
         case 'speed'
             u = find(strcmpi('u',hisvars));
             v = find(strcmpi('v',hisvars));
-            Out(i).Var = [u v];
+            Out(i).Var = [u v track];
         case 'ship track'
             x = find(strcmpi('x',hisvars));
             y = find(strcmpi('y',hisvars));

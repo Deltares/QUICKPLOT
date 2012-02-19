@@ -230,6 +230,8 @@ while 1
                             Str=deblank(line(Tkn(dim(1)):end));
                             if Str(1)=='''' && Str(end)==''''
                                 Str=Str(2:end-1);
+                            elseif Str(1)=='"' && Str(end)=='"'
+                                Str=Str(2:end-1);
                             end
                             Data{2}{i}=Str;
                         end
@@ -392,6 +394,8 @@ else %if ~isnan(FileInfo.Field(var).Offset)
                 Data{1}(:,i)=sscanf(line,'%f%*[ ,]',dim(1)-1);
                 Str=deblank(line(Tkn(dim(1)):end));
                 if Str(1)=='''' && Str(end)==''''
+                    Str=Str(2:end-1);
+                elseif Str(1)=='"' && Str(end)=='"'
                     Str=Str(2:end-1);
                 end
                 Data{2}{i}=Str;
