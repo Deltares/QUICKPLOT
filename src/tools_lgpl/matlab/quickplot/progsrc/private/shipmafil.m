@@ -185,7 +185,15 @@ varargout={Ans FI};
 
 % -----------------------------------------------------------------------------
 function selfplot(FI,Props)
-d3d_qp('newfigure','1 plot - portrait','1 plot - portrait')
+domain = Props.Domain;
+headerLine = FI.Cases.Data(domain).TimeSeries.Header(1,:);
+[shipma,rem] = strtok(headerLine);
+version = strtok(rem);
+shipma = [shipma ' ' version];
+texts = {'' '' FI.Cases.Names{domain} shipma};
+%
+texts{1} = 'Track plot and depth';
+d3d_qp('newfigure','1 plot - portrait','SHIPMA Fig A',texts)
 d3d_qp('selectfield','depth')
 d3d_qp('colourmap','navdepth')
 d3d_qp('presenttype','contour patches')
@@ -218,7 +226,8 @@ set(qpsa,'xlim',xrange,'ylim',yrange)
 set(qpsa,'drawmode','fast')
 set(qpsf,'renderer','painters')
 %--------
-d3d_qp('newfigure','1 plot - portrait','1 plot - portrait')
+texts{1} = 'Track plot and currents';
+d3d_qp('newfigure','1 plot - portrait','SHIPMA Fig B',texts)
 d3d_qp('selectfield','current')
 d3d_qp('component','magnitude')
 d3d_qp('thresholds',0:0.05:0.25)
@@ -242,7 +251,8 @@ set(qpsa,'xlim',xrange,'ylim',yrange)
 set(qpsa,'drawmode','fast')
 set(qpsf,'renderer','painters')
 %--------
-d3d_qp('newfigure','3 plots, vertical - portrait','3 plots, vertical - portrait')
+texts{1} = 'Speed and ruddle angle plots';
+d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig C',texts)
 qpsa('upper plot')
 d3d_qp('allt',1)
 d3d_qp('selectfield','propeller speed')
@@ -255,7 +265,8 @@ qpsa('lower plot')
 d3d_qp('selectfield','rudder angle')
 d3d_qp('addtoplot')
 %--------
-d3d_qp('newfigure','2 plots, vertical - portrait','2 plots, vertical - portrait')
+texts{1} = 'Swepth path and depth along track';
+d3d_qp('newfigure','2 plots, vertical - portrait','SHIPMA Fig D',texts)
 set(qpsa('upper plot'),'ydir','reverse')
 d3d_qp('selectfield','swept path port')
 d3d_qp('linestyle','-')
@@ -284,8 +295,8 @@ function Out=infile(FI,domain)
 PropNames={'Name'               'Units' 'DimFlag'   'DataInCell' 'NVal' 'Geom'   'Coords' 'ClosedPoly' 'Domain' 'Var'   };
 DataProps={'default figures'    ''      [0 0 0 0 0] 0            -2     ''       ''       0            domain   0       
     '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            domain   0       
-    'ship track'                ''      [1 0 0 0 0] 0             0     'PNT'    'xy'     0            domain   0       
-    'ship'                      ''      [1 0 0 0 0] 0             0     'POLYG'  'xy'     1            domain   0       
+    'ship track'                ''      [9 0 0 0 0] 0             0     'PNT'    'xy'     0            domain   0       
+    'ship'                      ''      [9 0 0 0 0] 0             0     'POLYG'  'xy'     1            domain   0       
     'fairway contour'           ''      [0 0 1 0 0] 0             0     'POLYG'  'xy'     1            domain   -1       
     'bank suction lines'        ''      [0 0 1 0 0] 0             0     'POLYL'  'xy'     0            domain   -1       
     '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            domain   0       
@@ -295,8 +306,8 @@ DataProps={'default figures'    ''      [0 0 0 0 0] 0            -2     ''      
     'current'                   'm/s'   [0 0 1 0 0] 0             2     'TRI'    'xy'     0            domain   -1       
     'depth'                     'm'     [0 0 1 0 0] 0             1     'TRI'    'xy'     0            domain   -1       
     '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            domain   0       
-    'speed'                     'm/s'   [1 0 0 0 0] 0             1     ''       ''       0            domain   0
-    'his-data'                  ''      [1 0 0 0 0] 0             1     ''       ''       0            domain   0       };
+    'speed'                     'm/s'   [9 0 0 0 0] 0             1     ''       ''       0            domain   0
+    'his-data'                  ''      [9 0 0 0 0] 0             1     ''       ''       0            domain   0       };
 Out=cell2struct(DataProps,PropNames,2);
 %======================== SPECIFIC CODE DIMENSIONS ============================
 hisvars = FI.Cases.Data(domain).TimeSeries.SubsName;
@@ -378,10 +389,8 @@ end
 % -----------------------------------------------------------------------------
 function T=readtim(FI,Props,t)
 %======================== SPECIFIC CODE =======================================
-if t==0
-    t=':';
-end
-T=[];
+domain = Props.Domain;
+T = delwaq('read',FI.Cases.Data(domain).TimeSeries,1,1,t);
 % -----------------------------------------------------------------------------
 
 

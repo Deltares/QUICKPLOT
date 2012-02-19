@@ -56,7 +56,7 @@ if nargin>0
     if ~isequal(figtype,'quick')
         ifigtype=ustrcmpi(figtype,labels);
         if ifigtype<0
-            error(sprintf('Unknown figure type: %s.',figtype));
+            error('Unknown figure type: %s.',figtype)
         end
         if nargin==1
             figname=figtype;
@@ -121,34 +121,34 @@ end
 switch(figtype)
     case '1 plot - portrait'
         figoptions.Editable=0;
-        standardfig(1,1,{'plot area'},axoptions,'portrait');
+        standardfig(1,1,{'plot area'},axoptions,'a4p',varargin{:});
     case '1 plot - landscape'
         figoptions.Editable=0;
-        standardfig(1,1,{'plot area'},axoptions,'landscape');
+        standardfig(1,1,{'plot area'},axoptions,'a4l',varargin{:});
     case '2 plots, vertical - portrait'
         figoptions.Editable=0;
-        standardfig(2,1,{'upper plot','lower plot'},axoptions,'portrait');
+        standardfig(2,1,{'upper plot','lower plot'},axoptions,'a4p',varargin{:});
     case '2 plots, horizontal - portrait'
         figoptions.Editable=0;
-        standardfig(1,2,{'left plot','right plot'},axoptions,'portrait');
+        standardfig(1,2,{'left plot','right plot'},axoptions,'a4p',varargin{:});
     case '2 plots, vertical - landscape'
         figoptions.Editable=0;
-        standardfig(2,1,{'upper plot','lower plot'},axoptions,'landscape');
+        standardfig(2,1,{'upper plot','lower plot'},axoptions,'a4l',varargin{:});
     case '2 plots, horizontal - landscape'
         figoptions.Editable=0;
-        standardfig(1,2,{'left plot','right plot'},axoptions,'landscape');
+        standardfig(1,2,{'left plot','right plot'},axoptions,'a4l',varargin{:});
     case '3 plots, vertical - portrait'
         figoptions.Editable=0;
-        standardfig(3,1,{'upper plot','middle plot','lower plot'},axoptions,'portrait');
+        standardfig(3,1,{'upper plot','middle plot','lower plot'},axoptions,'a4p',varargin{:});
     case '3 plots, horizontal - landscape'
         figoptions.Editable=0;
-        standardfig(1,3,{'left plot','center plot','right plot'},axoptions,'landscape');
+        standardfig(1,3,{'left plot','center plot','right plot'},axoptions,'a4l',varargin{:});
     case '4 plots, 2x2 - portrait'
         figoptions.Editable=0;
-        standardfig(2,2,{'upper left plot','upper right plot','lower left plot','lower right plot'},axoptions,'portrait');
+        standardfig(2,2,{'upper left plot','upper right plot','lower left plot','lower right plot'},axoptions,'a4p',varargin{:});
     case '4 plots, 2x2 - landscape'
         figoptions.Editable=0;
-        standardfig(2,2,{'upper left plot','upper right plot','lower left plot','lower right plot'},axoptions,'landscape');
+        standardfig(2,2,{'upper left plot','upper right plot','lower left plot','lower right plot'},axoptions,'a4l',varargin{:});
     case 'free format figure'
         set(fig, ...
             'papertype','a4letter', ...
@@ -167,7 +167,7 @@ end
 set(fig,'userdata',figoptions,'visible','on');
 
 
-function standardfig(m,n,tags,axoptions,orient)
+function standardfig(m,n,tags,axoptions,orient,varargin)
 %set(gcf,'color',[1 1 1]);
 for i=m*n:-1:1
     ax=subplot(m,n,i);
@@ -177,4 +177,4 @@ for i=m*n:-1:1
     end
     set(ax,'tag',tags{i},'userdata',axoptions,'drawmode','fast');
 end
-md_paper('no edit',orient,'','');
+md_paper('no edit',orient,'7box',varargin{:});

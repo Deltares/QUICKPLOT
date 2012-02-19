@@ -691,7 +691,7 @@ try
                     Files={File.Name};
                     NrInList=ustrcmpi(cmdargs{1},Files);
                     if NrInList<0
-                        error(sprintf('Cannot select file: %s',cmdargs{1}))
+                        error('Cannot select file: %s',cmdargs{1})
                     else
                         set(Handle_SelectFile,'value',NrInList);
                     end
@@ -829,7 +829,7 @@ try
             if ~isempty(cmdargs)
                 i=ustrcmpi(cmdargs{1},Domains);
                 if i<0
-                    error(sprintf('Cannot select field: %s',cmdargs{1}))
+                    error('Cannot select field: %s',cmdargs{1})
                 else
                     set(domains,'value',i);
                 end
@@ -903,7 +903,7 @@ try
             if ~isempty(cmdargs)
                 i=ustrcmpi(cmdargs{1},flds);
                 if i<0
-                    error(sprintf('Cannot select %s: %s',cmd(7:end),cmdargs{1}))
+                    error('Cannot select %s: %s',cmd(7:end),cmdargs{1})
                 else
                     set(sf,'value',i);
                 end
@@ -924,7 +924,7 @@ try
             else
                 Sts=cmdargs{1};
                 if ~isequal(Sts,0) && ~isequal(Sts,1)
-                    error(sprintf('Invalid argument specified for %s.',cmd))
+                    error('Invalid argument specified for %s.',cmd)
                 end
                 set(UDSts,'value',Sts);
             end
@@ -959,22 +959,7 @@ try
                     if size(Times,1)==1
                         Times=Times';
                     end
-                    nTimes=length(Times);
-                    switch Props(fld).DimFlag(T_)
-                        case {1,2} % day-month-year h:m:s
-                            % 1: discrete, 2: continuous
-                            Str=datestr(Times,0);
-                        case {3,4} % day h:m:s
-                            % 3: discrete, 4: continuous
-                            Str=cat(2,repmat('day ',nTimes,1),num2str(floor(Times)), ...
-                                repmat(' ',nTimes,1),datestr(rem(Times,1),13));
-                        case {5,6,0} % i
-                            % 5: discrete, 6: continuous
-                            Str=num2str(Times);
-                        case {7,8} % seconds
-                            % 7: discrete, 8: continuous
-                            Str=cat(2,num2str(Times*24*3600),repmat(' s',nTimes,1));
-                    end
+                    Str = qp_time2str(Times,Props(fld).DimFlag(T_));
                     set(tl,'string',Str,'userdata',1)
                 end
                 id=get(findobj(mfig,'tag','t=?'),'userdata');
@@ -1006,7 +991,7 @@ try
                             sprintf('Multiple station names match ''%s'', selecting first',stn));
                         set(UD.MainWin.StList,'value',iall(1));
                     else
-                        error(sprintf('Cannot select station: %s',cmdargs{1}))
+                        error('Cannot select station: %s',cmdargs{1})
                     end
                 else
                     set(UD.MainWin.StList,'value',i);
@@ -1058,7 +1043,7 @@ try
                 if isequal(SwitchToAll,'0') || isequal(SwitchToAll,'1')
                     SwitchToAll = str2num(SwitchToAll);
                 elseif ~isequal(SwitchToAll,0) && ~isequal(SwitchToAll,1)
-                    error(sprintf('Invalid argument specified for %s.',cmd))
+                    error('Invalid argument specified for %s.',cmd)
                 end
                 set(UDAllM,'value',SwitchToAll);
             end
@@ -1604,7 +1589,7 @@ try
             if ~isempty(cmdargs)
                 i=ustrcmpi(cmdargs{1},cmaps);
                 if i<0
-                    error(sprintf('Invalid %s: %s',cmd,cmdargs{1}))
+                    error('Invalid %s: %s',cmd,cmdargs{1})
                 else
                     set(Hcmaplist,'value',i);
                 end
@@ -1645,7 +1630,7 @@ try
                         %
                         i=ustrcmpi('mat file (v6)',modes);
                         if i<0
-                            error(sprintf('Invalid %s: %s',cmd,cmdargs{1}))
+                            error('Invalid %s: %s',cmd,cmdargs{1})
                         else
                             set(modelist,'value',i);
                         end
@@ -1657,7 +1642,7 @@ try
                         modelist=findobj(UOH,'tag',[cmd '=!']);
                         set(modelist,'string',cmdargs{1})
                     else
-                        error(sprintf('Invalid %s: %s',cmd,cmdargs{1}))
+                        error('Invalid %s: %s',cmd,cmdargs{1})
                     end
                 else
                     set(modelist,'value',i);
@@ -1733,7 +1718,7 @@ try
             if ~isempty(cmdargs)
                 Log=cmdargs{1};
                 if ~isequal(Log,0) && ~isequal(Log,1)
-                    error(sprintf('Invalid argument specified for %s.',cmd))
+                    error('Invalid argument specified for %s.',cmd)
                 end
                 set(cb,'value',Log);
             end
@@ -1748,7 +1733,7 @@ try
             if ~isempty(cmdargs)
                 Log=cmdargs{1};
                 if ~isequal(Log,0) && ~isequal(Log,1)
-                    error(sprintf('Invalid argument specified for %s.',cmd))
+                    error('Invalid argument specified for %s.',cmd)
                 end
                 set(cb,'value',Log);
             end

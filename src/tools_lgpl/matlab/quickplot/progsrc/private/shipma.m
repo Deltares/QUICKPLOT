@@ -296,6 +296,7 @@ for i = 1:nCases
     %
     FileName = fullfile(UnzipFolder,'shi_Cases',['shi_' CaseName],'Shi_results','Wor_workDir','embCtnt','containedFiles','track.his');
     Data(i).TimeSeries = delwaq('open',FileName);
+    Data(i).TimeSeries.T0 = 0; % overrule header information
 end
 
 

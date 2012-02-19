@@ -568,20 +568,7 @@ end
 
 TStr='';
 if isfield(data,'Time') && length(data(1).Time)==1
-    switch DimFlag(T_)
-        case {1,2} % day-month-year h:m:s
-            % 1: discrete, 2: continuous
-            TStr=datestr(data(1).Time,0);
-        case {3,4} % day h:m:s
-            % 3: discrete, 4: continuous
-            TStr=cat(2,'day ',num2str(floor(data(1).Time)),' ',datestr(rem(data(1).Time,1),13));
-        case {5,6} % i
-            % 5: discrete, 6: continuous
-            TStr=num2str(data(1).Time);
-        case {7,8} % seconds
-            % 7: discrete, 8: continuous
-            TStr=cat(2,num2str(data(1).Time*24*3600),' s');
-    end
+    TStr = qp_time2str(data(1).Time,DimFlag(T_));
 end
 
 clippingspatial = 0;
