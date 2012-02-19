@@ -280,6 +280,7 @@ switch NVal
                             Thresholds = [-inf Thresholds];
                         end
                         XYZ=squeeze(data.XYZ);
+                        delete(hNew);
                         switch Ops.presentationtype
                             case 'contour lines'
                                 hNew=tricontour(data.TRI,XYZ(:,1),XYZ(:,2),data.Val(:),Thresholds,'k');
@@ -287,20 +288,20 @@ switch NVal
                             case 'coloured contour lines'
                                 hNew=tricontour(data.TRI,XYZ(:,1),XYZ(:,2),data.Val(:),Thresholds);
                                 for i=1:length(hNew)
-                                    c=get(hNew(i),'cdata');
-                                    set(hNew(i),'cdata',0*c+i)
+                                    c=get(hNew(i),'FaceVertexCData');
+                                    set(hNew(i),'FaceVertexCData',0*c+i)
                                 end
                             case 'contour patches'
                                 hNew=tricontourf(data.TRI,XYZ(:,1),XYZ(:,2),data.Val(:),Thresholds,'clevel','index','zplane',0);
                                 for i=1:length(hNew)
-                                    c=get(hNew(i),'cdata');
-                                    set(hNew(i),'cdata',0*c+i)
+                                    c=get(hNew(i),'FaceVertexCData');
+                                    set(hNew(i),'FaceVertexCData',0*c+i)
                                 end
                             case 'contour patches with lines'
                                 hNew1=tricontourf(data.TRI,XYZ(:,1),XYZ(:,2),data.Val(:),Thresholds,'clevel','index','zplane',0);
                                 for i=1:length(hNew)
-                                    c=get(hNew(i),'cdata');
-                                    set(hNew(i),'cdata',0*c+i)
+                                    c=get(hNew(i),'FaceVertexCData');
+                                    set(hNew(i),'FaceVertexCData',0*c+i)
                                 end
                                 hNew2=tricontour(data.TRI,XYZ(:,1),XYZ(:,2),data.Val(:),Thresholds,'k');
                                 set(hNew2,'color',Ops.colour,'linestyle',Ops.linestyle,'marker',Ops.marker,'markeredgecolor',Ops.markercolour,'markerfacecolor',Ops.markerfillcolour)
