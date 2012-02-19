@@ -191,11 +191,10 @@ while ~feof(fid)
     if Index && NShapes<size(S.Idx,2)
         fseek(fid,S.Idx(1,NShapes+1),-1);
     end
-    [NrSize,k]=fread(fid,2,'int32');
+    [NrSize,k]=fread(fid,2,'int32','b');
     if k==0
         break
     end
-    NrSize=int32_byteflip(NrSize);
     ShapeTp=fread(fid,1,'int32');
     NShapes=NShapes+1;
     if ~Index
@@ -327,8 +326,7 @@ switch datatype
         Obj=zeros(S.NPnt,1);
         for shp=shapes
             fseek(fid,S.Idx(1,shp),-1);
-            [NrSize,k]=fread(fid,2,'int32');
-            NrSize=int32_byteflip(NrSize);
+            [NrSize,k]=fread(fid,2,'int32','b');
             ShapeTp=fread(fid,1,'int32');
             switch ShapeTp
                 case 0 % null shape
@@ -435,8 +433,7 @@ switch datatype
         Obj=repmat(NaN,S.NPnt+S.NPrt-1,1);
         for shp=shapes
             fseek(fid,S.Idx(1,shp),-1);
-            [NrSize,k]=fread(fid,2,'int32');
-            NrSize=int32_byteflip(NrSize);
+            [NrSize,k]=fread(fid,2,'int32','b');
             ShapeTp=fread(fid,1,'int32');
             switch ShapeTp
                 case 0 % null shape
