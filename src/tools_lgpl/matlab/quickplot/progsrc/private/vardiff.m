@@ -89,7 +89,7 @@ try
         end
     end
 catch
-    error(sprintf('An unexpected error occurred while comparing the files:\n%s',lasterr))
+    error('An unexpected error occurred while comparing the files:\n%s',lasterr)
 end
 if nargout>0
     out=DiffFound;
@@ -153,6 +153,19 @@ switch pflag
             myfprintf(fid,['%s%s contains the following fields not part of %s%s:' br],var2,substr,var1,substr);
             myfprintf(fid,['  %s' br],sfn2{:});
         end
+        if isempty(sfn1) && isempty(sfn2)
+            myfprintf(fid,['The order of fields in %s%s differs from those in %s%s:' br],var2,substr,var1,substr);
+            sfn1 = char(fn1);
+            sfn2 = char(fn2);
+            [f1,i1] = sort(fn1);
+            [f2,i2] = sort(fn2);
+            [ii,r1] = sort(i1);
+            for i = 1:length(fn1)
+               if ~strcmp(fn1{i},fn2{i})
+                  myfprintf(fid,['  %2i %s - %2i %s' br],i1(r1(i)),sfn1(i,:),i2(r1(i)),sfn2(i,:));
+               end
+            end
+        end
 end
 
 
@@ -168,8 +181,7 @@ elseif ~isequal(size(s1),size(s2))  % different size?
     DiffFound=1;
     printdiff(fid,br,'size',size(s1),size(s2),substr);
 elseif iscell(s1)  % & s2 is also cell! if cell -> check per element
-    sz1=size(s1);
-    for i=1:prod(sz1)  % s2 has same size!
+    for i=1:numel(s1)  % s2 has same size!
         Diff=detailedcheck(s1{i},s2{i},fid,br,sprintf('%s{%i}',substr,i));
         if Diff
             if ~DiffFound
@@ -182,7 +194,7 @@ elseif iscell(s1)  % & s2 is also cell! if cell -> check per element
     if DiffFound
         DiffFound=DiffFound+1;
     end
-elseif isstruct(s1) | isobject(s1)
+elseif isstruct(s1) || isobject(s1)
     if isobject(s1)  % in case of objects convert into structures for detailed check
         s1=struct(s1); s2=struct(s2);
     end
@@ -197,12 +209,12 @@ elseif isstruct(s1) | isobject(s1)
     s1=struct2cell(s1);
     s2=struct2cell(s2);
     j=0;
-    for i=1:prod(size(s1))  % s2 has same size! (array size is the same and fields are the same)
+    for i=1:numel(s1)  % s2 has same size! (array size is the same and fields are the same)
         j=j+1;
         if j>nf
             j=1;
         end
-        if prod(size(s1))~=nf
+        if numel(s1)~=nf
             Nsubstr=sprintf('%s(%i).%s',substr,(i-j)/nf+1,fn1{j});
         else
             Nsubstr=sprintf('%s.%s',substr,fn1{j});

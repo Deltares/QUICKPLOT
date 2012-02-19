@@ -56,6 +56,7 @@ NFailed=0;
 fs=filesep;
 sdata=['..',fs,'data',fs];
 sref=['..',fs,'reference',fs];
+swrk=['..',fs,'work',fs];
 slog=['..',fs,'logfiles',fs];
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %
@@ -96,7 +97,7 @@ try
    cd(val_dir)
    d=dir('*');
    for i=length(d):-1:1
-      if ~d(i).isdir | strcmp(d(i).name(1),'.') | strcmp(d(i).name(1),'..')
+      if ~d(i).isdir || strcmp(d(i).name(1),'.') || strcmp(d(i).name(1),'..')
          d(i)=[];
       end
    end
@@ -124,7 +125,7 @@ try
             movefile('*','data');
          end
          dd=dir(['data' fs '*']);
-         if ~localexist(CaseInfo) & length(dd)>2
+         if ~localexist(CaseInfo) && length(dd)>2
             CID=inifile('new');
             CID=inifile('set',CID,'','FileName',dd(3).name);
             CID=inifile('set',CID,'logfilecheck','example.qplog','example.png');
@@ -204,17 +205,20 @@ try
             end
             fprintf(logid2,'<hr>\n');
             if ChkOK
-               CmpFile=[sref,'datafields.mat'];
-               if localexist(CmpFile)
-                  cmpFile=localload(CmpFile);
+               CmpFile='datafields.mat';
+               RefFile=[sref CmpFile];
+               WrkFile=[swrk CmpFile];
+               if localexist(RefFile)
+                  cmpFile=localload(RefFile);
                   if isfield(cmpFile,'Props')
-                     PrevProps=getfield(cmpFile,'Props');
+                     PrevProps=cmpFile.Props;
                   else
-                     PrevProps=getfield(cmpFile,'Data');
+                     PrevProps=cmpFile.Data;
                   end
                   DiffFound=vardiff(Props,PrevProps)>1;
                   fprintf(logid2,'Comparing new and old fields:<br>\n');
                   if DiffFound
+                     localsave(WrkFile,Props,saveops);
                      if length(Props)~=length(PrevProps)
                         fprintf(logid2,'Number of domains differs.<br>\n')
                         fprintf(logid2,'Reference data set contains %i domains.<br>\n',length(PrevProps));
@@ -266,7 +270,7 @@ try
                   end
                   fprintf(logid2,'Conclusion: %s<br>\n',sc{2-DiffFound});
                else
-                  localsave(CmpFile,Props,saveops);
+                  localsave(RefFile,Props,saveops);
                end
                if DiffFound
                   frcolor='FF0000';
@@ -302,16 +306,18 @@ try
                         PName=P(p).Name;
                         PName_double = strmatch(PName,{P(1:p-1).Name},'exact');
                         PName=str2file(PName);
-                        CmpFile=[sref,PName,'.mat'];
+                        CmpFile=[PName '.mat'];
                         if PName_double
-                           CmpFile=[sref,PName,sprintf('.(%i).mat',PName_double+1)];
+                           CmpFile=[PName sprintf('.(%i).mat',PName_double+1)];
                         end
+                        RefFile=[sref CmpFile];
+                        WrkFile=[swrk CmpFile];
                         idx={};
                         subf={};
                         if P(p).DimFlag(ST_)
                            idx={1};
                            if P(p).DimFlag(T_)
-                               if P(p).DimFlag(M_) | P(p).DimFlag(N_)
+                               if P(p).DimFlag(M_) || P(p).DimFlag(N_)
                                    idx={P(p).Size(T_) idx{:}};
                                else
                                    idx={1:min(10,P(p).Size(T_)) idx{:}};
@@ -319,7 +325,7 @@ try
                            end
                         end
                         [Chk,subfields]=qp_getdata(FI,dm,P(p),'subfields');
-                        if Chk & ~isempty(subfields)
+                        if Chk && ~isempty(subfields)
                            subf={length(subfields)};
                         end
                         [Chk,Data]=qp_getdata(FI,dm,P(p),'griddata',subf{:},idx{:});
@@ -328,9 +334,17 @@ try
                            frcolor='FF0000';
                            frresult=sprintf('FAILED: Error retrieving data for ''%s''.',P(p).Name);
                            ChkOK=0;
-                        elseif localexist(CmpFile)
-                           cmpFile=localload(CmpFile);
-                           PrevData=getfield(cmpFile,'Data');
+                        elseif localexist(RefFile)
+                           cmpFile=localload(RefFile);
+                           PrevData=cmpFile.Data;
+                           %
+                           if isfield(Data,'TRI')
+                              Data.TRI = sortrows(sort(Data.TRI')'); %#ok<TRSRT>
+                           end
+                           if isfield(PrevData,'TRI')
+                              PrevData.TRI = sortrows(sort(PrevData.TRI')'); %#ok<TRSRT>
+                           end
+                           %
                            DiffFound=vardiff(Data,PrevData);
                            addedfields = {};
                            if DiffFound==2
@@ -357,6 +371,7 @@ try
                               DiffFound=DiffFound>1;
                            end
                            if DiffFound
+                              localsave(WrkFile,Data,saveops);
                               fprintf(logid2,'<td>');
                               if ~isempty(addedfields)
                                  fprintf(logid2,'New Fields:<br>\n');
@@ -387,7 +402,7 @@ try
                               fprintf(logid2,'<td>%s</td></tr>\n',sc{2-DiffFound});
                            end
                         else
-                           localsave(CmpFile,Data,saveops);
+                           localsave(RefFile,Data,saveops);
                            fprintf(logid2,'<td>Created</td></tr>\n');
                            if isequal(frresult,'PASSED')
                               frcolor='000000';
@@ -531,7 +546,7 @@ try
       CaseFailed = ~isempty(strmatch('FAILED',frresult)) | ~isempty(strmatch('FAILED',lgresult)) | ~isempty(strmatch('FAILED',result));
       NFailed=NFailed + double(CaseFailed);
       AnyFail=AnyFail | CaseFailed;
-      if AnyFail & ishandle(Hpb)
+      if AnyFail && ishandle(Hpb)
          progressbar(Hpb,'color','r')
       elseif ~ishandle(Hpb)
          UserInterrupt=1;
@@ -605,7 +620,7 @@ if isempty(dir(dirname))
       cd(parent)
    end
    c = computer;
-   if c(1:2) == 'PC'
+   if strcmp(c(1:2),'PC')
       s=dos(['mkdir "',thisdir,'"']);
    else
       s=unix(['mkdir -p ',thisdir]);
