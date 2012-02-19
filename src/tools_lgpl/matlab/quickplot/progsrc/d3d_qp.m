@@ -3631,10 +3631,11 @@ try
                             blockcomment=0;
                         end
                     end
-                    cmdstr=deblank(fgetl(runfil));
+                    cmdstr=fgetl(runfil);
                     if ~ischar(cmdstr)
                         break
                     end
+                    cmdstr=deblank(cmdstr);
                 end
                 cmdargs={};
                 if ischar(cmdstr) && ~isempty(cmdstr)
@@ -3839,7 +3840,7 @@ try
             set(findobj(UOH,'tag','colourdams'),'value',0)
             set(findobj(UOH,'tag','vectorcolour=?'),'value',1,'string',{' '})
             set(findobj(UOH,'tag','colclassify'),'value',0)
-            set(findobj(UOH,'tag','thresholds=?'),'string','')
+            set(findobj(UOH,'tag','thresholds=?'),'string','','userdata',[])
             set(findobj(UOH,'tag','threshdistr=?'),'value',1)
             set(findobj(UOH,'tag','climmode=?'),'value',1)
             set(findobj(UOH,'tag','climmax=?'),'userdata',1,'string','1')

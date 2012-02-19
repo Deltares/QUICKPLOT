@@ -1,18 +1,20 @@
 function varargout=wlgrid(cmd,varargin)
 %WLGRID Read/write a Delft3D grid file.
-%   GRID=WLGRID('read',FILENAME) reads a Delft3D or SWAN grid file and
+%   GRID = WLGRID('read',FILENAME) reads a Delft3D or SWAN grid file and
 %   returns a structure containing all grid information.
 %
-%   [X,Y,ENC,CS,nodatavalue]=WLGRID('read',FILENAME) reads a Delft3D 
-%   or SWAN grid file and returns X coordinates, Y coordinates, grid enclosure 
-%   and coordinate system string and nodatavalue separately.
+%   [X,Y,ENC,CS,nodatavalue] = WLGRID('read',FILENAME) reads a Delft3D
+%   or SWAN grid file and returns X coordinates, Y coordinates, grid
+%   enclosure and coordinate system string and nodatavalue separately.
 %
-%   OK=WLGRID('write','PropName1',PropVal1,'PropName2',PropVal2, ...)
+%   OK = WLGRID('write','PropName1',PropVal1,'PropName2',PropVal2, ...)
 %   writes a grid file. The following property names are accepted when
 %   following the write command
 %     'FileName'        : Name of file to write
-%     'X'               : X-coordinates (can be a 1D vector 'stick' of an orthogonal grid)
-%     'Y'               : Y-coordinates (can be a 1D vector 'stick' of an orthogonal grid)
+%     'X'               : X-coordinates (can be a 1D vector 'stick' of an
+%                         orthogonal grid)
+%     'Y'               : Y-coordinates (can be a 1D vector 'stick' of an
+%                         orthogonal grid)
 %     'Enclosure'       : Enclosure array
 %     'CoordinateSystem': Coordinate system 'Cartesian' (default) or
 %                         'Spherical'
@@ -29,30 +31,30 @@ function varargout=wlgrid(cmd,varargin)
 %   See also ENCLOSURE, WLDEP.
 
 %----- LGPL --------------------------------------------------------------------
-%                                                                               
-%   Copyright (C) 2011-2012 Stichting Deltares.                                     
-%                                                                               
-%   This library is free software; you can redistribute it and/or                
-%   modify it under the terms of the GNU Lesser General Public                   
-%   License as published by the Free Software Foundation version 2.1.                         
-%                                                                               
-%   This library is distributed in the hope that it will be useful,              
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of               
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU            
-%   Lesser General Public License for more details.                              
-%                                                                               
-%   You should have received a copy of the GNU Lesser General Public             
-%   License along with this library; if not, see <http://www.gnu.org/licenses/>. 
-%                                                                               
-%   contact: delft3d.support@deltares.nl                                         
-%   Stichting Deltares                                                           
-%   P.O. Box 177                                                                 
-%   2600 MH Delft, The Netherlands                                               
-%                                                                               
-%   All indications and logos of, and references to, "Delft3D" and "Deltares"    
-%   are registered trademarks of Stichting Deltares, and remain the property of  
-%   Stichting Deltares. All rights reserved.                                     
-%                                                                               
+%
+%   Copyright (C) 2011-2012 Stichting Deltares.
+%
+%   This library is free software; you can redistribute it and/or
+%   modify it under the terms of the GNU Lesser General Public
+%   License as published by the Free Software Foundation version 2.1.
+%
+%   This library is distributed in the hope that it will be useful,
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%   Lesser General Public License for more details.
+%
+%   You should have received a copy of the GNU Lesser General Public
+%   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+%
+%   contact: delft3d.support@deltares.nl
+%   Stichting Deltares
+%   P.O. Box 177
+%   2600 MH Delft, The Netherlands
+%
+%   All indications and logos of, and references to, "Delft3D" and "Deltares"
+%   are registered trademarks of Stichting Deltares, and remain the property of
+%   Stichting Deltares. All rights reserved.
+%
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
@@ -66,14 +68,14 @@ if nargin==0
 end
 
 switch lower(cmd)
-   case {'r','re','rea','read','open'}
+   case {'read','open'}
       Grid=Local_read_grid(varargin{:});
       if nargout<=1
          varargout{1}=Grid;
       else
          varargout={Grid.X Grid.Y Grid.Enclosure Grid.CoordinateSystem Grid.MissingValue};
       end
-   case {'w','wr','wri','writ','write'}
+   case {'write'}
       Out=Local_write_grid('newrgf',varargin{:});
       if nargout>0
          varargout{1}=Out;
@@ -92,7 +94,7 @@ switch lower(cmd)
       error('Unknown command')
 end
 
-%%
+
 function GRID=Local_read_grid(filename)
 GRID.X                = [];
 GRID.Y                = [];
@@ -101,16 +103,15 @@ GRID.FileName         = '';
 GRID.CoordinateSystem = 'Unknown';
 GRID.MissingValue     = 0;
 
-if (nargin==0) | strcmp(filename,'?')
+if (nargin==0) || strcmp(filename,'?')
    [fname,fpath]=uigetfile('*.*','Select grid file');
    if ~ischar(fname)
-      Out=struct2cell(GRID);
       return
    end
    filename=fullfile(fpath,fname);
 end
 
-%% detect extension
+% detect extension
 [path,name,ext]=fileparts(filename);
 if isempty(ext)
    if ~exist(filename)
@@ -122,210 +123,211 @@ filename=fullfile(path,[name ext]);
 basename=fullfile(path,name);
 GRID.FileName=filename;
 
-%% Grid file
+% Grid file
 gridtype='RGF';
 fid=fopen(filename);
 if fid<0
-   error(sprintf('Couldn''t open file: %s.',filename));
+   error('Couldn''t open file: %s.',filename)
 end
 %
-prevlineoffset = 0;
-line=fgetl(fid);
-if ~isempty(strfind(lower(line),'spherical'))
-   GRID.CoordinateSystem = 'Spherical';
-end
-while 1
-   values = sscanf(line,'%f');
-   if ~ischar(line)
-      fclose(fid);
-      error(sprintf('The file is empty: %s.',filename));
-   elseif ~isempty(line) & line(1)=='*'
-      prevlineoffset = ftell(fid);
-      line=fgetl(fid);
-   elseif strcmp('x coordinates',deblank(line)) | strcmp('x-coordinates',deblank(line))
-      gridtype='SWAN';
-      GRID.CoordinateSystem='Cartesian';
-      break
-   elseif prevlineoffset == 0 & length(values)>3
-      gridtype='ECOMSED-corners';
-      break
-   else
-      EqualSign = strfind(line,'=');
-      if ~isempty(EqualSign)
-         keyword = deblank2(line(1:EqualSign(1)-1));
-         switch keyword
-            case 'Coordinate System'
-               GRID.CoordinateSystem=deblank2(line(EqualSign(1)+1:end));
-            case 'Missing Value'
-               GRID.MissingValue=str2num(line(EqualSign(1)+1:end));
-         end
+try
+   prevlineoffset = 0;
+   line=fgetl(fid);
+   if ~isempty(strfind(lower(line),'spherical'))
+      GRID.CoordinateSystem = 'Spherical';
+   end
+   while 1
+      values = sscanf(line,'%f');
+      if ~ischar(line)
+         fclose(fid);
+         error('The file is empty: %s.',filename)
+      elseif ~isempty(line) && line(1)=='*'
          prevlineoffset = ftell(fid);
          line=fgetl(fid);
-      else
-         % Not a line containing a keyword. This can happen if it is an old
-         % grid file with the first line starting with a *, in which case
-         % this line should not yet have been read. Or it can be an old
-         % file,where the first line does not start with a *, in which case
-         % this line should be skipped anyway. To distinguish between these
-         % two cases, check prevlineoffset: if it is zero, then this is the
-         % first line and it should be skipped, otherwise unskip this line.
-         if prevlineoffset>0
-            fseek(fid,prevlineoffset,-1);
-         end
+      elseif strcmp('x coordinates',deblank(line)) || strcmp('x-coordinates',deblank(line))
+         gridtype='SWAN';
+         GRID.CoordinateSystem='Cartesian';
          break
+      elseif prevlineoffset == 0 && length(values)>3
+         gridtype='ECOMSED-corners';
+         break
+      else
+         EqualSign = strfind(line,'=');
+         if ~isempty(EqualSign)
+            keyword = deblank2(line(1:EqualSign(1)-1));
+            switch keyword
+               case 'Coordinate System'
+                  GRID.CoordinateSystem=deblank2(line(EqualSign(1)+1:end));
+               case 'Missing Value'
+                  GRID.MissingValue=str2double(line(EqualSign(1)+1:end));
+            end
+            prevlineoffset = ftell(fid);
+            line=fgetl(fid);
+         else
+            % Not a line containing a keyword. This can happen if it is an old
+            % grid file with the first line starting with a *, in which case
+            % this line should not yet have been read. Or it can be an old
+            % file,where the first line does not start with a *, in which case
+            % this line should be skipped anyway. To distinguish between these
+            % two cases, check prevlineoffset: if it is zero, then this is the
+            % first line and it should be skipped, otherwise unskip this line.
+            if prevlineoffset>0
+               fseek(fid,prevlineoffset,-1);
+            end
+            break
+         end
       end
    end
-end
-%%
-grdsize=[];
-switch gridtype
-   case 'RGF'
-      while 1
-         line=fgetl(fid);
-         if ~isstr(line)
-            break
-         end
-         if isempty(deblank(line)) & isempty(grdsize)
-         elseif line(1)=='*'
-            % skip comment
-         else
-            grdsize_f=transpose(sscanf(line,'%f'));
-            grdsize=transpose(sscanf(line,'%i'));
-            %
-            % don't continue if there are floating point numbers on the
-            % grid size line.
-            %
-            if length(grdsize_f) > length(grdsize)
-               fclose(fid);
-               error('Floating point number in line that should contain grid dimensions\n%s',line)
-            end
-            %
-            line=fgetl(fid); % read xori,yori,alfori
-            if length(grdsize)>2 % the possible third element contains the number of subgrids
-               if grdsize(3)>1
-                  for i=1:(2*grdsize(3)) % read subgrid definitions
-                     line=fgetl(fid);
-                  end
-               end
-            end
-            if isempty(grdsize)
-               fclose(fid);
-               error('Cannot determine grid size.');
-            end
-            grdsize=grdsize(1:2);
-            floc=ftell(fid);
-            str=fscanf(fid,'%11c',1);
-            fseek(fid,floc,-1);
-            cc = sscanf(str,' %*[Ee]%*[Tt]%*[Aa] = %i',1);
-            readETA=0;
-            if ~isempty(cc)
-               readETA=1;
-            end
-            GRID.X=-999*ones(grdsize);
-            for c=1:grdsize(2)
-               if readETA
-                  cc=fscanf(fid,' %*[Ee]%*[Tt]%*[Aa] = %i',1); % skip line header ETA= and read c
-               else
-                  cc=fscanf(fid,'%11c',1); % this does not include the preceding EOL
-               end
-               GRID.X(:,c)=fscanf(fid,'%f',[grdsize(1) 1]);
-               if ~readETA
-                   fgetl(fid); % read optional spaces and EOL
-               end
-            end
-            GRID.Y=-999*ones(grdsize);
-            for c=1:grdsize(2)
-               if readETA
-                  cc=fscanf(fid,' %*[Ee]%*[Tt]%*[Aa] = %i',1); % skip line header ETA= and read c
-               else
-                  cc=fscanf(fid,'%11c',1); % this does not include the preceding EOL
-               end
-               GRID.Y(:,c)=fscanf(fid,'%f',[grdsize(1) 1]);
-               if ~readETA
-                   fgetl(fid); % read optional spaces and EOL
-               end
-            end
-            break
-         end
-      end
-   case 'SWAN'
-      %SWANgrid
-      xCoords={};
-      firstline=1;
-      NCoordPerLine=0;
-      while 1
-         line=fgetl(fid);
-         if firstline
-             [Crd,cnt]=sscanf(line,'%f',[1 inf]);
-             NCoordPerLine=cnt;
-             firstline=0;
-         else
-             [Crd,cnt]=sscanf(line,'%f',[1 NCoordPerLine]);
-         end
-         if cnt>0
-            xCoords{end+1}=Crd;
-         end
-         if cnt<NCoordPerLine
-            break
-         end
-      end
-      NCnt=-1;
-      if cnt>0
-         NCnt=(length(xCoords)-1)*NCoordPerLine+length(xCoords{end});
+   %
+   grdsize=[];
+   switch gridtype
+      case 'RGF'
          while 1
             line=fgetl(fid);
-            [Crd,cnt]=sscanf(line,'%f',[1 NCoordPerLine]);
+            if ~ischar(line)
+               break
+            end
+            if isempty(deblank(line)) && isempty(grdsize)
+            elseif line(1)=='*'
+               % skip comment
+            else
+               grdsize_f=transpose(sscanf(line,'%f'));
+               grdsize=transpose(sscanf(line,'%i'));
+               %
+               % don't continue if there are floating point numbers on the
+               % grid size line.
+               %
+               if length(grdsize_f) > length(grdsize)
+                  error('Floating point number in line that should contain grid dimensions\n%s',line)
+               end
+               %
+               fgetl(fid); % read xori,yori,alfori
+               if length(grdsize)>2 % the possible third element contains the number of subgrids
+                  if grdsize(3)>1
+                     for i=1:(2*grdsize(3)) % read subgrid definitions
+                        fgetl(fid);
+                     end
+                  end
+               end
+               if isempty(grdsize)
+                  error('Cannot determine grid size.')
+               end
+               grdsize=grdsize(1:2);
+               floc=ftell(fid);
+               str=fscanf(fid,'%11c',1);
+               fseek(fid,floc,-1);
+               cc = sscanf(str,' %*[Ee]%*[Tt]%*[Aa] = %i',1);
+               readETA=0;
+               if ~isempty(cc)
+                  readETA=1;
+               end
+               GRID.X=-999*ones(grdsize);
+               for c=1:grdsize(2)
+                  if readETA
+                     fscanf(fid,' %*[Ee]%*[Tt]%*[Aa] = %i',1); % skip line header ETA= and read c
+                  else
+                     fscanf(fid,'%11c',1); % this does not include the preceding EOL
+                  end
+                  GRID.X(:,c)=fscanf(fid,'%f',[grdsize(1) 1]);
+                  if ~readETA
+                     fgetl(fid); % read optional spaces and EOL
+                  end
+               end
+               GRID.Y=-999*ones(grdsize);
+               for c=1:grdsize(2)
+                  if readETA
+                     fscanf(fid,' %*[Ee]%*[Tt]%*[Aa] = %i',1); % skip line header ETA= and read c
+                  else
+                     fscanf(fid,'%11c',1); % this does not include the preceding EOL
+                  end
+                  GRID.Y(:,c)=fscanf(fid,'%f',[grdsize(1) 1]);
+                  if ~readETA
+                     fgetl(fid); % read optional spaces and EOL
+                  end
+               end
+               break
+            end
+         end
+      case 'SWAN'
+         %SWANgrid
+         xCoords={};
+         firstline=1;
+         NCoordPerLine=0;
+         while 1
+            line=fgetl(fid);
+            if firstline
+               [Crd,cnt]=sscanf(line,'%f',[1 inf]);
+               NCoordPerLine=cnt;
+               firstline=0;
+            else
+               [Crd,cnt]=sscanf(line,'%f',[1 NCoordPerLine]);
+            end
             if cnt>0
                xCoords{end+1}=Crd;
-            else
+            end
+            if cnt<NCoordPerLine
                break
             end
          end
-      end
-      if ~strcmp('y coordinates',deblank(line)) & ~strcmp('y-coordinates',deblank(line))
-         fclose(fid);
-         error('y coordinates string expected.')
-      end
-      xCoords=cat(2,xCoords{:});
-      yCoords=zeros(size(xCoords));
-      offset=0;
-      while 1
-         line=fgetl(fid);
-         if ~ischar(line)
-            break;
-         else
-            [Crd,cnt]=sscanf(line,'%f',[1 NCoordPerLine]);
-            if cnt>0
-               yCoords(offset+(1:cnt))=Crd;
-               offset=offset+cnt;
-            else
-               break
+         NCnt=-1;
+         if cnt>0
+            NCnt=(length(xCoords)-1)*NCoordPerLine+length(xCoords{end});
+            while 1
+               line=fgetl(fid);
+               [Crd,cnt]=sscanf(line,'%f',[1 NCoordPerLine]);
+               if cnt>0
+                  xCoords{end+1}=Crd;
+               else
+                  break
+               end
             end
          end
-      end
-      if NCnt<0
-         %
-         % Determine grid dimensions by finding the first large change in the
-         % location of successive points. Does not work if the grid contains
-         % "missing points" such as the FLOW grid.
-         %
-         dist=sqrt(diff(xCoords).^2+diff(yCoords).^2);
-         NCnt=min(find(dist>max(dist)*0.9));
-      end
-      xCoords=reshape(xCoords,[NCnt length(xCoords)/NCnt]);
-      yCoords=reshape(yCoords,[NCnt length(yCoords)/NCnt]);
-      GRID.X=xCoords;
-      GRID.Y=yCoords;
-   case 'ECOMSED-corners'
-      fseek(fid,0,-1);
-      GRID = read_ecom_corners(fid);
-      GRID.CoordinateSystem='Unknown';
-      GRID.MissingValue=0;
-   otherwise
-      fclose(fid);
-      error(sprintf('Unknown grid type: %s',gridtype))
+         if ~strcmp('y coordinates',deblank(line)) && ~strcmp('y-coordinates',deblank(line))
+            error('y coordinates string expected.')
+         end
+         xCoords=cat(2,xCoords{:});
+         yCoords=zeros(size(xCoords));
+         offset=0;
+         while 1
+            line=fgetl(fid);
+            if ~ischar(line)
+               break;
+            else
+               [Crd,cnt]=sscanf(line,'%f',[1 NCoordPerLine]);
+               if cnt>0
+                  yCoords(offset+(1:cnt))=Crd;
+                  offset=offset+cnt;
+               else
+                  break
+               end
+            end
+         end
+         if NCnt<0
+            %
+            % Determine grid dimensions by finding the first large change in the
+            % location of successive points. Does not work if the grid contains
+            % "missing points" such as the FLOW grid.
+            %
+            dist=sqrt(diff(xCoords).^2+diff(yCoords).^2);
+            NCnt=min(find(dist>max(dist)*0.9));
+         end
+         xCoords=reshape(xCoords,[NCnt length(xCoords)/NCnt]);
+         yCoords=reshape(yCoords,[NCnt length(yCoords)/NCnt]);
+         GRID.X=xCoords;
+         GRID.Y=yCoords;
+      case 'ECOMSED-corners'
+         fseek(fid,0,-1);
+         GRID = read_ecom_corners(fid);
+         GRID.CoordinateSystem='Unknown';
+         GRID.MissingValue=0;
+      otherwise
+         error('Unknown grid type: %s',gridtype)
+   end
+   fclose(fid);
+catch
+   fclose(fid);
+   rethrow(lasterror)
 end
-fclose(fid);
 if isempty(GRID.X)
    error('File does not match Delft3D grid file format.')
 end
@@ -345,13 +347,13 @@ GRID.X(notdef)=NaN;
 GRID.Y(notdef)=NaN;
 GRID.Type = gridtype;
 
-%% Grid enclosure file
+% Grid enclosure file
 fid=fopen([basename '.enc']);
 if fid>0
    Enc = [];
    while 1
       line=fgetl(fid);
-      if ~isstr(line)
+      if ~ischar(line)
          break
       end
       Enc=[Enc; sscanf(line,'%i',[1 2])];
@@ -365,12 +367,11 @@ else
 end
 
 
-function OK=Local_write_grid(varargin)
+function OK = Local_write_grid(varargin)
 % GRDWRITE writes a grid file
 %       GRDWRITE(FILENAME,GRID) writes the GRID to files that
 %       can be used by Delft3D and TRISULA.
 
-OK         = 0;
 fileformat = 'newrgf';
 %
 i          = 1;
@@ -378,64 +379,79 @@ filename   = '';
 nparset    = 0;
 Grd.CoordinateSystem='Cartesian';
 while i<=nargin
-    if ischar(varargin{i})
-        switch lower(varargin{i})
-            case 'oldrgf';       fileformat      ='oldrgf';
-            case 'newrgf';       fileformat      ='newrgf';
-            case 'swangrid';     fileformat      ='swangrid';
-            case 'cartesian';Grd.CoordinateSystem='Cartesian';
-            case 'spherical';Grd.CoordinateSystem='Spherical';
-            otherwise
-                Cmds = {'CoordinateSystem','MissingValue','Format', ...
-                    'X','Y','Enclosure','FileName'};
-                j = ustrcmpi(varargin{i},Cmds);
-                if j>0
-                    i=i+1;
-                    switch Cmds{j}
-                        case 'CoordinateSystem'
-                            Cmds = {'Cartesian','Spherical'};
-                            j = ustrcmpi(varargin{i},Cmds);
-                            if j<0
-                                error(sprintf('Unknown coordinate system: %s',varargin{i}))
-                            else
-                                Grd.CoordinateSystem=Cmds{j};
-                            end
-                        case 'MissingValue'; Grd.MissingValue = varargin{i};
-                        case 'Format';           fileformat   = lower(varargin{i});
-                        case 'X';            Grd.X            = varargin{i};
-                        case 'Y';            Grd.Y            = varargin{i};
-                        case 'Enclosure';    Grd.Enclosure    = varargin{i};
-                        case 'FileName';         filename     = varargin{i};
-                    end
-                elseif isempty(filename) & ~isempty(varargin{i})
-                    filename=varargin{i};
-                else
-                    error(sprintf('Cannot interpret: %s',varargin{i}))
-                end
-        end
-    elseif isnumeric(varargin{i})
-        switch nparset
-            case 0;Grd.X         = varargin{i};
-            case 1;Grd.Y         = varargin{i};
-            case 2;Grd.Enclosure = varargin{i};
-            case 3;error('Unexpected numerical argument.')
-        end
-        nparset = nparset+1;
-    else
-        Grd = varargin{i};
-        if ~isfield(Grd,'CoordinateSystem')
+   if ischar(varargin{i})
+      switch lower(varargin{i})
+         case 'oldrgf'
+            fileformat      ='oldrgf';
+         case 'newrgf'
+            fileformat      ='newrgf';
+         case 'swangrid'
+            fileformat      ='swangrid';
+         case 'cartesian'
             Grd.CoordinateSystem='Cartesian';
-            if isfield(Grd,'CoordSys')
-                Grd.CoordinateSystem = Grd.CoordSys;
-                Grd = rmfield(Grd,'CoordSys');
+         case 'spherical'
+            Grd.CoordinateSystem='Spherical';
+         otherwise
+            Cmds = {'CoordinateSystem','MissingValue','Format', ...
+               'X','Y','Enclosure','FileName'};
+            j = ustrcmpi(varargin{i},Cmds);
+            if j>0
+               i=i+1;
+               switch Cmds{j}
+                  case 'CoordinateSystem'
+                     Cmds = {'Cartesian','Spherical'};
+                     j = ustrcmpi(varargin{i},Cmds);
+                     if j<0
+                        error('Unknown coordinate system: %s',varargin{i})
+                     else
+                        Grd.CoordinateSystem=Cmds{j};
+                     end
+                  case 'MissingValue'
+                     Grd.MissingValue = varargin{i};
+                  case 'Format'
+                     fileformat    = lower(varargin{i});
+                  case 'X'
+                     Grd.X         = varargin{i};
+                  case 'Y'
+                     Grd.Y         = varargin{i};
+                  case 'Enclosure'
+                     Grd.Enclosure = varargin{i};
+                  case 'FileName'
+                     filename      = varargin{i};
+               end
+            elseif isempty(filename) && ~isempty(varargin{i})
+               filename=varargin{i};
+            else
+               error('Cannot interpret: %s',varargin{i})
             end
-        end
-    end
-    i=i+1;
+      end
+   elseif isnumeric(varargin{i})
+      switch nparset
+         case 0
+            Grd.X         = varargin{i};
+         case 1
+            Grd.Y         = varargin{i};
+         case 2
+            Grd.Enclosure = varargin{i};
+         case 3
+            error('Unexpected numerical argument.')
+      end
+      nparset = nparset+1;
+   else
+      Grd = varargin{i};
+      if ~isfield(Grd,'CoordinateSystem')
+         Grd.CoordinateSystem='Cartesian';
+         if isfield(Grd,'CoordSys')
+            Grd.CoordinateSystem = Grd.CoordSys;
+            Grd = rmfield(Grd,'CoordSys');
+         end
+      end
+   end
+   i=i+1;
 end
 
-%% allow to supply orthogonal grid defined with two 1D sticks
-%  while making sure the resulting grid is RIGHT-HANDED 
+% allow to supply orthogonal grid defined with two 1D sticks
+%  while making sure the resulting grid is RIGHT-HANDED
 %  (when m is locally defined as x, n should locally point in positive y direction)
 sz.x = size(Grd.X);
 sz.y = size(Grd.Y);
@@ -447,7 +463,7 @@ if ~isequal(sz.x,sz.y)
    end
 end
 
-%% enclosure
+% enclosure
 if ~isfield(Grd,'Enclosure')
    Grd.Enclosure=[];
 end
@@ -455,20 +471,24 @@ if ~isfield(Grd,'MissingValue')
    Grd.MissingValue=0;
 end
 
-%%
+%
 j = ustrcmpi(fileformat,{'oldrgf','newrgf','swangrid'});
 switch j
-    case 1;    Format='%11.3f';
-    case 2;    Format='%25.17e';
-    case 3;    Format='%15.8f';
-    otherwise; Format=fileformat;
-           fileformat='newrgf';
+   case 1
+      Format='%11.3f';
+   case 2
+      Format='%25.17e';
+   case 3
+      Format='%15.8f';
+   otherwise
+      Format=fileformat;
+      fileformat='newrgf';
 end
 if isfield(Grd,'Format')
    Format=Grd.Format;
 end
 
-%%
+%
 if Format(end)=='f'
    ndec       = sscanf(Format,'%%%*i.%i');
    coord_eps  = 10^(-ndec);
@@ -476,7 +496,7 @@ else
    coord_eps  = eps*max(1,abs(Grd.MissingValue));
 end
 
-%% move any points that have x-coordinate/y-coordinate equal to missing
+% move any points that have x-coordinate/y-coordinate equal to missing
 % value coordinate
 Grd.X(Grd.X==Grd.MissingValue)=Grd.MissingValue+coord_eps;
 Grd.Y(Grd.Y==Grd.MissingValue)=Grd.MissingValue+coord_eps;
@@ -484,10 +504,10 @@ Idx=isnan(Grd.X.*Grd.Y);                % change indicator of grid point exclusi
 Grd.X(Idx)=Grd.MissingValue;            % from NaN in Matlab to (0,0) in grid file.
 Grd.Y(Idx)=Grd.MissingValue;
 
-%% detect extension
+% detect extension
 [path,name,ext]=fileparts(filename);
 if isempty(ext)
-    ext='.grd';
+   ext='.grd';
 end % default .grd file
 filename=fullfile(path,[name ext]);
 basename=fullfile(path,name);
@@ -501,14 +521,14 @@ if ~isempty(Grd.Enclosure),
    fclose(fid);
 end
 
-%% write
+% write
 fid=fopen(filename,'w');
-if strcmp(fileformat,'oldrgf') | strcmp(fileformat,'newrgf')
+if strcmp(fileformat,'oldrgf') || strcmp(fileformat,'newrgf')
    if strcmp(fileformat,'oldrgf')
       fprintf(fid,'* MATLAB Version %s file created at %s.\n',version,datestr(now));
    elseif strcmp(fileformat,'newrgf')
       fprintf(fid,'Coordinate System = %s\n',Grd.CoordinateSystem);
-      if isfield(Grd,'MissingValue') & Grd.MissingValue~=0
+      if isfield(Grd,'MissingValue') && Grd.MissingValue~=0
          fprintf(fid,['Missing Value = ' Format '\n'],Grd.MissingValue);
       end
    end
@@ -518,7 +538,7 @@ if strcmp(fileformat,'oldrgf') | strcmp(fileformat,'newrgf')
    M=size(Grd.X,1);
    for fld={'X','Y'}
       fldx=fld{1};
-      coords=getfield(Grd,fldx);
+      coords = Grd.(fldx);
       for j=1:size(coords,2)
          fprintf(fid,' ETA=%5i',j);
          fprintf(fid,Format,coords(1:min(5,M),j));
@@ -532,7 +552,7 @@ elseif strcmp(fileformat,'swangrid')
    for fld={'X','Y'}
       fldx  =fld{1};
       fprintf(fid,'%s%s\n',lower(fldx),'-coordinates');
-      coords=getfield(Grd,fldx);
+      coords = Grd.(fldx);
       Frmt  =repmat('%15.8f  ',[1 size(coords,1)]);
       k=8*3;
       Frmt((k-1):k:length(Frmt))='\';

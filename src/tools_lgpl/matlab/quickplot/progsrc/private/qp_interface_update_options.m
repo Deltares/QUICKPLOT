@@ -796,8 +796,7 @@ if (nval==1 && data2d) || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean')
                         if SpatialV
                             PrsTps={'continuous shades';'markers';'values'};
                         else
-                            %PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values'};
-                            PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
+                            PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                         end
                     elseif isequal(geometry,'PNT')
                         PrsTps={'markers';'values'};
