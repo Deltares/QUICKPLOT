@@ -919,6 +919,19 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'froude number'                    '-'      [1 0 1 1 0]  1         1    'u'       'u'   'z'       ''      'map-series'     'U1'      'V1'     []       0
     'head'                             'm'      [1 0 1 1 0]  1         1    'u'       'u'   'z'       ''      'map-series'     'U1'      'V1'     []       0
     '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
+    'acceleration (GLM coordinates)'   'm/s^2'  [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'MOM_DUDT'        'MOM_DVDT'        []       1
+    'acc. due to density'              'm/s^2'  [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'MOM_UDENSITY'    'MOM_VDENSITY'    []       1
+    'acc. due to flow resistance'      'm/s^2'  [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'MOM_URESISTANCE' 'MOM_VRESISTANCE' []       1
+    'acc. due to coriolis'             'm/s^2'  [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'MOM_UCORIOLIS'   'MOM_VCORIOLIS'   []       1
+    'acc. due to viscosity'            'm/s^2'  [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'MOM_UVISCO'      'MOM_VVISCO'      []       1
+    'acc. due to hydrostatic pressure' 'm/s^2'  [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-series'     'MOM_UPRESSURE'   'MOM_VPRESSURE'   []       1
+    'acc. due to tide gen. forces'     'm/s^2'  [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-series'     'MOM_UTIDEGEN'    'MOM_VTIDEGEN'    []       1
+    'acc. due to wind force (top layer)' 'm/s^2' [1 0 1 1 0] 1         2    'u'       'u'   'z'       ''      'map-series'     'MOM_UWINDFORCE'  'MOM_VWINDFORCE'  []       1
+    'acc. due to bed shear (bottom layer)' 'm/s^2' [1 0 1 1 0] 1       2    'u'       'u'   'z'       ''      'map-series'     'MOM_UBEDSHEAR'   'MOM_VBEDSHEAR'   []       1
+    'acc. due to waves'                'm/s^2'  [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'MOM_UWAVES'      'MOM_VWAVES'      []       1
+    'acc. due to streamw. momentum transp.' 'm/s^2' [1 0 1 1 1] 1      2    'u'       'u'   'z'       'c'     'map-series'     'MOM_UDUDX'       'MOM_VDVDY'       []       1
+    'acc. due to lateral momentum transp.'  'm/s^2' [1 0 1 1 1] 1      2    'u'       'u'   'z'       'c'     'map-series'     'MOM_VDUDY'       'MOM_UDVDX'       []       1
+    '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
     'density'                          'kg/m^3' [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'RHO'     ''       []       0
     'non-hydrostatic pressure'         'Pa'     [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'HYDPRES' ''       []       0
     '--constituents'                   ''       [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'R1'      ''       []       0
