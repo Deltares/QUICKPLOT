@@ -36,5 +36,5 @@ function [FI,Info]=qp_unwrapfi(Info)
 if isfield(Info,'QPF')
     FI=Info.Data;
 else
-    FI=Info; Info=[];
+    FI=Info;
 end

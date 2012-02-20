@@ -36,9 +36,9 @@ function Info=qp_wrapfi(FI,Info)
 if isequal(FI,[])
     Info=[];
 else
-    if isempty(Info)
-        Info=FI;
-    else
+    if isfield(Info,'QPF')
         Info.Data=FI;
+    else
+        Info=FI;
     end
 end

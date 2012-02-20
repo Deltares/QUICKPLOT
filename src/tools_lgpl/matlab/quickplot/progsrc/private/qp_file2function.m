@@ -166,19 +166,18 @@ tp=qp_gettype(Info);
 id = strcmpi(tp,F(:,1));
 Fcn = '';
 if ~any(id)
-    FileType = Info.FileType;
     previousMessage = 0;
     if isempty(MissingFileTypes)
-        MissingFileTypes = {FileType};
+        MissingFileTypes = {tp};
     else
-        if any(strcmpi(FileType,MissingFileTypes))
+        if any(strcmpi(tp,MissingFileTypes))
             previousMessage = 1;
         else
-            MissingFileTypes{end+1}=FileType;
+            MissingFileTypes{end+1}=tp;
         end
     end
     if ~previousMessage
-        ui_message('warning',sprintf('No function associated with file of type %s.',FileType))
+        ui_message('warning',sprintf('No function associated with file of type %s.',tp))
     end
     return
 end

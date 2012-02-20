@@ -76,18 +76,26 @@ X=varargin;
 if ~isempty(X) && isempty(X{1})
    ui_message('warning','Empty file information supplied, cancelling operation.')
    return
-elseif ~isempty(X) && isstruct(X{1}) && isfield(X{1},'FileType')
-   Info=X{1};
-   X=X(2:end);
 else
-   %
-   % Assume that the user intents to use the last-opened NEFIS file.
-   % This is consistent with the Delft3D-MATLAB functions.
-   %
-   Info=vs_use('lastread');
-   if isempty(Info)
-      error('No datafile specified');
-   end
+    Info=[];
+    if ~isempty(X) && isstruct(X{1})
+        tp = qp_gettype(X{1});
+        if ~strcmp(tp,'unknown file type')
+            Info=X{1};
+            X=X(2:end);
+        end
+    end
+    %
+    if isempty(Info)
+        %
+        % Assume that the user intents to use the last-opened NEFIS file.
+        % This is consistent with the Delft3D-MATLAB functions.
+        %
+        Info=vs_use('lastread');
+        if isempty(Info)
+            error('No data file specified or data file not recognized.');
+        end
+    end
 end
 %
 % Determine function to call ...
@@ -267,7 +275,7 @@ try
             %
             % ... and call the appropriate function for the file type.
             %
-            if isempty(strmatch(calltype,gridcelldata('types'),'exact'))
+            if ~any(strcmp(calltype,gridcelldata('types')))
                %
                % for calls like: domains, dimensions, times, stations, plot, ...
                %

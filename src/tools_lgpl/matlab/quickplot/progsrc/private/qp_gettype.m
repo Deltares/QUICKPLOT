@@ -37,11 +37,11 @@ if isfield(Info,'qp_filetype')
 elseif isfield(Info,'FileType')
     tp=Info.FileType;
 else
-    tp = 'unknown filetype';
+    tp = 'unknown file type';
 end
 %
 % In case of a NEFIS file, use the subtype ...
 %
-if strcmp(lower(tp),'nefis')
+if strcmpi(tp,'nefis')
     tp=Info.SubType;
 end
