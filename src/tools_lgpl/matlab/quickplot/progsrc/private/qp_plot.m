@@ -838,6 +838,11 @@ end
 if ~isempty(basicaxestype)
     axestype = strrep(strtok(basicaxestype),'-',' ');
     axestype = multiline(axestype,' ','cell');
+    %
+    unit1 = '';
+    unit2 = '';
+    unit3 = '';
+    %
     if isempty(axestype)
         dimension1 = '';
     elseif isequal(axestype{1},'Val')
@@ -845,7 +850,7 @@ if ~isempty(basicaxestype)
     elseif isequal(axestype{1},'Distance')
         dimension1 = 'distance';
         if isfield(data,'XUnits') && ~isempty(data(1).XUnits)
-            dimension1 = [dimension1 ' (' data(1).XUnits ')'];
+            unit1 = data(1).XUnits;
         end
     else
         dimension1 = diststr;%'distance';
@@ -854,14 +859,14 @@ if ~isempty(basicaxestype)
                 dimension1 = Props.NName;
             end
             if isfield(data,'YUnits') && ~isempty(data(1).YUnits)
-                dimension1 = [dimension1 ' (' data(1).YUnits ')'];
+                unit1 = data(1).YUnits;
             end
         else
             if isfield(Props,'MName') && ~isempty(Props.MName)
                 dimension1 = Props.MName;
             end
             if isfield(data,'XUnits') && ~isempty(data(1).XUnits)
-                dimension1 = [dimension1 ' (' data(1).XUnits ')'];
+                unit1 = data(1).XUnits;
             end
         end
     end
@@ -870,21 +875,21 @@ if ~isempty(basicaxestype)
         dimension2 = Props.NName;
     end
     if isfield(data,'YUnits') && ~isempty(data(1).YUnits)
-        dimension2 = [dimension2 ' (' data(1).YUnits ')'];
+        unit2 = data(1).YUnits;
     end
     if ~isempty(strfind(basicaxestype,'Z'))
         dimension3 = 'elevation';
         if isfield(data,'ZUnits')
             if ~isempty(data(1).ZUnits)
-                dimension3 = [dimension3 ' (' data(1).ZUnits ')'];
+                unit3 = data(1).ZUnits;
             end
         elseif isfield(data,'Units') && ~isempty(data(1).Units)
-            dimension3 = [dimension3 ' (' data(1).Units ')'];
+            unit3 = data(1).Units;
         end
     else
         dimension3 = PName;
     end
-    setaxesprops(Parent,Ops.axestype,dimension1,dimension2,dimension3);
+    setaxesprops(Parent,Ops.axestype,dimension1,unit1,dimension2,unit2,dimension3,unit3);
 end
 %==========================================================================
 % End of actual plotting

@@ -43,13 +43,11 @@ set(m1(1),'tag','QuickPlotFile')
 m1=qp_uimenu(fig,'&Edit', ...
     {'clipbitmap','&Bitmap to Clipboard',1,1,0,'B'
     'clipmeta','Windows &Metafile to Clipboard',1,1,0,'M'
-    'figcolor','Change &Figure Colour',1,1,1,''
     'editborder','Edit &Border',1,1,1,''});
 set(m1(1),'tag','QuickPlotEdit')
 if isunix
     set(findall(m1(1),'tag','clipbitmap'),'visible','off')
     set(findall(m1(1),'tag','clipmeta'),'visible','off')
-    set(findall(m1(1),'tag','figcolor'),'separator','off')
 end
 
 set(fig,'menubar','none','toolbar','figure')

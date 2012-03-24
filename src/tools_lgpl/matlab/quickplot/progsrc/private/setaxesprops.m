@@ -1,4 +1,5 @@
-function setaxesprops(Parent,FullAxesType,dimension1,dimension2,dimension3)
+function setaxesprops(Parent,FullAxesType, ...
+    dimension1,unit1,dimension2,unit2,dimension3,unit3)
 %SETAXESPROPS Set appropriate axes properties.
 
 %----- LGPL --------------------------------------------------------------------
@@ -31,6 +32,11 @@ function setaxesprops(Parent,FullAxesType,dimension1,dimension2,dimension3)
 %   $HeadURL$
 %   $Id$
 
+if nargin==1
+    update_axesprops(Parent)
+    return
+end
+
 AxesType=full2basic_axestype(FullAxesType);
 if ~ishandle(Parent)
 else
@@ -42,13 +48,16 @@ else
         end
     end
     if nargin<3
-        dimension1 = 'quantity (?)';
+        dimension1 = 'quantity';
+        unit1 = '?';
     end
     if nargin<4
-        dimension2 = 'quantity (?)';
+        dimension2 = 'quantity';
+        unit2 = '?';
     end
     if nargin<5
-        dimension3 = 'quantity (?)';
+        dimension3 = 'quantity';
+        unit3 = '?';
     end
     %
     set(Parent,'layer','top')
@@ -56,112 +65,73 @@ else
     % Get label handles. If the label is not empty, let the handle be empty
     % such that the label contents will not be overwritten.
     %
-    xlab=get(Parent,'xlabel');
-    if ~isempty(get(xlab,'string')) && isempty(get(xlab,'userdata'))
-        xlab=[];
-    end
-    ylab=get(Parent,'ylabel');
-    if ~isempty(get(ylab,'string')) && isempty(get(ylab,'userdata'))
-        ylab=[];
-    end
-    zlab=get(Parent,'zlabel');
-    if ~isempty(get(zlab,'string')) && isempty(get(zlab,'userdata'))
-        zlab=[];
-    end
-    %
-    ra = ' \rightarrow';
     switch AxesType
         %
         %----------------------------------------------------------------
         %
         case '<blocking>'
         case 'Time-Val'
-            tick(Parent,'x','autodate');
-            set(xlab,'string','time \rightarrow')
-            set(ylab,'string',[dimension3 ra])
+            setlabel(Parent,'x','time','')
+            setlabel(Parent,'y',dimension3,unit3)
         case 'Time-Z'
-            tick(Parent,'x','autodate');
-            set(xlab,'string','time \rightarrow')
-            set(ylab,'string',[dimension3 ra])
+            setlabel(Parent,'x','time','')
+            setlabel(Parent,'y',dimension3,unit3)
         case 'X-Time-Val'
-            tick(Parent,'y','autodate');
-            set(xlab,'string',[dimension1 ra])
-            set(ylab,'string','time \rightarrow')
-            set(zlab,'string',[dimension3 ra])
+            setlabel(Parent,'x',dimension1,unit1)
+            setlabel(Parent,'y','time','')
+            setlabel(Parent,'z',dimension3,unit3)
         case 'X-Time-Z'
-            tick(Parent,'y','autodate');
-            set(xlab,'string',[dimension1 ra])
-            set(ylab,'string','time \rightarrow')
-            set(zlab,'string',[dimension3 ra])
+            setlabel(Parent,'x',dimension1,unit1)
+            setlabel(Parent,'y','time','')
+            setlabel(Parent,'z',dimension3,unit3)
             %
             %-------------------------------------------------------------
             %
         case 'Val-Val'
-            set(xlab,'string',[dimension1 ra])
-            set(ylab,'string',[dimension3 ra])
+            setlabel(Parent,'x',dimension1,unit1)
+            setlabel(Parent,'y',dimension3,unit3)
         case 'X-Val'
-            set(xlab,'string',[dimension1 ra])
-            set(ylab,'string',[dimension3 ra])
+            setlabel(Parent,'x',dimension1,unit1)
+            setlabel(Parent,'y',dimension3,unit3)
         case 'Val-Z'
-            set(xlab,'string',[dimension1 ra])
-            set(ylab,'string',[dimension3 ra])
+            setlabel(Parent,'x',dimension1,unit1)
+            setlabel(Parent,'y',dimension3,unit3)
         case 'X-Y-Val'
-            set(xlab,'string',[dimension1 ra])
-            set(ylab,'string',[dimension2 ra])
-            set(zlab,'string',[dimension3 ra])
+            setlabel(Parent,'x',dimension1,unit1)
+            setlabel(Parent,'y',dimension2,unit2)
+            setlabel(Parent,'z',dimension3,unit3)
         case 'Lon-Lat-Val'
-            lat=mean(get(Parent,'ylim'));
-            sethscale(Parent,cos(lat*pi/180))
-            tick(Parent,'x','longitude');
-            tick(Parent,'y','latitude');
-            set(xlab,'string','longitude (deg) \rightarrow')
-            set(ylab,'string','latitude (deg) \rightarrow')
-            set(zlab,'string',[dimension3 ra])
+            setappdata(Parent,'LonLat',1)
+            sethscale_lonlat(Parent)
+            setlabel(Parent,'x','longitude','deg')
+            setlabel(Parent,'y','latitude','deg')
+            setlabel(Parent,'z',dimension3,unit3)
             %
             %-------------------------------------------------------------
             %
         case 'X-Y'
             sethscale(Parent,1)
-            set(xlab,'string',[dimension1 ra])
-            set(ylab,'string',[dimension2 ra])
+            setlabel(Parent,'x',dimension1,unit1)
+            setlabel(Parent,'y',dimension2,unit2)
         case 'X-Z'
-            set(xlab,'string',[dimension1 ra])
-            set(ylab,'string',[dimension3 ra])
+            setlabel(Parent,'x',dimension1,unit1)
+            setlabel(Parent,'y',dimension3,unit3)
         case 'X-Y-Z'
             sethscale(Parent,1)
-            set(xlab,'string',[dimension1 ra])
-            set(ylab,'string',[dimension2 ra])
-            set(zlab,'string',[dimension3 ra])
+            setlabel(Parent,'x',dimension1,unit1)
+            setlabel(Parent,'y',dimension2,unit2)
+            setlabel(Parent,'z',dimension3,unit3)
         case 'Lon-Lat'
-            ylimv=get(Parent,'ylim');
-            if ylimv(1)<-90
-                ylimv(1)=-90;
-                if ylimv(2)<=ylimv(1)
-                    ylimv(2)=-89;
-                end
-            end
-            if ylimv(2)>90
-                ylimv(2)=90;
-                if ylimv(1)>=ylimv(2)
-                    ylimv(1)=89;
-                end
-            end
-            lat=mean(ylimv);
-            lat=min(max(lat,-89),89);
-            sethscale(Parent,cos(lat*pi/180))
-            set(Parent,'ylim',ylimv)
-            tick(Parent,'x','longitude');
-            tick(Parent,'y','latitude');
-            set(xlab,'string','longitude (deg) \rightarrow')
-            set(ylab,'string','latitude (deg) \rightarrow')
+            setappdata(Parent,'LonLat',1)
+            sethscale_lonlat(Parent)
+            setlabel(Parent,'x','longitude','deg')
+            setlabel(Parent,'y','latitude','deg')
         case 'Lon-Lat-Z'
-            lat=mean(get(Parent,'ylim'));
-            sethscale(Parent,cos(lat*pi/180))
-            tick(Parent,'x','longitude');
-            tick(Parent,'y','latitude');
-            set(xlab,'string','longitude (deg) \rightarrow')
-            set(ylab,'string','latitude (deg) \rightarrow')
-            set(zlab,'string',[dimension3 ra])
+            setappdata(Parent,'LonLat',1)
+            sethscale_lonlat(Parent)
+            setlabel(Parent,'x','longitude','deg')
+            setlabel(Parent,'y','latitude','deg')
+            setlabel(Parent,'z',dimension3,unit3)
             %
             %-------------------------------------------------------------
             %
@@ -169,38 +139,44 @@ else
             AxisQuant = multiline(AxesType,'-','cell');
             for i = 1:length(AxisQuant)
                 if i == 1
-                    ilab = xlab;
-                    idimension = dimension1;
+                    dir = 'x';
+                    quantity = dimension1;
                 elseif i == 2
-                    ilab = ylab;
-                    idimension = dimension2;
+                    dir = 'y';
+                    quantity = dimension2;
                 else
-                    ilab = zlab;
-                    idimension = dimension3;
+                    dir = 'z';
+                    quantity = dimension3;
                 end
                 if isequal(AxisQuant{i},'Val')
-                    idimension = dimension3;
+                    quantity = dimension3;
                 end
-                set(ilab,'string',[idimension ra])
+                setlabel(Parent,dir,quantity,'')
             end
     end
-    %
-    set(xlab,'userdata','autolabel')
-    set(ylab,'userdata','autolabel')
-    set(zlab,'userdata','autolabel')
     %
     setappdata(Parent,'AxesType',FullAxesType)
 end
 
 
-function distanceticks(ax,x)
-unitQ=[0     1  1000];
-unitS={'mm' 'm' 'km'};
-dx=diff(get(ax,[x 'lim']));
-scale=max(find(dx>unitQ*0.1));
-set(ax,[x 'ticklabelmode'],'auto',[x 'tickmode'],'auto');
-tick(ax,x,'%g',1/unitQ(scale))
-set(get(ax,[x 'label']),'string',sprintf('distance (%s) \\rightarrow',unitS{scale}))
+function sethscale_lonlat(Parent)
+ylimv=get(Parent,'ylim');
+if ylimv(1)<-90
+    ylimv(1)=-90;
+    if ylimv(2)<=ylimv(1)
+        ylimv(2)=-89;
+    end
+end
+if ylimv(2)>90
+    ylimv(2)=90;
+    if ylimv(1)>=ylimv(2)
+        ylimv(1)=89;
+    end
+end
+lat=mean(ylimv);
+lat=min(max(lat,-89),89);
+sethscale(Parent,cos(lat*pi/180))
+set(Parent,'ylim',ylimv)
 
 
 function sethscale(Parent,ratio)
@@ -221,3 +197,63 @@ for i=length(unitsloc):-1:1
         axestype(:,unitsloc(i)+(0:max(unitsclose)-1))=[];
     end
 end
+
+
+function update_axesprops(Parent)
+for d = 'xyz'
+    update_axticks(Parent,d)
+end
+if isequal(getappdata(Parent,'LonLat'),1)
+    sethscale_lonlat(Parent)
+end
+
+
+function setlabel(ax,dir,quantity,unit)
+axlabel = get(ax,[dir 'label']);
+if ~isempty(get(axlabel,'string')) && isempty(get(axlabel,'userdata'))
+    return
+end
+%
+arrow = '\rightarrow';
+if ~isempty(unit)
+    dimstr = sprintf('%s (%s) %s',quantity,unit,arrow);
+else
+    dimstr = sprintf('%s %s',quantity,arrow);
+end
+%
+set(axlabel,'string',dimstr)
+set(axlabel,'userdata','autolabel')
+setappdata(ax,[dir 'quantity'],quantity)
+setappdata(ax,[dir 'unit'],unit)
+update_axticks(ax,dir)
+
+
+function update_axticks(Parent,dir)
+quantity = getappdata(Parent,[dir 'quantity']);
+if ~isempty(quantity)
+    switch quantity
+        case {'longitude','latitude'}
+            set(Parent,'xticklabelmode','auto','xtickmode','auto');
+            tick(Parent,dir,quantity);
+        case {'time'}
+            set(Parent,'xticklabelmode','auto','xtickmode','auto');
+            tick(Parent,dir,'autodate');
+        case {'distance','x coordinate','y coordinate'}
+            distanceticks(Parent,dir)
+    end
+end
+
+function distanceticks(ax,dir)
+unitQ=[0.001  1  1000];
+unitT=[0      1  10000];
+unitS={'mm'  'm' 'km'};
+%
+dx=max(abs(get(ax,[dir 'lim'])));
+scale=sum(dx>unitT);
+%
+set(ax,[dir 'ticklabelmode'],'auto',[dir 'tickmode'],'auto');
+tick(ax,dir,'%g',1/unitQ(scale))
+%
+quantity = getappdata(ax,[dir 'quantity']);
+setappdata(ax,[dir 'unit'],unitS{scale})
+set(get(ax,[dir 'label']),'string',sprintf('%s (%s) \\rightarrow',quantity,unitS{scale}))
