@@ -73,6 +73,7 @@
 %
 % Special plot routines
 %   classbar            - Converts a color bar into a classbar.
+%   colquiver           - Color quiver plot.
 %   drawgrid            - Plots the grid.
 %   md_clock            - Create a clock or calendar.
 %   md_paper            - Add border to plot.

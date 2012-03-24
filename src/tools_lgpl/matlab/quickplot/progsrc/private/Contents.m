@@ -51,7 +51,6 @@
 %
 % Special graphics routines
 %   balanceplot                 - Create a balance plot.
-%   colquiver                   - Color quiver plot.
 %   contourfcorr                - Filled contour plot (corrected).
 %   getnormpos                  - Select an area (using normalized units).
 %   hls2rgb                     - Convert hue-lightness-saturation to red-green-blue colors.
