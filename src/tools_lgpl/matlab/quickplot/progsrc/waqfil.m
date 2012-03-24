@@ -2,9 +2,13 @@ function S = waqfil(cmd,file,varargin)
 %WAQFIL Read various Delwaq binary files.
 %
 %   FI = WAQFIL('open',FILENAME,...extra arguments...) opens the specified
-%   file and reads a part or all of the data. Important (meta)data is
-%   returned as the structure FI. This routine does not support .his, .bal
-%   and .map files; use the DELWAQ function for those files.
+%   file and reads a part or all of the data. The file type is detected
+%   based on the file extension. If the file extension does not correspond
+%   to the file contents, then the 'open' string should be changed to the
+%   string ['open' EXT] where EXT is the file extension that matches the
+%   file contents. Important (meta)data is returned as the structure FI.
+%   This routine does not support .his, .bal and .map files; use the DELWAQ
+%   function for those files.
 %
 %   Data = WAQFIL('read',FI,...extra arguments...) reads additional data
 %   from the file previously opened using a WAQFIL('open',...) call.
@@ -16,7 +20,7 @@ function S = waqfil(cmd,file,varargin)
 %   Volume, salinity, temperature, and shear stress files
 %     * .vol, .sal, .tem, .vdf, .tau files: NSeg
 %
-%   Segment function files
+%   Segment function and parameter files
 %     * .segfun files                     : NSeg, NPar
 %
 %   Flow area and flux files
@@ -69,16 +73,23 @@ function S = waqfil(cmd,file,varargin)
 %   $HeadURL$
 %   $Id$
 
-switch lower(cmd)
+if length(cmd)<3
+    error('Unknown command: %s',cmd)
+end
+switch lower(cmd(1:4))
     case 'open'
-        [p,f,e]=fileparts(file);
+        if length(cmd)>4
+            e = cmd(5:end);
+        else
+            [p,f,e]=fileparts(file);
+        end
         switch lower(e)
             case {'.vol','.sal','.tem','.vdf','.tau'}
                 S = openvol(file,varargin{:});
-            case {'.segfun'}
-                S = opensegfun(file,varargin{:});
             case {'.are','.flo'}
                 S = openare(file,varargin{:});
+            case {'.segfun','.par'}
+                S = opensegfun(file,varargin{:});
             case '.poi'
                 S = openpoi(file,varargin{:});
             case '.len'
@@ -90,7 +101,7 @@ switch lower(cmd)
             case '.lgt'
                 S = openlgt(file,varargin{:});
             otherwise
-                error('Unrecognized file type')
+                error('Unrecognized file type: %s',e)
         end
         S.FileType = lower(e);
     case 'read'
@@ -99,8 +110,10 @@ switch lower(cmd)
                 S = readvol(file,varargin{:});
             case {'.are','.flo'}
                 S = readvol(file,varargin{:});
-            case {'.segfun'}
+            case '.segfun'
                 S = readvol(file,varargin{:});
+            case '.par'
+                S = readpar(file,varargin{:});
             case '.poi'
                 S = readpoi(file,varargin{:});
             case '.len'
@@ -115,32 +128,8 @@ switch lower(cmd)
         end
 end
 
-%% Ind file
-function S = openinp(file)
-S.NSegments = 2;
-S.NExhanges = 1;
-
-function nseg = detect_nseg(file)
-if ischar(file)
-    S = openinp(file);
-else
-    S = file;
-end
-nseg = S.NSegments;
-
-function nexch = detect_nexch(file)
-if ischar(file)
-    S = openinp(file);
-else
-    S = file;
-end
-nexch = S.NExchanges;
-
 %% Vol file
 function S = openvol(file,nseg)
-if nargin<2
-    nseg = detect_nseg(file);
-end
 S = openfile(file,nseg);
 
 function D = readvol(file,itime,ipar)
@@ -150,21 +139,25 @@ end
 fid = fopen(file.FileName,'r');
 fseek(fid,((itime-1)*(file.NVals*file.NPar+1)+1)*4,-1);
 D = fread(fid,[file.NVals file.NPar],'float32');
-D = D(:,ipar);
 fclose(fid);
+D = D(:,ipar);
 
-%% Segfun file
+%% Segfun or Par file
 function S = opensegfun(file,nseg,npar)
-if nargin<2
-    nseg = detect_nseg(file);
-end
 S = openfile(file,nseg,npar);
+
+function D = readpar(file,iseg,ipar)
+if nargin<3
+    ipar = 1:file.NPar;
+end
+fid = fopen(file.FileName,'r');
+fread(fid,1,'int32');
+D = fread(fid,[file.NPar file.NVals],'float32');
+fclose(fid);
+D = D(ipar,iseg);
 
 %% Are or Flo file
 function S = openare(file,nexch)
-if nargin<2
-    nexch = detect_nexch(file);
-end
 sum_noq = sum(nexch);
 S = openfile(file,sum_noq);
 
