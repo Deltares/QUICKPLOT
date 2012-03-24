@@ -16,30 +16,30 @@ function varargout=shipmafil(FI,domain,field,cmd,varargin)
 %   The DataFld can only be either an element of the DataProps structure.
 
 %----- LGPL --------------------------------------------------------------------
-%                                                                               
-%   Copyright (C) 2011-2012 Stichting Deltares.                                     
-%                                                                               
-%   This library is free software; you can redistribute it and/or                
-%   modify it under the terms of the GNU Lesser General Public                   
-%   License as published by the Free Software Foundation version 2.1.                         
-%                                                                               
-%   This library is distributed in the hope that it will be useful,              
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of               
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU            
-%   Lesser General Public License for more details.                              
-%                                                                               
-%   You should have received a copy of the GNU Lesser General Public             
-%   License along with this library; if not, see <http://www.gnu.org/licenses/>. 
-%                                                                               
-%   contact: delft3d.support@deltares.nl                                         
-%   Stichting Deltares                                                           
-%   P.O. Box 177                                                                 
-%   2600 MH Delft, The Netherlands                                               
-%                                                                               
-%   All indications and logos of, and references to, "Delft3D" and "Deltares"    
-%   are registered trademarks of Stichting Deltares, and remain the property of  
-%   Stichting Deltares. All rights reserved.                                     
-%                                                                               
+%
+%   Copyright (C) 2011-2012 Stichting Deltares.
+%
+%   This library is free software; you can redistribute it and/or
+%   modify it under the terms of the GNU Lesser General Public
+%   License as published by the Free Software Foundation version 2.1.
+%
+%   This library is distributed in the hope that it will be useful,
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%   Lesser General Public License for more details.
+%
+%   You should have received a copy of the GNU Lesser General Public
+%   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+%
+%   contact: delft3d.support@deltares.nl
+%   Stichting Deltares
+%   P.O. Box 177
+%   2600 MH Delft, The Netherlands
+%
+%   All indications and logos of, and references to, "Delft3D" and "Deltares"
+%   are registered trademarks of Stichting Deltares, and remain the property of
+%   Stichting Deltares. All rights reserved.
+%
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
@@ -91,7 +91,7 @@ switch cmd
         varargout={{}};
         return
     case 'plot'
-        selfplot(FI,Props); 
+        selfplot(FI,Props);
         varargout={[] FI};
         return
     otherwise
@@ -107,9 +107,11 @@ idx(fidx(1:length(varargin)))=varargin;
 
 sz=getsize(FI,Props);
 if DimFlag(T_)
-   if isempty(idx{T_})
-      idx{T_}=sz(T_);
-   end
+    if isempty(idx{T_})
+        idx{T_}=sz(T_);
+    end
+elseif all(Props.Var>=0)
+    idx{T_}=0;
 end
 
 % read data ...
@@ -162,6 +164,44 @@ if Props.NVal==0
             alf = val1(3)*pi/180;
             Ans.X = contour(:,1)*sin(alf)+contour(:,2)*cos(alf)+val1(1);
             Ans.Y = -contour(:,2)*sin(alf)+contour(:,1)*cos(alf)+val1(2);
+        case 'ship at distance ticks'
+            ship = FI.Cases.Data(domain).shipNr;
+            icontour = ustrcmpi('contour',{FI.Ships(ship).Data.Props.Quant});
+            contour = FI.Ships(ship).Data.Props(icontour).Value;
+            %
+            d = val1(4,:);
+            dtick = (0:500:max(d))';
+            xtick = interp1(d,val1(1,:),dtick);
+            ytick = interp1(d,val1(2,:),dtick);
+            itick = interp1(d,1:size(val1,3),dtick);
+            atick = val1(3,floor(itick));
+            atic2 = val1(3,ceil(itick));
+            for i = 1:length(itick)
+                f = itick(i)-floor(itick(i));
+                if atick(i)>270 && atic2(i)<90
+                    atick(i) = (atick(i)-360)*(1-f) + atick(i)*f;
+                    if atick(i)<0
+                        atick(i) = atick(i)+360;
+                    end
+                elseif atick(i)<90 && atic2(i)>270
+                    atick(i) = atick(i)*(1-f) + (atick(i)-360)*f;
+                    if atick(i)<0
+                        atick(i) = atick(i)+360;
+                    end
+                else
+                    atick(i) = atick(i)*(1-f) + atick(i)*f;
+                end
+            end
+            %
+            lenC = size(contour,1);
+            numS = length(dtick);
+            Ans.X = repmat(NaN,(lenC+1)*numS-1,1);
+            Ans.Y = Ans.X;
+            for i = 1:numS
+                alf = atick(i)*pi/180;
+                Ans.X((i-1)*(lenC+1)+(1:lenC)) = contour(:,1)*sin(alf)+contour(:,2)*cos(alf)+xtick(i);
+                Ans.Y((i-1)*(lenC+1)+(1:lenC)) = -contour(:,2)*sin(alf)+contour(:,1)*cos(alf)+ytick(i);
+            end
     end
     Ans.XUnits = 'm';
     Ans.YUnits = 'm';
@@ -194,8 +234,13 @@ elseif Props.NVal==4
                 Ans.Val{i} = sprintf('%i',dtick(i));
             end
     end
-else
+elseif Props.NVal==2
     switch Props.Name
+        case 'speed'
+            Ans.X = val1(3,:)';
+            Ans.XUnits = 'm';
+            Ans.XComp = val1(1,:)';
+            Ans.YComp = val1(2,:)';
         case 'wind'
             wFI = shipma('openpar',FI.Environments.Winds(FI.Cases.Data(domain).windNr).Data.file,'wind');
             Ans.XYZ = reshape(wFI.XY,[1 size(wFI.XY,1) 1 2]);
@@ -255,18 +300,17 @@ d3d_qp('facecolour',[ 1 1 0.2 ])
 d3d_qp('addtoplot')
 d3d_qp('selectfield','desired ship track')
 d3d_qp('addtoplot')
+a=d3d_qp('loaddata'); % get ship track for auto zoom limits
+d3d_qp('selectfield','ship at distance ticks')
+d3d_qp('facecolour',[ 1 0 0 ])
+d3d_qp('addtoplot')
 d3d_qp('selectfield','distance ticks')
 d3d_qp('addtoplot')
 d3d_qp('selectfield','distance tick labels')
 d3d_qp('presenttype','labels')
 d3d_qp('fontsize',6)
 d3d_qp('addtoplot')
-a=d3d_qp('loaddata');
-d3d_qp('selectfield','ship')
-d3d_qp('allt',0)
-d3d_qp('editt',1)
-d3d_qp('facecolour',[ 1 0 0 ])
-d3d_qp('addtoplot')
+d3d_qp('axesboxed',1)
 xrange = [min(a.X) max(a.X)];
 xrange = xrange + [-1 1]*0.1*diff(xrange);
 yrange = [min(a.Y) max(a.Y)];
@@ -274,7 +318,7 @@ yrange = yrange + [-1 1]*0.1*diff(yrange);
 fac = 1.25;
 yrange = mean(yrange)+[-1 1]*max(diff(xrange)*fac,diff(yrange))/2;
 xrange = mean(xrange)+[-1 1]*diff(yrange)/fac/2;
-set(qpsa,'xlim',xrange,'ylim',yrange)
+d3d_qp('axeslimits',xrange,yrange)
 set(qpsa,'drawmode','fast')
 set(qpsf,'renderer','painters')
 %--------
@@ -298,44 +342,147 @@ d3d_qp('facecolour',[ 1 1 0.2 ])
 d3d_qp('addtoplot')
 d3d_qp('selectfield','desired ship track')
 d3d_qp('addtoplot')
+d3d_qp('selectfield','ship at distance ticks')
+d3d_qp('facecolour',[ 1 0 0 ])
+d3d_qp('addtoplot')
 d3d_qp('selectfield','distance ticks')
 d3d_qp('addtoplot')
 d3d_qp('selectfield','distance tick labels')
 d3d_qp('presenttype','labels')
 d3d_qp('fontsize',6)
 d3d_qp('addtoplot')
-d3d_qp('selectfield','ship')
-d3d_qp('facecolour',[ 1 0 0 ])
-d3d_qp('allt',0)
-d3d_qp('addtoplot')
-set(qpsa,'xlim',xrange,'ylim',yrange)
+d3d_qp('axesboxed',1)
+d3d_qp('axeslimits',xrange,yrange)
 set(qpsa,'drawmode','fast')
 set(qpsf,'renderer','painters')
 %--------
 texts{1} = 'Speed and ruddle angle plots';
 d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig C',texts)
+%--
 qpsa('upper plot')
 d3d_qp('allt',1)
 d3d_qp('selectfield','propeller speed')
 d3d_qp('axestype','Distance-Val')
 d3d_qp('linestyle','-')
 d3d_qp('addtoplot')
+d3d_qp('axesgrid',1,1)
+d3d_qp('axesboxed',1)
+%--
 qpsa('middle plot')
 d3d_qp('selectfield','speed')
 d3d_qp('addtoplot')
+d3d_qp('axesgrid',1,1)
+d3d_qp('axesboxed',1)
+%--
 qpsa('lower plot')
 d3d_qp('selectfield','rudder angle')
 d3d_qp('addtoplot')
+d3d_qp('axesgrid',1,1)
+d3d_qp('axesboxed',1)
 %--------
-texts{1} = 'Swepth path and depth along track';
+texts{1} = 'Swept path and depth along track';
 d3d_qp('newfigure','2 plots, vertical - portrait','SHIPMA Fig D',texts)
+%--
 set(qpsa('upper plot'),'ydir','reverse')
-d3d_qp('selectfield','swept path port')
+d3d_qp('selectfield','swept path port side')
 d3d_qp('linestyle','-')
 d3d_qp('addtoplot')
-d3d_qp('selectfield','swept path stb.')
+d3d_qp('selectfield','swept path starboard side')
 d3d_qp('linestyle','--')
 d3d_qp('addtoplot')
+d3d_qp('axesgrid',1,1)
+d3d_qp('axesboxed',1)
+%--
+qpsa('lower plot')
+d3d_qp('selectfield','water depth')
+d3d_qp('linestyle','-')
+d3d_qp('addtoplot')
+d3d_qp('axesgrid',1,1)
+d3d_qp('axesboxed',1)
+%--------
+texts{1} = 'External forces plots';
+d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig E',texts)
+%--
+qpsa('upper plot')
+d3d_qp('selectfield','longitudinal wind force')
+d3d_qp('linestyle','-')
+d3d_qp('addtoplot')
+d3d_qp('selectfield','longitudinal wave force')
+d3d_qp('linestyle','--')
+d3d_qp('addtoplot')
+d3d_qp('selectfield','longitudinal swell force')
+d3d_qp('linestyle','-.')
+d3d_qp('addtoplot')
+d3d_qp('selectfield','longitudinal bank suction force')
+d3d_qp('linestyle',':')
+d3d_qp('addtoplot')
+%xlabel(qpsa,'longitudinal forces (unit?)')
+d3d_qp('axesgrid',1,1)
+d3d_qp('axesboxed',1)
+%--
+qpsa('middle plot')
+d3d_qp('selectfield','transverse wind force')
+d3d_qp('linestyle','-')
+d3d_qp('addtoplot')
+d3d_qp('selectfield','transverse wave force')
+d3d_qp('linestyle','--')
+d3d_qp('addtoplot')
+d3d_qp('selectfield','transverse swell force')
+d3d_qp('linestyle','-.')
+d3d_qp('addtoplot')
+d3d_qp('selectfield','transverse bank suction force')
+d3d_qp('linestyle',':')
+d3d_qp('addtoplot')
+%xlabel(qpsa,'transverse forces (unit?)')
+d3d_qp('axesgrid',1,1)
+d3d_qp('axesboxed',1)
+%--
+qpsa('lower plot')
+d3d_qp('selectfield','wind moment on ship')
+d3d_qp('linestyle','-')
+d3d_qp('addtoplot')
+d3d_qp('selectfield','wave moment')
+d3d_qp('linestyle','--')
+d3d_qp('addtoplot')
+d3d_qp('selectfield','swell moment')
+d3d_qp('linestyle','-.')
+d3d_qp('addtoplot')
+d3d_qp('selectfield','moment due to bank suction')
+d3d_qp('linestyle',':')
+d3d_qp('addtoplot')
+%xlabel(qpsa,'moment on ship (unit?)')
+d3d_qp('axesgrid',1,1)
+d3d_qp('axesboxed',1)
+%--------
+texts{1} = 'Tug and thrusters forces plots';
+d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig F',texts)
+%--
+qpsa('upper plot')
+d3d_qp('selectfield','longitudinal total tug force')
+d3d_qp('linestyle','-')
+d3d_qp('addtoplot')
+d3d_qp('axesgrid',1,1)
+d3d_qp('axesboxed',1)
+%--
+qpsa('middle plot')
+d3d_qp('selectfield','transverse total tug force')
+d3d_qp('linestyle','-')
+d3d_qp('addtoplot')
+d3d_qp('selectfield','transverse thruster force')
+d3d_qp('linestyle','--')
+d3d_qp('addtoplot')
+d3d_qp('axesgrid',1,1)
+d3d_qp('axesboxed',1)
+%--
+qpsa('lower plot')
+d3d_qp('selectfield','total tug moment')
+d3d_qp('linestyle','-')
+d3d_qp('addtoplot')
+d3d_qp('selectfield','moment due to thrusters')
+d3d_qp('linestyle','--')
+d3d_qp('addtoplot')
+d3d_qp('axesgrid',1,1)
+d3d_qp('axesboxed',1)
 %--------
 d3d_qp('selectfield','default figures')
 % -----------------------------------------------------------------------------
@@ -354,23 +501,25 @@ end
 function Out=infile(FI,domain)
 
 %======================== SPECIFIC CODE =======================================
+V=inf; % unknown/variable number of points indicated by infinity
 PropNames={'Name'               'Units' 'DimFlag'   'DataInCell' 'NVal' 'Geom'   'Coords' 'ClosedPoly' 'Domain' 'Var'   };
-DataProps={'default figures'    ''      [0 0 0 0 0] 0            -2     ''       ''       0            domain   0       
-    '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            domain   0       
-    'desired ship track'        ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            domain   -1       
-    'distance ticks'            ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            domain   -1       
-    'distance tick labels'      ''      [0 0 0 0 0] 0             4     'sQUAD'  'xy'     0            domain   -1       
-    'ship track'                ''      [9 0 0 0 0] 0             0     'PNT'    'xy'     0            domain   0       
-    'ship'                      ''      [9 0 0 0 0] 0             0     'POLYG'  'xy'     1            domain   0       
-    'fairway contour'           ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            domain   -1       
-    'bank suction lines'        ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            domain   -1       
-    '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            domain   0       
-    'wind'                      'm/s'   [0 0 1 0 0] 0             2     'TRI'    'xy'     0            domain   -1       
-    'waves'                     'm'     [0 0 1 0 0] 0             2     'TRI'    'xy'     0            domain   -1       
-    'swell'                     'm'     [0 0 1 0 0] 0             1     'TRI'    'xy'     0            domain   -1       
-    'current'                   'm/s'   [0 0 1 0 0] 0             2     'TRI'    'xy'     0            domain   -1       
-    'depth'                     'm'     [0 0 1 0 0] 0             1     'TRI'    'xy'     0            domain   -1       
-    '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            domain   0       
+DataProps={'default figures'    ''      [0 0 0 0 0] 0            -2     ''       ''       0            domain   0
+    '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            domain   0
+    'desired ship track'        ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            domain   -1
+    'distance ticks'            ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            domain   -1
+    'distance tick labels'      ''      [0 0 0 0 0] 0             4     'sQUAD'  'xy'     0            domain   -1
+    'ship at distance ticks'    ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            domain   0
+    'ship track'                ''      [9 0 0 0 0] 0             0     'PNT'    'xy'     0            domain   0
+    'ship'                      ''      [9 0 0 0 0] 0             0     'POLYG'  'xy'     1            domain   0
+    'fairway contour'           ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            domain   -1
+    'bank suction lines'        ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            domain   -1
+    '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            domain   0
+    'wind'                      'm/s'   [0 0 V 0 0] 0             2     'TRI'    'xy'     0            domain   -1
+    'waves'                     'm'     [0 0 V 0 0] 0             2     'TRI'    'xy'     0            domain   -1
+    'swell'                     'm'     [0 0 V 0 0] 0             1     'TRI'    'xy'     0            domain   -1
+    'current'                   'm/s'   [0 0 V 0 0] 0             2     'TRI'    'xy'     0            domain   -1
+    'depth'                     'm'     [0 0 V 0 0] 0             1     'TRI'    'xy'     0            domain   -1
+    '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            domain   0
     'speed'                     'm/s'   [9 0 0 0 0] 0             1     'PNT'    'd'      0            domain   0
     'his-data'                  ''      [9 0 0 0 0] 0             1     'PNT'    'd'      0            domain   0       };
 Out=cell2struct(DataProps,PropNames,2);
@@ -423,18 +572,21 @@ for i = length(Out):-1:1
                 Out(i)=[];
             end
         case 'speed'
-            u = find(strcmpi('u',hisvars));
-            v = find(strcmpi('v',hisvars));
+            u = find(strcmpi('longitudinal vessel speed',hisvars));
+            v = find(strcmpi('transverse vessel speed',hisvars));
             Out(i).Var = [u v track];
         case 'ship track'
             x = find(strcmpi('x',hisvars));
             y = find(strcmpi('y',hisvars));
             Out(i).Var = [x y];
-        case 'ship'
+        case {'ship','ship at distance ticks'}
             x = find(strcmpi('x',hisvars));
             y = find(strcmpi('y',hisvars));
-            dir = find(strcmpi('Heading',hisvars));
+            dir = find(strcmpi('heading',hisvars));
             Out(i).Var = [x y dir];
+            if ~strcmp(Out(i).Name,'ship')
+                Out(i).Var(4) = track;
+            end
     end
 end
 % -----------------------------------------------------------------------------
@@ -461,9 +613,98 @@ T = delwaq('read',FI.Cases.Data(domain).TimeSeries,1,1,t);
 
 
 function s2 = translate(s1)
-table = {'n1' 'propeller speed'
+table = {'track' 'track distance'
+    'psi' 'course (earth-fixed coords)'
+    'Heading' 'heading'
+    'dy' 'lateral offset (from desired track)'
+    'dpsi' 'course deviation'
+    'u' 'longitudinal vessel speed'
+    'v' 'transverse vessel speed'
+    'r' 'rate of turn'
     'rudder1' 'rudder angle'
-    'track' 'track distance'};
+    'n1' 'propeller speed'
+    'h' 'water depth'
+    'Vwind' 'wind speed'
+    'phiwind' 'wind direction (earth-fixed coords)'
+    'Xwind' 'longitudinal wind force'
+    'Ywind' 'transverse wind force'
+    'Nwind' 'wind moment on ship'
+    'Hwave' 'Hs sea waves'
+    'phiwave' 'direction sea waves (earth-fixed coords)'
+    'Xwave' 'longitudinal wave force'
+    'Ywave' 'transverse wave force'
+    'Nwave' 'wave moment'
+    'Hswl' 'Hs swell waves'
+    'phiswl' 'direction swell waves (earth-fixed coords)'
+    'Xswl' 'longitudinal swell force'
+    'Yswl' 'transverse swell force'
+    'Nswl' 'swell moment'
+    'uc' 'longitudinal current velocity over ground'
+    'vc' 'transverse current velocity over ground'
+    'rc' 'rotational current velocity'
+    'Xtugs' 'longitudinal total tug force'
+    'Ytugs' 'transverse total tug force'
+    'Ntugs' 'total tug moment'
+    'YThrusters' 'transverse thruster force'
+    'NThrusters' 'moment due to thrusters'
+    'Xbank' 'longitudinal bank suction force'
+    'Ybank' 'transverse bank suction force'
+    'Nbank' 'moment due to bank suction'
+    'Xhull' 'longitudinal hydrodynamic hull forces'
+    'Yhull' 'transverse hydrodynamic hull forces'
+    'Nhull' 'moment due to hydrodynamic hull forces'
+    'Xrudprop' 'longitudinal control forces'
+    'Yrudprop' 'latereal control forces'
+    'Nrudprop' 'moment from control forces'
+    'dp1' 'rate of rudder change'
+    'up' 'ship acceleration in longitudinal direction'
+    'vp' 'ship acceleration in transverse direction'
+    'rp' 'yaw acceleration'
+    'ucp' 'acceleration of current in longitudinal direction'
+    'vcp' 'acceleration of current in transverse direction'
+    'rcp' 'acceleration of rotational current'
+    'Xtug1' 'first tug force in ship''s longitudinal direction'
+    'Ytug1' 'first tug force in ship''s transverse direction'
+    'Ntug1' 'moment due to first tug forces'
+    'Towforce tug1' 'total tow force of first tug'
+    'Towdir. tug1' 'tow direction of first tug (rel. to ship)'
+    'Xtug2' 'second tug force in ship''s longitudinal direction'
+    'Ytug2' 'second tug force in ship''s transverse direction'
+    'Ntug2' 'moment due to second tug forces'
+    'Towforce tug2' 'total tow force of second tug'
+    'Towdir. tug2' 'tow direction of second tug (rel. to ship)'
+    'Xtug3' 'third tug force in ship''s longitudinal direction'
+    'Ytug3' 'third tug force in ship''s transverse direction'
+    'Ntug3' 'moment due to third tug forces'
+    'Towforce tug3' 'total tow force of third tug'
+    'Towdir. tug3' 'tow direction of third tug (rel. to ship)'
+    'Xtug4' 'fourth tug force in ship''s longitudinal direction'
+    'Ytug4' 'fourth tug force in ship''s transverse direction'
+    'Ntug4' 'moment due to fourth tug forces'
+    'Towforce tug4' 'total tow force of fourth tug'
+    'Towdir. tug4' 'tow direction of fourth tug (rel. to ship)'
+    'Xtug5' 'fifth tug force in ship''s longitudinal direction'
+    'Ytug5' 'fifth tug force in ship''s transverse direction'
+    'Ntug5' 'moment due to fifth tug forces'
+    'Towforce tug5' 'total tow force of fifth tug'
+    'Towdir. tug5' 'tow direction of fifth tug (rel. to ship)'
+    'Xtug6' 'sixth tug force in ship''s longitudinal direction'
+    'Ytug6' 'sixth tug force in ship''s transverse direction'
+    'Ntug6' 'moment due to sixth tug forces'
+    'Towforce tug6' 'total tow force of sixth tug'
+    'Towdir. tug6' 'tow direction of sixth tug (rel. to ship)'
+    'Xtug7' 'seventh tug force in ship''s longitudinal direction'
+    'Ytug7' 'seventh tug force in ship''s transverse direction'
+    'Ntug7' 'moment due to seventh tug forces'
+    'Towforce tug7' 'total tow force of seventh tug'
+    'Towdir. tug7' 'tow direction of seventh tug (rel. to ship)'
+    'Xtug8' 'eighth tug force in ship''s longitudinal direction'
+    'Ytug8' 'eighth tug force in ship''s transverse direction'
+    'Ntug8' 'moment due to eighth tug forces'
+    'Towforce tug8' 'total tow force of eighth tug'
+    'Towdir. tug8' 'tow direction of eighth tug (rel. to ship)'
+    'swept path port' 'swept path port side'
+    'swept path stb.' 'swept path starboard side'};
 is1 = strcmpi(s1,table(:,1));
 if ~any(is1)
     s2 = s1;
