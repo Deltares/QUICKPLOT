@@ -98,20 +98,46 @@ end
 fclose(fid);
 
 
+function ShipmaUnzipFolderDelete(unzipDir)
+rmdir(unzipDir,'s')
 
 function FI = LocalShipmaOpen(FileName)
-FI.FileName = FileName;
+[p,f,e]=fileparts(FileName);
 %
 % First check whether this is an XML file to prevent the error message:
 % [Fatal Error] FileName:1:1: Content is not allowed in prolog.
 fid = fopen(FileName,'r');
-firstchar = fread(fid,1,'*char');
+firstchar = fread(fid,[1 2],'*char');
 fclose(fid);
-if ~isequal(firstchar,'<')
-    error('Shipma Project File should start with "<".')
+if isequal(firstchar,'<?')
+    % OK, this might be an XML file
+elseif isequal(firstchar,'PK')
+    % OK, this might be a zipped file. Create a temp folder for its
+    % contents.
+    unzipDir = tempname;
+    %
+    % Create a cleanup function for the temp folder. This function will be
+    % called automatically if an error occurs during any of the file
+    % reading below, or if reading is successful the cleanup action is
+    % postponed until the FI object is deleted upon file closure or program
+    % end.
+    %
+    CleanUp = onCleanup(@()ShipmaUnzipFolderDelete(unzipDir));
+    %
+    % try to unzip ... this may result in error if FileName isn't a zipfile
+    % after all. The resulting unzipDir is created always which will be
+    % deleted by the cleanup function created above.
+    %
+    unzip(FileName,unzipDir)
+    FileName = [unzipDir filesep f e];
+    FI = LocalShipmaOpen(FileName);
+    FI.CleanUp = CleanUp;
+    return
+else
+    error('Shipma Project File should start with "<?" or "PK".')
 end
 %
-[p,f,e]=fileparts(FI.FileName);
+FI.FileName = FileName;
 FI.UnzipFolder = [p filesep f '_' e(2:end) '.emb'];
 %
 FI.XML = xmlread(FileName);

@@ -157,6 +157,20 @@ if Props.NVal==0
         case 'ship track'
             Ans.X = squeeze(val1(1,1,:));
             Ans.Y = squeeze(val1(2,1,:));
+        case 'swept path'
+            val1 = squeeze(val1)';
+            x = val1(:,1);
+            y = val1(:,2);
+            alf = val1(:,3)*pi/180;
+            lat_offset = val1(:,4);
+            swept_port = val1(:,5) - lat_offset;
+            swept_star = val1(:,6) - lat_offset;
+            sppx = x + cos(alf).*swept_port;
+            sppy = y - sin(alf).*swept_port;
+            spsx = x + cos(alf).*swept_star;
+            spsy = y - sin(alf).*swept_star;
+            Ans.X = [sppx;spsx(end-1:-1:1)];
+            Ans.Y = [sppy;spsy(end-1:-1:1)];
         case 'ship'
             ship = FI.Cases.Data(domain).shipNr;
             icontour = ustrcmpi('contour',{FI.Ships(ship).Data.Props.Quant});
@@ -511,6 +525,7 @@ DataProps={'default figures'    ''      [0 0 0 0 0] 0            -2     ''      
     'ship at distance ticks'    ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            domain   0
     'ship track'                ''      [9 0 0 0 0] 0             0     'PNT'    'xy'     0            domain   0
     'ship'                      ''      [9 0 0 0 0] 0             0     'POLYG'  'xy'     1            domain   0
+    'swept path'                ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            domain   0
     'fairway contour'           ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            domain   -1
     'bank suction lines'        ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            domain   -1
     '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            domain   0
@@ -579,13 +594,19 @@ for i = length(Out):-1:1
             x = find(strcmpi('x',hisvars));
             y = find(strcmpi('y',hisvars));
             Out(i).Var = [x y];
-        case {'ship','ship at distance ticks'}
+        case {'ship','ship at distance ticks','swept path'}
             x = find(strcmpi('x',hisvars));
             y = find(strcmpi('y',hisvars));
             dir = find(strcmpi('heading',hisvars));
             Out(i).Var = [x y dir];
-            if ~strcmp(Out(i).Name,'ship')
-                Out(i).Var(4) = track;
+            switch Out(i).Name
+                case 'ship at distance ticks'
+                    Out(i).Var(4) = track;
+                case 'swept path'
+                    loff = find(strcmpi('lateral offset (from desired track)',hisvars));
+                    spp = find(strcmpi('swept path port side',hisvars));
+                    sps = find(strcmpi('swept path starboard side',hisvars));
+                    Out(i).Var(1,4:6) = [loff spp sps];
             end
     end
 end
