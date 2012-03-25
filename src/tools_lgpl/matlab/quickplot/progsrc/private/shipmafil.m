@@ -217,8 +217,6 @@ if Props.NVal==0
                 Ans.Y((i-1)*(lenC+1)+(1:lenC)) = -contour(:,2)*sin(alf)+contour(:,1)*cos(alf)+ytick(i);
             end
     end
-    Ans.XUnits = 'm';
-    Ans.YUnits = 'm';
 elseif Props.NVal==1
     switch Props.Name
         case 'depth'
@@ -228,11 +226,9 @@ elseif Props.NVal==1
             Ans.Val = btFI.XYZ(:,3);
         case 'speed'
             Ans.X = val1(3,:)';
-            Ans.XUnits = 'm';
             Ans.Val = sqrt(val1(1,:).^2 + val1(2,:).^2)';
         otherwise
             Ans.X = val1(2,:)';
-            Ans.XUnits = 'm';
             Ans.Val = val1(1,:)';
     end
 elseif Props.NVal==4
@@ -252,7 +248,6 @@ elseif Props.NVal==2
     switch Props.Name
         case 'speed'
             Ans.X = val1(3,:)';
-            Ans.XUnits = 'm';
             Ans.XComp = val1(1,:)';
             Ans.YComp = val1(2,:)';
         case 'wind'
@@ -280,6 +275,12 @@ elseif Props.NVal==2
             Ans.XComp = val1;
             Ans.YComp = val2;
     end
+end
+if isfield(Ans,'X') || isfield(Ans,'XYZ')
+    Ans.XUnits = 'm';
+end
+if isfield(Ans,'Y') || isfield(Ans,'XYZ')
+    Ans.YUnits = 'm';
 end
 if ~isempty(T)
     Ans.Time = T;

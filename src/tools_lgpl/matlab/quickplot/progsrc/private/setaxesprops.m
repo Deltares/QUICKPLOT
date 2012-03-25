@@ -141,17 +141,20 @@ else
                 if i == 1
                     dir = 'x';
                     quantity = dimension1;
+                    unit = unit1;
                 elseif i == 2
                     dir = 'y';
                     quantity = dimension2;
+                    unit = unit2;
                 else
                     dir = 'z';
                     quantity = dimension3;
+                    unit = unit3;
                 end
                 if isequal(AxisQuant{i},'Val')
                     quantity = dimension3;
                 end
-                setlabel(Parent,dir,quantity,'')
+                setlabel(Parent,dir,quantity,unit)
             end
     end
     %
@@ -239,7 +242,9 @@ if ~isempty(quantity)
             set(Parent,[dir 'ticklabelmode'],'auto',[dir 'tickmode'],'auto');
             tick(Parent,dir,'autodate');
         case {'distance','x coordinate','y coordinate'}
-            distanceticks(Parent,dir)
+            if strcmp(getappdata(Parent,[dir 'unit']),'m')
+               distanceticks(Parent,dir)
+            end
     end
 end
 
@@ -255,5 +260,5 @@ set(ax,[dir 'ticklabelmode'],'auto',[dir 'tickmode'],'auto');
 tick(ax,dir,'%g',1/unitQ(scale))
 %
 quantity = getappdata(ax,[dir 'quantity']);
-setappdata(ax,[dir 'unit'],unitS{scale})
+%setappdata(ax,[dir 'unit'],unitS{scale})
 set(get(ax,[dir 'label']),'string',sprintf('%s (%s) \\rightarrow',quantity,unitS{scale}))
