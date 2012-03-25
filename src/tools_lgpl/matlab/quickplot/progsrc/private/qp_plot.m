@@ -929,7 +929,12 @@ if ~strcmp(Ops.colourbar,'none')
     h=qp_colorbar(Ops.colourbar,'peer',Parent);
     if ~isempty(h)
         set(pfig,'children',[h;Chld(ishandle(Chld) & (Chld~=h))]);
-
+        switch Ops.colourbar
+            case 'horiz'
+                set(h,'PlotBoxAspectRatio',[25 1 1])
+            case 'vert'
+                set(h,'PlotBoxAspectRatio',[1 25 1])
+        end
         if ~strcmp(Ops.thresholds,'none')
             if LocLabelClass
                 classbar(h,1:length(Thresholds),'labelcolor','label',Thresholds,'plotall')
