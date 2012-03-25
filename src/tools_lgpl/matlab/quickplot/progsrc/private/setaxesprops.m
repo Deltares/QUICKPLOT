@@ -233,10 +233,10 @@ quantity = getappdata(Parent,[dir 'quantity']);
 if ~isempty(quantity)
     switch quantity
         case {'longitude','latitude'}
-            set(Parent,'xticklabelmode','auto','xtickmode','auto');
+            set(Parent,[dir 'ticklabelmode'],'auto',[dir 'tickmode'],'auto');
             tick(Parent,dir,quantity);
         case {'time'}
-            set(Parent,'xticklabelmode','auto','xtickmode','auto');
+            set(Parent,[dir 'ticklabelmode'],'auto',[dir 'tickmode'],'auto');
             tick(Parent,dir,'autodate');
         case {'distance','x coordinate','y coordinate'}
             distanceticks(Parent,dir)
