@@ -98,6 +98,7 @@ Set.defaultfigurecolor        = get(0,'factoryuicontrolbackgroundcolor')*255;
 Set.defaultaxescolor          = [255 255 255];
 Set.boundingbox               = 0;
 Set.v6zoombehavior            = 0;
+Set.colorbar_ratio            = 25;
 Set.print_ID                  = 'PS file';
 Set.print_method              = 2;
 Set.print_DPI                 = 150;

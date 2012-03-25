@@ -556,6 +556,9 @@ switch Props.SubFld
             subf{i}=sprintf('%g deg',MainDirs(i));
         end
     case {'sf','nfreq','nrun'} % frequencies / periods
+        Info = vs_disp(FI,'SPECTRAL-INFO',[]);
+        spectral = isstruct(Info);
+        %
         freq = 0;
         switch Props.SubFld
             case 'sf'
@@ -605,7 +608,7 @@ switch Props.SubFld
                 end
             end
             %
-            if NRun>1 & strcmp(Props.Name,'wave image')
+            if NRun>1 & strcmp(Props.Name,'wave image') % & ~spectral
                 subf{end+1}='combined';
             end
         end
