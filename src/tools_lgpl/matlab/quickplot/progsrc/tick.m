@@ -153,7 +153,8 @@ NArgs=length(INP);
 
 i=1;
 if (NArgs>=i)
-    if ~ischar(INP{i}) & isequal(size(INP{i}),[1 1]) & ishandle(INP{i}) & strcmp(get(INP{i},'type'),'axes')
+    if ~ischar(INP{i}) && isequal(size(INP{i}),[1 1]) && ...
+          ishandle(INP{i}) && strcmp(get(INP{i},'type'),'axes')
         handle=INP{i};
         i=i+1;
     else
@@ -165,7 +166,8 @@ end
 
 ax='xyz';
 if (NArgs>=i)
-    if ischar(INP{i}) & ~isempty(strmatch(sort(lower(INP{i})),{'xyz','yz','xz','z'}))
+    if ischar(INP{i}) && ...
+          ~isempty(strmatch(sort(lower(INP{i})),{'xyz','yz','xz','z'}))
         ax=sort(lower(INP{i}));
         i=i+1;
     end
@@ -180,41 +182,41 @@ if (NArgs>=i)
     end
 end
 
-if (NArgs<i) | ~ischar(INP{i})
+if (NArgs<i) || ~ischar(INP{i})
     error('No FORMAT string specified.')
 end
 
 frmt=INP{i};
 i=i+1;
-datefrmt=strcmp(lower(frmt),'date');
+datefrmt=strcmpi(frmt,'date');
 if datefrmt
-    if (NArgs<i) | ~ischar(INP{i})
+    if (NArgs<i) || ~ischar(INP{i})
         error('No date format specified.')
     else
         frmt=['date:',INP{i}];
         i=i+1;
     end
 else
-    datefrmt=strcmp(lower(frmt),'autodate');
+    datefrmt=strcmpi(frmt,'autodate');
 end
 
 scaling=1;
 if (NArgs>=i)
-    if isnumeric(INP{i}) & isequal(size(INP{i}),[1 1])
+    if isnumeric(INP{i}) && isequal(size(INP{i}),[1 1])
         scaling=INP{i};
         i=i+1;
         if datefrmt
             warning('Scaling factor ignored for date axes.')
         end
     else
-        error(sprintf('Invalid scaling factor: argument %i.',i))
+        error('Invalid scaling factor: argument %i.',i)
     end
 end
 
 if (NArgs==i)
-    warning(sprintf('Argument %i ignored.',i))
+    warning('Argument %i ignored.',i)
 elseif (NArgs>i)
-    warning(sprintf('Arguments %i - %i ignored.',i,NArgs))
+    warning('Arguments %i - %i ignored.',i,NArgs)
 end
 
 for i=1:length(ax)
@@ -270,10 +272,10 @@ switch frmt
                 iperc=setdiff(setdiff(iperc,iperc+1),iperc-1); % double %% means just %
                 for i=fliplr(iperc) % I expect just one, but let's generalize
                     k=i+1;
-                    while k<length(Frmt) & ismember(Frmt(k),'-0123456789')
+                    while k<length(Frmt) && ismember(Frmt(k),'-0123456789')
                         k=k+1;
                     end
-                    if k<length(Frmt) & isequal(Frmt(k),'.')
+                    if k<length(Frmt) && isequal(Frmt(k),'.')
                         Frmt(k+1:k+2)=[]; % remove following .?
                     end
                 end
@@ -329,8 +331,10 @@ switch lower(Language)
 end
 
 qrtr = [ 1 1 1 2 2 2 3 3 3 4 4 4];
-mths=strvcat(mths)'; mths(mths==32)=2;
-week=strvcat(week)'; week(week==32)=2;
+mths=char(mths);
+mths(mths==32)=2;
+week=char(week);
+week(week==32)=2;
 
 for i=length(perc):-1:1
     n1=perc(i);
@@ -534,7 +538,7 @@ else
     lim = limits(handle,ax);
 end
 [ticks,format] = bestscale(lim);
-if ~limmanual & ~isempty(ticks)
+if ~limmanual && ~isempty(ticks)
     set(handle,[ax 'lim'],[min(lim(1),min(ticks)) max(lim(2),max(ticks))]);
 end
 
