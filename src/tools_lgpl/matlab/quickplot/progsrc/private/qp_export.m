@@ -159,7 +159,7 @@ if HasTime
         SelTim=Selected{T_};
         if isequal(SelTim,0)
             [Chk,sz]=qp_getdata(FileInfo,Domain,Props,'size');
-            if Chk & sz(T_)>0
+            if Chk && sz(T_)>0
                 SelTim=1:sz(T_);
             end
         end
@@ -171,7 +171,7 @@ end
 ntim=length(SelTim);
 for f=1:ntim
     lastfield = f==ntim;
-    if HasTime & ~AllTAtOnce
+    if HasTime && ~AllTAtOnce
         Selected{T_}=SelTim(f);
     end
     LocSelected = Selected;
@@ -190,7 +190,7 @@ for f=1:ntim
         filename='';
         return
     end
-    if isfield(data,'XYZ') & ~MATfile
+    if isfield(data,'XYZ') && ~MATfile
         data(1).X=data.XYZ(:,:,:,1);
         data(1).Y=data.XYZ(:,:,:,2);
         if size(data(1).XYZ,4)>2
@@ -199,9 +199,13 @@ for f=1:ntim
     end
     if ~isempty(data)
         Units=data(1).Units;
-        if isfield(Ops,'units') & ~isempty(Ops.units) & ~isempty(Units)
-            data=qp_unitconversion(Units,Ops.units,data);
-            Units=data(1).Units;
+        if isfield(Ops,'units') && ~isempty(Ops.units) && ~isempty(Units)
+            dataX=qp_unitconversion(Units,Ops.units,data);
+            if ~ischar(dataX)
+                data=dataX;
+                dataX=[];
+                Units=data(1).Units;
+            end
         end
         ValUnits=Units;
     end
@@ -232,21 +236,21 @@ for f=1:ntim
             vars{1,end+1}='z coordinate';
         end
         nCrd=length(vars);
-        if isfield(data,'XComp') & Props.NVal>1
+        if isfield(data,'XComp') && Props.NVal>1
             flds{1,end+1}='XComp';
             vars{1,end+1}=sprintf('%s component of %s',componentstrings{1},Props.Name);
             if ~isempty(Units)
                 vars{1,end}=cat(2,vars{1,end},' (',Units,')');
             end
         end
-        if isfield(data,'YComp') & Props.NVal>1
+        if isfield(data,'YComp') && Props.NVal>1
             flds{1,end+1}='YComp';
             vars{1,end+1}=sprintf('%s component of %s',componentstrings{2},Props.Name);
             if ~isempty(Units)
                 vars{1,end}=cat(2,vars{1,end},' (',Units,')');
             end
         end
-        if isfield(data,'ZComp') & Props.NVal>1
+        if isfield(data,'ZComp') && Props.NVal>1
             flds{1,end+1}='ZComp';
             vars{1,end+1}=sprintf('%s component of %s',componentstrings{3},Props.Name);
             if ~isempty(Units)
@@ -365,7 +369,7 @@ for f=1:ntim
             G.X=data.X(1:end-1,1:end-1);
             G.Y=data.Y(1:end-1,1:end-1);
             G.CoordSys='Cartesian';
-            if isfield(data,'XUnits') & strcmp(data.XUnits,'deg')
+            if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
                 G.CoordSys='Spherical';
             end
             switch expType
@@ -470,7 +474,7 @@ for f=1:ntim
             switch Ops.presentationtype
                 case {'patches','patches with lines','markers','values','grid','polylines','polygons',''}
                     xy=[];
-                    if isfield(Props,'Geom') & (strcmp(Props.Geom,'POLYL') | strcmp(Props.Geom,'POLYG'))
+                    if isfield(Props,'Geom') && (strcmp(Props.Geom,'POLYL') || strcmp(Props.Geom,'POLYG'))
                         vNaN=isnan(data.X);
                         if any(vNaN)
                             bs=findseries(~vNaN);
@@ -493,7 +497,7 @@ for f=1:ntim
                         shapewrite(filename,shp_type,xyc,vals{:})
                     else
                         d=1;
-                        if isfield(Props,'Tri') & Props.Tri
+                        if isfield(Props,'Tri') && Props.Tri
                             if strcmp(retreive,'gridcelldata')
                                 xv=data(d).XYZ(1,:,1,1:2);
                                 xv=reshape(xv,[size(xv,2) 2]);
@@ -854,15 +858,15 @@ for f=1:ntim
             if z
                 expdata(x+y+1,:)=data.Z(:)';
             end
-            if isfield(data,'XComp') & Props.NVal>1
+            if isfield(data,'XComp') && Props.NVal>1
                 xyz=xyz+1;
                 expdata(xyz,:)=data.XComp(:)';
             end
-            if isfield(data,'YComp') & Props.NVal>1
+            if isfield(data,'YComp') && Props.NVal>1
                 xyz=xyz+1;
                 expdata(xyz,:)=data.YComp(:)';
             end
-            if isfield(data,'ZComp') & Props.NVal>1
+            if isfield(data,'ZComp') && Props.NVal>1
                 xyz=xyz+1;
                 expdata(xyz,:)=data.ZComp(:)';
             end
@@ -883,7 +887,7 @@ for f=1:ntim
             fprintf(fid,Format,expdata);
             fclose(fid);
         case {'mat file','mat file (v6)','mat file (v7)','mat file (v7.3/hdf5)'}
-            if scalar & isfield(data,'XComp')
+            if scalar && isfield(data,'XComp')
                 data.Name = [data.Name ', ' Ops.vectorcomponent];
                 if isfield(data,'XComp')
                     data = rmfield(data,'XComp');
