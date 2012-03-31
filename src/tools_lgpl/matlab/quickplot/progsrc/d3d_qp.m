@@ -3067,6 +3067,7 @@ try
             set(findobj(UOH,'tag','vertscalem=?'),'value',1)
             set(findobj(UOH,'tag','vscale=?'),'userdata',1,'string','1')
             set(findobj(UOH,'tag','presenttype=?'),'value',1,'string',{' '})
+            set(findobj(UOH,'tag','extend2edge'),'value',0)
             set(findobj(UOH,'tag','thinfld=?'),'value',1)
             set(findobj(UOH,'tag','thinfact=?'),'userdata',1,'string','1')
             set(findobj(UOH,'tag','thindist=?'),'userdata',50,'string','50')

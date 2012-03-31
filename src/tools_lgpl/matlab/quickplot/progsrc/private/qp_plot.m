@@ -944,7 +944,6 @@ if ~strcmp(Ops.colourbar,'none')
     end
 end
 
-
 if isempty(hNewVec)
     hNewVec=line('xdata',[],'ydata',[],'zdata',[]);
     hNew{end+1}=hNewVec;
@@ -953,6 +952,9 @@ if isempty(hNewTag)
     hNewTag=sprintf('QPPlotTag [%bx-%bx]',now,rand);
 end
 set(hNewVec,'hittest','off','tag',hNewTag)
+
+ok=setzcoord(hNewVec,0);
+
 IUD.PlotState=PlotState;
 IUD.PlotState.FI=FileInfo;
 IUD.PlotState.Handles=hNew;
