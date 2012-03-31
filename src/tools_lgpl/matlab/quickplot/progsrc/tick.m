@@ -331,9 +331,9 @@ switch lower(Language)
 end
 
 qrtr = [ 1 1 1 2 2 2 3 3 3 4 4 4];
-mths=char(mths);
+mths=char(mths)';
 mths(mths==32)=2;
-week=char(week);
+week=char(week)';
 week(week==32)=2;
 
 for i=length(perc):-1:1

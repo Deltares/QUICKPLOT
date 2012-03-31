@@ -77,6 +77,7 @@ end
 % Allow for a large number of messages
 %
 ui_message('max',10000)
+set(findall(0,'tag','UI_MESSAGE window'),'position',[10 40 300 ssz(4)-pHpb(4)-120])
 try
    full_ln=fullfile(val_dir,logname);
    if ~localexist(fullfile(val_dir,baseini))
