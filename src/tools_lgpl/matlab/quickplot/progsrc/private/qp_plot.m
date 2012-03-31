@@ -320,19 +320,15 @@ if isfield(data,'XComp')
     [data,scalar]=computecomponent(data,Ops);
     if ~isempty(strfind(Ops.vectorcomponent,'vector'))
         % no text added for vector and patch centred vector
-        if strcmp(strtok(Ops.vectorcolour),'angle')
+        if ~isempty(Ops.vectorcolour)
             PName=[PName ', ' Ops.vectorcolour];
-            Units='';
-        elseif ~isempty(Ops.vectorcolour)
-            PName=[PName ', ' Ops.vectorcolour];
+            Units = data(1).Units;
         elseif Ops.spatial>1
             Units='';
         end
-    elseif strcmp(strtok(Ops.vectorcomponent),'angle')
-        PName=[PName ', ' Ops.vectorcomponent];
-        Units='';
     else
         PName=[PName ', ' Ops.vectorcomponent];
+        Units = data(1).Units;
     end
     if scalar
         NVal=1;

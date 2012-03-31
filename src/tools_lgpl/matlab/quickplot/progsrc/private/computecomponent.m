@@ -4,9 +4,8 @@ function [data,scalar,vpt]=computecomponent(data,Ops)
 %   NewData = COMPUTECOMPONENT(Data,Component)
 %   where Data is a vector data structure obtained from QPREAD and
 %   Component equals one of the following strings: 'magnitude',
-%   'magnitude in plane', 'angle (radians)', 'angle (degrees)',
-%   'x component', 'y component', 'z component', 'm component',
-%   'n component', 'k component'
+%   'magnitude in plane', 'angle', 'x component', 'y component',
+%   'z component', 'm component', 'n component', 'k component'
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -98,27 +97,31 @@ for d=1:length(data)
             end
             data(d).Val=sqrt(data(d).Val);
         case 'magnitude in plane'
-            if isfield(data,'XComp') & size(data(d).XComp,1)>1
+            if isfield(data,'XComp') && size(data(d).XComp,1)>1
                 data(d).Val=data(d).XComp.^2;
-                if isfield(data,'YComp') & size(data(d).YComp,2)>1
+                if isfield(data,'YComp') && size(data(d).YComp,2)>1
                     data(d).Val=data(d).Val+data(d).YComp.^2;
                 end
-            elseif isfield(data,'YComp') & size(data(d).YComp,2)>1
+            elseif isfield(data,'YComp') && size(data(d).YComp,2)>1
                 data(d).Val=data(d).YComp.^2;
             end
-            if isfield(data,'ZComp') & size(data(d).ZComp,3)>1
+            if isfield(data,'ZComp') && size(data(d).ZComp,3)>1
                 data(d).Val=data(d).Val+data(d).ZComp.^2;
             end
             data(d).Val=sqrt(data(d).Val);
-        case 'angle (radians)'
-            %data(d).Val=atan2(data(d).YComp,data(d).XComp); % mathematical convention
-            data(d).Val=atan2(data(d).XComp,data(d).YComp); % Nautical convention
-            data(d).Units='rad';
-            vpt='angle';
-        case 'angle (degrees)'
-            %data(d).Val=(180/pi)*atan2(data(d).YComp,data(d).XComp); % mathematical convention
-            data(d).Val=(180/pi)*atan2(data(d).XComp,data(d).YComp); % Nautical convention
-            data(d).Units='deg';
+        case 'angle'
+            sf = qp_unitconversion('radians',Ops.units);
+            switch Ops.angleconvention
+                case {'Nautical','Nautical Positive'}
+                    data(d).Val=sf*atan2(data(d).XComp,data(d).YComp); % Nautical convention
+                otherwise
+                    data(d).Val=sf*atan2(data(d).YComp,data(d).XComp); % Cartesian convention
+            end
+            if strfind(Ops.angleconvention,'Positive')
+                neg = data(d).Val<0;
+                data(d).Val(neg) = data(d).Val(neg)+2*pi*sf;
+            end
+            data(d).Units=Ops.units;
             vpt='angle';
         case 'x component'
             data(d).Val=data(d).XComp;

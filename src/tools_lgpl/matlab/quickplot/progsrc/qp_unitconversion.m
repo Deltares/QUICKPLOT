@@ -78,9 +78,9 @@ end
 if isempty(unit1)
     unit1='-';
 end
-if nargin==1 & strcmp(lower(unit1),'systems')
+if nargin==1 && strcmpi(unit1,'systems')
     varargout={unitsystems};
-elseif nargin==1 & strcmp(lower(unit1),'units')
+elseif nargin==1 && strcmpi(unit1,'units')
     varargout=search_elem('retrievetable');
 else
     if isempty(unit2)
@@ -97,7 +97,7 @@ else
     else
         if isequal(unit1,'-')
             factor1=[0 1];
-            SI1=zeros(1,7);
+            SI1=zeros(1,8);
         else
             [factor1,SI1]=factor2si(unit1);
         end
@@ -107,23 +107,23 @@ else
         else
             if isequal(unit2,'-')
                 factor2=[0 1];
-                SI2=zeros(1,7);
+                SI2=zeros(1,8);
             elseif ~isempty(strmatch(unit2,unitsystems,'exact'))
                 SI2=SI1;
-                SIUnits={'m','s','A','kg','cd','mol','degK'};
+                SIUnits={'m','s','A','kg','cd','mol','degK','deg'};
                 switch unit2
                     case 'SI'
                         Units=SIUnits;
                     case 'CGS'
-                        Units={'cm','s','A','g','cd','mol','degK'};
+                        Units={'cm','s','A','g','cd','mol','degK','deg'};
                     case 'FPS'
-                        Units={'ft','s','A','lb','cd','mol','degK'};
+                        Units={'ft','s','A','lb','cd','mol','degK','deg'};
                     case 'IPS'
-                        Units={'in','s','A','lb','cd','mol','degK'};
+                        Units={'in','s','A','lb','cd','mol','degK','deg'};
                     case 'NMM'
-                        Units={'mm','s','A','g','cd','mol','degK'};
+                        Units={'mm','s','A','g','cd','mol','degK','deg'};
                     otherwise
-                        error(sprintf('Unit system %s not yet implemented.',unit2))
+                        error('Unit system %s not yet implemented.',unit2)
                 end
                 factor2=[0 1];
                 if ~strcmp(unit2,'SI')
@@ -164,7 +164,7 @@ else
         else
             convfactor=factor1(2)/factor2(2);
             offset=0;
-            if factor1(1)~=0 | factor2(1)~=0
+            if factor1(1)~=0 || factor2(1)~=0
                 offset=factor1(1)-factor2(1)/convfactor;
             end
             if nargin<=2
@@ -223,7 +223,7 @@ end
 
 function Str=dispunit(SI,Units)
 if nargin==1
-    Units={'m','s','A','kg','cd','mol','degK'};
+    Units={'m','s','A','kg','cd','mol','degK','deg'};
 end
 Str='';
 if all(SI==0)
@@ -251,7 +251,7 @@ for i=1:length(SI)
         end
     end
 end
-if length(Str)>0
+if ~isempty(Str)
     Str=Str(2:end);
 end
 
@@ -262,7 +262,7 @@ function [factor,si]=factor2si(unit)
 
 function [factor,si]=factor2si_multiply_divide(unit)
 factor=[0 1];
-si=zeros(1,7);
+si=zeros(1,8);
 
 nob=0;
 prevcmd='*';
@@ -292,7 +292,7 @@ else
                         factor=factor1;
                         return
                     end
-                    if factor(1)~=0 | factor1(1)~=0
+                    if factor(1)~=0 || factor1(1)~=0
                         error('multiplying offset')
                     end
                     switch prevcmd
@@ -331,7 +331,7 @@ else
         factor=factor1;
         si=si1;
     else
-        if factor(1)~=0 | factor1(1)~=0
+        if factor(1)~=0 || factor1(1)~=0
             error('multiplying offset')
         end
         switch prevcmd
@@ -420,7 +420,7 @@ end
 function [factor,si]=factor2si_brackets(unit)
 factor='unknown error';
 si='';
-if isequal(unit(1),'(') & isequal(unit(end),')')
+if isequal(unit(1),'(') && isequal(unit(end),')')
     [factor,si]=factor2si_multiply_divide(unit(2:end-1));
 else
     [factor,si]=search_elem(unit);
@@ -442,23 +442,23 @@ i=strmatch(unit,unittable{1},'exact');
 prefix=1;
 if isempty(i)
     [v,n,e]=sscanf(unit,'%f',2);
-    if n==1 & isempty(e)
+    if n==1 && isempty(e)
         factor=[0 v];
-        si=zeros(1,7);
+        si=zeros(1,8);
     else
         prefixfound=0;
         pref='';
         if length(unit)>3
             j=strmatch(unit(1:3),{'exa'},'exact');
             if ~isempty(j)
-                scale=[1e18];
+                scale=1e18;
                 prefixfound=1;
                 prefix=scale(j);
                 pref=unit(1:3);
                 unit=unit(4:end);
             end
         end
-        if ~prefixfound & length(unit)>4
+        if ~prefixfound && length(unit)>4
             j=strmatch(unit(1:4),{'peta','tera','giga','mega','kilo','deka','deci','nano','pico','atto'},'exact');
             if ~isempty(j)
                 scale=[1e15 1e12 1e9 1e6 1e3 10 1/10 1e-9 1e-12 1e-18];
@@ -468,7 +468,7 @@ if isempty(i)
                 unit=unit(5:end);
             end
         end
-        if ~prefixfound & length(unit)>5
+        if ~prefixfound && length(unit)>5
             j=strmatch(unit(1:5),{'yotta','zetta','hecto','centi','milli','micro','femto','zepto','yocto'},'exact');
             if ~isempty(j)
                 scale=[1e24 1e21 100 1/100 1e-3 1e-6 1e-15 1e-21 1e-24];
@@ -478,7 +478,7 @@ if isempty(i)
                 unit=unit(6:end);
             end
         end
-        if ~prefixfound & length(unit)>1
+        if ~prefixfound && length(unit)>1
             j=find(unit(1)=='YZEPTGMkhDdcmµunpfazy');
             if ~isempty(j)
                 scale=[1e24 1e21 1e18 1e15 1e12 1e9 1e6 1e3 100 10 1e-1 1e-2 1e-3 1e-6 1e-6 1e-9 1e-12 1e-15 1e-18 1e-21 1e-24];
@@ -492,7 +492,7 @@ if isempty(i)
             i=strmatch(unit,unittable{1},'exact');
         end
         absfound=0;
-        if isempty(i) & length(unit)>5 & strcmp(lower(unit(end-4:end)),' abs.')
+        if isempty(i) && length(unit)>5 && strcmpi(unit(end-4:end),' abs.')
             absfound=1;
             unit=unit(1:end-5);
             i=strmatch(unit,unittable{1},'exact');
@@ -514,7 +514,7 @@ if isempty(i)
                             factor=factor1;
                             return
                         end
-                        if factor(1)~=0 | factor1(1)~=0
+                        if factor(1)~=0 || factor1(1)~=0
                             error('multiplying offset')
                         end
                         factor(2)=factor(2)*factor1(2);
@@ -583,7 +583,7 @@ units=inifile('chapters',UNIT);
 identified=zeros(1,length(units));
 nNames=size(table{1},1);
 anychange=1;
-while anychange & any(~identified)
+while anychange && any(~identified)
     anychange=0;
     i_notidentified=find(~identified);
     for i=i_notidentified
@@ -592,7 +592,7 @@ while anychange & any(~identified)
         Names=inifile('get',UNIT,i,'name','');
         if isempty(Names)
             identified(i)=1;
-            if ~strcmp(lower(units{i}),'general')
+            if ~strcmpi(units{i},'general')
                 ui_message('', ...
                     sprintf('No names in chapter #%i: %s', ...
                     i,units{i}))
@@ -610,7 +610,7 @@ while anychange & any(~identified)
                 [factor,si]=factor2si(Def);
             else
                 factor(2)=Def;
-                si=zeros(1,7);
+                si=zeros(1,8);
             end
             if ~ischar(factor)
                 j=j+1;
@@ -672,14 +672,16 @@ end
 
 
 function table=basisunittable
-table={'m'    [0 1]          [1 0 0 0 0 0 0]
-    'ft'   [0 0.3048]     [1 0 0 0 0 0 0]
-    'in'   [0 0.3048/12]  [1 0 0 0 0 0 0]
-    's'    [0 1]          [0 1 0 0 0 0 0]
-    'A'    [0 1]          [0 0 1 0 0 0 0]
-    'g'    [0 0.001]      [0 0 0 1 0 0 0]
-    'lb'   [0 0.45359237] [0 0 0 1 0 0 0]
-    'cd'   [0 1]          [0 0 0 0 1 0 0]
-    'mol'  [0 1]          [0 0 0 0 0 1 0]
-    'degK' [0 1]          [0 0 0 0 0 0 1]};
+table={'m'   [0 1]          [1 0 0 0 0 0 0 0]
+    'ft'     [0 0.3048]     [1 0 0 0 0 0 0 0]
+    'in'     [0 0.3048/12]  [1 0 0 0 0 0 0 0]
+    's'      [0 1]          [0 1 0 0 0 0 0 0]
+    'A'      [0 1]          [0 0 1 0 0 0 0 0]
+    'g'      [0 0.001]      [0 0 0 1 0 0 0 0]
+    'lb'     [0 0.45359237] [0 0 0 1 0 0 0 0]
+    'cd'     [0 1]          [0 0 0 0 1 0 0 0]
+    'mol'    [0 1]          [0 0 0 0 0 1 0 0]
+    'degK'   [0 1]          [0 0 0 0 0 0 1 0]
+    'deg'    [0 1]          [0 0 0 0 0 0 0 1]
+    'radian' [0 180/pi]     [0 0 0 0 0 0 0 1]};
 table={table(:,1) (1:size(table,1))' cat(1,table{:,2}) cat(1,table{:,3})};

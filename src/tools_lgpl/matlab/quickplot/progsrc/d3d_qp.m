@@ -1623,7 +1623,7 @@ try
                 'climmode','presenttype','vecscalem','vertscalem','thinfld', ...
                 'linestyle','marker','threshdistr','horizontalalignment', ...
                 'verticalalignment','exporttype','vectorcolour','dataunits', ...
-                'vectorstyle'}
+                'vectorstyle','angleconvention'}
             % commands require an input string
             %
             % nothing to do except refreshing the options
@@ -1632,6 +1632,7 @@ try
             end
             modelist=findobj(UOH,'tag',[cmd '=?']);
             modes=get(modelist,'string');
+            trigger={};
             if ~isempty(cmdargs)
                 i=ustrcmpi(cmdargs{1},modes);
                 if i<0
@@ -1649,8 +1650,9 @@ try
                     elseif strcmp(cmd,'dataunits')
                         %
                         % if it is not a mode string, it must be interpreted as a unit
-                        % string.
+                        % string. Make sure that dataunits=? is set to 'Other'
                         %
+                        set(modelist,'value',find(strcmp('Other',modes)))
                         modelist=findobj(UOH,'tag',[cmd '=!']);
                         set(modelist,'string',cmdargs{1})
                     else
@@ -1658,11 +1660,26 @@ try
                     end
                 else
                     set(modelist,'value',i);
+                    if strcmp(modes{i},'angle')
+                        % old option 'angle (radians)' or 'angle (degrees)'
+                        ob = strfind(cmdargs{1},'(');
+                        cb = strfind(cmdargs{1},')');
+                        trigger = {'dataunits',cmdargs{1}(ob+1:cb-1)};
+                    end
                 end
+            elseif strcmp(cmd,'dataunits')
+                modelist=gcbo; % either dataunits=? or dataunits=!
             end
             d3d_qp updateoptions
             if logfile
-                writelog(logfile,logtype,cmd,modes{get(modelist,'value')});
+                if strcmp(get(modelist,'tag'),'dataunits=!')
+                    writelog(logfile,logtype,cmd,get(modelist,'string'));
+                else
+                    writelog(logfile,logtype,cmd,modes{get(modelist,'value')});
+                end
+            end
+            if ~isempty(trigger)
+                d3d_qp(trigger{:});
             end
             
         case {'colour','facecolour','markercolour','markerfillcolour','textboxfacecolour', ...
