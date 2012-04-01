@@ -34,7 +34,9 @@ function outdata = qp_plotmanager(cmd,UD,logfile,logtype,cmdargs)
 Inactive = UD.Inactive;
 Active = UD.Active;
 mfig = findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
+
 T_=1; ST_=2; M_=3; N_=4; K_=5;
+DimStr={'subfield ','timestep ','station ','M=','N=','K='};
 
 switch cmd
     case 'resize'
@@ -354,13 +356,8 @@ switch cmd
             set(UD.PlotMngr.ItInfo,'enable','off');
             set(UD.PlotMngr.ItLink,'enable','off');
         else
-            AxVal=get(UD.PlotMngr.AxList,'value');
-            if get(UD.PlotMngr.AxAll,'value') || get(UD.PlotMngr.FigAll,'value')
-                Ax=AxIDs;
-            else
-                Ax=AxIDs(AxVal);
-            end
-            if ~ishandle(Ax)
+            Ax = getAx(UD);
+            if any(~ishandle(Ax))
                 d3d_qp refreshaxes
                 d3d_qp refreshfigprop
             else
@@ -383,7 +380,7 @@ switch cmd
                 Tags=Tags(TUDvalid);
                 UserDatas=UserDatas(TUDvalid);
                 %---
-                QPTag=strmatch('QPPlotTag',Tags);
+                QPTag=strncmp('QPPlotTag',Tags,9);
                 Items=Items(QPTag);
                 Tags=Tags(QPTag);
                 UserDatas=UserDatas(QPTag);
@@ -414,21 +411,11 @@ switch cmd
                     set(UD.PlotMngr.ItInfo,'enable','off');
                     set(UD.PlotMngr.ItLink,'enable','off');
                 else
-                    OldTags=get(UD.PlotMngr.ItList,'userdata');
-                    if isempty(OldTags)
-                        i=1;
-                    else
-                        ItVal=get(UD.PlotMngr.ItList,'value');
-                        SelTag=OldTags{1}(ItVal);
-                        i=strmatch(SelTag,Tags,'exact');
-                        if isempty(i)
-                            i=1;
-                        end
-                    end
                     prevseparator=0;
                     it=length(Items);
                     if it>0
                         prevseparator=1;
+                        Nms = cell(1,it);
                     end
                     while it>=1
                         %
@@ -459,10 +446,12 @@ switch cmd
                         Tags(1)=[];
                     end
                     for it=1:length(Items)
-                        it_same_name=strmatch(Nms{it},Nms,'exact');
+                        it_same_name=find(strcmp(Nms{it},Nms));
                         extend=1;
-                        while (length(it_same_name)>1) && ~strcmp(Nms{it},separator)
-                            for itloc=it_same_name'
+                        out_of_options=0;
+                        while length(it_same_name)>1 && ~strcmp(Nms{it},separator)
+                            extrastr = repmat({''},1,length(Items));
+                            for itloc=it_same_name
                                 switch extend
                                     case 1
                                         extrastr{itloc}=abbrevfn(UserDatas{itloc}.PlotState.FI.Name);
@@ -511,6 +500,8 @@ switch cmd
                                         elseif ~isempty(k)
                                             extrastr{itloc}=['K=' vec2str(k,'nobrackets')];
                                         end
+                                    case 7
+                                        extrastr{itloc}=UserDatas{itloc}.PlotState.Ops.presentationtype;
                                     case 8
                                         t=UserDatas{itloc}.PlotState.Selected{T_};
                                         if isequal(t,0)
@@ -518,19 +509,17 @@ switch cmd
                                         elseif ~isempty(t)
                                             extrastr{itloc}=['TS=' vec2str(t,'nobrackets')];
                                         end
-                                    case 7
-                                        extrastr{itloc}=UserDatas{itloc}.PlotState.Ops.presentationtype;
                                     otherwise
-                                        extrastr={};
+                                        out_of_options=1;
                                         break
                                 end
                             end
-                            if isempty(extrastr)
+                            if out_of_options
                                 break
                             end
-                            it_extra_same=strmatch(extrastr{it},extrastr(it_same_name),'exact');
+                            it_extra_same=find(strcmp(extrastr{it},extrastr(it_same_name)));
                             if length(it_extra_same)<length(it_same_name)
-                                for itloc=it_same_name'
+                                for itloc=it_same_name
                                     Nms{itloc}=cat(2,Nms{itloc},' - ',extrastr{itloc});
                                 end
                                 it_same_name=it_same_name(it_extra_same);
@@ -539,11 +528,25 @@ switch cmd
                         end
                     end
                     %
-                    % try not to select a separator
+                    % Select the item with the same tag.
                     %
-                    val=1;
-                    while val<length(Nms) && strcmp(Nms{val},separator)
-                        val=val+1;
+                    valOld = get(UD.PlotMngr.ItList,'value');
+                    InfoOld = get(UD.PlotMngr.ItList,'userdata');
+                    TagOld = InfoOld{1};
+                    val = [];
+                    for i = length(valOld):-1:1
+                        val(i) = ustrcmpi(TagOld(valOld(i)),Tags);
+                    end
+                    val(val<0) = [];
+                    %
+                    % If no item with same name was found, then select the
+                    % first item that's not a separator.
+                    %
+                    if isempty(val)
+                        val=1;
+                        while val<length(Nms) && strcmp(Nms{val},separator)
+                            val=val+1;
+                        end
                     end
                     %
                     % if there are only separators, select none
@@ -566,18 +569,88 @@ switch cmd
                 end
             end
         end
-        
-    case 'itemlist'
-        AxIDs=get(UD.PlotMngr.AxList,'userdata');
-        AxVal=get(UD.PlotMngr.AxList,'value');
-        if get(UD.PlotMngr.FigAll,'value')
-            Ax=AxIDs;
-        elseif get(UD.PlotMngr.AxAll,'value')
-            Ax=AxIDs;
+        qp_plotmanager('updatearrows',UD)
+
+    case 'updatearrows'
+        Ax = getAx(UD);
+        if strcmp(get(UD.PlotMngr.ItList,'enable'),'off') || length(Ax)>1
+            set(UD.PlotMngr.ItUp,'enable','inactive', ...
+                'cdata',getappdata(UD.PlotMngr.ItUp,'ArrowInactive'));
+            set(UD.PlotMngr.ItDown,'enable','inactive', ...
+                'cdata',getappdata(UD.PlotMngr.ItDown,'ArrowInactive'));
         else
-            Ax=AxIDs(AxVal);
+            it  = get(UD.PlotMngr.ItList,'value');
+            its = get(UD.PlotMngr.ItList,'string');
+            if length(it)~=1 || it==1
+                set(UD.PlotMngr.ItUp,'enable','inactive', ...
+                    'cdata',getappdata(UD.PlotMngr.ItUp,'ArrowInactive'));
+            else
+                set(UD.PlotMngr.ItUp,'enable','on', ...
+                    'cdata',getappdata(UD.PlotMngr.ItUp,'ArrowActive'));
+            end
+            if length(it)~=1 || it==length(its)
+                set(UD.PlotMngr.ItDown,'enable','inactive', ...
+                    'cdata',getappdata(UD.PlotMngr.ItDown,'ArrowInactive'));
+            else
+                set(UD.PlotMngr.ItDown,'enable','on', ...
+                    'cdata',getappdata(UD.PlotMngr.ItDown,'ArrowActive'));
+            end
         end
-        if ~ishandle(Ax)
+
+    case {'moveitemup','moveitemdown'}
+        Ax = getAx(UD);
+        if any(~ishandle(Ax))
+            d3d_qp refreshaxes
+            d3d_qp refreshfigprop
+        else
+            pfig = get(Ax,'parent');
+            ItInfo = get(UD.PlotMngr.ItList,'userdata');
+            ItVal = get(UD.PlotMngr.ItList,'value');
+            ItTags = ItInfo{1};
+            ItHand = ItInfo{2};
+            %
+            ItTag1 = ItTags{ItVal};
+            hItem1 = ItHand(ItVal);
+            hIt1 = findall(pfig,'tag',ItTag1); % the object itself
+            ZCurrent1 = getappdata(hItem1,'Level');
+            %
+            switch cmd
+                case 'moveitemup'
+                    ItVal2 = ItVal-1;
+                case 'moveitemdown'
+                    ItVal2 = ItVal+1;
+            end
+            ItTag2 = ItTags{ItVal2};
+            hItem2 = ItHand(ItVal2);
+            hIt2 = findall(pfig,'tag',ItTag2); % the object itself
+            ZCurrent2 = getappdata(hItem2,'Level');
+            %
+            setzcoord(hIt1,ZCurrent2)
+            setappdata(hItem1,'Level',ZCurrent2)
+            setzcoord(hIt2,ZCurrent1)
+            setappdata(hItem2,'Level',ZCurrent1)
+            %
+            children = allchild(Ax);
+            child1 = find(ismember(children,hIt1));
+            child2 = find(ismember(children,hIt2));
+            BeforeBoth = children(1:min([min(child1) min(child2)])-1);
+            AfterBoth = children(max([max(child1) max(child2)])+1:end);
+            switch cmd
+                case 'moveitemup'
+                    children = [BeforeBoth; children(child1); ...
+                        children(child2); AfterBoth];
+                case 'moveitemdown'
+                    children = [BeforeBoth; children(child2); ...
+                        children(child1); AfterBoth];
+            end
+            set(Ax,'children',children)
+            %
+            d3d_qp refreshitems
+        end
+
+    case 'itemlist'
+        Ax = getAx(UD);
+        if any(~ishandle(Ax))
             d3d_qp refreshaxes
             d3d_qp refreshfigprop
         else
@@ -600,16 +673,11 @@ switch cmd
             if OK
                 set(UD.PlotMngr.ItList,'value',ItVal);
                 if length(ItVal)==1
-                    UserDatas=get(hIt,'userdata');
-                    if iscell(UserDatas)
-                        UserDatas=UserDatas(~cellfun('isempty',UserDatas));
-                        UserDatas=UserDatas{1};
-                    end
                     set(UD.PlotMngr.DelIt,'enable','on');
                     set(UD.PlotMngr.ItLink,'enable','on');
                     set(UD.PlotMngr.ItInfo,'enable','on');
                 else
-                    if length(ItVal)==0
+                    if isempty(ItVal)
                         set(UD.PlotMngr.DelIt,'enable','off');
                         set(UD.PlotMngr.ItLink,'enable','off');
                     end
@@ -617,12 +685,11 @@ switch cmd
                 end
             end
         end
+        qp_plotmanager('updatearrows',UD)
         
     case 'iteminfo'
-        AxIDs=get(UD.PlotMngr.AxList,'userdata');
-        AxVal=get(UD.PlotMngr.AxList,'value');
-        Ax=AxIDs(AxVal);
-        if ~ishandle(Ax)
+        Ax = getAx(UD);
+        if any(~ishandle(Ax))
             d3d_qp refreshaxes
             d3d_qp refreshfigprop
         else
@@ -659,17 +726,15 @@ switch cmd
         end
         
     case 'deleteaxes'
-        AxIDs=get(UD.PlotMngr.AxList,'userdata');
-        AxVal=get(UD.PlotMngr.AxList,'value');
-        Ax=AxIDs(AxVal);
-        if ishandle(Ax)
+        Ax = getAx(UD);
+        if length(Ax)==1 && ishandle(Ax)
             pfig=get(Ax,'parent');
             Items=allchild(Ax);
             Tags=get(Items,'tag');
             UserDatas=get(Items,'userdata');
             TUDvalid=~cellfun('isempty',Tags) & ~cellfun('isempty',UserDatas);
             Tags=Tags(TUDvalid);
-            QPTag=strmatch('QPPlotTag',Tags);
+            QPTag=strncmp('QPPlotTag',Tags,9);
             Tags=Tags(QPTag);
             Tags=unique(Tags);
             for i=1:length(Tags)
@@ -685,14 +750,8 @@ switch cmd
         d3d_qp refreshfigprop
         
     case 'deleteitems'
-        AxIDs=get(UD.PlotMngr.AxList,'userdata');
-        AxVal=get(UD.PlotMngr.AxList,'value');
-        if get(UD.PlotMngr.FigAll,'value') || get(UD.PlotMngr.AxAll,'value')
-            Ax=AxIDs;
-        else
-            Ax=AxIDs(AxVal);
-        end
-        if ~ishandle(Ax)
+        Ax = getAx(UD);
+        if any(~ishandle(Ax))
             d3d_qp refreshaxes
             d3d_qp refreshfigprop
         else
@@ -737,13 +796,7 @@ switch cmd
         end
         
     case 'linkitems'
-        AxIDs=get(UD.PlotMngr.AxList,'userdata');
-        AxVal=get(UD.PlotMngr.AxList,'value');
-        if get(UD.PlotMngr.FigAll,'value') || get(UD.PlotMngr.AxAll,'value')
-            Ax=AxIDs;
-        else
-            Ax=AxIDs(AxVal);
-        end
+        Ax = getAx(UD);
         if any(~ishandle(Ax))
             d3d_qp refreshaxes
             d3d_qp refreshfigprop
@@ -775,7 +828,8 @@ switch cmd
                 hCanAnim=get(hAnIt,'children');
                 CanAnimL={};
                 for h=hCanAnim'
-                    NRs=get(h,'userdata'); nsteps=NRs(2);
+                    NRs=get(h,'userdata');
+                    nsteps=NRs(2);
                     CanAnimL{end+1,1}=cat(2,get(h,'label'),sprintf(' (%i steps)',nsteps));
                 end
                 CanAnim=intersect(CanAnim,CanAnimL);
@@ -1040,6 +1094,7 @@ switch cmd
                 set(UD.PlotMngr.ItList,'value',iIt)
             end
         end
+        qp_plotmanager('updatearrows',UD)
         d3d_qp update_addtoplot
 
     case 'refreshfigprop'
@@ -1121,4 +1176,15 @@ switch cmd
                 'enable','off')
         end
 
+end
+
+function Ax = getAx(UD)
+AxIDs=get(UD.PlotMngr.AxList,'userdata');
+AxVal=get(UD.PlotMngr.AxList,'value');
+if get(UD.PlotMngr.FigAll,'value') || ...
+        get(UD.PlotMngr.AxAll,'value') || ...
+        isempty(AxIDs)
+    Ax=AxIDs;
+else
+    Ax=AxIDs(AxVal);
 end

@@ -120,7 +120,8 @@ try
                 'refreshitems', 'itemlist', 'iteminfo', 'deleteaxes', ...
                 'deleteitems', 'linkitems', 'selectfigure', ...
                 'selectaxes', 'selectitem','refreshfigprop', ...
-                'refreshaxprop'}
+                'refreshaxprop','moveitemup','moveitemdown', ...
+                'updatearrows'}
             qp_plotmanager(cmd,UD,logfile,logtype,cmdargs);
             
         case {'selectedfigure', 'selectedaxes', 'selecteditem'}
@@ -1560,6 +1561,7 @@ try
                     
                     if ~isempty(pfig)
                         set(UD.PlotMngr.FigList,'value',1,'string',listnames(pfig,'showType','no','showHandle','no','showTag','no'),'userdata',pfig);
+                        set(UD.PlotMngr.ItList,'value',[]) % clear item selection such that new item will be selected
                         d3d_qp refreshfigs
                     end
                     qp_updatescroller(hNew,pfig)

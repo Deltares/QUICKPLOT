@@ -334,8 +334,6 @@ fac = 1.25;
 yrange = mean(yrange)+[-1 1]*max(diff(xrange)*fac,diff(yrange))/2;
 xrange = mean(xrange)+[-1 1]*diff(yrange)/fac/2;
 d3d_qp('axeslimits',xrange,yrange)
-set(qpsa,'drawmode','fast')
-set(qpsf,'renderer','painters')
 %--------
 texts{1} = 'Track plot and currents';
 d3d_qp('newfigure','1 plot - portrait','SHIPMA Fig B',texts)
@@ -368,8 +366,6 @@ d3d_qp('fontsize',6)
 d3d_qp('addtoplot')
 d3d_qp('axesboxed',1)
 d3d_qp('axeslimits',xrange,yrange)
-set(qpsa,'drawmode','fast')
-set(qpsf,'renderer','painters')
 %--------
 texts{1} = 'Speed and ruddle angle plots';
 d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig C',texts)

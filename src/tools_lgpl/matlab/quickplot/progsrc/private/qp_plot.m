@@ -59,39 +59,75 @@ if isequal(Ops.horizontalalignment,'centre')
     Ops.horizontalalignment='center';
 end
 
+%
+% Determine all objects in the axes. If this is a new plot then the new
+% object will be added on top, but if this is an update of an existing
+% object then the new object will be located at the location of the old
+% object in the object stack.
+%
 hNewTag='';
 lParents=get(hOldVec(ishandle(hOldVec)),'Parent');
 if iscell(lParents)
     lParents=unique([lParents{:}]);
 end
-for lP=1:length(lParents)
-    Parent=lParents(lP);
-    SortObjs=1;
-    Pchild=allchild(Parent);
+nParents = length(lParents);
+%
+% PchildBefore lists objects plotted on top of this object.
+% PchildAfter lists objects plotted below this object.
+%
+PchildBefore = cell(1,nParents);
+PchildAfter = cell(1,nParents);
+SortObjs=1;
+for lP=1:nParents
+    Pchild=allchild(lParents(lP));
     if isempty(hOldVec) || ~ishandle(hOldVec(1))
+        %
+        % If there is no old object, then plot new object on top.
+        %
         PchildBefore{lP}=[];
         PchildAfter{lP}=Pchild;
     else
         hNewTag=get(hOldVec(1),'tag');
         IdxObj=find(Pchild==hOldVec(1));
         if isempty(IdxObj)
+            %
+            % If there is an old object, but not in the current Parent then
+            % switch off object sorting.
+            %
             SortObjs=0;
             PchildBefore{lP}=[];
             PchildAfter{lP}=[];
         else
-            PchildBefore{lP}=Pchild(1:IdxObj); PchildBefore{lP}=PchildBefore{lP}(~ismember(PchildBefore{lP},hOldVec));
-            PchildAfter{lP}=Pchild(IdxObj:end); PchildAfter{lP}=PchildAfter{lP}(~ismember(PchildAfter{lP},hOldVec));
+            %
+            % Old object exists in current axes, identify objects before
+            % and after this object.
+            %
+            PchildBefore{lP}=Pchild(1:IdxObj);
+            PchildBefore{lP}=PchildBefore{lP}(~ismember(PchildBefore{lP},hOldVec));
+            PchildAfter{lP}=Pchild(IdxObj:end);
+            PchildAfter{lP}=PchildAfter{lP}(~ismember(PchildAfter{lP},hOldVec));
         end
     end
-    %  else
-    %    if ishandle(hOldVec(1))
-    %      hNewTag=get(hOldVec(1),'tag');
-    %    end
-    %    SortObjs=0;
-    %    Pchild=[];
-    %    PchildBefore=[];
-    %    PchildAfter=[];
-    %  end
+end
+Level = -1;
+for i = 1:length(hOldVec)
+    if ishandle(hOldVec(i))
+        iLevel = getappdata(hOldVec(i),'Level');
+        if ~isempty(iLevel)
+            Level = iLevel;
+        end
+    end
+end
+if Level<0
+    Level = 0;
+    Pchild=allchild(Parent);
+    for i = 1:length(Pchild)
+        iLevel = getappdata(Pchild(i),'Level');
+        if ~isempty(iLevel)
+            Level = max(Level,iLevel);
+        end
+    end
+    Level = Level+500;
 end
 Thresholds=[]; % Thresholds is predefined to make sure that Thresholds always exists when its value is checked at the end of this routine
 
@@ -361,7 +397,7 @@ for d=1:length(data)
 end
 npnt=0;
 if isfield(data,'Val') && ~iscell(data(1).Val) && ~VectorPlot
-    for d=1:length(data)
+    for d=length(data):-1:1
         if isfield(data,'X')
             szX=size(data(d).X);
         elseif isfield(data,'Y')
@@ -413,7 +449,7 @@ switch Ops.vectorscalingmode
     case 'automatic'
         quivopt={'automatic'};
     case 'manual'
-        for d=1:length(data)
+        for d=length(data):-1:1
             if isfield(data,'XComp')
                 data(d).XComp=Ops.vectorscale*data(d).XComp;
             end
@@ -426,7 +462,7 @@ switch Ops.vectorscalingmode
         end
         quivopt={0};
     case {'manual normalised','automatic normalised'}
-        for d=1:length(data)
+        for d=length(data):-1:1
             if strcmp(vpt,'magnitude')
                 VecMag=data(d).Val;
             else
@@ -494,26 +530,21 @@ if isequal(quivopt,{'automatic'})
         autoscale = 0.9;
     end
     %
-    if 1
-        %
-        % apply "automatic" scaling
-        %
-        for d=1:length(data)
-            if isfield(data,'XComp')
-                data(d).XComp=autoscale*data(d).XComp;
-            end
-            if isfield(data,'YComp')
-                data(d).YComp=autoscale*data(d).YComp;
-            end
-            if isfield(data,'ZComp')
-                data(d).ZComp=autoscale*data(d).ZComp;
-            end
+    % apply "automatic" scaling
+    %
+    for d=length(data):-1:1
+        if isfield(data,'XComp')
+            data(d).XComp=autoscale*data(d).XComp;
         end
-        %
-        quivopt={0};
-    else
-        quivopt={};
+        if isfield(data,'YComp')
+            data(d).YComp=autoscale*data(d).YComp;
+        end
+        if isfield(data,'ZComp')
+            data(d).ZComp=autoscale*data(d).ZComp;
+        end
     end
+    %
+    quivopt={0};
 end
 
 stn='';
@@ -583,7 +614,7 @@ for clipi=1:3
             clp='yclipping';
     end
     if isfield(Ops,clp)
-        clippingvals = getfield(Ops,clp);
+        clippingvals = Ops.(clp);
     else
         clippingvals = [];
     end
@@ -611,7 +642,7 @@ for clipi=1:3
     val=[];
 end
 if isfield(data,'XYZ') && clippingspatial
-    for d = 1:length(data)
+    for d = length(data):-1:1
        val = data(d).XYZ;
        szVal = size(val);
        val = reshape(val,prod(szVal(1:end-1)),szVal(end));
@@ -803,7 +834,7 @@ else
         Param.compat7={'v6'};
     end
 
-    for d=1:length(data)
+    for d=length(data):-1:1
         do=min(length(hOld),d);
         plotargs={hOld{do},Parent,Param,data(d),Ops,Props};
         geom='';
@@ -953,8 +984,6 @@ if isempty(hNewTag)
 end
 set(hNewVec,'hittest','off','tag',hNewTag)
 
-ok=setzcoord(hNewVec,0);
-
 IUD.PlotState=PlotState;
 IUD.PlotState.FI=FileInfo;
 IUD.PlotState.Handles=hNew;
@@ -967,15 +996,31 @@ if ~isempty(Thresholds)
 end
 set(hNewVec,'userdata',[])
 set(hNewVec(1),'userdata',IUD)
-for lP=1:length(lParents)
-    Parent=lParents(lP);
-    if SortObjs
-        thisParent=ismember(hNewVec,allchild(Parent));
-        hNew_lP=hNewVec(thisParent);
-        childs=[PchildBefore{lP};hNew_lP(:);PchildAfter{lP}];
+%
+% If object sorting is enabled (almost always) then let's put the new
+% object at the right location in the object stack.
+%
+if SortObjs
+    for lP=1:nParents
+        Parent=lParents(lP);
+        %
+        % Identify objects that are children of this parent ...
+        %
         childlist=allchild(Parent);
-        childs(~ismember(childs,childlist))=[];
-        childs=cat(1,childlist(~ismember(childlist,childs)),childs);
-        set(Parent,'children',childs)
+        hNew_lP=hNewVec(ismember(hNewVec,childlist));
+        %
+        % ... and put them in the right location.
+        %
+        children=[PchildBefore{lP};hNew_lP(:);PchildAfter{lP}];
+        children(~ismember(children,childlist))=[];
+        %
+        % Put any children that didn't exist initially and that aren't
+        % listed as being part of the new object, on top.
+        %
+        children=cat(1,childlist(~ismember(childlist,children)),children);
+        set(Parent,'children',children)
     end
 end
+%
+setzcoord(hNewVec,Level)
+setappdata(hNewVec(1),'Level',Level)

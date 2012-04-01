@@ -1,4 +1,4 @@
-function ok=setzcoord(h,z)
+function setzcoord(h,z)
 %SETZ Sets the z coordinate.
 %   SETZ(H,Z) sets the z coordinate of the objects referred to be array of
 %   handles H to the specified value Z.
@@ -35,10 +35,8 @@ function ok=setzcoord(h,z)
 %   $HeadURL$
 %   $Id$ 
 
-skipped = 0;
 for i = 1:length(h)
     if ~ishandle(h)
-        skipped = 1;
         continue
     end
     switch get(h(i),'type')
@@ -55,14 +53,5 @@ for i = 1:length(h)
             set(h(i),'vertices',coord)
         otherwise
             % don't do anything for root, figure, axes, image, uicontrol, etc.
-            skipped = 1;
     end
-end
-
-if nargout==0
-   if skipped
-      warning('The Z value of some objects couldn''t be changed.')
-   end
-else
-   ok = ~skipped;
 end
