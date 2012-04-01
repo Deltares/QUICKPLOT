@@ -530,14 +530,16 @@ switch cmd
                     %
                     % Select the item with the same tag.
                     %
+                    val = [];
                     valOld = get(UD.PlotMngr.ItList,'value');
                     InfoOld = get(UD.PlotMngr.ItList,'userdata');
-                    TagOld = InfoOld{1};
-                    val = [];
-                    for i = length(valOld):-1:1
-                        val(i) = ustrcmpi(TagOld(valOld(i)),Tags);
+                    if iscell(InfoOld)
+                        TagOld = InfoOld{1};
+                        for i = length(valOld):-1:1
+                            val(i) = ustrcmpi(TagOld(valOld(i)),Tags);
+                        end
+                        val(val<0) = [];
                     end
-                    val(val<0) = [];
                     %
                     % If no item with same name was found, then select the
                     % first item that's not a separator.
