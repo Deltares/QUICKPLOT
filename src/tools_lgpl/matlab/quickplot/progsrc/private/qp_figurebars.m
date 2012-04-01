@@ -84,6 +84,9 @@ if isempty(fMZO) % MATLAB 7
 end
 set(fMZO,'clickedcallback','d3d_qp zoomout');
 %--------------------------------------------------------------------------
+fMZO=findall(m1,'tag','Exploration.Pan');
+set(fMZO,'clickedcallback','d3d_qp pan');
+%--------------------------------------------------------------------------
 fMZO=findall(m1,'clickedcallback','figure');
 if isempty(fMZO) % MATLAB 7
     fMZO=findall(m1,'tag','Standard.NewFigure');

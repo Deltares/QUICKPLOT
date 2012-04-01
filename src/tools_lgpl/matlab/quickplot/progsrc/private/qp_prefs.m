@@ -138,19 +138,35 @@ switch cmd
         newval = get(gcbo,'value');
         qp_settings(cmd,newval);
         if newval
-            % on
-            switch cmd
-                case 'v6zoombehavior'
-                    zoom v6 on
-            end
+            newval = 'on';
         else
-            % off
-            switch cmd
-                case 'v6zoombehavior'
-                    zoom v6 off
+            newval = 'off';
+        end
+        %
+        switch cmd
+            case 'v6zoombehavior'
+                qp_prefs(UD,mfig,'v6zoomswitch',newval)
+        end
+        
+    case 'v6zoomswitch'
+        F = findall(0,'type','figure');
+        zoomon = logical(zeros(size(F)));
+        for i = 1:length(F)
+            zoomon(i) = ~strcmp(zoom(F(i),'getmode'),'off');
+            if zoomon(i)
+                zoom(F(i),'off')
             end
         end
-
+        zoom('v6',cmdargs)
+        for i = 1:length(F)
+            if zoomon(i)
+                zoom(F(i),'on')
+                if strcmp(get(F(i),'name'),'Grid View')
+                    set(F(i),'WindowButtonMotionFcn','qp_gridview trackcoord')
+                end
+            end
+        end
+        
     case 'changefont'
         uicontrolfont = qp_fontsettings('Font');
         uicontrolfont = uisetfont(uicontrolfont);

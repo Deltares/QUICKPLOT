@@ -171,7 +171,7 @@ try
                     set(mfig,'name',cat(2,'Delft3D-QUICKPLOT ',qpversion));
                 end
                 if qp_settings('v6zoombehavior') && matlabversionnumber >= 7
-                    zoom v6 on
+                    qp_prefs(UD,mfig,'v6zoomswitch','on')
                 end
                 if isstandalone
                     set(findobj(mfig,'tag','loaddata'),'visible','off')
@@ -2345,10 +2345,10 @@ try
                     i_grd=Props(fld).UseGrid;
                     UseGridNew={Info.Name,DomainNr,i_grd};
                     if ~isequal(UseGrid,UseGridNew)
-                        set(UD.GridView.Fig,'name','Grid selection: updating grid ...')
+                        set(UD.GridView.Fig,'name','Grid View: updating grid ...')
                         [Chk,GRID]=qp_getdata(Info,DomainNr,Props(i_grd),'grid');
                         qp_gridview('setgrid',UD.GridView.Fig,GRID)
-                        set(UD.GridView.Fig,'name','Grid selection')
+                        set(UD.GridView.Fig,'name','Grid View')
                         set(UD.GridView.Fig,'userdata',UseGridNew)
                     end
                     d3d_qp('gridview_update')
@@ -2573,76 +2573,311 @@ try
             
         case 'zoomdown'
             zoom(gcbf,'down');
-            ax=get(gcbf,'currentaxes');
-            if ~isempty(ax)
-                axestype=getappdata(ax,'AxesType');
-                if ischar(axestype)
-                    basicaxestype=strtok(axestype);
-                    switch basicaxestype
-                        case {'LimitingFactorsAxes','LimitingFactorsAxes2'}
-                            if isequal(basicaxestype,'LimitingFactorsAxes2')
-                                ax2=ax;
-                                ax=getappdata(ax2,'LimitingFactorsAxes');
-                                set(ax,'xlim',get(ax2,'xlim'))
-                            else
-                                ax2 = getappdata(ax,'LimitingFactorsAxes');
-                            end
-                            set(ax,'xticklabelmode','auto','xtickmode','auto');
-                            tick(ax,'x','autodate');
-                            set(ax2,'xlim',get(ax,'xlim'), ...
-                                'ylim',getappdata(ax2,'YLim'), ...
-                                'xtick',get(ax,'xtick'), ...
-                                'xticklabel',get(ax,'xticklabel'))
-                            set(ax,'xticklabel','')
-                        otherwise
-                            setaxesprops(ax)
-                    end
+            updateaxes(gcbf,[])
+            
+        case 'zoomin'
+            %  putdowntext('zoomin',gcbo)
+            if matlabversionnumber<7 || qp_settings('v6zoombehavior')
+                switch zoom(gcbf,'getmode')
+                    case {'off','out'}
+                        if matlabversionnumber>=7
+                            pan(gcbf,'off')
+                        end
+                        zoom(gcbf,'inmode');
+                        set(gcbf,'windowbuttondownfcn','d3d_qp zoomdown');
+                    case {'in'}
+                        zoom(gcbf,'off');
+                end
+            elseif matlabversionnumber<7.02
+                F = gcbf;
+                switch zoom(F,'getmode')
+                    case {'off','out'}
+                        zoom(gcbf,'inmode')
+                        WBDZIF = getappdata(F,'WrappedButtonDownZoomInFcn');
+                        %
+                        if isempty(WBDZIF)
+                            WBDZIF = get(F,'WindowButtonDownFcn');
+                            WBUZIF = get(F,'WindowButtonUpFcn');
+                            setappdata(F,'WrappedButtonDownZoomInFcn',WBDZIF)
+                            setappdata(F,'WrappedButtonUpZoomInFcn0',WBUZIF)
+                        end
+                        set(F,'WindowButtonDownFcn','d3d_qp zoomindown');
+                        set(F,'WindowButtonUpFcn','d3d_qp zoominup');
+                   otherwise
+                        zoom(F,'off')
+                end
+            elseif matlabversionnumber<7.03
+                F = gcbf;
+                switch zoom(F,'getmode')
+                    case {'off','out'}
+                        zoom(gcbf,'inmode')
+                        WBDZIF = getappdata(F,'WrappedButtonDownZoomInFcn');
+                        mmgr = uigetmodemanager(F);
+                        zoominM = mmgr.CurrentMode;
+                        %
+                        if isempty(WBDZIF)
+                            WBDZIF = get(F,'WindowButtonDownFcn');
+                            WBUZIF = get(F,'WindowButtonUpFcn');
+                            setappdata(F,'WrappedButtonDownZoomInFcn',WBDZIF)
+                            setappdata(F,'WrappedButtonUpZoomInFcn0',WBUZIF)
+                            zoominM.WindowButtonDownFcn = 'd3d_qp zoomindown';
+                            zoominM.WindowButtonUpFcn = 'd3d_qp zoominup';
+                        end
+                    otherwise
+                        zoom(F,'off')
+                end
+            else
+                h = zoom(gcbf);
+                if strcmpi(get(gcbo,'State'),'on')
+                    set(h,'Direction','in')
+                    set(h,'ActionPostCallback',@updateaxes);
+                    set(h,'Enable','on');
+                else
+                    set(h,'Enable','off');
                 end
             end
             
-        case 'zoomin'
-            v72 = matlabversionnumber>=7.02;
-            switch zoom(gcbf,'getmode')
-                case {'off' 'out'}
-                    zoom(gcbf,'inmode');
-                    if v72
-                        %Disable listeners
-                        mmgr = uigetmodemanager(gcbf);
-                        set(mmgr.WindowListenerHandles,'Enable','off');
-                        %'MATLAB:modes:mode:InvalidPropertySet'
-                    end
-                    set(gcbf,'windowbuttondownfcn','d3d_qp zoomdown');
-                    if v72
-                        set(mmgr.WindowListenerHandles,'Enable','on');
-                    end
-                case {'in' 'on'}
-                    zoom(gcbf,'off');
-            end
-            
         case 'zoomout'
-            v72 = matlabversionnumber>=7.02;
-            switch zoom(gcbf,'getmode')
-                case {'on' 'off' 'in'}
-                    zoom(gcbf,'outmode');
-                    if v72
-                        %Disable listeners
-                        mmgr = uigetmodemanager(gcbf);
-                        set(mmgr.WindowListenerHandles,'Enable','off');
-                        %'MATLAB:modes:mode:InvalidPropertySet'
-                    end
-                    set(gcbf,'windowbuttondownfcn','d3d_qp zoomdown');
-                    if v72
-                        set(mmgr.WindowListenerHandles,'Enable','on');
-                    end
-                case 'out'
-                    zoom(gcbf,'off');
-            end
             %  putdowntext('zoomout',gcbo)
+            if matlabversionnumber<7 || qp_settings('v6zoombehavior')
+                switch zoom(gcbf,'getmode')
+                    case {'off','in'}
+                        if matlabversionnumber>=7
+                            pan(gcbf,'off')
+                        end
+                        zoom(gcbf,'outmode');
+                        set(gcbf,'windowbuttondownfcn','d3d_qp zoomdown');
+                    case 'out'
+                        zoom(gcbf,'off');
+                end
+            elseif matlabversionnumber<7.02
+                F = gcbf;
+                switch zoom(F,'getmode')
+                    case {'off','in'}
+                        zoom(gcbf,'outmode')
+                        WBDZOF = getappdata(F,'WrappedButtonDownZoomOutFcn');
+                        %
+                        if isempty(WBDZOF)
+                            WBDZOF = get(F,'WindowButtonDownFcn');
+                            setappdata(F,'WrappedButtonDownZoomOutFcn',WBDZOF)
+                        end
+                        set(F,'WindowButtonDownFcn','d3d_qp zoomoutdown');
+                    otherwise
+                        zoom(F,'off')
+                end
+            elseif matlabversionnumber<7.03
+                F = gcbf;
+                switch zoom(F,'getmode')
+                    case {'off','in'}
+                        zoom(gcbf,'outmode')
+                        WBDZOF = getappdata(F,'WrappedButtonDownZoomOutFcn');
+                        mmgr = uigetmodemanager(F);
+                        zoomoutM = mmgr.CurrentMode;
+                        %
+                        if isempty(WBDZOF)
+                            WBDZOF = get(F,'WindowButtonDownFcn');
+                            setappdata(F,'WrappedButtonDownZoomOutFcn',WBDZOF)
+                            zoomoutM.WindowButtonDownFcn = 'd3d_qp zoomoutdown';
+                        end
+                    otherwise
+                        zoom(F,'off')
+                end
+            else
+                h = zoom(gcbf);
+                if strcmpi(get(gcbo,'State'),'on')
+                    set(h,'Direction','out')
+                    set(h,'ActionPostCallback',@updateaxes);
+                    set(h,'Enable','on');
+                else
+                    set(h,'Enable','off');
+                end
+            end
             
+        case 'pan'
+            % putdowntext('pan',gcbo)
+            if qp_settings('v6zoombehavior') && ~strcmp(zoom(gcbf,'getmode'),'off')
+               zoom(gcbf,'off')
+            end
+            if matlabversionnumber<7.0
+               % pan feature doesn't exist
+            elseif matlabversionnumber<7.02
+                F = gcbf;
+                if strcmpi(get(gcbo,'State'),'on')
+                    pan(F,'on')
+                    WBDPF = getappdata(F,'WrappedButtonDownPanFcn');
+                    %
+                    if isempty(WBDPF)
+                        WBDPF = get(F,'WindowButtonDownFcn');
+                        WBUPF = get(F,'WindowButtonUpFcn');
+                        setappdata(F,'WrappedButtonDownPanFcn',WBDPF)
+                        setappdata(F,'WrappedButtonUpPanFcn',WBUPF)
+                    end
+                    set(F,'WindowButtonDownFcn','d3d_qp pandown');
+                    set(F,'WindowButtonUpFcn','d3d_qp panup');
+                else
+                    pan(F,'off')
+                end
+            elseif matlabversionnumber<7.03
+                F = gcbf;
+                if strcmpi(get(gcbo,'State'),'on')
+                    pan(F,'on')
+                    WBDPF = getappdata(F,'WrappedButtonDownPanFcn');
+                    mmgr = uigetmodemanager(F);
+                    panM = mmgr.CurrentMode;
+                    %
+                    if isempty(WBDPF)
+                        WBDPF = get(F,'WindowButtonDownFcn');
+                        WBUPF = get(F,'WindowButtonUpFcn');
+                        setappdata(F,'WrappedButtonDownPanFcn',WBDPF)
+                        setappdata(F,'WrappedButtonUpPanFcn',WBUPF)
+                        %
+                        panM.WindowButtonDownFcn = 'd3d_qp pandown';
+                        panM.WindowButtonUpFcn = 'd3d_qp panup';
+                    end
+                    %
+                    UIcm = panM.UIContextMenu;
+                    Reset = findobj(UIcm,'Label','Reset to Original View');
+                    setappdata(F,'WrappedResetFcn',get(Reset,'Callback'))
+                    set(Reset,'Callback','d3d_qp viewreset')
+                else
+                    pan(F,'off')
+                end
+            else
+                h = pan(gcbf);
+                if strcmpi(get(gcbo,'State'),'on')
+                    set(h,'ActionPostCallback',@updateaxes);
+                    set(h,'Enable','on');
+                else
+                    set(h,'Enable','off');
+                end
+            end
             
+        case 'zoomindown'
+            WBDZIF = getappdata(gcbf,'WrappedButtonDownZoomInFcn');
+            WBDZIF{1}(gcbf,[],WBDZIF{2:end})
+            %
+            F = gcbf;
+            if strcmp(get(F,'selectionType'),'normal')
+               WBUZIF = getappdata(F,'WrappedButtonUpZoomInFcn');
+               if isempty(WBUZIF) && ~isempty(get(F,'WindowButtonUpFcn'))
+                  WBUZIF = get(F,'WindowButtonUpFcn');
+                  setappdata(F,'WrappedButtonUpZoomInFcn',WBUZIF)
+               end
+               %
+               if matlabversionnumber>=7.02
+                  mmgr = uigetmodemanager(F);
+                  zoominM = mmgr.CurrentMode;
+                  zoominM.WindowButtonUpFcn = 'd3d_qp zoominup';
+               elseif ~isempty(get(F,'WindowButtonUpFcn'))
+                  set(F,'WindowButtonUpFcn','d3d_qp zoominup')
+               end
+            elseif strcmp(get(F,'selectionType'),'extend')
+            else
+               UIm = findall(F,'Label','Zoom Out       Shift-Click');
+               if isempty(UIm)
+                  UIm = findall(F,'Label','Zoom Out       Alt-Click');
+               end
+               WRZIF = get(UIm,'Callback');
+               if ~isequal(WRZIF,'d3d_qp zoominout') && ~isempty(WRZIF)
+                  setappdata(F,'WrappedZoomInOutFcn',WRZIF)
+                  set(UIm,'Callback','d3d_qp zoominout')
+               end
+               %
+               UIm = findall(F,'Label','Reset to Original View');
+               WRF = get(UIm,'Callback');
+               if ~isequal(WRF,'d3d_qp viewreset')
+                  setappdata(F,'WrappedResetFcn',WRF)
+                  set(UIm,'Callback','d3d_qp viewreset')
+               end
+            end
+            %
+            updateaxes(gcbf,[])
+                      
+        case 'zoomoutdown'
+            WBDZOF = getappdata(gcbf,'WrappedButtonDownZoomOutFcn');
+            WBDZOF{1}(gcbf,[],WBDZOF{2:end})
+            %
+            F = gcbf;
+            if strcmp(get(F,'selectionType'),'normal')
+               if matlabversionnumber>=7.02
+                  WBUZOF = getappdata(F,'WrappedButtonUpZoomOutFcn');
+                  if isempty(WBUZOF)
+                     WBUZOF = get(F,'WindowButtonUpFcn')
+                     setappdata(F,'WrappedButtonUpZoomOutFcn',WBUZOF)
+                  end
+                  %
+                  mmgr = uigetmodemanager(F);
+                  zoomoutM = mmgr.CurrentMode;
+                  zoomoutM.WindowButtonUpFcn = 'd3d_qp zoomoutup';
+               end
+            elseif strcmp(get(F,'selectionType'),'extend')
+            else
+               UIm = findall(F,'Label','Zoom In        Shift-Click');
+               if isempty(UIm)
+                  UIm = findall(F,'Label','Zoom In        Alt-Click');
+               end
+               WRZOF = get(UIm,'Callback');
+               if ~isequal(WRZOF,'d3d_qp zoominout') && ~isempty(WRZOF)
+                  setappdata(F,'WrappedZoomInOutFcn',WRZOF)
+                  set(UIm,'Callback','d3d_qp zoominout')
+               end
+               %
+               UIm = findall(F,'Label','Reset to Original View');
+               WRF = get(UIm,'Callback');
+               if ~isequal(WRF,'d3d_qp viewreset')
+                  setappdata(F,'WrappedResetFcn',WRF)
+                  set(UIm,'Callback','d3d_qp viewreset')
+               end
+            end
+            %
+            updateaxes(gcbf,[])
+            
+        case 'zoominup'
+            WBUPF = getappdata(gcbf,'WrappedButtonUpZoomInFcn');
+            if ~isempty(WBUPF)
+                rmappdata(gcbf,'WrappedButtonUpZoomInFcn')
+                WBUPF{1}(gcbf,[],WBUPF{2:end})
+            else
+                WBUPF = getappdata(gcbf,'WrappedButtonUpZoomInFcn0');
+                WBUPF{1}(gcbf,[],WBUPF{2:end})
+            end
+            updateaxes(gcbf,[])
+
+        case 'zoomoutup'
+            WBUPF = getappdata(gcbf,'WrappedButtonUpZoomOutFcn');
+            WBUPF{1}(gcbf,[],WBUPF{2:end})
+            updateaxes(gcbf,[])
+
+        case 'zoominout'
+            WBUPF = getappdata(gcbf,'WrappedZoomInOutFcn');
+            WBUPF{1}(gcbo,[],WBUPF{2})
+            updateaxes(gcbf,[])
+
+        case 'pandown'
+            WBDPF = getappdata(gcbf,'WrappedButtonDownPanFcn');
+            WBDPF{1}(gcbf,[],WBDPF{2:end})
+            if matlabversionnumber<7.02 && ...
+                  strcmp(get(gcf,'selectionType'),'alt')
+               Reset = findall(gcbf,'Label','Reset to Original View');
+               if ~strcmp(get(Reset,'Callback'),'d3d_qp viewreset')
+                  setappdata(gcbf,'WrappedResetFcn',get(Reset,'Callback'))
+                  set(Reset,'Callback','d3d_qp viewreset')
+               end
+            end
+            
+        case 'panup'
+            WBUPF = getappdata(gcbf,'WrappedButtonUpPanFcn');
+            WBUPF{1}(gcbf,[],WBUPF{2:end})
+            updateaxes(gcbf,[])
+
+        case 'viewreset'
+            WRF = getappdata(gcbf,'WrappedResetFcn');
+            WRF{1}(gcbo,[],WRF{2})
+            updateaxes(gcbf,[])
+
         case 'rotate3d'
-            rotate3d(gcbf,get(gcbo,'State'));
             %  putdowntext('rotate3d',gcbo)
+            rotate3d(gcbf,get(gcbo,'State'));
             
         case 'editborder'
             Brdr=findobj(gcbf,'type','axes','tag','border');
@@ -3194,4 +3429,32 @@ if ~isempty(names)
         '', ...
         'Please remove the overruling functions.')
     beep
+end
+
+function updateaxes(obj,evd)
+ax=get(obj,'currentaxes');
+if ~isempty(ax)
+    axestype=getappdata(ax,'AxesType');
+    if ischar(axestype)
+        basicaxestype=strtok(axestype);
+        switch basicaxestype
+            case {'LimitingFactorsAxes','LimitingFactorsAxes2'}
+                if isequal(basicaxestype,'LimitingFactorsAxes2')
+                    ax2=ax;
+                    ax=getappdata(ax2,'LimitingFactorsAxes');
+                    set(ax,'xlim',get(ax2,'xlim'))
+                else
+                    ax2 = getappdata(ax,'LimitingFactorsAxes');
+                end
+                set(ax,'xticklabelmode','auto','xtickmode','auto');
+                tick(ax,'x','autodate');
+                set(ax2,'xlim',get(ax,'xlim'), ...
+                    'ylim',getappdata(ax2,'YLim'), ...
+                    'xtick',get(ax,'xtick'), ...
+                    'xticklabel',get(ax,'xticklabel'))
+                set(ax,'xticklabel','')
+            otherwise
+                setaxesprops(ax)
+        end
+    end
 end

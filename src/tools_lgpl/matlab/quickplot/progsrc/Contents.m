@@ -117,7 +117,7 @@
 %   qck_anim            - Helper function for QuickPlot Animations.
 %   qp_colorbar         - Display color bar (color scale).
 %   qp_getdata          - General interface for various data files
-%   qp_gridview         - Helper routine for grid selection interface.
+%   qp_gridview         - Helper routine for Grid View interface.
 %   qp_validate         - Helper function to validate Delft3D-QUICKPLOT.
 %   splitcellstr        - Split cell string at delimiters.
 %   stagprint           - Convert stagger name into string for printing.

@@ -1,5 +1,5 @@
 function [out,out2]=qp_gridview(cmd,varargin)
-%QP_GRIDVIEW Helper routine for grid selection interface.
+%QP_GRIDVIEW Helper routine for Grid View interface.
 %   FIG = QP_GRIDVIEW(GRID,RANGE) initialise interface with grid and
 %   selected range. The RANGE argument is optional. The GRID may be dropped
 %   if the RANGE is not specified. The GRID variable should be structure
@@ -14,13 +14,13 @@ function [out,out2]=qp_gridview(cmd,varargin)
 %   call output for the contents of the Range field.
 %
 %   QP_GRIDVIEW('setgrid',FIG,GRID) update the grid used by the grid
-%   in the specified grid selection interface FIG.
+%   in the specified Grid View interface FIG.
 %
 %   QP_GRIDVIEW('setrange',FIG,RANGE) update the selected range of the
-%   specified grid selection interface FIG to the specified RANGE.
+%   specified Grid View interface FIG to the specified RANGE.
 %
 %   RANGE = QP_GRIDVIEW('getrange',FIG) get the currently selected range of
-%   the specified grid selection interface FIG. The RANGE structure
+%   the specified Grid View interface FIG. The RANGE structure
 %   contains both selection type and selection indices.
 %
 %   [RANGETYPE,RANGEINDEX] = ... get the currently selected range as a
@@ -763,7 +763,7 @@ switch cmd
             'color',qp_settings('gridviewbackgroundcolor')/255, ...
             'renderer','zbuffer', ...
             'doublebuffer','on', ...
-            'name','Grid selection', ...
+            'name','Grid View', ...
             'numbertitle','off', ...
             'handlevisibility','off', ...
             'keypressfcn','qp_gridview keypress', ...
@@ -797,7 +797,9 @@ switch cmd
         line('xdata',[],'ydata',[],'parent',A, ...
             'color',selcolor,'markersize',18,'linewidth',4, ...
             'tag','SELLINE','erasemode','xor');
-        set(A,'vis','off','da',[1 1 1],'view',[0 90])
+        set(A,'color','none','xtick',[],'ytick',[], ...
+            'da',[1 1 1],'view',[0 90],'xcolor',get(F,'color'), ...
+            'ycolor',get(F,'color'))
         xl=limits(A,'xlim'); xl=xl+[-1 1]*diff(xl)/20;
         yl=limits(A,'ylim'); yl=yl+[-1 1]*diff(yl)/20;
         if ~isfinite(xl), xl=[0 1]; yl=[0 1]; end
@@ -893,20 +895,20 @@ switch cmd
         F=varargin{1};
         UsrRange=varargin{2};
         %
-        zoom(F,'off');
-        v72 = matlabversionnumber>=7.02;
-        if v72
-            %Disable listeners
-            mmgr = uigetmodemanager(F);
-            set(mmgr.WindowListenerHandles,'Enable','off');
-        end
-        set(F,'WindowButtonDownFcn','')
-        set(F,'WindowButtonUpFcn','')
-        zoom(F,'on');
+%         zoom(F,'off');
+%         v72 = matlabversionnumber>=7.02;
+%         if v72
+%             %Disable listeners
+%             mmgr = uigetmodemanager(F);
+%             set(mmgr.WindowListenerHandles,'Enable','off');
+%         end
+%         set(F,'WindowButtonDownFcn','')
+%         set(F,'WindowButtonUpFcn','')
         set(F,'WindowButtonMotionFcn','qp_gridview trackcoord')
-        if v72
-            set(mmgr.WindowListenerHandles,'Enable','on');
-        end
+%         zoom(F,'on');
+%         if v72
+%             set(mmgr.WindowListenerHandles,'Enable','on');
+%         end
         %
         SelectedGrid=findobj(F,'tag','SELSURF');
         SelectedPatch=findobj(F,'tag','SELPATCH');
@@ -1104,7 +1106,6 @@ switch cmd
         fprintf('Unkwown command: %s\n',cmd)
 end
 
-
 function [mdist,indrng,i1,j1]=NearDiag(dist,i0,j0)
 sz=size(dist);
 szi=sz(1);
@@ -1159,7 +1160,6 @@ else
     j1=jr2;
 end
 
-
 function qp_menutool(uim,TB,tag,label,tooltip,separator)
 prog = 'qp_gridview';
 newmenu = uimenu('tag',tag,'label',label, ...
@@ -1169,7 +1169,6 @@ if separator
     set(newmenu,'separator','on')
 end
 qp_toolbarpush(TB,tag,separator,tooltip,prog);
-
 
 function localdrawgrid(F,GRID)
 zoom(F,'off');
@@ -1254,7 +1253,6 @@ switch GRID.Type
         set(findall(F,'tag','gridviewarbarea'),'enable','off')
 end
 
-
 function menusoff(F)
 obj = cat(1,findall(F,'type','uimenu'),findall(F,'type','uipushtool'));
 for i=1:length(obj)
@@ -1304,21 +1302,20 @@ switch GRID.Type
         set(MN,'string',sprintf('pnt: %i',i))
 end
 
-
 function normalstate(F)
 set(F,'WindowButtonDownFcn','')
 set(F,'WindowButtonMotionFcn','')
 set(F,'WindowButtonUpFcn','')
 menusreset(F)
 zoom(F,'inmode');
-v72 = matlabversionnumber>=7.02;
-if v72
-    %Disable listeners
-    mmgr = uigetmodemanager(gcbf);
-    set(mmgr.WindowListenerHandles,'Enable','off');
-end
+% v72 = matlabversionnumber>=7.02;
+% if v72
+%     %Disable listeners
+%     mmgr = uigetmodemanager(gcbf);
+%     set(mmgr.WindowListenerHandles,'Enable','off');
+% end
 set(F,'WindowButtonMotionFcn','qp_gridview trackcoord')
-if v72
-    set(mmgr.WindowListenerHandles,'Enable','on');
-end
+% if v72
+%     set(mmgr.WindowListenerHandles,'Enable','on');
+% end
 qp_gridview execcallback

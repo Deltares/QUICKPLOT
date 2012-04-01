@@ -126,11 +126,11 @@ if isfield(Props(fld),'UseGrid') & Props(fld).UseGrid>0
     if strcmp(get(UD.GridView.Fig,'visible'),'on') ...
             & ~isequal(UseGrid,UseGridNew) ...
             & UseGridNew{2}>0
-        set(UD.GridView.Fig,'name','Grid selection: updating grid ...')
+        set(UD.GridView.Fig,'name','Grid View: updating grid ...')
         drawnow
         [Chk,GRID]=qp_getdata(Info,DomainNr,Props(i_grd),'grid');
         qp_gridview('setgrid',UD.GridView.Fig,GRID)
-        set(UD.GridView.Fig,'name','Grid selection')
+        set(UD.GridView.Fig,'name','Grid View')
         set(UD.GridView.Fig,'userdata',UseGridNew)
     end
 else
