@@ -819,8 +819,10 @@ if XYRead
     Ans.Y=y;
     Ans.XUnits='m';
     Ans.YUnits='m';
+    [coordtype,ok]=vs_get(FI,'map-const','COORDINATES','quiet');
     Info=vs_disp(FI,'map-const','XZ');
-    if isstruct(Info) && isequal(Info.ElmUnits,'[  DEG  ]')
+    if (isstruct(Info) && isequal(Info.ElmUnits,'[  DEG  ]')) || ...
+       (ok && strcmp(coordtype,'SPHERICAL'))
         Ans.XUnits='deg';
         Ans.YUnits='deg';
     end
