@@ -419,9 +419,9 @@ switch cmd
          current_t = selected{t_};
       end
       if (t>current_t)
-         t=ceil(t);
+         t=min(max(round(t),current_t+1),get(sld,'max'));
       else
-         t=floor(t);
+         t=max(min(round(t),current_t-1),1);
       end
       %
       sld=findall(par_fig,'tag','animslid');

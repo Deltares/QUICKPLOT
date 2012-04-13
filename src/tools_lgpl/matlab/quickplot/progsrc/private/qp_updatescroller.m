@@ -59,33 +59,33 @@ for i = 1:length(UDs)
     Obj.NRange=[];
     Obj.KRange=[];
     if Chk
-        if length(subfs)>1 & length(subf)==1 & ~isequal(subf,0)
+        if length(subfs)>1 && length(subf)==1 && ~isequal(subf,0)
             Obj.SubfRange=[1 length(subfs)];
             CanAnim=1;
         end
-        if Props.DimFlag(T_) & (sz(T_)>1) & length(selected{T_})==1 & ~isequal(selected{T_},0)
+        if Props.DimFlag(T_) && (sz(T_)>1) && length(selected{T_})==1 && ~isequal(selected{T_},0)
             Obj.TRange=[1 sz(T_)];
             CanAnim=1;
         end
-        if Props.DimFlag(ST_) & (sz(ST_)>1) & length(selected{ST_})==1 & ~isequal(selected{ST_},0)
+        if Props.DimFlag(ST_) && (sz(ST_)>1) && length(selected{ST_})==1 && ~isequal(selected{ST_},0)
             Obj.StRange=[1 sz(ST_)];
             CanAnim=1;
         end
-        if Props.DimFlag(M_) & (sz(M_)>1) & length(selected{M_})==1 & ~isequal(selected{M_},0)
+        if Props.DimFlag(M_) && (sz(M_)>1) && length(selected{M_})==1 && ~isequal(selected{M_},0)
             Obj.MRange=[1 sz(M_)];
             CanAnim=1;
         end
-        if Props.DimFlag(N_) & (sz(N_)>1) & length(selected{N_})==1 & ~isequal(selected{N_},0)
+        if Props.DimFlag(N_) && (sz(N_)>1) && length(selected{N_})==1 && ~isequal(selected{N_},0)
             Obj.NRange=[1 sz(N_)];
             CanAnim=1;
         end
-        if Props.DimFlag(K_) & (sz(K_)>1) & length(selected{K_})==1 & ~isequal(selected{K_},0)
+        if Props.DimFlag(K_) && (sz(K_)>1) && length(selected{K_})==1 && ~isequal(selected{K_},0)
             Obj.KRange=[1 sz(K_)];
             CanAnim=1;
         end
     end
 
-    if CanAnim & ishandle(pfig)
+    if CanAnim && ishandle(pfig)
         animslid=findobj(pfig,'tag','animslid');
         if isempty(animslid)
             qp_figurebars(pfig)
