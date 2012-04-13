@@ -84,8 +84,10 @@ switch cmd
         shiftcontrol(PM.ItList,stretchhor+stretchver)
         shiftcontrol(PM.ItUp,aligntop+alignright)
         shiftcontrol(PM.ItDown,alignright)
+        %
         shiftcontrol(PM.FigColorTxt,aligntop)
         shiftcontrol(PM.FigColor,aligntop)
+        %
         shiftcontrol(PM.AxColorTxt,aligntop)
         shiftcontrol(PM.AxColor,aligntop)
         shiftcontrol(PM.AxBox,aligntop+shift5+stretch5)
@@ -104,6 +106,9 @@ switch cmd
         shiftcontrol(PM.AxWidth,aligntop+2*shift5+stretch5)
         shiftcontrol(PM.AxHeight,aligntop+3*shift5+stretch5)
         shiftcontrol(PM.AxPosUnit,aligntop+4*shift5+stretch5)
+        %
+        shiftcontrol(PM.ItTxt2,aligntop)
+        shiftcontrol(PM.ItList2,aligntop+stretchhor)
         %
         % Store the new figure size for usage during next resize command
         %
@@ -355,6 +360,9 @@ switch cmd
             set(UD.PlotMngr.DelIt,'enable','off');
             set(UD.PlotMngr.ItInfo,'enable','off');
             set(UD.PlotMngr.ItLink,'enable','off');
+            %
+            set(UD.PlotMngr.ItList2,'string',' ','value',1, ...
+                'enable','off','backgroundcolor',Inactive);
         else
             Ax = getAx(UD);
             if any(~ishandle(Ax))
@@ -410,6 +418,9 @@ switch cmd
                     set(UD.PlotMngr.DelIt,'enable','off');
                     set(UD.PlotMngr.ItInfo,'enable','off');
                     set(UD.PlotMngr.ItLink,'enable','off');
+                    %
+                    set(UD.PlotMngr.ItList2,'string',' ','value',1, ...
+                        'enable','off','backgroundcolor',Inactive);
                 else
                     prevseparator=0;
                     it=length(Items);
@@ -556,7 +567,12 @@ switch cmd
                     if strcmp(Nms{val},separator)
                         val=[];
                     end
-                    set(UD.PlotMngr.ItList,'string',Nms,'userdata',{Tags Items},'value',val, ...
+                    set(UD.PlotMngr.ItList,'string',Nms, ...
+                        'userdata',{Tags Items},'value',val, ...
+                        'enable','on','backgroundcolor',Active);
+                    %
+                    set(UD.PlotMngr.ItList2,'string',Nms, ...
+                        'value',val(1), ...
                         'enable','on','backgroundcolor',Active);
                     %
                     % buttons should not be enabled if a separator is selected
@@ -1095,6 +1111,8 @@ switch cmd
                 iIt = find(ismember(ItemHandles{1},Tags));
                 set(UD.PlotMngr.ItList,'value',iIt)
             end
+        else
+            get(gcbo,'tag')
         end
         qp_plotmanager('updatearrows',UD)
         d3d_qp update_addtoplot
