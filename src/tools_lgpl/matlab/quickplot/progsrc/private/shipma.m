@@ -101,6 +101,7 @@ fclose(fid);
 function ShipmaUnzipFolderDelete(unzipDir)
 rmdir(unzipDir,'s')
 
+
 function FI = LocalShipmaOpen(FileName)
 [p,f,e]=fileparts(FileName);
 %
@@ -172,12 +173,12 @@ FI.Cases = getMembers(Children(7));
 FI.Cases.Data = getCaseData(FI.Cases.XML,ProjFolder);
 Data = FI.Cases.Data;
 for i=1:length(Data)
-    Data(i).shipNr    = ustrcmpi(Data(i).shipId,{FI.Ships.Names});
-    Data(i).windNr    = ustrcmpi(Data(i).windId,{FI.Environments.Winds.Names});
-    Data(i).wavesNr   = ustrcmpi(Data(i).wavesId,{FI.Environments.Waves.Names});
-    Data(i).currentNr = ustrcmpi(Data(i).currentId,{FI.Environments.Currents.Names});
-    Data(i).swellNr   = ustrcmpi(Data(i).swellId,{FI.Environments.Swells.Names});
-    Data(i).sceneryNr = ustrcmpi(Data(i).sceneryId,{FI.Sceneries.Names});
+    Data(i).shipNr    = ustrcmpi(Data(i).shipId,FI.Ships.Names);
+    Data(i).windNr    = ustrcmpi(Data(i).windId,FI.Environments.Winds.Names);
+    Data(i).wavesNr   = ustrcmpi(Data(i).wavesId,FI.Environments.Waves.Names);
+    Data(i).currentNr = ustrcmpi(Data(i).currentId,FI.Environments.Currents.Names);
+    Data(i).swellNr   = ustrcmpi(Data(i).swellId,FI.Environments.Swells.Names);
+    Data(i).sceneryNr = ustrcmpi(Data(i).sceneryId,FI.Sceneries.Names);
 end
 FI.Cases.Data = Data;
 
@@ -235,7 +236,11 @@ for i = 1:length(Env.Names)
                 case 'file'
                     FileDir = fullfile(UnzipFolder,'shi_Environment',['shi_' Env.Names{i}],['shi_' envNames{j}],'Emb_file','embCtnt');
                     embFiles = dir(FileDir);
-                    FileName = fullfile(FileDir,embFiles(3).name);
+                    if length(embFiles)>2
+                        FileName = fullfile(FileDir,embFiles(3).name);
+                    else
+                        FileName = '';
+                    end
                     envData(j).file = FileName;
                 case 'originalPath'
                     % skip
@@ -290,7 +295,11 @@ for i = 1:nSceneries
                 % ### data is contained in an embedded file ###
                 FileDir = fullfile(UnzipFolder,'shi_Sceneries',['shi_' SceneryName],['Emb_' ScenePropNames{ip}],'embCtnt');
                 embFiles = dir(FileDir);
-                FileName = fullfile(FileDir,embFiles(3).name);
+                if length(embFiles)>2
+                    FileName = fullfile(FileDir,embFiles(3).name);
+                else
+                    FileName = '';
+                end
                 Data(i).(ScenePropNames{ip}) = FileName;
             case 'description'
                 Data(i).description = char(SceneProps(ip).getTextContent);
@@ -305,18 +314,18 @@ Data(nCases).Props = [];
 for i = 1:nCases
     CaseName = char(Cases(i).getAttribute('key'));
     %
-    CaseProps = getChildren(Cases(i));
-    CaseDef = getChildren(CaseProps(5));
-    CaseComposition = getChildren(CaseDef(2));
-    CaseCompositionNames = getName(CaseComposition,true);
+    CaseDef = getNamedChild(Cases(i),'CaseDefinition');
+    CaseComposition = getNamedChild(CaseDef,'CaseComposition');
+    CaseCompItems = getChildren(CaseComposition);
+    CaseCompositionNames = getName(CaseCompItems,true);
     for ic = 1:length(CaseCompositionNames)
         switch CaseCompositionNames{ic}
             case {'shipId','windId','wavesId','currentId','swellId','sceneryId'}
-                Data(i).(CaseCompositionNames{ic}) = char(CaseComposition(ic).getTextContent);
+                Data(i).(CaseCompositionNames{ic}) = char(CaseCompItems(ic).getTextContent);
             case {'windIsSelected','wavesIsSelected', ...
                     'currentIsSelected','swellIsSelected', ...
                     'sceneryIsSelected'}
-                Data(i).(CaseCompositionNames{ic}) = getbool(CaseComposition(ic));
+                Data(i).(CaseCompositionNames{ic}) = getbool(CaseCompItems(ic));
         end
     end
     %
@@ -352,8 +361,16 @@ for p = 1:nProp
                 'maxPropellerAcceleration'}
             ShipProps(p).Value = str2double(char(Props(p).getTextContent));
         case 'contour'
+            checkName(Props(p),'Contour')
             Contour = getChildren(Props(p)); % String and Points
-            Points = getChildren(Contour(2));
+            if checkName(Contour(1),'String')
+                checkName(Contour(1),'String')
+                checkName(Contour(2),'Points')
+                Points = getChildren(Contour(2));
+            else
+                Points = Contour;
+            end
+            checkName(Points(1),'collectionElement')
             nPoints = length(Points);
             contour = zeros(nPoints,2);
             for i=1:nPoints
@@ -370,3 +387,24 @@ for p = 1:nProp
             end
     end
 end
+
+function OK = checkName(Item,name)
+nodeName = char(Item.getNodeName);
+ok = isequal(nodeName,name);
+if nargout==0
+    if ~ok
+        error('Encountered tag <%s> while expecting tag <%s>',nodeName,name)
+    end
+else
+    OK = ok;
+end
+
+function Item = getNamedChild(Parent,name)
+Items = getChildren(Parent);
+for i = 1:length(Items)
+    if checkName(Items(i),name)
+        Item = Items(i);
+        return
+    end
+end
+error('Tag <%s> does not include child tag <%s>',char(Parent.getNodeName),name)

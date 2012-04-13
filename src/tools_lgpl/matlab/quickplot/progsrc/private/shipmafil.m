@@ -173,15 +173,15 @@ if Props.NVal==0
             Ans.Y = [sppy;spsy(end-1:-1:1)];
         case 'ship'
             ship = FI.Cases.Data(domain).shipNr;
-            icontour = ustrcmpi('contour',{FI.Ships(ship).Data.Props.Quant});
-            contour = FI.Ships(ship).Data.Props(icontour).Value;
+            icontour = ustrcmpi('contour',{FI.Ships.Data(ship).Props.Quant});
+            contour = FI.Ships.Data(ship).Props(icontour).Value;
             alf = val1(3)*pi/180;
             Ans.X = contour(:,1)*sin(alf)+contour(:,2)*cos(alf)+val1(1);
             Ans.Y = -contour(:,2)*sin(alf)+contour(:,1)*cos(alf)+val1(2);
         case 'ship at distance ticks'
             ship = FI.Cases.Data(domain).shipNr;
-            icontour = ustrcmpi('contour',{FI.Ships(ship).Data.Props.Quant});
-            contour = FI.Ships(ship).Data.Props(icontour).Value;
+            icontour = ustrcmpi('contour',{FI.Ships.Data(ship).Props.Quant});
+            contour = FI.Ships.Data(ship).Props(icontour).Value;
             %
             d = val1(4,:);
             dtick = (0:500:max(d))';
@@ -292,6 +292,16 @@ varargout={Ans FI};
 
 % -----------------------------------------------------------------------------
 function selfplot(FI,Props)
+persistent inSelfPlot
+%
+% use persistent variable to prevent the selfplot command from recursively
+% calling itself if one of the selected variables does not exist.
+%
+if isequal(inSelfPlot,1)
+    return
+end
+inSelfPlot = 1; %#ok<NASGU>
+
 domain = Props.Domain;
 headerLine = FI.Cases.Data(domain).TimeSeries.Header(1,:);
 [shipma,rem] = strtok(headerLine);
@@ -496,6 +506,7 @@ d3d_qp('axesgrid',1,1)
 d3d_qp('axesboxed',1)
 %--------
 d3d_qp('selectfield','default figures')
+inSelfPlot=[];
 % -----------------------------------------------------------------------------
 
 
@@ -559,10 +570,16 @@ for i = length(Out):-1:1
             Out(i)=[];
         case 'y'
             Out(i)=[];
+        case 'depth'
+            if isempty(FI.Sceneries.Data(FI.Cases.Data(domain).sceneryNr).bottomFile)
+                Out(i)=[];
+            end
         case 'wind'
             if FI.Cases.Data(domain).windNr<0
                 Out(i)=[];
             elseif ~FI.Environments.Winds(FI.Cases.Data(domain).windNr).Data.fileSelected
+                Out(i)=[];
+            elseif isempty(FI.Environments.Winds(FI.Cases.Data(domain).windNr).Data.file)
                 Out(i)=[];
             end
         case 'waves'
@@ -570,17 +587,23 @@ for i = length(Out):-1:1
                 Out(i)=[];
             elseif ~FI.Environments.Waves(FI.Cases.Data(domain).wavesNr).Data.fileSelected
                 Out(i)=[];
+            elseif isempty(FI.Environments.Waves(FI.Cases.Data(domain).wavesNr).Data.file)
+                Out(i)=[];
             end
         case 'swell'
             if FI.Cases.Data(domain).swellNr<0
                 Out(i)=[];
             elseif ~FI.Environments.Swells(FI.Cases.Data(domain).swellNr).Data.fileSelected
                 Out(i)=[];
+            elseif isempty(FI.Environments.Swells(FI.Cases.Data(domain).swellNr).Data.file)
+                Out(i)=[];
             end
         case 'current'
             if FI.Cases.Data(domain).currentNr<0
                 Out(i)=[];
             elseif ~FI.Environments.Currents(FI.Cases.Data(domain).currentNr).Data.fileSelected
+                Out(i)=[];
+            elseif isempty(FI.Environments.Currents(FI.Cases.Data(domain).currentNr).Data.file)
                 Out(i)=[];
             end
         case 'speed'
