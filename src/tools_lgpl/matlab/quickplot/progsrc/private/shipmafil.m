@@ -220,7 +220,7 @@ if Props.NVal==0
 elseif Props.NVal==1
     switch Props.Name
         case 'depth'
-            btFI = samples('read',FI.Sceneries.Data(FI.Cases.Data(domain).sceneryNr).bottomFile);
+            btFI = samples('read',FI.Cases.Data(domain).bottomFile);
             Ans.XYZ = reshape(btFI.XYZ,[1 size(btFI.XYZ,1) 1 3]);
             Ans.TRI = delaunay(btFI.XYZ(:,1),btFI.XYZ(:,2));
             Ans.Val = btFI.XYZ(:,3);
@@ -570,10 +570,6 @@ for i = length(Out):-1:1
             Out(i)=[];
         case 'y'
             Out(i)=[];
-        case 'depth'
-            if isempty(FI.Sceneries.Data(FI.Cases.Data(domain).sceneryNr).bottomFile)
-                Out(i)=[];
-            end
         case 'wind'
             if FI.Cases.Data(domain).windNr<0
                 Out(i)=[];

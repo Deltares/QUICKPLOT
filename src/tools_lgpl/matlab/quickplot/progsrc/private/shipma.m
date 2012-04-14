@@ -333,7 +333,8 @@ for i = 1:nCases
     FileName = fullfile(CaseDir,'track.his');
     Data(i).TimeSeries = delwaq('open',FileName);
     Data(i).TimeSeries.T0 = 0; % overrule header information
-    Data(i).trackFile = fullfile(CaseDir,'track.trk');
+    Data(i).trackFile  = fullfile(CaseDir,'track.trk');
+    Data(i).bottomFile = fullfile(CaseDir,'shipma.BOT');
 end
 
 
