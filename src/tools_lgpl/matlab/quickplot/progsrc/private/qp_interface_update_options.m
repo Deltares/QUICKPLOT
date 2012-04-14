@@ -871,9 +871,7 @@ if (nval==1 && data2d) || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean')
                 geometry='PNT';
             end
         case {'contour lines','coloured contour lines','contour patches','contour patches with lines'}
-            set(findobj(OH,'tag','thresholds'),'enable','on')
-            set(findobj(OH,'tag','thresholds=?'),'enable','on','backgroundcolor',Active)
-            Ops.thresholds=get(findobj(OH,'tag','thresholds=?'),'userdata');
+            Ops.thresholds='get_from_user';
             switch Ops.presentationtype
                 case 'contour lines'
                     MultipleColors=0;
@@ -980,27 +978,6 @@ if strcmp(Ops.thinningmode,'?')
             thindist=findobj(OH,'tag','thindist=?');
             set(thindist,'enable','on','backgroundcolor',Active);
             Ops.thinningdistance=get(thindist,'userdata');
-    end
-end
-
-switch Ops.presentationtype
-    case 0,%{'colvector','patches','patches with lines','markers'};
-        cclass=findobj(OH,'tag','colclassify');
-        set(cclass,'enable','on')
-        if get(cclass,'value')
-            set(findobj(OH,'tag','thresholds'),'enable','on')
-            set(findobj(OH,'tag','thresholds=?'),'enable','on','backgroundcolor',Active)
-            Ops.thresholds=get(findobj(OH,'tag','thresholds=?'),'userdata');
-        end
-end
-
-Ops.thresholddistribution='linear';
-if ~strcmp(Ops.thresholds,'none')
-    if isempty(Ops.thresholds) || (isequal(size(Ops.thresholds),[1 1]) && isequal(Ops.thresholds,round(Ops.thresholds)) && Ops.thresholds>0)
-        thrd=findobj(OH,'tag','threshdistr=?');
-        set(thrd,'enable','on','backgroundcolor',Active)
-        thrdStr=get(thrd,'string'); % linear, logarithmic, anti-logarithmic
-        Ops.thresholddistribution=thrdStr{get(thrd,'value')};
     end
 end
 
@@ -1132,6 +1109,31 @@ if usesmarker
                 MultipleColors=0 | edgeflatcolour;
             end
         end
+    end
+end
+
+switch Ops.presentationtype
+    case {'vector','patches','patches with lines','markers'};
+        if MultipleColors
+            cclass=findobj(OH,'tag','colclassify');
+            set(cclass,'enable','on')
+            if get(cclass,'value')
+                Ops.thresholds='get_from_user';
+            end
+        end
+end
+
+Ops.thresholddistribution='linear';
+if ~strcmp(Ops.thresholds,'none')
+    set(findobj(OH,'tag','thresholds'),'enable','on')
+    set(findobj(OH,'tag','thresholds=?'),'enable','on','backgroundcolor',Active)
+    Ops.thresholds=get(findobj(OH,'tag','thresholds=?'),'userdata');
+    if isempty(Ops.thresholds) || ...
+            (isequal(size(Ops.thresholds),[1 1]) && isequal(Ops.thresholds,round(Ops.thresholds)) && Ops.thresholds>0)
+        thrd=findobj(OH,'tag','threshdistr=?');
+        set(thrd,'enable','on','backgroundcolor',Active)
+        thrdStr=get(thrd,'string'); % linear, logarithmic, anti-logarithmic
+        Ops.thresholddistribution=thrdStr{get(thrd,'value')};
     end
 end
 

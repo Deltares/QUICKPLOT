@@ -64,7 +64,8 @@ try
             [dummy,hNew]=contour(compat7{:},X,Y,Z,Thresholds);
             for i=1:length(hNew)
                 hNewC=get(hNew(i),'cdata');
-                set(hNew(i),'cdata',repmat(max(find(Thresholds<=hNewC(1))),size(hNewC)));
+                ii = max(find(Thresholds<=hNewC(1)));
+                set(hNew(i),'cdata',repmat(ii,size(hNewC)))
             end
             set(hNew, ...
                 'linewidth',Ops.linewidth, ...
@@ -76,7 +77,9 @@ try
             if any(~isnan(Z(:)))
                 [dummy,hNew]=contourfcorr(X,Y,Z,Thresholds);
                 for i=1:length(hNew)
-                    set(hNew(i),'cdata',max(find(Thresholds<=get(hNew(i),'cdata'))));
+                    hNewC=get(hNew(i),'cdata');
+                    ii = max(find(Thresholds<=hNewC(1)));
+                    set(hNew(i),'cdata',ii)
                 end
             else
                 hNew=patch(1,1,1,'xdata',[],'ydata',[],'cdata',[]);
@@ -87,7 +90,9 @@ try
             if any(~isnan(Z(:)))
                 [dummy,hNew]=contourfcorr(X,Y,Z,Thresholds);
                 for i=1:length(hNew)
-                    set(hNew(i),'cdata',max(find(Thresholds<=get(hNew(i),'cdata'))));
+                    hNewC=get(hNew(i),'cdata');
+                    ii = max(find(Thresholds<=hNewC(1)));
+                    set(hNew(i),'cdata',ii)
                 end
             else
                 hNew=patch(1,1,1,'xdata',[],'ydata',[],'cdata',[]);
@@ -101,7 +106,7 @@ try
             hNew=flipud(hNew);
     end
     set(hNew,'parent',Parent)
-    if ~isnan(min(Thresholds)) & ~strcmp(Ops.presentationtype,'contour lines')
+    if ~isnan(min(Thresholds)) && ~strcmp(Ops.presentationtype,'contour lines')
         set(Parent,'clim',[1 length(Thresholds)]);
     end
 catch

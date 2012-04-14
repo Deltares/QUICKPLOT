@@ -857,8 +857,9 @@ else
                 [hNew{d},Thresholds,Param]=qp_plot_default(plotargs{:});
         end
     end
+    
+    ChangeCLim = strcmp(Thresholds,'none');
 
-    ChangeCLim=Param.ChangeCLim;
     hNewVec=cat(1,hNew{:});
 end
 
@@ -967,9 +968,9 @@ if ~strcmp(Ops.colourbar,'none')
         end
         if ~strcmp(Ops.thresholds,'none')
             if LocLabelClass
-                classbar(h,1:length(Thresholds),'labelcolor','label',Thresholds,'plotall')
+                classbar(h,1:length(Thresholds),'labelcolor','label',Thresholds,'plotall','climmode','new')
             else
-                classbar(h,1:length(Thresholds),'label',Thresholds,'plotall')
+                classbar(h,1:length(Thresholds),'label',Thresholds,'plotall','climmode','new')
             end
         end
     end

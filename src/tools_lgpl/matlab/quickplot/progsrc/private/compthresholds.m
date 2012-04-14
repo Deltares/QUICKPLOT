@@ -35,7 +35,13 @@ Thresholds=Ops.thresholds;
 if isempty(Thresholds),
     Thresholds=10;
 end
-if isequal(size(Thresholds),[1 1]) & isequal(Thresholds,round(Thresholds)) & Thresholds>0
+%
+lm(1)=lm(1)-eps(lm(1));
+lm(end)=lm(end)+eps(lm(end));
+%
+if isequal(size(Thresholds),[1 1]) && ...
+        isequal(Thresholds,round(Thresholds)) && ...
+        Thresholds>0
     if ~isempty(Ops.colourlimits)
         lm=Ops.colourlimits;
     end

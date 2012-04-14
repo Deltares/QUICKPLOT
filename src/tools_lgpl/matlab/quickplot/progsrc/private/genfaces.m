@@ -32,11 +32,11 @@ function hNew=genfaces(hOld,Ops,Parent,Val,X,Y,Z)
 %   $Id$
 
 if nargin==4
-    if isempty(hOld) | ~ishandle(hOld)
+    if isempty(hOld) || ~ishandle(hOld)
         error('Invalid handle')
     else
         hNew=hOld;
-        set(hNew,'facevertexcdata',Val(:));
+        set(hNew,'facevertexcdata',Val(:))
     end
 else
     %
@@ -44,7 +44,7 @@ else
         %
         % ---> X, Y and Z
         %
-        faces=reshape(1:prod(size(Z)),size(Z));
+        faces=reshape(1:numel(Z),size(Z));
         if isequal(size(Z),size(Val)+1)
             faces=faces(1:end-1,1:end-1);
             faces=faces(:);
@@ -58,13 +58,19 @@ else
             X1=X(2:end,:);
             Y1=Y(2:end,:);
             xv=[X0(:) Y0(:) Z(:); X1(:) Y1(:) Z(:)];
-            fv=[faces faces+prod(size(X0)) faces+size(X0,1)+prod(size(X0)) faces+size(X0,1)];
+            fv=[faces faces+numel(X0) faces+size(X0,1)+numel(X0) faces+size(X0,1)];
         end
+    elseif ndims(X)==4
+        %
+        % ---> X=XYZ and Y=TRI
+        %
+        xv = squeeze(X(1,:,1,:));
+        fv = Y;
     else
         %
         % ---> X and Y
         %
-        faces=reshape(1:prod(size(Y)),size(Y));
+        faces=reshape(1:numel(Y),size(Y));
         if isequal(size(Y),size(Val)+1)
             faces=faces(1:end-1,1:end-1);
             faces=faces(:);
@@ -76,7 +82,7 @@ else
             X0=X(1:end-1,:);
             X1=X(2:end,:);
             xv=[X0(:) Y(:); X1(:) Y(:)];
-            fv=[faces faces+prod(size(X0)) faces+size(X0,1)+prod(size(X0)) faces+size(X0,1)];
+            fv=[faces faces+numel(X0) faces+size(X0,1)+numel(X0) faces+size(X0,1)];
         end
     end
     cv=Val(:);
@@ -88,7 +94,18 @@ else
         cv(any(isnan(coord(fv)),2))=NaN;
     end
     %
-    if isempty(hOld) | ~ishandle(hOld)
+    if isfield(Ops,'Thresholds') && ~strcmp(Ops.Thresholds,'none')
+        Thresholds = Ops.Thresholds;
+    else
+        Thresholds = [];
+    end
+    %
+    if any(~ishandle(hOld)) || ~isempty(Thresholds)
+        delete(hOld(ishandle(hOld)))
+        hOld = [];
+    end
+    %
+    if isempty(hOld)
         if isempty(Ops.colourmap)
             fv=fv(~isnan(cv) & cv~=0,:);
             hNew=patch('vertices',xv, ...
@@ -96,27 +113,45 @@ else
                 'parent',Parent, ...
                 'edgecolor','none', ...
                 'facecolor',Ops.colour);
-        else
+        elseif isempty(Thresholds)
             hNew=patch('vertices',xv, ...
                 'faces',fv, ...
                 'facevertexcdata',cv, ...
                 'parent',Parent, ...
                 'edgecolor','none', ...
                 'facecolor','flat');
+        else
+            nThresholds = length(Thresholds);
+            Thresholds(end+1) = inf;
+            hNew=zeros(1,nThresholds);
+            for i = 1:nThresholds
+                iclass = cv>=Thresholds(i) & cv<Thresholds(i+1);
+                if any(iclass)
+                    facecolor = 'flat';
+                else
+                    facecolor = 'none';
+                end
+                hNew(i)=patch('vertices',xv, ...
+                    'faces',fv(iclass,:), ...
+                    'facevertexcdata',0*cv(iclass)+i, ...
+                    'parent',Parent, ...
+                    'edgecolor','none', ...
+                    'facecolor',facecolor);
+            end
         end
         if strcmp(Ops.presentationtype,'patches with lines')
-            set(hNew,'edgecolor',Ops.colour);
+            set(hNew,'edgecolor',Ops.colour)
         end
     else
         hNew=hOld;
         if isempty(Ops.colourmap)
             fv=fv(~isnan(cv) & cv~=0,:);
             set(hNew,'vertices',xv, ...
-                'faces',fv);
+                'faces',fv)
         else
             set(hNew,'vertices',xv, ...
                 'faces',fv, ...
-                'facevertexcdata',cv);
+                'facevertexcdata',cv)
         end
     end
 end

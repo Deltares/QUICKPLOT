@@ -68,13 +68,24 @@ if strcmp(Ops.markerfillcolour,'flat') && hasvals
     plot_using_patch=1;
 end
 
+if isfield(Ops,'Thresholds') && ~strcmp(Ops.Thresholds,'none')
+    Thresholds = Ops.Thresholds;
+else
+    Thresholds = [];
+end
+%
+if any(~ishandle(hOld)) || ~isempty(Thresholds)
+    delete(hOld(ishandle(hOld)))
+    hOld = [];
+end
+
 if plot_using_patch
-    if ishandle(hOld)
+    if ~isempty(hOld)
         hNew=hOld;
         set(hNew,'vertices',xyz, ...
             'facevertexcdata',Val, ...
             'faces',FacesIndex);
-    else
+    elseif isempty(Thresholds)
         hNew=patch('vertices',xyz, ...
             'facevertexcdata',Val, ...
             'faces',FacesIndex, ...
@@ -85,12 +96,41 @@ if plot_using_patch
             'marker',Ops.marker, ...
             'markeredgecolor',Ops.markercolour, ...
             'markerfacecolor',Ops.markerfillcolour);
+    else
+        nThresholds = length(Thresholds);
+        Thresholds(end+1) = inf;
+        hNew=zeros(1,nThresholds);
+        for i = 1:nThresholds
+            iclass = Val>=Thresholds(i) & Val<Thresholds(i+1);
+            FacesIndex=(1:sum(iclass))';
+            if any(iclass)
+                edgecolor = 'flat';
+                markeredgecolor = Ops.markercolour;
+                markerfacecolor = Ops.markerfillcolour;
+                XYZ = xyz(iclass,:);
+            else
+                edgecolor = 'none';
+                markeredgecolor = 'none';
+                markerfacecolor = 'none';
+                XYZ = [];
+            end
+            hNew(i)=patch('vertices',XYZ, ...
+                'facevertexcdata',0*Val(iclass)+i, ...
+                'faces',FacesIndex, ...
+                'parent',Parent, ...
+                'edgecolor',edgecolor, ...
+                'facecolor','none', ...
+                'linestyle','none', ...
+                'marker',Ops.marker, ...
+                'markeredgecolor',markeredgecolor, ...
+                'markerfacecolor',markerfacecolor);
+        end
     end
 else
     if isempty(xyz)
         xyz=zeros(0,2);
     end
-    if ishandle(hOld)
+    if ~isempty(hOld)
         hNew=hOld;
         set(hNew,'xdata',xyz(:,1), ...
             'ydata',xyz(:,2));

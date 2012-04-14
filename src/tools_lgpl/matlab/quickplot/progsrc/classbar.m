@@ -1,43 +1,45 @@
 function classbar(ax,Th,varargin)
 %CLASSBAR Converts a color bar into a classbar.
-%   CLASSBAR(ColorbarHandle,Thresholds,NumberFormat)
-%   converts the specified colorbar into a class bar
-%   using the specified number format (default %1.4g)
+%   CLASSBAR(ColorbarHandle,Thresholds,NumberFormat) converts the specified
+%   colorbar into a class bar using the specified number format (default
+%   %1.4g).
 %
-%   CLASSBAR(ColorbarHandle,Thresholds,CellString)
-%   converts the specified colorbar into a class bar
-%   with the labels specified in the cell string.
+%   CLASSBAR(ColorbarHandle,Thresholds,CellString) converts the specified
+%   colorbar into a class bar with the labels specified in the cell string.
 %
 %   ...,'labelcolor')
-%   labels the colors instead of the transitions. The
-%   colors should be labeled in case of a CONTOUR plot,
-%   the transitions should be labeled in case of a
-%   CONTOURF plot.
+%   labels the colors instead of the transitions. The colors should be
+%   labeled in case of a CONTOUR plot, the transitions should be labeled in
+%   case of a CONTOURF plot.
 %
 %   ...,'plotall')
-%   makes sure that all classes are drawn irrespective
-%   of the classes used in the plot. This includes the
-%   last class >= maximum threshold.
+%   makes sure that all classes are drawn irrespective of the classes used
+%   in the plot. This includes the last class >= maximum threshold.
 %
 %   ...,'plot',N)
-%   makes sure that the first N classes are drawn irrespective
-%   of the classes used in the plot. If N>=length(Thresholds)
-%   this implies 'plotall'.
+%   makes sure that the first N classes are drawn irrespective of the
+%   classes used in the plot. If N>=length(Thresholds) this implies
+%   'plotall'.
 %
 %   ...,'plotrange',[N1 N2])
 %   plots only the classes in the range N1:N2.
 %
 %   ...,'label',ThresholdsVal)
-%   uses the value in the ThresholdsVal vector to display
-%   along the class bar. NaN values will not be labelled.
+%   uses the value in the ThresholdsVal vector to display along the class
+%   bar. NaN values will not be labelled.
 %
 %   ...,'format',FormatString)
-%   uses the specified format to label the classbar,
-%   for instance '%3.2f'.
+%   uses the specified format to label the classbar, for instance '%3.2f'.
 %
 %   ...,'max')
-%   use this option if cdata of contour patches contain
-%   maximum instead of minimum values.
+%   use this option if cdata of contour patches contain maximum instead of
+%   minimum values.
+%
+%   ...,'climmode',ClimMode)
+%   uses the specified mode for setting the clim of the axes. By default
+%   the ClimMode equals 'extend', which extends the current clim to include
+%   the new threshold range. Alternative option for ClimMode is: 'new'
+%   which causes the clim to match the threshold limits.
 %
 %   Example 1
 %       thr=.25:.1:.95;
@@ -95,6 +97,7 @@ ColorByIndex=0;
 sTh=[];
 LabelCol=0;
 MaxValues=0;
+ClimMode='extend';
 if nargin>2
     i=0;
     while i<length(varargin)
@@ -108,6 +111,9 @@ if nargin>2
                     LabelCol=1;
                 case 'colorbyindex'
                     ColorByIndex=1;
+                case 'climmode'
+                    i=i+1;
+                    ClimMode=lower(varargin{i});
                 case 'plot'
                     i=i+1;
                     PlotAll=varargin{i};
@@ -141,7 +147,7 @@ end
 Patches=findall(OrigAx,'type','patch');
 
 CLim=get(OrigAx,'clim');
-if ~ColorByIndex
+if ~ColorByIndex && ~strcmp(ClimMode,'new')
     CLimTh = CLim;
     if Th(1)<CLimTh(1)
         CLimTh(1)=Th(1);

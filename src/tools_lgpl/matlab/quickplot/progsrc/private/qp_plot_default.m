@@ -215,45 +215,22 @@ switch NVal
 
         if spatialh==2 && spatial==2
             if isfield(data,'TRI')
+                mv=max(data.Val(:));
+                miv=min(data.Val(:));
+                Thresholds=compthresholds(Ops,[miv mv],LocStartClass);
+                Ops.Thresholds = Thresholds;
+                %
                 set(Parent,'NextPlot','add');
                 switch Ops.presentationtype
                     case {'patches','patches with lines'}
-                        if FirstFrame
-                            hNew=patch('vertices',squeeze(data.XYZ(1,:,1,:)),'faces',data.TRI,'facevertexcdata',data.Val, ...
-                                'facecolor','flat','edgecolor','none', ...
-                                'parent',Parent);
-                            if strcmp(Ops.presentationtype,'patches with lines')
-                                set(hNew,'edgecolor',Ops.colour)
-                            end
-                        elseif ishandle(hNew)
-                            set(hNew,'vertices',squeeze(data.XYZ(1,:,1,:)),'facevertexcdata',data.Val(:));
-                        else
-                            return
-                        end
+                        hNew=genfaces(hNew,Ops,Parent,data.Val,data.XYZ,data.TRI);
 
                     case 'values'
                         I=~isnan(data.Val);
                         hNew=gentextfld(hNew,Ops,Parent,data.Val(I),data.X(I),data.Y(I));
 
                     case 'markers'
-                        data.XYZ=[data.X(:) data.Y(:)];
-                        if FirstFrame
-
-                            hNew=patch('vertices',data.XYZ,'faces',(1:size(data.XYZ,1))', ...
-                                'facevertexcdata',data.Val(:), ...
-                                'parent',Parent, ...
-                                'edgecolor','flat', ...
-                                'facecolor','none', ...
-                                'linestyle','none', ...
-                                'marker',Ops.marker, ...
-                                'markerfacecolor',Ops.markerfillcolour, ...
-                                'markeredgecolor',Ops.markercolour);
-
-                        elseif ishandle(hNew)
-                            set(hNew,'vertices',data.XYZ,'facevertexcdata',data.Val(:));
-                        else
-                            return
-                        end
+                        hNew=genmarkers(hNew,Ops,Parent,data.Val,data.X,data.Y);
 
                     case 'continuous shades'
 
@@ -275,9 +252,6 @@ switch NVal
                         end
 
                     case {'contour lines','coloured contour lines','contour patches','contour patches with lines'}
-                        mv=max(data.Val(:));
-                        miv=min(data.Val(:));
-                        Thresholds=compthresholds(Ops,[miv mv],LocStartClass);
                         if miv<Thresholds(1)
                             Thresholds = [-inf Thresholds];
                         end
@@ -322,6 +296,9 @@ switch NVal
                 end
                 mv=max(data.Val(:));
                 miv=min(data.Val(:));
+                Thresholds=compthresholds(Ops,[miv mv],LocStartClass);
+                Ops.Thresholds = Thresholds;
+                %
                 set(Parent,'NextPlot','add');
                 switch Ops.presentationtype
                     case {'patches','patches with lines'}
@@ -352,8 +329,6 @@ switch NVal
                             data.X(isnan(data.X))=mean(data.X(~isnan(data.X)));
                             data.Y(isnan(data.Y))=mean(data.Y(~isnan(data.Y)));
                         end
-                        miv=min(data.Val(:));
-                        Thresholds=compthresholds(Ops,[miv mv],LocStartClass);
                         if mv==miv
                             data.X(end+1,:)=mx;
                             data.Y(end+1,:)=my;
@@ -371,7 +346,6 @@ switch NVal
                         if mv==miv
                             Thresholds=[mv mv];
                         end
-                        Param.ChangeCLim=0;
                 end
                 if isempty(Selected{K_})
                     str=PName;
@@ -533,6 +507,11 @@ switch NVal
             end
             data.Z=squeeze(data.Z);
             data.Val=squeeze(data.Val);
+            mv=max(data.Val(:));
+            miv=min(data.Val(:));
+            Thresholds=compthresholds(Ops,[miv mv],LocStartClass);
+            Ops.Thresholds = Thresholds;
+            %
             set(Parent,'NextPlot','add');
             switch Ops.presentationtype
                 case {'patches','patches with lines'}
@@ -559,9 +538,6 @@ switch NVal
                     data.Val(isnan(s) | isnan(data.Z))=NaN;
                     ms=max(s(:));
                     mz=max(data.Z(:));
-                    mv=max(data.Val(:));
-                    miv=min(data.Val(:));
-                    Thresholds=compthresholds(Ops,[miv mv],LocStartClass);
                     s(isnan(s))=ms;
                     data.Z(isnan(data.Z))=mz;
                     if mv==miv
@@ -578,7 +554,6 @@ switch NVal
                     if mv==miv
                         Thresholds=[mv mv];
                     end
-                    Param.ChangeCLim=0;
 
             end
             if FirstFrame
@@ -894,13 +869,17 @@ switch NVal
                 end
 
                 if ~isempty(Ops.vectorcolour)
-                    %        if ~strcmp(Ops.thresholds,'none')
-                    %          miv=min(data.Val);
-                    %          mv=max(data.Val);
-                    %          Thresholds=compthresholds(Ops,[miv mv],LocStartClass);
-                    %          data.Val=cont2class(data.Val,Thresholds);
-                    %          set(Parent,'clim',[1 length(Thresholds)]);
-                    %        end
+                    if ~strcmp(Ops.thresholds,'none')
+                        miv=min(data.Val);
+                        mv=max(data.Val);
+                        Thresholds=compthresholds(Ops,[miv mv],LocStartClass);
+                        vc = zeros(size(data.Val));
+                        for i=1:length(Thresholds)
+                            vc(data.Val>=Thresholds(i))=i;
+                        end
+                        data.Val=vc;
+                        set(Parent,'clim',[1 length(Thresholds)]);
+                    end
                     hNew=colquiver(hNew,data.Val);
                 else
                     set(hNew,'color',Ops.colour)
