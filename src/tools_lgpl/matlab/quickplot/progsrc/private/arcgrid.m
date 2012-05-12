@@ -89,7 +89,7 @@ switch cmd
             Out=H;
         end
     otherwise
-        error(sprintf('Unknown command: "%s"',cmd))
+        error('Unknown command: "%s"',cmd)
 end
 
 
@@ -97,7 +97,7 @@ function Structure=Local_open_file(filename)
 Structure.Check='NotOK';
 Structure.FileType='arcgrid';
 
-if (nargin==0) | strcmp(filename,'?')
+if (nargin==0) || strcmp(filename,'?')
     [fn,fp]=uigetfile('*.arc');
     if ~ischar(fn)
         return
@@ -117,7 +117,7 @@ Structure.Extension=e(2:end);
 Line=fgetl(fid); % First lines might be comment lines: /* ....
 time_in_file=0;
 while strmatch('/*',Line)
-    if ~isempty(strfind(Line,'time=')) | ~isempty(strfind(Line,'time ='))
+    if ~isempty(strfind(Line,'time=')) || ~isempty(strfind(Line,'time ='))
         time_in_file=1;
     end
     Line=fgetl(fid);
@@ -156,7 +156,7 @@ while ~feof(fid)
         case 'nodata_value' % both nodata_value and NODATA_value occur
             Structure.NoData=sscanf(remLine,'%f',1);
         otherwise
-            if length(keyw)>2 & isequal(keyw(1:2),'/*')
+            if length(keyw)>2 && isequal(keyw(1:2),'/*')
                 % skip comment
             else
                 fseek(fid,Structure.DataStart,-1);
@@ -197,7 +197,7 @@ if ~isempty(Time)
     while ~feof(fid)
         LineStartsAt=ftell(fid);
         Line=fgetl(fid);
-        if length(Line)>2 & strcmp(Line(1:2),'/*') & isempty(Time)
+        if length(Line)>2 && strcmp(Line(1:2),'/*') && isempty(Time)
             Time=sscanf(lower(Line),'/* time (hrs) %f',1);
         elseif ~isempty(Time)
             Structure.DataStart(end+1,1)=LineStartsAt;
@@ -248,61 +248,71 @@ Structure.Times=[];
 % case (upper/lower characters) on a character by character basis.
 %
 ndigits=0;
-while ndigits<=length(n) & abs(n(end-ndigits))>47 & abs(n(end-ndigits))<58
+while ndigits<=length(n) && abs(n(end-ndigits))>47 && abs(n(end-ndigits))<58
     ndigits=ndigits+1;
 end
-digits=n(end-ndigits+1:end);
+digits=n(length(n)-ndigits+1:end);
 if all(abs(digits)>47 & abs(digits)<58)
     Structure.FileBase=[p filesep n(1:end-ndigits)];
     Structure.NDigits=ndigits;
-    Files=dir([Structure.FileBase '*.' Structure.Extension]);
-    Files=str2mat(Files.name); % cannot be empty, should find this file
-    if time_in_file
-        Files=Files(:,end-3-ndigits:end-4);
-        ntimes=size(Files,1);
-        Structure.FileNr=Files;
-        Structure.Times=zeros(ntimes,1);
-        for i=1:ntimes
-            fl=fopen([Structure.FileBase Files(i,:) '.' Structure.Extension],'r');
-            if fl>0
-                Line=fgetl(fl);
-                n = strfind(Line,'time=');
-                if ~isempty(n)
-                    Structure.Times(i) = sscanf(Line(n+5:end),'%f');
-                else
-                    n = strfind(Line,'time =');
-                    Structure.Times(i) = sscanf(Line(n+6:end),'%f');
-                end
-                fclose(fl);
-            end
-        end
-    else
-        Files=Files(:,end-3-(1:ndigits));
-        Structure.Times=sort((Files-48)*10.^(0:ndigits-1)');
+    [Structure.Times,FileNr]=getfiletimes(Structure.FileBase,Structure.Extension,time_in_file);
+    if ~isempty(FileNr)
+        Structure.FileNr = FileNr;
     end
 end
 lwc=Structure.Extension-upper(Structure.Extension);
-if strcmp(lower(Structure.Extension),'amu')
+if strcmpi(Structure.Extension,'amu')
     amv=char('AMV'+lwc);
-    Files=dir([Structure.FileBase '*.' amv]);
-    if ~isempty(Files)
-        Files=str2mat(Files.name); % cannot be empty, should find this file
-        Files=Files(:,end-3-ndigits:end-4);
-        if isequal(Files,Structure.FileNr)
-            Structure.Extension=char('AMUV'+lwc([1:3 3]));
-        end
+    Times=getfiletimes(Structure.FileBase,amv,time_in_file);
+    if isequal(Times,Structure.Times)
+        Structure.Extension=char('AMUV'+lwc([1:3 3]));
     end
-elseif strcmp(lower(Structure.Extension),'amv')
+elseif strcmpi(Structure.Extension,'amv')
     amu=char('AMU'+lwc);
-    Files=dir([Structure.FileBase '*.' amu]);
-    if ~isempty(Files)
-        Files=str2mat(Files.name); % cannot be empty, should find this file
-        Files=Files(:,end-3-ndigits:end-4);
-        if isequal(Files,Structure.FileNr)
-            Structure.Extension=char('AMUV'+lwc([1:3 3]));
-        end
+    Times=getfiletimes(Structure.FileBase,amu,time_in_file);
+    if isequal(Times,Structure.Times)
+        Structure.Extension=char('AMUV'+lwc([1:3 3]));
     end
 end
+
+
+function [Times,FileNr]=getfiletimes(FileBase,Extension,time_in_file)
+[FilePath,FileName]=fileparts(FileBase);
+last_char=length(FileName);
+len_ext=length(Extension)+1;
+%
+Files=dir([FileBase '*.' Extension]);
+ntimes=length(Files);
+FileNr=cell(ntimes,1);
+Times=zeros(ntimes,1);
+if ntimes==0
+    return
+elseif time_in_file
+    for i=1:ntimes
+        FileNr{i}=Files(i).name(last_char+1:end-len_ext);
+        %
+        fl=fopen(fullfile(FilePath,Files(i).name),'r');
+        if fl>0
+            Line=fgetl(fl);
+            n = strfind(Line,'time=');
+            if ~isempty(n)
+                Times(i) = sscanf(Line(n+5:end),'%f');
+            else
+                n = strfind(Line,'time =');
+                Times(i) = sscanf(Line(n+6:end),'%f');
+            end
+            fclose(fl);
+        end
+    end
+else
+    Times=zeros(ntimes,1);
+    for i=1:ntimes
+        FileNr{i}=Files(i).name(last_char+1:end-len_ext);
+        Times(i)=(FileNr{i}-48)*10.^(length(FileNr{i})-1:-1:0)';
+    end
+end
+[Times,I] = sort(Times);
+FileNr = FileNr(I);
 
 
 function Structure=Local_read_file(filename,nr)
@@ -326,22 +336,22 @@ if strcmp(Structure.Check,'NotOK')
 end
 
 ext=3;
-if strcmp(lower(Structure.Extension),'amuv')
+if strcmpi(Structure.Extension,'amuv')
     ext=[3 4];
 end
 for i=ext
     fil=Structure.FileName;
     subnr=1;
-    if nargin>1 & length(Structure.DataStart)==1
-        if isfield(Structure,'NDigits')
-            ndigits=Structure.NDigits;
-        else
-            ndigits=3;
-        end
-        format=sprintf('%%%i.%ii',ndigits,ndigits);
+    if nargin>1 && length(Structure.DataStart)==1
         if isfield(Structure,'FileNr')
-            Nr=Structure.FileNr(nr,:);
+            Nr=Structure.FileNr{nr};
         else
+            if isfield(Structure,'NDigits')
+                ndigits=Structure.NDigits;
+            else
+                ndigits=3;
+            end
+            format=sprintf('%%%i.%ii',ndigits,ndigits);
             Nr=sprintf(format,Structure.Times(nr));
         end
         fil=[Structure.FileBase Nr '.' Structure.Extension([1 2 i])];
@@ -357,7 +367,7 @@ for i=ext
     if NumRead<(Structure.NCols*Structure.NRows)
         if feof(fid)
             fclose(fid);
-            error(sprintf('Insufficient data values found in the file: %s.',Structure.FileName));
+            error('Insufficient data values found in the file: %s.',Structure.FileName)
         end
         X=char(fread(fid,1,'uchar'));
         if isequal(X,'*')
@@ -368,7 +378,7 @@ for i=ext
         else
             fclose(fid);
             fprintf(1,['Unexpected character ''' X ''' encountered.\n']);
-            error(sprintf('Not all data values could be read from %s.',Structure.FileName));
+            error('Not all data values could be read from %s.',Structure.FileName)
         end
     else
         [X,More]=fscanf(fid,'%f',1);
@@ -447,8 +457,8 @@ if nargin<2
     end
     StepSize=str2num(StepSize{1});
 end
-if ~isequal(size(StepSize),[1 1]) | ~isfinite(StepSize) | ...
-        StepSize~=round(StepSize) | StepSize<0 | ...
+if ~isequal(size(StepSize),[1 1]) || ~isfinite(StepSize) || ...
+        StepSize~=round(StepSize) || StepSize<0 || ...
         StepSize>min(Structure.NRows,Structure.NCols)
     return
 end
@@ -508,8 +518,8 @@ if nargin<3
     end
     StepSize=str2num(StepSize{1});
 end
-if ~isequal(size(StepSize),[1 1]) | ~isfinite(StepSize) | ...
-        StepSize~=round(StepSize) | StepSize<0 | ...
+if ~isequal(size(StepSize),[1 1]) || ~isfinite(StepSize) || ...
+        StepSize~=round(StepSize) || StepSize<0 || ...
         StepSize>min(Structure.NRows,Structure.NCols)
     return
 end
