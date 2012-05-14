@@ -132,7 +132,7 @@ switch expType
                 saveops={'-v7.3'};
         end
     otherwise
-        ui_message('warning',sprintf('Export type %s not implemented.',ExpType));
+        ui_message('warning','Export type %s not implemented.',ExpType);
         filename='';
         return
 end

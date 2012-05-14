@@ -103,7 +103,7 @@ while i<=nargin
                 if isequal(Type(end),'_') & ~isempty(strmatch(lower(Type(Type>58)),{'jpg_','jpeg_'}))
                     % OK accept it, it is probably something like jpg_ or jpeg90_
                 else
-                    error(sprintf('Unrecognized option or file format: %s',varargin{i}));
+                    error('Unrecognized option or file format: %s',varargin{i})
                 end
         end
     else

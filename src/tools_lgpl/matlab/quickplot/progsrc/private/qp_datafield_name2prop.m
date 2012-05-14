@@ -49,7 +49,7 @@ Names = {DataProps.Name};
 [Id,IdAll] = ustrcmpi(Name,Names);
 if Id<0
     if isempty(IdAll)
-        error(sprintf('Unknown data field: %s.',Name));
+        error('Unknown data field: %s.',Name)
     else
         error(cat(2,sprintf('Datafield name ''%s'' not unique, matching:\n',Name), ...
             sprintf('''%s'' ',Names{IdAll})));

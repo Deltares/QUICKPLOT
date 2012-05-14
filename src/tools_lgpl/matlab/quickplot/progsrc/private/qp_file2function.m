@@ -177,7 +177,7 @@ if ~any(id)
         end
     end
     if ~previousMessage
-        ui_message('warning',sprintf('No function associated with file of type %s.',tp))
+        ui_message('warning','No function associated with file of type %s.',tp)
     end
     return
 end

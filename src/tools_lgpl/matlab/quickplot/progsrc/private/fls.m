@@ -743,7 +743,7 @@ switch OS
         N1=fread(fid,1,'uint32');
     otherwise
         fclose(fid);
-        error(sprintf('%s formatted file not supported.',OS))
+        error('%s formatted file not supported.',OS)
 end
 switch OS
     case {'PCWIN','UNIX'}
@@ -817,7 +817,7 @@ switch OS
 end
 if ~isequal(N1,N2)
     fclose(fid);
-    error(sprintf('Error reading formatted binary file: inconsistent block length %i versus %i.',N1,N2))
+    error('Error reading formatted binary file: inconsistent block length %i versus %i.',N1,N2)
 end
 
 function Data=Local_read_bin(FileInfo,Field,Station,Index)

@@ -331,7 +331,7 @@ if nval==2 || nval==3
             vectors=0;
             Ops.MNK=1;
         otherwise
-            ui_message('error',sprintf('Unexpected plot type encountered: %s\nin main module.',Ops.vectorcomponent));
+            ui_message('error','Unexpected plot type encountered: %s\nin main module.',Ops.vectorcomponent)
             Ops.presentationtype='failed';
             return
     end

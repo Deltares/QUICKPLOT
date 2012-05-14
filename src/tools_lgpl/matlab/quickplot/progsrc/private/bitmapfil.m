@@ -90,7 +90,7 @@ switch cmd
         return
     case 'plot'
     otherwise
-        error(sprintf('''%s'' option not defined for bitmap',cmd))
+        error('''%s'' option not defined for bitmap',cmd)
 end
 
 Parent=varargin{1};

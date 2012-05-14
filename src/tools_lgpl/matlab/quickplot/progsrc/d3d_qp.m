@@ -70,7 +70,7 @@ if (nargout~=0)
         return
     elseif isstandalone % allow standalone auto start ...
         outdata=[];
-    elseif ~any(strcmp(cmd,{'loaddata','selectedfigure','selectedaxes','selecteditem'}))
+    elseif none(strcmp(cmd,{'loaddata','selectedfigure','selectedaxes','selecteditem'}))
         error('Too many output arguments.');
     end
 end
@@ -78,7 +78,7 @@ end
 if isempty(gcbf) || ~strcmp(get(gcbf,'tag'),'Delft3D-QUICKPLOT')
     mfig=findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
     
-    if isempty(mfig) && ~any(strcmp(cmd,{'initialize','initialize_background','closefigure','printfigure','dayok'}))
+    if isempty(mfig) && none(strcmp(cmd,{'initialize','initialize_background','closefigure','printfigure','dayok'}))
         d3d_qp
         mfig=findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
         if isempty(mfig)
@@ -246,7 +246,7 @@ try
                 File=NewRecord;
             else
                 FileNameList={File.Name};
-                sel=strmatch(FileName,FileNameList,'exact');
+                sel=find(strcmp(FileName,FileNameList));
                 if isempty(sel)
                     sel=length(File)+1;
                 end
@@ -269,7 +269,7 @@ try
             end
             ThisFile = sprintf('''%s'' ',FileName,Otherargs{:});
             ThisFile(end)=[];
-            ii = strmatch(ThisFile,RecentFiles,'exact');
+            ii = find(strcmp(ThisFile,RecentFiles));
             if isempty(ii)
                 ii = 9;
             else
@@ -454,7 +454,7 @@ try
                     File=NewRecord;
                 else
                     FileNameList={File.Name};
-                    NrInList=strmatch(FileName,FileNameList,'exact');
+                    NrInList=find(strcmp(FileName,FileNameList));
                     if isempty(NrInList)
                         NrInList=length(File)+1;
                     end
@@ -510,7 +510,7 @@ try
                     File=NewRecord;
                 else
                     FileNameList={File.Name};
-                    NrInList=strmatch(FileName,FileNameList,'exact');
+                    NrInList=find(strcmp(FileName,FileNameList));
                     if isempty(NrInList)
                         NrInList=length(File)+1;
                         Str{NrInList}=abbrevfn(FileName,60);
@@ -608,7 +608,6 @@ try
             File=get(Handle_File1,'userdata');
             %
             Handle_SelectFile=findobj(hDiff,'tag',cmd);
-            Str=get(Handle_SelectFile,'string');
             %
             if nargin==2
                 NrInList = cmdargs{1};
@@ -749,7 +748,6 @@ try
                 OpenFile=findobj(mfig,'tag','openfile','type','uipushtool');
                 Handle_ReloadFile=findobj(mfig,'tag','reloadfile');
                 Handle_CloseFile=findobj(mfig,'tag','closefile');
-                Handle_CloseAllFiles=findobj(mfig,'tag','closeallfiles');
                 switch File(NrInList).FileType
                     case '<user defined variables>'
                         set(Handle_ReloadFile,'enable','off');
@@ -932,9 +930,7 @@ try
             
         case 'showtimeswitch'
             UDSts=findobj(mfig,'tag','showtimes');
-            if isempty(cmdargs)
-                Sts=get(UDSts,'value');
-            else
+            if ~isempty(cmdargs)
                 Sts=cmdargs{1};
                 if ~isequal(Sts,0) && ~isequal(Sts,1)
                     error('Invalid argument specified for %s.',cmd)
@@ -989,7 +985,7 @@ try
                     nsts = max(size(sts,1),length(sts));
                     if i<1 || i>nsts
                         ui_message('warning', ...
-                            sprintf('Requested station number %i bigger than number of stations %i.',i,nsts));
+                            'Requested station number %i bigger than number of stations %i.',i,nsts);
                         i = get(UD.MainWin.StList,'value');
                     else
                         i = cmdargs{1};
@@ -1001,7 +997,7 @@ try
                 if i<0
                     if length(iall)>1
                         ui_message('warning', ...
-                            sprintf('Multiple station names match ''%s'', selecting first',stn));
+                            'Multiple station names match ''%s'', selecting first',stn);
                         set(UD.MainWin.StList,'value',iall(1));
                     else
                         error('Cannot select station: %s',cmdargs{1})
@@ -1101,13 +1097,22 @@ try
             
         case {'editm','editn','editk','editt','edits','editm*','editn*','editk*','editt*','edits*'}
             M=upper(cmd(5));
+            m_=find('TSMNK'==M);
+            %
             MW=UD.MainWin;
-            UDAllM=getfield(MW,strcat('All',M));
-            UDEditM=getfield(MW,strcat('Edit',M));
-            UDMaxM=getfield(MW,strcat('Max',M));
+            UDAllM=MW.(['All' M]);
+            UDEditM=MW.(['Edit' M]);
+            UDMaxM=MW.(['Max' M]);
             maxm=get(UDMaxM,'userdata');
             pUDM=get(UDAllM,'userdata');
-            
+
+            fld=get(MW.Field,'value');
+            Props=get(MW.Field,'userdata');
+            if isempty(Props)
+                return
+            end
+            DimFlag=Props(fld).DimFlag;
+
             try
                 if isempty(cmdargs)
                     mstr=get(UDEditM,'string');
@@ -1115,7 +1120,11 @@ try
                     mstr=cmdargs{1};
                 end
                 if ischar(mstr)
-                    m=str2vec(mstr,'range',[1 maxm],'applylimit');
+                    if DimFlag(m_)==7
+                        m=str2vec(mstr);
+                    else
+                        m=str2vec(mstr,'range',[1 maxm],'applylimit');
+                    end
                 else
                     m=mstr;
                 end
@@ -1127,17 +1136,11 @@ try
                 m=1;
             end
             if M~='T'
-                %
-                m_=find('TSMNK'==M);
                 if m_==3 || m_==4
                     if ~strcmp(getvalstr(MW.HSelType),'M range and N range')
                         d3d_qp('m,n*')
                     end
                 end
-                datafields=findobj(mfig,'tag','selectfield');
-                fld=get(datafields,'value');
-                Props=get(datafields,'userdata');
-                DimFlag=Props(fld).DimFlag;
                 %
                 % often only subranges are acceptable: m1:m2, not m1:mi:m2 or [m1 m2 m4]
                 %
@@ -1162,8 +1165,14 @@ try
                         % cannot occur
                     case {5,15} % Element
                         m=m(1);
-                    case {6,16}
+                    case {6,16} % Any list of elements
                         m=unique(m);
+                    case {7} % Element from list
+                        labels = getappdata(UDEditM,'dimlabels');
+                        m = m(ismember(m,labels));
+                        if isempty(m)
+                            m = get(UDEditM,'userdata');
+                        end
                 end
                 %
             else
@@ -2291,7 +2300,7 @@ try
                     delete(findall(GVAxes,'tag','landboundary'))
                     zoomupdate=1;
                 otherwise
-                    ui_message('error',sprintf('%s not supported as supplier of landboundary data.',Tp))
+                    ui_message('error','%s not supported as supplier of landboundary data.',Tp)
             end
             
             if zoomupdate
@@ -2335,7 +2344,7 @@ try
                 if ~Succes || isempty(Props) || ~isfield(Props,'DimFlag') || ~isempty(strmatch('---',Props(fld).Name))
                     qp_gridview('setgrid',UD.GridView.Fig,[],[])
                     set(UD.GridView.Fig,'userdata',[])
-                elseif isfield(Props(fld),'UseGrid') && Props(fld).UseGrid>0
+                elseif isfield(Props(fld),'UseGrid') && ~isempty(Props(fld).UseGrid) && Props(fld).UseGrid>0
                     Info=File(NrInList);
                     %
                     Handle_Domain=findobj(mfig,'tag','selectdomain');
@@ -3380,9 +3389,9 @@ try
                 stat=1;
             end
             if stat==1
-                ui_message('error',['Could not find browser to visit ',site,'.'])
+                ui_message('error','Could not find browser to visit %s.',site)
             elseif stat==2
-                ui_message('error',['Could not start browser to visit ',site,'.'])
+                ui_message('error','Could not start browser to visit %s.',site)
             end
             
         otherwise
@@ -3394,7 +3403,7 @@ catch
 end
 if ~ischar(cmd)
     try
-        ui_message('error',sprintf('Unknown command in d3d_qp: %s',cmd2))
+        ui_message('error','Unknown command in d3d_qp: %s',cmd2)
     catch
         ui_message('error','Unknown command in d3d_qp: <cmd2 not defined>')
     end

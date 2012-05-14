@@ -594,14 +594,14 @@ while anychange && any(~identified)
             identified(i)=1;
             if ~strcmpi(units{i},'general')
                 ui_message('', ...
-                    sprintf('No names in chapter #%i: %s', ...
-                    i,units{i}))
+                    'No names in chapter #%i: %s', ...
+                    i,units{i})
             end
         elseif isempty(Def)
             identified(i)=1;
             ui_message('', ...
-                sprintf('No definition for %s in chapter #%i: %s', ...
-                list2string(Names),i,units{i}))
+                'No definition for %s in chapter #%i: %s', ...
+                list2string(Names),i,units{i})
         else
             if ~iscell(Names)
                 Names={Names};
@@ -621,8 +621,8 @@ while anychange && any(~identified)
                     if ~isempty(ii)
                         ii=table{2}(ii);
                         ui_message('', ...
-                            sprintf('%s defined multiple times, using definition: %g %s', ...
-                            Names{n},table{3}(ii,2),dispunit(table{4}(ii,:))))
+                            '%s defined multiple times, using definition: %g %s', ...
+                            Names{n},table{3}(ii,2),dispunit(table{4}(ii,:)))
                         Names(n)=[];
                         nNewNames=nNewNames-1;
                     else
@@ -651,8 +651,8 @@ if any(~identified)
             Names={Names};
         end
         ui_message('', ...
-            sprintf('Cannot understand definition ''%s''\ntherefore the definition of %s has been cancelled.', ...
-            Def,list2string(Names)))
+            'Cannot understand definition ''%s''\ntherefore the definition of %s has been cancelled.', ...
+            Def,list2string(Names))
     end
 end
 

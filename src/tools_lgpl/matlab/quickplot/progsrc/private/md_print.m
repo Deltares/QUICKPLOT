@@ -264,7 +264,7 @@ while i<length(figlist)
                         try
                             print(fn,FigStr,dvr,PrtMth{:});
                         catch
-                            ui_message('error',sprintf('error encountered creating %s:%s',fn,lasterr));
+                            ui_message('error','error encountered creating %s:%s',fn,lasterr);
                         end
                         set(figlist(i),'inverthardcopy',ih);
                     end
@@ -277,7 +277,7 @@ while i<length(figlist)
                         try
                             hgsave(figlist(i),fn);
                         catch
-                            ui_message('error',sprintf('error encountered creating %s:%s',fn,lasterr));
+                            ui_message('error','error encountered creating %s:%s',fn,lasterr);
                         end
                     end
                 otherwise
@@ -325,7 +325,7 @@ while i<length(figlist)
                         set(figlist(i),'inverthardcopy',ih);
                         cd(ccd);
                     catch
-                        ui_message('error',sprintf('error encountered printing to %s:%s',Printer,lasterr));
+                        ui_message('error','error encountered printing to %s:%s',Printer,lasterr);
                     end
             end
             if nargout>0

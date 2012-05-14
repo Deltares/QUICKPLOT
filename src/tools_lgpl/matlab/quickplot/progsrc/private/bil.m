@@ -52,7 +52,7 @@ switch cmd
     case 'read'
         Out=Local_read_file(varargin{:});
     otherwise
-        error(sprintf('Unknown command: "%s"',cmd))
+        error('Unknown command: "%s"',cmd)
 end
 
 function Structure=Local_open_file(filename)
@@ -73,7 +73,7 @@ switch lower(e)
     case {'.bil','.bip','.bsq'}
         Structure.HdrExtension=char(e-[' ' upper(e(2:end))]+' HDR');
     otherwise
-        error(sprintf('Invalid file extension for raster file: ''%s''.',e))
+        error('Invalid file extension for raster file: ''%s''.',e)
 end
 Structure.FileBase = fullfile(p,n);
 Structure.FileName = [Structure.FileBase Structure.HdrExtension];
@@ -87,7 +87,7 @@ Structure.Layout = 'BIL';
 filename = Structure.FileName;
 fid=fopen(filename,'r');
 if fid<0
-    error(sprintf('Cannot open header file ''%s''.',filename))
+    error('Cannot open header file ''%s''.',filename)
 end
 KnownKeywords = {'ByteOrder','Layout','nRows','nCols','nBands', ...
     'nBlocks','nBits','BandRowBytes','TotalRowBytes','BandGapBytes', ...
@@ -99,16 +99,16 @@ while ~feof(fid)
     iLine = iLine+1;
     if length(Line)>100
         fclose(fid);
-        error(sprintf('Line %i considered to be too long.',iLine))
+        error('Line %i considered to be too long.',iLine)
     end
     [T,R] = strtok(Line);
     [R,R2] = strtok(R);
     if isempty(R)
         fclose(fid);
-        error(sprintf('Too few tokens on line %i.',iLine))
+        error('Too few tokens on line %i.',iLine)
     elseif ~isempty(deblank(R2))
         fclose(fid);
-        error(sprintf('Too many tokens on line %i.',iLine))
+        error('Too many tokens on line %i.',iLine)
     end
     iT = strmatch(lower(T),LowerKeywords,'exact');
     if ~isempty(iT)
@@ -118,7 +118,7 @@ while ~feof(fid)
         Structure = setfield(Structure,KnownKeywords{iT},R);
     else
         fclose(fid);
-        error(sprintf('Unknown keyword ''%s''.',T))
+        error('Unknown keyword ''%s''.',T)
     end
 end
 fclose(fid);
@@ -126,27 +126,27 @@ fclose(fid);
 RequiredKeywords = {'nRows','nCols'};
 for i=1:length(RequiredKeywords)
     if ~isfield(Structure,RequiredKeywords{i})
-        error(sprintf('Required keyword ''%s'' not found in header file.',RequiredKeywords{i}))
+        error('Required keyword ''%s'' not found in header file.',RequiredKeywords{i})
     end
 end
 %
 if Structure.nBits == 1 & Structure.nBands~=1
-    error(sprintf('A file with nBits equal to one, should have nBands also equal to one.'))
+    error('A file with nBits equal to one, should have nBands also equal to one.')
 end
 %
 if isfield(Structure,'Xdim') & ~isfield(Structure,'Ydim')
-    error(sprintf('Missing Ydim keyword.'))
+    error('Missing Ydim keyword.')
 elseif isfield(Structure,'Ydim') & ~isfield(Structure,'Xdim')
-    error(sprintf('Missing Xdim keyword.'))
+    error('Missing Xdim keyword.')
 elseif ~isfield(Structure,'Xdim') & ~isfield(Structure,'Ydim')
     Structure.Xdim = 1;
     Structure.Ydim = 1;
 end
 %
 if isfield(Structure,'ULXmap') & ~isfield(Structure,'ULYmap')
-    error(sprintf('Missing ULYmap keyword.'))
+    error('Missing ULYmap keyword.')
 elseif isfield(Structure,'ULYmap') & ~isfield(Structure,'ULXmap')
-    error(sprintf('Missing ULXmap keyword.'))
+    error('Missing ULXmap keyword.')
 elseif ~isfield(Structure,'ULXmap') & ~isfield(Structure,'ULYmap')
     Structure.ULXmap = Structure.Xdim/2;
     Structure.ULYmap = Structure.Ydim*(Structure.nRows-0.5);
@@ -170,7 +170,7 @@ switch Structure.Layout
         filename = [Structure.FileBase use_ext(Structure,Structure.Layout)];
         fid=fopen(filename,'r');
         if fid<0
-            error(sprintf('Cannot open %s file ''%s''.',Structure.Layout,filename))
+            error('Cannot open %s file ''%s''.',Structure.Layout,filename)
         end
         fseek(fid,0,1);
         filesize = ftell(fid);
@@ -178,12 +178,12 @@ switch Structure.Layout
         expectedfilesize = Structure.nBands*Structure.nRows*Structure.nCols*Structure.nBits/8;
         if filesize ~= expectedfilesize
             fclose(fid);
-            error(sprintf('Size of %s file (%u) does not match expected size (%u)',Structure.Layout,filesize,expectedfilesize))
+            error('Size of %s file (%u) does not match expected size (%u)',Structure.Layout,filesize,expectedfilesize)
         end
         %
         fclose(fid);
     otherwise
-        error(sprintf('Layout ''%s'' not yet supported.',Structure.Layout))
+        error('Layout ''%s'' not yet supported.',Structure.Layout)
 end
 %
 Structure.Check='OK';
@@ -212,7 +212,7 @@ elseif isequal(i,'yco')
     end
 elseif isnumeric(i)
     if i~=round(i) | i<1 | i>Structure.nBands
-        error(sprintf('Invalid band index %g.',i))
+        error('Invalid band index %g.',i)
     else
         filename = [Structure.FileBase use_ext(Structure,'BIL')];
         switch upper(Structure.ByteOrder)
@@ -223,7 +223,7 @@ elseif isnumeric(i)
         end
         fid=fopen(filename,'r',bOrder);
         if fid<0
-            error(sprintf('Cannot open BIL file ''%s''.',filename))
+            error('Cannot open BIL file ''%s''.',filename)
         end
         fseek(fid,Structure.SkipBytes,-1);
         switch Structure.nBits
@@ -249,7 +249,7 @@ elseif isnumeric(i)
                 sFormat = 'float64';
                 tFormat = 'float64';
             otherwise
-                error(sprintf('Invalid number of bits (%i)',Structure.nBits))
+                error('Invalid number of bits (%i)',Structure.nBits)
         end
         if nargin>2
             tFormat = tFormatUser;

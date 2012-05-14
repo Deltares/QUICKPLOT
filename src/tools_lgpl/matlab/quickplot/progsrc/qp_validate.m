@@ -81,7 +81,7 @@ set(findall(0,'tag','UI_MESSAGE window'),'position',[10 40 300 ssz(4)-pHpb(4)-12
 try
    full_ln=fullfile(val_dir,logname);
    if ~localexist(fullfile(val_dir,baseini))
-      ui_message('error',sprintf('Invalid validation directory: ''%s'' is missing.',baseini));
+      ui_message('error','Invalid validation directory: ''%s'' is missing.',baseini)
       if ishandle(Hpb)
          delete(Hpb);
       end
@@ -577,9 +577,9 @@ if logid>0
    fclose(logid);
 end
 if AnyFail
-   ui_message('error',sprintf('Testbank failed on %i out of %i cases! Check log file.\n',NFailed,NTested));
+   ui_message('error','Testbank failed on %i out of %i cases! Check log file.\n',NFailed,NTested)
 else
-   ui_message('',sprintf('Testbank completed successfully (%i cases).\n',NTested));
+   ui_message('','Testbank completed successfully (%i cases).\n',NTested)
 end
 
 

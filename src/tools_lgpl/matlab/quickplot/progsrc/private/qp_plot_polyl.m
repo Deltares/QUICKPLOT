@@ -118,12 +118,13 @@ switch NVal
         %
         % Now create objects
         %
+        %Ops.markerfillcolour = 'none';
         hNew = zeros(length(LEN_BF)+1,1);
         for i=1:length(LEN_BF)
             LBF = LEN_BF(i);
             nbf = sum(len_bf==LBF);
             xyd = repmat(NaN,LBF*nbf,2);
-            cl = repmat(NaN,nbf,1);
+            cl = repmat(NaN,LBF*nbf,1);
             %
             k = 1;
             for j=1:length(len_bf)
@@ -135,7 +136,7 @@ switch NVal
                         data.X(bf(j,1):bf(j,2)) = NaN;
                     end
                     xyd(trange,2)=data.Y(range);
-                    cl(k,1)=data.Val(range(1));
+                    cl(trange,1)=data.Val(range(1));
                     k=k+1;
                 end
             end
@@ -143,7 +144,7 @@ switch NVal
             hNew(i)=patch('vertices',xyd, ...
                'faces',reshape(1:LBF*nbf,[LBF nbf])', ...
                'facevertexcdata',cl, ...
-                'edgecolor','none', ...
+                'edgecolor','flat', ...
                 'facecolor','flat', ...
                 'linestyle',Ops.linestyle, ...
                 'linewidth',Ops.linewidth, ...

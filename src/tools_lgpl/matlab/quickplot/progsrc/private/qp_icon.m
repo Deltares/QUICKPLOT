@@ -42,7 +42,7 @@ if isempty(IconRepository)
    try
       IconRepository=load('qp_icons.mat');
    catch
-      ui_message('error',sprintf(errmsg,Icon))
+      ui_message('error',errmsg,Icon)
       I=[];
    end
 end
@@ -66,7 +66,7 @@ if ~isempty(IconRepository)
          I=idx2rgb(I.idx,I.cmap);
       end
    catch
-      ui_message('error',sprintf(errmsg,Icon))
+      ui_message('error',errmsg,Icon)
       I=[];
    end
 end

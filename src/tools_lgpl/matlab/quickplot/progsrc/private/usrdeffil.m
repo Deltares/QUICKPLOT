@@ -50,7 +50,7 @@ function varargout=usrdeffil(FI,domain,field,cmd,varargin)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 if nargin<2
-    error('Not enough input arguments');
+    error('Not enough input arguments')
 elseif nargin==2
     varargout={infile(FI,domain)};
     return
@@ -544,7 +544,7 @@ if isequal(Props.FileInfo,'operator')
             end
             Ans.Val=sqrt(Ans.Val);
         otherwise
-            error(sprintf('Operator ''%s'' not implemented',Oper));
+            error('Operator ''%s'' not implemented',Oper)
     end
     %
     % As long as Units treatment is not yet valid, remove Units ...

@@ -439,7 +439,7 @@ damshape='dam';
 while i<nargin
    i=i+1;
    if ~ischar(varargin{i})
-      error(sprintf('Invalid input argument %i.',i))
+      error('Invalid input argument %i.',i)
    end
    switch lower(varargin{i})
       case 'bottom'
@@ -529,7 +529,7 @@ while i<nargin
          fontsize=varargin{i+1};
          i=i+1;
       otherwise
-         error(sprintf('Unknown property: %s.',varargin{i}))
+         error('Unknown property: %s.',varargin{i})
    end
 end
 if isempty(Parent) & nargout<=1
@@ -879,7 +879,7 @@ switch j-i
          belev{2}=belev{2}(:);
          belev{1}='XYW';
       else
-         error(sprintf('Could not interpret %s of dams.',bottom))
+         error('Could not interpret %s of dams.',bottom)
       end
    case 2
       %
@@ -912,13 +912,13 @@ switch j-i
          return
       elseif (~any(size(belev{2},2)==[1 2]) & ~isempty(belev{2})) | ...
             (~any(size(belev{3},2)==[1 2]) & ~isempty(belev{3}))
-         error(sprintf('Could not interpret %s of dams.',bottom))
+         error('Could not interpret %s of dams.',bottom)
       elseif ~UVallowed
          %
          % ------- cannot combine the specification for separate dams
          %         with a "random" number of dams taken from a field.
          %
-         error(sprintf('Method used for specifying %s of dams not allowed.',bottom))
+         error('Method used for specifying %s of dams not allowed.',bottom)
       end
       %
       % ------- deal with empty arrays appropriately
@@ -941,7 +941,7 @@ switch j-i
             if size(belev{2},1)==1
                belev{2}=belev{2}(ones(size(Indu)),:);
             else
-               error(sprintf('Length of array containing %s of U dams\ndoes not match number of U dams.',bottom))
+               error('Length of array containing %s of U dams\ndoes not match number of U dams.',bottom)
             end
          else
             belev{2}=belev{2}(Indu,:);
@@ -955,7 +955,7 @@ switch j-i
             if size(belev{3},1)==1
                belev{3}=belev{3}(ones(size(Indv)),:);
             else
-               error(sprintf('Length of array containing %s of V dams\ndoes not match number of V dams.',bottom))
+               error('Length of array containing %s of V dams\ndoes not match number of V dams.',bottom)
             end
          else
             belev{3}=belev{3}(Indv,:);
@@ -965,7 +965,7 @@ switch j-i
       %
       % ------- too many or too few arguments specified.
       %
-      error(sprintf('Could not interpret %s of dams.',bottom))
+      error('Could not interpret %s of dams.',bottom)
 end
 %
 % -------------------------------------------------------------------------------------------------
@@ -1085,5 +1085,5 @@ switch belev{1}
       end
       %
    otherwise
-      error(sprintf('Unknown method for determining %s.',botstr))
+      error('Unknown method for determining %s.',botstr)
 end

@@ -127,7 +127,7 @@ if DimFlag(T_)
 end
 
 if max(idx{T_})>sz(T_)
-    error(sprintf('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_)))
+    error('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_))
 elseif ~Props.DimFlag(T_)
     idx{T_} = 1;
 end

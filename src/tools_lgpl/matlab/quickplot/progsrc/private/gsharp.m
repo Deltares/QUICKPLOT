@@ -100,7 +100,7 @@ for i=1:nVar
                 Data{n}=Str(1:end-1);
             end
         otherwise
-            error(sprintf('Type %i not yet implemented.',Type))
+            error('Type %i not yet implemented.',Type)
     end
     FI.Var(i).Data=Data;
 end
@@ -138,9 +138,9 @@ for i=1:nFlds
     elseif isnumeric(Data)
         % OK, convert to double when necessary ...
     elseif ischar(Data)
-        error(sprintf('Cannot write %s data to GSharp Folder file.',class(Data)))
+        error('Cannot write %s data to GSharp Folder file.',class(Data))
     else
-        error(sprintf('Cannot write %s data to GSharp Folder file.',class(Data)))
+        error('Cannot write %s data to GSharp Folder file.',class(Data))
     end
 end
 

@@ -122,7 +122,7 @@ for i=[M_ N_ K_]
             idx{i}=1:sz(i);
             allidx(i)=1;
         elseif ~isequal(idx{i},idx{i}(1):idx{i}(end))
-            error(sprintf('Only scalars or ranges allowed for index %i',i));
+            error('Only scalars or ranges allowed for index %i',i)
             %    elseif i~=K_
             %      idx{i}=[max(1,idx{i}(1)-1) idx{i}];
         end
@@ -131,7 +131,7 @@ end
 
 % load data ...
 if max(idx{T_})>sz(T_)
-    error(sprintf('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_)))
+    error('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_))
 end;
 
 if DimFlag(ST_)

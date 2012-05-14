@@ -84,6 +84,7 @@
 %   reducepoints                - Filters a set points using a distance threshold.
 %   reducepoints_r13_6p5        - MEX file for REDUCEPOINTS compiled with R13.
 %   reducepoints_r2007a_7p4     - MEX file for REDUCEPOINTS compiled with R2007A.
+%   removequant                 - QP support function for removing quantities from poperty lists.
 %   setProperty                 - Generic routine to set values in PropertyName-PropertyValue pairs
 %   stdbeep                     - Produce beep sound.
 %   trim2rst                    - Extract Delft3D-FLOW restart file from TRIM-file.

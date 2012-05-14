@@ -64,13 +64,13 @@ ViewSelect.ElmDef=[];
 if (nargin==1) & isstruct(varargin{1}) % vs_use(Struct) % to refresh 'lastread'
    INP=varargin{1};
    if ~isequal(size(INP),[1 1])
-      error('Scalar structure expected.');
+      error('Scalar structure expected.')
    end
    FN=fieldnames(INP);
    ExpFN={'FileName','DatExt','DefExt','GrpDat','GrpDef','CelDef','ElmDef','Format'};
    diffFN=setdiff(ExpFN,FN);
    if ~(isempty(diffFN) | isequal(diffFN,{''})) % anything missing?
-      error(sprintf('Missing field: %s.',diffFN{1}))
+      error('Missing field: %s.',diffFN{1})
    end
    VSKeep=INP;
    if nargout>0
@@ -1251,7 +1251,7 @@ elseif AddressBytes == 8
                FileSize,BigE8_Lfile);
          end
       otherwise
-         error(sprintf('Invalid file format indicator (expected L or B).'))
+         error('Invalid file format indicator (expected L or B).')
    end
 end
 if AddressBytes>0
@@ -1283,7 +1283,7 @@ if isunix
          home=filename(1:(i(1)-1));
          [s,home]=unix(['cd ',home,char(10),'pwd']);
          if s>0
-            error(sprintf('Error interpreting: %s.',filename(1:(i(1)-1))));
+            error('Error interpreting: %s.',filename(1:(i(1)-1)))
          else
             filename=[home(1:end-1) filename(i(1):end)];
          end

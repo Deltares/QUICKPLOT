@@ -50,7 +50,7 @@ Success=~isempty(File) & NrInList<=length(File);
 Props=get(MW.Field,'userdata');
 fld=get(MW.Field,'value');
 
-if isempty(Props) | ~isfield(Props,'DimFlag') | ~isempty(strmatch('---',Props(fld).Name)) | ~Success
+if isempty(Props) || ~isfield(Props,'DimFlag') || ~isempty(strmatch('---',Props(fld).Name)) || ~Success
     %
     % No quantity selected, so disable all controls and set them to default
     % appearance.
@@ -82,7 +82,7 @@ DomainNr=get(MW.DList,'value');
 % Update subfield information for active data field
 %
 [Chk,SubF]=qp_getdata(Info,DomainNr,Props(fld),'subfields');
-if Chk & ~isempty(SubF)
+if Chk && ~isempty(SubF)
     %
     % Subfields obtained: enable subfield controls
     %
@@ -116,7 +116,7 @@ end
 %
 % Update grid view
 %
-if isfield(Props(fld),'UseGrid') & Props(fld).UseGrid>0
+if isfield(Props(fld),'UseGrid') && ~isempty(Props(fld).UseGrid) && Props(fld).UseGrid>0
     %
     % Gridview information: update grid view when shown
     %
@@ -124,8 +124,8 @@ if isfield(Props(fld),'UseGrid') & Props(fld).UseGrid>0
     i_grd=Props(fld).UseGrid;
     UseGridNew={Info.Name,DomainNr,i_grd};
     if strcmp(get(UD.GridView.Fig,'visible'),'on') ...
-            & ~isequal(UseGrid,UseGridNew) ...
-            & UseGridNew{2}>0
+            && ~isequal(UseGrid,UseGridNew) ...
+            && UseGridNew{2}>0
         set(UD.GridView.Fig,'name','Grid View: updating grid ...')
         drawnow
         [Chk,GRID]=qp_getdata(Info,DomainNr,Props(i_grd),'grid');
@@ -146,13 +146,26 @@ end
 % Get size information and return in case of error
 %
 [Chk,sz]=qp_getdata(Info,DomainNr,Props(fld),'size');
-DimFlag=Props(fld).DimFlag;
 if ~Chk
     %
     % Disable remaining controls ...
     %
     disablecontrols(UD)
     return
+end
+DimFlag=Props(fld).DimFlag;
+if any(DimFlag(2:end)==7)
+    [Chk,dimlabels]=qp_getdata(Info,DomainNr,Props(fld),'dimlabels');
+    if ~Chk
+        dimlabels=cell(size(DimFlag));
+        for i=2:length(DimFlag)
+            if DimFlag(i)==7
+                dimlabels{i} = 1:sz(i);
+            end
+        end
+    end
+else
+    dimlabels=cell(size(DimFlag));
 end
 
 %
@@ -162,7 +175,7 @@ if sz(T_)>1
     set(MW.T,'enable','on')
     pUDM=get(MW.AllT,'userdata');
     if ~isempty(pUDM)
-        if length(pUDM)>=3 & isequal(sz(T_),pUDM{3})
+        if length(pUDM)>=3 && isequal(sz(T_),pUDM{3})
             allt=pUDM{1};
             selt=pUDM{2};
         else
@@ -182,7 +195,7 @@ if sz(T_)>1
     end
     set(MW.MaxT,'enable','on','string',sprintf('%i',sz(T_)),'userdata',sz(T_))
     if sz(T_)>30000 ... % disable timelist if there are more than 30000 times
-            | allt        % or if all times have been selected
+            || allt        % or if all times have been selected
         set(MW.ShowT,'enable','off')
     else
         set(MW.ShowT,'enable','on')
@@ -220,7 +233,7 @@ if DimFlag(ST_)
     set(MW.VSelType,'visible','off')
     % switch to editbox if there are more than 30000 stations
     % or if it is possible to select multiple stations ...
-    if sz(ST_)>30000 | ~ismember(DimFlag(ST_),[0 3 5 13 15])
+    if sz(ST_)>30000 || ~ismember(DimFlag(ST_),[0 3 5 13 15])
         set(MW.Stat,'visible','on')
         set(MW.StList,'visible','off')
         stlist=0;
@@ -242,15 +255,15 @@ end
 % Disable/enable switching between spatial selection mechanisms
 %
 TRI = 0;
-if isfield(Props,'Tri') & Props(fld).Tri
+if isfield(Props,'Tri') && ~isempty(Props(fld).Tri) && Props(fld).Tri
    TRI = 1;
-elseif isfield(Props,'Geom') & isequal(Props(fld).Geom,'TRI')
+elseif isfield(Props,'Geom') && isequal(Props(fld).Geom,'TRI')
    TRI = 1;
 end
-if DimFlag(M_) & DimFlag(N_)
+if DimFlag(M_) && DimFlag(N_)
     % structured grid
     set(MW.HSelType,'string',{'M range and N range','(M,N) point/path','(X,Y) point/path'})
-elseif DimFlag(M_) & TRI
+elseif DimFlag(M_) && TRI
     % triangular
     set(MW.HSelType,'string',{'M range and N range','(M,N) point/path','(X,Y) point/path'})
 elseif DimFlag(M_)
@@ -276,37 +289,43 @@ for m_=[ST_ M_ N_ K_]
     % Get handles of relevant controls ...
     %
     m=dims{m_};
-    UDM=getfield(MW,m);
+    UDM=MW.(m);
     %
     mstr=m;
     if m_ == ST_
         mstr='Station';
     end
-    if isfield(Props,[m 'Name'])
-        mstr1 = getfield(Props(fld),[m 'Name']);
+    mName = [m 'Name'];
+    if isfield(Props,mName)
+        mstr1 = Props(fld).(mName);
         if ~isempty(mstr1)
             mstr = mstr1;
         end
     end
     %
-    UDAllM=getfield(MW,strcat('All',m));
-    UDEditM=getfield(MW,strcat('Edit',m));
-    UDMaxM=getfield(MW,strcat('Max',m));
+    UDAllM  = MW.(['All'  m]);
+    UDEditM = MW.(['Edit' m]);
+    UDMaxM  = MW.(['Max'  m]);
     %
     % If dimension is active, set controls to appropriate status
     %
     if DimFlag(m_)
-        if sz(m_)==1 & m_~=ST_
+        if sz(m_)==1 && m_~=ST_
             %
             % If dimension is degenerate (size one) then there is no choice.
             % Indicate selection and disable controls.
             %
             set(UDM,'string',mstr,'enable','off')
             set(UDAllM,'enable','off','value',0)
-            set(UDEditM,'enable','off','string','1','backgroundcolor',Inactive,'userdata',1)
+            val = 1;
+            if DimFlag(m_)==7
+                val = dimlabels{m_};
+                setappdata(UDEditM,'dimlabels',dimlabels{m_})
+            end
+            set(UDEditM,'enable','off','string',vec2str(val,'nobrackets'),'backgroundcolor',Inactive,'userdata',val)
             set(UDMaxM,'enable','on','string','1','userdata',1)
             selm=1;
-        elseif DimFlag(m_)==4 | DimFlag(m_)==14 | DimFlag(m_)==inf
+        elseif DimFlag(m_)==4 || DimFlag(m_)==14 || DimFlag(m_)==inf
             %
             % If DimFlag=4 or 14 or inf (variable number of elements) then the
             % only option is to select all values. Indicate selection and
@@ -327,7 +346,7 @@ for m_=[ST_ M_ N_ K_]
             %
             pUDM=get(UDAllM,'userdata');
             if ~isempty(pUDM)
-                if length(pUDM)>=3 & isequal(sz(m_),pUDM{3})
+                if length(pUDM)>=3 && isequal(sz(m_),pUDM{3})
                     allm=pUDM{1};
                     selm=pUDM{2};
                 elseif m_==ST_
@@ -346,10 +365,13 @@ for m_=[ST_ M_ N_ K_]
             end
             %
             allmon='on';
+            if isempty(selm)
+                selm = 1;
+            end
             switch DimFlag(m_)
                 case {1,11} % All, Range, Element
                     if ~isequal(selm,selm(1):selm(end))
-                        selm=selm(1);selm(end);
+                        selm=selm(1);
                     end
                 case {2,12} % All, Range
                     if isequal(size(selm),[1 1])
@@ -357,15 +379,24 @@ for m_=[ST_ M_ N_ K_]
                     end
                 case {3,13} % All, Element
                     selm=selm(1);
-                    % case {4,14,inf} % All -> handled above
+                case {4,14,inf} % All -> handled above
+                    % nothing to do anymore
                 case {5,15} % Element
                     allm=0;
                     allmon='off';
                     selm=selm(1);
                 case {6,16} % Any list of elements
                     % nothing to do
+                case {7} % Element from list
+                    allm=0;
+                    allmon='off';
+                    selm=selm(1);
+                    if ~ismember(selm,dimlabels{m_})
+                        selm=dimlabels{m_}(1);
+                    end
             end
             %
+            setappdata(UDEditM,'dimlabels',dimlabels{m_})
             set(UDM,'string',mstr,'enable','on')
             set(UDAllM,'enable',allmon,'value',allm,'userdata',{allm selm sz(m_)})
             set(UDEditM,'string',vec2str(selm,'nobrackets','noones'),'userdata',selm)
@@ -381,14 +412,17 @@ for m_=[ST_ M_ N_ K_]
                 case {1,11} % All, Range, Element
                     Str=cat(2,'specify ',lower(mstr),' value(s):',c10,'single value, e.g. 4, or',c10,'range, e.g. 20:100');
                 case {2,12} % All, Range
-                    Str=cat(2,'specify ',lower(mstr),' value(s):',c10,'range, e.g. 20:100');
+                    Str=cat(2,'specify ',lower(mstr),' values:',c10,'range, e.g. 20:100');
                 case {3,13} % All, Element
-                    Str=cat(2,'specify ',lower(mstr),' value(s):',c10,'single value, e.g. 4');
-                    % case {4,14,inf} % All -> not active, so, no need to change tooltip
+                    Str=cat(2,'specify ',lower(mstr),' value:',c10,'single value, e.g. 4');
+                case {4,14,inf} % All -> edit box not active, so, no need to change tooltip
+                    % no tooltip
                 case {5,15} % Element
-                    Str=cat(2,'specify ',lower(mstr),' value(s):',c10,'single value, e.g. 4');
+                    Str=cat(2,'specify ',lower(mstr),' value:',c10,'single value, e.g. 4');
                 case {6,16} % Any list of elements
                     Str=cat(2,'specify ',lower(mstr),' value(s):',c10,'single value, e.g. 4,',c10,'range, e.g. 20:100',c10,'range with step, e.g. 1:4:101,',c10,'or any combination, e.g. 1:5 7 10 14');
+                case {7} % Element from limited list
+                    Str=cat(2,'specify ',lower(mstr),' value:',c10,'single value from following list',c10,vec2str(dimlabels{m_},'nobrackets'));
             end
             if ~isempty(Str), set(UDEditM,'tooltip',Str); end
             %
@@ -400,7 +434,7 @@ for m_=[ST_ M_ N_ K_]
         if m_==ST_
             [Chk,Stats]=qp_getdata(Info,DomainNr,Props(fld),'stations');
             if stlist
-                if isempty(Stats) & sz(ST_)==0
+                if isempty(Stats) && sz(ST_)==0
                     set(MW.S,'enable','off')
                     set(MW.StList,'visible','on','enable','off','value',1,'string',' ','backgroundcolor',Inactive)
                 else
@@ -444,13 +478,13 @@ if strcmp(get(MW.HSelType,'enable'),'on')
     set(MW.MN,'enable','on')
     set(MW.EditMN,'enable','on','backgroundcolor',Active)
     mn = get(MW.EditMN,'userdata');
-    if DimFlag(N_) & size(mn,2)<2
+    if DimFlag(N_) && size(mn,2)<2
         mn=[];
-    elseif ~DimFlag(N_) & size(mn,2)>1
+    elseif ~DimFlag(N_) && size(mn,2)>1
         mn=[];
     end
 
-    if DimFlag(M_) & DimFlag(N_)
+    if DimFlag(M_) && DimFlag(N_)
         % structured 2D domain
         [mnexp,mn1]=piecewise(mn,sz([M_ N_]));
     else
@@ -485,7 +519,7 @@ else
     set(MW.MN,'enable','off')
     set(MW.EditMN,'enable','off','backgroundcolor',Inactive)
 end
-if ~isempty(strmatch('(X,Y) ',get(MW.HSelType,'string'))) & strcmp(get(MW.HSelType,'enable'),'on')
+if ~isempty(strmatch('(X,Y) ',get(MW.HSelType,'string'))) && strcmp(get(MW.HSelType,'enable'),'on')
     set(MW.XY,'enable','on')
     set(MW.EditXY,'enable','on','backgroundcolor',Active)
 else
@@ -496,7 +530,7 @@ end
 %
 % If 3D other K/Z selection mechanisms
 %
-if ~isempty(strmatch('Z ',get(MW.VSelType,'string'))) & strcmp(get(MW.VSelType,'enable'),'on')
+if ~isempty(strmatch('Z ',get(MW.VSelType,'string'))) && strcmp(get(MW.VSelType,'enable'),'on')
     set(MW.Z,'enable','on')
     set(MW.EditZ,'enable','on','backgroundcolor',Active)
 else
@@ -576,6 +610,6 @@ set(MW.Add2Plot,'enable','off')
 % Options and gridview ...
 %
 set(UD.Options.Handles,'enable','off','visible','off','backgroundcolor',Inactive)
-UD.Options.Act(:)=logical(0);
+UD.Options.Act(:)=false;
 update_option_positions(UD)
 

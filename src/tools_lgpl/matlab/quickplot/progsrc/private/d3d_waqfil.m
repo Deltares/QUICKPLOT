@@ -186,7 +186,7 @@ for i=[M_ N_ K_]
             idx{i}=1:sz(i);
             allidx(i)=1;
         elseif ~isequal(idx{i},idx{i}(1):idx{i}(end))
-            error(sprintf('Only scalars or ranges allowed for index %i',i));
+            error('Only scalars or ranges allowed for index %i',i)
         end
         if (i~=K_) && ~strcmp(subtype,'plot') && ~strcmp(Props.Geom,'POLYG')
             if DataInCell && isequal(idx{i},1)
@@ -210,13 +210,13 @@ for i=[M_ N_ K_]
 end
 
 if max(idx{T_})>sz(T_)
-    error(sprintf('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_)))
+    error('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_))
 end
 if isbinary
     if isequal(idx{T_},1:sz(T_))
         % don't change it yet
     elseif ~isequal(size(idx{T_}),[1 1]) && sz(T_)>0
-        % error(sprintf('Can only read one or all timesteps from Delwaq bin file.'))
+        % error('Can only read one or all timesteps from Delwaq bin file.')
     end
 end
 
@@ -1851,7 +1851,7 @@ switch cmd
         if nargin>3
             Log = varargin{1};
             if ~isequal(Log,0) && ~isequal(Log,1)
-                error(sprintf('Invalid argument specified for %s.',cmd));
+                error('Invalid argument specified for %s.',cmd)
             end
             value = Log;
         else

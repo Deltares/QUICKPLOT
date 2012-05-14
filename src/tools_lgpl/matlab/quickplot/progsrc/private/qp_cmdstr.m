@@ -52,7 +52,7 @@ while ~isempty(rmndr)
                     end
                 end
                 if isempty(endquote)
-                    error(sprintf('Invalid command argument encountered: ''%s',rmndr));
+                    error('Invalid command argument encountered: ''%s',rmndr)
                 else
                     cmdargs{end+1}=rmndr(1:endquote-1);
                     rmndr=rmndr(endquote+1:end);
@@ -61,7 +61,7 @@ while ~isempty(rmndr)
                 rmndr=rmndr(idx(1)+1:end);
                 [X,count,err,n]=sscanf(rmndr,'%[0-9+ .Ee:-]');
                 if n>length(rmndr) | rmndr(n)~=']'
-                    error(sprintf('Invalid command argument encountered: [%s',rmndr));
+                    error('Invalid command argument encountered: [%s',rmndr)
                 end
                 cmdargs{end+1}=X;
 
@@ -75,7 +75,7 @@ while ~isempty(rmndr)
                     error(err);
                 end
             otherwise
-                error(sprintf('Invalid command argument encountered: %s',rmndr));
+                error('Invalid command argument encountered: %s',rmndr)
         end
     end
 end

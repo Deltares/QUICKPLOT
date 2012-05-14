@@ -132,7 +132,7 @@ for i=[M_ N_ K_]
          idx{i}=1:sz(i);
          allidx(i)=1;
       elseif ~isequal(idx{i},idx{i}(1):idx{i}(end))
-         error(sprintf('Only scalars or ranges allowed for index %i',i));
+         error('Only scalars or ranges allowed for index %i',i)
       end
       if i~=K_ & DimFlag(M_) & DimFlag(N_)
          if DataInCell & isequal(idx{i},1)
@@ -155,7 +155,7 @@ for i=[M_ N_ K_]
 end
 
 if max(idx{T_})>sz(T_)
-   error(sprintf('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_)))
+   error('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_))
 end
 
 % read grid ...
@@ -446,7 +446,7 @@ if Props.File~=0
          linidx=sub2ind(size(FI.X),tmpData.MN(:,1),tmpData.MN(:,2));
          val{1}(linidx)=1;
       otherwise
-         error(sprintf('Reading data from %s file not yet implemented.',FI.Data(Props.File).FileType))
+         error('Reading data from %s file not yet implemented.',FI.Data(Props.File).FileType)
    end
    for i=1:length(val)
       val{i}=val{i}(elidx{:});
@@ -1205,7 +1205,7 @@ switch cmd
                   elseif strcmp(DataFI.Check,'NotOK')
                      DataFI=[];
                   elseif ~strcmp(DataFI.FileType,'FLS-inc')
-                     ui_message('error',sprintf('Don''t know how to plot %s file on grid.',DataFI.FileType));
+                     ui_message('error','Don''t know how to plot %s file on grid.',DataFI.FileType);
                      DataFI=[]; return
                   elseif length(DataFI.Domain)~=1
                      ui_message('error','Multi-domain incremental file not supported on grid');
@@ -1318,7 +1318,7 @@ switch cmd
                         Tp=DataFI.FileType;
                      end
                   else
-                     ui_message('error',[DataFI.Type ' not yet supported.']);
+                     ui_message('error','%s not yet supported.',DataFI.Type);
                      DataFI=[];
                   end
                else

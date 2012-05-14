@@ -156,7 +156,7 @@ else
         end
     end
     if isempty(data)
-        ui_message('error',sprintf('Did not get any data from %s file.',FT));
+        ui_message('error','Did not get any data from %s file.',FT)
         return
     elseif ~Chk
         ui_message('error','Error retrieving data from file.');

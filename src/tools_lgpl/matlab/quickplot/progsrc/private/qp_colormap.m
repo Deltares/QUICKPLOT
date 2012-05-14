@@ -127,7 +127,7 @@ if isempty(COLORMAPS) | strcmp(MapName,':reload')
                 %
                 j=j+1;
             catch
-                %   ui_message('warning','%s\n',lasterr)
+                %   ui_message('warning',lasterr)
             end
         end
     end

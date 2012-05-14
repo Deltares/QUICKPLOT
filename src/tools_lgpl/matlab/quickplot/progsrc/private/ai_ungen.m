@@ -163,6 +163,9 @@ switch nval
                 T.SubType='box'; % set to rectangle at the end
             case 'DONUT'
                 T.SubType='donut';
+            otherwise
+                fclose(fid);
+                error('Invalid string encountered ''%s''.',Line(irem:end))
         end
 end
 %

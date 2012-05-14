@@ -80,6 +80,9 @@ switch cmd
     case 'size'
         varargout={getsize(FI,Props)};
         return
+    case 'dimlabels'
+        varargout={getlabels(FI,Props)};
+        return
     case 'times'
         varargout={readtim(FI,Props,varargin{:})};
         return
@@ -127,6 +130,14 @@ if DimFlag(T_)
 end
 
 % select appropriate spatial indices ...
+if any(DimFlag==7)
+    dimlabels = getlabels(FI,Props);
+    for i=1:length(DimFlag)
+        if DimFlag(i)==7
+            idx{i}=find(idx{i}==dimlabels{i});
+        end
+    end
+end
 
 %================== NEFIS SPECIFIC CODE ===================================
 if DimFlag(M_)&& DimFlag(N_)
@@ -140,11 +151,11 @@ ind=cell(1,5);
 ind{2}=1;
 for i=[M_ N_ K_]
     if DimFlag(i)
-        if isequal(idx{i},0) || isequal(idx{i},1:sz(i))
+        if isempty(idx{i}) || isequal(idx{i},0) || isequal(idx{i},1:sz(i))
             idx{i}=1:sz(i);
             allidx(i)=1;
         elseif ~isequal(idx{i},idx{i}(1):idx{i}(end))
-            error(sprintf('Only scalars or ranges allowed for index %i',i));
+            error('Only scalars or ranges allowed for index %i',i)
         end
         if i~=K_
             idx{i} = [max(1,idx{i}(1)-1) idx{i}];
@@ -156,7 +167,7 @@ for i=[M_ N_ K_]
 end
 
 if max(idx{T_})>sz(T_)
-    error(sprintf('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_)))
+    error('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_))
 end
 
 % read grid ...
@@ -178,8 +189,8 @@ if XYRead
 
     %======================== SPECIFIC CODE ===============================
     if DimFlag(M_) && DimFlag(N_)
-        [x,Chk]=vs_get(FI,'map-const','XCOR',idx([M_ N_]),'quiet');
-        [y,Chk]=vs_get(FI,'map-const','YCOR',idx([M_ N_]),'quiet');
+        x=vs_get(FI,'map-const','XCOR',idx([M_ N_]),'quiet!');
+        y=vs_get(FI,'map-const','YCOR',idx([M_ N_]),'quiet!');
         %    x((x==0) & (y==0)) = NaN;
         %y(isnan(x))=NaN;
     end
@@ -189,7 +200,7 @@ if XYRead
         else
             idxK_ = idx{K_};
         end
-        [z,Chk]=vs_let(FI,'map-sedgs-series',{idx{T_}},'Z_INTERF',[idx([M_ N_]) {idxK_}],'quiet');
+        z=vs_let(FI,'map-sedgs-series',idx(T_),'Z_INTERF',[idx([M_ N_]) {idxK_}],'quiet!');
         if strcmp(Props.Loc3D,'i')
             if DataInCell
                 z=cat(4,z(:,:,:,1),(z(:,:,:,1:end-1)+z(:,:,:,2:end))/2,z(:,:,:,end));
@@ -205,10 +216,10 @@ if XYRead
         y=reshape(y,[1 size(y)]);
         y=repmat(y,[1 1 1 nk]);
     elseif fixedlayers && (DimFlag(K_) || computeDZ)
-        [h,Chk]=vs_let(FI,'map-const','ZK','quiet');
+        h=vs_let(FI,'map-const','ZK','quiet!');
         h(1)=-inf;
         h(end)=inf;
-        [s,Chk]=vs_let(FI,'map-series',{idx{T_}},'S1',idx([M_ N_]),'quiet');
+        s=vs_let(FI,'map-series',idx(T_),'S1',idx([M_ N_]),'quiet!');
         szz=[size(s) length(h)];
         z=repmat(reshape(h,[1 1 1 length(h)]),[szz(1:3),1]);
         z=reshape(z,[prod(szz(1:3)) szz(4)]);
@@ -268,7 +279,7 @@ if XYRead
         if ~DataInCell && length(idx{K_})>1
             error('Plot type not yet supported for underlayers')
         end
-        [dz,Chk]=vs_let(FI,'map-sed-series',{idx{T_}},'THLYR',[idx([M_ N_]) {0}],'quiet');
+        dz=vs_let(FI,'map-sed-series',idx(T_),'THLYR',[idx([M_ N_]) {0}],'quiet!');
         dz=cumsum(dz,4);
         idxK_=[idx{K_} idx{K_}(end)+1]-1;
         szdp=size(dp);
@@ -285,7 +296,7 @@ if XYRead
         y=repmat(y,[1 1 1 length(idxK_)]);
     elseif DimFlag(K_)
         dp=readdps(FI,idx);
-        [h,Chk_h]=vs_let(FI,'map-series',{idx{T_}},'S1',idx([M_ N_]),'quiet');
+        [h,Chk_h]=vs_let(FI,'map-series',idx(T_),'S1',idx([M_ N_]),'quiet');
         if Chk_h
             if size(dp,1)==1
                 for i=1:size(h,1)
@@ -295,7 +306,7 @@ if XYRead
                 h=h-dp;
             end
         end
-        [thk,Chk]=vs_let(FI,'map-const','THICK','quiet');
+        thk=vs_let(FI,'map-const','THICK','quiet!');
         if strcmp(Props.Loc3D,'i')
             if DataInCell
                 cthk=[0 cumsum(thk)-thk/2 1];
@@ -397,29 +408,29 @@ if DataRead
     if (Props.NVal==0) || DepthInZeta
         val1=[];
     else
-        [val1,Chk]=vs_let(FI,Props.Group,{idx{T_}},Props.Val1,elidx,'quiet');
+        val1=vs_let(FI,Props.Group,idx(T_),Props.Val1,elidx,'quiet!');
     end
     if isempty(Props.Val2)
         val2=[];
     else
-        [val2,Chk]=vs_let(FI,Props.Group,{idx{T_}},Props.Val2,elidx,'quiet');
+        val2=vs_let(FI,Props.Group,idx(T_),Props.Val2,elidx,'quiet!');
     end
     val3=[];
 
     if strmatch('total transport',Props.Name)
-        [val1r,Chk]=vs_let(FI,Props.Group,{idx{T_}},'SBUU',elidx,'quiet');
+        val1r=vs_let(FI,Props.Group,idx(T_),'SBUU',elidx,'quiet!');
         val1=val1+val1r;
-        val1r=[];
-        [val2r,Chk]=vs_let(FI,Props.Group,{idx{T_}},'SBVV',elidx,'quiet');
+        clear val1r
+        val2r=vs_let(FI,Props.Group,idx(T_),'SBVV',elidx,'quiet!');
         val2=val2+val2r;
-        val2r=[];
+        clear val2r
     elseif strmatch('mean total transport',Props.Name)
-        [val1r,Chk]=vs_let(FI,Props.Group,{idx{T_}},'SBUUA',elidx,'quiet');
+        val1r=vs_let(FI,Props.Group,idx(T_),'SBUUA',elidx,'quiet!');
         val1=val1+val1r;
-        val1r=[];
-        [val2r,Chk]=vs_let(FI,Props.Group,{idx{T_}},'SBVVA',elidx,'quiet');
+        clear val1r
+        val2r=vs_let(FI,Props.Group,idx(T_),'SBVVA',elidx,'quiet!');
         val2=val2+val2r;
-        val2r=[];
+        clear val2r
     end
     if isequal(subforig,'s') || isequal(subforig,'sb')
         if length(Props.SubFld)>1
@@ -429,13 +440,13 @@ if DataRead
     end
     switch Props.Name
         case {'grid cell surface area'}
-            [xc,Chk]=vs_get(FI,'map-const','XCOR',idx([M_ N_]),'quiet');
-            [yc,Chk]=vs_get(FI,'map-const','YCOR',idx([M_ N_]),'quiet');
+            xc=vs_get(FI,'map-const','XCOR',idx([M_ N_]),'quiet!');
+            yc=vs_get(FI,'map-const','YCOR',idx([M_ N_]),'quiet!');
             val1(:) = NaN;
             val1(1,ind{[M_ N_]}) = reshape(cellarea(xc,yc),[1 size(xc)-1]);
         case {'water level','temporarily inactive water level points'}
-            [kfu,Chk]=vs_let(FI,Props.Group,{idx{T_}},'KFU',elidx,'quiet');
-            [kfv,Chk]=vs_let(FI,Props.Group,{idx{T_}},'KFV',elidx,'quiet');
+            kfu=vs_let(FI,Props.Group,idx(T_),'KFU',elidx,'quiet!');
+            kfv=vs_let(FI,Props.Group,idx(T_),'KFV',elidx,'quiet!');
             if strcmp(Props.Name,'water level')
                 val1(kfv(:,[1 1:end-1],:)==0 & kfv==0 & kfu(:,:,[1 1:end-1])==0 & kfu==0)=NaN;
             else
@@ -465,12 +476,10 @@ if DataRead
             val2 = double((val1(:,1:end,:)~=bval | val1(:,[2:end end],:)~=1) & (val1(:,1:end,:)~=1 | val1(:,[2:end end],:)~=bval));
             val1 = double((val1(:,:,1:end)~=bval | val1(:,:,[2:end end])~=1) & (val1(:,:,1:end)~=1 | val1(:,:,[2:end end])~=bval));
         case {'velocity'}
-            if sz(K_)>1
-                [val3,Chk]=vs_let(FI,Props.Group,{idx{T_}},'WPHY',elidx,'quiet');
-                if ~Chk
-                    val3=[];
-                    Props.NVal=2;
-                end
+            [val3,Chk]=vs_let(FI,Props.Group,idx(T_),'WPHY',elidx,'quiet');
+            if ~Chk
+                val3=[];
+                Props.NVal=2;
             end
         case {'initial bed level','bed level in water level points'}
             if DepthInZeta, %strcmp(Props.Val1,'DPSED') || DataInCell
@@ -485,7 +494,6 @@ if DataRead
         case {'depth averaged velocity','d.a. velocity fluctuations','froude number','head'}
             if Flag3D
                 if fixedlayers
-                    sz=size(val1);
                     val1(val1==-999)=0;
                     val2(val2==-999)=0;
                     val1=val1.*dz;
@@ -495,7 +503,7 @@ if DataRead
                     val1=sum(val1,4); val1=val1./h;
                     val2=sum(val2,4); val2=val2./h;
                 else
-                    [thk,Chk]=vs_let(FI,'map-const','THICK','quiet');
+                    thk=vs_let(FI,'map-const','THICK','quiet!');
                     for k=1:length(thk)
                         val1(:,:,:,k)=val1(:,:,:,k)*thk(k);
                         val2(:,:,:,k)=val2(:,:,:,k)*thk(k);
@@ -507,16 +515,16 @@ if DataRead
             end
             switch Props.Name
                 case 'd.a. velocity fluctuations'
-                    [val1r,Chk]=vs_let(FI,Props.Group,{idx{T_}},'UMNLDF',elidx,'quiet');
+                    val1r=vs_let(FI,Props.Group,idx(T_),'UMNLDF',elidx,'quiet!');
                     val1=val1-val1r;
                     val1r=[];
-                    [val2r,Chk]=vs_let(FI,Props.Group,{idx{T_}},'VMNLDF',elidx,'quiet');
+                    val2r=vs_let(FI,Props.Group,idx(T_),'VMNLDF',elidx,'quiet!');
                     val2=val2-val2r;
                     val2r=[];
                 case 'head'
-                    [val3,Chk]=vs_let(FI,Props.Group,{idx{T_}},'S1',elidx,'quiet');
+                    val3=vs_let(FI,Props.Group,idx(T_),'S1',elidx,'quiet!');
                 case 'froude number'
-                    [val3,Chk]=vs_let(FI,Props.Group,{idx{T_}},'S1',elidx,'quiet');
+                    val3=vs_let(FI,Props.Group,idx(T_),'S1',elidx,'quiet!');
                     dp=readdps(FI,idx);
                     if size(dp,1)==1,
                         for i=1:size(val3,1)
@@ -587,7 +595,7 @@ if DataRead
     if isequal(Props.VecType,'u') && Props.MNK<=1
         % rotate n,m components into x,y direction ...
         [alf,Chk] = vs_get(FI,'map-const','ALFAS',idx([M_ N_]),'quiet');
-        if ischar(alf)
+        if ~Chk
             ui_message('warning','No direction information in file. Vector direction probably incorrect.');
             alf=0;
         end
@@ -614,7 +622,7 @@ if DataRead
                 end
                 %dav1=dav1./h; dav2=dav2./h;
             else
-                [thk,Chk]=vs_let(FI,'map-const','THICK','quiet');
+                thk=vs_let(FI,'map-const','THICK','quiet!');
                 sz=size(val1);
                 dav1=zeros(sz(1:3));
                 dav2=dav1;
@@ -643,15 +651,15 @@ else
 end
 %======================== SPECIFIC CODE ===================================
 % select active points ...
-[act,Chk]=vs_get(FI,'map-const','KCS',idx([M_ N_]),'quiet');
+act=vs_get(FI,'map-const','KCS',idx([M_ N_]),'quiet!');
 switch Props.ReqLoc
     case 'd'
-        %  [act,Chk]=vs_get(FI,'TEMPOUT','CODB',idx([M_ N_]),'quiet');
+        %  act=vs_get(FI,'TEMPOUT','CODB',idx([M_ N_]),'quiet!');
         act=conv2(double(act==1),[1 1;1 1],'same')>0;
         gridact=act;
     otherwise % 'z', always if DataInCell
         if DataInCell
-            %[gridact,Chk]=vs_get(FI,'TEMPOUT','CODB',idx([M_ N_]),'quiet');
+            %gridact=vs_get(FI,'TEMPOUT','CODB',idx([M_ N_]),'quiet!');
             gridact=conv2(double(act==1),[1 1;1 1],'same')>0;
         else
             gridact=act;
@@ -700,7 +708,6 @@ if Props.NVal>0 && ~strcmp(Props.Loc,'NA')
 end
 
 % select subrange if necessary ... M,N,K only
-DimMask=[0 0 1 1 1];
 if DataInCell
     for i=[M_ N_ K_]
         if DimFlag(i)
@@ -911,7 +918,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'depth averaged velocity'          'm/s'    [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-series'     'U1'      'V1'     []       1
     'horizontal velocity'              'm/s'    [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'U1'      'V1'     []       1
     'velocity'                         'm/s'    [1 0 1 1 1]  1         3    'u'       'u'   'z'       'c'     'map-series'     'U1'      'V1'     []       1
-    'vertical velocity'                'm/s'    [1 0 1 1 1]  1         1    ''        'w'   'w'       'c'     'map-series'     'WPHY'    ''       []       0
+    'vertical velocity'                'm/s'    [1 0 1 1 1]  1         1    ''        'w'   'z'       'c'     'map-series'     'WPHY'    ''       []       0
     'velocity in depth averaged flow direction' ...
     'm/s'    [1 0 1 1 1]  1         1    'u'       'u'   'z'       'c'     'map-series'     'U1'      'V1'     []       0
     'velocity normal to depth averaged flow direction' ...
@@ -1017,6 +1024,15 @@ SkipGroup={'map-const'};
 SkipElem={'THLYR'};
 DataProps=auto_map_detect(FI,DataProps,nm,k,SkipGroup,SkipElem);
 
+% Check whether the number of layers on the output file has been reduced
+Info=vs_disp(FI,'map-const','OUTPUT_LAYERS');
+if isstruct(Info)
+    Info2=vs_disp(FI,'map-const','THICK');
+    outputLayers = ~isequal(Info.SizeDim,Info2.SizeDim+1);
+else
+    outputLayers = 0;
+end
+
 %======================== SPECIFIC CODE DIMENSIONS ========================
 Info=vs_disp(FI,'map-sed-series','LYRFRAC');
 if isstruct(Info)
@@ -1024,31 +1040,43 @@ if isstruct(Info)
     DataProps{id,1} = sprintf('sediment %s fraction', ...
         lower(strtok(Info.ElmDescription)));
 end
-%
-if k==1
-    id=strmatch('velocity',DataProps(:,1),'exact');
-    DataProps(id,:)=[];
-    id=strmatch('horizontal velocity',DataProps(:,1),'exact');
-    DataProps(id,:)=[];
-    id=strmatch('velocity in depth averaged flow direction',DataProps(:,1),'exact');
-    DataProps(id,:)=[];
-    id=strmatch('velocity normal to depth averaged flow direction',DataProps(:,1),'exact');
-    DataProps(id,:)=[];
-end
 
 Out=cell2struct(DataProps,PropNames,2);
+%
+if k==1
+    Out = removequant(Out, ...
+        {'velocity'
+        'horizontal velocity'});
+elseif outputLayers
+    Out = removequant(Out, ...
+        {'depth averaged velocity'
+        'd.a. velocity fluctuations'
+        'froude number'
+        'head'});
+    K_=5;
+    for i=1:length(Out)
+        if Out(i).DimFlag(K_) && any(strcmp(Out(i).Loc3D,{'i','c'}))
+            Out(i).DimFlag(K_) = 7;
+        end
+    end
+end
+if k==1 || outputLayers
+    Out = removequant(Out, ...
+        {'velocity in depth averaged flow direction'
+        'velocity normal to depth averaged flow direction'});
+end
 
 %======================== SPECIFIC CODE CHANGE ============================
 Info=vs_disp(FI,'map-sed-series',[]);
 if isstruct(Info)
-    i=strmatch('bed level in water level points',{Out.Name});
+    i=strcmp('bed level in water level points',{Out.Name});
     Out(i).Loc='z';
     Out(i).Group='map-sed-series';
     Out(i).Val1='DPS';
     if ~isstruct(vs_disp(FI,Out(i).Group,Out(i).Val1))
         Out(i).Val1='DPSED';
     end
-    i=strmatch('cum. erosion/sedimentation',{Out.Name});
+    i=strcmp('cum. erosion/sedimentation',{Out.Name});
     Out(i).Loc='z';
     Out(i).Group='map-sed-series';
     Out(i).Val1='DPS';
@@ -1056,8 +1084,7 @@ if isstruct(Info)
         Out(i).Val1='DPSED';
     end
 else
-    i=strmatch('cum. erosion/sedimentation',{Out.Name});
-    Out(i)=[];
+    Out(strcmp('cum. erosion/sedimentation',{Out.Name}))=[];
 end
 
 %======================== SPECIFIC CODE REMOVE ============================
@@ -1100,7 +1127,7 @@ for i=size(Out,1):-1:1
             Out(i).Val2='V1';
         end
     elseif strcmp(Out(i).Name,'initial bed level') || strcmp(Out(i).Name,'bed level in water level points')
-        [nfltp,Chk]=vs_get(FI,'map-const','DRYFLP','quiet');
+        nfltp=vs_get(FI,'map-const','DRYFLP','quiet!');
         nfltp=lower(deblank(nfltp));
         if isequal(nfltp,'dp')
             Out(i).Loc='z';
@@ -1112,25 +1139,23 @@ for i=size(Out,1):-1:1
     end
 end
 
-[kcs,Chk]=vs_get(FI,'map-const','KCS','quiet');
+kcs=vs_get(FI,'map-const','KCS','quiet!');
 if all(kcs~=2)
-    i=strmatch('open boundaries',{Out.Name},'exact');
-    Out(i)=[];
+    Out(strcmp('open boundaries',{Out.Name}))=[];
 end
 if all(kcs~=3)
-    i=strmatch('domain decomposition boundaries',{Out.Name},'exact');
-    Out(i)=[];
+    Out(strcmp('domain decomposition boundaries',{Out.Name}))=[];
 end
 %======================== SPECIFIC CODE ADD ===============================
 sednames = getsedimentnames(FI,'suspended');
 %
-[names,Chk]=vs_get(FI,'map-const','NAMCON','quiet');
+names=vs_get(FI,'map-const','NAMCON','quiet!');
 names=lower(cellstr(names));
-[lstci,Chk]=vs_get(FI,'map-const','LSTCI','quiet');
+lstci=vs_get(FI,'map-const','LSTCI','quiet!');
 if ischar(lstci), lstci=0; end
-[ltur,Chk]=vs_get(FI,'map-const','LTUR','quiet');
+ltur=vs_get(FI,'map-const','LTUR','quiet!');
 if ischar(ltur), ltur=0; end
-i=strmatch('--constituents',{Out.Name},'exact');
+i=find(strcmp('--constituents',{Out.Name}));
 if (lstci>0) && ~isempty(i)
     Ins=Out(i*ones(lstci,1));
     for j=1:lstci
@@ -1140,7 +1165,7 @@ if (lstci>0) && ~isempty(i)
     end
     Out=insstruct(Out,i,Ins);
 end
-i=strmatch('--constituents flux',{Out.Name},'exact');
+i=find(strcmp('--constituents flux',{Out.Name}));
 if (lstci>0) && ~isempty(i)
     Ins=Out(i*ones(lstci,1));
     for j=1:lstci
@@ -1153,7 +1178,7 @@ if (lstci>0) && ~isempty(i)
     end
     Out=insstruct(Out,i,Ins);
 end
-i=strmatch('--constituents cumulative flux',{Out.Name},'exact');
+i=find(strcmp('--constituents cumulative flux',{Out.Name}));
 if (lstci>0) && ~isempty(i)
     Ins=Out(i*ones(lstci,1));
     for j=1:lstci
@@ -1166,7 +1191,7 @@ if (lstci>0) && ~isempty(i)
     end
     Out=insstruct(Out,i,Ins);
 end
-i=strmatch('--turbquant',{Out.Name});
+i=find(strcmp('--turbquant',{Out.Name}));
 if (ltur>0) && ~isempty(i)
     Ins=Out(i*ones(ltur,1));
     for j=1:ltur
@@ -1201,6 +1226,22 @@ for i=1:length(Out)
 end
 % -------------------------------------------------------------------------
 
+
+% -------------------------------------------------------------------------
+function DL=getlabels(FI,Props)
+T_=1; ST_=2; M_=3; N_=4; K_=5;
+DL={[] [] [] [] []};
+if Props.DimFlag(K_)==7
+    layers = vs_get(FI,'map-const','OUTPUT_LAYERS','quiet!');
+    if strcmp(Props.Loc3D,'í')
+        DL{K_} = layers;
+    else
+        DL{K_} = layers(layers~=0)'; %row vector is easier
+    end
+end
+% -------------------------------------------------------------------------
+
+
 % -------------------------------------------------------------------------
 function sz=getsize(FI,Props)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
@@ -1215,8 +1256,27 @@ if Props.NVal==0
     Info=vs_disp(FI,'map-const','THICK');
     sz(K_)=Info.SizeDim(1)+1;
 elseif Props.DimFlag(K_)
-    Info=vs_disp(FI,Props.Group,Props.Val1);
-    sz(K_)=Info.SizeDim(3);
+    switch Props.Loc3D
+        case 'c'
+            if 0 % dummyMissingLayers
+                Info=vs_disp(FI,'map-const','THICK');
+                sz(K_)=Info.SizeDim;
+            else
+                Info=vs_disp(FI,Props.Group,Props.Val1);
+                sz(K_)=Info.SizeDim(3);
+            end
+        case 'i'
+            if 0 % dummyMissingLayers
+                Info=vs_disp(FI,'map-const','THICK');
+                sz(K_)=Info.SizeDim+1;
+            else
+                Info=vs_disp(FI,Props.Group,Props.Val1);
+                sz(K_)=Info.SizeDim(3);
+            end
+        otherwise
+            Info=vs_disp(FI,Props.Group,Props.Val1);
+            sz(K_)=Info.SizeDim(3);
+    end
 end
 if Props.DimFlag(T_)
     Info=vs_disp(FI,Props.Group,[]);
@@ -1431,7 +1491,7 @@ for i = size(Out,1):-1:1
             Out(i).Val2 = 'V1';
         end
     elseif strcmp(Out(i).Name,'initial bed level') || strcmp(Out(i).Name,'bed level in cell centers')
-        [nfltp,Chk] = vs_get(FI,'map-const','DRYFLP','quiet');
+        nfltp = vs_get(FI,'map-const','DRYFLP','quiet!');
         nfltp = lower(deblank(nfltp));
         if isequal(nfltp,'dp')
             Out(i).Stagger = 'Faces2D';
@@ -1457,14 +1517,14 @@ end
 %======================== SPECIFIC CODE ADD ===============================
 sednames = getsedimentnames(FI,'suspended');
 %
-[names,Chk] = vs_get(FI,'map-const','NAMCON','quiet');
+names = vs_get(FI,'map-const','NAMCON','quiet!');
 names = lower(cellstr(names));
 [lstci,Chk] = vs_get(FI,'map-const','LSTCI','quiet');
-if ischar(lstci)
+if ~Chk
     lstci = 0;
 end
 [ltur,Chk] = vs_get(FI,'map-const','LTUR','quiet');
-if ischar(ltur)
+if ~Chk
     ltur = 0;
 end
 i = strmatch('--constituents',{Out.Name},'exact');
@@ -2126,10 +2186,10 @@ if ischar(Props.SubFld)
         case {'s','sb','s1','sb1'}
             Info=vs_disp(FI,'map-const','NAMSED');
             if isstruct(Info) && ismember(Props.SubFld,{'sb','sb1'})
-                [names,Chk]=vs_get(FI,'map-const','NAMSED','quiet');
+                names=vs_get(FI,'map-const','NAMSED','quiet!');
                 subf=cellstr(names);
             else
-                [names,Chk]=vs_get(FI,'map-const','NAMCON','quiet');
+                names=vs_get(FI,'map-const','NAMCON','quiet!');
                 names=cellstr(names);
                 lnames=lower(names);
                 i_sed=strmatch('sediment',lnames);
@@ -2148,9 +2208,9 @@ end
 % -------------------------------------------------------------------------
 function T=readtim(FI,Props,t)
 %======================== SPECIFIC CODE ===================================
-[Dt,Chk]=vs_get(FI,'map-const','DT','quiet');
-[Tunit,Chk]=vs_get(FI,'map-const','TUNIT','quiet');
-[Date,Chk]=vs_get(FI,'map-const','ITDATE','quiet');
+Dt=vs_get(FI,'map-const','DT','quiet!');
+Tunit=vs_get(FI,'map-const','TUNIT','quiet!');
+Date=vs_get(FI,'map-const','ITDATE','quiet!');
 d0=tdelft3d(Date(1),Date(2));
 dispt='hydrodynamic time';
 if isfield(FI,'displaytime')
@@ -2162,7 +2222,7 @@ switch Props.Group
     case {'map-series','map-rol-series','map-sed-series','map-infsed-serie','map-sedgs-series'}
         TLikeFlow=1;
     case 'map-avg-series'
-        [T,Chk]=vs_let(FI,'map-infavg-serie',{t},'ITAVGS','quiet');
+        T=vs_let(FI,'map-infavg-serie',{t},'ITAVGS','quiet!');
         T=d0+T*Dt*Tunit/(24*3600);
     otherwise % ONE FIELD
         Info = vs_disp(FI,Props.Group,[]);
@@ -2180,22 +2240,22 @@ if TLikeFlow
             %
             switch Props.Group
                 case 'map-rol-series'
-                    [T,Chk]=vs_let(FI,'map-infrol-serie',{t},'ITMAPS','quiet');
+                    T=vs_let(FI,'map-infrol-serie',{t},'ITMAPS','quiet!');
                 case {'map-sed-series','map-infsed-serie'}
-                    [T,Chk]=vs_let(FI,'map-infsed-serie',{t},'ITMAPS','quiet');
+                    T=vs_let(FI,'map-infsed-serie',{t},'ITMAPS','quiet!');
                 otherwise %case {'map-series','map-sedgs-series'} % and other groups
-                    [T,Chk]=vs_let(FI,'map-info-series',{t},'ITMAPC','quiet');
+                    T=vs_let(FI,'map-info-series',{t},'ITMAPC','quiet!');
             end
             T=d0+T*Dt*Tunit/(24*3600);
             %
         case 'morphologic time'
             Info=vs_disp(FI,'map-infsed-serie','MORFT');
             if isstruct(Info)
-                [T,Chk]=vs_let(FI,'map-infsed-serie',{t},'MORFT','quiet');
+                T=vs_let(FI,'map-infsed-serie',{t},'MORFT','quiet!');
                 T=d0+T;
             else
                 % The following approach assumes Tstart equal to 0.
-                [T,Chk]=vs_let(FI,'map-info-series',{t},'ITMAPC','quiet');
+                T=vs_let(FI,'map-info-series',{t},'ITMAPC','quiet!');
                 T=T*Dt*Tunit/60; % Determine relative time in minutes
                 if isfield(FI,'morstt')
                     T=max(0,T-FI.morstt);
@@ -2286,7 +2346,7 @@ if strcmp(Name,'cumulative mass error')
     %
     % This part of the code needs DP0 to be equal to dps(1) !!
     %
-    [dz,Success]=vs_let(FI,'map-sed-series',{idx{T_}},'THLYR',[idx([M_ N_]) {0}],'quiet');
+    [dz,Success]=vs_let(FI,'map-sed-series',idx(T_),'THLYR',[idx([M_ N_]) {0}],'quiet');
     if ~Success, error(dz), end
     ddzt=sum(dz,4);
     [dz,Success]=vs_let(FI,'map-sed-series',{1},'THLYR',[idx([M_ N_]) {0}],'quiet');
@@ -2316,7 +2376,7 @@ if isstruct(Info) && ~DP0
     %
     % Simple case: read DPS directly
     %
-    [dp,Chk]=vs_let(FI,'map-sed-series',{idx{T_}},'DPS',idx([M_ N_]),'quiet');
+    dp=vs_let(FI,'map-sed-series',idx(T_),'DPS',idx([M_ N_]),'quiet!');
     dp=-dp;
 else
     %
@@ -2328,15 +2388,15 @@ else
         %
         % DPS0 available on file
         %
-        [dp,Chk]=vs_get(FI,'map-const','DPS0',idx([M_ N_]),'quiet');
+        dp=vs_get(FI,'map-const','DPS0',idx([M_ N_]),'quiet!');
         dp=-dp;
     else
         %
         % DPS0 not available: reconstruct from DP0 and DPSOPT(=DRYFLP)
         %
-        [dp,Chk]=vs_get(FI,'map-const','DP0',idx([M_ N_]),'quiet');
+        dp=vs_get(FI,'map-const','DP0',idx([M_ N_]),'quiet!');
         dp(dp==-999)=NaN;
-        [nfltp,Chk]=vs_get(FI,'map-const','DRYFLP','quiet');
+        nfltp=vs_get(FI,'map-const','DRYFLP','quiet!');
         nfltp=lower(deblank(nfltp));
         if isfield(FI,'dps'), nfltp=FI.dps; end
         switch nfltp
@@ -2367,7 +2427,7 @@ else
     %
     if isstruct(Info2) && ~DP0
         dp0=dp;
-        [dp,Chk]=vs_let(FI,'map-sed-series',{idx{T_}},'DPSED',idx([M_ N_]),'quiet');
+        [dp,Chk]=vs_let(FI,'map-sed-series',idx(T_),'DPSED',idx([M_ N_]),'quiet');
         if Chk
             for i=1:size(dp,1)
                 %
@@ -2405,7 +2465,7 @@ switch cmd,
         dpslst=findobj(mfig,'tag','dpslst');
         dpsops=get(dpslst,'string');
         if ~isfield(FI,'dps')
-            [nfltp,Chk]=vs_get(FI,'map-const','DRYFLP','quiet');
+            nfltp=vs_get(FI,'map-const','DRYFLP','quiet!');
             nfltp=lower(deblank(nfltp));
             %if isempty(nfltp)
             dpsops = get(dpslst,'string');
@@ -2553,14 +2613,16 @@ switch cmd,
         Hv=findobj(mfig,'tag',['E' cmd]);
         if nargin>3
             v=varargin{1};
-            if ischar(v), v=str2num(v); end
+            if ischar(v)
+                v=str2double(v);
+            end
         else
-            v=str2num(get(Hv,'string'));
+            v=str2double(get(Hv,'string'));
         end
-        if isempty(v)
+        if isnan(v)
             v=get(Hv,'userdata');
         end
-        NewFI=setfield(FI,cmd,v);
+        NewFI.(cmd)=v;
         set(Hv,'string',sprintf('%g',v),'userdata',v)
     case 'dps'
         dpslst=findobj(mfig,'tag','dpslst');
@@ -2600,7 +2662,7 @@ function OK=optfig(h0)
 Inactive=get(0,'defaultuicontrolbackground');
 FigPos=get(h0,'position');
 voffset=FigPos(4)-30;
-h2 = uicontrol('Parent',h0, ...
+uicontrol('Parent',h0, ...
     'Style','text', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
@@ -2608,7 +2670,7 @@ h2 = uicontrol('Parent',h0, ...
     'String','Dpsopt', ...
     'Enable','off', ...
     'Tag','dpstxt');
-h2 = uicontrol('Parent',h0, ...
+uicontrol('Parent',h0, ...
     'Style','popupmenu', ...
     'BackgroundColor',Inactive, ...
     'Callback','d3d_qp fileoptions dps', ...
@@ -2618,7 +2680,7 @@ h2 = uicontrol('Parent',h0, ...
     'Enable','off', ...
     'Tag','dpslst');
 voffset=voffset-25;
-h2 = uicontrol('Parent',h0, ...
+uicontrol('Parent',h0, ...
     'Style','text', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
@@ -2626,7 +2688,7 @@ h2 = uicontrol('Parent',h0, ...
     'String','Time Index', ...
     'Enable','off', ...
     'Tag','Trestart');
-h2 = uicontrol('Parent',h0, ...
+uicontrol('Parent',h0, ...
     'Style','edit', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','right', ...
@@ -2636,7 +2698,7 @@ h2 = uicontrol('Parent',h0, ...
     'Value',0, ...
     'Enable','off', ...
     'Tag','Erestart');
-h1 = uicontrol('Parent',h0, ...
+uicontrol('Parent',h0, ...
     'BackgroundColor',Inactive, ...
     'Callback','d3d_qp fileoptions writerestart', ...
     'Position',[181 voffset 150 20], ...
@@ -2644,7 +2706,7 @@ h1 = uicontrol('Parent',h0, ...
     'Enable','off', ...
     'Tag','Wrestart');
 voffset=voffset-25;
-h1 = uicontrol('Parent',h0, ...
+uicontrol('Parent',h0, ...
     'BackgroundColor',Inactive, ...
     'Callback','d3d_qp fileoptions simsteps', ...
     'Position',[181 voffset 150 20], ...
@@ -2652,7 +2714,7 @@ h1 = uicontrol('Parent',h0, ...
     'Enable','off', ...
     'Tag','checktstep');
 voffset=voffset-25;
-h2 = uicontrol('Parent',h0, ...
+uicontrol('Parent',h0, ...
     'Style','text', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
@@ -2660,7 +2722,7 @@ h2 = uicontrol('Parent',h0, ...
     'String','Dz', ...
     'Enable','off', ...
     'Tag','Tdz');
-h2 = uicontrol('Parent',h0, ...
+uicontrol('Parent',h0, ...
     'Style','edit', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','right', ...
@@ -2670,7 +2732,7 @@ h2 = uicontrol('Parent',h0, ...
     'Value',0, ...
     'Enable','off', ...
     'Tag','Edz');
-h1 = uicontrol('Parent',h0, ...
+uicontrol('Parent',h0, ...
     'BackgroundColor',Inactive, ...
     'Callback','d3d_qp fileoptions map2golder', ...
     'Position',[181 voffset 150 20], ...
@@ -2678,7 +2740,7 @@ h1 = uicontrol('Parent',h0, ...
     'Enable','off', ...
     'Tag','map2golder');
 voffset=voffset-30;
-h1 = uicontrol('Parent',h0, ...
+uicontrol('Parent',h0, ...
     'Style','text', ...
     'BackgroundColor',Inactive, ...
     'Position',[11 voffset 70 18], ...
@@ -2686,7 +2748,7 @@ h1 = uicontrol('Parent',h0, ...
     'Horizontalalignment','left', ...
     'Enable','off', ...
     'Tag','displaytime');
-h1 = uicontrol('Parent',h0, ...
+uicontrol('Parent',h0, ...
     'Style','popupmenu', ...
     'BackgroundColor',Inactive, ...
     'Callback','d3d_qp fileoptions displaytime', ...
@@ -2695,7 +2757,7 @@ h1 = uicontrol('Parent',h0, ...
     'Enable','off', ...
     'Tag','displaytime=?');
 voffset=voffset-25;
-h2 = uicontrol('Parent',h0, ...
+uicontrol('Parent',h0, ...
     'Style','text', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
@@ -2703,7 +2765,7 @@ h2 = uicontrol('Parent',h0, ...
     'String','Morphological Scale Factor', ...
     'Enable','off', ...
     'Tag','Tmorfac');
-h2 = uicontrol('Parent',h0, ...
+uicontrol('Parent',h0, ...
     'Style','edit', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','right', ...
@@ -2714,7 +2776,7 @@ h2 = uicontrol('Parent',h0, ...
     'Enable','off', ...
     'Tag','Emorfac');
 voffset=voffset-25;
-h2 = uicontrol('Parent',h0, ...
+uicontrol('Parent',h0, ...
     'Style','text', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
@@ -2722,7 +2784,7 @@ h2 = uicontrol('Parent',h0, ...
     'String','Spin-up Interval Morphology', ...
     'Enable','off', ...
     'Tag','Tmorstt');
-h2 = uicontrol('Parent',h0, ...
+uicontrol('Parent',h0, ...
     'Style','edit', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','right', ...
@@ -2732,7 +2794,7 @@ h2 = uicontrol('Parent',h0, ...
     'Value',0, ...
     'Enable','off', ...
     'Tag','Emorstt');
-h2 = uicontrol('Parent',h0, ...
+uicontrol('Parent',h0, ...
     'Style','text', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
@@ -2769,17 +2831,15 @@ if nargin<2
     typ='all';
 end
 %
-[names,Chk] = vs_get(FI,'map-const','NAMCON','quiet');
+names = vs_get(FI,'map-const','NAMCON','quiet!');
 constituents = lower(cellstr(names));
 %
 Info = vs_disp(FI,'map-const','NAMSED');
 if isstruct(Info)
-    [names,Chk] = vs_get(FI,'map-const','NAMSED','quiet');
+    names = vs_get(FI,'map-const','NAMSED','quiet!');
     sediments = cellstr(names);
 else
-    L_constituents = lower(constituents);
-    i_sed = strmatch('sediment',L_constituents);
-    sediments = constituents(i_sed);
+    sediments = constituents(strncmpi('sediment',constituents,8));
 end
 %
 switch typ

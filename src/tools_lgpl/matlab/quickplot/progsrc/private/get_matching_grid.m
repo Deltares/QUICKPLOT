@@ -184,7 +184,7 @@ while 1
             end
             break
          else
-            ui_message('error',sprintf('Number of segments in map file (%i) does not\nmatch the number of segments in the\ngrid file (%i)',MapSeg,GridSeg));
+            ui_message('error','Number of segments in map file (%i) does not\nmatch the number of segments in the\ngrid file (%i)',MapSeg,GridSeg);
          end
       else
          %
@@ -193,7 +193,7 @@ while 1
          if isequal(GridSize,MapSeg)
             break
          else
-            ui_message('error',sprintf('Grid size (%ix%i) does not match data size (%ix%i)',GridSize,MapSeg));
+            ui_message('error','Grid size (%ix%i) does not match data size (%ix%i)',GridSize,MapSeg);
          end
       end
    else

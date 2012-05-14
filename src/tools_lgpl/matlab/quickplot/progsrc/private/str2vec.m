@@ -70,7 +70,7 @@ while i<=length(INP)
             maxint=INP{i+1};
             i=i+2;
         otherwise
-            error(sprintf('Invalid input argument %i.',i+2))
+            error('Invalid input argument %i.',i+2)
     end
 end
 
@@ -97,7 +97,7 @@ while 1
             colonafter(end+1)=length(vec);
             n=n+1;
         else
-            error(sprintf('Unexpected character: %s.',s(n)))
+            error('Unexpected character: %s.',s(n))
         end
     else
         break
@@ -143,7 +143,7 @@ while ~isempty(colonafter)
         vec=cat(1,vec(1:f1-1,1),vecin,vec(f1+3:end,1));
         colonafter=colonafter(3:end)+length(vecin)-3;
     else % i>2
-        error(sprintf('Series of multiple colons encountered in ''%s''.',str))
+        error('Series of multiple colons encountered in ''%s''.',str)
     end
 end
 if ApplyLimit

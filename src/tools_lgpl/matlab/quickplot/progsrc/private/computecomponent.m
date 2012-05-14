@@ -142,7 +142,7 @@ for d=1:length(data)
                 data(d).Val=data(d).XComp; %MComp
             end
         otherwise
-            ui_message('error',sprintf('Unexpected colour/plot type encountered: %s.',vpt));
+            ui_message('error','Unexpected colour/plot type encountered: %s.',vpt);
             scalar=0;
     end
 end

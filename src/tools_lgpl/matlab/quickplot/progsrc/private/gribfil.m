@@ -124,7 +124,7 @@ for i=[M_ N_ K_]
 end
 
 if max(idx{T_})>sz(T_)
-    error(sprintf('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_)))
+    error('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_))
 end
 
 nT = length(idx{T_});

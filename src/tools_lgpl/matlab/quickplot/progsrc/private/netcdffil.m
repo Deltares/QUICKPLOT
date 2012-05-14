@@ -336,7 +336,7 @@ if ~isempty(Info.Z) && Props.hasCoords
             case 'down'
                 signup = -1;
             otherwise
-                ui_message('warning',sprintf('Unknown value for attribute ''positive'': %s',CoordInfo.Attribute(j).Value))
+                ui_message('warning','Unknown value for attribute ''positive'': %s',CoordInfo.Attribute(j).Value)
                 signup = 1;
         end
     else
@@ -467,7 +467,7 @@ if ~isempty(Info.Z) && Props.hasCoords
                 end
             otherwise
                 if ~isempty(formula)
-                   ui_message('warning',sprintf('Formula for %s not implemented',standard_name))
+                   ui_message('warning','Formula for %s not implemented',standard_name)
                 end
                 [Z, status] = qp_netcdf_get(FI,CoordInfo,Props.Dimension,idx);
                 if signup<0
@@ -883,7 +883,7 @@ for i = 1:length(CoordDims)
     if ~isempty(idim)
         Dimension(idim) = i;
     else
-        error(sprintf('Coordinate dimension ''%s'' not matched by variable dimension.',CoordDims{i}))
+        error('Coordinate dimension ''%s'' not matched by variable dimension.',CoordDims{i})
     end
 end
 %

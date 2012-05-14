@@ -97,7 +97,7 @@ else
     end
 end
 if logtype==3 | logtype==4
-    ui_message('',sprintf(Format,Args{:}));
+    ui_message('',Format,Args{:})
 elseif logtype==5 | logtype==6
     fprintf(1,Format,Args{:});
 else

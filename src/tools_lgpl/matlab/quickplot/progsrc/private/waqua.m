@@ -249,7 +249,7 @@ try
         fprintf(wqdebug,'\nFile type: %s\n',Str);
     end
     if ~strcmp(lower(Structure.FileType),'simona sds file')
-        error(sprintf('Not Simona SDS file? FileType=''%s''',Structure.FileType));
+        error('Not Simona SDS file? FileType=''%s''',Structure.FileType)
     end
     if wqdebug
         fprintf(wqdebug,'Accepted as Simona SDS file.\n\n');
@@ -260,7 +260,7 @@ try
     if strcmp(Structure.Format,'l'), Str=Swap4byte(Str); end
     Structure.FileName1=Str(1:X);
     if any(Structure.FileName1<32 | Structure.FileName1>122)
-        error(sprintf('Invalid file: %s',Structure.FileName1));
+        error('Invalid file: %s',Structure.FileName1)
     end
 
     X=fread(fid,1,'int32'); % HP 9000

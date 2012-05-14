@@ -80,7 +80,7 @@ while i <= nargin
                   def_file = varargin{i};
                   onefile = 0;
                otherwise
-                  error(sprintf('Unexpected function argument %i',i));
+                  error('Unexpected function argument %i',i)
             end
       end
    end

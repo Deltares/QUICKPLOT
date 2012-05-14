@@ -186,8 +186,7 @@ elseif isequal(casedir,'distributed')
    %
    observ = inifile('get',Ini,'Cases','Observations','');
 else
-   ui_message('error',['Unknown CaseSpec ''',casedir, ...
-      ''' in ''',Ini.FileName,''''])
+   ui_message('error','Unknown CaseSpec ''%s'' in ''%s''',casedir,Ini.FileName)
    cases = [];
 end
 %
@@ -199,10 +198,10 @@ while i<=length(cases)
       casedir = cases(i).dir;
       caseid = dir([casedir '*.inp']);
       if isempty(caseid)
-         ui_message('error',sprintf('Directory %s does not contain an *.inp file',cases(i).name))
+         ui_message('error','Directory %s does not contain an *.inp file',cases(i).name)
          cases(i)=[];
       elseif length(caseid)>1
-         ui_message('error',sprintf('Directory %s contains multiple *.inp files',cases(i).name))
+         ui_message('error','Directory %s contains multiple *.inp files',cases(i).name)
          cases(i)=[];
       else
          cases(i).id = [casedir caseid.name(1:end-4)];
@@ -279,10 +278,10 @@ for i=1:length(cases)
          if isequal(plottypes{ptype},'Map')
             cco = dir([cases(i).dir '*.cco']);
             if isempty(cco)
-               ui_message('error',sprintf('Directory %s does not contain a *.cco file',cases(i).name))
+               ui_message('error','Directory %s does not contain a *.cco file',cases(i).name)
                okay = 0;
             elseif length(cco)>1
-               ui_message('error',sprintf('Directory %s contains multiple *.cco files',cases(i).name))
+               ui_message('error','Directory %s contains multiple *.cco files',cases(i).name)
                okay = 0;
             else
                gridfile = {[cases(i).dir cco(1).name]};

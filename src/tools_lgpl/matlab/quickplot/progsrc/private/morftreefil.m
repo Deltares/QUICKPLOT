@@ -85,7 +85,7 @@ switch cmd
         return
     case 'plot'
     otherwise
-        error(sprintf('''%s'' option not defined for MorfTree',cmd))
+        error('''%s'' option not defined for MorfTree',cmd)
 end
 
 Parent=varargin{1};

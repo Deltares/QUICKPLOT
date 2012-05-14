@@ -67,7 +67,7 @@ switch cmd
             end
             fid=fopen(FileName,'w');
             if fid<0
-                error(sprintf('Cannot open output file: %s',FileName))
+                error('Cannot open output file: %s',FileName)
             end
             fclose(fid);
             AVIHandle.CPointer = calldll('writeavi','open',AVIHandle.CPointer,FileName);
@@ -140,7 +140,7 @@ switch cmd
                 error('No output file opened.')
             end
             if ~isfield(AVIHandle,'VideoSize')
-                error(sprintf('No video stream opened for file %s.',AVIHandle.FileName))
+                error('No video stream opened for file %s.',AVIHandle.FileName)
             end
             szFig=size(Fig);
             szAVI4=ceil(szFig(1:2)/4);

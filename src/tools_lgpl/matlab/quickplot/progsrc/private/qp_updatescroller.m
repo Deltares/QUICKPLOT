@@ -2,37 +2,37 @@ function qp_updatescroller(hNew,pfig)
 %QP_UPDATESCROLLER Update list of items/dimensions that can be animated.
 
 %----- LGPL --------------------------------------------------------------------
-%                                                                               
-%   Copyright (C) 2011-2012 Stichting Deltares.                                     
-%                                                                               
-%   This library is free software; you can redistribute it and/or                
-%   modify it under the terms of the GNU Lesser General Public                   
-%   License as published by the Free Software Foundation version 2.1.                         
-%                                                                               
-%   This library is distributed in the hope that it will be useful,              
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of               
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU            
-%   Lesser General Public License for more details.                              
-%                                                                               
-%   You should have received a copy of the GNU Lesser General Public             
-%   License along with this library; if not, see <http://www.gnu.org/licenses/>. 
-%                                                                               
-%   contact: delft3d.support@deltares.nl                                         
-%   Stichting Deltares                                                           
-%   P.O. Box 177                                                                 
-%   2600 MH Delft, The Netherlands                                               
-%                                                                               
-%   All indications and logos of, and references to, "Delft3D" and "Deltares"    
-%   are registered trademarks of Stichting Deltares, and remain the property of  
-%   Stichting Deltares. All rights reserved.                                     
-%                                                                               
+%
+%   Copyright (C) 2011-2012 Stichting Deltares.
+%
+%   This library is free software; you can redistribute it and/or
+%   modify it under the terms of the GNU Lesser General Public
+%   License as published by the Free Software Foundation version 2.1.
+%
+%   This library is distributed in the hope that it will be useful,
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%   Lesser General Public License for more details.
+%
+%   You should have received a copy of the GNU Lesser General Public
+%   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+%
+%   contact: delft3d.support@deltares.nl
+%   Stichting Deltares
+%   P.O. Box 177
+%   2600 MH Delft, The Netherlands
+%
+%   All indications and logos of, and references to, "Delft3D" and "Deltares"
+%   are registered trademarks of Stichting Deltares, and remain the property of
+%   Stichting Deltares. All rights reserved.
+%
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 
-T_=1; ST_=2; M_=3; N_=4; K_=5;
-DimStr={'subfield ','timestep ','station ','M=','N=','K='};
+DimMenu = {'subfield' 'time' 'station' 'M' 'N' 'K'};
+DimStr={'subfield','time step','station','M','N','K'};
 
 UDs = get(hNew,'userdata');
 if ~iscell(UDs)
@@ -42,50 +42,43 @@ UDs(cellfun('isempty',UDs)) = [];
 for i = 1:length(UDs)
     UD = UDs{i};
     ObjTag = get(hNew(i),'tag');
-
+    
     Info = UD.PlotState.FI;
     DomainNr = UD.PlotState.Domain;
     Props = UD.PlotState.Props;
-    selected = UD.PlotState.Selected;
     subf = UD.PlotState.SubField;
-
+    if isempty(subf)
+        subf={[]};
+    end
+    
     [Chk,subfs]=qp_getdata(Info,DomainNr,Props,'subfields');
-    [Chk,sz]=qp_getdata(Info,DomainNr,Props,'size');
-    CanAnim=0;
-    Obj.SubfRange=[];
-    Obj.TRange=[];
-    Obj.StRange=[];
-    Obj.MRange=[];
-    Obj.NRange=[];
-    Obj.KRange=[];
-    if Chk
-        if length(subfs)>1 && length(subf)==1 && ~isequal(subf,0)
-            Obj.SubfRange=[1 length(subfs)];
-            CanAnim=1;
-        end
-        if Props.DimFlag(T_) && (sz(T_)>1) && length(selected{T_})==1 && ~isequal(selected{T_},0)
-            Obj.TRange=[1 sz(T_)];
-            CanAnim=1;
-        end
-        if Props.DimFlag(ST_) && (sz(ST_)>1) && length(selected{ST_})==1 && ~isequal(selected{ST_},0)
-            Obj.StRange=[1 sz(ST_)];
-            CanAnim=1;
-        end
-        if Props.DimFlag(M_) && (sz(M_)>1) && length(selected{M_})==1 && ~isequal(selected{M_},0)
-            Obj.MRange=[1 sz(M_)];
-            CanAnim=1;
-        end
-        if Props.DimFlag(N_) && (sz(N_)>1) && length(selected{N_})==1 && ~isequal(selected{N_},0)
-            Obj.NRange=[1 sz(N_)];
-            CanAnim=1;
-        end
-        if Props.DimFlag(K_) && (sz(K_)>1) && length(selected{K_})==1 && ~isequal(selected{K_},0)
-            Obj.KRange=[1 sz(K_)];
-            CanAnim=1;
+    [Chk,szTSMNK]=qp_getdata(Info,DomainNr,Props,'size');
+    if ~Chk
+        continue
+    end
+    %
+    sz = [length(subfs) szTSMNK];
+    selected = [subf UD.PlotState.Selected];
+    DimFlag = [1 Props.DimFlag];
+    Values  = cell(size(sz));
+    Values{1} = subfs;
+    if any(Props.DimFlag(3:end)==7)
+       [Chk,Values(2:end)]=qp_getdata(Info,DomainNr,Props,'dimlabels');
+    end
+    for m_ = 2:length(sz)
+        if isempty(Values{m_})
+            Values{m_} = 1:sz(m_);
         end
     end
-
-    if CanAnim && ishandle(pfig)
+    %
+    CanAnim = zeros(size(sz));
+    for m_ = 1:length(sz)
+        if DimFlag(m_) && (sz(m_)>1) && length(selected{m_})==1 && ~isequal(selected{m_},0)
+            CanAnim(m_)=1;
+        end
+    end
+    
+    if any(CanAnim) && ishandle(pfig)
         animslid=findobj(pfig,'tag','animslid');
         if isempty(animslid)
             qp_figurebars(pfig)
@@ -103,39 +96,24 @@ for i = 1:length(UDs)
             AS=get(animslid,'userdata');
         end
         it=uimenu('label',Props.Name,'parent',uicm,'userdata',ObjTag);
-        AnimOpt=[]; hAnimOpt=[];
-        if ~isempty(Obj.TRange)
-            AnimLoc=[T_ Obj.TRange(2)];
-            hMenu=uimenu('label','time','parent',it,'userdata',AnimLoc,'callback','d3d_qp animselect');
-            if isempty(AnimOpt), AnimOpt=AnimLoc; hAnimOpt=hMenu; end
+        AnimSel=[];
+        hAnimSel=[];
+        for m_ = 1:length(sz)
+            if CanAnim(m_)
+                Anim.Dim=m_-1; %! CONVERT from 1:6 back to AnimLoc (0=subf, 1=time, ...]
+                Anim.Values=Values{m_};
+                hMenu=uimenu('label',DimMenu{m_},'parent',it,'userdata',Anim,'callback','d3d_qp animselect');
+                if isempty(AnimSel)
+                    AnimSel=Anim;
+                    hAnimSel=hMenu;
+                end
+            end
         end
-        if ~isempty(Obj.StRange)
-            AnimLoc=[ST_ Obj.StRange(2)];
-            hMenu=uimenu('label','station','parent',it,'userdata',AnimLoc,'callback','d3d_qp animselect');
-            if isempty(AnimOpt), AnimOpt=AnimLoc; hAnimOpt=hMenu; end
-        end
-        if ~isempty(Obj.MRange)
-            AnimLoc=[M_ Obj.MRange(2)];
-            hMenu=uimenu('label','M','parent',it,'userdata',AnimLoc,'callback','d3d_qp animselect');
-            if isempty(AnimOpt), AnimOpt=AnimLoc; hAnimOpt=hMenu; end
-        end
-        if ~isempty(Obj.NRange)
-            AnimLoc=[N_ Obj.NRange(2)];
-            hMenu=uimenu('label','N','parent',it,'userdata',AnimLoc,'callback','d3d_qp animselect');
-            if isempty(AnimOpt), AnimOpt=AnimLoc; hAnimOpt=hMenu; end
-        end
-        if ~isempty(Obj.KRange)
-            AnimLoc=[K_ Obj.KRange(2)];
-            hMenu=uimenu('label','K','parent',it,'userdata',AnimLoc,'callback','d3d_qp animselect');
-            if isempty(AnimOpt), AnimOpt=AnimLoc; hAnimOpt=hMenu; end
-        end
-        if ~isempty(Obj.SubfRange)
-            AnimLoc=[0 Obj.SubfRange(2)];
-            hMenu=uimenu('label','subfield','parent',it,'userdata',AnimLoc,'callback','d3d_qp animselect');
-            if isempty(AnimOpt), AnimOpt=AnimLoc; hAnimOpt=hMenu; end
-        end
-        sstep=[min(1/(AnimOpt(2)-1),.1) min(10/(AnimOpt(2)-1),.9)];
-        AS(end+1).Fld=AnimOpt(1);
+        %
+        NAnimValues = length(AnimSel.Values);
+        sstep=[min(1/(NAnimValues-1),0.1) min(10/(NAnimValues-1),0.9)];
+        AS(end+1).Fld=AnimSel.Dim;
+        AS(end).Values=AnimSel.Values;
         AS(end).Tag=ObjTag;
         if length(AS)>1
             if ~isequal(AS(end).Fld,AS(end-1).Fld)
@@ -143,22 +121,16 @@ for i = 1:length(UDs)
                 set(hAnimOptChecked,'checked','off')
             end
         end
-        t_=AnimOpt(1);
-        if t_==0
-            t=subf{1};
+        t_=AnimSel.Dim+1; %! CONVERT from AnimOpt (0=subf, 1=time, ...] back to 1:6
+        t=selected{t_};
+        if iscellstr(AS.Values)
+            Str=AS.Values{t};
         else
-            t=selected{t_};
+            Str=sprintf('%i',t);
+            t=find(AS.Values==t);
         end
-        set(animslid,'userdata',AS,'value',1,'sliderstep',sstep,'Max',AnimOpt(2),'enable','on','value',t)
-        set(hAnimOpt,'checked','on')
-        %
-        Str=sprintf('%i',t);
-        if t_==0
-            [Chk,sflds] = qp_getdata(Info,DomainNr,Props,'subfields',t);
-            if Chk
-                Str=sflds{1};
-            end
-        end
-        set(animslid,'tooltip',[DimStr{t_+1},Str]);
+        set(animslid,'userdata',AS,'value',1,'sliderstep',sstep,'Max',NAnimValues,'enable','on','value',t)
+        set(hAnimSel,'checked','on')
+        set(animslid,'tooltip',sprintf('%s(%i)=%s',DimStr{t_},t,Str));
     end
 end

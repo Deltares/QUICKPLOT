@@ -56,14 +56,14 @@ switch lower(cmd)
         varargout = {Data};
         %case 'write'
     otherwise
-        error(sprintf('Unknown command: %s',cmd))
+        error('Unknown command: %s',cmd)
 end
 
 
 function FI = Local_read_swan(filename,dims)
 fid = fopen(filename,'r');
 if fid<0
-    error(sprintf('Error opening file: %s',filename))
+    error('Error opening file: %s',filename)
 end
 FI.FileName = filename;
 FI.FileType = 'SWAN-output';
@@ -92,7 +92,7 @@ temp = sscanf(Line,'%f');
 nvalperline = length(temp);
 if nvalperline==0
     fclose(fid);
-    error(sprintf('No data found in Line ''%s''.',Line))
+    error('No data found in Line ''%s''.',Line)
 end
 %
 % Read data from file
@@ -120,7 +120,7 @@ end
 function FI = Local_read_swanin(filename)
 fid = fopen(filename,'r');
 if fid<0
-    error(sprintf('Error opening file: %s',filename))
+    error('Error opening file: %s',filename)
 end
 FI.FileName = filename;
 FI.FileType = 'SWAN-input';
@@ -132,20 +132,20 @@ while ischar(Line) & isempty(Line)
 end
 if ~ischar(Line)
     fclose(fid);
-    error(sprintf('No data in file: %s',filename))
+    error('No data in file: %s',filename)
 elseif length(Line)>200
     fclose(fid);
-    error(sprintf('First line too long (>200): %s',filename))
+    error('First line too long (>200): %s',filename)
 elseif ~ismember(Line(1),['A':'Z' 'a':'z' ' $'])
     fclose(fid);
-    error(sprintf('Invalid first character ''%s''',Line(1)))
+    error('Invalid first character ''%s''',Line(1))
 end
 TableLine = 0;
 while ~TableLine
     Line = fgetl(fid);
     if ~ischar(Line)
         fclose(fid);
-        error(sprintf('No table record found in file: %s',filename))
+        error('No table record found in file: %s',filename)
     else
         TableLine = ~isempty(strmatch('tab',lower(deblank2(Line))));
     end
@@ -215,7 +215,7 @@ while ~isempty(Pars)
     end
     %
     if ~found
-        error(sprintf('Unexpected keyword: %s.',Par))
+        error('Unexpected keyword: %s.',Par)
     end
     %
     keyword = keyw{i,2};

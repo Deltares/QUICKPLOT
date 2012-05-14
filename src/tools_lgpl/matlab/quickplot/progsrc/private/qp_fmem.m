@@ -458,7 +458,7 @@ switch cmd
                   Tp=FI.FileType;
                   for b = 1:length(FI.Block)
                      if FI.Block(b).Edition>1
-                        ui_message('warning',sprintf('Skipping GRIB edition %i block',FI.Block(b).Edition))
+                        ui_message('warning','Skipping GRIB edition %i block',FI.Block(b).Edition)
                      end
                   end
                end
@@ -687,7 +687,7 @@ switch cmd
                            try
                               pfile = tekal('open',[ppn pfn]);
                               if length(pfile.Field)~=FI.Field(1).Size(1)
-                                 ui_message('error',sprintf('Number of values in KUBINT file (%i) does not\nmatch the number of polygons (%i)',FI.Field(1).Size(1),length(pfile.Field)));
+                                 ui_message('error','Number of values in KUBINT file (%i) does not\nmatch the number of polygons (%i)',FI.Field(1).Size(1),length(pfile.Field))
                                  ppn='';
                                  pfn='';
                               else
@@ -1001,7 +1001,7 @@ switch cmd
             % Therefore, the following isempty statement is actually
             % superfluous.
             if isempty(FI)
-               ui_message('error',sprintf('Error while opening\n%s\nas %s:\n%s',FileName,usertrytp,lasterr))
+               ui_message('error','Error while opening\n%s\nas %s:\n%s',FileName,usertrytp,lasterr)
             end
             break
          elseif ~try1 && isempty(trytp)

@@ -73,26 +73,26 @@ while ~feof(fid)
     if length(Temp)==4
         if ~isequal(round(Temp(1:3)),Temp(1:3))
             fclose(fid);
-            error(sprintf('Floating point value read when integer was expected on line %i.',i))
+            error('Floating point value read when integer was expected on line %i.',i)
         elseif any(Temp<0) | any(Temp(1:3)==0)
             fclose(fid);
-            error(sprintf('Unexpected negative or zero value on line %i.',i))
+            error('Unexpected negative or zero value on line %i.',i)
         else
             Record(i,idx4)=Temp;
         end
     elseif length(Temp)==6
         if ~isequal(round(Temp(1:5)),Temp(1:5))
             fclose(fid);
-            error(sprintf('Floating point value read when integer was expected on line %i.',i))
+            error('Floating point value read when integer was expected on line %i.',i)
         elseif any(Temp<0) | any(Temp(1:3)==0)
             fclose(fid);
-            error(sprintf('Unexpected negative or zero value on line %i.',i))
+            error('Unexpected negative or zero value on line %i.',i)
         else
             Record(i,1:6)=Temp;
         end
     else
         fclose(fid);
-        error(sprintf('Invalid number of values on line %i.',i))
+        error('Invalid number of values on line %i.',i)
     end
 end
 fclose(fid);
@@ -106,7 +106,7 @@ Record=Record(1:i,:);
 %if any(invalid)
 %   invalid=find(invalid);
 %   i=invalid(1);
-%   error(sprintf('Invalid area fraction %f on line %i.',Record(i,6),i));
+%   error('Invalid area fraction %f on line %i.',Record(i,6),i)
 %end
 Struct.Records=Record;
 Struct.RoughnessIDs=unique(Record(:,5));

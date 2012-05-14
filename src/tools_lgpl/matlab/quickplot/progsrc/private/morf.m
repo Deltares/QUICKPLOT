@@ -81,7 +81,7 @@ switch cmd,
             Out=ax;
         end;
     otherwise
-        error(sprintf('Unrecognized command: %s',cmd));
+        error('Unrecognized command: %s',cmd)
 end;
 
 function Structure=Local_read_morf(filename),
@@ -96,7 +96,7 @@ if nargin==0,
 end;
 fid=fopen(filename,'rt');
 if fid<0,
-    error(sprintf('Cannot open file: %s.',filename));
+    error('Cannot open file: %s.',filename)
 end;
 Data={};
 DataLine=0;
@@ -260,7 +260,7 @@ for i=1:Structure.NESPRO,
     %   LINE : IESP K L M N
     Offset=Offset+1;
     X=sscanf(Data{Offset},'%i',5);
-    if length(X)<5, error(sprintf('Error reading line %i: %s',LineNr(Offset),Data{Offset})); end;
+    if length(X)<5, error('Error reading line %i: %s',LineNr(Offset),Data{Offset}); end;
     if ~isequal(X(1),i)
         warning(sprintf('Expected element number %i instead of %i.\nFile: %s\nLine %i:%s.',i,X(1),filename,LineNr(Offset),Data{Offset}))
     end

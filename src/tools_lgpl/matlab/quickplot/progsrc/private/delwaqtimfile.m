@@ -129,7 +129,7 @@ while ~feof(fid)
             case '*'
             otherwise
                 fclose(fid);
-                error(sprintf('Unkown keyword: %s',keyword))
+                error('Unkown keyword: %s',keyword)
         end
     end
     %

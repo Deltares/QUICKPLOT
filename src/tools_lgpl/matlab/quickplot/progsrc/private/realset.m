@@ -213,7 +213,7 @@ while ~isempty(str) | ~isempty(str1)
             end
         case {'>','>='}
             if isequal(str(1),' ')
-                error(sprintf('%s\n%s',fullstr,'A value should directly follow a > sign.'));
+                error('%s\n%s',fullstr,'A value should directly follow a > sign.')
             else
                 clipstruct.max=cat(1,clipstruct.max,v(1));
                 clipstruct.maxkeep=cat(1,clipstruct.maxkeep,length(str1)==1);
@@ -223,7 +223,7 @@ while ~isempty(str) | ~isempty(str1)
             end
         case {'<','<='}
             if isequal(str(1),' ')
-                error(sprintf('%s\n%s',fullstr,'A value should directly follow a < sign.'));
+                error('%s\n%s',fullstr,'A value should directly follow a < sign.')
             else
                 clipstruct.min=cat(1,clipstruct.min,v(1));
                 clipstruct.minkeep=cat(1,clipstruct.minkeep,length(str1)==1);
@@ -234,7 +234,7 @@ while ~isempty(str) | ~isempty(str1)
         case {'[','('}
             if isequal(size(v),[1 2])
                 if i>length(str) | (~strcmp(str(i),']') & ~strcmp(str(i),')'))
-                    error(sprintf('%s\n%s',fullstr,'Missing closing bracket ] or ) for range'));
+                    error('%s\n%s',fullstr,'Missing closing bracket ] or ) for range')
                 end
                 clipstruct.range=cat(1,clipstruct.range,sort(v));
                 rangeminkeep=strcmp(str1,'(');
@@ -242,10 +242,10 @@ while ~isempty(str) | ~isempty(str1)
                 clipstruct.rangeminmaxkeep=cat(1,clipstruct.rangeminmaxkeep,[rangeminkeep rangemaxkeep]);
                 str(i)=' ';
             else
-                error(sprintf('%s\n%s',fullstr,'A range should consist of 2 values.'));
+                error('%s\n%s',fullstr,'A range should consist of 2 values.')
             end
         otherwise
-            error(sprintf('Unexpected character: %s.',str1));
+            error('Unexpected character: %s.',str1)
     end
     if i>length(str)
         str=cat(2,str,' ');
@@ -256,7 +256,7 @@ while ~isempty(str) | ~isempty(str1)
         str0=str(i-1);
     end
     if ~isequal(str0,' ') & (strcmp(str1,'<') | strcmp(str1,'>'))
-        error(sprintf('%s\nThere should be a space before a %s sign.',fullstr,str1));
+        error('%s\nThere should be a space before a %s sign.',fullstr,str1)
     end
     str=str(i+1:end);
     if strcmp(str1,'>') | strcmp(str1,'<')

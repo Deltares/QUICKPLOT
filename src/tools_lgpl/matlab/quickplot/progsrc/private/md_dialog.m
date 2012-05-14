@@ -148,7 +148,7 @@ switch cmd
         UD{3}=Answer;
         set(F,'userdata',UD);
     otherwise
-        error(sprintf('Unknown command: %s.',cmd))
+        error('Unknown command: %s.',cmd)
 end
 
 

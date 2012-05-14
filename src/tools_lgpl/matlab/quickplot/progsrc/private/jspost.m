@@ -48,7 +48,7 @@ switch lower(cmd)
     case 'read'
         [Out1,Out2]=jspost_read(varargin{:});
     otherwise,
-        error(sprintf('Unknown command: %s.',cmd));
+        error('Unknown command: %s.',cmd)
 end
 
 
@@ -130,7 +130,7 @@ for i=1:NPar
     if ~ischar(Line)
         fclose(fstu);
         fclose(fpst);
-        error(sprintf('Error reading name of parameter %i.',i))
+        error('Error reading name of parameter %i.',i)
     end
     S.SubsName{i}=deblank2(Line);
 end
@@ -140,7 +140,7 @@ for i=1:NSeg
     if ~ischar(Line)
         fclose(fstu);
         fclose(fpst);
-        error(sprintf('Error reading name of segment %i.',i))
+        error('Error reading name of segment %i.',i)
     end
     S.SegmentName{i}=deblank2(Line);
 end

@@ -512,7 +512,7 @@ try
    fidat=fopen(data_file,'r+',VS.Format);
 
    if fidat<0
-      error(sprintf('Cannot not open file: %s.',data_file));
+      error('Cannot not open file: %s.',data_file)
    end
 
    if vs_debug
@@ -622,7 +622,7 @@ try
                case 16 % number of bytes equals 16 (8+8)
                   RdType{j1}='float64';
                otherwise
-                  error(sprintf('Unable to %s COMPLEX data.',write));
+                  error('Unable to %s COMPLEX data.',write)
             end
          case 3 % INTEGER
             switch ValBytes(j1)
@@ -631,7 +631,7 @@ try
                case 2 % number of bytes equals 2
                   RdType{j1}='int16';
                otherwise
-                  error(sprintf('Unable to %s INTEGER data.',write));
+                  error('Unable to %s INTEGER data.',write)
             end
          case 4 % LOGICAL
             switch ValBytes(j1)
@@ -640,7 +640,7 @@ try
                case 2 % number of bytes equals 2
                   RdType{j1}='int16';
                otherwise
-                  error(sprintf('Unable to %s LOGICAL data.',write));
+                  error('Unable to %s LOGICAL data.',write)
             end
          case 5 % REAL
             switch ValBytes(j1)
@@ -649,7 +649,7 @@ try
                case 8 % number of bytes equals 8
                   RdType{j1}='float64';
                otherwise
-                  error(sprintf('Unable to %s REAL data.',write));
+                  error('Unable to %s REAL data.',write)
             end
          otherwise
             Str=sprintf(1,'Unexpected type number %i for %s.\n',DataType(j1),VS.ElmDef(j(j1)).Name);
@@ -1047,7 +1047,7 @@ try
                   end
                   % Check number of values read/written
                   if NRead~=prod(rDimen{j1}) %prod(size(Temp))~=prod(rDimen{j1})
-                     error(sprintf('Not all %i values could be written to the file.',prod(rDimen{j1})));
+                     error('Not all %i values could be written to the file.',prod(rDimen{j1}))
                   end
                end
             end

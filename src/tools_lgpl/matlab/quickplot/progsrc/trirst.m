@@ -107,7 +107,7 @@ if (4*prod(dim))~=T, % If not a match ...
 end;
 if (4*prod(dim))~=T, % If not a match ...
    fclose(fid);
-   error(sprintf('Specified size %ix%i=%i does not match\nrecord length %i or %i in file.',dim,prod(dim),T/4,Tb/4));
+   error('Specified size %ix%i=%i does not match\nrecord length %i or %i in file.',dim,prod(dim),T/4,Tb/4)
 end;
 
 if nargin==2,
@@ -159,9 +159,9 @@ if ~isfinite(NRequested)
    varargout{1}=Y;
 end
 if (i>NRequested) & (NRequested~=0),
-   ui_message('warning',sprintf('%i more data field(s) in the file.\n',i-NRequested));
+   ui_message('warning','%i more data field(s) in the file.\n',i-NRequested)
 elseif (i<NRequested) & isfinite(NRequested),
-   error(sprintf('Out of data while reading layer %i of record %i.\n',l,i));
+   error('Out of data while reading layer %i of record %i.\n',l,i)
 end;
 fclose(fid);
 
@@ -196,7 +196,7 @@ switch lower(PC);
    case {'hp','sg','sgi','sgi64','unix','b','sol','sol2','ieee-be'},
       fid=fopen(filename,'w','b');
    otherwise,
-      error(sprintf('Unsupported file format: %s.',PC));
+      error('Unsupported file format: %s.',PC)
 end;
 T=4*prod(size(Data{1}));
 for i=1:length(Data),

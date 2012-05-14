@@ -152,6 +152,9 @@ if isempty(fig) || ~ishandle(fig)
 
    fig=qp_uifigure('Message Window','','UI_MESSAGE window',rect);
    set(fig,'closerequestfcn','ui_message close','resize','on','resizefcn','ui_message resize')
+   if ~isstandalone && matlabversionnumber >= 7
+       set(fig,'DockControls','on')
+   end
 
    setappdata(fig,'WL_UserInterface',1)
    setappdata(fig,'FigureSize',[Fig_Width Fig_Height])

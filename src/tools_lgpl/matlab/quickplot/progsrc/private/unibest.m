@@ -43,13 +43,13 @@ function [Out1,Out2]=unibest(cmd,varargin),
 switch cmd,
     case 'open',
         if nargout>1,
-            error('Too many output arguments.');
+            error('Too many output arguments.')
         end;
         Out1=Local_open(varargin{:});
     case 'read',
         [Out1,Out2]=Local_read(varargin{:});
     otherwise,
-        error(sprintf('Unknown command: %s.',cmd));
+        error('Unknown command: %s.',cmd)
 end;
 
 
@@ -81,10 +81,10 @@ Line=fgetl(fid);
 [nfunc,nread,err,nexti]=sscanf(Line,'%i',1);
 if ~isempty(err)
     fclose(fid);
-    error(sprintf('Cannot read line 9:\n%s',Line))
+    error('Cannot read line 9:\n%s',Line)
 elseif ~isempty(deblank(Line(nexti:end)))
     fclose(fid);
-    error(sprintf('Too many numbers encountered on line 9:\n%s',Line))
+    error('Too many numbers encountered on line 9:\n%s',Line)
 end
 S.NQuant=nfunc;
 
@@ -93,14 +93,14 @@ Line=fgetl(fid);
 lLine=min(length(Line),4);
 if ~isequal(dummy(1:lLine),'****')
     fclose(fid);
-    error(sprintf('Expected separator line starting with ****\n%s',Line))
+    error('Expected separator line starting with ****\n%s',Line)
 end
 
 for i=1:nfunc
     Line=fgetl(fid);
     if length(Line)<80
         fclose(fid);
-        error(sprintf('Line %i too short\n%s',i+10,Line))
+        error('Line %i too short\n%s',i+10,Line)
     end
     S.Quant.ShortName{i}=deblank(Line(1:6));
     LongNameNr=deblank(Line(7:36));
@@ -108,7 +108,7 @@ for i=1:nfunc
     lstri=length(stri);
     if length(LongNameNr)<lstri | ~isequal(LongNameNr(end-lstri+1:end),stri)
         fclose(fid);
-        error(sprintf('Number in line %i does not match %i:\n%s',i+10,i,Line))
+        error('Number in line %i does not match %i:\n%s',i+10,i,Line)
     end
     LongName=LongNameNr(1:end-lstri);
     while length(LongName)>0 & (isequal(LongName(end),'.') | isequal(LongName(end),' '))
@@ -118,7 +118,7 @@ for i=1:nfunc
     ShortName=deblank(Line(37:42));
     %if ~isequal(ShortName,S.Quant.ShortName{i})
     %   fclose(fid);
-    %   error(sprintf('Non-consistent short name in line %i:\n%s',i+10,Line))
+    %   error('Non-consistent short name in line %i:\n%s',i+10,Line)
     %end
     unitopen=strfind(Line(38:end),'(')+37;
     unitclose=strfind(Line(38:end),')')+37;
@@ -128,7 +128,7 @@ for i=1:nfunc
     %[X,nread]=sscanf(Line(52:end),'%f');
     %if nread~=3
     %   fclose(fid);
-    %   error(sprintf('Unexpected number of values at end of line %i\n%s',i+10,Line))
+    %   error('Unexpected number of values at end of line %i\n%s',i+10,Line)
     %end
 end
 fclose(fid);
@@ -140,7 +140,7 @@ end
 fid=fopen(datafile,'r','l');
 if fid<0
     if nargin>1
-        error(sprintf('Error reading file: %s',datafile))
+        error('Error reading file: %s',datafile)
     end
     return
 end
@@ -148,7 +148,7 @@ S.DataFile=datafile;
 [nx,count]=fread(fid,1,'float32');
 if nx~=round(nx) | nx<0
     fclose(fid);
-    error(sprintf('Number of points (%g) not valid.',nx));
+    error('Number of points (%g) not valid.',nx)
 end
 S.RecSize=nx+1;
 Parameters=fread(fid,[1 S.RecSize],'float32');
@@ -167,12 +167,12 @@ switch S.DafVersion
         zr=8;
     otherwise
         if S.DafVersion<1
-            error(sprintf('Invalid version number: %g',S.DafVersion));
+            error('Invalid version number: %g',S.DafVersion)
         end
         zr=length(Parameters);
 end
 if ~all(Parameters(zr:end)==0)
-    error('Unexpected non-zero values in the first record.');
+    error('Unexpected non-zero values in the first record.')
 end
 S.X=fread(fid,[1 S.RecSize-1],'float32');
 fseek(fid,0,1);
@@ -180,7 +180,7 @@ DataFileSize=ftell(fid);
 fclose(fid);
 S.NTimes=(DataFileSize/4/S.RecSize-2)/nfunc;
 if S.NTimes<1
-    error('File too small.');
+    error('File too small.')
 elseif S.NTimes~=round(S.NTimes)
     S.Status='incomplete last record';
     S.NTimes=floor(S.NTimes);

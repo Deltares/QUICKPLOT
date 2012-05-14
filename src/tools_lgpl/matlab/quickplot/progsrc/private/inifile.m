@@ -95,7 +95,7 @@ function FI=readfile(filename)
 S=cell(0,2);
 fid=fopen(filename,'r');
 if fid<0
-    error(sprintf('Error opening %s.',filename));
+    error('Error opening %s.',filename)
 end
 Line={};
 while ~feof(fid)
@@ -134,7 +134,7 @@ function writefile(filename,FI)
 S=FI.Data;
 fid=fopen(filename,'wt');
 if fid<0
-    error(sprintf('Error opening %s.',filename));
+    error('Error opening %s.',filename)
 end
 %
 % Keywords without a Chapter title should be written first.
@@ -220,7 +220,7 @@ elseif ~isempty(key)
         end
     end
 else
-    error(sprintf('Keyword ''%s'' not found in Chapter ''%s''.',keyS,grpS))
+    error('Keyword ''%s'' not found in Chapter ''%s''.',keyS,grpS)
 end
 
 

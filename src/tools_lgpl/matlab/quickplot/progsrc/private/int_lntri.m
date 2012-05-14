@@ -147,7 +147,11 @@ for i=1:N
             %
             xx = (xo{i}(j)+xo{i}(j-1))/2;
             yy = (yo{i}(j)+yo{i}(j-1))/2;
-            T = tsearch(Xvec,Yvec,TRI(neighbors,:),xx,yy);
+            if matlabversionnumber>=7.14
+                T = tsearchn([Xvec Yvec],TRI(neighbors,:),[xx yy]);
+            else
+                T = tsearch(Xvec,Yvec,TRI(neighbors,:),xx,yy);
+            end
             if ~isnan(T)
                 T = neighbors(T);
                 PO = TRI(T,:);
@@ -182,7 +186,11 @@ for i=1:N
             warnstate = warning('query','MATLAB:tsearch:DeprecatedFunction');
             warning('off','MATLAB:tsearch:DeprecatedFunction')
             %
-            Ti = tsearch(Xvec,Yvec,TRI(T2,:),xx,yy);
+            if matlabversionnumber>=7.14
+                Ti = tsearchn([Xvec Yvec],TRI(T2,:),[xx yy]);
+            else
+                Ti = tsearch(Xvec,Yvec,TRI(T2,:),xx,yy);
+            end
             %
             warning(warnstate);
             %
@@ -227,7 +235,11 @@ if First
     % triangles. Since we have to look for just one point for a rare case,
     % it is not worth to investigate other methods of searching.
     %
-    T = tsearch(Xvec,Yvec,TRI,xx,yy);
+    if matlabversionnumber>=7.14
+        Ti = tsearchn([Xvec Yvec],TRI,[xx yy]);
+    else
+        Ti = tsearch(Xvec,Yvec,TRI,xx,yy);
+    end
     if ~isnan(T)
         PO = TRI(T,:);
         for ii=N:-1:1

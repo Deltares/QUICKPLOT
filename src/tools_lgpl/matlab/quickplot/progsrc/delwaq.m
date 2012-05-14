@@ -1175,7 +1175,7 @@ else
     %
     fid=fopen(S.FileName,'a',S.ByteOrder);
     if fid<0
-        error(sprintf('Cannot open file: %s',S.FileName))
+        error('Cannot open file: %s',S.FileName)
     end
 end
 %

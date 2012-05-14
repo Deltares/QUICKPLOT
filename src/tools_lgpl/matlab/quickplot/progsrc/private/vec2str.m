@@ -1,5 +1,5 @@
-function Str=vec2str(OrigVec,varargin);
-%VEC2STR Creates a string of a row vector.
+function Str=vec2str(OrigVec,varargin)
+%VEC2STR Creates a string of a vector.
 %
 %   S=VEC2STR(V)
 %   Converts the rows vector V into a string representation S.
@@ -56,24 +56,28 @@ for i=1:nargin-1
         case {'noo','noon','noone','noones'}
             Ones=0;
         otherwise
-            error(sprintf('Unknown input argument %i.',i+1))
+            error('Unknown input argument %i.',i+1)
     end
 end
 if nargin<1,
     error('Not enough input arguments.');
-elseif isempty(OrigVec),
+elseif isempty(OrigVec)
     if Brackets
         Str='[]';
     else
         Str='';
     end
-elseif length(OrigVec)==1,
+elseif length(OrigVec)==1
     if Brackets
         Str=sprintf('[ %g ]',OrigVec);
     else
         Str=sprintf('%g',OrigVec);
     end
-else,
+else
+    ColVec = size(OrigVec,1)>1;
+    if ColVec
+        OrigVec = OrigVec.';
+    end
     FiniteVec=OrigVec;
     FiniteVec(~isfinite(FiniteVec))=NaN;
     % handle finite values
@@ -100,8 +104,8 @@ else,
     lengthW=diff(find(diff([-1 W -1])));
     startW=cumsum([1 lengthW(1:end-1)]);
     valueW=W(startW);
-    startW=startW(find(valueW>0));
-    lengthW=lengthW(find(valueW>0));
+    startW=startW(valueW>0);
+    lengthW=lengthW(valueW>0);
     E(4,startW)=lengthW;
     E(:,setdiff(find(W),startW))=[];
     if ~isempty(E(2,~isfinite(E(1,:)))) % workaround for Matlab 5.2
@@ -114,36 +118,40 @@ else,
     else
         Str='';
     end
-    for i=1:size(E,2),
-        if E(4,i)==1,
+    for i=1:size(E,2)
+        if E(4,i)==1
             Str=[Str sprintf(' %g',E(1,i))];
-        elseif E(4,i)==2,
+        elseif E(4,i)==2
             Str=[Str sprintf(' %g %g',E([1 3],i))];
-        elseif (E(2,i)==0) | isnan(E(2,i)),
+        elseif (E(2,i)==0) | isnan(E(2,i))
             if E(4,i)>3,
                 if Ones
-                    if E(1,i)==0,
+                    if E(1,i)==0
                         Str=[Str sprintf(' zeros(1,%i)',E(4,i))];
-                    else,
+                    else
                         Str=[Str sprintf(' %g*ones(1,%i)',E(1,i),E(4,i))];
-                    end;
+                    end
                 else
                     Str=[Str sprintf(' %g',E(1,i)*ones(1,E(4,i)))];
                 end
-            else,
+            else
                 Str=[Str sprintf(' %g',E(1,i)*ones(1,E(4,i)))];
             end;
-        else,
-            if E(2,i)==1,
+        else
+            if E(2,i)==1
                 Str=[Str sprintf(' %g:%g',E([1 3],i))];
-            else,
+            else
                 Str=[Str sprintf(' %g:%g:%g',E(1:3,i))];
-            end;
-        end;
-    end;
+            end
+        end
+    end
     if Brackets
+        if ColVec
+            Str=[Str ' ].'''];
+        else
         Str=[Str ' ]'];
+        end
     else
         Str(1)=[];
     end
-end;
+end

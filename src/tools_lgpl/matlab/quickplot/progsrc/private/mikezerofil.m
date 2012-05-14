@@ -123,7 +123,7 @@ for i=[M_ N_ K_]
             if DataInCell, gidx{i}=1:sz(i)+1; end
             allidx(i)=1;
         elseif ~isequal(idx{i},idx{i}(1):idx{i}(end))
-            error(sprintf('Only scalars or ranges allowed for index %i',i));
+            error('Only scalars or ranges allowed for index %i',i)
         elseif DataInCell
             gidx{i}=idx{i}(1):(idx{i}(end)+1);
         end
@@ -134,7 +134,7 @@ if ~DataInCell
 end
 
 if max(idx{T_})>sz(T_)
-    error(sprintf('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_)))
+    error('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_))
 end
 
 % read grid ...

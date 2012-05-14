@@ -159,7 +159,7 @@ if ischar(Channel),
     Channels={FI.Channel.Name};
     i=ustrcmpi(Channel,Channels);
     if i<0,
-        error(sprintf('Channel %s does not exist',Channel));
+        error('Channel %s does not exist',Channel)
     end
     Ch=i;
 elseif (Channel>length(FI.Channel)) | (Channel<=0),

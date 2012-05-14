@@ -86,7 +86,7 @@ if isempty(B)
       case 'calendar page'
          B=create_calendarpage(Hclock,otherargs);
       otherwise
-         error(sprintf('Unknown clock type: %s',clocktype))
+         error('Unknown clock type: %s',clocktype)
    end
    set(B,'tag','BackgroundPlateClock')
    setappdata(B,'ClockType',lower(clocktype))
@@ -112,7 +112,7 @@ switch clocktype
    case 'calendar page'
       update_calendarpage(Hclock,B,time)
    otherwise
-      error(sprintf('Unknown clock type: %s',clocktype))
+      error('Unknown clock type: %s',clocktype)
 end
 
 

@@ -67,7 +67,7 @@ elseif nargin>2
                  case 'quantify'
                     Quantify = 1;
                 otherwise
-                    error(sprintf('Unknown input argument: %s',varargin{i}))
+                    error('Unknown input argument: %s',varargin{i})
             end
         else
             fid = varargin{i};

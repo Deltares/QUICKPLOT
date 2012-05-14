@@ -36,7 +36,7 @@ S.FileType='SWAN spectral';
 S.Check='NotOK';
 fid = fopen(FileName,'r');
 if fid<0
-    error(sprintf('Cannot open %s',FileName))
+    error('Cannot open %s',FileName)
 end
 %
 % Check first line and stop
@@ -150,7 +150,7 @@ while ischar(Line)
                 if NVal~=NDir*NFreq
                     Line = fgetl(fid);
                     fclose(fid);
-                    error(sprintf('Unexpected ''%s'' in spectral block in file %s',deblank(Line),S.FileName))
+                    error('Unexpected ''%s'' in spectral block in file %s',deblank(Line),S.FileName)
                 end
                 Data = f*Data';
                 ct = max(ct,1);
@@ -190,7 +190,7 @@ while ischar(Line)
                 DateTime = scan_for_datetime(Line,TimeCoding);
                 if isempty(DateTime)
                     fclose(fid);
-                    error(sprintf('Unknown keyword %s in file %s',strtok(Line),S.FileName))
+                    error('Unknown keyword %s in file %s',strtok(Line),S.FileName)
                 else
                     iloc = 0;
                     iqnt = 1;

@@ -221,7 +221,7 @@ if fid>0
         MDX.Index(i).KeyFormat1 = fread(fid,1,'uint8'); % 00h Right left dtoc, 08h Decending order, 10h Fields string, 40h Unique keys
         KT = char(fread(fid,1,'uchar'));
         if ~isequal(KT,MDX.Index(i).KeyType)
-            error(sprintf('Second key type (%s) does not match first key type (%s)',KT,MDX.Index(i).KeyType))
+            error('Second key type (%s) does not match first key type (%s)',KT,MDX.Index(i).KeyType)
         end
         MDX.Index(i).X2b = fread(fid,1,'int16');
         MDX.Index(i).NBytes = fread(fid,1,'int16'); % Numeric 12, Date 8, Character <= 100

@@ -93,7 +93,7 @@ end
 
 INP = varargin;
 INPlen = nargin;
-if nargin>0
+if INPlen>0
     if isequal(INP{1},'vsget')
         outputtype=2; % vs_get
         INP(1)=[];
@@ -104,11 +104,11 @@ gNameDefault = '>>no group specified<<';
 eNameDefault = '>>no element specified<<';
 
 showwaitbar=isenvironment('MATLAB');
+vs_debug=0;
+cmdhelp=0;
+vs_warning=1;
+VS=vs_use('lastread');
 if INPlen==0
-    vs_debug=0;
-    cmdhelp=0;
-    vs_warning=1;
-    VS=vs_use('lastread');
     if ~isstruct(VS)
         error('No NEFIS file specified.');
     end
@@ -117,55 +117,36 @@ if INPlen==0
     gName=gNameDefault;
     eName=eNameDefault;
 else
-    INP=varargin;
-    if isequal(INP{1},'vsget')
-        outputtype=2; % vs_get
-        INP(1)=[];
-    end
-    VS=[];
+    deleteINP = repmat(false,size(INP));
     for i=1:length(INP)
         if isstruct(INP{i})
             VS=INP{i};
-            INP(i)=[];
-            break
+        elseif ischar(INP{i})
+            switch lower(INP{i})
+                case 'quiet!' % alternative for 2nd output argument
+                    showwaitbar=0;
+                    Success=0;
+                case 'quiet'
+                    showwaitbar=0;
+                case 'debug'
+                    vs_debug=1;
+                case '-cmdhelp'
+                    cmdhelp=1;
+                case 'nowarn'
+                    vs_warning=0;
+                otherwise
+                    % don't set the deleteINP flag
+                    continue
+            end
+        else
+            % don't set the deleteINP flag
+            continue
         end
+        deleteINP(i) = true;
     end
-    for i=1:length(INP)
-        if isequal(INP{i},'quiet')
-            showwaitbar=0;
-            INP(i)=[];
-            break
-        end
-    end
-    vs_debug=0;
-    for i=1:length(INP)
-        if isequal(INP{i},'debug')
-            vs_debug=1;
-            INP(i)=[];
-            break
-        end
-    end
-    cmdhelp=0;
-    for i=1:length(INP)
-        if isequal(INP{i},'-cmdhelp')
-            cmdhelp=1;
-            INP(i)=[];
-            break
-        end
-    end
-    vs_warning=1;
-    for i=1:length(INP)
-        if isequal(INP{i},'nowarn')
-            vs_warning=0;
-            INP(i)=[];
-            break
-        end
-    end
+    INP(deleteINP) = [];
     if ~isstruct(VS)
-        VS=vs_use('lastread');
-        if ~isstruct(VS)
-            error('No NEFIS file specified.')
-        end
+        error('No NEFIS file specified.')
     end
     switch length(INP)
         case 0
@@ -740,7 +721,7 @@ while ~AllCorrect
         eIndex={};
     end
     UseGui=1;
-    if (~AllCorrect) & (~Success)
+    if ~AllCorrect & ~Success
         return
     end
 end
@@ -872,7 +853,7 @@ try
         if vs_debug<=0
             vs_debug=0;
             if vs_warning
-                warning(sprintf('Cannot open debug file: %svs_let.dbg.',tempdir));
+                warning('Cannot open debug file: %svs_let.dbg.',tempdir)
             end
         else
             fprintf(1,'Writing to debug file %i: %svs_let.dbg ...\n',vs_debug,tempdir);
@@ -895,7 +876,7 @@ try
     fidat=fopen(data_file,'r',VS.Format);
 
     if fidat<0
-        error(sprintf('Cannot not open file: %s.',data_file));
+        error('Cannot not open file: %s.',data_file)
     end
 
     gDimen=VS.GrpDat(i).SizeDim;
@@ -1043,7 +1024,7 @@ try
                 end
             otherwise
                 Str=sprintf(1,'Unexpected type number %i for %s.\n',DataType(j1),VS.ElmDef(j(j1)).Name);
-                error(Str);
+                error(Str)
         end
         %Initialize dimension for reading ...
         switch DataType(j1)

@@ -84,7 +84,7 @@ while i<=nargin
     elseif ishandle(varargin{i}) & isequal(size(varargin{i}),[1 1])
         H=varargin{i};
     else
-        error(sprintf('Error reading argument %i.',i))
+        error('Error reading argument %i.',i)
     end
     i=i+1;
 end

@@ -44,7 +44,7 @@ switch cmd,
     case 'read',
         Out=telemac_read(varargin{:});
     otherwise,
-        error(sprintf('Unknown command: %s.',cmd));
+        error('Unknown command: %s.',cmd)
 end;
 
 
@@ -202,17 +202,17 @@ switch type
     case 'uchar'
         NBytesPE=1;
     otherwise
-        error(sprintf('Undefined type: %s.',type))
+        error('Undefined type: %s.',type)
 end
 NBytesExpected=prod(size)*NBytesPE;
 NBytes=fread(fid,[1 1],'int32');
 if ~isequal(NBytes,NBytesExpected)
     fclose(fid);
-    error(sprintf('Unexpected size at beginning of record: %i (expected: %i)',NBytes,NBytesExpected));
+    error('Unexpected size at beginning of record: %i (expected: %i)',NBytes,NBytesExpected)
 end
 Data=fread(fid,size,type);
 NBytes=fread(fid,[1 1],'int32');
 if ~isequal(NBytes,NBytesExpected)
     fclose(fid);
-    error(sprintf('Unexpected size at end of record: %i (expected: %i)',NBytes,NBytesExpected));
+    error('Unexpected size at end of record: %i (expected: %i)',NBytes,NBytesExpected)
 end
