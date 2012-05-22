@@ -443,8 +443,11 @@ if Props.File~=0
          val{1}=tmpData.Name; % (idx{M_}) indexing done after this switch statement
       case {'drypoint'}
          val{1}=zeros(size(FI.X));
-         linidx=sub2ind(size(FI.X),tmpData.MN(:,1),tmpData.MN(:,2));
-         val{1}(linidx)=1;
+         for i=1:size(tmpData.MN,1)
+             i1 = tmpData.MN(i,[1 3]);
+             i2 = tmpData.MN(i,[2 4]);
+             val{1}(min(i1):max(i1),min(i2):max(i2))=1;
+         end
       otherwise
          error('Reading data from %s file not yet implemented.',FI.Data(Props.File).FileType)
    end
