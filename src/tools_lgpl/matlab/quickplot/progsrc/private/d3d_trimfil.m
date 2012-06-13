@@ -829,7 +829,7 @@ if XYRead
     [coordtype,ok]=vs_get(FI,'map-const','COORDINATES','quiet');
     Info=vs_disp(FI,'map-const','XZ');
     if (isstruct(Info) && isequal(Info.ElmUnits,'[  DEG  ]')) || ...
-       (ok && strcmp(coordtype,'SPHERICAL'))
+       (ok && strcmp(deblank(coordtype),'SPHERICAL'))
         Ans.XUnits='deg';
         Ans.YUnits='deg';
     end
