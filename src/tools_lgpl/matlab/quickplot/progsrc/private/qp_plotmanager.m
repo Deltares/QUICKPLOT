@@ -628,8 +628,8 @@ switch cmd
             ItHand = ItInfo{2};
             %
             ItTag1 = ItTags{ItVal};
-            hItem1 = ItHand(ItVal);
             hIt1 = findall(pfig,'tag',ItTag1); % the object itself
+            hItem1 = hIt1(~cellfun('isempty',get(hIt1,'userdata')));
             ZCurrent1 = getappdata(hItem1,'Level');
             %
             switch cmd
@@ -639,8 +639,8 @@ switch cmd
                     ItVal2 = ItVal+1;
             end
             ItTag2 = ItTags{ItVal2};
-            hItem2 = ItHand(ItVal2);
             hIt2 = findall(pfig,'tag',ItTag2); % the object itself
+            hItem2 = hIt2(~cellfun('isempty',get(hIt2,'userdata')));
             ZCurrent2 = getappdata(hItem2,'Level');
             %
             setzcoord(hIt1,ZCurrent2)

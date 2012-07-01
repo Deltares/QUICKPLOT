@@ -284,10 +284,10 @@ switch cmd
                         if iscell(AnimObj.PlotState)
                             AnimObj.PlotState=plotstatestruct(AnimObj.PlotState);
                         end
-                        if iscellstr(AS.Values)
+                        if iscellstr(AS(1).Values)
                             tval = i;
                         else
-                            tval = AS.Values(i);
+                            tval = AS(1).Values(i);
                         end
                         if t_==0
                             AnimObj.PlotState.SubField{1} = tval;
@@ -395,10 +395,10 @@ switch cmd
                 if ishandle(sld(i))
                     %tt=get(sld(i),'value');
                     %
-                    if iscellstr(AS.Values)
-                        Str=AS.Values{t};
+                    if iscellstr(AS(1).Values)
+                        Str=AS(1).Values{t};
                     else
-                        Str=sprintf('%i',AS.Values(t));
+                        Str=sprintf('%i',AS(1).Values(t));
                     end
                     set(sld(i),'value',t,'tooltip',sprintf('%s(%i)=%s',DimStr{t_+1},t,Str));
                 end
@@ -425,9 +425,9 @@ switch cmd
                 current_t = find(AS(1).Values==current_t);
             end
         end
-        if (t>current_t)
+        if t>current_t
             t=min(max(round(t),current_t+1),get(sld,'max'));
-        else
+        elseif t<current_t
             t=max(min(round(t),current_t-1),1);
         end
         %
