@@ -348,13 +348,31 @@ end
 vpt='';
 [NVal,NValStr]=convertnval(Props.NVal);
 if NVal==0.6 || NVal==0.9
+    % 0.6 = thindam optionally coloured
+    % 0.9 = coloured thindam
     NVal=0.5;
+elseif  NVal==1.9 
+    if isequal(Ops.presentationtype,'edge')
+        % 1.9 = coloured thindam or vector perpendicular to thindam
+        NVal=0.5;
+    else
+        % vector case: vector location is determined by computecomponent
+        NVal=2;
+        data.XComp = data.XDamVal;
+        data.YComp = data.YDamVal;
+        data = rmfield(data,{'XDam','YDam','XDamVal','YDamVal'});
+        Ops.vectorcomponent='edge';
+    end
 end
 
 VectorPlot=0;
 if isfield(data,'XComp')
     [data,scalar]=computecomponent(data,Ops);
-    if ~isempty(strfind(Ops.vectorcomponent,'vector'))
+    if strcmp(Ops.vectorcomponent,'edge')
+        if isempty(Ops.vectorcolour)
+            Units='';
+        end
+    elseif ~isempty(strfind(Ops.vectorcomponent,'vector'))
         % no text added for vector and patch centred vector
         if ~isempty(Ops.vectorcolour)
             PName=[PName ', ' Ops.vectorcolour];
@@ -441,6 +459,12 @@ elseif isfield(data,'XComp')
         npnt=npnt+sum(~I);
     end
     npnt=max(npnt,1);
+elseif isfield(data,'XDamVal')
+    for d=1:length(data)
+        npnt = npnt + sum(data(d).XDamVal(:)~=0);
+        npnt = npnt + sum(data(d).YDamVal(:)~=0);
+    end
+    npnt=max(npnt,1);
 end
 
 switch Ops.vectorscalingmode
@@ -510,9 +534,13 @@ if isequal(quivopt,{'automatic'})
         V=0;
         if isfield(data,'XComp')
             V=V+data(d).XComp.^2;
+        elseif isfield(data,'XDamVal')
+            maxlen=max(maxlen,max(abs(data(d).XDamVal(:))));
         end
         if isfield(data,'YComp')
             V=V+data(d).YComp.^2;
+        elseif isfield(data,'YDamVal')
+            maxlen=max(maxlen,max(abs(data(d).YDamVal(:))));
         end
         if isfield(data,'ZComp') && isfield(data,'Z')
             V=V+data(d).ZComp.^2;
@@ -535,9 +563,13 @@ if isequal(quivopt,{'automatic'})
     for d=length(data):-1:1
         if isfield(data,'XComp')
             data(d).XComp=autoscale*data(d).XComp;
+        elseif isfield(data,'XDamVal')
+            data(d).XDamVal=autoscale*data(d).XDamVal;
         end
         if isfield(data,'YComp')
             data(d).YComp=autoscale*data(d).YComp;
+        elseif isfield(data,'YDamVal')
+            data(d).YDamVal=autoscale*data(d).YDamVal;
         end
         if isfield(data,'ZComp')
             data(d).ZComp=autoscale*data(d).ZComp;

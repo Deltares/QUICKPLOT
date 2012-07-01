@@ -181,7 +181,7 @@ if isstruct(Info)
 end
 computeDZ=0;
 switch Props.Name
-    case {'depth averaged velocity','d.a. velocity fluctuations','velocity in depth averaged flow direction','velocity normal to depth averaged flow direction','head','froude number'}
+    case {'depth averaged velocity','staggered depth averaged velocities','d.a. velocity fluctuations','velocity in depth averaged flow direction','velocity normal to depth averaged flow direction','head','froude number'}
         if fixedlayers, computeDZ=1; end
 end
 XYRead = XYRead & ~strcmp(Props.Loc,'NA');
@@ -365,8 +365,12 @@ if DataRead
     elidx=idx(2:end);
     ThinDam=0;
     DepthInZeta=0;
+    if Props.NVal==1.9
+        Props.NVal=2;
+        ThinDam=2;
+    end
     switch Props.Name
-        case {'depth averaged velocity','d.a. velocity fluctuations'}
+        case {'depth averaged velocity','staggered depth averaged velocities','d.a. velocity fluctuations'}
             Info=vs_disp(FI,Props.Group,Props.Val1);
             Flag3D=isequal(size(Info.SizeDim),[1 3]);
             if Flag3D
@@ -491,7 +495,7 @@ if DataRead
             val1(val1==999)=NaN;
         case {'cum. erosion/sedimentation','cumulative mass error'}
             [FI,val1] = eros_sed(FI,Props.Name,idx);
-        case {'depth averaged velocity','d.a. velocity fluctuations','froude number','head'}
+        case {'depth averaged velocity','staggered depth averaged velocities','d.a. velocity fluctuations','froude number','head'}
             if Flag3D
                 if fixedlayers
                     val1(val1==-999)=0;
@@ -916,6 +920,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'water level'                      'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'S1'      ''       []       0
     'water depth'                      'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'S1'      ''       []       0
     'depth averaged velocity'          'm/s'    [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-series'     'U1'      'V1'     []       1
+    'staggered depth averaged velocities' 'm/s' [1 0 1 1 0]  1         1.9  ''        'd'   'd'       ''      'map-series'     'U1'      'V1'     []       2
     'horizontal velocity'              'm/s'    [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'U1'      'V1'     []       1
     'velocity'                         'm/s'    [1 0 1 1 1]  1         3    'u'       'u'   'z'       'c'     'map-series'     'U1'      'V1'     []       1
     'vertical velocity'                'm/s'    [1 0 1 1 1]  1         1    ''        'w'   'z'       'c'     'map-series'     'WPHY'    ''       []       0
@@ -965,15 +970,20 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'bed load transport due to currents (zeta point)' ...
     '*'      [1 0 1 1 0]  1         2    'u'       'z'   'z'       ''      'map-sed-series' 'SBCU'    'SBCV'   'sb'     1
     'bed load transport due to currents' '*'    [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SBCUU'   'SBCVV'  'sb'     1
+    'staggered bed load transp. due to currents' '*' [1 0 1 1 0] 1     1.9  ''        'd'   'd'       ''      'map-sed-series' 'SBCUU'   'SBCVV'  'sb'     2
     'bed load transport due to waves (zeta point)' ...
     '*'      [1 0 1 1 0]  1         2    'u'       'z'   'z'       ''      'map-sed-series' 'SBWU'    'SBWV'   'sb'     1
     'bed load transport due to waves'  '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SBWUU'   'SBWVV'  'sb'     1
+    'staggered bed load transp. due to waves' '*' [1 0 1 1 0] 1        1.9  ''        'd'   'd'       ''      'map-sed-series' 'SBWUU'   'SBWVV'  'sb'     2
     'suspended transport due to waves (zeta point)' ...
     '*'      [1 0 1 1 0]  1         2    'u'       'z'   'z'       ''      'map-sed-series' 'SSWU'    'SSWV'   'sb'     1
     'suspended transport due to waves' '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SSWUU'   'SSWVV'  'sb'     1
+    'staggered suspended transp. due to waves' '*' [1 0 1 1 0] 1     1.9    ''        'd'   'd'       ''      'map-sed-series' 'SSWUU'   'SSWVV'  'sb'     2
     'bed load transport'               '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SBUU'    'SBVV'   'sb'     1
+    'staggered bedload transport'      '*'      [1 0 1 1 0]  1       1.9    ''        'd'   'd'       ''      'map-sed-series' 'SBUU'    'SBVV'   'sb'     2
     'near-bed transport correction'    '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SUCOR'   'SVCOR'  's'      1
     'd.a. suspended transport'         '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SSUU'    'SSVV'   's'      1
+    'staggered d.a. suspended transport' '*'    [1 0 1 1 0]  1       1.9    ''        'd'   'd'       ''      'map-sed-series' 'SSUU'    'SSVV'   's'      2
     'total transport'                  '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SSUU'    'SSVV'   's'      1
     'mean bed load transport'          '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-avg-series' 'SBUUA'   'SBVVA'  'sb'     1
     'mean d.a. suspended transport'    '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-avg-series' 'SSUUA'   'SSVVA'  's'      1
@@ -1050,6 +1060,7 @@ if k==1
 elseif outputLayers
     Out = removequant(Out, ...
         {'depth averaged velocity'
+        'staggered depth averaged velocities'
         'd.a. velocity fluctuations'
         'froude number'
         'head'});

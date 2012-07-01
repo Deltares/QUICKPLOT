@@ -43,6 +43,35 @@ if ischar(Ops)
 else
     vpt=Ops.vectorcomponent;
     switch lower(vpt)
+        case {'edge'}
+            N=length(data);
+            data=cat(2,data,data);
+            for dU = 1:N
+                dV = dU+N;
+                if ~isempty(Ops.vectorcolour)
+                    data(dU).Val=abs(data(dU).XComp(:,2:end));
+                    data(dV).Val=abs(data(dV).YComp(2:end,:));
+                end
+                %
+                dX = data(dU).X(:,2:end)-data(dU).X(:,1:end-1);
+                dY = data(dU).Y(:,2:end)-data(dU).Y(:,1:end-1);
+                Mg = sqrt(dX.^2+dY.^2);
+                data(dU).X=(data(dU).X(:,1:end-1)+data(dU).X(:,2:end))/2;
+                data(dU).Y=(data(dU).Y(:,1:end-1)+data(dU).Y(:,2:end))/2;
+                data(dU).YComp=-data(dU).XComp(:,2:end).*dX./Mg;
+                data(dU).XComp=data(dU).XComp(:,2:end).*dY./Mg;
+                %
+                dX = data(dV).X(2:end,:)-data(dV).X(1:end-1,:);
+                dY = data(dV).Y(2:end,:)-data(dV).Y(1:end-1,:);
+                Mg = sqrt(dX.^2+dY.^2);
+                data(dV).X=(data(dV).X(1:end-1,:)+data(dV).X(2:end,:))/2;
+                data(dV).Y=(data(dV).Y(1:end-1,:)+data(dV).Y(2:end,:))/2;
+                data(dV).XComp=-data(dV).YComp(2:end,:).*dY./Mg;
+                data(dV).YComp=data(dV).YComp(2:end,:).*dX./Mg;
+            end
+            scalar=0;
+            vpt='vector';
+            return
         case {'vector (split x,y)'}
             N=length(data);
             data=cat(2,data,data);

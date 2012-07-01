@@ -468,7 +468,7 @@ DataProps={'depth grid'               ''       [0 0 1 1 0]  0        0      0   
     'velocity'                        'm/s'    [1 0 1 1 1]  1        1      3     'z'   'z'       'c'    ''      'xyveloc'   ''         'SOLUTION_FLOW_UP'
     'unit discharge'                  'm^2/s'  [1 0 1 1 0]  1        0      2     'z'   'z'       'c'    ''      'xyudisch'  ''         'SOLUTION_FLOW_UP'
     'discharge potential'             'm^3/s'  [1 0 1 1 0]  1        0      1     'd'   'd'       ''     ''      'dischpot'  ''         'SOLUTION_FLOW_UP'
-    'roughness Chezy C'            'm^{1/2}/s' [1 0 1 1 0]  0        0     0.6    'd'   'd'       ''     ''      'chezy'     ''         'SOLUTION_FLOW_CZ'
+    'roughness Chezy C'            'm^{1/2}/s' [1 0 1 1 0]  0        0     0.9    'd'   'd'       ''     ''      'chezy'     ''         'SOLUTION_FLOW_CZ'
     'head'                            'm'      [1 0 1 1 0]  1        0      1     'z'   'z'       ''     ''      'head'      ''         'SOLUTION_FLOW_SEP'
     '-------'                         ''       [0 0 0 0 0]  0        0      0     ''    ''        ''     ''      ''          ''         ''
     'non-hydrostatic pressure'        'Pa'     [1 0 1 1 1]  1        0      1     'z'   'z'       'c'    ''      'pressure'  ''         'SOLUTION_HYDRODYNAMIC_PRESSURE'

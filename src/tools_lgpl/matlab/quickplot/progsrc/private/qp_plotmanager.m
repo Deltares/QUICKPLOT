@@ -835,7 +835,8 @@ switch cmd
                 hAnIt=findall(pfig,'userdata',ItTag); % animation list items
                 hCanAnim=get(hAnIt,'children');
                 for h=hCanAnim'
-                    NRs=get(h,'userdata'); nsteps=NRs(2);
+                    AnimInfo=get(h,'userdata');
+                    nsteps=length(AnimInfo.Values);
                     CanAnim{end+1,1}=cat(2,get(h,'label'),sprintf(' (%i steps)',nsteps));
                 end
             end
@@ -846,8 +847,8 @@ switch cmd
                 hCanAnim=get(hAnIt,'children');
                 CanAnimL={};
                 for h=hCanAnim'
-                    NRs=get(h,'userdata');
-                    nsteps=NRs(2);
+                    AnimInfo=get(h,'userdata');
+                    nsteps=length(AnimInfo.Values);
                     CanAnimL{end+1,1}=cat(2,get(h,'label'),sprintf(' (%i steps)',nsteps));
                 end
                 CanAnim=intersect(CanAnim,CanAnimL);
@@ -886,13 +887,15 @@ switch cmd
                 hAnIt=findall(pfig,'userdata',ItTag); % animation list items
                 hCanAnim=get(hAnIt,'children');
                 for h=hCanAnim'
-                    NRs=get(h,'userdata'); nsteps=NRs(2);
+                    AnimInfo=get(h,'userdata');
+                    nsteps=length(AnimInfo.Values);
                     AniStr=cat(2,get(h,'label'),sprintf(' (%i steps)',nsteps));
                     if strcmp(AniStr,AnimateThis)
                         set(h,'checked','on')
-                        AnimObj(end+1).Fld=NRs(1);
-                        NSteps=NRs(2);
+                        AnimObj(end+1).Fld=AnimInfo.Dim;
+                        NSteps=length(AnimInfo.Values);
                         AnimObj(end).Tag=ItTag;
+                        AnimObj(end).Values=AnimInfo.Values;
                     end
                 end
             end

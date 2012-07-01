@@ -113,8 +113,8 @@ else
         t = AnimObj.PlotState.SubField{1};
     else
         t=AnimObj.PlotState.Selected{t_};
-        if isnumeric(AS.Values)
-            t=find(AS.Values==t);
+        if isnumeric(AS(1).Values)
+            t=find(AS(1).Values==t);
         end
     end
 end
@@ -421,8 +421,8 @@ switch cmd
             current_t = AnimObj.PlotState.SubField{1};
         else
             current_t = selected{t_};
-            if isnumeric(AS.Values)
-                current_t = find(AS.Values==current_t);
+            if isnumeric(AS(1).Values)
+                current_t = find(AS(1).Values==current_t);
             end
         end
         if (t>current_t)
@@ -437,10 +437,10 @@ switch cmd
             setappdata(sldi,'SliderValue',t)
         end
         %
-        if iscellstr(AS.Values)
-            Str=AS.Values{t};
+        if iscellstr(AS(1).Values)
+            Str=AS(1).Values{t};
         else
-            Str=sprintf('%i',AS.Values(t));
+            Str=sprintf('%i',AS(1).Values(t));
         end
         set(sld,'tooltip',sprintf('%s(%i)=%s',DimStr{t_+1},t,Str));
     case 'animselect'
@@ -557,10 +557,10 @@ switch cmd
         end
         set(animslid,'userdata',AS,'value',1,'sliderstep',sstep,'Max',AnimMax,'enable','on','value',t)
         %
-        if iscellstr(AS.Values)
-            Str=AS.Values{t};
+        if iscellstr(AS(1).Values)
+            Str=AS(1).Values{t};
         else
-            Str=sprintf('%i',AS.Values(t));
+            Str=sprintf('%i',AS(1).Values(t));
         end
         set(animslid,'tooltip',sprintf('%s(%i)=%s',DimStr{t_+1},t,Str));
         if NoUpdateNec
@@ -588,10 +588,10 @@ for iobj=1:length(UDh)
         AnimObj.PlotState=plotstatestruct(AnimObj.PlotState);
     end
     %
-    if iscellstr(AS.Values)
+    if iscellstr(AS(1).Values)
         tval = t;
     else
-        tval = AS.Values(t);
+        tval = AS(1).Values(t);
     end
     if t_==0
         AnimObj.PlotState.SubField{1} = tval;

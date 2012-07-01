@@ -240,6 +240,10 @@ remainder=Str((Q(i)+1):end);
 
 
 function OK=Local_write_bct(filename,Info)
+if ~ischar(filename) && nargin==1
+    Info = filename;
+    filename = Info.FileName;
+end
 fid=fopen(filename,'w');
 % When the file is written using a fixed line/record length this is
 % shown in the first line

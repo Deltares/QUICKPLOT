@@ -247,210 +247,12 @@ lineproperties=0;
 data2d=0;
 
 [nval,nvalstr]=convertnval(Props.NVal);
-if nval==2 || nval==3
-    vectors=1;
-    set(findobj(OH,'tag','component'),'enable','on');
-    compon=findobj(OH,'tag','component=?');
-    if DimFlag(M_) && (DimFlag(N_) || triangles)
-        if MNK<2
-            if MNK>0
-                if DimFlag(K_) && DimFlag(M_) && DimFlag(N_)
-                    compList={'vector','vector (split x,y)','vector (split m,n)','patch centred vector','magnitude','magnitude in plane','angle','x component','y component','z component','m component','n component'};
-                    if SpatialH ~=2
-                        ii=strmatch('magnitude in plane',compList,'exact');
-                        compList(ii)=[];
-                    end
-                    if Spatial==2 && SpatialH==1
-                        compList{end+1}='normal component';
-                    end
-                else
-                    compList={'vector','vector (split x,y)','vector (split m,n)','patch centred vector','magnitude','angle','x component','y component','m component','n component'};
-                end
-            else
-                compList={'vector','vector (split x,y)','patch centred vector','magnitude','angle','x component','y component'};
-            end
-        else
-            compList={'vector','patch centred vector','magnitude','m component','n component'};
-        end
-    elseif DimFlag(M_) && DimFlag(K_)
-        compList={'vector','patch centred vector','magnitude','x component','z component'};
-    else
-        switch nvalstr
-            case 'xy'
-                compList={'vector','magnitude','angle'};
-                if MNK<2
-                    compList(end+1:end+2)={'x component','y component'};
-                end
-                if MNK>0
-                    compList(end+1:end+2)={'m component','n component'};
-                end
-            case 'xyz'
-                compList={'vector','magnitude','angle','x component','y component','z component'};
-            case 'xz'
-                compList={'vector','magnitude','x component','z component'};
-        end
-    end
-
-    if SpatialV
-        ii=strmatch('vector (split',compList);
-        compList(ii)=[];
-    end
-    ii=strmatch('patch centred vector',compList,'exact');
-    compList(ii)=[];
-
-    set(compon,'enable','on','backgroundcolor',Active)
-    comp=get(compon,'value');
-    prevCompList=get(compon,'string');
-    if ~isequal(compList,prevCompList)
-        % try to find an exact match when switching presentation type strings
-        if iscellstr(prevCompList)
-            comp=prevCompList{comp};
-        else
-            comp=prevCompList(comp,:);
-        end
-        comp=strmatch(comp,compList,'exact');
-        if isempty(comp)
-            comp=1;
-        end
-        set(compon,'value',1,'string',compList,'value',comp)
-    end
-    Ops.vectorcomponent=lower(compList{comp});
-    switch Ops.vectorcomponent
-        case {'vector','patch centred vector','vector (split x,y)','vector (split m,n)'}
-            Ops.presentationtype=Ops.vectorcomponent;
-            if (multiple(M_) + multiple(N_) == 1) && (multiple(K_) == 1) && MNK
-                Ops.MNK=1;
-            end
-        case {'magnitude','x component','y component','z component'}
-            vectors=0;
-        case 'angle'
-            vectors=0;
-            Units = 'radians';
-            Ops.angleconvention='?';
-        case {'magnitude in plane','m component','n component','normal component'}
-            vectors=0;
-            Ops.MNK=1;
-        otherwise
-            ui_message('error','Unexpected plot type encountered: %s\nin main module.',Ops.vectorcomponent)
-            Ops.presentationtype='failed';
-            return
-    end
-end
-if (nval==2 || nval==3) && ~vectors
-    nval=1;
-end
-thindams=nval>0 & nval<1;
+thindams = nval>0 & nval<1;
 MultipleColors = nval>=1 & nval<4;
-
-if vectors %&& ~isempty(strmatch(axestype,{'X-Y','X-Y-Z','X-Y-Val','X-Z'},'exact'))
-    colvect=findobj(OH,'tag','colourvectors');
-    set(colvect,'enable','on')
-    if get(colvect,'value')
-        switch Ops.vectorcomponent
-            case {'vector (split x,y)','vector (split m,n)'}
-                Ops.vectorcolour='component';
-            otherwise
-                colvecm=findobj(OH,'tag','vectorcolour=?');
-                pvecCLR=get(colvecm,'string');
-                colveci=get(colvecm,'value');
-                if Ops.MNK
-                    vecCLR={'magnitude in plane','m component','n component','normal component'};
-                    vecCLRi=ismember(vecCLR,compList);
-                    vecCLR(~vecCLRi)=[];
-                else
-                    vecCLR={'magnitude','angle','x component','y component','z component'};
-                    vecCLRi=ismember(vecCLR,compList);
-                    vecCLR(~vecCLRi)=[];
-                end
-                if ~isequal(vecCLR,pvecCLR)
-                    % try to find an exact match when switching vector colouring strings
-                    colveci=strmatch(pvecCLR{colveci},vecCLR,'exact');
-                    if isempty(colveci),
-                        colveci=1;
-                    end
-                    set(colvecm,'value',1,'string',vecCLR,'value',colveci)
-                end
-                set(colvecm,'enable','on','backgroundcolor',Active)
-                Ops.vectorcolour=vecCLR{colveci};
-        end
-        if strcmp(Ops.vectorcolour,'angle')
-            Units = 'radians';
-            Ops.angleconvention='?';
-        end
-    else
-        Ops.vectorcolour='';
-        MultipleColors=0;
-    end
-    %
-    Ops.thinningmode='?';
-end
-
+%--------------------------------------------------------------------------
 %
-%---- data units
+%---- axes type
 %
-if ~isempty(Units)
-    set(findobj(OH,'tag','dataunits'),'enable','on')
-    dunit=findobj(OH,'tag','dataunits=?');
-    set(dunit,'enable','on', ...
-        'backgroundcolor',Active)
-    system=get(dunit,'value');
-    systems=get(dunit,'string');
-    if system==1
-        % As in file
-        qp_settings('UnitSystem',systems{system})
-        user_units=Units;
-        dunit=findobj(OH,'tag','dataunits=!');
-        set(dunit,'backgroundcolor','r') % needed to get next line working properly R2011b
-        set(dunit,'backgroundcolor',Inactive)
-        set(dunit,'enable','inactive')
-        set(dunit,'string',user_units)
-        actualunits=user_units;
-    elseif system==length(systems)
-        % Hide
-        user_units='**Hide**';
-        Units='**Hide**';
-        actualunits='**Hide**';
-    elseif system==length(systems)-1
-        % Other (user specified)
-        dunit=findobj(OH,'tag','dataunits=!');
-        set(dunit,'enable','on', ...
-            'backgroundcolor',Active)
-        user_units=get(dunit,'string');
-        conversion=qp_unitconversion(Units,user_units);
-        if ischar(conversion)
-            user_units=Units;
-        else
-            Units=user_units;
-        end
-        set(dunit,'string',user_units)
-        actualunits=user_units;
-    else
-        % Specified format: SI, CGS, etc.
-        qp_settings('UnitSystem',systems{system})
-        user_units=systems{system};
-        dunit=findobj(OH,'tag','dataunits=!');
-        set(dunit,'enable','inactive', ...
-            'backgroundcolor',Inactive)
-        [conversion,SIunit]=qp_unitconversion(Units,user_units);
-        set(dunit,'string',SIunit)
-        actualunits=SIunit;
-    end
-    Ops.units=user_units;
-else
-    actualunits='';
-    Ops.units='';
-end
-
-if strcmp(Ops.angleconvention,'?')
-    pd=findobj(OH,'tag','angleconvention=?');
-    conventions=get(pd,'string');
-    i=get(pd,'value');
-    Ops.angleconvention=conventions{i};
-    %
-    set(findobj(OH,'tag','angleconvention'),'enable','on');
-    set(pd,'enable','on','backgroundcolor',Active)
-end
-
 defaultaxestype='';
 axestype={'auto'};
 if nval<0
@@ -721,62 +523,115 @@ else
     SingleColor=0;
 end
 
-Ops.colourdams=0;
-if thindams
-    if nval==0.9
-        Ops.colourdams=1;
+%--------------------------------------------------------------------------
+%
+%---- vector component
+%
+if nval==2 || nval==3
+    vectors=1;
+    set(findobj(OH,'tag','component'),'enable','on');
+    compon=findobj(OH,'tag','component=?');
+    if DimFlag(M_) && (DimFlag(N_) || triangles)
+        if MNK<2
+            if MNK>0
+                if DimFlag(K_) && DimFlag(M_) && DimFlag(N_)
+                    compList={'vector','vector (split x,y)','vector (split m,n)','patch centred vector','magnitude','magnitude in plane','angle','x component','y component','z component','m component','n component'};
+                    if SpatialH ~=2
+                        ii=strmatch('magnitude in plane',compList,'exact');
+                        compList(ii)=[];
+                    end
+                    if Spatial==2 && SpatialH==1
+                        compList{end+1}='normal component';
+                    end
+                else
+                    compList={'vector','vector (split x,y)','vector (split m,n)','patch centred vector','magnitude','angle','x component','y component','m component','n component'};
+                end
+            else
+                compList={'vector','vector (split x,y)','patch centred vector','magnitude','angle','x component','y component'};
+            end
+        else
+            compList={'vector','patch centred vector','magnitude','m component','n component'};
+        end
+    elseif DimFlag(M_) && DimFlag(K_)
+        compList={'vector','patch centred vector','magnitude','x component','z component'};
     else
-        coldams=findobj(OH,'tag','colourdams');
-        set(coldams,'enable','on')
-        Ops.colourdams=get(coldams,'value');
+        switch nvalstr
+            case 'xy'
+                compList={'vector','magnitude','angle'};
+                if MNK<2
+                    compList(end+1:end+2)={'x component','y component'};
+                end
+                if MNK>0
+                    compList(end+1:end+2)={'m component','n component'};
+                end
+            case 'xyz'
+                compList={'vector','magnitude','angle','x component','y component','z component'};
+            case 'xz'
+                compList={'vector','magnitude','x component','z component'};
+        end
     end
-    MultipleColors=Ops.colourdams;
-    SingleColor=~MultipleColors;
-    edgeflatcolour=MultipleColors;
+
+    if SpatialV
+        ii=strmatch('vector (split',compList);
+        compList(ii)=[];
+    end
+    ii=strmatch('patch centred vector',compList,'exact');
+    compList(ii)=[];
+
+    set(compon,'enable','on','backgroundcolor',Active)
+    comp=get(compon,'value');
+    prevCompList=get(compon,'string');
+    if ~isequal(compList,prevCompList)
+        % try to find an exact match when switching presentation type strings
+        if iscellstr(prevCompList)
+            comp=prevCompList{comp};
+        else
+            comp=prevCompList(comp,:);
+        end
+        comp=strmatch(comp,compList,'exact');
+        if isempty(comp)
+            comp=1;
+        end
+        set(compon,'value',1,'string',compList,'value',comp)
+    end
+    Ops.vectorcomponent=lower(compList{comp});
+    switch Ops.vectorcomponent
+        case {'vector','patch centred vector','vector (split x,y)','vector (split m,n)'}
+            Ops.presentationtype=Ops.vectorcomponent;
+            if (multiple(M_) + multiple(N_) == 1) && (multiple(K_) == 1) && MNK
+                Ops.MNK=1;
+            end
+        case {'magnitude','x component','y component','z component'}
+            vectors=0;
+        case 'angle'
+            vectors=0;
+            Units = 'radians';
+            Ops.angleconvention='?';
+        case {'magnitude in plane','m component','n component','normal component'}
+            vectors=0;
+            Ops.MNK=1;
+        case 'edge'
+            Ops.presentationtype=Ops.vectorcomponent;
+            vectors=0;
+            nval=0.9;
+        otherwise
+            ui_message('error','Unexpected plot type encountered: %s\nin main module.',Ops.vectorcomponent)
+            Ops.presentationtype='failed';
+            return
+    end
+end
+if (nval==2 || nval==3) && ~vectors
+    nval=1;
 end
 
-if vectors && ~isempty(strmatch(axestype,{'X-Y','X-Y-Z','X-Y-Val','X-Z'},'exact'))
-    set(findobj(OH,'tag','vectorstyle'),'enable','on')
-    vstyle=findobj(OH,'tag','vectorstyle=?');
-    set(vstyle,'enable','on','backgroundcolor',Active)
-    vstyles=get(vstyle,'string');
-    Ops.vectorstyle=vstyles{get(vstyle,'value')};
-    %
-    set(findobj(OH,'tag','vecscalem'),'enable','on')
-    vsmode=findobj(OH,'tag','vecscalem=?');
-    set(vsmode,'enable','on','backgroundcolor',Active)
-    vsmodes=get(vsmode,'string');
-    Ops.vectorscalingmode=vsmodes{get(vsmode,'value')};
-    switch Ops.vectorscalingmode
-        case {'automatic','automatic normalised'}
-            Ops.vectorscale=1;
-        case {'manual','manual normalised'}
-            oneunitis=findobj(OH,'tag','1vecunit=?');
-            set(findobj(OH,'tag','1vecunit'),'enable','on')
-            set(oneunitis,'enable','on','backgroundcolor',Active)
-            Ops.vectorscale=get(oneunitis,'userdata');
-    end
-end
-
-Ops.verticalscalingmode='unrestricted';
-if vectors && ~isempty(strmatch(axestype,{'X-Z' 'X-Y-Z'},'exact'))
-    set(findobj(OH,'tag','vertscalem'),'enable','on')
-    vsm=findobj(OH,'tag','vertscalem=?');
-    set(vsm,'enable','on','backgroundcolor',Active)
-    VsMeths=get(vsm,'string');
-    vsm=get(vsm,'value');
-    Ops.verticalscalingmode=lower(VsMeths{vsm});
-    switch Ops.verticalscalingmode
-        case 'manual'
-            set(findobj(OH,'tag','vscale'),'enable','on')
-            enl=findobj(OH,'tag','vscale=?');
-            set(enl,'enable','on','backgroundcolor',Active)
-            Ops.verticalscalefactor=get(enl,'userdata');
-    end
-end
-
-if (nval==1 && data2d) || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') || strcmp(geometry,'POLYG') % || (nval==0 & ~DimFlag(ST_))
+%--------------------------------------------------------------------------
+%
+%---- presentation type
+%
+if (nval==1 && data2d) || nval==1.9 || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') || strcmp(geometry,'POLYG') % || (nval==0 & ~DimFlag(ST_))
     switch nvalstr
+        case 1.9
+            PrsTps={'vector','edge'};
         case 'strings'
             if multiple(T_)
                 PrsTps={'tracks'}; % {'labels';'tracks'};
@@ -912,6 +767,188 @@ if (nval==1 && data2d) || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean')
             edgeflatcolour=nval>0;
         case 'grid with numbers'
             plotstexts=1;
+        case 'edge'
+            thindams=1;
+            lineproperties=1;
+            nval=0.9;
+        case 'vector'
+            vectors=1';
+            Ops.vectorcomponent='edge';
+    end
+end
+
+%--------------------------------------------------------------------------
+
+if vectors %&& ~isempty(strmatch(axestype,{'X-Y','X-Y-Z','X-Y-Val','X-Z'},'exact'))
+    colvect=findobj(OH,'tag','colourvectors');
+    set(colvect,'enable','on')
+    if get(colvect,'value')
+        switch Ops.vectorcomponent
+            case {'vector (split x,y)','vector (split m,n)','edge'}
+                Ops.vectorcolour='component';
+            otherwise
+                colvecm=findobj(OH,'tag','vectorcolour=?');
+                pvecCLR=get(colvecm,'string');
+                colveci=get(colvecm,'value');
+                if Ops.MNK
+                    vecCLR={'magnitude in plane','m component','n component','normal component','edge'};
+                    vecCLRi=ismember(vecCLR,compList);
+                    vecCLR(~vecCLRi)=[];
+                else
+                    vecCLR={'magnitude','angle','x component','y component','z component','edge'};
+                    vecCLRi=ismember(vecCLR,compList);
+                    vecCLR(~vecCLRi)=[];
+                end
+                if ~isequal(vecCLR,pvecCLR)
+                    % try to find an exact match when switching vector colouring strings
+                    if isempty(pvecCLR) || length(pvecCLR)<colveci
+                        colveci=1;
+                    else
+                       colveci=strmatch(pvecCLR{colveci},vecCLR,'exact');
+                       if isempty(colveci)
+                           colveci=1;
+                       end
+                    end
+                    set(colvecm,'value',1,'string',vecCLR,'value',colveci)
+                end
+                if length(vecCLR)>1
+                    set(colvecm,'enable','on','backgroundcolor',Active)
+                end
+                Ops.vectorcolour=vecCLR{colveci};
+        end
+        if strcmp(Ops.vectorcolour,'angle')
+            Units = 'radians';
+            Ops.angleconvention='?';
+        end
+    else
+        Ops.vectorcolour='';
+        MultipleColors=0;
+        SingleColor=1;
+    end
+    %
+    if ~strcmp(Ops.vectorcomponent,'edge')
+        Ops.thinningmode='?';
+    end
+end
+
+%--------------------------------------------------------------------------
+%
+%---- data units
+%
+if ~isempty(Units)
+    set(findobj(OH,'tag','dataunits'),'enable','on')
+    dunit=findobj(OH,'tag','dataunits=?');
+    set(dunit,'enable','on', ...
+        'backgroundcolor',Active)
+    system=get(dunit,'value');
+    systems=get(dunit,'string');
+    if system==1
+        % As in file
+        qp_settings('UnitSystem',systems{system})
+        user_units=Units;
+        dunit=findobj(OH,'tag','dataunits=!');
+        set(dunit,'backgroundcolor','r') % needed to get next line working properly R2011b
+        set(dunit,'backgroundcolor',Inactive)
+        set(dunit,'enable','inactive')
+        set(dunit,'string',user_units)
+        actualunits=user_units;
+    elseif system==length(systems)
+        % Hide
+        user_units='**Hide**';
+        Units='**Hide**';
+        actualunits='**Hide**';
+    elseif system==length(systems)-1
+        % Other (user specified)
+        dunit=findobj(OH,'tag','dataunits=!');
+        set(dunit,'enable','on', ...
+            'backgroundcolor',Active)
+        user_units=get(dunit,'string');
+        conversion=qp_unitconversion(Units,user_units);
+        if ischar(conversion)
+            user_units=Units;
+        else
+            Units=user_units;
+        end
+        set(dunit,'string',user_units)
+        actualunits=user_units;
+    else
+        % Specified format: SI, CGS, etc.
+        qp_settings('UnitSystem',systems{system})
+        user_units=systems{system};
+        dunit=findobj(OH,'tag','dataunits=!');
+        set(dunit,'enable','inactive', ...
+            'backgroundcolor',Inactive)
+        [conversion,SIunit]=qp_unitconversion(Units,user_units);
+        set(dunit,'string',SIunit)
+        actualunits=SIunit;
+    end
+    Ops.units=user_units;
+else
+    actualunits='';
+    Ops.units='';
+end
+
+if strcmp(Ops.angleconvention,'?')
+    pd=findobj(OH,'tag','angleconvention=?');
+    conventions=get(pd,'string');
+    i=get(pd,'value');
+    Ops.angleconvention=conventions{i};
+    %
+    set(findobj(OH,'tag','angleconvention'),'enable','on');
+    set(pd,'enable','on','backgroundcolor',Active)
+end
+
+Ops.colourdams=0;
+if thindams
+    if nval==0.9
+        Ops.colourdams=1;
+    else
+        coldams=findobj(OH,'tag','colourdams');
+        set(coldams,'enable','on')
+        Ops.colourdams=get(coldams,'value');
+    end
+    MultipleColors=Ops.colourdams;
+    SingleColor=~MultipleColors;
+    edgeflatcolour=MultipleColors;
+end
+
+if vectors && ~isempty(strmatch(axestype,{'X-Y','X-Y-Z','X-Y-Val','X-Z'},'exact'))
+    set(findobj(OH,'tag','vectorstyle'),'enable','on')
+    vstyle=findobj(OH,'tag','vectorstyle=?');
+    set(vstyle,'enable','on','backgroundcolor',Active)
+    vstyles=get(vstyle,'string');
+    Ops.vectorstyle=vstyles{get(vstyle,'value')};
+    %
+    set(findobj(OH,'tag','vecscalem'),'enable','on')
+    vsmode=findobj(OH,'tag','vecscalem=?');
+    set(vsmode,'enable','on','backgroundcolor',Active)
+    vsmodes=get(vsmode,'string');
+    Ops.vectorscalingmode=vsmodes{get(vsmode,'value')};
+    switch Ops.vectorscalingmode
+        case {'automatic','automatic normalised'}
+            Ops.vectorscale=1;
+        case {'manual','manual normalised'}
+            oneunitis=findobj(OH,'tag','1vecunit=?');
+            set(findobj(OH,'tag','1vecunit'),'enable','on')
+            set(oneunitis,'enable','on','backgroundcolor',Active)
+            Ops.vectorscale=get(oneunitis,'userdata');
+    end
+end
+
+Ops.verticalscalingmode='unrestricted';
+if vectors && ~isempty(strmatch(axestype,{'X-Z' 'X-Y-Z'},'exact'))
+    set(findobj(OH,'tag','vertscalem'),'enable','on')
+    vsm=findobj(OH,'tag','vertscalem=?');
+    set(vsm,'enable','on','backgroundcolor',Active)
+    VsMeths=get(vsm,'string');
+    vsm=get(vsm,'value');
+    Ops.verticalscalingmode=lower(VsMeths{vsm});
+    switch Ops.verticalscalingmode
+        case 'manual'
+            set(findobj(OH,'tag','vscale'),'enable','on')
+            enl=findobj(OH,'tag','vscale=?');
+            set(enl,'enable','on','backgroundcolor',Active)
+            Ops.verticalscalefactor=get(enl,'userdata');
     end
 end
 
