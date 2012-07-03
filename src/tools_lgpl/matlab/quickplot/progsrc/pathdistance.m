@@ -1,4 +1,4 @@
-function d0=pathdistance(x0,y0,z0),
+function d0=pathdistance(x0,y0,z0)
 %PATHDISTANCE Computes the distance along a path.
 %   Computes the distance along the path from the first
 %   point for every point on the path.
@@ -39,39 +39,69 @@ function d0=pathdistance(x0,y0,z0),
 %   $HeadURL$
 %   $Id$
 
-d0=repmat(NaN,size(x0));
+igeo=0;
+n=0;
+if nargin>2
+    if ischar(z0)
+        if strcmpi(z0,'geographic')
+            igeo=1;
+        end
+        n=1;
+    end
+end
 
-if nargin==1,
-    iprev=min(find(~isnan(x0)));
+iopt=nargin-n;
+
+d0=NaN(size(x0));
+
+% iopt=1 : 1D
+% iopt=2 : 2D
+% iopt=3 : 3D
+
+if iopt==1
+    iprev=find(~isnan(x0), 1 );
     d0(iprev)=0;
-    for i=(iprev+1):length(x0),
-        if isnan(x0(i)),
+    for i=(iprev+1):length(x0)
+        if isnan(x0(i))
             d0(i)=NaN;
-        else,
+        else
             d0(i)=d0(iprev)+abs(x0(i)-x0(iprev));
             iprev=i;
-        end;
-    end;
-elseif nargin==2,
-    iprev=min(find(~isnan(x0) & ~isnan(y0)));
+        end
+    end
+elseif iopt==2
+    iprev=find(~isnan(x0) & ~isnan(y0), 1 );
     d0(iprev)=0;
-    for i=(iprev+1):length(x0),
-        if isnan(x0(i)) | isnan(y0(i)),
+    for i=(iprev+1):length(x0)
+        if isnan(x0(i)) || isnan(y0(i))
             d0(i)=NaN;
-        else,
-            d0(i)=d0(iprev)+sqrt((x0(i)-x0(iprev))^2+(y0(i)-y0(iprev))^2);
+        else
+            if igeo
+                d0(i)=d0(iprev)+sqrt((111111*cos(0.5*(y0(i)+y0(iprev))*pi/180)*(x0(i)-x0(iprev)))^2 ...
+                    +(111111*(y0(i)-y0(iprev)))^2);
+            else
+                d0(i)=d0(iprev)+sqrt((x0(i)-x0(iprev))^2+(y0(i)-y0(iprev))^2);
+            end
             iprev=i;
-        end;
-    end;
-elseif nargin==3,
-    iprev=min(find(~isnan(x0) & ~isnan(y0) & ~isnan(z0)));
+        end
+    end
+elseif iopt==3
+    iprev=find(~isnan(x0) & ~isnan(y0) & ~isnan(z0), 1 );
     d0(iprev)=0;
-    for i=(iprev+1):length(x0),
-        if isnan(x0(i)) | isnan(y0(i)) | isnan(z0(i)),
+    for i=(iprev+1):length(x0)
+        if isnan(x0(i)) || isnan(y0(i)) || isnan(z0(i))
             d0(i)=NaN;
-        else,
-            d0(i)=d0(iprev)+sqrt((x0(i)-x0(iprev))^2+(y0(i)-y0(iprev))^2+(z0(i)-z0(iprev))^2);
+        else
+            if igeo
+                d0(i)=d0(iprev)+sqrt((111111*cos(0.5*(y0(i)+y0(iprev))*pi/180)*(x0(i)-x0(iprev)))^2 + ...
+                    (111111*(y0(i)-y0(iprev)))^2 + ...
+                    (z0(i)-z0(iprev))^2);
+                d0(i)=d0(iprev)+sqrt((111111*cos(0.5*(y0(i)+y0(iprev))*pi/180)*(x0(i)-x0(iprev)))^2 + ...
+                    (111111*(y0(i)-y0(iprev)))^2);
+            else
+                d0(i)=d0(iprev)+sqrt((x0(i)-x0(iprev))^2+(y0(i)-y0(iprev))^2+(z0(i)-z0(iprev))^2);
+            end
             iprev=i;
-        end;
-    end;
-end;
+        end
+    end
+end
