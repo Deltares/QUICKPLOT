@@ -471,7 +471,9 @@ switch NVal
         elseif spatialh==1 && spatial==2
 
             Mask=repmat(min(data.Z,[],3)==max(data.Z,[],3),[1 1 size(data.Z,3)]);
-            data.X(Mask)=NaN;
+            if isequal(size(Mask),size(data.X))
+                data.X(Mask)=NaN;
+            end
             switch Ops.plotcoordinate
                 case {'path distance','reverse path distance'}
                     x=data.X(:,:,1);
