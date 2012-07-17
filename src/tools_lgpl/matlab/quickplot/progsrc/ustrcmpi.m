@@ -1,4 +1,4 @@
-function [I,IAll]=ustrcmpi(Str,StrSet)
+function [I,IAll]=ustrcmpi(Str,StrSet,opt)
 %USTRCMPI Find a unique string.
 %   INDEX = USTRCMPI(STR,STRSET) compares the string STR with the strings
 %   in the string set STRSET and returns the INDEX of the string in the set
@@ -12,6 +12,8 @@ function [I,IAll]=ustrcmpi(Str,StrSet)
 %        6. matches start of Str case insensitive (unique longest match)
 %   If no string is found or if there is no unique match, the function
 %   returns -1.
+%
+%   INDEX = USTRCMPI(STR,STRSET,N) limits the checks to the first N cases.
 %
 %   [INDEX,ALLINDEX] = USTRCMPI(STR,STRSET) returns also the indices of all
 %   matches when there are multiple.
@@ -50,6 +52,8 @@ function [I,IAll]=ustrcmpi(Str,StrSet)
 
 if nargin<2
    error('Not enough input arguments.')
+elseif nargin<3
+    opt=6;
 end
 
 if (ischar(Str) && size(Str,1)>1) || (iscellstr(Str) && length(Str)>1) % multiple Str values
@@ -66,13 +70,13 @@ else
 end
 
 I=strcmp(Str,StrSet);
-if ~any(I)
+if ~any(I) && opt>1
    I=strcmpi(Str,StrSet);
-   if ~any(I)
+   if ~any(I) && opt>2
       I=strncmp(Str,StrSet,length(Str));
-      if ~any(I)
+      if ~any(I) && opt>3
          I=strncmpi(Str,StrSet,length(Str));
-         if ~any(I)
+         if ~any(I) && opt>4
             I=double(I);
             LS = length(Str);
             for i=1:length(StrSet)
@@ -81,7 +85,7 @@ if ~any(I)
                   I(i)=strncmp(Str,StrSet{i},L)*L;
                end
             end
-            if ~any(I)
+            if ~any(I) && opt>5
                for i=1:length(StrSet)
                   L = length(StrSet{i});
                   if L<LS

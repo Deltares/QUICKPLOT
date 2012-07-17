@@ -174,11 +174,11 @@ end
 fclose(fid);
 
 
-function chaps=chapfile(FI);
+function chaps=chapfile(FI)
 chaps=FI.Data(:,1);
 
 
-function val=getfield(cmd,FI,grpS,keyS,def);
+function val=getfield(cmd,FI,grpS,keyS,def)
 S=FI.Data;
 if ischar(grpS)
     if isequal(grpS,'*')
@@ -224,7 +224,7 @@ else
 end
 
 
-function FI=setfield(FI,grpS,keyS,val);
+function FI=setfield(FI,grpS,keyS,val)
 S=FI.Data;
 if nargin<4
     error('Not enough input arguments.')

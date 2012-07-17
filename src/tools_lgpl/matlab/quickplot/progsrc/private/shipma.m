@@ -148,39 +148,57 @@ if FI.XML.getLength~=1 || ...
         ~isequal(char(Doc.getAttribute('key')),'Shipma Projects')
     error('First level of Shipma XML file should be a single documentTag with key=Shipma Projects')
 end
-IntProp = Doc.getFirstChild;
-Proj = Doc.getLastChild;
-if Doc.getLength~=2 || ...
-        ~isequal(char(IntProp.getNodeName),'internal_properties') || ...
-        ~isequal(char(Proj.getNodeName),'shipmaProject')
-    error('Second level of Shipma XML file should be an internal_properties node and a shipmaProject node')
-end
+Children = getChildren(Doc);
+Name = getNodeName(Children,true);
+IntProp = Children(strcmp(Name,'internal_properties'));
+Proj = Children(strcmp(Name,'shipmaProject'));
+nProj = length(Proj);
 FI.TempFilePath = char(IntProp.getFirstChild.getTextContent);
 %
-Children = getChildren(Proj);
-FI.ProjectName = getName(Proj);
-ProjFolder = fullfile(FI.UnzipFolder,['shi_' FI.ProjectName]);
-FI.Ships = getMembers(Children(1));
-FI.Ships.Data = getShipData(FI.Ships.XML);
-FI.Sceneries = getMembers(Children(2));
-FI.Sceneries.Data = getSceneryData(FI.Sceneries.XML,ProjFolder);
-FI.Environments = getMembers(Children(3));
-FI.Environments = getEnvironmentData(FI.Environments,ProjFolder);
-FI.Manoeuvres = getMembers(Children(4));
-FI.Pilots = getMembers(Children(5));
-FI.TugScenarios = getMembers(Children(6));
-FI.Cases = getMembers(Children(7));
-FI.Cases.Data = getCaseData(FI.Cases.XML,ProjFolder);
-Data = FI.Cases.Data;
-for i=1:length(Data)
-    Data(i).shipNr    = ustrcmpi(Data(i).shipId,FI.Ships.Names);
-    Data(i).windNr    = ustrcmpi(Data(i).windId,FI.Environments.Winds.Names);
-    Data(i).wavesNr   = ustrcmpi(Data(i).wavesId,FI.Environments.Waves.Names);
-    Data(i).currentNr = ustrcmpi(Data(i).currentId,FI.Environments.Currents.Names);
-    Data(i).swellNr   = ustrcmpi(Data(i).swellId,FI.Environments.Swells.Names);
-    Data(i).sceneryNr = ustrcmpi(Data(i).sceneryId,FI.Sceneries.Names);
+FI.Project(nProj).Name = '';
+nCasesTot = 0;
+for p = 1:nProj
+    Children = getChildren(Proj(p));
+    FI.Project(p).Name = getName(Proj(p));
+    ProjFolder = fullfile(FI.UnzipFolder,['shi_' FI.Project(p).Name]);
+    FI.Project(p).Ships = getMembers(Children(1));
+    FI.Project(p).Ships.Data = getShipData(FI.Project(p).Ships.XML);
+    FI.Project(p).Sceneries = getMembers(Children(2));
+    FI.Project(p).Sceneries.Data = getSceneryData(FI.Project(p).Sceneries.XML,ProjFolder);
+    FI.Project(p).Environments = getMembers(Children(3));
+    FI.Project(p).Environments = getEnvironmentData(FI.Project(p).Environments,ProjFolder);
+    FI.Project(p).Manoeuvres = getMembers(Children(4));
+    FI.Project(p).Pilots = getMembers(Children(5));
+    FI.Project(p).TugScenarios = getMembers(Children(6));
+    FI.Project(p).Cases = getMembers(Children(7));
+    FI.Project(p).Cases.Data = getCaseData(FI.Project(p).Cases.XML,ProjFolder);
+    Data = FI.Project(p).Cases.Data;
+    nCases = length(Data);
+    for i=1:nCases
+        Data(i).shipNr    = ustrcmpi(Data(i).shipId,FI.Project(p).Ships.Names);
+        Data(i).windNr    = ustrcmpi(Data(i).windId,FI.Project(p).Environments.Winds.Names);
+        Data(i).wavesNr   = ustrcmpi(Data(i).wavesId,FI.Project(p).Environments.Waves.Names);
+        Data(i).currentNr = ustrcmpi(Data(i).currentId,FI.Project(p).Environments.Currents.Names);
+        Data(i).swellNr   = ustrcmpi(Data(i).swellId,FI.Project(p).Environments.Swells.Names);
+        Data(i).sceneryNr = ustrcmpi(Data(i).sceneryId,FI.Project(p).Sceneries.Names);
+    end
+    FI.Project(p).Cases.Data = Data;
+    nCasesTot = nCasesTot + nCases;
 end
-FI.Cases.Data = Data;
+%
+FI.Case.Name = cell(nCasesTot,1);
+FI.Case.Project = zeros(1,nCasesTot);
+FI.Case.Case = zeros(1,nCasesTot);
+j = 0;
+for p=1:length(FI.Project)
+    nCases = length(FI.Project(p).Cases.Data);
+    for i=1:nCases
+        j = j+1;
+        FI.Case.Name{j}    = sprintf('%s\\%s',FI.Project(p).Name,FI.Project(p).Cases.Names{i});
+        FI.Case.Project(j) = p;
+        FI.Case.Case(j)    = i;
+    end
+end
 
 
 function S = getMembers(Node)
@@ -202,6 +220,20 @@ else
     end
 end
 
+
+function Name = getNodeName(Node,forceCell)
+nNode = length(Node);
+if nNode==1
+    Name = char(Node.getNodeName);
+    if nargin>1 && forceCell
+        Name = {Name};
+    end
+else
+    Name = cell(1,nNode);
+    for i = 1:nNode
+        Name{i} = char(Node(i).getNodeName);
+    end
+end
 
 function Children = getChildren(Node)
 nChild = Node.getLength;
@@ -310,6 +342,10 @@ end
 
 function Data = getCaseData(Cases,UnzipFolder)
 nCases = length(Cases);
+if nCases==0
+    Data = [];
+    return
+end
 Data(nCases).Props = [];
 for i = 1:nCases
     CaseName = char(Cases(i).getAttribute('key'));
@@ -331,8 +367,12 @@ for i = 1:nCases
     %
     CaseDir = fullfile(UnzipFolder,'shi_Cases',['shi_' CaseName],'Shi_results','Wor_workDir','embCtnt','containedFiles');
     FileName = fullfile(CaseDir,'track.his');
-    Data(i).TimeSeries = delwaq('open',FileName);
-    Data(i).TimeSeries.T0 = 0; % overrule header information
+    if exist(FileName)
+        Data(i).TimeSeries = delwaq('open',FileName);
+        Data(i).TimeSeries.T0 = 0; % overrule header information
+    else
+        Data(i).TimeSeries = [];
+    end
     Data(i).trackFile  = fullfile(CaseDir,'track.trk');
     Data(i).bottomFile = fullfile(CaseDir,'shipma.BOT');
 end
@@ -371,13 +411,17 @@ for p = 1:nProp
             else
                 Points = Contour;
             end
-            checkName(Points(1),'collectionElement')
-            nPoints = length(Points);
-            contour = zeros(nPoints,2);
-            for i=1:nPoints
-                Point = getChildren(Points(i));
-                contour(i,1) = str2double(char(Point(1).getTextContent));
-                contour(i,2) = str2double(char(Point(2).getTextContent));
+            if length(Points)>0
+                checkName(Points(1),'collectionElement')
+                nPoints = length(Points);
+                contour = zeros(nPoints,2);
+                for i=1:nPoints
+                    Point = getChildren(Points(i));
+                    contour(i,1) = str2double(char(Point(1).getTextContent));
+                    contour(i,2) = str2double(char(Point(2).getTextContent));
+                end
+            else
+                contour = zeros(0,2);
             end
             ShipProps(p).Value = contour;
         otherwise

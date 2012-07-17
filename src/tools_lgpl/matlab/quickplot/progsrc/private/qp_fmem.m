@@ -184,6 +184,8 @@ switch cmd
                trytp='unibest';
             case {'.shx','.shp'}
                trytp='shape';
+             case {'.sma'}
+                 trytp='shipma';
             case {'.sp1','.sp2'}
                trytp='SWAN spectral';
             case {'.mdm'}

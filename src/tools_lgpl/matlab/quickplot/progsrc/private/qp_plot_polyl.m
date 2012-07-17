@@ -62,11 +62,13 @@ switch NVal
             vNaN=isnan(data.X);
             if any(vNaN)
                 bs=findseries(~vNaN);
+            elseif isempty(vNaN)
+                bs=zeros(0,2);
             else
                 bs=[1 length(vNaN)];
             end
             for i=1:size(bs,1)
-                if data.X(bs(i,1))==data.X(bs(i,2)) & ...
+                if data.X(bs(i,1))==data.X(bs(i,2)) && ...
                         data.Y(bs(i,1))==data.Y(bs(i,2))
                     hNew(i)=patch(data.X(bs(i,1):bs(i,2)), ...
                         data.Y(bs(i,1):bs(i,2)), ...

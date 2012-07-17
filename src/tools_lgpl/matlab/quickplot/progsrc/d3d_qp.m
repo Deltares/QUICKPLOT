@@ -70,7 +70,7 @@ if (nargout~=0)
         return
     elseif isstandalone % allow standalone auto start ...
         outdata=[];
-    elseif none(strcmp(cmd,{'loaddata','selectedfigure','selectedaxes','selecteditem'}))
+    elseif none(strcmp(cmd,{'loaddata','selectedfigure','selectedaxes','selecteditem','selectfield'}))
         error('Too many output arguments.');
     end
 end
@@ -911,10 +911,14 @@ try
         case {'selectfield','selectsubfield'}
             sf=findobj(mfig,'tag',cmd);
             flds=get(sf,'string');
+            found=1;
             if ~isempty(cmdargs)
-                i=ustrcmpi(cmdargs{1},flds);
+                i=ustrcmpi(cmdargs{1},flds,4); % only allow longer names to match
                 if i<0
-                    error('Cannot select %s: %s',cmd(7:end),cmdargs{1})
+                    found=0;
+                    if nargout==0
+                        error('Cannot select %s: %s',cmd(7:end),cmdargs{1})
+                    end
                 else
                     set(sf,'value',i);
                 end
@@ -922,6 +926,9 @@ try
             d3d_qp updatefieldprop
             if logfile
                 writelog(logfile,logtype,cmd,flds{get(sf,'value')});
+            end
+            if nargout>0
+                outdata = found;
             end
             
         case 'updatefieldprop'
