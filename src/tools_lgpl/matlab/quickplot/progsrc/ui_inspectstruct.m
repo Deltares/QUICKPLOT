@@ -285,73 +285,79 @@ i=min(i,length(Str));
 switch strtok(Str{i})
     case '+'
         %expand(Struct,H)
-        if isempty(Rec{i,1})
-            SubStruct=Struct;
-        else
-            SubStruct=subsref(Struct,Rec{i,1});
-        end
-        switch class(SubStruct)
-            case 'struct'
-                Str{i} = sprintf('%s- %s(%i)',repmat('  ',1,Rec{i,3}),Rec{i,2},1);
-                Rec{i,1}(end+1).type='()';
-                Rec{i,1}(end).subs={1};
-                Rec{i,4} = '- ';
-                %
-                SubStruct=subsref(Struct,Rec{i,1});
-                flds = fieldnames(SubStruct);
-                nflds = length(flds);
-                nfllw = i+1:length(Str);
-                Str(nflds+nfllw)=Str(nfllw);
-                Rec(nflds+nfllw,:)=Rec(nfllw,:);
-                %
-                for j=1:nflds
-                    Rec{i+j,1} = Rec{i,1};
-                    Rec{i+j,1}(end+1).type='.';
-                    Rec{i+j,1}(end).subs=flds{j};
-                    Rec{i+j,2} = flds{j};
-                    Rec{i+j,3} = Rec{i,3}+1;
-                    Rec{i+j,4} = '+ ';
-                    Str{i+j} = sprintf('%s  %s',repmat('  ',1,Rec{i+j,3}),Rec{i+j,2});
-                end
-            case {'org.apache.xerces.dom.DeferredDocumentImpl[]'
-                    'org.apache.xerces.dom.DeferredElementImpl[]'
-                    'org.apache.xerces.dom.DeferredDocumentImpl'
-                    'org.apache.xerces.dom.DeferredElementImpl'}
-                cls = class(SubStruct);
-                if strcmp(cls(end-1:end),'[]')
-                    Str{i} = sprintf('%s- %s',repmat('  ',1,Rec{i,3}),Rec{i,2});
-                    Rec{i,1}(end+1).type='()';
-                    Rec{i,1}(end).subs={1};
-                    Rec{i,4} = '- ';
-                else
-                    Str{i} = sprintf('%s* %s',repmat('  ',1,Rec{i,3}),Rec{i,2});
-                    Rec{i,4} = '* ';
-                end
-                %
-                SubStruct=subsref(Struct,Rec{i,1});
-                nflds = SubStruct.getLength;
-                nfllw = i+1:length(Str);
-                Str(nflds+nfllw)=Str(nfllw);
-                Rec(nflds+nfllw,:)=Rec(nfllw,:);
-                %
-                for j=1:nflds
-                    Rec{i+j,1} = Rec{i,1};
-                    Rec{i+j,1}(end+1).type='.';
-                    Rec{i+j,1}(end).subs='item';
-                    Rec{i+j,1}(end+1).type='()';
-                    Rec{i+j,1}(end).subs={j-1};
-                    Rec{i+j,2} = char(SubStruct.item(j-1).getNodeName);
-                    Rec{i+j,3} = Rec{i,3}+1;
-                    Rec{i+j,4} = '+ ';
-                    Str{i+j} = sprintf('%s  %s',repmat('  ',1,Rec{i+j,3}),Rec{i+j,2});
-                end
-        end
+        [Str,Rec]=expand(Struct,Str,Rec,i,1);
     case {'-','*'}
         %collapse(Struct,H)
         [Str,Rec]=collapse(Str,Rec,i);
     otherwise
 end
 set(H.Subs,'string',Str,'userdata',Rec);
+
+function [Str,Rec,nadded]=expand(Struct,Str,Rec,i,IndexVal)
+if isempty(Rec{i,1})
+    SubStruct=Struct;
+else
+    SubStruct=subsref(Struct,Rec{i,1});
+end
+nflds = 0;
+switch class(SubStruct)
+    case 'struct'
+        Str{i} = sprintf('%s- %s(%i)',repmat('  ',1,Rec{i,3}),Rec{i,2},1);
+        Rec{i,1}(end+1).type='()';
+        Rec{i,1}(end).subs={IndexVal};
+        Rec{i,4} = '- ';
+        %
+        SubStruct=subsref(Struct,Rec{i,1});
+        flds = fieldnames(SubStruct);
+        nflds = length(flds);
+        nfllw = i+1:length(Str);
+        Str(nflds+nfllw)=Str(nfllw);
+        Rec(nflds+nfllw,:)=Rec(nfllw,:);
+        %
+        for j=1:nflds
+            Rec{i+j,1} = Rec{i,1};
+            Rec{i+j,1}(end+1).type='.';
+            Rec{i+j,1}(end).subs=flds{j};
+            Rec{i+j,2} = flds{j};
+            Rec{i+j,3} = Rec{i,3}+1;
+            Rec{i+j,4} = '+ ';
+            Str{i+j} = sprintf('%s  %s',repmat('  ',1,Rec{i+j,3}),Rec{i+j,2});
+        end
+    case {'org.apache.xerces.dom.DeferredDocumentImpl[]'
+            'org.apache.xerces.dom.DeferredElementImpl[]'
+            'org.apache.xerces.dom.DeferredDocumentImpl'
+            'org.apache.xerces.dom.DeferredElementImpl'}
+        cls = class(SubStruct);
+        if strcmp(cls(end-1:end),'[]')
+            Str{i} = sprintf('%s- %s',repmat('  ',1,Rec{i,3}),Rec{i,2});
+            Rec{i,1}(end+1).type='()';
+            Rec{i,1}(end).subs={IndexVal};
+            Rec{i,4} = '- ';
+        else
+            Str{i} = sprintf('%s* %s',repmat('  ',1,Rec{i,3}),Rec{i,2});
+            Rec{i,4} = '* ';
+        end
+        %
+        SubStruct=subsref(Struct,Rec{i,1});
+        nflds = SubStruct.getLength;
+        nfllw = i+1:length(Str);
+        Str(nflds+nfllw)=Str(nfllw);
+        Rec(nflds+nfllw,:)=Rec(nfllw,:);
+        %
+        for j=1:nflds
+            Rec{i+j,1} = Rec{i,1};
+            Rec{i+j,1}(end+1).type='.';
+            Rec{i+j,1}(end).subs='item';
+            Rec{i+j,1}(end+1).type='()';
+            Rec{i+j,1}(end).subs={j-1};
+            Rec{i+j,2} = char(SubStruct.item(j-1).getNodeName);
+            Rec{i+j,3} = Rec{i,3}+1;
+            Rec{i+j,4} = '+ ';
+            Str{i+j} = sprintf('%s  %s',repmat('  ',1,Rec{i+j,3}),Rec{i+j,2});
+        end
+end
+nadded = nflds;
+
 
 function [Str,Rec,nremoved]=collapse(Str,Rec,i)
 Str{i} = sprintf('%s+ %s',repmat('  ',1,Rec{i,3}),Rec{i,2});
@@ -429,6 +435,24 @@ else
         'userdata',SliderInfo);
     %
     j=length(Subscript);
+    if indexChanged
+        switch class(SubStruct)
+            case {'org.apache.xerces.dom.DeferredDocumentImpl[]'
+                    'org.apache.xerces.dom.DeferredElementImpl[]'}
+                % the different array elements can have different items
+                % we might even support org.apache.xerces.dom.ParentNode[]
+                % in which case the array elements may be of different
+                % type!
+                %
+                % the solution is to collapse and expand again
+                [Str,Rec,nremoved]=collapse(Str,Rec,islid);
+                [Str,Rec,nadded]=expand(Struct,Str,Rec,islid,IndexVal);
+                if i>islid && i<=islid+nremoved && i>islid+nadded
+                    i = islid;
+                end
+        end
+    end
+    %
     k=islid;
     while k<=length(Str)
         if length(Rec{k,1})<j
