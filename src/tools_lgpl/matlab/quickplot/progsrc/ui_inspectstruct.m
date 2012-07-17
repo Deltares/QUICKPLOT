@@ -1,338 +1,488 @@
-function ui_inspectstruct(Struct,Title)
+function ui_inspectstruct(cmd,Title)
 %UI_INSPECTSTRUCT Inspect a structure.
 %
 %   UI_INSPECTSTRUCT(Structure,Title)
 
 %----- LGPL --------------------------------------------------------------------
-%                                                                               
-%   Copyright (C) 2011-2012 Stichting Deltares.                                     
-%                                                                               
-%   This library is free software; you can redistribute it and/or                
-%   modify it under the terms of the GNU Lesser General Public                   
-%   License as published by the Free Software Foundation version 2.1.                         
-%                                                                               
-%   This library is distributed in the hope that it will be useful,              
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of               
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU            
-%   Lesser General Public License for more details.                              
-%                                                                               
-%   You should have received a copy of the GNU Lesser General Public             
-%   License along with this library; if not, see <http://www.gnu.org/licenses/>. 
-%                                                                               
-%   contact: delft3d.support@deltares.nl                                         
-%   Stichting Deltares                                                           
-%   P.O. Box 177                                                                 
-%   2600 MH Delft, The Netherlands                                               
-%                                                                               
-%   All indications and logos of, and references to, "Delft3D" and "Deltares"    
-%   are registered trademarks of Stichting Deltares, and remain the property of  
-%   Stichting Deltares. All rights reserved.                                     
-%                                                                               
+%
+%   Copyright (C) 2011-2012 Stichting Deltares.
+%
+%   This library is free software; you can redistribute it and/or
+%   modify it under the terms of the GNU Lesser General Public
+%   License as published by the Free Software Foundation version 2.1.
+%
+%   This library is distributed in the hope that it will be useful,
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%   Lesser General Public License for more details.
+%
+%   You should have received a copy of the GNU Lesser General Public
+%   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+%
+%   contact: delft3d.support@deltares.nl
+%   Stichting Deltares
+%   P.O. Box 177
+%   2600 MH Delft, The Netherlands
+%
+%   All indications and logos of, and references to, "Delft3D" and "Deltares"
+%   are registered trademarks of Stichting Deltares, and remain the property of
+%   Stichting Deltares. All rights reserved.
+%
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 
-% Specify the selectiontypes on which the edit boxes react.
-SelectionTypes={'open','normal'};
-Inactive=get(0,'defaultuicontrolbackground');
-Active=[1 1 1];
-Subs_Width=50;  % Width of the left pane
-Field_Width=50; % Width of the right pane
-List_Height=20; % Number of lines in the list boxes
-
 % valid input argument?
 if nargin==0
-   error('One argument expected.')
+    error('One argument expected.')
 else
-   if ~ischar(Struct) & ~isstruct(Struct)
-      error('Structure expected as argument.')
-   end
-   StructName='';
-   if ~isstandalone
-      StructName=inputname(1);
-   end
-   if isempty(StructName) % function result
-      StructName='[root]';
-   end
+    if ~ischar(cmd) && ~isstruct(cmd)
+        error('Structure expected as argument.')
+    end
+    StructName='';
+    if ~isstandalone
+        StructName=inputname(1);
+    end
+    if isempty(StructName) % function result
+        StructName='[root]';
+    end
 end
 
 fig=gcbf;
-if ~ischar(Struct)
-   %
-   % Initialize and create interface window
-   %
-   % Define basic characteristics
-   %
-   Button_Width=floor((Subs_Width-8)/2);
-   XX.Margin=1;
-   XX.Txt.Height=1.4;
-   XX.But.Height=1.5;
+if ~ischar(cmd)
+    %
+    % Initialize and create interface window
+    %
+    % Define basic characteristics
+    %
+    Fig_Width=800;%500
+    Fig_Height=500;%300
+    XX=xx_constants;
 
-   Fig_Width=3*XX.Margin+Subs_Width+Field_Width;
-   Fig_Height=3*XX.Margin+XX.But.Height+List_Height;
-
-   Units=get(0,'units');
-   set(0,'units','characters');
-   ss = get(0,'ScreenSize');
-   set(0,'units',Units);
-   swidth = ss(3);
-   sheight = ss(4);
-   left = (swidth-Fig_Width)/2;
-   bottom = (sheight-Fig_Height)/2;
-   rect = [left bottom Fig_Width Fig_Height];
-
-   %
-   % Create figure in background
-   %
-   if nargin<2
-      Title='Structure tree';
-   end
-   fig=figure('visible','off', ...
-      'windowstyle','normal', ...
-      'menu','none', ...
-      'resize','off', ...
-      'integerhandle','off', ...
-      'numbertitle','off', ...
-      'handlevisibility','off', ...
-      'color',Inactive, ...
-      'units','characters', ...
-      'position',rect, ...
-      'name',Title);
-
-   %
-   % Create array index slider
-   %
-   rect = [XX.Margin XX.Margin Subs_Width-2*Button_Width-2*XX.Margin XX.Txt.Height];
-   H.ITxt=uicontrol('style','text', ...
-      'units','character', ...
-      'position',rect, ...
-      'string','Index', ...
-      'horizontalalignment','left', ...
-      'backgroundcolor',Inactive, ...
-      'parent',fig);
-
-   rect(1) = rect(1)+rect(3)+XX.Margin;
-   rect(3) = Button_Width;
-   rect(4) = XX.But.Height;
-   H.Index=uicontrol('style','edit', ...
-      'units','character', ...
-      'position',rect, ...
-      'string','1', ...
-      'backgroundcolor',[1 1 1], ...
-      'horizontalalignment','right', ...
-      'parent',fig, ...
-      'callback','ui_inspectstruct index');
-
-   rect(1) = rect(1)+rect(3)+XX.Margin;
-   rect(3) = Button_Width;
-   rect(4) = XX.But.Height;
-   H.ISld=uicontrol('style','slider', ...
-      'units','character', ...
-      'position',rect, ...
-      'min',1, ...
-      'value',1, ...
-      'max',2, ...
-      'userdata',[1 2], ...
-      'parent',fig, ...
-      'callback','ui_inspectstruct slider');
-
-   %
-   % Create close button
-   %
-   rect(1) = rect(1)+rect(3)+XX.Margin;
-   rect(3) = Field_Width;
-   H.Done=uicontrol('style','pushbutton', ...
-      'units','character', ...
-      'position',rect, ...
-      'string','Close', ...
-      'parent',fig, ...
-      'callback','ui_inspectstruct done');
-
-   %
-   % Create tree area
-   %
-   rect(1) = XX.Margin;
-   rect(2) = rect(2)+rect(4)+XX.Margin;
-   rect(3) = Subs_Width;
-   rect(4) = List_Height;
-   H.Subs=uicontrol('style','listbox', ...
-      'units','character', ...
-      'position',rect, ...
-      'string','', ...
-      'backgroundcolor',[1 1 1], ...
-      'horizontalalignment','left', ...
-      'parent',fig, ...
-      'fontname','Courier', ...
-      'callback','ui_inspectstruct up');
-
-   %
-   % Create fields area
-   %
-   rect(1) = rect(1)+rect(3)+XX.Margin;
-   rect(3) = Field_Width;
-   H.Fields=uicontrol('style','listbox', ...
-      'units','character', ...
-      'position',rect, ...
-      'string','', ...
-      'backgroundcolor',[1 1 1], ...
-      'horizontalalignment','left', ...
-      'parent',fig, ...
-      'enable','on', ...
-      'fontname','Courier', ...
-      'callback','ui_inspectstruct down');
-
-   %
-   % Store state and show figure
-   %
-   UD.Struct=Struct;
-   UD.StructName=StructName;
-   UD.Index=[];
-   UD.H=H;
-   set(fig,'visible','on','userdata',UD);
-   if isempty(Struct)
-      LocalTree(Struct,StructName,UD.Index,0,0,H,fig)
-   else
-      LocalTree(Struct,StructName,UD.Index,1,1,H,fig)
-   end
-   return
+    Units=get(0,'units');
+    set(0,'units','pixels');
+    ss = get(0,'ScreenSize');
+    set(0,'units',Units);
+    swidth = ss(3);
+    sheight = ss(4);
+    left = (swidth-Fig_Width)/2;
+    bottom = (sheight-Fig_Height)/2;
+    rect = [left bottom Fig_Width Fig_Height];
+    
+    %
+    % Create figure in background
+    %
+    if nargin<2
+        Title='Structure tree';
+    end
+    fig=figure('visible','off', ...
+        'windowstyle','normal', ...
+        'menu','none', ...
+        'resizefcn','ui_inspectstruct resize', ...
+        'integerhandle','off', ...
+        'numbertitle','off', ...
+        'handlevisibility','off', ...
+        'color',XX.Inactive, ...
+        'units','pixels', ...
+        'position',rect, ...
+        'name',Title);
+    
+    %
+    % Create array index slider
+    %
+    H.ITxt=uicontrol('style','text', ...
+        'units','pixels', ...
+        'string','Index', ...
+        'horizontalalignment','left', ...
+        'backgroundcolor',XX.Inactive, ...
+        'parent',fig);
+    
+    H.Index=uicontrol('style','edit', ...
+        'units','pixels', ...
+        'string','1', ...
+        'backgroundcolor',XX.Active, ...
+        'horizontalalignment','right', ...
+        'parent',fig, ...
+        'callback','ui_inspectstruct index');
+    
+    H.ISld=uicontrol('style','slider', ...
+        'units','pixels', ...
+        'min',1, ...
+        'value',1, ...
+        'max',2, ...
+        'userdata',[1 2 1], ...
+        'parent',fig, ...
+        'callback','ui_inspectstruct slider');
+    
+    %
+    % Create close button
+    %
+    H.Done=uicontrol('style','pushbutton', ...
+        'units','pixels', ...
+        'string','Close', ...
+        'parent',fig, ...
+        'callback','ui_inspectstruct done');
+    
+    %
+    % Create tree area
+    %
+    H.Subs=uicontrol('style','listbox', ...
+        'units','pixels', ...
+        'string','', ...
+        'backgroundcolor',XX.Active, ...
+        'horizontalalignment','left', ...
+        'parent',fig, ...
+        'fontname','Courier', ...
+        'keypressfcn','ui_inspectstruct key', ...
+        'callback','ui_inspectstruct button');
+    
+    %
+    % Create fields area
+    %
+    H.Fields=uicontrol('style','listbox', ...
+        'units','pixels', ...
+        'string','', ...
+        'max',2, ...
+        'backgroundcolor',XX.Inactive, ...
+        'horizontalalignment','left', ...
+        'parent',fig, ...
+        'enable','off', ...
+        'fontname','Courier', ...
+        'callback','ui_inspectstruct down');
+    
+    %
+    % Store state and show figure
+    %
+    UD.Struct=cmd;
+    UD.StructName=StructName;
+    UD.Index=[];
+    UD.H=H;
+    set(fig,'visible','on','userdata',UD);
+    if isempty(UD.Struct)
+        Str='  ';
+    else
+        Str='+ ';
+    end
+    Rec={[] StructName 0 Str};
+    set(H.Subs,'string',{[Str StructName]},'value',1,'userdata',Rec)
+    update(cmd,H)
+%     if isempty(Struct)
+%         LocalTree(Struct,StructName,UD.Index,0,0,H,fig)
+%     else
+%         LocalTree(Struct,StructName,UD.Index,1,1,H,fig)
+%     end
+    return
 end
 
 UD=get(fig,'userdata');
 H=UD.H;
-Tmp=get(H.ISld,'userdata');
-IndexVal=Tmp(1);
-IndexMax=Tmp(2);
+SliderInfo=get(H.ISld,'userdata');
+IndexVal=SliderInfo(1);
+IndexMax=SliderInfo(2);
 Index=UD.Index;
 
-switch Struct
-   case 'done'
-      if ishandle(fig)
-         delete(fig);
-         return
-      end
-   case 'index'
-      i=str2num(get(H.Index,'string'));
-      if ~isnumeric(i) | ~isequal(size(i),[1 1]) | i~=round(i) | isnan(i) | ~isfinite(i)
-         % IndexVal=IndexVal;
-      elseif i<1
-         IndexVal=1;
-      elseif i>IndexMax
-         IndexVal=IndexMax;
-      else
-         IndexVal=i;
-      end
-      set(H.Index,'string',num2str(IndexVal));
-      set(H.ISld,'value',IndexVal,'userdata',[IndexVal IndexMax]);
-      i=get(H.Subs,'value');
-      LocalTree(UD.Struct,UD.StructName,Index,IndexVal,i-(length(Index))/2-1,H,fig)
-   case 'slider' % index slider
-      dI=get(H.ISld,'value')-IndexVal;
-      IndexVal=IndexVal+sign(dI)*ceil(abs(dI));
-      set(H.Index,'string',num2str(IndexVal));
-      set(H.ISld,'value',IndexVal,'userdata',[IndexVal IndexMax]);
-      i=get(H.Subs,'value');
-      LocalTree(UD.Struct,UD.StructName,Index,IndexVal,i-(length(Index))/2-1,H,fig)
-   case 'up'
-      switch get(fig,'selectiontype')
-         case 'normal'
-            i=get(H.Subs,'value');
-            LocalTree(UD.Struct,UD.StructName,Index,IndexVal,i-(length(Index))/2-1,H,fig)
-         case 'open'
-            i=get(H.Subs,'value');
-            if (2*i-1)<length(Index)
-               IndexVal=Index(2*i-1).subs{1};
-               Index((2*i-1):end)=[];
-               LocalTree(UD.Struct,UD.StructName,Index,IndexVal,1,H,fig)
-            elseif (2*i-2)==length(Index)
-               LocalTree(UD.Struct,UD.StructName,Index,IndexVal,i-(length(Index))/2-1,H,fig)
-            elseif (2*i-1)>length(Index),
-               Str2=get(H.Subs,'string');
-               Index(end+1).type='()';
-               Index(end).subs={IndexVal};
-               Index(end+1).type='.';
-               Index(end).subs=strtok(Str2{i});
-               SubStruct=subsref(UD.Struct,Index);
-               if isstruct(SubStruct) & ~isempty(SubStruct)
-                  IndexVal=1;
-                  LocalTree(UD.Struct,UD.StructName,Index,IndexVal,1,H,fig)
-               else
-                  Index(end-1:end)=[];
-                  LocalTree(UD.Struct,UD.StructName,Index,IndexVal,i-(length(Index))/2-1,H,fig)
-               end
+switch cmd
+    case 'done'
+        if ishandle(fig)
+            delete(fig);
+            return
+        end
+    case {'index','slider'}
+        if strcmp(cmd,'index')
+            i=str2double(get(H.Index,'string'));
+            if isnan(i)
+                % IndexVal=IndexVal;
+            elseif i<1
+                IndexVal=1;
+            elseif i>IndexMax
+                IndexVal=IndexMax;
+            else
+                IndexVal=i;
             end
-      end
+        else
+            dI=get(H.ISld,'value')-IndexVal;
+            IndexVal=IndexVal+sign(dI)*ceil(abs(dI));
+        end
+        set(H.Index,'string',num2str(IndexVal));
+        SliderInfo(1)=IndexVal;
+        set(H.ISld,'value',IndexVal,'userdata',SliderInfo);
+        update(UD.Struct,H)
+    case 'key'
+        key = abs(get(fig,'CurrentCharacter'));
+        i=get(H.Subs,'value');
+        Str=get(H.Subs,'string');
+        switch strtok(Str{i})
+            case {'-','*'}
+                if key==28
+                    openaction(UD.Struct,H)
+                    update(UD.Struct,H)
+                end
+            otherwise
+                if key==29
+                    openaction(UD.Struct,H)
+                    update(UD.Struct,H)
+                end
+        end
+    case 'button'
+        switch get(fig,'selectiontype')
+            case 'open'
+                openaction(UD.Struct,H)
+                update(UD.Struct,H)
+            otherwise % e.g. 'normal'
+                update(UD.Struct,H)
+        end
+    case 'resize'
+        pos=get(fig,'position');
+        Fig_Width=pos(3);
+        Fig_Height=pos(4);
+        XX=xx_constants;
+        
+        Total_Width=Fig_Width-3*XX.Margin;
+        Subs_Width=min(300,floor(Total_Width/3));
+        Field_Width=Total_Width-Subs_Width;
+        List_Height=max(1,Fig_Height-3*XX.Margin-XX.But.Height);
+        Txt_Width=floor(min(40,Subs_Width/3));
+        Val_Width=floor(min(60,(Subs_Width-Txt_Width)/2));
+        Scr_Width=Subs_Width-Txt_Width-Val_Width;
+        %
+        rect = [XX.Margin XX.Margin Txt_Width XX.Txt.Height];
+        set(H.ITxt,'position',rect)
+        %
+        rect(1) = rect(1)+rect(3);
+        rect(3) = Val_Width;
+        rect(4) = XX.But.Height;
+        set(H.Index,'position',rect)
+        %
+        rect(1) = rect(1)+rect(3);
+        rect(3) = Scr_Width;
+        rect(4) = XX.But.Height;
+        set(H.ISld,'position',rect)
+        %
+        rect(1) = rect(1)+rect(3)+XX.Margin;
+        rect(3) = Field_Width;
+        set(H.Done,'position',rect)
+        %
+        rect(1) = XX.Margin;
+        rect(2) = rect(2)+rect(4)+XX.Margin;
+        rect(3) = Subs_Width;
+        rect(4) = List_Height;
+        set(H.Subs,'position',rect)
+        %
+        rect(1) = rect(1)+rect(3)+XX.Margin;
+        rect(3) = Field_Width;
+        set(H.Fields,'position',rect)
 end
 UD.Index=Index;
 set(fig,'userdata',UD);
 
 
-function LocalTree(Struct,StructName,Index,IndexVal,Fld,H,fig)
-Inactive=get(0,'defaultuicontrolbackground');
-Active=[1 1 1];
-Str2='';
-ValIsData=0;
-if IndexVal==0 % can only occur if the function is called with an empty structure
-   Str1={['  ' StructName]};
-   StartFields=0;
-   Fld=1;
-   SubStruct=Struct;
-   Val=1;
-else
-   if isempty(Index)
-      Str1={['+ ' StructName '(' num2str(IndexVal) ') >']};
-      SubStruct=Struct;
-      i=0;
-   else
-      Str1={['- ' StructName '(' num2str(Index(1).subs{1}) ')']};
-      for i=2:2:length(Index)-1,
-         Str1{end+1}=[repmat(' ',1,i) '- ' Index(i).subs '(' num2str(Index(i+1).subs{1}) ')'];
-      end;
-      i=length(Index);
-      Str1{end+1}=[repmat(' ',1,i) '+ ' Index(i).subs '(' num2str(IndexVal) ') >'];
-      SubStruct=subsref(Struct,Index);
-   end
-   StartFields=length(Str1);
-   Str2=fieldnames(SubStruct);
-   for j=1:length(Str2)
-      Str1{end+1}=[repmat(' ',1,i+4) Str2{j}];
-   end
-   Val=prod(size(SubStruct));
+function openaction(Struct,H)
+i=get(H.Subs,'value');
+Str=get(H.Subs,'string');
+Rec=get(H.Subs,'userdata');
+i=min(i,length(Str));
+switch strtok(Str{i})
+    case '+'
+        %expand(Struct,H)
+        if isempty(Rec{i,1})
+            SubStruct=Struct;
+        else
+            SubStruct=subsref(Struct,Rec{i,1});
+        end
+        switch class(SubStruct)
+            case 'struct'
+                Str{i} = sprintf('%s- %s(%i)',repmat('  ',1,Rec{i,3}),Rec{i,2},1);
+                Rec{i,1}(end+1).type='()';
+                Rec{i,1}(end).subs={1};
+                Rec{i,4} = '- ';
+                %
+                SubStruct=subsref(Struct,Rec{i,1});
+                flds = fieldnames(SubStruct);
+                nflds = length(flds);
+                nfllw = i+1:length(Str);
+                Str(nflds+nfllw)=Str(nfllw);
+                Rec(nflds+nfllw,:)=Rec(nfllw,:);
+                %
+                for j=1:nflds
+                    Rec{i+j,1} = Rec{i,1};
+                    Rec{i+j,1}(end+1).type='.';
+                    Rec{i+j,1}(end).subs=flds{j};
+                    Rec{i+j,2} = flds{j};
+                    Rec{i+j,3} = Rec{i,3}+1;
+                    Rec{i+j,4} = '+ ';
+                    Str{i+j} = sprintf('%s  %s',repmat('  ',1,Rec{i+j,3}),Rec{i+j,2});
+                end
+            case {'org.apache.xerces.dom.DeferredDocumentImpl[]'
+                    'org.apache.xerces.dom.DeferredElementImpl[]'
+                    'org.apache.xerces.dom.DeferredDocumentImpl'
+                    'org.apache.xerces.dom.DeferredElementImpl'}
+                cls = class(SubStruct);
+                if strcmp(cls(end-1:end),'[]')
+                    Str{i} = sprintf('%s- %s',repmat('  ',1,Rec{i,3}),Rec{i,2});
+                    Rec{i,1}(end+1).type='()';
+                    Rec{i,1}(end).subs={1};
+                    Rec{i,4} = '- ';
+                else
+                    Str{i} = sprintf('%s* %s',repmat('  ',1,Rec{i,3}),Rec{i,2});
+                    Rec{i,4} = '* ';
+                end
+                %
+                SubStruct=subsref(Struct,Rec{i,1});
+                nflds = SubStruct.getLength;
+                nfllw = i+1:length(Str);
+                Str(nflds+nfllw)=Str(nfllw);
+                Rec(nflds+nfllw,:)=Rec(nfllw,:);
+                %
+                for j=1:nflds
+                    Rec{i+j,1} = Rec{i,1};
+                    Rec{i+j,1}(end+1).type='.';
+                    Rec{i+j,1}(end).subs='item';
+                    Rec{i+j,1}(end+1).type='()';
+                    Rec{i+j,1}(end).subs={j-1};
+                    Rec{i+j,2} = char(SubStruct.item(j-1).getNodeName);
+                    Rec{i+j,3} = Rec{i,3}+1;
+                    Rec{i+j,4} = '+ ';
+                    Str{i+j} = sprintf('%s  %s',repmat('  ',1,Rec{i+j,3}),Rec{i+j,2});
+                end
+        end
+    case {'-','*'}
+        %collapse(Struct,H)
+        [Str,Rec]=collapse(Str,Rec,i);
+    otherwise
 end
-if Fld<=0
-   Str2='';
-else
-   if IndexVal>0
-      SubStruct=getfield(SubStruct,{IndexVal},Str2{Fld});
-      ValIsData=1;
-   end
-   Str2=var2str(SubStruct);
+set(H.Subs,'string',Str,'userdata',Rec);
+
+function [Str,Rec,nremoved]=collapse(Str,Rec,i)
+Str{i} = sprintf('%s+ %s',repmat('  ',1,Rec{i,3}),Rec{i,2});
+if strcmp(Rec{i,4},'- ')
+    Rec{i,1}(end)=[];
 end
-set(H.Subs,'string',Str1,'value',StartFields+Fld);
-if IndexVal==0
-   set(H.Subs,'callback','');
+Rec{i,4} = '+ ';
+%
+remove=false(size(Str));
+for j=i+1:length(remove)
+    if Rec{j,3}>=Rec{i,3}+1
+        remove(j)=true;
+    else
+        break
+    end
 end
-if isempty(Str2) & ~ValIsData
-   set(H.Fields,'string','','max',2,'value',[],'style','edit','callback','','enable','off','backgroundcolor',Inactive);
-   set(H.Index,'string','','enable','off','backgroundcolor',Inactive);
-   set(H.ITxt,'enable','off');
-   set(H.ISld,'enable','off');
+Str(remove)=[];
+Rec(remove,:)=[];
+nremoved=sum(remove);
+
+        
+function update(Struct,H)
+XX=xx_constants;
+i=get(H.Subs,'value');
+Str=get(H.Subs,'string');
+Rec=get(H.Subs,'userdata');
+islid=i;
+nlevel=length(Rec{i,1});
+while islid>0
+    if strcmp(strtok(Str{islid}),'-') && length(Rec{islid,1})<=nlevel
+        break
+    else
+        islid=islid-1;
+    end
+end
+%
+if islid==0
+    set(H.ITxt,'enable','off');
+    set(H.Index,'string','','enable','off','backgroundcolor',XX.Inactive);
+    set(H.ISld,'enable','off');
 else
-   set(H.Fields,'string',Str2,'max',2,'enable','on','style','edit','backgroundcolor',Active);
-   set(H.ITxt,'enable','on');
-   %
-   indact='on';
-   indclr=Active;
-   if Val==1 | IndexVal==0
-      indact='off';
-      indclr=Inactive;
-   end
-   Tmp=get(H.ISld,'userdata');
-   if isempty(IndexVal)
-      IndexVal=Tmp(1);
-   end
-   set(H.ITxt,'enable',indact);
-   set(H.Index,'string',num2str(IndexVal),'enable',indact,'backgroundcolor',indclr);
-   set(H.ISld,'enable',indact,'value',max(1,IndexVal),'max',max(2,Val),'sliderstep',[min(0.1,1/max(1,Val)) min(1,10/max(1,Val))], ...
-      'userdata',[IndexVal Val]);
+    indact='on';
+    indclr=XX.Active;
+    %
+    Subscript=Rec{islid,1};
+    if length(Subscript)<=1
+        SubStruct=Struct;
+    else
+        SubStruct=subsref(Struct,Subscript(1:end-1));
+    end
+    nVal=numel(SubStruct);
+    %
+    if nVal<=1
+        indact='off';
+        indclr=XX.Inactive;
+    end
+    %
+    SliderInfo=get(H.ISld,'userdata');
+    if SliderInfo(3)==islid
+        IndexVal=min(SliderInfo(1),nVal);
+        if nVal>0
+            IndexVal=max(IndexVal,1);
+        end
+    else
+        IndexVal=Subscript(end).subs{1};
+    end
+    indexChanged = IndexVal~=Subscript(end).subs{1};
+    %
+    SliderInfo(1)=IndexVal;
+    SliderInfo(2)=nVal;
+    SliderInfo(3)=islid;
+    set(H.ITxt,'enable','on');
+    set(H.Index,'string',num2str(IndexVal),'enable',indact,'backgroundcolor',indclr);
+    set(H.ISld,'enable',indact,'value',max(1,IndexVal),'max',max(2,nVal),'sliderstep',[min(0.1,1/max(1,nVal)) min(1,10/max(1,nVal))], ...
+        'userdata',SliderInfo);
+    %
+    j=length(Subscript);
+    k=islid;
+    while k<=length(Str)
+        if length(Rec{k,1})<j
+            break
+        end
+        Rec{k,1}(j).subs={IndexVal};
+        if k==islid
+            Str{k}=sprintf('%s- %s(%i)',repmat('  ',1,Rec{k,3}),Rec{k,2},IndexVal);
+        else
+            if (strcmp(Rec{k,4},'- ') || strcmp(Rec{k,4},'* ')) && indexChanged
+                % if expanded then collapse
+                [Str,Rec,nremoved]=collapse(Str,Rec,k);
+                if i>k
+                    i=i-nremoved;
+                end
+            end
+            SubStruct=subsref(Struct,Rec{k,1});
+            exp = '  ';
+            index = '';
+            switch class(SubStruct)
+                case 'struct'
+                    exp=Rec{k,4};
+                    if isequal(Rec{k,1}(end).type,'()')
+                        index=sprintf('(%i)',Rec{k,1}(end).subs{1});
+                    end
+                case {'org.apache.xerces.dom.DeferredDocumentImpl'
+                        'org.apache.xerces.dom.DeferredElementImpl'}
+                    if SubStruct.getLength<1
+                        % no subtags
+                    elseif SubStruct.getLength==1 && strcmp(char(SubStruct.item(0).getNodeName),'#text')
+                        % only #text
+                    else
+                        exp=Rec{k,4};
+                    end
+                case {'org.apache.xerces.dom.DeferredDocumentImpl[]'
+                        'org.apache.xerces.dom.DeferredElementImpl[]'}
+                    exp=Rec{k,4};
+            end
+            Str{k}=sprintf('%s%s%s%s',repmat('  ',1,Rec{k,3}),exp,Rec{k,2},index);
+        end
+        k=k+1;
+    end
+    set(H.Subs,'string',Str,'userdata',Rec,'value',i)
+end
+%
+Subscript=Rec{i,1};
+if isempty(Subscript)
+    SubStruct=Struct;
+else
+    SubStruct=subsref(Struct,Subscript);
+end
+Str2=var2str(SubStruct);
+if isempty(Str2)
+    set(H.Fields,'string','','callback','','enable','off','backgroundcolor',XX.Inactive);
+else
+    set(H.Fields,'string',Str2,'enable','on','backgroundcolor',XX.Active);
 end
