@@ -35,7 +35,77 @@ function Str=var2str(X)
 
 switch class(X)
     case 'struct'
-        Str=cat(1,{[LocalSize(X) ' struct array with fields:']},fieldnames(X));
+        flds=fieldnames(X);
+        if isempty(flds)
+            Str={[LocalSize(X) ' struct array without any fields']};
+        elseif numel(X)==1
+            cflds=char(flds);
+            nflds=length(flds);
+            Str=cell(nflds+1,1);
+            Str{1}=[LocalSize(X) ' struct array with fields:'];
+            for i=1:nflds
+                Y=X.(flds{i});
+                YStr = [LocalSize(Y) ' ' class(Y) ' array'];
+                switch class(Y)
+                    case 'char'
+                        if ndims(Y)==2 && size(Y,1)==1
+                            YStr=['''' Y ''''];
+                        end
+                    case 'double'
+                        if isempty(Y)
+                            YStr='[]';
+                        elseif numel(Y)==1
+                            YStr=num2str(Y);
+                        end
+                    case 'cell'
+                        if isempty(Y)
+                            YStr='{}';
+                        end
+                end
+                Str{i+1}=sprintf('%s = %s',cflds(i,:),YStr);
+            end
+        else
+            Str=cat(1,{[LocalSize(X) ' struct array with fields:']},fieldnames(X));
+        end
+    case {'org.apache.xerces.dom.DeferredDocumentImpl'
+            'org.apache.xerces.dom.DeferredElementImpl'}
+        atts={};
+        XA=X.getAttributes;
+        if ~isempty(XA)
+            for i=XA.getLength:-1:1
+                atts{i,1}=char(XA.item(i-1));
+            end
+        end
+        tags={};
+        for i=X.getLength:-1:1
+            tags{i,1}=char(X.item(i-1).getNodeName);
+        end
+        if ~isempty(atts)
+            Str=cat(1,{'XML object with attributes:'},atts);
+        else
+            Str={};
+        end
+        if isempty(tags)
+            if ~isempty(Str)
+                Str=cat(1,Str,{'and no subtags'});
+            else
+                Str={'XML object with neither attributes nor subtags'};
+            end
+        elseif isequal(tags,{'#text'})
+            Str1={char(X.item(0).getData)};
+            if ~isempty(Str)
+                Str=cat(1,Str,Str1);
+            else
+                Str={'XML object'
+                    Str1};
+            end
+        else
+            if ~isempty(Str)
+                Str=cat(1,Str,{'and subtags'},tags);
+            else
+                Str=cat(1,{'XML object with subtags:'},tags);
+            end
+        end
     case 'char'
         if ndims(X)<=2
             Str=X;
@@ -58,9 +128,11 @@ switch class(X)
         Str=[LocalSize(X) ' cell array'];
         if iscellstr(X) && sum(size(X)>1)<2 && ~isempty(X)
             Str={[Str ' containing']};
-            Str{2}=sprintf('''\n''%s',X{:});
-            Str{2}=Str{2}([3:end 1:2]);
+            Str=cat(1,Str,X(:));
         end
+    case 'org.apache.xerces.dom.DeferredTextImpl'
+        Str={[LocalSize(X) ' ' class(X) ' array']
+            char(X.getData)};
     otherwise
         Str=[LocalSize(X) ' ' class(X) ' array'];
 end
