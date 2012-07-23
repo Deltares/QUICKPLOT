@@ -36,6 +36,7 @@ function outdata=d3d_qp(cmd,varargin)
 
 %VERSION = 2.16
 qpversionbase = 'v<VERSION>';
+qpcreationdate = '<CREATIONDATE>';
 %
 persistent qpversion logfile logtype
 
@@ -163,6 +164,64 @@ try
                 delete(mfig(2:length(mfig)));
                 mfig=mfig(1);
             elseif isempty(mfig)
+                if isstandalone && matlabversionnumber>7.10
+                    % Until MATLAB 7.10 (R2010a) it was possible to mix
+                    % c/c++ files in with the MATLAB executable. This was
+                    % used to include the @(#) identification string in the
+                    % executable that could be located using the WHAT tool.
+                    % Unfortunately, this option is no longer supported by
+                    % later MATLAB versions. For later versions we'll need
+                    % to use a separate text file which is easy to mess up
+                    % and therefore we only start QuickPlot if that file is
+                    % consistent with the actual executable.
+                    whatfile = fullfile(qp_basedir('exe'),'d3d_qp.version');
+                    Str = ['@(#)Deltares, Delft3D-QUICKPLOT, Version ' qpversionbase(2:end) ', ' qpcreationdate ];
+                    fid = fopen(whatfile,'r');
+                    if fid>0
+                        % file exists, read its contents
+                        Str2 = fgetl(fid);
+                        if ~ischar(Str2)
+                            Str2 = '';
+                        end
+                        fclose(fid);
+                        if ~isequal(Str,Str2)
+                            % if contents does not match, do as if file
+                            % does not exist (which will try to write it)
+                            fid = -1;
+                        end
+                    end
+                    if fid<0
+                        % file does not exist, try to write it
+                        fid = fopen(whatfile,'w');
+                        if fid>0
+                            % file can be opened for writing, write string
+                            try
+                                fprintf(fid,'%s\n',Str);
+                                fclose(fid);
+                                % reopen the file to check whether string
+                                % was written correctly
+                                fid = fopen(whatfile,'r');
+                                Str2 = fgetl(fid);
+                                if ~ischar(Str2)
+                                    Str2 = '';
+                                end
+                                fclose(fid);
+                            catch
+                                fid = -1;
+                            end
+                        end
+                    end
+                    if fid>0
+                        if ~isequal(Str,Str2)
+                            ui_message('error',{['First line in ' whatfile],Str2,'doesn''t match the string',Str,'Please correct.'})
+                            return
+                        end
+                    else
+                        ui_message('error',{'Copy the following line:',Str,['to ' whatfile ' to start QuickPlot.']})
+                        return
+                    end
+                end
+                %
                 mfig=qp_interface(showUI);
                 if showUI && strcmp(qp_settings('PlotMngrVisible','off'),'on')
                     d3d_qp plotmngr

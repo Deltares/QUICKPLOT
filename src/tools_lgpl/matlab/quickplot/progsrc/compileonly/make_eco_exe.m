@@ -8,5 +8,9 @@ switch computer
         if matlabversionnumber>=7.04
            cleanup({'*_r13_6p5.*'})
         end
-        mcc(appopt{:},'-a','./units.ini','-a','./qp_icons.mat','-a','./grib','-v','ecoplot.m','wl_identification.c')
+        files = {'ecoplot.m'};
+        if matlabversionnumber<=7.10
+           files{end+1} = 'wl_identification.c';
+        end
+        mcc(appopt{:},'-a','./units.ini','-a','./qp_icons.mat','-a','./grib','-v',files{:})
 end

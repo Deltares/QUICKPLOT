@@ -68,11 +68,11 @@ addpath ../../../../third_party_open/netcdf/matlab/snctools
 %
 qpversion=read_identification(sourcedir,'d3d_qp.m');
 fprintf('\nBuilding Delft3D-QUICKPLOT version %s\n\n',qpversion);
+TStr = datestr(now);
 fstrrep('d3d_qp.m','<VERSION>',qpversion)
+fstrrep('d3d_qp.m','<CREATIONDATE>',TStr)
 fstrrep('wl_identification.c','<VERSION>',qpversion)
-T=round(clock);
-TStr=[datestr(datenum(T),3) sprintf(' %2.2i %i %2.2i:%2.2i:%2.2i',T([3 1 4 5 6]))];
-fstrrep('wl_identification.c','<CREATIONDATE>',datestr(now))
+fstrrep('wl_identification.c','<CREATIONDATE>',TStr)
 make_exe
 X={'*.asv'
     '*.bak'
