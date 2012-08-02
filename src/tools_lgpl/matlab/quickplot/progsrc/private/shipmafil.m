@@ -352,6 +352,8 @@ end
 if d3d_qp('selectfield','desired ship track')
     d3d_qp('addtoplot')
     a=d3d_qp('loaddata'); % get ship track for auto zoom limits
+else
+    a=[];
 end
 if d3d_qp('selectfield','ship at distance ticks')
     d3d_qp('facecolour',[ 1 0 0 ])
@@ -366,14 +368,16 @@ if d3d_qp('selectfield','distance tick labels')
     d3d_qp('addtoplot')
 end
 d3d_qp('axesboxed',1)
-xrange = [min(a.X) max(a.X)];
-xrange = xrange + [-1 1]*0.1*diff(xrange);
-yrange = [min(a.Y) max(a.Y)];
-yrange = yrange + [-1 1]*0.1*diff(yrange);
-fac = 1.25;
-yrange = mean(yrange)+[-1 1]*max(diff(xrange)*fac,diff(yrange))/2;
-xrange = mean(xrange)+[-1 1]*diff(yrange)/fac/2;
-d3d_qp('axeslimits',xrange,yrange)
+if ~isempty(a)
+    xrange = [min(a.X) max(a.X)];
+    xrange = xrange + [-1 1]*0.1*diff(xrange);
+    yrange = [min(a.Y) max(a.Y)];
+    yrange = yrange + [-1 1]*0.1*diff(yrange);
+    fac = 1.25;
+    yrange = mean(yrange)+[-1 1]*max(diff(xrange)*fac,diff(yrange))/2;
+    xrange = mean(xrange)+[-1 1]*diff(yrange)/fac/2;
+    d3d_qp('axeslimits',xrange,yrange)
+end
 %--------
 texts{1} = 'Track plot and currents';
 d3d_qp('newfigure','1 plot - portrait','SHIPMA Fig B',texts)
@@ -411,7 +415,9 @@ if d3d_qp('selectfield','distance tick labels')
     d3d_qp('addtoplot')
 end
 d3d_qp('axesboxed',1)
-d3d_qp('axeslimits',xrange,yrange)
+if ~isempty(a)
+    d3d_qp('axeslimits',xrange,yrange)
+end
 %--------
 texts{1} = 'Speed and ruddle angle plots';
 d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig C',texts)
@@ -686,6 +692,10 @@ for i = length(Out):-1:1
             end
         case 'bank suction lines'
             if ~Proj.Cases.Data(cse).sceneryIsSelected || ~exist(Proj.Sceneries.Data(Proj.Cases.Data(cse).sceneryNr).banksuctionFile)
+                Out(i)=[];
+            end
+        case {'desired ship track','distance ticks','distance tick labels'}
+            if ~exist(Proj.Cases.Data(cse).trackFile)
                 Out(i)=[];
             end
         case {'ship','ship at distance ticks','swept path'}
