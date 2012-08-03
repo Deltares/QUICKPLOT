@@ -2,7 +2,9 @@ function nc = nc_interpret(nc)
 %NC_INTERPRET  Interpret the netCDF data based on conventions.
 %    NC_OUT = NC_INTERPRET(NC_IN)
 %
-%    See also MEXNC, NC_DUMP.
+% where NC_IN  = nc_info(filename)
+%
+%    See also netcdf, MEXNC, NC_DUMP, NC_INFO
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
