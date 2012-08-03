@@ -1774,26 +1774,7 @@ try
                 clr=cmdargs{1};
             end
             if ischar(clr)
-                switch clr
-                    case 'r'
-                        clr=[1 0 0];
-                    case 'g'
-                        clr=[0 1 0];
-                    case 'b'
-                        clr=[0 0 1];
-                    case 'c'
-                        clr=[0 1 1];
-                    case 'm'
-                        clr=[1 0 1];
-                    case 'y'
-                        clr=[1 1 0];
-                    case 'k'
-                        clr=[0 0 0];
-                    case 'w'
-                        clr=[1 1 1];
-                    otherwise
-                        clr=str2vec(clr,'%f');
-                end
+                clr = str2color(clr);
             end
             if isequal(size(clr),[1 3]) && all(clr>=0 & clr<=1)
                 set(clrh,'backgroundcolor',clr,'userdata',clr)
@@ -2506,6 +2487,9 @@ try
             else
                 clr=cmdargs{1};
             end
+            if ischar(clr)
+                clr = str2color(clr);
+            end
             if isequal(size(clr),[1 3])
                 set(fig,'color',clr)
                 d3d_qp refreshfigprop
@@ -2517,9 +2501,12 @@ try
         case 'axescolour'
             ax = qpsa;
             if isempty(cmdargs)
-                clr=uisetcolor(get(ax,'color'),'Specify the figure colour ...');
+                clr=uisetcolor(get(ax,'color'),'Specify the axes colour ...');
             else
                 clr=cmdargs{1};
+            end
+            if ischar(clr)
+                clr = str2color(clr);
             end
             if isequal(size(clr),[1 3])
                 set(ax,'color',clr)
@@ -2546,6 +2533,12 @@ try
             else
                 xlm=cmdargs{1};
                 ylm=cmdargs{2};
+                if ischar(xlm)
+                    xlm = str2vec(xlm);
+                end
+                if ischar(ylm)
+                    ylm = str2vec(ylm);
+                end
             end
             if isequal(size(xlm),[1 2]) && isequal(size(ylm),[1 2])
                 set(ax,'xlim',xlm,'ylim',ylm)
@@ -2616,6 +2609,9 @@ try
                     pos = cmdargs{2};
                 else
                     pos = cmdargs{1};
+                end
+                if ischar(pos)
+                    pos = str2vec(pos);
                 end
                 if posi==3
                     pos = pos/100;
@@ -3532,4 +3528,26 @@ if ~isempty(ax)
                 setaxesprops(ax)
         end
     end
+end
+
+function clr = str2color(str)
+switch str
+    case 'r'
+        clr=[1 0 0];
+    case 'g'
+        clr=[0 1 0];
+    case 'b'
+        clr=[0 0 1];
+    case 'c'
+        clr=[0 1 1];
+    case 'm'
+        clr=[1 0 1];
+    case 'y'
+        clr=[1 1 0];
+    case 'k'
+        clr=[0 0 0];
+    case 'w'
+        clr=[1 1 1];
+    otherwise
+        clr=str2vec(str,'%f');
 end
