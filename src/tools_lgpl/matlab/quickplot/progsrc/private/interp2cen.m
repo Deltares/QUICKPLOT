@@ -42,10 +42,17 @@ Input = varargin;
 interptype='mean';
 if ischar(varargin{end})
     switch lower(varargin{end})
-        case {'mean','max'}
+        case {'mean','max','min'}
             interptype = lower(varargin{end});
             Input(end)=[];
     end
+end
+
+switch interptype
+    case 'max'
+        fcn = @max;
+    case 'min'
+        fcn = @min;
 end
 
 x = Input{1};
@@ -61,11 +68,11 @@ switch length(Input)
             switch interptype
                 case 'mean'
                     X(:,m,n)=(x(:,m,n)+x(:,m-1,n)+x(:,m,n-1)+x(:,m-1,n-1))/4;
-                case 'max'
+                case {'max','min'}
                     X=x;
-                    X(:,m,n)=max(X(:,m,n),x(:,m-1,n));
-                    X(:,m,n)=max(X(:,m,n),x(:,m,n-1));
-                    X(:,m,n)=max(X(:,m,n),x(:,m-1,n-1));
+                    X(:,m,n)=feval(fcn,X(:,m,n),x(:,m-1,n));
+                    X(:,m,n)=feval(fcn,X(:,m,n),x(:,m,n-1));
+                    X(:,m,n)=feval(fcn,X(:,m,n),x(:,m-1,n-1));
             end
             X(:,1,:)=NaN;
             X(:,:,1)=NaN;
@@ -75,11 +82,11 @@ switch length(Input)
             switch interptype
                 case 'mean'
                     X(m,n)=(x(m,n)+x(m-1,n)+x(m,n-1)+x(m-1,n-1))/4;
-                case 'max'
+                case {'max','min'}
                     X=x;
-                    X(m,n)=max(X(m,n),x(m-1,n));
-                    X(m,n)=max(X(m,n),x(m,n-1));
-                    X(m,n)=max(X(m,n),x(m-1,n-1));
+                    X(m,n)=feval(fcn,X(m,n),x(m-1,n));
+                    X(m,n)=feval(fcn,X(m,n),x(m,n-1));
+                    X(m,n)=feval(fcn,X(m,n),x(m-1,n-1));
             end
             X(1,:)=NaN;
             X(:,1)=NaN;
@@ -105,12 +112,12 @@ switch length(Input)
                 idd{2}=idx{2};
                 X(idx{:})=X(idx{:})+x(idd{:});
                 X(idx{:})=X(idx{:})/4;
-            case 'max'
-                X(idx{:})=max(X(idx{:}),x(idd{:}));
+            case {'max','min'}
+                X(idx{:})=feval(fcn,X(idx{:}),x(idd{:}));
                 idd{3}=idx{3}-1;
-                X(idx{:})=max(X(idx{:}),x(idd{:}));
+                X(idx{:})=feval(fcn,X(idx{:}),x(idd{:}));
                 idd{2}=idx{2};
-                X(idx{:})=max(X(idx{:}),x(idd{:}));
+                X(idx{:})=feval(fcn,X(idx{:}),x(idd{:}));
         end
         X(:,1,:,:)=NaN;
         X(:,:,1,:)=NaN;

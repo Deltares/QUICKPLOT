@@ -479,6 +479,13 @@ else
          full = reshape(nmlb:nmub,[nub-nlb+1 mub-mlb+1]);
          full = permute(full(1+ddb:end-ddb,3+ddb:end-2-ddb),[3 2 1]); % permute M and N and add 1 as time dimension in front
          val{1}=full(1,elidx{:});
+      case '(m,n) indices'
+         val{1}=cell(1, length(elidx{1}), length(elidx{2}));
+         for m = 1:length(elidx{1})
+             for n = 1:length(elidx{2})
+                 val{1}{1,m,n} = sprintf('(%i,%i)',elidx{1}(m),elidx{2}(n));
+             end
+         end
    end
 end
 
@@ -564,7 +571,7 @@ if dataongrid
          y(gridact<=0)=NaN;
       end
    end
-   if Props.NVal>0
+   if Props.NVal>0 && Props.NVal~=4
       szz=[size(val{1}) 1]; % extent szx for the case that dataset in K dir. is 1
       szz1=szz([1:2 4:end]);
       szz1(2)=szz(2)*szz(3);
@@ -703,6 +710,7 @@ PropNames={'Name'                    'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVa
 DataProps={'morphologic grid'        'sQUAD' 'xy'    [0 0 1 1 0]  0          0     ''        'd'   'd'      ''      0      0
    'hydrodynamic grid'               'sQUAD' 'xy'    [0 0 1 1 0]  0          0     ''        'z'   'z'      'i'     0      0
    '-------'                         ''      ''      [0 0 0 0 0]  0          0     ''        ''    ''       ''      0      0
+   '(m,n) indices'                   'sQUAD' 'xy'    [0 0 1 1 0]  1          4     ''        'z'   'z'      'i'     0      0
    'nm index'                        'sQUAD' 'xy'    [0 0 1 1 0]  1          1     ''        'z'   'z'      'i'     0      0
    'nm index (DD simulation)'        'sQUAD' 'xy'    [0 0 1 1 0]  1          1     ''        'z'   'z'      'i'     0      0   };
 
@@ -1882,7 +1890,7 @@ uicontrol('Parent',h0, ...
    'Position',[181 voffset 150 20], ...
    'Style','popupmenu', ...
    'horizontalalignment','right', ...
-   'String',{'mean','max'}, ...
+   'String',{'mean','max','min'}, ...
    'Tag','dpsopt')
 %
 %------------------------------

@@ -1056,4 +1056,14 @@ if SortObjs
 end
 %
 setzcoord(hNewVec,Level)
+for i=1:length(hNewVec)
+    a = get(hNewVec(i),'parent');
+    if strcmp(get(a,'type'),'axes')
+        cp = get(a,'cameraposition');
+        if cp(3)<Level
+            cp(3) = 1.1*Level;
+            set(a,'cameraposition',cp)
+        end
+    end
+end
 setappdata(hNewVec(1),'Level',Level)
