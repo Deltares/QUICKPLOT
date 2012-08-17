@@ -77,7 +77,7 @@ else
 end
 
 cmd=lower(cmd);
-switch cmd,
+switch cmd
    case 'size'
       varargout={getsize(FI,Props)};
       return
@@ -128,17 +128,17 @@ ind=cell(1,5);
 ind{2}=1;
 for i=[M_ N_ K_]
    if DimFlag(i)
-      if isequal(idx{i},0) | isequal(idx{i},1:sz(i))
+      if isequal(idx{i},0) || isequal(idx{i},1:sz(i))
          idx{i}=1:sz(i);
          allidx(i)=1;
       elseif ~isequal(idx{i},idx{i}(1):idx{i}(end))
          error('Only scalars or ranges allowed for index %i',i)
       end
-      if i~=K_ & DimFlag(M_) & DimFlag(N_)
-         if DataInCell & isequal(idx{i},1)
+      if i~=K_ && DimFlag(M_) && DimFlag(N_)
+         if DataInCell && isequal(idx{i},1)
             idx{i}=[1 2];
             ind{i}=2;
-         elseif DataInCell & idx{i}(1)==1
+         elseif DataInCell && idx{i}(1)==1
             ind{i}=2:length(idx{i});
          else
             idx{i}=[max(1,idx{i}(1)-1) idx{i}];
@@ -190,15 +190,15 @@ if XYRead
                case 'i'
                   sigma = -[0 0.5:kmax-2.5 kmax-2];
                otherwise
-                  sigma = -[0:kmax-1];
+                  sigma = -(0:kmax-1);
             end
          else
             kmax = sz(K_);
             switch Props.Loc3D
                case 'i'
-                  sigma = -[0:kmax];
+                  sigma = -(0:kmax);
                otherwise
-                  sigma = -[0:kmax]-0.5;
+                  sigma = -(0:kmax)-0.5;
             end
          end
          x = repmat(x,[1 1 kmax]);
@@ -231,7 +231,7 @@ if Props.File~=0
    tmpData=File.Data;
    switch filetp
       case {'wldep','wlfdep','trirst','boxfile'}
-         if isfield(tmpData,'Dpsopt') & ~isempty(tmpData.Dpsopt)
+         if isfield(tmpData,'Dpsopt') && ~isempty(tmpData.Dpsopt)
             Dpsopt=tmpData.Dpsopt;
          else
             Dpsopt='max';
@@ -328,9 +328,9 @@ if Props.File~=0
             MNu(:,[3 4])=MNu(:,[3 4])-MNu(:,[1 2]);
             if any( ~( (abs(MNu(:,3))==abs(MNu(:,4))) | ...
                   abs(MNu(:,3))==0              | ...
-                  abs(MNu(:,4))==0              ) ),
-               error('Invalid combination of MNu coordinates.');
-            end;
+                  abs(MNu(:,4))==0              ) )
+               error('Invalid combination of MNu coordinates.')
+            end
             xx=max(abs(MNu(:,[3 4]))+1,[],2);
             n=max(xx);
             M=repmat(MNu(:,1),1,n)+sign(MNu(:,3))*(0:(n-1));
@@ -362,9 +362,9 @@ if Props.File~=0
             MNv(:,[3 4])=MNv(:,[3 4])-MNv(:,[1 2]);
             if any( ~( (abs(MNv(:,3))==abs(MNv(:,4))) | ...
                   abs(MNv(:,3))==0              | ...
-                  abs(MNv(:,4))==0              ) ),
-               error('Invalid combination of MNv coordinates.');
-            end;
+                  abs(MNv(:,4))==0              ) )
+               error('Invalid combination of MNv coordinates.')
+            end
             xx=max(abs(MNv(:,[3 4]))+1,[],2);
             n=max(xx);
             M=repmat(MNv(:,1),1,n)+sign(MNv(:,3))*(0:(n-1)); M=M';
@@ -491,12 +491,12 @@ end
 
 if dataongrid
    % data interpolation ...
-   if DataInCell & isequal(Props.ReqLoc,'d') & Props.NVal>0
+   if DataInCell && isequal(Props.ReqLoc,'d') && Props.NVal>0
       Props.ReqLoc='z';
    end
-   if isequal(Props.Loc,'d') & isequal(Props.ReqLoc,'z')
+   if isequal(Props.Loc,'d') && isequal(Props.ReqLoc,'z')
       val{1}=interp2cen(val{1},'t',Dpsopt);
-   elseif isequal(Props.Loc,'u') & isequal(Props.ReqLoc,'z')
+   elseif isequal(Props.Loc,'u') && isequal(Props.ReqLoc,'z')
       [val{1},val{2}]=uv2cen(val{1},val{2});
    end
    
@@ -535,7 +535,7 @@ if dataongrid
       otherwise
          % done above:
          % act=~isnan(x)&~isnan(y);
-         if size(act,1)>2 & size(act,2)>2,
+         if size(act,1)>2 && size(act,2)>2
             act=conv2(double(act),[0 0 0; 0 1 1;0 1 1],'same')>3;
          elseif size(act,1)>2
             act=conv2(double(act),[0;1;1],'same')==2;
@@ -595,11 +595,11 @@ if dataongrid
    if ~all(allidx(DimMask & DimFlag))
       if XYRead
          if DataInCell
-            if DimFlag(M_) & DimFlag(N_) & DimFlag(K_)
+            if DimFlag(M_) && DimFlag(N_) && DimFlag(K_)
                z=z(:,ind{[M_ N_]},:);
             end
          else
-            if DimFlag(M_) & DimFlag(N_)
+            if DimFlag(M_) && DimFlag(N_)
                if DimFlag(K_)
                   x=x(:,ind{[M_ N_]},:);
                   y=y(:,ind{[M_ N_]},:);
@@ -629,7 +629,7 @@ if dataongrid
    end
    
    % reshape if a single timestep is selected ...
-   if ~DimFlag(T_) | (DimFlag(T_) & isequal(size(idx{T_}),[1 1]))
+   if ~DimFlag(T_) || (DimFlag(T_) && isequal(size(idx{T_}),[1 1]))
       sz=size(x); sz=[sz(2:end) 1];
       if DimFlag(K_)
          x=reshape(x,sz);
@@ -661,7 +661,7 @@ if XYRead
    Ans.Y=y;
    Ans.XUnits='m';
    Ans.YUnits='m';
-   if isfield(FI,'CoordinateSystem') & isequal(lower(FI.CoordinateSystem),'spherical')
+   if isfield(FI,'CoordinateSystem') && isequal(lower(FI.CoordinateSystem),'spherical')
       Ans.XUnits='deg';
       Ans.YUnits='deg';
    end
@@ -676,7 +676,7 @@ if Props.NVal==0
       Ans.XDam=val{1};
       Ans.YDam=val{2};
    end
-elseif Props.NVal==1 | Props.NVal==4 | Props.NVal==5
+elseif Props.NVal==1 || Props.NVal==4 || Props.NVal==5
    Ans.Val=val{1};
 else
    if ThinDam
@@ -703,7 +703,7 @@ varargout={Ans FI};
 
 
 % -----------------------------------------------------------------------------
-function Out=infile(FI,domain);
+function Out=infile(FI,domain)
 
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'                    'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc' 'Loc3D' 'File' 'Fld'};
@@ -715,7 +715,7 @@ DataProps={'morphologic grid'        'sQUAD' 'xy'    [0 0 1 1 0]  0          0  
    'nm index (DD simulation)'        'sQUAD' 'xy'    [0 0 1 1 0]  1          1     ''        'z'   'z'      'i'     0      0   };
 
 %======================== SPECIFIC CODE DIMENSIONS ============================
-if isfield(FI,'Data') & ~isempty(FI.Data)
+if isfield(FI,'Data') && ~isempty(FI.Data)
    l=size(DataProps,1);
    for i=1:length(FI.Data)
       switch FI.Data(i).FileType
@@ -735,7 +735,7 @@ if isfield(FI,'Data') & ~isempty(FI.Data)
                      {strcat('-',Str) 'sQUAD' 'xy'   [0 0 1 1 0]  1          1     ''        'd'   'd'      ''      i     -j   };
                   L=[L l];
                end
-               if isfield(FI.Data(i).Data,'DLocation') & isequal(FI.Data(i).Data.DLocation,'water level')
+               if isfield(FI.Data(i).Data,'DLocation') && isequal(FI.Data(i).Data.DLocation,'water level')
                   DataProps(L,8:9)={'z'};
                end
             end
@@ -826,7 +826,7 @@ if isfield(FI,'Data') & ~isempty(FI.Data)
             end
          case {'weir','weir-waqua','thindam','thindam-waqua'}
             type=FI.Data(i).FileType;
-            if length(type)>6 & isequal(type(end-5:end),'-waqua')
+            if length(type)>6 && isequal(type(end-5:end),'-waqua')
                type=type(1:end-6);
             end
             l=l+1;
@@ -938,7 +938,7 @@ if Props.File>0
          % default no subfields
    end
 end
-if nargin>2 & f~=0
+if nargin>2 && f~=0
    subf=subf(f);
 end
 % -----------------------------------------------------------------------------
@@ -950,7 +950,7 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 sz=[0 0 0 0 0];
 
 %======================== SPECIFIC CODE =======================================
-if Props.DimFlag(M_) & Props.DimFlag(N_)
+if Props.DimFlag(M_) && Props.DimFlag(N_)
    sz(M_)=size(FI.X,1);
    sz(N_)=size(FI.X,2);
 else
@@ -1028,10 +1028,11 @@ end
 % -----------------------------------------------------------------------------
 
 % -----------------------------------------------------------------------------
-function [NewFI,cmdargs]=options(FI,mfig,cmd,varargin);
+function [NewFI,cmdargs]=options(FI,mfig,cmd,varargin)
 Inactive=get(0,'defaultuicontrolbackground');
 Active=[1 1 1];
-NewFI=FI; FI=[];
+NewFI=FI;
+FI=[];
 cmd=lower(cmd);
 cmdargs={};
 
@@ -1045,7 +1046,7 @@ switch cmd
    case 'initialize'
       OK=optfig(mfig);
       Handle_SelectFile=findobj(mfig,'tag','selectfile');
-      if isfield(NewFI,'Data') & ~isempty(File)
+      if isfield(NewFI,'Data') && ~isempty(File)
          Str={};
          for i=1:length(File)
             Str{i}=abbrevfn(File(i).Name,60);
@@ -1217,13 +1218,16 @@ switch cmd
                      DataFI=[];
                   elseif ~strcmp(DataFI.FileType,'FLS-inc')
                      ui_message('error','Don''t know how to plot %s file on grid.',DataFI.FileType);
-                     DataFI=[]; return
+                     DataFI=[];
+                     return
                   elseif length(DataFI.Domain)~=1
                      ui_message('error','Multi-domain incremental file not supported on grid');
-                     DataFI=[]; return
+                     DataFI=[];
+                     return
                   elseif ~isequal([DataFI.Domain.NRows DataFI.Domain.NCols],size(NewFI.X))
                      ui_message('error','Size of datafield does not match size of grid');
-                     DataFI=[]; return
+                     DataFI=[];
+                     return
                   else
                      Tp=DataFI.FileType;
                   end
@@ -1267,63 +1271,70 @@ switch cmd
                   DataFI=d3d_attrib('read',FileName);
                catch
                end
-               if ~isempty(DataFI) & strcmp(DataFI.Check,'OK');
+               if ~isempty(DataFI) && strcmp(DataFI.Check,'OK');
                   trytp=DataFI.Type;
                   if isfield(DataFI,'MNu')
-                     if (max(max(DataFI.MNu(:,[1 3])))>size(NewFI.X,1)) | (max(max(DataFI.MNv(:,[1 3])))>size(NewFI.X,1)) | ...
-                           (max(max(DataFI.MNu(:,[2 4])))>size(NewFI.X,2)) | (max(max(DataFI.MNv(:,[2 4])))>size(NewFI.X,2))
+                     if (max(max(DataFI.MNu(:,[1 3])))>size(NewFI.X,1)) || (max(max(DataFI.MNv(:,[1 3])))>size(NewFI.X,1)) || ...
+                           (max(max(DataFI.MNu(:,[2 4])))>size(NewFI.X,2)) || (max(max(DataFI.MNv(:,[2 4])))>size(NewFI.X,2))
                         ui_message('error','Weirs/dams outside grid encountered.');
-                        DataFI=[]; return
+                        DataFI=[];
+                        return
                      else
                         DataFI.FileType=trytp;
                         Tp=DataFI.FileType;
                      end
                   elseif isfield(DataFI,'MNKu')
-                     if (max(max(DataFI.MNKu(:,[1 3])))>size(NewFI.X,1)) | (max(max(DataFI.MNKv(:,[1 3])))>size(NewFI.X,1)) | ...
-                           (max(max(DataFI.MNKu(:,[2 4])))>size(NewFI.X,2)) | (max(max(DataFI.MNKv(:,[2 4])))>size(NewFI.X,2))
+                     if (max(max(DataFI.MNKu(:,[1 3])))>size(NewFI.X,1)) || (max(max(DataFI.MNKv(:,[1 3])))>size(NewFI.X,1)) || ...
+                           (max(max(DataFI.MNKu(:,[2 4])))>size(NewFI.X,2)) || (max(max(DataFI.MNKv(:,[2 4])))>size(NewFI.X,2))
                         ui_message('error','Gates/sheets outside grid encountered.');
-                        DataFI=[]; return
+                        DataFI=[];
+                        return
                      else
                         DataFI.FileType=trytp;
                         Tp=DataFI.FileType;
                      end
                   elseif isequal(DataFI.Type,'drypoint')
-                     if (max(max(DataFI.MN(:,[1 3])))>size(NewFI.X,1)) | (max(max(DataFI.MN(:,[2 4])))>size(NewFI.X,2))
+                     if (max(max(DataFI.MN(:,[1 3])))>size(NewFI.X,1)) || (max(max(DataFI.MN(:,[2 4])))>size(NewFI.X,2))
                         ui_message('error','Dry points outside grid encountered.');
-                        DataFI=[]; return
+                        DataFI=[];
+                        return
                      else
                         DataFI.FileType=trytp;
                         Tp=DataFI.FileType;
                      end
                   elseif isequal(DataFI.Type,'observation points')
-                     if (max(DataFI.MN(:,1))>size(NewFI.X,1)) | (max(DataFI.MN(:,2))>size(NewFI.X,2))
+                     if (max(DataFI.MN(:,1))>size(NewFI.X,1)) || (max(DataFI.MN(:,2))>size(NewFI.X,2))
                         ui_message('error','Observation points outside grid encountered.');
-                        DataFI=[]; return
+                        DataFI=[];
+                        return
                      else
                         DataFI.FileType=trytp;
                         Tp=DataFI.FileType;
                      end
                   elseif isequal(DataFI.Type,'openboundary')
-                     if (max(DataFI.MN(:,1))>size(NewFI.X,1)) | (max(DataFI.MN(:,2))>size(NewFI.X,2))
+                     if (max(DataFI.MN(:,1))>size(NewFI.X,1)) || (max(DataFI.MN(:,2))>size(NewFI.X,2))
                         ui_message('error','Boundary locations outside grid encountered.');
-                        DataFI=[]; return
+                        DataFI=[];
+                        return
                      else
                         DataFI.FileType=trytp;
                         Tp=DataFI.FileType;
                      end
                   elseif isequal(DataFI.Type,'discharge stations')
-                     if (max(DataFI.MNK(:,1))>size(NewFI.X,1)) | (max(DataFI.MNK(:,2))>size(NewFI.X,2))
+                     if (max(DataFI.MNK(:,1))>size(NewFI.X,1)) || (max(DataFI.MNK(:,2))>size(NewFI.X,2))
                         ui_message('error','Discharge stations outside grid encountered.');
-                        DataFI=[]; return
+                        DataFI=[];
+                        return
                      else
                         DataFI.FileType=trytp;
                         Tp=DataFI.FileType;
                      end
                   elseif isequal(DataFI.Type,'cross-sections')
-                     if (max(max(DataFI.MNMN(:,[1 3])))>size(NewFI.X,1)) | ...
+                     if (max(max(DataFI.MNMN(:,[1 3])))>size(NewFI.X,1)) || ...
                            (max(max(DataFI.MNMN(:,[2 4])))>size(NewFI.X,2))
                         ui_message('error','Cross-sections outside grid encountered.');
-                        DataFI=[]; return
+                        DataFI=[];
+                        return
                      else
                         DataFI.FileType=trytp;
                         Tp=DataFI.FileType;
@@ -1503,11 +1514,11 @@ switch cmd
             set(Handle_SelectFile,'tooltip',File(NrInList).Name)
          end
       end
-      if isempty(File) | ~strcmp(File(NrInList).FileType,'trirst')
+      if isempty(File) || ~strcmp(File(NrInList).FileType,'trirst')
          set(findobj(mfig,'tag','rstunix'),'enable','off')
          set(findobj(mfig,'tag','rstpc'),'enable','off')
          set(findobj(mfig,'tag','rstascii'),'enable','off')
-         if isempty(File) | ~strcmp(File(NrInList).FileType,'3dgate')
+         if isempty(File) || ~strcmp(File(NrInList).FileType,'3dgate')
             set(findobj(mfig,'tag','nlyr'),'enable','off','backgroundcolor',Inactive,'string','')
             set(findobj(mfig,'tag','nlyrtxt'),'enable','off')
          else
@@ -1547,20 +1558,32 @@ switch cmd
          end
       end
       %
-      if isempty(File) | (~strcmp(File(NrInList).FileType,'wldep') & ...
+      if isempty(File) || (~strcmp(File(NrInList).FileType,'wldep') && ...
             ~strcmp(File(NrInList).FileType,'boxfile'))
          set(findobj(mfig,'tag','dlocation'),'enable','off','backgroundcolor',Inactive)
          set(findobj(mfig,'tag','dlocationtxt'),'enable','off')
          set(findobj(mfig,'tag','dpsopt'),'enable','off','backgroundcolor',Inactive)
          set(findobj(mfig,'tag','dpsopt'),'enable','off')
       else
-         if isfield(File(NrInList).Data,'DLocation') & ~isempty(File(NrInList).Data.DLocation)
+         if isfield(File(NrInList).Data,'DLocation') && ~isempty(File(NrInList).Data.DLocation)
             DLoc=File(NrInList).Data.DLocation;
          else
-            DLoc='bed level';
+            DLoc='grid points';
          end
          hDLoc=findobj(mfig,'tag','dlocation');
-         DLoc=strmatch(DLoc,get(hDLoc,'string'));
+         supportedLocations = get(hDLoc,'string');
+         iDLoc = ustrcmpi(DLoc,supportedLocations);
+         if iDLoc>0
+             DLoc = iDLoc;
+         else
+             % maybe an old location name was used ...
+             iDLoc = ustrcmpi(DLoc,{'bed level','water level'});
+             if iDLoc>0
+                 DLoc = iDLoc;
+             else
+                 DLoc = 1; % default 'grid points'
+             end
+         end
          set(hDLoc,'enable','on','backgroundcolor',Active,'value',DLoc)
          set(findobj(mfig,'tag','dlocationtxt'),'enable','on')
          %
@@ -1568,7 +1591,7 @@ switch cmd
             set(findobj(mfig,'tag','dpsopt'),'enable','off','backgroundcolor',Inactive)
             set(findobj(mfig,'tag','dpsopttxt'),'enable','off')
          else
-            if isfield(File(NrInList).Data,'Dpsopt') & ~isempty(File(NrInList).Data.Dpsopt)
+            if isfield(File(NrInList).Data,'Dpsopt') && ~isempty(File(NrInList).Data.Dpsopt)
                Dpsopt=File(NrInList).Data.Dpsopt;
             else
                Dpsopt='max';
@@ -1580,12 +1603,12 @@ switch cmd
          end
       end
       %
-      if isempty(File) | ~strcmp(File(NrInList).FileType,'wldep')
+      if isempty(File) || ~strcmp(File(NrInList).FileType,'wldep')
          set(findobj(mfig,'tag','dataorder'),'enable','off','backgroundcolor',Inactive)
          set(findobj(mfig,'tag','dataordertxt'),'enable','off')
       else
          hDOrd=findobj(mfig,'tag','dataorder');
-         if isfield(File(NrInList).Data,'DOrder') & ~isempty(File(NrInList).Data.DOrder)
+         if isfield(File(NrInList).Data,'DOrder') && ~isempty(File(NrInList).Data.DOrder)
             DOrd=File(NrInList).Data.DOrder;
          else
             DOrd=2; % (d(m,n) m=1:M) n=1:N
@@ -1614,8 +1637,6 @@ switch cmd
       end
       NLyr = File(NrInList).Data.NLyr;
       N = max(1,floor(N/NLyr))*NLyr;
-      h_nelyr
-      N
       set(h_nelyr,'userdata',N,'string',sprintf('%i',N))
       %
       cmdargs={cmd N};
@@ -1675,7 +1696,7 @@ switch cmd
          N_=N_0;
       else
          N_=N_(1);
-         if N_~=round(N_) | N_<N_LowerLim | N_>N_UpperLim
+         if N_~=round(N_) || N_<N_LowerLim || N_>N_UpperLim
             N_=N_0;
          end
          if N_>N_UpperLim
@@ -1730,12 +1751,12 @@ switch cmd
       Handle_SelectFile=findobj(mfig,'tag','selectfile');
       NrInList=get(Handle_SelectFile,'value');
       Lbl='DLocation';
-      Default='bed level';
+      Default='grid points';
       if strcmp(cmd,'dpsopt')
          Lbl='Dpsopt';
          Default='max';
       end
-      if isfield(File(NrInList).Data,Lbl) & ~isempty(getfield(File(NrInList).Data,Lbl))
+      if isfield(File(NrInList).Data,Lbl) && ~isempty(getfield(File(NrInList).Data,Lbl))
          Val0=getfield(File(NrInList).Data,Lbl);
       else
          Val0=Default;
@@ -1765,7 +1786,7 @@ switch cmd
       NrInList=get(Handle_SelectFile,'value');
       Handle_DOrd=findobj(mfig,'tag','dataorder');
       DOrdStr=get(Handle_DOrd,'string');
-      if isfield(File(NrInList).Data,'DOrder') & ~isempty(File(NrInList).Data.DOrder)
+      if isfield(File(NrInList).Data,'DOrder') && ~isempty(File(NrInList).Data.DOrder)
          DOrd0=File(NrInList).Data.DOrder;
       else
          DOrd0=2; % (d(m,n) m=1:M) n=1:N
@@ -1799,7 +1820,7 @@ end
 % -----------------------------------------------------------------------------
 
 % -----------------------------------------------------------------------------
-function OK=optfig(h0);
+function OK=optfig(h0)
 FigPos=get(h0,'position');
 voffset=FigPos(4)-30;
 Inactive=get(0,'defaultuicontrolbackground');
@@ -1845,7 +1866,7 @@ uicontrol('Parent',h0, ...
    'Position',[181 voffset 150 20], ...
    'Style','popupmenu', ...
    'horizontalalignment','right', ...
-   'String',{'bed level','water level'}, ...
+   'String',{'grid points','cell centres'}, ...
    'Tag','dlocation')
 %
 voffset=voffset-25;
@@ -2016,7 +2037,7 @@ OK=1;
 function [k,NSubs,NTurb,NRem]=DetectFld(Rst)
 N=length(Rst.Data.Data);
 %
-if isfield(Rst.Data,'NLyr') & ~isempty(Rst.Data.NLyr)
+if isfield(Rst.Data,'NLyr') && ~isempty(Rst.Data.NLyr)
    maxk=floor((N-1)/2);
    k=max(min(Rst.Data.NLyr,maxk),1);
 else
@@ -2025,7 +2046,7 @@ end
 %
 NSubs=-1;
 maxsubs=floor((N-1-k*2)/k);
-if isfield(Rst.Data,'NSubs') & ~isempty(Rst.Data.NSubs)
+if isfield(Rst.Data,'NSubs') && ~isempty(Rst.Data.NSubs)
    NSubs=min(Rst.Data.NSubs,maxsubs);
 end
 %
@@ -2039,7 +2060,7 @@ if NSubs<0 % Number of substances not specified
       NTurb=min(2,maxturb);
       NSubs=floor((N-1-k*2-(k+1)*NTurb)/k);
       NRem=N-1-k*(2+NSubs)-(k+1)*NTurb;
-      if NRem==1 & NTurb>0
+      if NRem==1 && NTurb>0
          NTurb=NTurb-1;
          NSubs=NSubs+1;
          NRem=NRem+1;
@@ -2051,7 +2072,7 @@ else % Number of substances specified
    else
       NTurb=-1;
       maxturb=floor((N-1-k*(2+NSubs))/(k+1));
-      if isfield(Rst.Data,'NTurb') & ~isempty(Rst.Data.NTurb)
+      if isfield(Rst.Data,'NTurb') && ~isempty(Rst.Data.NTurb)
          NTurb=min(Rst.Data.NTurb,maxturb);
       end
    end
@@ -2067,8 +2088,8 @@ end
 
 
 % -----------------------------------------------------------------------------
-function NewFI=optionstransfer(NewFI,FI);
-if isequal(size(NewFI.X),size(FI.X)) & isfield(FI,'Data')
+function NewFI=optionstransfer(NewFI,FI)
+if isequal(size(NewFI.X),size(FI.X)) && isfield(FI,'Data')
    NewFI.Data=FI.Data;
 end
 % -----------------------------------------------------------------------------
