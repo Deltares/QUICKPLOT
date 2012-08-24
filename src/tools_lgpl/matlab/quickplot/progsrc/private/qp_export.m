@@ -325,7 +325,7 @@ for f=1:ntim
             for k = 1:length(Selected{K_})
                 for s = 1:length(stations)
                     i = i+1;
-                    Loc = sprintf('%s - layer %i',stations{s},k);
+                    Loc = sprintf('%s - layer %i',stations{s},Selected{K_}(k));
                     for j = 1:nVal
                         vars{nCrd+(i-1)*nVal+j} = [vars{nCrd+(i-1)*nVal+j} ' - ' Loc];
                     end
