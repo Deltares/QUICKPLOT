@@ -488,6 +488,7 @@ for ivar = 1:nvars
         j = strmatch('bounds',coordAttribs,'exact');
         if ~isempty(j)
             Info.XBounds = strmatch(nc.Dataset(Info.X).Attribute(j).Value,varNames);
+            nc.Dataset(Info.XBounds).Type = nc.Dataset(Info.X).Type;
         end
     end
     if ~isempty(Info.Y)
@@ -498,7 +499,7 @@ for ivar = 1:nvars
             yCoord = {nc.Dataset(Info.Y).Name};
             iLat = ismember(yType,'latitude');
             iAux = ismember(yCoord,AuxCoordVars);
-            if any(iAux & iLon)
+            if any(iAux & iLat)
                 Info.Y = Info.Y(iAux & iLat);
             elseif any(iLat)
                 Info.Y = Info.Y(iLat);
@@ -527,6 +528,7 @@ for ivar = 1:nvars
         j = strmatch('bounds',coordAttribs,'exact');
         if ~isempty(j)
             Info.YBounds = strmatch(nc.Dataset(Info.Y).Attribute(j).Value,varNames);
+            nc.Dataset(Info.YBounds).Type = nc.Dataset(Info.Y).Type;
         end
     end
     %

@@ -219,10 +219,19 @@ for iCoord = 1:length(coordname)
     dimvals = idx;
     isbounds = strcmp(coordname{iCoord}(2:end),'Bounds');
     if isbounds
+        vdim2 = getfield(Info,coordname{iCoord}(1));
+        if isempty(vdim2)
+            CoordInfo2 = [];
+        else
+            CoordInfo2 = FI.Dataset(vdim2);
+        end
+        %
         dims{end+1} = setdiff(CoordInfo.Dimension,dims(~cellfun('isempty',dims)));
         id = strmatch(dims{end},{FI.Dimension.Name});
         dimvals{end+1} = 1:FI.Dimension(id).Length;
         coordname{iCoord}=coordname{iCoord}(1);
+    else
+        CoordInfo2 = CoordInfo;
     end
     [Coord, status] = qp_netcdf_get(FI,CoordInfo,dims,dimvals);
     Coord = expand_hdim(Coord,szData,hdim);
@@ -268,10 +277,20 @@ for iCoord = 1:length(coordname)
         Coord = reshape(Coord,[szCoord(2:end) 1]);
     end
     %
+    szCoord = size(Coord);
+    if length(Coord)>2
+        Coord = reshape(Coord,[prod(szCoord(1:end-1)) szCoord(end)]);
+    end
     if isbounds
         if size(Coord,2)==2
-            Coord(:,end+1) = NaN;
+            % add one NaN to separate the line segments
+            Coord(:,3) = NaN;
+            nboundpnt = 3;
         else
+            % add two NaNs
+            % the first one will be used to close the bounds polygons
+            % the second one will be used to separate the polygons
+            nboundpnt = size(Coord,2)+2;
             Coord(:,end+1:end+2) = NaN;
             for j=1:size(Coord,1)
                 for k=1:size(Coord,2)
@@ -292,11 +311,11 @@ for iCoord = 1:length(coordname)
     end
     %
     Ans = setfield(Ans,coordname{iCoord},Coord);
-    if ~isempty(CoordInfo.Attribute)
-        Attribs = {CoordInfo.Attribute.Name};
+    if ~isempty(CoordInfo2.Attribute)
+        Attribs = {CoordInfo2.Attribute.Name};
         j = strmatch('units',Attribs,'exact');
         if ~isempty(j)
-            unit = CoordInfo.Attribute(j).Value;
+            unit = CoordInfo2.Attribute(j).Value;
             units = {'degrees_east','degree_east','degreesE','degreeE', ...
                 'degrees_north','degree_north','degreesN','degreeN'};
             if ismember(unit,units)
@@ -491,6 +510,9 @@ if ~isempty(Info.Z) && Props.hasCoords
     %--------------------------------------------------------------------
     Ans.Z = Z;
     %
+    if isbounds
+        Z = repmat(Z,[nboundpnt 1]);
+    end
     szZ = size(Z);
     szX = ones(size(szZ));
     szX(1:ndims(Ans.X)) = size(Ans.X);
