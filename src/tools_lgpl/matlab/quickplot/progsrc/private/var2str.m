@@ -97,7 +97,7 @@ switch class(X)
                 Str=cat(1,Str,Str1);
             else
                 Str={'XML object'
-                    Str1};
+                    Str1{:}};
             end
         else
             if ~isempty(Str)
