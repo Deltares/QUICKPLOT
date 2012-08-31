@@ -37,7 +37,10 @@ function ui_inspectstruct(cmd,Title)
 if nargin==0
     error('One argument expected.')
 else
-    if ~ischar(cmd) && ~isstruct(cmd)
+    if isa(cmd,'org.apache.xerces.dom.DeferredDocumentImpl')
+        tmp.XML = cmd;
+        cmd = tmp;
+    elseif ~ischar(cmd) && ~isstruct(cmd)
         error('Structure expected as argument.')
     end
     StructName='';
@@ -506,7 +509,16 @@ else
 end
 Str2=var2str(SubStruct);
 if isempty(Str2)
-    set(H.Fields,'string','','callback','','enable','off','backgroundcolor',XX.Inactive);
+    set(H.Fields,'string','','callback','','enable','off','backgroundcolor',XX.Inactive,'value',1);
 else
-    set(H.Fields,'string',Str2,'enable','on','backgroundcolor',XX.Active);
+    curline = get(H.Fields,'value');
+    if iscell(Str2)
+        nlines = length(Str2);
+    else
+        nlines = size(Str2,1);
+    end
+    if any(curline>nlines)
+        curline = 1;
+    end
+    set(H.Fields,'string',Str2,'enable','on','backgroundcolor',XX.Active,'value',curline);
 end
