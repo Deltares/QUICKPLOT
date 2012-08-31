@@ -1298,6 +1298,11 @@ if ~isempty(i)
     end
     %
     % check whether substance names were expanded by adding 001,002,...
+    % the following algorithm requires fractions to be numbered
+    % consecutively. For this puerpose we sort the entries first.
+    %
+    [sorted_names,reorder] = sort({Ins.Name}');
+    Ins = Ins(reorder);
     %
     names=substdb;
     onenames = names(wildstrmatch('*01',names),:);
@@ -1308,10 +1313,10 @@ if ~isempty(i)
           j=j+1;
           continue
        end
-       if strcmp(nm(end-1:end),'01') % do the last two characters match '01'? [initial expansion used two digits; support may not be needed]
+       if strcmp(nm(end-1:end),'01') % do the last two characters match '01'? [two digits if there are less than 100 fractions)
           n=2;
           f='%s%2.2d';
-          if strcmp(nm(end-2:end),'001') % do the last three characters match '001'? [most common expansion]
+          if strcmp(nm(end-2:end),'001') % do the last three characters match '001'? (three digits if there are more than 99 fractions)
              n=3;
              f='%s%3.3d';
           end
@@ -1331,10 +1336,11 @@ if ~isempty(i)
           end
        end
        Ins(j).Name = nm(1:end-n);
+       nms = {};
        for i=k-j+1:-1:1
           nms{i} = sprintf('fraction %i',i);
        end
-       Ins(j).SubFld = {j:k nms};
+       Ins(j).SubFld = {[Ins(j:k).Val1] nms};
        Ins(j+1:k)=[];
        j=j+1;
     end
