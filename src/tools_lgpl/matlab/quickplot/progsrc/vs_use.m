@@ -1016,27 +1016,19 @@ if fidat<0
 end
 Header=char(fread(fidat,[1 HeaderLength],'uchar'));
 %
-eoh = ftell(fidat);
-BigE8_Lfile = fread(fidat,1,'uint64');
-BigE8_Hash = fread(fidat,997,'uint64');
-fseek(fidat,eoh,-1);
-BigE4_Lfile = fread(fidat,1,'uint32');
-BigE4_Hash = fread(fidat,997,'uint32');
-fclose(fidat);
-%
-fidat = fopen(data_file,'r','l');
-Header=char(fread(fidat,[1 HeaderLength],'uchar'));
+% Possible file sizes
 %
 eoh = ftell(fidat);
-LitE8_Lfile = fread(fidat,1,'uint64');
-LitE8_Hash = fread(fidat,997,'uint64');
+BigE8_Lfile = fread(fidat,1,'uint64','b');
 fseek(fidat,eoh,-1);
-LitE4_Lfile = fread(fidat,1,'uint32');
-LitE4_Hash = fread(fidat,997,'uint32');
+LitE8_Lfile = fread(fidat,1,'uint64','l');
+fseek(fidat,eoh,-1);
+BigE4_Lfile = fread(fidat,1,'uint32','b');
+fseek(fidat,eoh,-1);
+LitE4_Lfile = fread(fidat,1,'uint32','l');
 %
 fseek(fidat,0,1); % go to EOF
 FileSize = ftell(fidat);
-fclose(fidat);
 %
 if vs_debug
    if onefile
@@ -1046,40 +1038,84 @@ if vs_debug
    end
    fprintf(vs_debug,'File header:\n%s\n',deblank(Header(1:(end-1))));
    fprintf(vs_debug,'File format indicator    : %s.\n',Header(end));
-   fprintf(vs_debug,'Real file length is      : %u bytes\n\n',FileSize);
+   fprintf(vs_debug,'Actual file length is      : %u bytes\n\n',FileSize);
    fprintf(vs_debug,'File length big-endian    (8 bytes): %u bytes\n',BigE8_Lfile);
    fprintf(vs_debug,'File length little-endian (8 bytes): %u bytes\n',LitE8_Lfile);
    fprintf(vs_debug,'File length big-endian    (4 bytes): %u bytes\n',BigE4_Lfile);
    fprintf(vs_debug,'File length little-endian (4 bytes): %u bytes\n\n',LitE4_Lfile);
 end
 %
+% Possible hash tables
+%
+fseek(fidat,eoh+8,-1);
+BigE8_Hash = fread(fidat,997,'uint64','b');
+fseek(fidat,eoh+8,-1);
+LitE8_Hash = fread(fidat,997,'uint64','l');
+fseek(fidat,eoh+4,-1);
+BigE4_Hash = fread(fidat,997,'uint32','b');
+fseek(fidat,eoh+4,-1);
+LitE4_Hash = fread(fidat,997,'uint32','l');
+fclose(fidat);
+%
 Miss4 = 2^32-1;
 Miss8 = 2^64-1;
-if all(BigE8_Hash(BigE8_Hash<Miss8)<=FileSize) & length(BigE8_Hash)==997
-   AddressType = 'uint64';
-   AddressBytes = 8;
-   ByteOrder = 'b';
-elseif all(LitE8_Hash(LitE8_Hash<Miss8)<=FileSize) & length(LitE8_Hash)==997
-   AddressType = 'uint64';
-   AddressBytes = 8;
-   ByteOrder = 'l';
-elseif all(BigE4_Hash(BigE4_Hash<Miss4)<=FileSize)
-   AddressType = 'uint32';
-   AddressBytes = 4;
-   ByteOrder = 'b';
-elseif all(LitE4_Hash(LitE4_Hash<Miss4)<=FileSize)
-   AddressType = 'uint32';
-   AddressBytes = 4;
-   ByteOrder = 'l';
+opt = zeros(1,4);
+opt(1) = all(BigE8_Hash(BigE8_Hash<Miss8)<=FileSize) & length(BigE8_Hash)==997;
+opt(2) = all(LitE8_Hash(LitE8_Hash<Miss8)<=FileSize) & length(LitE8_Hash)==997;
+opt(3) = all(BigE4_Hash(BigE4_Hash<Miss4)<=FileSize);
+opt(4) = all(LitE4_Hash(LitE4_Hash<Miss4)<=FileSize);
+if sum(opt)>1
+    if vs_debug
+       fprintf(vs_debug,'Hash table inconclusive, possible options: \n');
+       if opt(1)
+           fprintf(vs_debug,'  Big endian    - 8 bytes\n');
+       end
+       if opt(2)
+           fprintf(vs_debug,'  Little endian - 8 bytes\n');
+       end
+       if opt(3)
+           fprintf(vs_debug,'  Big endian    - 4 bytes\n');
+       end
+       if opt(4)
+           fprintf(vs_debug,'  Little endian - 4 bytes\n');
+       end
+    end
+    opt = find(opt);
+    opts = opt(1);
+    if vs_debug
+        fprintf(vs_debug,'  Assuming first option.\n');
+    end
+elseif sum(opt)==1
+    opts = find(opt);
 else
-   if vs_debug
-      fprintf(vs_debug,'Hash table not valid for any of the formats.\n');
-   end
-   AddressBytes = -1;
-   ByteOrder = '';
+    opts = -1;
+end
+switch opts
+    case 1
+        AddressType = 'uint64';
+        AddressBytes = 8;
+        ByteOrder = 'b';
+    case 2
+        AddressType = 'uint64';
+        AddressBytes = 8;
+        ByteOrder = 'l';
+    case 3
+        AddressType = 'uint32';
+        AddressBytes = 4;
+        ByteOrder = 'b';
+    case 4
+        AddressType = 'uint32';
+        AddressBytes = 4;
+        ByteOrder = 'l';
+    otherwise
+        if vs_debug
+            fprintf(vs_debug,'Hash table not valid for any of the formats.\n');
+        end
+        AddressBytes = -1;
+        ByteOrder = '';
 end
 %
-if vs_debug & AddressBytes~=-1
+if vs_debug & AddressBytes~=-1 & sum(opt)==1
    switch ByteOrder
       case 'b'
          BO = 'big-endian';
@@ -1115,14 +1151,14 @@ end
 if ~isempty(strfind(Header,'Versie 1.')) | ~isempty(strfind(Header,'File; Version 4.'))
    if AddressBytes==4
       if vs_debug
-         fprintf(vs_debug,'Header agrees with address size: 4 bytes.\n');
+         fprintf(vs_debug,'Header version agrees with address size: 4 bytes.\n');
       end
    else
       if vs_debug
          if AddressBytes==-1
-            fprintf(vs_debug,'File header indicates address size: 4 bytes.\n');
+            fprintf(vs_debug,'File header version indicates address size: 4 bytes.\n');
          else
-            fprintf(vs_debug,'File header overrules address size: 4 bytes.\n');
+            fprintf(vs_debug,'File header version overrules address size: 4 bytes.\n');
          end
       end
       AddressType = 'uint32';
@@ -1131,14 +1167,14 @@ if ~isempty(strfind(Header,'Versie 1.')) | ~isempty(strfind(Header,'File; Versio
 elseif ~isempty(strfind(Header,'File; 5.'))
    if AddressBytes==8
       if vs_debug
-         fprintf(vs_debug,'Header agrees with address size: 8 bytes.\n');
+         fprintf(vs_debug,'Header version agrees with address size: 8 bytes.\n');
       end
    else
       if vs_debug
          if AddressBytes==-1
-            fprintf(vs_debug,'File header indicates address size: 8 bytes.\n');
+            fprintf(vs_debug,'File header version indicates address size: 8 bytes.\n');
          else
-            fprintf(vs_debug,'File header overrules address size: 8 bytes.\n');
+            fprintf(vs_debug,'File header version overrules address size: 8 bytes.\n');
          end
       end
       AddressType = 'uint64';
