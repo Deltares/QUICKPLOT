@@ -120,31 +120,128 @@ while 1
                G = nc_info(GridFileName);
                G = nc_interpret(G);
                %
-               C = cell(0,3);
+               AggrTable=false(length(G.Dataset),1);
                for i=1:length(G.Dataset)
-                  for j=1:length(G.Dataset(i).Attribute)
-                     if strcmp(G.Dataset(i).Attribute(j).Name,'bounds')
-                        C{end+1,1} = G.Dataset(i).Attribute(j).Value;
-                        C{end,2} = G.Dataset(i).Name;
-                        C{end,3} = G.Dataset(i).Dimension;
-                        C{end,4} = G.Dataset(i).Size;
-                     end
-                  end
+                   for j=1:length(G.Dataset(i).Attribute)
+                       if strcmp(G.Dataset(i).Attribute(j).Name,'delwaq_role') && ...
+                                strcmp(G.Dataset(i).Attribute(j).Value,'segment_aggregation_table')
+                            table = nc_varget(G.Filename,G.Dataset(i).Name);
+                            if max(table)==MapSeg
+                               AggrTable(i) = true;
+                            end
+                            break
+                       end
+                   end
                end
                %
-               if ~isempty(C)
-                  GridSeg = C{1,4};
-                  G.MNK=[GridSeg 1 1];
-                  G.Index=(1:GridSeg)';
-                  CouldReadGridData = 1;
-                  G.BCoordinates = sort(C(1:2,1)');
-                  G.CCoordinates = sort(C(1:2,2)');
-                  ibound = strmatch(G.BCoordinates{1},{G.Dataset.Name});
-                  G.CoordDims = G.Dataset(ibound).Dimension;
-                  idim = strmatch(C{1,3},G.CoordDims,'exact');
-                  odim = setdiff(1:length(G.CoordDims),idim);
-                  G.CoordDims = G.CoordDims([idim odim]);
-                  G.FileType = 'netCDF';
+               if any(AggrTable)
+                   iAggr = find(AggrTable);
+                   iAggr = iAggr(1);
+                   GridSeg = MapSeg;
+                   CouldReadGridData = 1;
+                   xbounds = G.Dataset(iAggr).XBounds;
+                   ybounds = G.Dataset(iAggr).YBounds;
+                   x = G.Dataset(iAggr).X;
+                   y = G.Dataset(iAggr).Y;
+                   G.Aggregation = G.Dataset(iAggr).Name;
+                   G.AggregationDims = [G.Dataset(x).Dimension setdiff(G.Dataset(iAggr).Dimension,G.Dataset(x).Dimension)];
+%                   [G.Index, errmsg] = qp_netcdf_get(G,G.Aggregation,G.AggregationDims);
+%                   G.Index(isnan(G.Index))=0;
+                   G.MNK=[GridSeg 1 1];
+                   G.Index=(1:GridSeg)';
+               else
+                   C = cell(0,4);
+                   for i=1:length(G.Dataset)
+                       for j=1:length(G.Dataset(i).Attribute)
+                           if strcmp(G.Dataset(i).Attribute(j).Name,'bounds')
+                               C{end+1,1} = G.Dataset(i).Attribute(j).Value;
+                               C{end,2} = G.Dataset(i).Name;
+                               C{end,3} = G.Dataset(i).Dimension;
+                               C{end,4} = G.Dataset(i).Size;
+                           end
+                       end
+                   end
+                   %
+                   if ~isempty(C)
+                       matching = 0;
+                       for i=1:size(C,1)
+                           if isequal(C{i,4},MapSeg)
+                               matching = i;
+                               break
+                           end
+                       end
+                       %
+                       if ~matching
+                           error('Unable to identify coordinate bounds variables for %i segments.',segdim)
+                       else
+                           segdim = C{matching,3};
+                           GridSeg = C{matching,4};
+                           %
+                           matching = false(size(C,1),1);
+                           for i=1:size(C,1)
+                               matching(i) = isequal(C{i,3},segdim);
+                           end
+                           C = C(matching,:);
+                           %
+                           % locate x/longitude coordinate
+                           %
+                           ytype='';
+                           for i=1:size(C,1)
+                               j=strmatch(C{i,2},{G.Dataset.Name},'exact');
+                               switch G.Dataset(j).Type
+                                   case 'longitude'
+                                       ytype = 'latitude';
+                                       break
+                                   case 'x-coordinate'
+                                       ytype = 'y-coordinate';
+                                       break
+                               end
+                           end
+                           if isempty(ytype)
+                               error('Unable to identify x-coordinate/longitude for segments')
+                           else
+                               x = j;
+                               xbounds = strmatch(C{i,1},{G.Dataset.Name},'exact');
+                           end
+                           %
+                           % locate y/latitude coordinate
+                           %
+                           y=[];
+                           for i=1:size(C,1)
+                               j=strmatch(C{i,2},{G.Dataset.Name},'exact');
+                               switch G.Dataset(j).Type
+                                   case ytype
+                                       y = j;
+                                       ybounds = strmatch(C{i,1},{G.Dataset.Name},'exact');
+                               end
+                           end
+                           if isempty(y)
+                               error('Unable to identify %s for segments',ytype)
+                           end
+                           %
+                           CouldReadGridData = 1;
+                       end
+                   end
+                   G.MNK=[GridSeg 1 1];
+                   G.Index=(1:GridSeg)';
+               end
+               G.BCoordinates = {G.Dataset(xbounds).Name G.Dataset(ybounds).Name};
+               G.CCoordinates = {G.Dataset(x).Name G.Dataset(y).Name};
+               XBoundsDimensions = G.Dataset(xbounds).Dimension;
+               XDimensions = G.Dataset(x).Dimension;
+               G.CoordDims = [intersect(XDimensions,XBoundsDimensions) setdiff(XBoundsDimensions,XDimensions)];
+               G.FileType = 'netCDF';
+               %
+               for j = 1:length(G.Dataset(x).Attribute)
+                   if isequal(G.Dataset(x).Attribute(j).Name,'units')
+                       switch G.Dataset(x).Attribute(j).Value
+                           case {'degrees_east','degree_east','degreesE','degreeE', ...
+                                   'degrees_north','degree_north','degreesN','degreeN'}
+                               G.Unit = 'deg';
+                           otherwise
+                               G.Unit = G.Dataset(x).Attribute(j).Value;
+                       end
+                   end
                end
             catch
                trytp = '.geo';

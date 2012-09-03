@@ -225,6 +225,7 @@ x=[];
 y=[];
 z=[];
 ZUnits='';
+XUnits='';
 %if XYRead || strcmp(subtype,'plot')
 %
 missingvalue = clip2single(999.999);
@@ -272,6 +273,14 @@ switch subtype
                            [x, errmsg] = qp_netcdf_get(FI.Grid,FI.Grid.CCoordinates{1},FI.Grid.CoordDims(1));
                            [y, errmsg] = qp_netcdf_get(FI.Grid,FI.Grid.CCoordinates{2},FI.Grid.CoordDims(1));
                         end
+                         if isfield(FI.Grid,'Aggregation') && ~isempty(FI.Grid.Aggregation)
+                            [agg, errmsg] = qp_netcdf_get(FI.Grid,FI.Grid.Aggregation,FI.Grid.AggregationDims);
+                            clip = isnan(agg);
+                            x(clip,:)=[];
+                            y(clip,:)=[];
+                            %agg(clip)=[]; % For aggregation, use agg or FI.Grid.Index
+                         end
+                        XUnits = FI.Grid.Unit;
                     case 'arcgrid'
                         eidx=idx;
                         eidx{M_}=eidx{M_}+1;
@@ -846,6 +855,11 @@ if XYRead
                 Ans.Z=z;
                 Ans.ZUnits=ZUnits;
             end
+    end
+    %
+    if ~isempty(XUnits)
+        Ans.XUnits = XUnits;
+        Ans.YUnits = XUnits;
     end
 end
 if Props.NVal==0

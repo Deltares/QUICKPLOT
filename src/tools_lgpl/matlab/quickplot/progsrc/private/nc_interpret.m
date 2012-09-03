@@ -549,11 +549,6 @@ for ivar = 1:nvars
 end
 
 function nc = setType(nc,ivar,idim,value)
-if isfield(nc,'DataSet')
-    DataSet = 'DataSet';
-else
-    DataSet = 'Dataset';
-end
 nc.Dataset(ivar).Type = value;
 if ~isempty(idim)
     nc.Dimension(idim).Type = value;
