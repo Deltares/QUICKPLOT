@@ -203,6 +203,7 @@ set(setdiff(UD.Options.Handles,gcbo),'enable','off','backgroundcolor',Inactive)
 switch geometry
    case {'POLYL','POLYG'}
       Spatial = 2;
+      SpatialH = 2;
 end
 Ops.spatial=Spatial;
 Ops.spatialh=SpatialH;
@@ -623,7 +624,11 @@ end
 if (nval==2 || nval==3) && ~vectors
     nval=1;
 end
-
+if isequal(Ops.vectorcomponent,'vector')
+    geometry='sSEG';
+    Props.Geom='sSEG';
+    Props.ClosedPoly=0;
+end
 %--------------------------------------------------------------------------
 %
 %---- presentation type

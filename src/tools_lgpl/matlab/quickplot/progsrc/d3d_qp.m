@@ -244,6 +244,7 @@ try
                 figure(mfig);
             end
             if isstandalone
+                setpref('SNCTOOLS','USE_JAVA',true);
                 javaaddpath([qp_basedir('exe') filesep 'netcdfAll-4.1.jar'])
                 try
                     CloseSplashScreen;

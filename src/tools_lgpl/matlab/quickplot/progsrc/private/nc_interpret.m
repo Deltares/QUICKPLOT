@@ -445,11 +445,12 @@ for ivar = 1:nvars
         %
         % Assumption: station is always unique and coordinate dimension.
         %
-        if length(Info.Station)>1 | length(nc.Dataset(Info.Station).Dimid)>1
+        statdim = intersect(Info.Dimid,nc.Dataset(Info.Station).Dimid);
+        if length(Info.Station)>1 | length(statdim)>2
             ui_message('error','Problem detecting station coordinate. Contact support.')
             Info.Station = Info.Station(1);
         end
-        Info.TSMNK(2) = nc.Dataset(Info.Station).Dimid;
+        Info.TSMNK(2) = statdim;
     end
     if ~isempty(Info.X)
         iDim = {nc.Dataset(Info.X).Dimid};

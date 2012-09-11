@@ -84,7 +84,7 @@ switch cmd
         varargout={readtim(FI,Props,varargin{:})};
         return
     case 'stations'
-        varargout={{}};
+        varargout={readsts(FI,Props,0)};
         return
     case 'subfields'
         varargout={getsubfields(FI,Props,varargin{:})};
@@ -302,8 +302,13 @@ for iCoord = 1:length(coordname)
             end
         end
         if firstbound
-            Ans.Val = repmat(Ans.Val,1,size(Coord,2))';
-            Ans.Val = Ans.Val(:);
+            for f = {'Val','XComp','YComp'}
+                fc = f{1};
+                if isfield(Ans,fc)
+                    Ans.(fc) = repmat(Ans.(fc),1,size(Coord,2))';
+                    Ans.(fc) = Ans.(fc)(:);
+                end
+            end
             firstbound = 0;
         end
         Coord = Coord';
@@ -635,7 +640,11 @@ else
         %
         for i=1:5
             if ~isnan(Info.TSMNK(i))
-                Insert.DimFlag(i)=1;
+                if i==ST_ & ~isempty(Info.Station)
+                    Insert.DimFlag(i)=5;
+                else
+                    Insert.DimFlag(i)=1;
+                end
                 Insert.Dimension{i}=FI.Dimension(Info.TSMNK(i)+1).Name;
             end
         end
@@ -893,6 +902,18 @@ end
 if t~=0
     T=T(t);
 end
+% -----------------------------------------------------------------------------
+
+
+% -----------------------------------------------------------------------------
+function S=readsts(FI,Props,t)
+%======================== SPECIFIC CODE =======================================
+stcrd = FI.Dataset(Props.varid+1).Station;
+[Stations, status] = qp_netcdf_get(FI,stcrd-1,FI.Dataset(stcrd).Dimension);
+if t~=0
+    Stations = Stations(t,:);
+end
+S=cellstr(Stations);
 % -----------------------------------------------------------------------------
 
 

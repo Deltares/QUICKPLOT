@@ -273,13 +273,15 @@ switch subtype
                            [x, errmsg] = qp_netcdf_get(FI.Grid,FI.Grid.CCoordinates{1},FI.Grid.CoordDims(1));
                            [y, errmsg] = qp_netcdf_get(FI.Grid,FI.Grid.CCoordinates{2},FI.Grid.CoordDims(1));
                         end
-                         if isfield(FI.Grid,'Aggregation') && ~isempty(FI.Grid.Aggregation)
+                        if isfield(FI.Grid,'Aggregation') && ~isempty(FI.Grid.Aggregation)
                             [agg, errmsg] = qp_netcdf_get(FI.Grid,FI.Grid.Aggregation,FI.Grid.AggregationDims);
                             clip = isnan(agg);
                             x(clip,:)=[];
                             y(clip,:)=[];
                             %agg(clip)=[]; % For aggregation, use agg or FI.Grid.Index
-                         end
+                        end
+                        x=x(idx{M_},:);
+                        y=y(idx{M_},:);
                         XUnits = FI.Grid.Unit;
                     case 'arcgrid'
                         eidx=idx;
