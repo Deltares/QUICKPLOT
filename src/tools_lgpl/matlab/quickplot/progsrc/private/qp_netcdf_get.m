@@ -135,6 +135,10 @@ else
     %Data=Data(RS_netcdf{reverse});
 end
 %
+if ~isa(Data,'double') && ~isa(Data,'char')
+    Data = double(Data);
+end
+%
 reverse=[reverse Info.Rank+1:5];
 permuted(permuted==0)=[];
 if length(permuted)>1
