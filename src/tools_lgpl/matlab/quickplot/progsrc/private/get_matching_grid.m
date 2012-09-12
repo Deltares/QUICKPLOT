@@ -42,7 +42,7 @@ CouldReadGridData = 0;
 filters = {'*.cco;*.lga' 'Delft3D Grid (Aggregation) Files'
    '*.m2b' 'SOBEK Grid Aggregation Files'
    '*.geo;geo*' 'Telemac Grid Files'
-   '*.nc' 'D-FLOW FM Grid Files'};
+   '*.nc' 'UGRID netCDF Files (D-Flow FM, Untrim)'};
 if nargin<3
    filterspec = '';
 end
