@@ -485,8 +485,10 @@ if DataRead
                 val3=[];
                 Props.NVal=2;
             end
+        case 'base level of sediment layer'
+            val1=-val1+readdps(FI,idx,0);
         case {'initial bed level','bed level in water level points'}
-            if DepthInZeta, %strcmp(Props.Val1,'DPSED') || DataInCell
+            if DepthInZeta %strcmp(Props.Val1,'DPSED') || DataInCell
                 val1=readdps(FI,idx,strcmp(Props.Name,'initial bed level'));
                 Props.Loc='z';
             else
@@ -1021,6 +1023,8 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'hiding and exposure'              '-'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'HIDEXP'  ''       'sb1'    0
     'reduction factor due to limited sediment thickness' ...
     '-'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'FIXFAC'  ''       'sb1'    0
+    'sediment thickness'               'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'DPSED'   ''       []       0
+    'base level of sediment layer'     'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'DPSED'   ''       []       0
     '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
     'grid cell surface area'           'm^2'    [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-const'      'XCOR'    ''       []       0
     '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0};

@@ -692,6 +692,8 @@ DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     '' 
     % note 2: 'cumulative total transp.' includes morfac (and bedload) whereas cumulative flux does not include either
     'cumulative total transp.'  'kg'     [1 5 0 0 0]  0         1     ''       'NA'  ''        ''      'his-bal-series' 'BALSDFLUX' ''        'fs'     0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    'time fraction ploughing'        '-'     [1 5 0 0 0]  0     1     ''       ''    ''        ''      'his-dad-series' 'PLOUGH_TFRAC' ''     []       0
+    'time fraction dredging'         '-'     [1 5 0 0 0]  0     1     ''       ''    ''        ''      'his-dad-series' 'DREDGE_TFRAC' ''     []       0
     'cumulative dredged material'    'm^3'   [1 5 0 0 0]  0     1     ''       ''    ''        ''      'his-dad-series' 'LINK_SUM' ''         'sb'     0};
 
 %  'vorticity'                 '1/s'    [1 5 0 0 5]  0         1     ''       'd'   'd'       'c'     'his-series'     'ZVORT'    ''         []       0
@@ -1064,6 +1066,9 @@ switch Props.Val1
     case {'ATR','DTR','SBTR','SSTR','SBTRC','SSTRC'}
         % cross-section
         [S,Chk]=vs_get(FI,'his-const','NAMTRA','quiet');
+    case {'DREDGE_TFRAC','PLOUGH_TFRAC'}
+        [DredgeArea,Chk]=vs_get(FI,'his-dad-const','DREDGE_AREAS','quiet');
+        S=cellstr(DredgeArea);
     case {'LINK_SUM'}
         % dredging link
         [ij,Chk]=vs_get(FI,'his-dad-const','LINK_DEF','quiet');
