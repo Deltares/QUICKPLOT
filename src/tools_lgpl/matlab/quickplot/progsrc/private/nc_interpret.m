@@ -479,7 +479,7 @@ for ivar = 1:nvars
         iDim = intersect(iDim,iDims);
         if ~isempty(iDim)
             Info.TSMNK(3) = iDim(1);
-        else
+        elseif ~isempty(iDims)
             Info.TSMNK(3) = iDims(1);
         end
         %
