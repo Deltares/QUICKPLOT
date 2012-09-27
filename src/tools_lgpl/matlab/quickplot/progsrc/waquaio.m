@@ -33,6 +33,7 @@ function varargout=waquaio(sds,exper,field,varargin)
 %   * disch0   : unprocessed discharges in velocity points
 %   * dischpot : discharge potential,time
 %   * chezy    : Chézy KSI direction at U point,Chézy ETA direction at V point
+%   * hvisco   : eddy viscosity, time
 %
 %   * energy   : turbulent kinetic energy, time
 %   * dissip   : energy dissipation, time
@@ -1604,7 +1605,7 @@ switch field
             varargout={U V refdate+u.SimTime/1440};
         end
         
-    case {'wlvl','waterlevel','head','wdepth','hrms','peakperiod','wavenumber'}
+    case {'wlvl','waterlevel','head','wdepth','hrms','peakperiod','wavenumber','hvisco'}
         %
         % Time dependent 2D quantities at cell centre
         %
@@ -1621,6 +1622,8 @@ switch field
                 var=waqua('readsds',sds,exper,'COEFF_FLOW_WAVES',tstep,3*npnt+(1:npnt));
             case 'wavenumber'
                 var=waqua('readsds',sds,exper,'SOLUTION_WAVES_WAVENUMBER',tstep);
+            case 'hvisco'
+                var=waqua('readsds',sds,exper,'SOLUTION_FLOW_TOTALHORVISC',tstep);
             otherwise
                 var=waqua('readsds',sds,exper,field,tstep);
         end
