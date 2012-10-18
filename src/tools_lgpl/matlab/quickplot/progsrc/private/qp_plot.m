@@ -876,7 +876,11 @@ else
             geom=Props.Geom;
         end
         if strcmp(geom,'POLYG') && ~DataInCell
-            geom='PNT';
+            if DimFlag(M_) && DimFlag(N_)
+                geom='';
+            else
+                geom='PNT';
+            end
         end
         switch geom
             case 'SEG'

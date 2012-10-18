@@ -676,7 +676,11 @@ if (nval==1 && data2d) || nval==1.9 || strcmp(nvalstr,'strings') || strcmp(nvals
                 case 1
                     switch geometry
                         case {'POLYG'}
-                            PrsTps={'polygons';'markers';'values'};
+                            if DimFlag(M_) && DimFlag(N_)
+                                PrsTps={'polygons';'markers';'values';'continuous shades';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
+                            else
+                                PrsTps={'polygons';'markers';'values'};
+                            end
                         otherwise
                             PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                     end

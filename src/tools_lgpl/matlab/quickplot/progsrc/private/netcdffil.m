@@ -305,7 +305,7 @@ for iCoord = 1:length(coordname)
             for f = {'Val','XComp','YComp'}
                 fc = f{1};
                 if isfield(Ans,fc)
-                    Ans.(fc) = repmat(Ans.(fc),1,size(Coord,2))';
+                    Ans.(fc) = repmat(Ans.(fc)(:),1,size(Coord,2))';
                     Ans.(fc) = Ans.(fc)(:);
                 end
             end
@@ -660,13 +660,13 @@ else
         %
         if ~isempty(Info.X) && ~isempty(Info.Y)
             Insert.hasCoords=1;
-            if ~Insert.DimFlag(N_) % 1D data set or unstructured data set
-                if ~isempty(Info.XBounds) && ~isempty(Info.YBounds)
-                    Insert.Geom = 'POLYG';
-                    Insert.ClosedPoly = 1;
-                    Insert.Coords = 'xy';
-                    Insert.DataInCell = 1;
-                elseif Insert.DimFlag(K_)
+            if ~isempty(Info.XBounds) && ~isempty(Info.YBounds)
+                Insert.Geom = 'POLYG';
+                Insert.ClosedPoly = 1;
+                Insert.Coords = 'xy';
+                Insert.DataInCell = 1;
+            elseif ~Insert.DimFlag(N_) % 1D data set or unstructured data set
+                if Insert.DimFlag(K_)
                     Insert.Geom = 'PNT+';
                     Insert.Coords = 'xy+z';
                 else
