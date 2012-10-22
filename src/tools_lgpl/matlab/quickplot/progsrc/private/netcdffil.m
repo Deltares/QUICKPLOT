@@ -305,7 +305,7 @@ for iCoord = 1:length(coordname)
             for f = {'Val','XComp','YComp'}
                 fc = f{1};
                 if isfield(Ans,fc)
-                    Ans.(fc) = repmat(Ans.(fc)(:),1,size(Coord,2))';
+                    Ans.(fc) = repmat(Ans.(fc)(:)',size(Coord,2),1);
                     Ans.(fc) = Ans.(fc)(:);
                 end
             end
