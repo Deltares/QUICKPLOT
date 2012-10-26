@@ -538,7 +538,7 @@ elseif (strcmp(subtype,'map') && mapgrid) || strcmp(subtype,'plot') || strcmp(su
                     val1=val1(:,1:NoSegFlow);
                 end
             elseif Props.BedLayer == 1
-                NoSegBedLayer=prod(sz([M_ N_]));
+                NoSegBedLayer=FI.Grid.NoSegPerLayer;
                 val1=val1(:,end-NoSegBedLayer+1:end);
             end
         end
