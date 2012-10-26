@@ -9,7 +9,6 @@
 %   aukepc                      - Read AUKE/pc files.
 %   bagdpt                      - Read output files BAGGER-BOS-RIZA bagger option.
 %   bagmap                      - Read output files BAGGER-BOS-RIZA bagger option.
-%   bct_io                      - Read/write boundary condition tables.
 %   bil                         - Read bil/hdr files.
 %   bna                         - Read/write for ArcInfo (un)generate files.
 %   boxfile                     - Read/write SIMONA box files.
