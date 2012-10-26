@@ -7,7 +7,9 @@ function Info=bct_io(cmd,varargin)
 %
 %   BCT_IO('WRITE',FILENAME,INFO) writes the time-series data to the
 %   specified file. The INFO structure should be similar to the one
-%   obtained from a BCT_IO('OPEN',...) call.
+%   obtained from a BCT_IO('OPEN',...) call. Each Table may contain in
+%   addition a Format field specifying the number format of the data values
+%   to be written to the file.
 %
 %   DATE = BCT_IO('TIMES',INFO,I) returns a vector DATE containing the
 %   dates associated with table I of file INFO.
@@ -17,7 +19,7 @@ function Info=bct_io(cmd,varargin)
 %
 %   INFO2 = BCT_IO('CLIP',INFO,T1,T2) clips all time series such that the
 %   period of T1 until T2 is still covered. If T2 is missing, then only
-%   time series segment the includes T1 is preserved.
+%   time series segment that includes T1 is preserved.
 
 %----- LGPL --------------------------------------------------------------------
 %
@@ -263,16 +265,39 @@ for i = 1:length(Info.Table)
     fprintf(fid,'reference-time       %i\n',Info.Table(i).ReferenceTime);
     fprintf(fid,'time-unit           ''%s''\n',Info.Table(i).TimeUnit);
     fprintf(fid,'interpolation       ''%s''\n',Info.Table(i).Interpolation);
-    
-    for j=1:length(Info.Table(i).Parameter)
+
+    nval = length(Info.Table(i).Parameter);
+    for j=1:nval
         fprintf(fid,'parameter           ''%s'' unit ''%s''\n', ...
             Info.Table(i).Parameter(j).Name, ...
             Info.Table(i).Parameter(j).Unit);
     end
-    
+
     fprintf(fid,'records-in-table     %i\n',size(Info.Table(i).Data,1));
-    fprintf(fid,[repmat('%15.7e ',1,length(Info.Table(i).Parameter)) '\n'], ...
-        transpose(Info.Table(i).Data));
+    if isfield(Info.Table(i),'Format') && ~isempty(Info.Table(i),Format)
+       fmt = Info.Table(i).Format;
+    else
+       fmt = '';
+    endif
+
+    nperc = length(strfind(fmt,'%'));
+    if nperc==0
+       fmt = '%15.7e';
+    endif
+    if nperc==1
+       fmt = [repmat([' ',deblank2(fmt)],1,nval-1),'\n'];
+       fmt = fmt(2:end);
+    elseif nperc==nval
+       fmt = [Info.Table(i).Format,'\n'];
+    elseif nperc>nval
+       perc = strfind(fmt,'%');
+       fmt = [deblank(fmt(1:perc(nval+1)-1)),'\n'];
+    else % nperc<nval
+       perc = strfind(fmt,'%');
+       lastfmt = deblank(fmt(perc(end):end));
+       fmt = [deblank(fmt),repmat([' ',lastfmt],1,nval-nperc),'\n'];
+    end
+    fprintf(fid,fmt, transpose(Info.Table(i).Data));
 end
 fclose(fid);
 OK=1;
