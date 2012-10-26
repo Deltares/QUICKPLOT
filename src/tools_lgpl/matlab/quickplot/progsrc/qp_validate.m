@@ -60,10 +60,10 @@ swrk=['..',fs,'work',fs];
 slog=['..',fs,'logfiles',fs];
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %
-Hpb=progressbar('cancel','delete(gcbf)');
+Hpb=progressbar('cancel','delete(gcbf)','pause','on');
 pHpb=get(Hpb,'position');
 ssz=get(0,'screensize');
-set(Hpb,'position',[10 ssz(4)-pHpb(4)-30 300 pHpb(4)])
+set(Hpb,'position',[10 ssz(4)-pHpb(4)-30 pHpb(3) pHpb(4)])
 %
 UserInterrupt=0;
 if matlabversionnumber>=7.02
@@ -77,7 +77,7 @@ end
 % Allow for a large number of messages
 %
 ui_message('max',10000)
-set(findall(0,'tag','UI_MESSAGE window'),'position',[10 40 300 ssz(4)-pHpb(4)-120])
+set(findall(0,'tag','UI_MESSAGE window'),'position',[10 40 pHpb(3) ssz(4)-pHpb(4)-120])
 try
    full_ln=fullfile(val_dir,logname);
    if ~localexist(fullfile(val_dir,baseini))
