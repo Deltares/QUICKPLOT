@@ -19,6 +19,10 @@ function Fg0=progressbar(varargin)
 %   ...,'color',Color)
 %   Set color of progressbar to specified color.
 %
+%   ...,'pause','on')
+%   Activate pause feature, which pauses the execution at the next
+%   progressbar update.
+%
 %   ...,'cancel',CancelFcn)
 %   Activate cancel button (and close window button)
 %   and execute CancelFcn when clicked. If CancelFcn
@@ -57,7 +61,6 @@ function Fg0=progressbar(varargin)
 %   $HeadURL$
 %   $Id$
 
-Cancel='';
 Update=0;
 Scan=0;
 if nargin==0
@@ -87,6 +90,7 @@ if Scan
         'Figure'              1 []    '' 0
         'Title'               1 -1    '' 0
         'Cancel'              1 -1    '' 0
+        'Pause'               1  '' {'on','off'} 0
         'Color'               1 -1    '' 0};
     [X,err]=procargs(varargin,CellFields,CellValues);
     if ~isempty(err)
@@ -94,7 +98,7 @@ if Scan
     end
     frac=X.Fraction;
     Fg=X.Figure;
-    if isempty(Fg) & ishandle(frac) & strcmp(get(frac,'type'),'figure')
+    if isempty(Fg) && ishandle(frac) && strcmp(get(frac,'type'),'figure')
         Fg=frac;
         frac=NaN;
     end
@@ -110,7 +114,7 @@ end
 Width=220;
 First=0;
 if isempty(Fg)
-    sz=[300 60];
+    sz=[360 60];
     ssz=get(0,'screensize');
     pos=[ssz(3:4)/2-sz/2 sz];
     Inactive=get(0,'defaultuicontrolbackgroundcolor');
@@ -118,7 +122,8 @@ if isempty(Fg)
     Fg=figure('position',pos,'numbertitle','off','name','0%','resize','off','menubar','none','color',Inactive,'closerequestfcn','','integerhandle','off','handlevisibility','off','tag','DelftProgressBar');
     setappdata(Fg,'WL_UserInterface',1)
     UD.Title='';
-    UD.Cancel=uicontrol('parent',Fg,'pos',[240 30 50 20],'string','cancel','enable','off','tag','cancel');
+    UD.Pause=uicontrol('parent',Fg,'pos',[240 30 50 20],'style','togglebutton','string','pause','enable','off','tag','pause','value',0,'callback',@dopause);
+    UD.Cancel=uicontrol('parent',Fg,'pos',[300 30 50 20],'string','cancel','enable','off','tag','cancel');
     uicontrol('parent',Fg,'pos',[10 30 Width 20],'style','edit','enable','inactive','backgroundcolor',Inactive);
     UD.HBar=uicontrol('parent',Fg,'pos',[10 30 0.1 20],'style','pushbutton','enable','inactive','backgroundcolor',[0 0 1],'foregroundcolor','w','string','0%','tag','bar','userdata',0);
     UD.TRem=uicontrol('parent',Fg,'pos',[10 10 sz(1)-20 18],'style','text','enable','on','string','Time remaining: --','tag','remain','horizontalalignment','left');
@@ -144,6 +149,11 @@ hbar=UD.HBar;
 fracprev=UD.FracPrev;
 frac=round(max(0,min(1,frac))*100)/100;
 if Update
+    switch X.Pause
+        case {'on','off'}
+            set(UD.Pause,'enable',X.Pause)
+    end
+    %
     if ischar(X.Cancel)
         set(Fg,'closerequestfcn',X.Cancel);
         set(UD.Cancel,'callback',X.Cancel);
@@ -165,7 +175,7 @@ if Update
         fracprev=-1;
     end
 end
-if ~isequal(frac,fracprev) & ~First
+if ~isequal(frac,fracprev) && ~First
     fracprev=UD.FracPrev;
     UD.FracPrev=frac;
     if frac<0.11
@@ -175,7 +185,7 @@ if ~isequal(frac,fracprev) & ~First
         Str=sprintf('%.0f%%',frac*100);
         Str2=Str;
     end
-    if frac<fracprev | frac<=UD.StartFrac
+    if frac<fracprev || frac<=UD.StartFrac
         % when going back reset clock
         UD.StartTime=now;
         UD.StartFrac=frac;
@@ -206,3 +216,6 @@ end
 if nargout>0
     Fg0=Fg;
 end
+
+function dopause(obj,varargin)
+waitfor(obj,'value',0)
