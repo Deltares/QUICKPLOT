@@ -188,9 +188,10 @@ end
 %
 for ivar = 1:nvars
     Info = nc.Dataset(ivar);
-    if strcmp(Info.Type,'unknown')
-        continue
-    elseif strcmp(Info.Type,'coordinate')
+    %if strcmp(Info.Type,'unknown')
+    %    continue
+    %else
+    if strcmp(Info.Type,'coordinate')
         idim = Info.Dimid+1;
     else % auxiliary coordinate
         idim = [];
