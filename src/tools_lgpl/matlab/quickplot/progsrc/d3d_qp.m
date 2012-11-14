@@ -71,7 +71,7 @@ if (nargout~=0)
         return
     elseif isstandalone % allow standalone auto start ...
         outdata=[];
-    elseif none(strcmp(cmd,{'loaddata','selectedfigure','selectedaxes','selecteditem','selectfield'}))
+    elseif none(strcmp(cmd,{'loaddata','selectedfigure','selectedaxes','selecteditem','selectfield','qpmanual','matlabmanual'}))
         error('Too many output arguments.');
     end
 end
@@ -2116,6 +2116,36 @@ try
                 end
             end
             qpversion=[];
+        
+        case {'qpmanual','matlabmanual'}
+            switch cmd
+                case 'qpmanual'
+                    manual = 'Delft3D-QUICKPLOT_User_Manual.pdf';
+                case 'matlabmanual'
+                    manual = 'Delft3D-MATLAB_User_Manual.pdf';
+            end
+            p = {qp_basedir('exe') getenv('D3D_HOME')};
+            found = 0;
+            for ip = 1:2
+                pth = [p{ip} filesep];
+                dp = strfind(pth,filesep);
+                for i=length(dp):-1:1
+                    manp = [pth(1:dp(i)) 'manuals' filesep manual];
+                    if exist(manp)
+                        found = 1;
+                        if nargout==0
+                           system(['start ' manp]);
+                        end
+                        break
+                    end
+                end
+                if found
+                    break
+                end
+            end
+            if nargout>0
+                outdata = found;
+            end
             
         case {'about','version'}
             qp_showabout(qpversion,'quickplot');
@@ -2125,7 +2155,7 @@ try
             
         case {'plotmngr','hideplotmngr'}
             currentstatus=get(UD.PlotMngr.Fig,'visible');
-            if strcmp(cmd,'hideplotmngr'),
+            if strcmp(cmd,'hideplotmngr')
                 currentstatus='on';
             end
             switch currentstatus

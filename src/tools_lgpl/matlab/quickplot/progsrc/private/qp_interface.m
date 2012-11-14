@@ -79,12 +79,18 @@ m1=qp_uimenu(mfig,'&Window', ...
     'comline','Hide C&ommand Line',0,1,0
     'dock','Dock Plot &Options',0,1,0});
 %=============
+showqpm = ispc && d3d_qp('qpmanual');
+showmim = ispc && ~isstandalone && d3d_qp('matlabmanual');
 m1=qp_uimenu(mfig,'&Help', ...
-    {'deltaresweb','&Deltares Systems',1,1,0
+    {'qpmanual','&QUICKPLOT manual',showqpm,1,0
+    'matlabmanual','MATLAB Interface &Toolbox manual',showmim,1,0
+    'deltaresweb','&Deltares Systems',1,1,showqpm || showmim
     'deltaresweboss','Deltares &Open Source',1,1,0
     'aboutmatlab','About &MATLAB',1,1,1
     'about','&About Delft3D-QUICKPLOT',1,1,1});
 %=============
+
+
 
 a0 = axes('Parent',mfig, ...
     'Visible','off', ...
