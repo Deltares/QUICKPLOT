@@ -278,7 +278,7 @@ for i = 1:length(Info.Table)
        fmt = Info.Table(i).Format;
     else
        fmt = '';
-    endif
+    end
 
     nperc = length(strfind(fmt,'%'));
     if nperc==0
