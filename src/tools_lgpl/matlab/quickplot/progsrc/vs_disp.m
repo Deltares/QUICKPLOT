@@ -3,44 +3,46 @@ function Output=vs_disp(varargin)
 %
 %   GENERAL OVERVIEW OF FILE CONTENTS
 %   =================================
-%   VS_DISP(NFStruct) lists all group names, group elements, and all group
+%   VS_DISP(NFSfile) lists all group names, group elements, and all group
 %   and element properties like the "disp stat" command of the stand alone
 %   Viewer Selector program for accessing NEFIS file contents.
 %
-%   VS_DISP(NFStruct,[]) lists only group names, group dimensions, and
+%   VS_DISP(NFSfile,[]) lists only group names, group dimensions, and
 %   number of elements per group.
 %
-%   Output=VS_DISP(NFStruct) or Output=VS_DISP(NFStruct,[]) returns a char
+%   Output=VS_DISP(NFSfile) or Output=VS_DISP(NFSfile,[]) returns a char
 %   array containing the names of the groups.
 %
 %   CONTENT OF SINGLE GROUP
 %   =======================
-%   VS_DISP(NFStruct,'GroupName') lists all group elements, and all element
+%   VS_DISP(NFSfile,'GroupName') lists all group elements, and all element
 %   properties like the "disp <GroupName>" command of the stand alone
 %   Viewer Selector program for accessing NEFIS file contents.
 %
-%   Output=VS_DISP(NFStruct,'GroupName') returns a char array containing
+%   Output=VS_DISP(NFSfile,'GroupName') returns a char array containing
 %   the names of the elements of the group.
 %
-%   VS_DISP(NFStruct,'GroupName',[]) gives detailed data about the
+%   VS_DISP(NFSfile,'GroupName',[]) gives detailed data about the
 %   specified group.
 %
-%   Output=VS_DISP(NFStruct,'GroupName',[]) returns detailed data about the
+%   Output=VS_DISP(NFSfile,'GroupName',[]) returns detailed data about the
 %   specified group.
 %
 %   INFORMATION OF A SINGLE ELEMENT
 %   ===============================
-%   VS_DISP(NFStruct,'GroupName','ElementName') gives detailed data about
+%   VS_DISP(NFSfile,'GroupName','ElementName') gives detailed data about
 %   the specified element.
 %
-%   Output=VS_DISP(NFStruct,'GroupName','ElementName') returns detailed
+%   Output=VS_DISP(NFSfile,'GroupName','ElementName') returns detailed
 %   data about the specified element.
 %
 %   FOR ALL CASES
 %   =============
-%   If the file (NFStruct) is not specified, the NEFIS that was last opened
-%   by VS_USE will be used to read the data. A file structure NFStruct can
-%   be obtained as output argument from the function VS_USE.
+%   NFSfile may be either the data structure of a NEFIS as obtained from
+%   VS_USE or the name of a NEFIS file (in which case VS_USE will be called
+%   on the fly). If the NFSfile is not specified then NEFIS that was last
+%   opened by VS_USE will be used to read the data.
+%
 %   VS_DISP(FID,...) writes the information to the specified file instead
 %   of the command window.
 %
@@ -93,10 +95,16 @@ if nargin>0
 end
 
 VS=[];
-if length(args)>0
+if ~isempty(args)
     if isstruct(args{1})
         VS = args{1};
         args = args(2:end);
+    elseif ischar(args{1})
+        try
+           VS = vs_use(args{1});
+           args = args(2:end);
+        catch
+        end
     end
 end
 if isempty(VS)
