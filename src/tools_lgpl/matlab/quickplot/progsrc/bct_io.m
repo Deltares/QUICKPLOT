@@ -274,7 +274,7 @@ for i = 1:length(Info.Table)
     end
 
     fprintf(fid,'records-in-table     %i\n',size(Info.Table(i).Data,1));
-    if isfield(Info.Table(i),'Format') && ~isempty(Info.Table(i),Format)
+    if isfield(Info.Table(i),'Format') && ~isempty(Info.Table(i).Format)
        fmt = Info.Table(i).Format;
     else
        fmt = '';
