@@ -202,6 +202,7 @@ else
     coordname={};
 end
 %
+npolpnt = 0;
 firstbound = 1;
 for iCoord = 1:length(coordname)
     vdim = getfield(Info,coordname{iCoord});
@@ -302,10 +303,11 @@ for iCoord = 1:length(coordname)
             end
         end
         if firstbound
+            npolpnt = size(Coord,2);
             for f = {'Val','XComp','YComp'}
                 fc = f{1};
                 if isfield(Ans,fc)
-                    Ans.(fc) = repmat(Ans.(fc)(:)',size(Coord,2),1);
+                    Ans.(fc) = repmat(Ans.(fc)(:)',npolpnt,1);
                     Ans.(fc) = Ans.(fc)(:);
                 end
             end
@@ -513,11 +515,12 @@ if ~isempty(Info.Z) && Props.hasCoords
         Z = reshape(Z,[szCoord(2:end) 1]);
     end
     %--------------------------------------------------------------------
+    if npolpnt>0
+        Z = repmat(Z(:)',npolpnt,1);
+        Z = Z(:);
+    end
     Ans.Z = Z;
     %
-    if isbounds
-        Z = repmat(Z,[nboundpnt 1]);
-    end
     szZ = size(Z);
     szX = ones(size(szZ));
     szX(1:ndims(Ans.X)) = size(Ans.X);

@@ -427,7 +427,7 @@ for ivar = 1:nvars
         % Assumption: time is always unique and coordinate dimension.
         %
         if length(Info.Time)>1 | length(nc.Dataset(Info.Time).Dimid)>1
-            ui_message('error','Problem detecting time coordinate. Contact support.')
+            ui_message('error','Unsupported case encountered: multiple time coordinates encountered.')
             Info.Time = Info.Time(1);
         end
         Info.TSMNK(1) = nc.Dataset(Info.Time).Dimid;
@@ -436,11 +436,29 @@ for ivar = 1:nvars
         %
         % Assumption: vertical coordinate is always unique and coordinate dimension.
         %
-        if length(Info.Z)>1 | length(nc.Dataset(Info.Z).Dimid)>1
-            ui_message('error','Problem detecting vertical coordinate. Contact support.')
+        if length(Info.Z)>1
+            ui_message('error','Unsupported case encountered: multiple vertical coordinates encountered.')
             Info.Z = Info.Z(1);
         end
-        Info.TSMNK(5) = nc.Dataset(Info.Z).Dimid;
+        ZDims = nc.Dataset(Info.Z).Dimid;
+        if length(ZDims)>1
+            % Z coordinate is multidimensional variable; try to determine
+            % z dimension by excluding any assigned dimension ...
+            ZDims = setdiff(ZDims,Info.TSMNK );
+            % ... and dimensions associated to X and Y coordinates
+            % (assuming that those ain't have a vertical dimension).
+            for ix = 1:length(Info.X)
+                ZDims = setdiff(ZDims,nc.Dataset(Info.X(ix)).Dimid);
+            end
+            for iy = 1:length(Info.Y)
+                ZDims = setdiff(ZDims,nc.Dataset(Info.Y(iy)).Dimid);
+            end
+        end
+        if length(ZDims)==1
+           Info.TSMNK(5) = ZDims;
+        else
+            ui_message('error','Unable to uniquely identify z coordinate.')
+        end
     end
     if ~isempty(Info.Station)
         %
