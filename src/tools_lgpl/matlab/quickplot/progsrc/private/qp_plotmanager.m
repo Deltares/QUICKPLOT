@@ -629,7 +629,11 @@ switch cmd
             %
             ItTag1 = ItTags{ItVal};
             hIt1 = findall(pfig,'tag',ItTag1); % the object itself
-            hItem1 = hIt1(~cellfun('isempty',get(hIt1,'userdata')));
+            if length(hIt1)>1
+                hItem1 = hIt1(~cellfun('isempty',get(hIt1,'userdata')));
+            else
+                hItem1 = hIt1;
+            end
             ZCurrent1 = getappdata(hItem1,'Level');
             %
             switch cmd
@@ -640,7 +644,11 @@ switch cmd
             end
             ItTag2 = ItTags{ItVal2};
             hIt2 = findall(pfig,'tag',ItTag2); % the object itself
-            hItem2 = hIt2(~cellfun('isempty',get(hIt2,'userdata')));
+            if length(hIt2)>1
+                hItem2 = hIt2(~cellfun('isempty',get(hIt2,'userdata')));
+            else
+                hItem2 = hIt2;
+            end
             ZCurrent2 = getappdata(hItem2,'Level');
             %
             setzcoord(hIt1,ZCurrent2)
