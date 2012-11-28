@@ -317,7 +317,11 @@ else
             end
             I=logical(zeros(size(I))); I(II(Ind))=1;
             if (multiple(M_) || multiple(N_)) && multiple(K_) && isfield(data,'Y')
-                s=pathdistance(data.X(:,:,1),data.Y(:,:,1));
+                if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
+                    s=pathdistance(data.X(:,:,1),data.Y(:,:,1),'geographic');
+                else
+                    s=pathdistance(data.X(:,:,1),data.Y(:,:,1));
+                end
                 s=reshape(repmat(s,[1 1 size(data.X,3)]),size(data.X));
                 s=s(I);
             end
@@ -792,9 +796,11 @@ end
 ChangeCLim=1;
 
 diststr = 'x coordinate';
+isdist  = 0;
 if isfield(Ops,'plotcoordinate') && ~isempty(Ops.plotcoordinate)
     switch Ops.plotcoordinate
         case {'path distance','reverse path distance'}
+            isdist = 1;
             if multiple(M_) && ~multiple(N_)
                 if isempty(Selected{N_})
                     diststr = 'distance';
@@ -915,6 +921,9 @@ if ~isempty(basicaxestype)
         dimension1 = 'distance';
         if isfield(data,'XUnits') && ~isempty(data(1).XUnits)
             unit1 = data(1).XUnits;
+            if strcmp(data(1).XUnits,'deg')
+                unit1 = 'm';
+            end
         end
     else
         dimension1 = diststr;%'distance';
@@ -932,6 +941,9 @@ if ~isempty(basicaxestype)
             if isfield(data,'XUnits') && ~isempty(data(1).XUnits)
                 unit1 = data(1).XUnits;
             end
+        end
+        if isdist && strcmp(unit1,'deg')
+            unit1 = 'm';
         end
     end
     dimension2 = 'y coordinate';%'distance';

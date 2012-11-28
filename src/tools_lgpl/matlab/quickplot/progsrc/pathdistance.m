@@ -1,4 +1,4 @@
-function d0=pathdistance(x0,y0,z0)
+function d0=pathdistance(varargin)
 %PATHDISTANCE Computes the distance along a path.
 %   Computes the distance along the path from the first
 %   point for every point on the path.
@@ -40,17 +40,31 @@ function d0=pathdistance(x0,y0,z0)
 %   $Id$
 
 igeo=0;
-n=0;
+iopt=0;
+x0=[];
+y0=[];
+z0=[];
 if nargin>2
-    if ischar(z0)
-        if strcmpi(z0,'geographic')
-            igeo=1;
+    for i=1:length(varargin)
+        if ischar(varargin{i})
+            switch varargin{i}
+                case {'geographic','spherical','deg'}
+                    igeo=1;
+            end
+        elseif isempty(x0)
+            x0 = varargin{i};
+            iopt=1;
+        elseif isempty(y0)
+            y0 = varargin{i};
+            iopt=2;
+        elseif isempty(z0)
+            z0 = varargin{i};
+            iopt=3;
+        else
+            error('Too many numerical arguments.')
         end
-        n=1;
     end
 end
-
-iopt=nargin-n;
 
 d0=NaN(size(x0));
 
@@ -77,8 +91,7 @@ elseif iopt==2
             d0(i)=NaN;
         else
             if igeo
-                d0(i)=d0(iprev)+sqrt((111111*cos(0.5*(y0(i)+y0(iprev))*pi/180)*(x0(i)-x0(iprev)))^2 ...
-                    +(111111*(y0(i)-y0(iprev)))^2);
+                d0(i)=d0(iprev)+geodist(x0(iprev), y0(iprev), x0(i), y0(i));
             else
                 d0(i)=d0(iprev)+sqrt((x0(i)-x0(iprev))^2+(y0(i)-y0(iprev))^2);
             end
@@ -93,11 +106,7 @@ elseif iopt==3
             d0(i)=NaN;
         else
             if igeo
-                d0(i)=d0(iprev)+sqrt((111111*cos(0.5*(y0(i)+y0(iprev))*pi/180)*(x0(i)-x0(iprev)))^2 + ...
-                    (111111*(y0(i)-y0(iprev)))^2 + ...
-                    (z0(i)-z0(iprev))^2);
-                d0(i)=d0(iprev)+sqrt((111111*cos(0.5*(y0(i)+y0(iprev))*pi/180)*(x0(i)-x0(iprev)))^2 + ...
-                    (111111*(y0(i)-y0(iprev)))^2);
+                d0(i)=d0(iprev)+sqrt(geodist(x0(iprev), y0(iprev), x0(i), y0(i))^2+(z0(i)-z0(iprev))^2);
             else
                 d0(i)=d0(iprev)+sqrt((x0(i)-x0(iprev))^2+(y0(i)-y0(iprev))^2+(z0(i)-z0(iprev))^2);
             end

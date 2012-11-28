@@ -46,10 +46,15 @@ end
 switch lower(vs_type(C))
     case 'delft3d-trim'
         T=C;
-        try
-            C=vs_use(strrep(C.FileName,'trim-','com-'),'quiet');
-        catch
+        Cfile = strrep([C.FileName C.DatExt],'trim-','com-');
+        if isempty(Cfile)
             C=[];
+        else
+            try
+                C=vs_use(Cfile,'quiet');
+            catch
+                C=[];
+            end
         end
         vs_use(T)
     case 'delft3d-com'
@@ -93,10 +98,24 @@ end
 DPZ=corner2center(DP0,'same');
 H=ms.S1+DPZ;
 
+I=vs_disp(T,'map-const','XZ');
+if strcmp(I.ElmUnits,'[  DEG  ]')
+    spherical = 1;
+else
+    spherical = 0;
+end
 distU=[];
-distU(2:size(X,1),:)=sqrt(diff(X).^2+diff(Y).^2);
 distV=[];
-distV(:,2:size(X,2))=sqrt(diff(X,1,2).^2+diff(Y,1,2).^2);
+if spherical
+    distU(2:size(X,1),:)=geodist(X(1:end-1,:),Y(1:end-1,:),X(2:end,:),Y(2:end,:));
+else
+    distU(2:size(X,1),:)=sqrt(diff(X).^2+diff(Y).^2);
+end
+if spherical
+    distV(:,2:size(X,2))=geodist(X(:,1:end-1),Y(:,1:end-1),X(:,2:end),Y(:,2:end));
+else
+    distV(:,2:size(X,2))=sqrt(diff(X,1,2).^2+diff(Y,1,2).^2);
+end
 
 distU=distU.*mmc.KCU;
 distU(mmc.KCU~=1)=NaN;

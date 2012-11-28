@@ -134,7 +134,11 @@ switch NVal
                         xx=flipud(fliplr(xx));
                         yy=flipud(fliplr(yy));
                     end
-                    x=pathdistance(xx,yy);
+                    if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
+                        x=pathdistance(xx,yy,'geographic');
+                    else
+                        x=pathdistance(xx,yy);
+                    end
                     if strcmp(Ops.plotcoordinate,'reverse path distance')
                         x=flipud(fliplr(x));
                     end
@@ -390,7 +394,11 @@ switch NVal
                         yy=flipud(fliplr(yy));
                         zz=flipud(fliplr(zz));
                     end
-                    x=pathdistance(xx,yy,zz);
+                    if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
+                        x=pathdistance(xx,yy,zz,'geographic');
+                    else
+                        x=pathdistance(xx,yy,zz);
+                    end
                     if strcmp(Ops.plotcoordinate,'reverse path distance')
                         x=flipud(fliplr(x));
                     end
@@ -486,7 +494,11 @@ switch NVal
                         x=flipud(fliplr(x));
                         y=flipud(fliplr(y));
                     end
-                    s=pathdistance(x,y);
+                    if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
+                        s=pathdistance(x,y,'geographic');
+                    else
+                        s=pathdistance(x,y);
+                    end
                     if ~isequal(size(data.X),size(data.Val))
                         ds=s(min(find(s>0)))/2;
                         if ~isempty(ds)
@@ -679,7 +691,11 @@ switch NVal
                     else
                         xsign=1;
                     end
-                    s=pathdistance(x,y);
+                    if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
+                        s=pathdistance(x,y,'geographic');
+                    else
+                        s=pathdistance(x,y);
+                    end
                     if strcmp(Ops.plotcoordinate,'reverse path distance')
                         s=flipud(fliplr(s));
                     end
@@ -698,7 +714,11 @@ switch NVal
                 % component in case of x/y coordinate projection
                 %
                 if xsign==0
-                    t = pathdistance(x,y);
+                    if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
+                        t=pathdistance(x,y,'geographic');
+                    else
+                        t=pathdistance(x,y);
+                    end
                     dt1 = t-t([1 1:end-1]);
                     dt1(dt1==0)=NaN;
                     dx1 = (x-x([1 1:end-1]))./dt1;

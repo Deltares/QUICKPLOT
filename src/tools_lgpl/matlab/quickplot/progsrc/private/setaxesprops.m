@@ -245,6 +245,11 @@ if ~isempty(quantity)
             if strcmp(getappdata(Parent,[dir 'unit']),'m')
                distanceticks(Parent,dir)
             end
+        otherwise
+            if strncmp(quantity,'distance along',14) && ...
+                    strcmp(getappdata(Parent,[dir 'unit']),'m')
+               distanceticks(Parent,dir)
+            end
     end
 end
 
