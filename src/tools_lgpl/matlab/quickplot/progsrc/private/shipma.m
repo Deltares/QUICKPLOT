@@ -139,7 +139,7 @@ else
 end
 %
 FI.FileName = FileName;
-FI.UnzipFolder = [p filesep f '_' e(2:end) '.emb'];
+FI.UnzipFolder = [p filesep strrep(f,'.','_') '_' e(2:end) '.emb'];
 %
 FI.XML = xmlread(FileName);
 Doc = FI.XML.getFirstChild;
