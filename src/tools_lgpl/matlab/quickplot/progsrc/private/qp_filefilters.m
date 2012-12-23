@@ -99,7 +99,7 @@ switch filters
         if strcmp(filters,'selected+')
             lasttp  = qp_settings('LastFileType','nefis');
             ilasttp = find(strncmp(lasttp,filtertbl(:,3),length(lasttp)));
-            if ~any(iFull==ilasttp)
+            if ~isempty(ilasttp) && ~any(iFull==ilasttp)
                 iFull(end+1)=ilasttp;
             end
         end
