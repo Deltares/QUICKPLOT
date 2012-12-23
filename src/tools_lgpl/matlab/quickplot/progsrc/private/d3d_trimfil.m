@@ -392,6 +392,10 @@ if DataRead
         case {'bed level in velocity points'}
             Props.NVal=2;
             ThinDam=2;
+        case 'base level of sediment layer'
+            if strcmp(Props.Val1,'THLYR')
+                elidx{end+1}=0;
+            end
         case {'cum. erosion/sedimentation','initial bed level','bed level in water level points','cumulative mass error'}
             DepthInZeta=DataInCell | strcmp(Props.ReqLoc,'z');
     end
@@ -486,6 +490,7 @@ if DataRead
                 Props.NVal=2;
             end
         case 'base level of sediment layer'
+            val1=sum(val1,4);
             val1=-val1+readdps(FI,idx,0);
         case {'initial bed level','bed level in water level points'}
             if DepthInZeta %strcmp(Props.Val1,'DPSED') || DataInCell
@@ -1024,6 +1029,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'reduction factor due to limited sediment thickness' ...
     '-'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'FIXFAC'  ''       'sb1'    0
     'sediment thickness'               'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'DPSED'   ''       []       0
+    'base level of sediment layer'     'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'THLYR'   ''       []       0
     'base level of sediment layer'     'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'DPSED'   ''       []       0
     '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
     'grid cell surface area'           'm^2'    [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-const'      'XCOR'    ''       []       0

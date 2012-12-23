@@ -47,7 +47,7 @@ else
     %
     % called from qp_interface_update_options
     %
-    UD.Options.Act = ~strcmp(get(UD.Options.Handles,'enable'),'off');% | 1;  % <- for debugging useful: show all options
+    UD.Options.Act = ~strcmp(get(UD.Options.Handles,'enable'),'off') | qp_settings('showinactiveopt');  % <- for debugging useful: show all options
     %set(UD.Options.Handles,'enable','on')
     set(UD.Options.Handles(~UD.Options.Act),'visible','off');
     P = UD.Options.Pos(UD.Options.Act,:);

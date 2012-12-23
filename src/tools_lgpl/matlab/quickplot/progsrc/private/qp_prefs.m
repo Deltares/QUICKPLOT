@@ -134,7 +134,7 @@ switch cmd
         qp_settings(cmd,newval);
         set(gcbo,'string',num2str(newval))
         
-    case {'gridviewshowindices','boundingbox','v6zoombehavior'}
+    case {'gridviewshowindices','boundingbox','v6zoombehavior','showinactiveopt'}
         newval = get(gcbo,'value');
         qp_settings(cmd,newval);
         if newval

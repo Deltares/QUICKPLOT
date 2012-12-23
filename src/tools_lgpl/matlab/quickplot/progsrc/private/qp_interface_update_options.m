@@ -44,11 +44,20 @@ Units='';
 if isfield(Props,'Units')
     Units=Props.Units;
 end
+[nval,nvalstr]=convertnval(Props.NVal);
 
 DimFlag=Props.DimFlag;
 if isfield(Props,'Geom') && ~isempty(Props.Geom)
     geometry=Props.Geom;
     coordinates=Props.Coords;
+elseif nval<0
+    if DimFlag(M_) && DimFlag(N_)
+        geometry='sQUAD';
+        coordinates='xy';
+    else
+        geometry='SELFPLOT';
+        coordinates='';
+    end
 else
     if DimFlag(M_) && DimFlag(N_)
         geometry='sQUAD';
@@ -97,24 +106,11 @@ else
     stats={};
 end
 
-Spatial=0;
-SpatialH=0;
-SpatialV=0;
 allm=0;
-onem=isequal(get(MW.MaxM,'userdata'),1);
 alln=0;
-onen=isequal(get(MW.MaxN,'userdata'),1);
-allk=0;
-onek=isequal(get(MW.MaxK,'userdata'),1);
+vslice=0;
+hslice=0;
 if all(~DimFlag([M_ N_ K_]))
-    if DimFlag(ST_)
-        if alls || length(selected{ST_})>1
-            if isfield(Props,'Coords') && isequal(Props.Coords,'xy')
-                Spatial=2;
-                SpatialH=2;
-            end
-        end
-    end
 else
     switch getvalstr(MW.HSelType)
         case 'M range and N range'
@@ -140,34 +136,14 @@ else
                 alln=0;
             end
             %maxn=get(MW.MaxN,'userdata');
-            %
-            if any(DimFlag([M_ N_]))
-                for m_=[M_ N_]
-                    if DimFlag(m_)
-                        if isequal(selected{m_},0) || length(selected{m_})>1
-                            Spatial=Spatial+1;
-                            SpatialH=SpatialH+1;
-                        end
-                    end
-                end
-            end
-            %
-            if isequal(geometry,'TRI') || isequal(geometry,'TRI+')
-                if SpatialH==1
-                    SpatialH = 2;
-                    Spatial = 2;
-                end
-            end
         case '(M,N) point/path'
-            Spatial=Spatial+1;
-            SpatialH=SpatialH+1;
+            vslice=1;
             selected{M_}={'MN' get(MW.EditMN,'userdata')};
             if DimFlag(N_)
                 selected{N_}=0;
             end
         case '(X,Y) point/path'
-            Spatial=Spatial+1;
-            SpatialH=SpatialH+1;
+            vslice=1;
             selected{M_}={'XY' get(MW.EditXY,'userdata')};
             if DimFlag(N_)
                 selected{N_}=0;
@@ -181,33 +157,15 @@ maxt=get(findobj(mfig,'tag','max_t'),'userdata');
 switch getvalstr(MW.VSelType)
     case {'K range'}
         if DimFlag(K_)
-            allk=get(MW.AllK,'value');
-            if allk
+            if get(MW.AllK,'value')
                 selected{K_}=0;
             else
                 selected{K_}=get(MW.EditK,'userdata');
-            end
-        else
-            allk=0;
-        end
-        %maxk=get(MW.MaxK,'userdata');
-        if DimFlag(K_)
-            if isequal(selected{K_},0) || length(selected{K_})>1
-                Spatial=Spatial+1;
-                SpatialV=SpatialV+1;
             end
         end
     case {'Z slice','dZ below surface','dZ above bed'}
 end
 set(setdiff(UD.Options.Handles,gcbo),'enable','off','backgroundcolor',Inactive)
-switch geometry
-   case {'POLYL','POLYG'}
-      Spatial = 2;
-      SpatialH = 2;
-end
-Ops.spatial=Spatial;
-Ops.spatialh=SpatialH;
-Ops.spatialv=SpatialV;
 Ops.thinningmode='none';
 Ops.thinningfactors=[1 1 1];
 Ops.thinningdistance=50;
@@ -247,203 +205,131 @@ edgeflatcolour=0;
 lineproperties=0;
 data2d=0;
 
-[nval,nvalstr]=convertnval(Props.NVal);
 thindams = nval>0 & nval<1;
 MultipleColors = nval>=1 & nval<4;
 %--------------------------------------------------------------------------
 %
 %---- axes type
 %
-defaultaxestype='';
-axestype={'auto'};
-if nval<0
-elseif Spatial+multiple(ST_)==0
-    if nval==0 || nval==4
-        defaultaxestype='X-Y';
-    else
-        MultipleColors=0;
-        if multiple(T_)
-            lineproperties=1;
-            defaultaxestype='Time-Val';
-            if isequal(coordinates,'d')
-                axestype={'Time-Val','Distance-Val'};
-            end
-        else
-            plotstexts=1;
-            Ops.numformat='%g';
-            defaultaxestype='Text';
-            if DimFlag(T_)
-                axestype={'Time-Val','Text'};
-            else
-                axestype={'Text'};
-            end
-        end
-    end
-end
+axestype={'noplot'};
 switch geometry
+    case 'SELFPLOT'
+        axestype={''};
     case 'PNT'
         if multiple(ST_) || multiple(M_)
-            defaultaxestype='X-Y';
-            Spatial=2;
-            Ops.spatial=2;
-            Ops.spatialh=2;
-        end
-        if Spatial==2
-            data2d=1;
+            axestype={'X-Y'};
+        elseif multiple(T_)
+            if isequal(coordinates,'d')
+                axestype={'Time-Val','Distance-Val'};
+            elseif nval==0
+                axestype={'X-Y'};
+            else
+                axestype={'Time-Val'};
+            end
+        else
+            if nval==0
+                axestype={'X-Y'};
+            else
+                axestype={'Time-Val','Text'};
+            end
         end
     case 'PNT+'
-        switch Spatial
-            case 1
-                MultipleColors=0;
-                lineproperties=1;
-                defaultaxestype='Val-Z';
-        end
-    case 'sSEG'
-        switch SpatialH
-            case 1
-                if nval==0
-                    defaultaxestype='X-Y';
-                elseif nval==1
-                    MultipleColors=0;
-                    lineproperties=1;
-                    defaultaxestype='X-Val';
-                elseif nval==2
-                    defaultaxestype='X-Y';
-                elseif nval==4
-                    MultipleColors=0;
-                    defaultaxestype='X-Y';
-                end
-        end
-    case 'sSEG+'
-        switch Spatial
-            case 1
-                if nval==0
-                    defaultaxestype='X-Z';
-                elseif nval==1
-                    if multiple(K_)
-                        defaultaxestype='Val-Z';
-                    else
-                        defaultaxestype='X-Val';
-                    end
-                    MultipleColors=0;
-                    lineproperties=1;
-                elseif nval==2
-                    defaultaxestype='X-Z';
-                end
-            case 2
-                if nval<1
-                    lineproperties=1;
-                else
-                    data2d=1;
-                end
-                defaultaxestype='X-Z';
-        end
-    case 'sQUAD'
-        switch SpatialH
-            case 1
-                if nval<1
-                    defaultaxestype='X-Y';
-                elseif nval==1
-                    MultipleColors=0;
-                    lineproperties=1;
-                    defaultaxestype='X-Val';
-                elseif nval==2 || nval==3
-                    data2d=1;
-                    defaultaxestype='X-Y';
-                else %nval==4
-                    MultipleColors=0;
-                    defaultaxestype='X-Y';
-                end
-            case 2
-                if nval<1
-                    lineproperties=1;
-                else
-                    data2d=1;
-                end
-                defaultaxestype='X-Y';
+        if multiple(K_)
+            if ~multiple(M_) && ~multiple(ST_)
+                axestype={'Val-Z'};
+            end
+        else
+            if multiple(M_) || multiple(ST_)
+                axestype={'X-Y'};
+            elseif multiple(T_)
+                axestype={'Time-Val','X-Y'};
+            else
+                axestype={'Time-Val','Text'};
+            end
         end
     case 'SEG'
-        switch SpatialH
-            case {0,1}
-                defaultaxestype='X-Y';
-                lineproperties=1;
-                if nval==1 && SpatialH>0
-                    edgeflatcolour=1;
-                    markerflatfill=1;
-                end
-        end
-    case 'POLYL'
-        defaultaxestype='X-Y';
+        axestype={'X-Y'};
         lineproperties=1;
-        %MultipleColors=1;
-        data2d=1;
-    case {'TRI','TRI+'}
-        switch Spatial
-            case 1
-                if multiple(K_)
-                    MultipleColors=0;
-                    lineproperties=1;
-                    defaultaxestype='Val-Z';
-                elseif SpatialH==1
-                    if nval==0 || vectors
-                        defaultaxestype='X-Y';
-                    elseif nval==1
-                        MultipleColors=0;
-                        lineproperties=1;
-                        defaultaxestype='X-Val';
-                    else
-                        data2d=1;
-                        defaultaxestype='X-Y';
-                    end
-                end
-            case 2
-                if multiple(K_)
-                    data2d=1;
-                    defaultaxestype='X-Z';
+    case 'sSEG'
+        if multiple(M_)
+            switch nval
+                case {0,2,4}
+                    axestype={'X-Y'};
+                case 1
+                    axestype={'X-Val'};
+            end
+        else
+            switch nval
+                case {0,2,4}
+                    axestype={'X-Y'};
+                case 1
+                    axestype={'Time-Val','X-Val'};
+            end
+        end
+    case 'sSEG+'
+        if multiple(M_) && multiple(K_)
+            axestype={'X-Z'};
+        elseif multiple(M_)
+            axestype={'X-Val'};
+        elseif multiple(K_)
+            axestype={'Val-Z'};
+        else
+            axestype={'X-Z'};
+        end
+    case {'POLYL','POLYG'}
+        axestype={'X-Y'};
+        lineproperties=1;
+    case {'sQUAD','sQUAD+'}
+        if multiple(K_)
+            if multiple(M_) && multiple(N_) && ~vslice
+                axestype={'X-Y-Z'};
+            elseif multiple(M_) || multiple(N_) || vslice
+                axestype={'X-Z'};
+            else
+                axestype={'Val-Z'};
+            end
+        else
+            if multiple(M_) && multiple(N_) && ~vslice
+                axestype={'X-Y'};
+            elseif multiple(M_) || multiple(N_) || vslice
+                if nval==0 || nval==4
+                    axestype={'X-Y'};
+                elseif multiple(T_)
+                    axestype={'X-Val','X-Y'}; % ,'X-Time'
                 else
-                    data2d=1;
-                    defaultaxestype='X-Y';
+                    axestype={'X-Val','X-Y'};
                 end
+            elseif multiple(T_)
+                axestype={'Time-Val','X-Y','X-Val'};
+            else
+                axestype={'X-Y','X-Val','Text'};
+            end
+        end
+    case {'TRI','TRI+'}
+        if multiple(M_) && multiple(K_)
+            if vslice
+                axestype={'X-Z'};
+            else
+                axestype={'X-Y-Z'};
+            end
+        elseif multiple(M_)
+            if ~vslice || nval==0
+                axestype={'X-Y'};
+            else
+                axestype={'X-Val','X-Y'};
+            end
+        elseif multiple(K_)
+            axestype={'Val-Z'};
+        else
+            if multiple(T_)
+                axestype={'Time-Val'};
+            else
+                axestype={'X-Y'};
+            end
         end
     case 'QUAD'
-    case 'POLYG'
-        defaultaxestype='X-Y';
-        lineproperties=1;
-        %MultipleColors=1;
-        data2d=1;
     case 'GEN2D'
     case 'GEN-2D'
-    case 'sQUAD+'
-        switch Spatial
-            case 1
-                if multiple(K_)
-                    MultipleColors=0;
-                    lineproperties=1;
-                    defaultaxestype='Val-Z';
-                else
-                    if nval==0
-                        defaultaxestype='X-Y';
-                    elseif nval==1
-                        MultipleColors=0;
-                        lineproperties=1;
-                        defaultaxestype='X-Val';
-                    elseif nval==2 || nval==3
-                        data2d=1;
-                        defaultaxestype='X-Y';
-                    else %nval==4
-                        MultipleColors=0;
-                        defaultaxestype='X-Y';
-                    end
-                end
-            case 2
-                if multiple(K_)
-                    data2d=1;
-                    defaultaxestype='X-Z';
-                else
-                    data2d=1;
-                    defaultaxestype='X-Y';
-                end
-        end
     case 'SEG+'
     case 'QUAD+'
     case 'POLY+'
@@ -471,12 +357,51 @@ else
     i=1;
 end
 axestype=axestype{i};
-if isequal(axestype,'auto')
-    axestype=defaultaxestype;
+
+if strfind(axestype,'Val')
+    MultipleColors=0;
+    lineproperties=1;
+    if  strcmp(axestype,'Time-Val') && ~multiple(T_)
+        plotstexts=1;
+        Ops.numformat='%g';
+    end
+elseif strcmp(axestype,'X-Y') || strcmp(axestype,'X-Z')
+    data2d=1;
+elseif strcmp(axestype,'Text') || (strcmp(axestype,'Time-Val') && ~multiple(T_))
+    MultipleColors=0;
+    plotstexts=1;
+    Ops.numformat='%g';
 end
-defaultaxestype=axestype;
+if nval<1
+    lineproperties=1;
+end
 
 coords={'path distance','reverse path distance','x coordinate','y coordinate'};
+
+if strfind(axestype,'X')
+    Spatial=1;
+else
+    Spatial=0;
+end
+if strfind(axestype,'Y')
+    Spatial=Spatial+1;
+end
+SpatialH=Spatial;
+if strfind(axestype,'Z')
+    Spatial=Spatial+1;
+    SpatialV=1;
+else
+    SpatialV=0;
+end
+Ops.spatial=Spatial;
+Ops.spatialh=SpatialH;
+Ops.spatialv=SpatialV;
+
+if strcmp(axestype,'X-Y-Z') || (multiple(K_) && DimFlag(N_) && nval==2) % cannot plot 3D volumes and vector datasets containing no vertical component
+    %won't plot
+    axestype='noplot';
+end
+
 if strfind(axestype,'Y')
     if isfield(Props,'MName') && ~isempty(Props.MName)
         axestype = strrep(axestype,'X',Props.MName);
@@ -494,7 +419,7 @@ else
     end
 end
 
-if isequal(defaultaxestype,'X-Val') || isequal(defaultaxestype,'X-Z')
+if isequal(axestype,'X-Val') || isequal(axestype,'X-Z')
     pd=findobj(OH,'tag','plotcoordinate=?');
     prev_coords=get(pd,'string');
     i=get(pd,'value');
@@ -537,11 +462,11 @@ if nval==2 || nval==3
             if MNK>0
                 if DimFlag(K_) && DimFlag(M_) && DimFlag(N_)
                     compList={'vector','vector (split x,y)','vector (split m,n)','patch centred vector','magnitude','magnitude in plane','angle','x component','y component','z component','m component','n component'};
-                    if SpatialH ~=2
+                    if Ops.spatialh ~=2
                         ii=strmatch('magnitude in plane',compList,'exact');
                         compList(ii)=[];
                     end
-                    if Spatial==2 && SpatialH==1
+                    if Ops.spatial==2 && Ops.spatialh==1
                         compList{end+1}='normal component';
                     end
                 else
@@ -572,7 +497,7 @@ if nval==2 || nval==3
         end
     end
 
-    if SpatialV
+    if Ops.spatialv
         ii=strmatch('vector (split',compList);
         compList(ii)=[];
     end
@@ -633,7 +558,7 @@ end
 %
 %---- presentation type
 %
-if (nval==1 && data2d) || nval==1.9 || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') || strcmp(geometry,'POLYG') % || (nval==0 & ~DimFlag(ST_))
+if (nval==1 && data2d && ~strcmp(geometry,'SEG')) || nval==1.9 || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') || strcmp(geometry,'POLYG') % || (nval==0 & ~DimFlag(ST_))
     switch nvalstr
         case 1.9
             PrsTps={'vector','edge'};
@@ -661,7 +586,7 @@ if (nval==1 && data2d) || nval==1.9 || strcmp(nvalstr,'strings') || strcmp(nvals
             switch dic
                 case 0
                     if triangles
-                        if SpatialV
+                        if Ops.spatialv
                             PrsTps={'continuous shades';'markers';'values'};
                         else
                             PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
@@ -1276,7 +1201,7 @@ if (nval==1 || ~isempty(Ops.vectorcolour) || Ops.colourdams) && (lineproperties 
     Ops.clippingvalues=get(findobj(OH,'tag','clippingvals=?'),'userdata');
 end
 
-if (SpatialH==2)
+if (Ops.spatialh==2)
     set(findobj(OH,'tag','clippingvals'),'enable','on')
     set(findobj(OH,'tag','xclipping'),'enable','on')
     set(findobj(OH,'tag','xclipping=?'),'enable','on','backgroundcolor',Active)
@@ -1289,7 +1214,7 @@ end
 %---- Export option
 
 ExpTypes={};
-if (Spatial<=1) && nval>0
+if (Ops.spatial<=1) && nval>0
     ExpTypes{end+1}='csv file (time series)';
     ExpTypes{end+1}='Tekal file (time series)';
 end
@@ -1297,8 +1222,8 @@ if (allm && alln) && ~multiple(K_) && ~multiple(T_)
     ExpTypes{end+1}='grid file';
     ExpTypes{end+1}='grid file (old format)';
 end
-if (((allm || onem) && ~multiple(N_)) || ...
-        ((alln || onen) && ~multiple(M_))) && ...
+if (((allm || ~multiple(M_)) && ~multiple(N_)) || ...
+        ((alln || ~multiple(N_)) && ~multiple(M_))) && ...
         ~multiple(K_) && ~multiple(T_) && nval==0
     ExpTypes{end+1}='spline';
 end
@@ -1374,7 +1299,7 @@ OH=-1;
 %---- Set quick view or quick animate
 %
 
-Ops.animate = (((allt & maxt>1) | length(selected{T_})>1)) & Spatial & ~isequal(geometry,'PNT');
+Ops.animate = (((allt & maxt>1) | length(selected{T_})>1)) & Ops.spatial & ~isequal(geometry,'PNT');
 if Ops.animate
     viewstr='Quick Animate';
 else
@@ -1385,7 +1310,7 @@ set(qv,'string',viewstr);
 if nval==-1
     set(qv,'enable','on')
     set(findobj(mfig,'tag','loaddata'),'enable','off')
-elseif (Spatial==3) || (multiple(K_) && DimFlag(N_) && nval==2) % cannot plot 3D volumes and vector datasets containing no vertical component
+elseif strcmp(axestype,'noplot')
     set(qv,'enable','off')
 else
     set(qv,'enable','on')

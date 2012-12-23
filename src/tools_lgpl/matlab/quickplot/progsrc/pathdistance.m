@@ -44,25 +44,23 @@ iopt=0;
 x0=[];
 y0=[];
 z0=[];
-if nargin>2
-    for i=1:length(varargin)
-        if ischar(varargin{i})
-            switch varargin{i}
-                case {'geographic','spherical','deg'}
-                    igeo=1;
-            end
-        elseif isempty(x0)
-            x0 = varargin{i};
-            iopt=1;
-        elseif isempty(y0)
-            y0 = varargin{i};
-            iopt=2;
-        elseif isempty(z0)
-            z0 = varargin{i};
-            iopt=3;
-        else
-            error('Too many numerical arguments.')
+for i=1:length(varargin)
+    if ischar(varargin{i})
+        switch varargin{i}
+            case {'geographic','spherical','deg'}
+                igeo=1;
         end
+    elseif isempty(x0)
+        x0 = varargin{i};
+        iopt=1;
+    elseif isempty(y0)
+        y0 = varargin{i};
+        iopt=2;
+    elseif isempty(z0)
+        z0 = varargin{i};
+        iopt=3;
+    else
+        error('Too many numerical arguments.')
     end
 end
 

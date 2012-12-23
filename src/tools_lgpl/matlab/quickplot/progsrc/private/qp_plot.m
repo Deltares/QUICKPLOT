@@ -184,9 +184,17 @@ for i=5:-1:1
     multiple(i) = (length(Selected{i})>1) | isequal(Selected{i},0);
 end
 
+keepext = zeros(1,5);
+switch Ops.axestype
+    case 'X-Y'
+        keepext([M_ N_]) = 1;
+    case 'X-Z'
+        %keepext([M_||N_ K_]) = 1;
+end
+
 di=1+~multiple(T_);
-for i=5:-1:3
-    if ~multiple(i) && DimFlag(i), % deal with DataInCell extended grid
+for i=[K_ N_ M_]
+    if ~multiple(i) && DimFlag(i) && ~keepext(i)
        for d=1:length(data)
           geom='';
           if isfield(data,'Geom') && ~isempty(data(d).Geom)

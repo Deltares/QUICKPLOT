@@ -78,6 +78,14 @@ end
 %
 ui_message('max',10000)
 set(findall(0,'tag','UI_MESSAGE window'),'position',[10 40 pHpb(3) ssz(4)-pHpb(4)-120])
+DefFigProp.defaultfigure = qp_settings('defaultfigure',-999);
+qp_settings('defaultfigure','')
+DefFigProp.defaultfigurecolor = qp_settings('defaultfigurecolor',-999);
+qp_settings('defaultfigurecolor',get(0,'factoryuicontrolbackgroundcolor')*255)
+DefFigProp.defaultaxescolor = qp_settings('defaultaxescolor',-999);
+qp_settings('defaultaxescolor',[255 255 255])
+DefFigProp.boundingbox = qp_settings('boundingbox',-999);
+qp_settings('boundingbox',0)
 try
    full_ln=fullfile(val_dir,logname);
    if ~localexist(fullfile(val_dir,baseini))
@@ -105,7 +113,7 @@ try
    %
    % Sorting required for MATLAB 5.3 ...
    %
-   [sorteddirnames,I]=sort({d.name});
+   [sorteddirnames,I]=sort(upper({d.name}));
    d=d(I);
    %
    pbfrac=1/max(1,length(d));
@@ -581,6 +589,10 @@ if AnyFail
 else
    ui_message('','Testbank completed successfully (%i cases).\n',NTested)
 end
+qp_settings('defaultfigure',DefFigProp.defaultfigure)
+qp_settings('defaultfigurecolor',DefFigProp.defaultfigurecolor)
+qp_settings('defaultaxescolor',DefFigProp.defaultaxescolor)
+qp_settings('boundingbox',DefFigProp.boundingbox)
 
 
 function writeheader(logid,casename)

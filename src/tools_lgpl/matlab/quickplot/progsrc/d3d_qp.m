@@ -776,7 +776,7 @@ try
             
         case 'selectfile*'
             Handle_SelectFile=findobj(mfig,'tag','selectfile');
-            
+
             Handle_FO=findobj(mfig,'tag','fileoptions');
             
             File=get(Handle_SelectFile,'userdata');
@@ -798,12 +798,26 @@ try
                     set(Handle_FO,'enable','off','state','off')
                     set(UD.FilOpt.Fig,'visible','off')
                 end
-                set(Handle_SelectFile,'tooltip', ...
-                    ['Select a data file for plotting' char(10) ...
-                    ' ' char(10) ...
-                    'Currently selected:' char(10) ...
-                    File(NrInList).Name char(10) ...
-                    'Type: ' File(NrInList).FileType])
+                %
+                Handle_FileOpt=findobj(mfig,'tag','fileoptions');
+                if strcmp(File(NrInList).FileType,'<user defined variables>')
+                    set(Handle_FileOpt,'tooltip','Perform computations on variables')
+                    %
+                    set(Handle_SelectFile,'tooltip', ...
+                        ['Select a data file for plotting' char(10) ...
+                        ' ' char(10) ...
+                        'Currently selected:' char(10) ...
+                        'user defined variables'])
+                else
+                    set(Handle_FileOpt,'tooltip','Set file dependent options')
+                    %
+                    set(Handle_SelectFile,'tooltip', ...
+                        ['Select a data file for plotting' char(10) ...
+                        ' ' char(10) ...
+                        'Currently selected:' char(10) ...
+                        File(NrInList).Name char(10) ...
+                        'Type: ' File(NrInList).FileType])
+                end
                 
                 OpenFile=findobj(mfig,'tag','openfile','type','uipushtool');
                 Handle_ReloadFile=findobj(mfig,'tag','reloadfile');
@@ -3388,6 +3402,7 @@ try
             set(MW.QuickV,'enable','off')
             set(MW.Add2Plot,'enable','off')
             set(UOH,'enable','off','visible','off','backgroundcolor',Inactive)
+            set(findobj(UOH,'tag','axestype=?'),'value',1,'string',{''})
             set(findobj(UOH,'tag','dataunits=?'),'value',1)
             set(findobj(UOH,'tag','plotcoordinate=?'),'value',1,'string',{' '})
             set(findobj(UOH,'tag','component=?'),'value',1,'string',{' '})
@@ -3462,7 +3477,8 @@ try
                 'gridviewselectioncolor','gridviewlandboundarycolor', ...
                 'defaultfigurecolor','gridviewshowindices','changefont', ...
                 'defaultaxescolor','boundingbox','v6zoombehavior', ...
-                'organizationname','filefilterselection','colorbar_ratio'}
+                'organizationname','filefilterselection','colorbar_ratio', ...
+                'showinactiveopt'}
             qp_prefs(UD,mfig,cmd,cmdargs);
             
         case {'deltaresweb','deltaresweboss'}

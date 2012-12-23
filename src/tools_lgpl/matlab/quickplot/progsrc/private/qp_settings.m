@@ -106,6 +106,8 @@ Set.print_colour              = 1;
 Set.print_inverthardcopy      = 1;
 Set.organizationname          = 'Deltares';
 Set.filefilterselection       = '"ARC/INFO Ascii Grid Files","Delft3D Grid Files","Delft3D Output Files","Delft3D-FLOW Bound. Cond. Files","Delft3D/SOBEK Meteo Files","Delwaq Binary Files","Delwaq Time Series Input Files","NetCDF Files","Sample Files","Simona SDS Files","Sobek Networks","Tekal Data Files"';
+Set.debugging                 = 0;
+Set.showinactiveopt           = 0;
 if isfield(Set,param)
     val=getfield(Set,param);
 elseif ~iscell(defval)

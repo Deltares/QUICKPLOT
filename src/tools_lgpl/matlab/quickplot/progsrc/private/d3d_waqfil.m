@@ -1416,6 +1416,10 @@ if ~isempty(i)
             Ins(j0).Name='-------';
             Ins(j0).Units='';
             Ins(j0).DimFlag=[0 0 0 0 0];
+            Ins(j0).Group='';
+            Ins(j0).Val1='';
+            Ins(j0).ShortName='';
+            Ins(j0).SubsGrp='';
         end
     end
     %end
@@ -1461,6 +1465,10 @@ if isfield(FI,'Grid') && ~isempty(FI.Grid) && includegrid
     Out(3).Name='-------';
     Out(3).Units='';
     Out(3).DimFlag=[0 0 0 0 0];
+    Out(3).Group='';
+    Out(3).Val1='';
+    Out(3).ShortName='';
+    Out(3).SubsGrp='';
 end
 
 if isPartFile(FI)

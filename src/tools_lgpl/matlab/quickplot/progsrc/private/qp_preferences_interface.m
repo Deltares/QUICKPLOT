@@ -309,6 +309,20 @@ handles(end+1)=uicontrol('style','listbox', ...
 Panes(end+1,1:2)={'File Filters' handles};
 set(handles,'visible','off')
 %=============
+if qp_settings('debugging')
+    handles=[]; VOffset = dims(2)-Margin-20;
+%--------------------------------------------------------------------------
+    handles(end+1)=uicontrol('style','checkbox', ...
+        'position',[HOffset VOffset-2 150 18], ...
+        'string','Show Inactive Options', ...
+        'value',qp_settings('showinactiveopt'), ...
+        'callback','d3d_qp showinactiveopt', ...
+        'parent',mfig);
+%--------------------------------------------------------------------------
+    Panes(end+1,1:2)={'Debugging' handles};
+    set(handles,'visible','off')
+end
+%=============
 %handles=[]; VOffset = dims(2)-Margin-20;
 %--------------------------------------------------------------------------
 %Panes(end+1,1:2)={'New Pane' handles};

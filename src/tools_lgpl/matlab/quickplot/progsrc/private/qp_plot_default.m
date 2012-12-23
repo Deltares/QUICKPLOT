@@ -85,7 +85,7 @@ switch NVal
                     hNew=thindam(data.X,data.Y,data.XDam,data.YDam,'parent',Parent);
                     set(hNew,Ops.LineParams{:});
                 end
-            else
+            elseif sum(size(data.X)>1)==2
                 if FirstFrame
                     hNew=surface(data.X,data.Y,zeros(size(data.X)), ...
                         'cdata',[], ...
@@ -100,10 +100,7 @@ switch NVal
                 else
                     set(hNew,'xdata',data.X,'ydata',data.Y);
                 end
-            end
-            set(get(Parent,'title'),'string',{PName,TStr})
-        elseif spatialh==1 && spatial==1
-            if isfield(data,'Y')
+            else
                 if FirstFrame
                     hNew=line(data.X,data.Y, ...
                         'parent',Parent, ...
@@ -111,14 +108,15 @@ switch NVal
                 else
                     set(hNew,'xdata',data.X,'ydata',data.Y);
                 end
+            end
+            set(get(Parent,'title'),'string',{PName,TStr})
+        elseif spatialh==1 && spatial==1
+            if FirstFrame
+                hNew=line(data.X,zeros(size(data.X)), ...
+                    'parent',Parent, ...
+                    Ops.LineParams{:});
             else
-                if FirstFrame
-                    hNew=line(data.X,zeros(size(data.X)), ...
-                        'parent',Parent, ...
-                        Ops.LineParams{:});
-                else
-                    set(hNew,'xdata',data.X);
-                end
+                set(hNew,'xdata',data.X);
             end
             set(get(Parent,'title'),'string',{PName,TStr})
         elseif spatial==2 && spatialh==1
@@ -630,7 +628,11 @@ switch NVal
                     set(hNew(i1),'position',[data.Time yval 0],'string',strval);
                 end
             else
-                hNew=gentext(hNew,Ops,Parent,['Val=',strval]);
+                unit = '';
+                if ~isempty(Ops.units)
+                    unit = [' ' Ops.units];
+                end
+                hNew=gentext(hNew,Ops,Parent,['Val = ',strval,unit]);
             end
         end
 
