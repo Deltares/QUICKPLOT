@@ -874,20 +874,24 @@ try
             File=get(Handle_SelectFile,'userdata');
             NrInList=get(Handle_SelectFile,'value');
             Succes=~isempty(File);
+            domainstr = 'Domain';
             if Succes
                 Info=File(NrInList);
+                if isfield(Info.Data,'DomainName')
+                    domainstr = Info.Data(1).DomainName;
+                end
             end
             
             domaintxt=findobj(mfig,'tag','domain');
             domains=findobj(mfig,'tag','selectdomain');
             if ~Succes
                 set(domains,'string',' ','value',1,'enable','off','backgroundcolor',Inactive);
-                set(domaintxt,'enable','off');
+                set(domaintxt,'enable','off','string',domainstr);
             else
                 [Chk,Domains]=qp_getdata(Info,'domains');
                 if ~Chk || isempty(Domains)
                     set(domains,'string',' ','value',1,'enable','off','backgroundcolor',Inactive);
-                    set(domaintxt,'enable','off');
+                    set(domaintxt,'enable','off','string',domainstr);
                 else
                     dm=length(Domains);
                     if strcmp(get(domains,'enable'),'on')
@@ -903,7 +907,7 @@ try
                         end
                     end
                     set(domains,'string',Domains,'value',dm,'enable','on','backgroundcolor',Active);
-                    set(domaintxt,'enable','on');
+                    set(domaintxt,'enable','on','string',domainstr);
                 end
             end
             d3d_qp updatedatafields
