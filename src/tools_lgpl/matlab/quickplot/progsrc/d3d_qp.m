@@ -111,6 +111,10 @@ try
     switch cmd
         case {'slider','startanim','animselect','animpush','stopanim'}
             qck_anim(cmd,cmdargs{:});
+        case 'set'
+            if length(cmdargs)==2
+                qp_settings(cmdargs{:})
+            end
         case {'gridviewpoint','gridviewline','gridviewlineseg', ...
                 'gridviewpiecewise','gridviewarbline','gridviewrange', ...
                 'gridviewall','gridviewarbrect','gridviewarbarea', ...
@@ -3506,6 +3510,11 @@ try
             elseif stat==2
                 ui_message('error','Could not start browser to visit %s.',site)
             end
+            
+        case 'pause'
+            hpause = findobj(findobj(allchild(0),'tag','DelftProgressBar'),'tag','pause');
+            set(hpause,'value',1)
+            waitfor(hpause,'value',0)
             
         otherwise
             cmd2 = cmd;

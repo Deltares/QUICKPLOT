@@ -41,8 +41,11 @@ for i = 1:length(h)
     end
     switch get(h(i),'type')
         case {'line','surface'}
-            xdata = get(h(i),'xdata');
-            set(h(i),'zdata',repmat(z,size(xdata)))
+            zdata = get(h(i),'zdata'); % in case of Z surface on X vector, Y vector
+            if isempty(zdata)
+                zdata = get(h(i),'xdata'); % in case of lines in X,Y plane
+            end
+            set(h(i),'zdata',repmat(z,size(zdata)))
         case {'text','light'}
             coord = get(h(i),'position');
             coord(3) = z;

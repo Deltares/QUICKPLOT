@@ -76,6 +76,12 @@ else
         case 'Time-Z'
             setlabel(Parent,'x','time','')
             setlabel(Parent,'y',dimension3,unit3)
+        case 'X-Time'
+            setlabel(Parent,'x',dimension1,unit1)
+            setlabel(Parent,'y','time','')
+        case 'Time-X'
+            setlabel(Parent,'x','time','')
+            setlabel(Parent,'y',dimension1,unit1)
         case 'X-Time-Val'
             setlabel(Parent,'x',dimension1,unit1)
             setlabel(Parent,'y','time','')
@@ -159,6 +165,7 @@ else
     end
     %
     setappdata(Parent,'AxesType',FullAxesType)
+    setappdata(Parent,'BasicAxesType',AxesType)
 end
 
 

@@ -32,12 +32,16 @@ function Thresholds=compthresholds(Ops,lm,LocStartClass)
 %   $Id$
 
 Thresholds=Ops.thresholds;
-if isempty(Thresholds),
+if isempty(Thresholds)
     Thresholds=10;
 end
 %
-lm(1)=lm(1)-eps(lm(1));
-lm(end)=lm(end)+eps(lm(end));
+if abs(lm(1))>eps(0)*1e6
+    lm(1)=lm(1)-eps(lm(1));
+end
+if abs(lm(end))>eps(0)*1e6
+    lm(end)=lm(end)+eps(lm(end));
+end
 %
 if isequal(size(Thresholds),[1 1]) && ...
         isequal(Thresholds,round(Thresholds)) && ...
@@ -48,7 +52,7 @@ if isequal(size(Thresholds),[1 1]) && ...
     if Ops.symmetriccolourlimits
         lm=[-1 1]*max(abs(lm));
     end
-    switch Ops.thresholddistribution,
+    switch Ops.thresholddistribution
         case 'logarithmic'
             if all(lm>0)
                 Thresholds=lm(1)*10.^((log10(lm(2))-log10(lm(1)))*(LocStartClass:Thresholds)/Thresholds);
@@ -65,5 +69,5 @@ if isequal(size(Thresholds),[1 1]) && ...
             Thresholds=lm(1)+(lm(2)-lm(1))*(LocStartClass:Thresholds)/Thresholds;
     end
 elseif isequal(size(Thresholds),[1 1])
-    Thresholds=Thresholds*[1 1];
+    Thresholds=[-inf Thresholds];
 end

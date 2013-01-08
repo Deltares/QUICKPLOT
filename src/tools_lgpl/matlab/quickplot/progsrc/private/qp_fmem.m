@@ -976,6 +976,7 @@ switch cmd
                if ~isempty(FI)
                   Tp=trytp;
                   FI.DomainName = 'Proj\Case';
+                  FI.Options=1;
                end
                trytp='unibest';
             case 'unibest'

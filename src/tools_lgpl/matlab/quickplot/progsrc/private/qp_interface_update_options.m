@@ -184,6 +184,7 @@ DomainNr=get(Handle_Domain,'value');
 for i=5:-1:1
     multiple(i) = (length(selected{i})>1) | isequal(selected{i},0);
 end
+Ops.animate = multiple(T_);
 
 MNK=0;
 if isfield(Props,'MNK')
@@ -227,7 +228,9 @@ switch geometry
                 axestype={'Time-Val'};
             end
         else
-            if nval==0
+            if isequal(coordinates,'d')
+                axestype={'Time-Val','Distance-Val','Text'};
+            elseif nval==0
                 axestype={'X-Y'};
             else
                 axestype={'Time-Val','Text'};
@@ -285,24 +288,34 @@ switch geometry
                 axestype={'X-Y-Z'};
             elseif multiple(M_) || multiple(N_) || vslice
                 axestype={'X-Z'};
+            elseif multiple(T_)
+                axestype={'Val-Z','Time-Z'};
             else
                 axestype={'Val-Z'};
             end
         else
-            if multiple(M_) && multiple(N_) && ~vslice
+            if nval==0
                 axestype={'X-Y'};
-            elseif multiple(M_) || multiple(N_) || vslice
-                if nval==0 || nval==4
-                    axestype={'X-Y'};
-                elseif multiple(T_)
-                    axestype={'X-Val','X-Y'}; % ,'X-Time'
+            elseif nval==4
+                if ~multiple(T_) && ~multiple(M_) && ~multiple(N_)
+                    axestype={'X-Y','Text'};
                 else
-                    axestype={'X-Val','X-Y'};
+                    axestype={'X-Y'};
                 end
-            elseif multiple(T_)
-                axestype={'Time-Val','X-Y','X-Val'};
             else
-                axestype={'X-Y','X-Val','Text'};
+                if multiple(M_) && multiple(N_) && ~vslice
+                    axestype={'X-Y','X-Y-Val'};
+                elseif multiple(M_) || multiple(N_) || vslice
+                    if multiple(T_)
+                        axestype={'X-Val','X-Y','X-Time','Time-X'};
+                    else
+                        axestype={'X-Val','X-Y'};
+                    end
+                elseif multiple(T_)
+                    axestype={'Time-Val','X-Y','X-Val'};
+                else
+                    axestype={'X-Y','X-Val','Text'};
+                end
             end
         end
     case {'TRI','TRI+'}
@@ -343,22 +356,49 @@ switch geometry
     case 'GEN-3D'
 end
 
+h_axtype=findobj(OH,'tag','axestype=?');
 if length(axestype)>1
     set(findobj(OH,'tag','axestype'),'enable','on');
-    pd=findobj(OH,'tag','axestype=?');
-    ppd=get(pd,'string');
-    ppd=ppd{get(pd,'value')};
-    i=strmatch(ppd,axestype,'exact');
-    if isempty(i)
-        i=1;
+    paxestype = get(h_axtype,'string');
+    if isequal(paxestype',axestype)
+        %
+        % if the supported axes types are the same then use the previously
+        % selected axes type
+        %
+        i = get(h_axtype,'value');
+    else
+        %
+        % if the supported axes types are different then use the axes type
+        % of the current plot if an axes object is select and if that axes
+        % type is supported, otherwise use the default first axes type.
+        %
+        ax=qpsa;
+        if isempty(ax)
+            i=1;
+        else
+            paxestype = getappdata(ax,'BasicAxesType');
+            if isempty(paxestype)
+                paxestype = getappdata(ax,'AxesType');
+            end
+            i = [];
+            if ~isempty(paxestype)
+                i = strmatch(paxestype,axestype,'exact');
+            end
+            if isempty(i)
+                i=1;
+            end
+        end
     end
-    set(pd,'string',axestype,'value',i,'enable','on','backgroundcolor',Active)
+    set(h_axtype,'string',axestype,'value',i,'enable','on','backgroundcolor',Active)
 else
+    set(h_axtype,'string',{'no choice'},'value',1)
     i=1;
 end
 axestype=axestype{i};
 
-if strfind(axestype,'Val')
+if strcmp(axestype,'X-Y-Val')
+    data2d=1;
+elseif strfind(axestype,'Val')
     MultipleColors=0;
     lineproperties=1;
     if  strcmp(axestype,'Time-Val') && ~multiple(T_)
@@ -367,6 +407,8 @@ if strfind(axestype,'Val')
     end
 elseif strcmp(axestype,'X-Y') || strcmp(axestype,'X-Z')
     data2d=1;
+elseif strcmp(axestype,'X-Time') || strcmp(axestype,'Time-X') || strcmp(axestype,'Time-Z')
+    data2d=1;
 elseif strcmp(axestype,'Text') || (strcmp(axestype,'Time-Val') && ~multiple(T_))
     MultipleColors=0;
     plotstexts=1;
@@ -374,6 +416,13 @@ elseif strcmp(axestype,'Text') || (strcmp(axestype,'Time-Val') && ~multiple(T_))
 end
 if nval<1
     lineproperties=1;
+end
+if ~isempty(strfind(axestype,'Time'))
+    Ops.animate = 0;
+elseif ~multiple(M_) && ~multiple (N_) && ~multiple(K_) && nval==0
+    Ops.animate = 0;
+elseif strcmp(axestype,'Distance-Val')
+    Ops.animate = 0;
 end
 
 coords={'path distance','reverse path distance','x coordinate','y coordinate'};
@@ -419,7 +468,7 @@ else
     end
 end
 
-if isequal(axestype,'X-Val') || isequal(axestype,'X-Z')
+if ismember(axestype,{'X-Val','X-Z','X-Time','Time-X'})
     pd=findobj(OH,'tag','plotcoordinate=?');
     prev_coords=get(pd,'string');
     i=get(pd,'value');
@@ -500,6 +549,9 @@ if nval==2 || nval==3
     if Ops.spatialv
         ii=strmatch('vector (split',compList);
         compList(ii)=[];
+    elseif Ops.spatial==1
+        ii=strmatch('vector',compList);
+        compList(ii)=[];
     end
     ii=strmatch('patch centred vector',compList,'exact');
     compList(ii)=[];
@@ -558,6 +610,7 @@ end
 %
 %---- presentation type
 %
+extend2edge = 0;
 if (nval==1 && data2d && ~strcmp(geometry,'SEG')) || nval==1.9 || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') || strcmp(geometry,'POLYG') % || (nval==0 & ~DimFlag(ST_))
     switch nvalstr
         case 1.9
@@ -647,7 +700,7 @@ if (nval==1 && data2d && ~strcmp(geometry,'SEG')) || nval==1.9 || strcmp(nvalstr
         case 'patches with lines'
             SingleColor=1;
         case 'continuous shades'
-            set(findobj(OH,'tag','extend2edge'),'enable','on')
+            extend2edge = 1;
         case 'values'
             MultipleColors=0;
             SingleColor=1;
@@ -672,7 +725,7 @@ if (nval==1 && data2d && ~strcmp(geometry,'SEG')) || nval==1.9 || strcmp(nvalstr
                     SingleColor=1;
                     lineproperties=1;
             end
-            set(findobj(OH,'tag','extend2edge'),'enable','on')
+            extend2edge = 1;
         case 'markers'
             usesmarker=1;
             forcemarker=1;
@@ -886,9 +939,20 @@ if vectors && ~isempty(strmatch(axestype,{'X-Z' 'X-Y-Z'},'exact'))
     end
 end
 
-h = findobj(OH,'tag','extend2edge');
-if strcmp(get(h,'enable'),'on')
-    Ops.extend2edge = get(h,'value');
+if extend2edge
+    h = findobj(OH,'tag','extend2edge');
+    if multiple(M_)+multiple(N_)+multiple(K_)==2
+        set(h,'enable','on')
+        Ops.extend2edge = get(h,'value');
+    else
+        %set(h,'enable','inactive','value',1)
+        switch axestype
+            case {'X-Time','Time-X','Time-Z'}
+                Ops.extend2edge = 0;
+            otherwise
+                Ops.extend2edge = 1;
+        end
+    end
 end
 
 if isfield(Ops,'numformat')
@@ -1177,8 +1241,10 @@ end
 %---- axes type
 %
 
+levelvar=0;
 if ~isempty(strfind(axestype,'Val'))
     if ~isempty(strfind(Props.Name,'level'))
+        levelvar=1;
         % only convert to elevation if unit is equivalent to m or
         % dimensionless
         if ~ischar(qp_unitconversion(Units,'m')) || ...
@@ -1186,6 +1252,12 @@ if ~isempty(strfind(axestype,'Val'))
             axestype=strrep(axestype,'Val','Z');
         end
     end
+end
+Ops.basicaxestype=axestype;
+
+if levelvar
+    axestype=strrep(axestype,'Z',['Z [',actualunits,']']);
+elseif ~isempty(strfind(axestype,'Val'))
     axestype=strrep(axestype,'Val',['Val [',actualunits,']']);
 end
 Ops.axestype=axestype;
@@ -1299,7 +1371,6 @@ OH=-1;
 %---- Set quick view or quick animate
 %
 
-Ops.animate = (((allt & maxt>1) | length(selected{T_})>1)) & Ops.spatial & ~isequal(geometry,'PNT');
 if Ops.animate
     viewstr='Quick Animate';
 else

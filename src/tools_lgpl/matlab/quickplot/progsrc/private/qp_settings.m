@@ -108,6 +108,11 @@ Set.organizationname          = 'Deltares';
 Set.filefilterselection       = '"ARC/INFO Ascii Grid Files","Delft3D Grid Files","Delft3D Output Files","Delft3D-FLOW Bound. Cond. Files","Delft3D/SOBEK Meteo Files","Delwaq Binary Files","Delwaq Time Series Input Files","NetCDF Files","Sample Files","Simona SDS Files","Sobek Networks","Tekal Data Files"';
 Set.debugging                 = 0;
 Set.showinactiveopt           = 0;
+%
+Set.shipma_spacestep          = 500; %m
+Set.shipma_tickwidth          = 200; %m
+Set.shipma_timestep           = 300; %s
+%
 if isfield(Set,param)
     val=getfield(Set,param);
 elseif ~iscell(defval)

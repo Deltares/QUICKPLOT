@@ -184,39 +184,6 @@ for i=5:-1:1
     multiple(i) = (length(Selected{i})>1) | isequal(Selected{i},0);
 end
 
-keepext = zeros(1,5);
-switch Ops.axestype
-    case 'X-Y'
-        keepext([M_ N_]) = 1;
-    case 'X-Z'
-        %keepext([M_||N_ K_]) = 1;
-end
-
-di=1+~multiple(T_);
-for i=[K_ N_ M_]
-    if ~multiple(i) && DimFlag(i) && ~keepext(i)
-       for d=1:length(data)
-          geom='';
-          if isfield(data,'Geom') && ~isempty(data(d).Geom)
-             geom=data(d).Geom;
-          elseif isfield(Props,'Geom')
-             geom=Props.Geom;
-          end
-          if ~strcmp(geom,'POLYL') && ~strcmp(geom,'POLYG')
-             if isfield(data,'X') && size(data(d).X,i-di)>1
-                data(d).X=mean(data(d).X,i-di);
-             end
-             if isfield(data,'Y') && size(data(d).Y,i-di)>1
-                data(d).Y=mean(data(d).Y,i-di);
-             end
-             if isfield(data,'Z') && size(data(d).Z,i-di)>1
-                data(d).Z=mean(data(d).Z,i-di);
-             end
-          end
-       end
-    end
-end
-
 FirstFrame=isempty(hOldVec);
 s=[];
 
@@ -591,6 +558,28 @@ if isequal(quivopt,{'automatic'})
     quivopt={0};
 end
 
+LocLabelClass=0;
+LocStartClass=0;
+if strcmp(Ops.presentationtype,'coloured contour lines')
+    LocLabelClass=1;
+    LocStartClass=1;
+end
+
+if ~strcmp(Ops.thresholds,'none')
+    miv = inf;
+    mv  = -inf;
+    for d = 1:length(data)
+        miv = min(miv,min(data(d).Val(:)));
+        mv  = max(mv ,max(data(d).Val(:)));
+    end
+    Ops.Thresholds = compthresholds(Ops,[miv mv],LocStartClass);
+    if miv<Ops.Thresholds(1) && ~LocLabelClass
+        Ops.Thresholds = [-inf Ops.Thresholds];
+    end
+else
+    Ops.Thresholds = 'none';
+end
+
 stn='';
 if any(cellfun('isclass',Selected,'cell'))
     stn='';
@@ -713,13 +702,6 @@ if isfield(data,'XYZ') && clippingspatial
     val=[];
 end
 
-LocLabelClass=0;
-LocStartClass=0;
-if strcmp(Ops.presentationtype,'coloured contour lines')
-    LocLabelClass=1;
-    LocStartClass=1;
-end
-
 if ~isempty(Parent) && ishandle(Parent) && strcmp(get(Parent,'type'),'axes')
     pfig=get(Parent,'parent');
     set(0,'currentfigure',pfig)
@@ -769,22 +751,9 @@ if isfield(data,'XUnits') && ...
     end
 end
 %
-% Define basicaxestype as the axestype without the unit of the Z/Value
-% field.
-%
-axestype=Ops.axestype;
-unitsloc=strfind(axestype,' [');
-for i=length(unitsloc):-1:1
-    unitsclose=strfind(axestype(unitsloc(i):end),']');
-    if ~isempty(unitsclose)
-        axestype(:,unitsloc(i)+(0:max(unitsclose)-1))=[];
-    end
-end
-basicaxestype=axestype;
-%
 % If it the plot contains a Z co-ordinate.
 %
-if ~isempty(strfind(basicaxestype,'Z'))
+if ~isempty(strfind(Ops.basicaxestype,'Z'))
     %
     % If the elevation unit has not yet been specified, do so now.
     %
@@ -872,7 +841,6 @@ else
     Param.Selected=Selected;
     Param.quivopt=quivopt;
     Param.stats=stats;
-    Param.LocStartClass=LocStartClass;
     Param.stn=stn;
     Param.s=s;
     Param.compat7={};
@@ -913,8 +881,8 @@ else
     hNewVec=cat(1,hNew{:});
 end
 
-if ~isempty(basicaxestype)
-    axestype = strrep(strtok(basicaxestype),'-',' ');
+if ~isempty(Ops.basicaxestype)
+    axestype = strrep(strtok(Ops.basicaxestype),'-',' ');
     axestype = multiline(axestype,' ','cell');
     %
     unit1 = '';
@@ -961,7 +929,7 @@ if ~isempty(basicaxestype)
     if isfield(data,'YUnits') && ~isempty(data(1).YUnits)
         unit2 = data(1).YUnits;
     end
-    if ~isempty(strfind(basicaxestype,'Z'))
+    if ~isempty(strfind(Ops.basicaxestype,'Z'))
         dimension3 = 'elevation';
         if isfield(data,'ZUnits')
             if ~isempty(data(1).ZUnits)
@@ -1079,7 +1047,9 @@ if SortObjs
     end
 end
 %
-setzcoord(hNewVec,Level)
+if ~strcmp(Ops.basicaxestype,'X-Y-Z') && ~strcmp(Ops.basicaxestype,'X-Y-Val')
+    setzcoord(hNewVec,Level)
+end
 for i=1:length(hNewVec)
     a = get(hNewVec(i),'parent');
     if strcmp(get(a,'type'),'axes')

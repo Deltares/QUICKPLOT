@@ -1,4 +1,4 @@
-function Out=morf(cmd,varargin);
+function Out=morf(cmd,varargin)
 %MORF Read Delft3D-MOR morf files.
 %   FileData = morf('read',filename);
 %     reads and checks data from a morf file.
@@ -41,63 +41,63 @@ function Out=morf(cmd,varargin);
 %   $HeadURL$
 %   $Id$
 
-if nargin==0,
-    if nargout>0,
+if nargin==0
+    if nargout>0
         Out=[];
-    end;
-    return;
-end;
-switch cmd,
-    case 'read',
+    end
+    return
+end
+switch cmd
+    case 'read'
         Structure=Local_read_morf(varargin{:});
         Structure=Local_check_morf(Structure);
-        if nargout>0,
-            if ~isstruct(Structure),
+        if nargout>0
+            if ~isstruct(Structure)
                 Out=[];
-            elseif strcmp(Structure.Check,'NotOK'),
+            elseif strcmp(Structure.Check,'NotOK')
                 Out=[];
-            else,
+            else
                 Out=Structure;
-            end;
-        else,
+            end
+        else
             Local_plot_morf(0,Structure);
-        end;
-    case 'check',
-        if nargin==1,
+        end
+    case 'check'
+        if nargin==1
             Out=0;
-        else,
+        else
             Structure=Local_check_morf(varargin{1});
             if nargout>0,
                 Out=strcmp(Structure.Check,'OK');
-            end;
-        end;
+            end
+        end
     case {'plot','plottime'}
-        if nargin==1,
+        if nargin==1
             ax=[];
-        else,
+        else
             ax=Local_plot_morf(strcmp(cmd,'plottime'),varargin{:});
-        end;
-        if nargout>0,
+        end
+        if nargout>0
             Out=ax;
-        end;
+        end
     otherwise
         error('Unrecognized command: %s',cmd)
-end;
+end
 
-function Structure=Local_read_morf(filename),
+function Structure=Local_read_morf(filename)
 Structure=[];
 
 if nargin==0,
     [fn,fp]=uigetfile('morf.*');
     if ~ischar(fn),
         return;
-    end;
+    end
     filename=[fp fn];
-end;
+end
 fid=fopen(filename,'rt');
 if fid<0,
     error('Cannot open file: %s.',filename)
-end;
+end
 Data={};
 DataLine=0;
 LineNr=[];
@@ -105,7 +105,7 @@ i=0;
 while ~feof(fid),
     Line=fgetl(fid);
     i=i+1;
-    if ~isempty(Line) & ~strcmp(Line(1),'*'),
+    if ~isempty(Line) && ~strcmp(Line(1),'*'),
         DataLine=DataLine+1;
         Data{DataLine}=Line;
         LineNr(DataLine)=i;
@@ -116,13 +116,13 @@ while ~feof(fid),
                 error('Error reading line 1: missing case name or label string.');
             end
         end
-    end;
-end;
+    end
+end
 fclose(fid);
 
 %for i=1:DataLine,
 %  fprintf(1,'%s\n',Data(I));
-%end;
+%end
 
 % Line 1 : CASE LABEL DUMMY1 DUMMY2
 X=strfind(Data{1},'''');
@@ -130,16 +130,16 @@ Structure.CASE=Data{1}((X(1)+1):(X(2)-1));
 Structure.LABEL=Data{1}((X(3)+1):(X(4)-1));
 % Line 2 : INITP
 X=sscanf(Data{2},'%i',1);
-switch X,
-    case 0,
+switch X
+    case 0
         Structure.INITP='initial run';
-    case 1,
+    case 1
         Structure.INITP='decentral restart';
-    case 2,
+    case 2
         Structure.INITP='central restart';
-    otherwise,
+    otherwise
         Structure.INITP='unknown';
-end;
+end
 % Line 3 : ITO1 ITO2
 X=sscanf(Data{3},'%i',2);
 Structure.ITO(6)=rem(X(2),100);
@@ -163,7 +163,7 @@ switch X,
         Structure.NBACK='central backup';
     otherwise,
         Structure.NBACK='unknown';
-end;
+end
 % Line 6 : NINPFI
 X=sscanf(Data{6},'%i',1);
 Structure.NINPFI=X;
@@ -181,11 +181,11 @@ for i=1:Structure.NINPFI,
             Structure.PhysSubProc(i).IPROC='bottom';
         otherwise,
             Structure.PhysSubProc(i).IPROC='unknown';
-    end;
+    end
     Structure.PhysSubProc(i).IVERS=X(2);
     X=strfind(Data{6+i},'''');
     Structure.PhysSubProc(i).INPUTFILENAME=Data{6+i}((X(1)+1):(X(2)-1));
-end;
+end
 Offset=6+Structure.NINPFI;
 % Line Offset+1 : ITLEN
 X=sscanf(Data{Offset+1},'%i',1);
@@ -200,7 +200,7 @@ for i=1:Structure.NORDER,
     X=sscanf(Data{Offset+2+i},'%i',2);
     Structure.Controller(i).ICHILD=X(1);
     Structure.Controller(i).IPARNT=X(2);
-end;
+end
 if ~isequal(sort(cat(2,Structure.Controller(:).ICHILD)),1:Structure.NORDER)
     error('Invalid child number in child-parent list.')
 end
@@ -211,7 +211,7 @@ for i=1:Structure.NORDER,
     %   Line : I NCTR ITELCM XTELM
     X=sscanf(Data{Offset+1},'%f',4);
     if ~isequal(i,X(1))
-        warning(sprintf('Invalid I on line %i.',LineNr(Offset+1)))
+        warning('Invalid I on line %i.',LineNr(Offset+1))
         %X(1)=i;
     end
     I=find([Structure.Controller(:).ICHILD]==X(1));
@@ -219,7 +219,7 @@ for i=1:Structure.NORDER,
     Structure.Controller(I).ITELCM=X(3);
     Structure.Controller(I).XTELM=X(4);
     Offset=Offset+1;
-    if (Structure.Controller(I).NCTR==4) | (Structure.Controller(I).NCTR==5),
+    if (Structure.Controller(I).NCTR==4) || (Structure.Controller(I).NCTR==5),
         %     Line : NAMITQ IEPSC CITP
         X=sscanf(Data{Offset+1},'%i',1);
         X=strfind(Data{Offset+1},'''');
@@ -228,11 +228,11 @@ for i=1:Structure.NORDER,
         Structure.Controller(I).ITEPSC=X(1);
         if length(X)>1, % CITP might not be included
             Structure.Controller(I).CITP=X(2);
-        else,
+        else
             Structure.Controller(I).CITP=1; % one by default
-        end;
+        end
         Offset=Offset+1;
-    end;
+    end
     %   Line : NTIMIN1 NTIMIN2 NTIMIN3 NTIMIN4
     X=sscanf(Data{Offset+1},'%i',4);
     Structure.Controller(I).NTIMIN=X;
@@ -253,16 +253,18 @@ for i=1:Structure.NORDER,
         Structure.Controller(I).IFET=X(1);
         Structure.Controller(I).IFESDT=X(2);
         Offset=Offset+1;
-    end;
-end;
+    end
+end
 
 for i=1:Structure.NESPRO,
     %   LINE : IESP K L M N
     Offset=Offset+1;
     X=sscanf(Data{Offset},'%i',5);
-    if length(X)<5, error('Error reading line %i: %s',LineNr(Offset),Data{Offset}); end;
+    if length(X)<5
+        error('Error reading line %i: %s',LineNr(Offset),Data{Offset})
+    end
     if ~isequal(X(1),i)
-        warning(sprintf('Expected element number %i instead of %i.\nFile: %s\nLine %i:%s.',i,X(1),filename,LineNr(Offset),Data{Offset}))
+        warning('Expected element number %i instead of %i.\nFile: %s\nLine %i:%s.',i,X(1),filename,LineNr(Offset),Data{Offset})
     end
     I=i;%I=find([Structure.Controller(:).ICHILD]==X(1));
     Structure.ElemSubProc(I).K=X(2);
@@ -277,16 +279,16 @@ for i=1:Structure.NESPRO,
         Offset=Offset+1;
         Structure.ElemSubProc(I).PhysSubProc(IM).ITA=X(2);
         Structure.ElemSubProc(I).PhysSubProc(IM).ITB=X(3);
-    end;
-end;
+    end
+end
 
 
-function Structure=Local_check_morf(Structure),
+function Structure=Local_check_morf(Structure)
 if ~isstruct(Structure),
     Structure=[];
     Structure.Check='NotOK';
     return;
-end;
+end
 Structure.Check='NotOK';
 Contr=1:Structure.NORDER;
 Child=[Structure.Controller(:).ICHILD];
@@ -298,41 +300,41 @@ Level(ismember(Child,ElProc))=1;
 Weight=zeros(size(Contr));
 Weight(ismember(Child,ElProc))=1;
 N=0;
-while (min(Level)==0) & (N<Structure.NORDER),
-    for ContrI=Contr,
-        if (Level(ContrI)==0),
+while (min(Level)==0) && (N<Structure.NORDER)
+    for ContrI=Contr
+        if (Level(ContrI)==0)
             ChildI=find(Parent==Child(ContrI));
-            if all(Level(ChildI)~=0),
+            if all(Level(ChildI)~=0)
                 Level(ContrI)=max(Level(ChildI))+1;
                 Weight(ContrI)=sum(Weight(ChildI));
-            end;
-        end;
-    end;
+            end
+        end
+    end
     N=N+1;
-end;
-if any(Level==0),
+end
+if any(Level==0)
     fprintf(1,'Warning: Tree contains unconnected branches.\n');
-end;
+end
 for ContrI=Contr,
     Structure.Controller(ContrI).Level=Level(ContrI);
     Structure.Controller(ContrI).LevelWeight=Weight(ContrI);
-    if (Structure.Controller(ContrI).Level==1) & (Structure.Controller(ContrI).ICHILD>Structure.NESPRO),
+    if (Structure.Controller(ContrI).Level==1) && (Structure.Controller(ContrI).ICHILD>Structure.NESPRO),
         fprintf(1,'Warning: Incorrect numbering of elementary subprocess.\n');
         return;
-    end;
-end;
+    end
+end
 Structure.Check='OK';
 
 
-function ax=Local_plot_morf(plottime,Structure,ax),
-if nargin<2,
+function ax=Local_plot_morf(plottime,Structure,ax)
+if nargin<2
     ax=[];
-    return;
-elseif ~isstruct(Structure),
+    return
+elseif ~isstruct(Structure)
     ax=[];
-    return;
-end;
-if nargin==2,
+    return
+end
+if nargin==2
     ax=gca;
     set(ax,'xlim',[0 1], ...
         'ylim',[0 1], ...
@@ -342,8 +344,8 @@ if nargin==2,
         'yticklabel','manual', ...
         'xticklabel',[], ...
         'yticklabel',[]);
-else, % ax specified
-end;
+else % ax specified
+end
 
 Contr=1:length(Structure.Controller);
 
@@ -383,8 +385,8 @@ while CurLIFO~=0,
             NChildCurProc=NChildCurProc+1;
             ChildCurProc(NChildCurProc)=ContrI;
             SumWeights=SumWeights+Structure.Controller(ContrI).LevelWeight;
-        end;
-    end;
+        end
+    end
     %  fprintf(1,'Controller(%i)=%i\nChildren=',LIFOProcList(CurLIFO),Structure.Controller(LIFOProcList(CurLIFO)).ICHILD);
     %  fprintf(1,' %i',[Structure.Controller(ChildCurProc).ICHILD]);
     %  fprintf(1,'\n');
@@ -394,13 +396,13 @@ while CurLIFO~=0,
             XOffset(ChildCurProc(i))=XOffset(LIFOProcList(CurLIFO))-(5*(SumWeights-1)+4)*XTick/2+(5*PartSumWeights)*XTick+(5*(Structure.Controller(ChildCurProc(i)).LevelWeight-1)+4)*XTick/2;
             YOffset(ChildCurProc(i))=YTick*(3*(Structure.Controller(ChildCurProc(i)).Level-1)+1);
             PartSumWeights=PartSumWeights+Structure.Controller(ChildCurProc(i)).LevelWeight;
-        end;
+        end
         LIFOProcList(CurLIFO-1+(1:NChildCurProc))=ChildCurProc;
         CurLIFO=CurLIFO+NChildCurProc-1;
-    else,
+    else
         CurLIFO=CurLIFO-1;
-    end;
-end;
+    end
+end
 
 for ContrI=Contr,
     if ContrI~=TopProc,
@@ -408,43 +410,43 @@ for ContrI=Contr,
         Line=line([XOffset(ContrI)+[2 2]*XTick XOffset(Parent)+2*XTick], ...
             [YOffset(ContrI)+0.5*YTick YOffset(Parent)+[0.5 0.5]*YTick], ...
             'parent',ax,'color',[0 0 0]);
-    else,
+    else
         Line=line(XOffset(ContrI)+[2 2]*XTick,YOffset(ContrI)+[0.5 2]*YTick, ...
             'parent',ax,'color',[0 0 0]);
-    end;
-end;
+    end
+end
 
-for ContrI=Contr,
-    switch Structure.Controller(ContrI).NCTR,
-        case 1,
+for ContrI=Contr
+    switch Structure.Controller(ContrI).NCTR
+        case 1
             Str='1';
-        case 2,
+        case 2
             Str=sprintf('%i',Structure.Controller(ContrI).ITELCM);
-        case 3,
+        case 3
             A=refdate+Structure.Controller(ContrI).ITELCM*Structure.TSCALE/60/60/24;
             Str={['until ',datestr(A,13)],[datestr(A,7) ' ' datestr(A,3) ' ' datestr(A,10)]};
-        case {4,5},
-            if Structure.Controller(ContrI).NCTR==4,
+        case {4,5}
+            if Structure.Controller(ContrI).NCTR==4
                 lessthan='<';
             else
                 lessthan='>';
             end
             switch Structure.Controller(ContrI).ITEPSC
-                case 1,
+                case 1
                     qty=['\Delta',Structure.Controller(ContrI).NAMITQ];
-                case 2,
+                case 2
                     qty=['\delta',Structure.Controller(ContrI).NAMITQ];
-                case 3,
+                case 3
                     qty='\Delta|U|';
-                case 4,
+                case 4
                     qty='\delta|U|';
-                case 5,
+                case 5
                     qty='\Delta|F_W|';
-                case 6,
+                case 6
                     qty='\delta|F_W|';
             end
             Str={[sprintf('max %i, until\n',Structure.Controller(ContrI).ITELCM),sprintf('%s%s%g',qty,lessthan,Structure.Controller(ContrI).XTELM)]};
-    end;
+    end
     XX=XOffset(ContrI);
     if ContrI~=TopProc,
         Parent=find([Structure.Controller(:).ICHILD]==Structure.Controller(ContrI).IPARNT);
@@ -488,7 +490,7 @@ for ContrI=Contr,
                 Txt=Local_text(ax,YLim,XOffset(ContrI)+0.5*XTick, ...
                     YOffset(ContrI)+0.5*YTick, ...
                     2,Str);
-            end;
+            end
             if Structure.ElemSubProc(ICHILD).L>0,
                 Str={'Hydr' ''};
                 ElmTime=Structure.ElemSubProc(ICHILD).PhysSubProc(2);
@@ -502,7 +504,7 @@ for ContrI=Contr,
                 Txt=Local_text(ax,YLim,XOffset(ContrI)+1.5*XTick, ...
                     YOffset(ContrI)+0.5*YTick, ...
                     2,Str);
-            end;
+            end
             if Structure.ElemSubProc(ICHILD).M>0,
                 switch Structure.ElemSubProc(ICHILD).M
                     case 1,
@@ -525,7 +527,7 @@ for ContrI=Contr,
                 Txt=Local_text(ax,YLim,XOffset(ContrI)+2.5*XTick, ...
                     YOffset(ContrI)+0.5*YTick, ...
                     2,Str);
-            end;
+            end
             if Structure.ElemSubProc(ICHILD).N>0,
                 Str={'Bed' ''};
                 ElmTime=Structure.ElemSubProc(ICHILD).PhysSubProc(4);
@@ -539,10 +541,10 @@ for ContrI=Contr,
                 Txt=Local_text(ax,YLim,XOffset(ContrI)+3.5*XTick, ...
                     YOffset(ContrI)+0.5*YTick, ...
                     2,Str);
-            end;
-        end;
-    end;
-end;
+            end
+        end
+    end
+end
 set(ax,'visible','off');
 if plottime
     text(XLim,0,sprintf('Tscale: %gs',Structure.TSCALE), ...
@@ -555,7 +557,7 @@ if plottime
 end
 
 
-function Handle=Local_text(ax,YLim,x,y,z,Str);
+function Handle=Local_text(ax,YLim,x,y,z,Str)
 Handle=text(x,y,z,Str, ...
     'fontunits','normalized', ...
     'fontsize',0.35/YLim, ...
@@ -564,7 +566,7 @@ Handle=text(x,y,z,Str, ...
     'horizontalalignment','center', ...
     'verticalalignment','middle');
 
-function Handle=Local_number(ax,YLim,x,y,z,Str);
+function Handle=Local_number(ax,YLim,x,y,z,Str)
 Handle=text(x,y,z,Str, ...
     'fontunits','normalized', ...
     'fontsize',0.25/YLim, ...
@@ -573,7 +575,7 @@ Handle=text(x,y,z,Str, ...
     'horizontalalignment','right', ...
     'verticalalignment','baseline');
 
-function Handle=Local_start(ax,YLim,x,y,z,S,refdate,tscale);
+function Handle=Local_start(ax,YLim,x,y,z,S,refdate,tscale)
 Handle=[];
 switch S.NTIMIN(1)
     case 1 % start time of controller S.NTIMIN(2)
@@ -612,7 +614,7 @@ switch S.NTIMIN(1)
 end
 
 
-function Handle=Local_end(ax,YLim,x,y,z,S);
+function Handle=Local_end(ax,YLim,x,y,z,S)
 Handle=[];
 switch S.NTIMIN(3)
     case 1 % update central time

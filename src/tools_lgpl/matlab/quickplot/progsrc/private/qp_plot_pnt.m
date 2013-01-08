@@ -94,8 +94,10 @@ switch NVal
         end
         set(get(Parent,'title'),'string',{PName TStr})
     case 1
-        if multiple(T_)
-            switch strtok(Ops.axestype)
+        axestype = strtok(Ops.axestype);
+        if strcmp(axestype,'Distance-Val') || strcmp(axestype,'Time-Val')
+        %if multiple(T_)
+            switch axestype
                 case 'Distance-Val'
                     x = data.X;
                     xdate = 0;

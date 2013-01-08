@@ -41,16 +41,16 @@ multiple=Param.multiple;
 NVal=Param.NVal;
 quivopt=Param.quivopt;
 stats=Param.stats;
-LocStartClass=Param.LocStartClass;
 stn=Param.stn;
 s=Param.s;
 compat7=Param.compat7;
 
 DimFlag=Props.DimFlag;
-Thresholds=[];
+Thresholds=Ops.Thresholds;
 spatial=Ops.spatial;
 spatialh=Ops.spatialh;
 
+%data = qp_dimsqueeze(data,Ops.axestype,multiple,DimFlag,Props);
 switch NVal
 
     case {0,0.5}
@@ -217,137 +217,24 @@ switch NVal
 
         if spatialh==2 && spatial==2
             if isfield(data,'TRI')
-                mv=max(data.Val(:));
-                miv=min(data.Val(:));
-                Thresholds=compthresholds(Ops,[miv mv],LocStartClass);
-                Ops.Thresholds = Thresholds;
-                %
                 set(Parent,'NextPlot','add');
                 switch Ops.presentationtype
-                    case {'patches','patches with lines'}
-                        hNew=genfaces(hNew,Ops,Parent,data.Val,data.XYZ,data.TRI);
-
-                    case 'values'
-                        I=~isnan(data.Val);
-                        hNew=gentextfld(hNew,Ops,Parent,data.Val(I),data.X(I),data.Y(I));
-
-                    case 'markers'
-                        hNew=genmarkers(hNew,Ops,Parent,data.Val,data.X,data.Y);
-
-                    case 'continuous shades'
-
-                        if size(data.XYZ,4)==2
-                            sz = size(data.XYZ);
-                            sz(4) = 1;
-                            data.XYZ = cat(4,data.XYZ,reshape(data.Val,sz));
-                        end
-                        data.XYZ=squeeze(data.XYZ);
-                        if FirstFrame
-                            hNew=patch('vertices',data.XYZ,'faces',data.TRI,'facevertexcdata',data.Val(:), ...
-                                'facecolor','interp','edgecolor','none', ...
-                                'parent',Parent);
-
-                        elseif ishandle(hNew)
-                            set(hNew,'vertices',data.XYZ,'facevertexcdata',data.Val(:));
+                    case {'values','markers'}
+                        if isfield(data,'Z') && 0
+                            hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'QUAD',data.X,data.Y,data.Z,data.Val,Ops);
                         else
-                            return
+                            hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'QUAD',data.X,data.Y,[],data.Val,Ops);
                         end
-
-                    case {'contour lines','coloured contour lines','contour patches','contour patches with lines'}
-                        if miv<Thresholds(1)
-                            Thresholds = [-inf Thresholds];
-                        end
-                        XYZ=squeeze(data.XYZ);
-                        delete(hNew);
-                        switch Ops.presentationtype
-                            case 'contour lines'
-                                hNew=tricontour(data.TRI,XYZ(:,1),XYZ(:,2),data.Val(:),Thresholds,'k');
-                                set(hNew,'color',Ops.colour,'linestyle',Ops.linestyle,'marker',Ops.marker,'markeredgecolor',Ops.markercolour,'markerfacecolor',Ops.markerfillcolour)
-                            case 'coloured contour lines'
-                                hNew=tricontour(data.TRI,XYZ(:,1),XYZ(:,2),data.Val(:),Thresholds);
-                                for i=1:length(hNew)
-                                    c=get(hNew(i),'FaceVertexCData');
-                                    set(hNew(i),'FaceVertexCData',0*c+i)
-                                end
-                            case 'contour patches'
-                                hNew=tricontourf(data.TRI,XYZ(:,1),XYZ(:,2),data.Val(:),Thresholds,'clevel','index','zplane',0);
-                                for i=1:length(hNew)
-                                    c=get(hNew(i),'FaceVertexCData');
-                                    set(hNew(i),'FaceVertexCData',0*c+i)
-                                end
-                            case 'contour patches with lines'
-                                hNew1=tricontourf(data.TRI,XYZ(:,1),XYZ(:,2),data.Val(:),Thresholds,'clevel','index','zplane',0);
-                                for i=1:length(hNew)
-                                    c=get(hNew(i),'FaceVertexCData');
-                                    set(hNew(i),'FaceVertexCData',0*c+i)
-                                end
-                                hNew2=tricontour(data.TRI,XYZ(:,1),XYZ(:,2),data.Val(:),Thresholds,'k');
-                                set(hNew2,'color',Ops.colour,'linestyle',Ops.linestyle,'marker',Ops.marker,'markeredgecolor',Ops.markercolour,'markerfacecolor',Ops.markerfillcolour)
-                                hNew = [hNew1 hNew2];
-                        end
-                end
+                    otherwise
+                        hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'TRI',data.TRI,data.XYZ,data.Val,Ops);
+                end                        
                 set(get(Parent,'title'),'string',{PName,TStr})
             else
-                extended=~isequal(size(data.X),size(data.Val));
-                if ~extended
-                    data.Val(isnan(data.X) | isnan(data.Y))=NaN;
-                    mx=max(data.X(:));
-                    my=max(data.Y(:));
-                    data.X(isnan(data.X))=mx;
-                    data.Y(isnan(data.Y))=my;
-                end
-                mv=max(data.Val(:));
-                miv=min(data.Val(:));
-                Thresholds=compthresholds(Ops,[miv mv],LocStartClass);
-                Ops.Thresholds = Thresholds;
-                %
-                set(Parent,'NextPlot','add');
-                switch Ops.presentationtype
-                    case {'patches','patches with lines'}
-                        if isfield(data,'Z') && isequal(size(data.X),size(data.Z))
-                            hNew=genfaces(hNew,Ops,Parent,data.Val,data.X,data.Y,data.Z);
-                        else
-                            hNew=genfaces(hNew,Ops,Parent,data.Val,data.X,data.Y);
-                        end
-
-                    case 'values'
-                        I=~isnan(data.Val);
-                        hNew=gentextfld(hNew,Ops,Parent,data.Val(I),data.X(I),data.Y(I));
-
-                    case 'continuous shades'
-                        if isfield(data,'Z') && isequal(size(data.X),size(data.Z))
-                            z=data.Z;
-                        else
-                            z=data.Val;
-                        end
-                        hNew=gensurface(hNew,Ops,Parent,data.Val,data.X,data.Y,z);
-
-                    case 'markers'
-                        hNew=genmarkers(hNew,Ops,Parent,data.Val,data.X,data.Y);
-
-                    case {'contour lines','coloured contour lines','contour patches','contour patches with lines'}
-                        if isequal(size(data.X),size(data.Val)+1)
-                            [data.X,data.Y,data.Val]=face2surf(data.X,data.Y,data.Val);
-                            data.X(isnan(data.X))=mean(data.X(~isnan(data.X)));
-                            data.Y(isnan(data.Y))=mean(data.Y(~isnan(data.Y)));
-                        end
-                        if mv==miv
-                            data.X(end+1,:)=mx;
-                            data.Y(end+1,:)=my;
-                            amv=abs(mv);
-                            if ~amv
-                                amv=1;
-                            end
-                            data.Val(end+1,:)=mv+0.01*amv;
-                            Thresholds=mv+[0 0.01*amv];
-                        end
-                        hNew=gencontour(hNew,Ops,Parent,data.X,data.Y,data.Val,Thresholds,Param);
-                        if strcmp(Ops.presentationtype,'contour lines')
-                            set(hNew,Ops.LineParams{:});
-                        end
-                        if mv==miv
-                            Thresholds=[mv mv];
-                        end
+                data = qp_dimsqueeze(data,Ops.axestype,multiple,DimFlag,Props);
+                if isfield(data,'Z') && 0
+                    hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'QUAD',data.X,data.Y,data.Z,data.Val,Ops);
+                else
+                    hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'QUAD',data.X,data.Y,[],data.Val,Ops);
                 end
                 if isempty(Selected{K_})
                     str=PName;
@@ -419,7 +306,28 @@ switch NVal
                     y=data.Y;
                     z=data.Val;
             end
-            if strcmp(Ops.facecolour,'none')
+            if length(data.Time)>1
+                if strcmp(Ops.axestype,'X-Time')
+                    c1 = x;
+                    c2 = data.Time;
+                    v = squeeze(data.Val);
+                else
+                    c1 = data.Time;
+                    c2 = x;
+                    v = squeeze(data.Val)';
+                end
+                if FirstFrame
+                    hNew=surface(c1,c2,v,v, ...
+                        'parent',Parent, ...
+                        'facecolor','interp', ...
+                        'edgecolor','none');
+                    set(Parent,'layer','top')
+                else
+                    set(hNew,'xdata',c1, ...
+                        'ydata',c2, ...
+                        'cdata',v);
+                end
+            elseif strcmp(Ops.facecolour,'none')
                 if FirstFrame
                     hNew=line(x,y,z, ...
                         'parent',Parent, ...
@@ -476,6 +384,7 @@ switch NVal
 
         elseif spatialh==1 && spatial==2
 
+            data = qp_dimsqueeze(data,Ops.axestype,multiple,DimFlag,Props);
             Mask=repmat(min(data.Z,[],3)==max(data.Z,[],3),[1 1 size(data.Z,3)]);
             if isequal(size(Mask),size(data.X))
                 data.X(Mask)=NaN;
@@ -519,10 +428,6 @@ switch NVal
             end
             data.Z=squeeze(data.Z);
             data.Val=squeeze(data.Val);
-            mv=max(data.Val(:));
-            miv=min(data.Val(:));
-            Thresholds=compthresholds(Ops,[miv mv],LocStartClass);
-            Ops.Thresholds = Thresholds;
             %
             set(Parent,'NextPlot','add');
             switch Ops.presentationtype
@@ -552,20 +457,7 @@ switch NVal
                     mz=max(data.Z(:));
                     s(isnan(s))=ms;
                     data.Z(isnan(data.Z))=mz;
-                    if mv==miv
-                        s(end+1,:)=ms;
-                        data.Z(end+1,:)=mz;
-                        amv=abs(mv);
-                        if ~amv
-                            amv=1;
-                        end
-                        data.Val(end+1,:)=mv+0.01*amv;
-                        Thresholds=mv+[0 0.01*amv];
-                    end
                     hNew=gencontour(hNew,Ops,Parent,s,data.Z,data.Val,Thresholds,Param);
-                    if mv==miv
-                        Thresholds=[mv mv];
-                    end
 
             end
             if FirstFrame
@@ -576,7 +468,22 @@ switch NVal
 
         elseif spatialh==0 && spatial==1
 
-            if FirstFrame
+            if length(data.Time)>1 % Time-Z
+                c2 = squeeze(data.Z);
+                c1 = repmat(data.Time,1,size(c2,2));
+                v = squeeze(data.Val);
+                if FirstFrame
+                    hNew=surface(c1,c2,v,v, ...
+                        'parent',Parent, ...
+                        'facecolor','interp', ...
+                        'edgecolor','none');
+                    set(Parent,'layer','top')
+                else
+                    set(hNew,'xdata',c1, ...
+                        'ydata',c2, ...
+                        'cdata',v);
+                end
+            elseif FirstFrame
                 hNew=line(squeeze(data.Val),squeeze(data.Z), ...
                     'parent',Parent, ...
                     Ops.LineParams{:});
@@ -894,9 +801,6 @@ switch NVal
 
                 if ~isempty(Ops.vectorcolour)
                     if ~strcmp(Ops.thresholds,'none')
-                        miv=min(data.Val);
-                        mv=max(data.Val);
-                        Thresholds=compthresholds(Ops,[miv mv],LocStartClass);
                         vc = zeros(size(data.Val));
                         for i=1:length(Thresholds)
                             vc(data.Val>=Thresholds(i))=i;

@@ -1,4 +1,4 @@
-function hNew=gencontour(hOld,Ops,Parent,X,Y,Z,Thresholds,Param)
+function hNew=gencontour(hOld,Ops,Parent,X,Y,Z,Thresholds)
 %GENCONTOUR Generic plot routine for contour plot.
 
 %----- LGPL --------------------------------------------------------------------
@@ -56,6 +56,8 @@ end
 %
 e = '';
 try
+    Thresholds(Thresholds==-inf)=-realmax;
+    Thresholds(Thresholds==inf)=realmax;
     switch Ops.presentationtype
         case 'contour lines'
             [dummy,hNew]=contour(compat7{:},X,Y,Z,Thresholds,'k');

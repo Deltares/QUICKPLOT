@@ -36,7 +36,7 @@ function varargout=shipmafil(FI,domain,field,cmd,varargin)
 %   P.O. Box 177
 %   2600 MH Delft, The Netherlands
 %
-%   All indications and logos of, and references to, "Delft3D" and "Deltares"
+%   All values and logos of, and references to, "Delft3D" and "Deltares"
 %   are registered trademarks of Stichting Deltares, and remain the property of
 %   Stichting Deltares. All rights reserved.
 %
@@ -118,6 +118,18 @@ prj = Props.Project;
 PRJ = FI.Project(prj);
 cse = Props.Case;
 
+switch Props.Name
+    case 'ship snapshots'
+        step = qp_settings('shipma_timestep');
+        Series = PRJ.Cases.Data(cse).TimeSeries;
+        times = delwaq('read',Series,1,1,0)*3600*24;
+        timereq = 0:step:times(end)+1;
+        for i=1:length(timereq)
+            [mn,timereq(i)]=min(abs(times-timereq(i)));
+        end
+        idx{1}=timereq;
+end
+
 % read data ...
 if all(Props.Var>=0)
     [T,val1] = delwaq('read',PRJ.Cases.Data(cse).TimeSeries,Props.Var,1,idx{1});
@@ -144,13 +156,17 @@ if Props.NVal==0
         case 'desired ship track'
             [Ans.X,Ans.Y] = landboundary('read',PRJ.Cases.Data(cse).trackFile);
         case 'distance ticks'
-            [x,y] = landboundary('read',PRJ.Cases.Data(cse).trackFile);
+            step = qp_settings('shipma_spacestep');
+            width = qp_settings('shipma_tickwidth');
+            %[x,y] = landboundary('read',PRJ.Cases.Data(cse).trackFile);
+            x = squeeze(val1(1,1,:));
+            y = squeeze(val1(2,1,:));
             d = pathdistance(x,y);
             doublepoints = find(diff(d)==0)+1;
             x(doublepoints) = [];
             y(doublepoints) = [];
             d(doublepoints) = [];
-            dtick = (0:500:max(d))';
+            dtick = (0:step:max(d))';
             xtick = interp1(d,x,dtick);
             ytick = interp1(d,y,dtick);
             itick = min(length(d)-1,floor(interp1(d,1:length(d),dtick)));
@@ -159,9 +175,9 @@ if Props.NVal==0
             ds = sqrt(dx.^2+dy.^2);
             dx = dx./ds;
             dy = dy./ds;
-            width = 100;
-            x0 = [xtick-width*dy(itick) xtick+width*dy(itick)];
-            y0 = [ytick+width*dx(itick) ytick-width*dx(itick)];
+            hwidth = width/2;
+            x0 = [xtick-hwidth*dy(itick) xtick+hwidth*dy(itick)];
+            y0 = [ytick+hwidth*dx(itick) ytick-hwidth*dx(itick)];
             x0 = x0';
             x0(3,:) = NaN;
             y0 = y0';
@@ -185,13 +201,20 @@ if Props.NVal==0
             spsy = y - sin(alf).*swept_star;
             Ans.X = [sppx;spsx(end-1:-1:1); sppx(1)];
             Ans.Y = [sppy;spsy(end-1:-1:1); sppy(1)];
-        case 'ship'
+        case {'ship','ship snapshots'} 
             ship = PRJ.Cases.Data(cse).shipNr;
             icontour = ustrcmpi('contour',{PRJ.Ships.Data(ship).Props.Quant});
             contour = PRJ.Ships.Data(ship).Props(icontour).Value;
-            alf = val1(3)*pi/180;
-            Ans.X = contour(:,1)*sin(alf)+contour(:,2)*cos(alf)+val1(1);
-            Ans.Y = -contour(:,2)*sin(alf)+contour(:,1)*cos(alf)+val1(2);
+            %
+            lenC = size(contour,1);
+            numS = size(val1,3);
+            Ans.X = repmat(NaN,(lenC+1)*numS-1,1);
+            Ans.Y = Ans.X;
+            for i = 1:numS
+                alf = val1(3,1,i)*pi/180;
+                Ans.X((i-1)*(lenC+1)+(1:lenC)) = contour(:,1)*sin(alf)+contour(:,2)*cos(alf)+val1(1,1,i);
+                Ans.Y((i-1)*(lenC+1)+(1:lenC)) = -contour(:,2)*sin(alf)+contour(:,1)*cos(alf)+val1(2,1,i);
+            end
         case 'ship at distance ticks'
             ship = PRJ.Cases.Data(cse).shipNr;
             icontour = ustrcmpi('contour',{PRJ.Ships.Data(ship).Props.Quant});
@@ -247,14 +270,17 @@ elseif Props.NVal==1
     end
 elseif Props.NVal==4
     switch Props.Name
-        case 'distance tick labels'
-            [x,y] = landboundary('read',PRJ.Cases.Data(cse).trackFile);
+        case 'distance value at ticks'
+            step = qp_settings('shipma_spacestep');
+            %[x,y] = landboundary('read',PRJ.Cases.Data(cse).trackFile);
+            x = squeeze(val1(1,1,:));
+            y = squeeze(val1(2,1,:));
             d = pathdistance(x,y);
             doublepoints = find(diff(d)==0)+1;
             x(doublepoints) = [];
             y(doublepoints) = [];
             d(doublepoints) = [];
-            dtick = (0:500:max(d))';
+            dtick = (0:step:max(d))';
             Ans.X = interp1(d,x,dtick);
             Ans.Y = interp1(d,y,dtick);
             Ans.Val = cell(size(dtick));
@@ -355,14 +381,14 @@ if d3d_qp('selectfield','desired ship track')
 else
     a=[];
 end
-if d3d_qp('selectfield','ship at distance ticks')
+if d3d_qp('selectfield','ship snapshots')
     d3d_qp('facecolour',[ 1 0 0 ])
     d3d_qp('addtoplot')
 end
 if d3d_qp('selectfield','distance ticks')
     d3d_qp('addtoplot')
 end
-if d3d_qp('selectfield','distance tick labels')
+if d3d_qp('selectfield','distance value at ticks')
     d3d_qp('presenttype','labels')
     d3d_qp('fontsize',6)
     d3d_qp('addtoplot')
@@ -402,14 +428,14 @@ end
 if d3d_qp('selectfield','desired ship track')
     d3d_qp('addtoplot')
 end
-if d3d_qp('selectfield','ship at distance ticks')
+if d3d_qp('selectfield','ship snapshots')
     d3d_qp('facecolour',[ 1 0 0 ])
     d3d_qp('addtoplot')
 end
 if d3d_qp('selectfield','distance ticks')
     d3d_qp('addtoplot')
 end
-if d3d_qp('selectfield','distance tick labels')
+if d3d_qp('selectfield','distance value at ticks')
     d3d_qp('presenttype','labels')
     d3d_qp('fontsize',6)
     d3d_qp('addtoplot')
@@ -587,27 +613,28 @@ prj=FI.Case.Project(domain);
 cse=FI.Case.Case(domain);
 %======================== SPECIFIC CODE =======================================
 V=inf; % unknown/variable number of points indicated by infinity
-PropNames={'Name'               'Units' 'DimFlag'   'DataInCell' 'NVal' 'Geom'   'Coords' 'ClosedPoly' 'Project' 'Case' 'Var'   };
-DataProps={'default figures'    ''      [0 0 0 0 0] 0            -2     ''       ''       0            prj       cse     0
-    '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse     0
-    'desired ship track'        ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse     -1
-    'distance ticks'            ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse     -1
-    'distance tick labels'      ''      [0 0 0 0 0] 0             4     'sQUAD'  'xy'     0            prj       cse     -1
-    'ship at distance ticks'    ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     0
-    'ship track'                ''      [9 0 0 0 0] 0             0     'PNT'    'xy'     0            prj       cse     0
-    'ship'                      ''      [9 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     0
-    'swept path'                ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     0
-    'fairway contour'           ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     -1
-    'bank suction lines'        ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse     -1
-    '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse     0
-    'wind'                      'm/s'   [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse     -1
-    'waves'                     'm'     [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse     -1
-    'swell'                     'm'     [0 0 V 0 0] 0             1     'TRI'    'xy'     0            prj       cse     -1
-    'current'                   'm/s'   [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse     -1
-    'depth'                     'm'     [0 0 V 0 0] 0             1     'TRI'    'xy'     0            prj       cse     -1
-    '-------'                   ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse     0
-    'speed'                     'm/s'   [9 0 0 0 0] 0             1     'PNT'    'd'      0            prj       cse     0
-    'his-data'                  ''      [9 0 0 0 0] 0             1     'PNT'    'd'      0            prj       cse     0       };
+PropNames={'Name'                   'Units' 'DimFlag'   'DataInCell' 'NVal' 'Geom'   'Coords' 'ClosedPoly' 'Project' 'Case' 'Var'   };
+DataProps={'default figures'        ''      [0 0 0 0 0] 0            -2     ''       ''       0            prj       cse     0
+    '-------'                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse     0
+    'desired ship track'            ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse     -1
+    'distance ticks'                ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse     0
+    'distance value at ticks'       ''      [0 0 0 0 0] 0             4     'sQUAD'  'xy'     0            prj       cse     0
+    %'ship at distance ticks'        ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     0
+    'ship snapshots'                ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     0
+    'ship track'                    ''      [9 0 0 0 0] 0             0     'PNT'    'xy'     0            prj       cse     0
+    'ship'                          ''      [9 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     0
+    'swept path'                    ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     0
+    'fairway contour'               ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     -1
+    'bank suction lines'            ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse     -1
+    '-------'                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse     0
+    'wind'                          'm/s'   [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse     -1
+    'waves'                         'm'     [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse     -1
+    'swell'                         'm'     [0 0 V 0 0] 0             1     'TRI'    'xy'     0            prj       cse     -1
+    'current'                       'm/s'   [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse     -1
+    'depth'                         'm'     [0 0 V 0 0] 0             1     'TRI'    'xy'     0            prj       cse     -1
+    '-------'                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse     0
+    'speed'                         'm/s'   [9 0 0 0 0] 0             1     'PNT'    'd'      0            prj       cse     0
+    'his-data'                      ''      [9 0 0 0 0] 0             1     'PNT'    'd'      0            prj       cse     0       };
 Out=cell2struct(DataProps,PropNames,2);
 %======================== SPECIFIC CODE DIMENSIONS ============================
 Proj = FI.Project(prj);
@@ -678,7 +705,7 @@ for i = length(Out):-1:1
             else
                 Out(i).Var = [u v track];
             end
-        case 'ship track'
+        case {'ship track','distance ticks','distance value at ticks'}
             x = find(strcmpi('x',hisvars));
             y = find(strcmpi('y',hisvars));
             if isempty(x) || isempty(y)
@@ -694,11 +721,11 @@ for i = length(Out):-1:1
             if ~Proj.Cases.Data(cse).sceneryIsSelected || ~exist(Proj.Sceneries.Data(Proj.Cases.Data(cse).sceneryNr).banksuctionFile)
                 Out(i)=[];
             end
-        case {'desired ship track','distance ticks','distance tick labels'}
+        case 'desired ship track'
             if ~exist(Proj.Cases.Data(cse).trackFile)
                 Out(i)=[];
             end
-        case {'ship','ship at distance ticks','swept path'}
+        case {'ship','ship snapshots','ship at distance ticks','swept path'}
             x = find(strcmpi('x',hisvars));
             y = find(strcmpi('y',hisvars));
             dir = find(strcmpi('heading',hisvars));
@@ -716,7 +743,7 @@ for i = length(Out):-1:1
                         if isempty(contour)
                             Out(i) = [];
                         end
-                    case 'ship at distance ticks'
+                    case {'ship at distance ticks','ship snapshots'}
                         Out(i).Var(4) = track;
                         if isempty(contour)
                             Out(i) = [];
@@ -753,6 +780,87 @@ cse = Props.Case;
 %======================== SPECIFIC CODE =======================================
 T = delwaq('read',FI.Project(prj).Cases.Data(cse).TimeSeries,1,1,t);
 % -----------------------------------------------------------------------------
+
+% -------------------------------------------------------------------------
+function [NewFI,cmdargs]=options(FI,mfig,cmd,varargin)
+T_=1; ST_=2; M_=3; N_=4; K_=5;
+%======================== SPECIFIC CODE ===================================
+Inactive=get(0,'defaultuicontrolbackground');
+Active=[1 1 1];
+NewFI=FI;
+cmd=lower(cmd);
+cmdargs={};
+switch cmd
+    case 'initialize'
+        optfig(mfig);
+        %
+        h=findobj(mfig,'tag','spacestepval');
+        step=qp_settings('shipma_spacestep');
+        set(h,'string',step)
+        %
+        h=findobj(mfig,'tag','timestepval');
+        step=qp_settings('shipma_timestep');
+        set(h,'string',step)
+    case {'shipma_spacestep','shipma_timestep'}
+        h = findobj(mfig,'tag',[cmd(8:end) 'val']);
+        if isempty(varargin)
+            step = get(h,'string');
+        else
+            step = varargin{1};
+        end
+        if ischar(step)
+            step = str2double(step);
+        end
+        set(h,'string',sprintf('%g',step))
+        qp_settings(cmd,step)
+    otherwise
+        error(['Unknown option command: ',cmd])
+end
+% -------------------------------------------------------------------------
+
+% -------------------------------------------------------------------------
+function OK=optfig(h0)
+Inactive=qp_settings('UIInActiveColor');
+Active=qp_settings('UIActiveColor');
+FigPos=get(h0,'position');
+voffset=FigPos(4)-30;
+textwidth=FigPos(3)-80-30;
+uicontrol('Parent',h0, ...
+    'Style','text', ...
+    'BackgroundColor',Inactive, ...
+    'Horizontalalignment','left', ...
+    'Position',[11 voffset textwidth 18], ...
+    'String','Space step for distance ticks (m)', ...
+    'Enable','on', ...
+    'Tag','spacestep');
+uicontrol('Parent',h0, ...
+    'Style','edit', ...
+    'HorizontalAlignment','right', ...
+    'BackgroundColor',Active, ...
+    'Callback','d3d_qp fileoptions shipma_spacestep', ...
+    'Position',[21+textwidth voffset 80 20], ...
+    'Enable','on', ...
+    'Tag','spacestepval');
+voffset=voffset-25;
+uicontrol('Parent',h0, ...
+    'Style','text', ...
+    'BackgroundColor',Inactive, ...
+    'Horizontalalignment','left', ...
+    'Position',[11 voffset textwidth 18], ...
+    'String','Time step for ship snapshots (s)', ...
+    'Enable','on', ...
+    'Tag','timestep');
+uicontrol('Parent',h0, ...
+    'Style','edit', ...
+    'HorizontalAlignment','right', ...
+    'BackgroundColor',Active, ...
+    'Horizontalalignment','right', ...
+    'Callback','d3d_qp fileoptions shipma_timestep', ...
+    'Position',[21+textwidth voffset 80 20], ...
+    'Enable','on', ...
+    'Tag','timestepval');
+OK=1;
+% -------------------------------------------------------------------------
 
 
 function s2 = translate(s1)
