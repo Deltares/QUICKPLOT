@@ -3517,8 +3517,18 @@ try
             waitfor(hpause,'value',0)
             
         otherwise
-            cmd2 = cmd;
-            cmd = -1;
+            if exist(cmd)==2
+                [p,f,e]=fileparts(cmd);
+                switch lower(e)
+                    case {'.qplog','.m'}
+                        d3d_qp('run',cmd,cmdargs{:})
+                    otherwise
+                        d3d_qp('openfile',cmd,cmdargs{:})
+                end
+            else
+                cmd2 = cmd;
+                cmd = -1;
+            end
     end
 catch
     ui_message('error',{sprintf('Catch in d3d_qp\\%s:',cmd),lasterr})
