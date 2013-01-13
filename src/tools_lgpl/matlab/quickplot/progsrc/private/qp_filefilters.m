@@ -45,6 +45,7 @@ filtertbl={...
     '*.mesh'                                               'Mike Flexible Mesh Files'          'mikemesh'
     '*.14'                                                 'Adcirc Mesh Files'                 'adcircmesh'
     '*.mesh;*.node;*.ele;*.n;*.e'                          'EasyMesh and Triangle Mesh Files'  'nodelemesh'
+    '*.gem'                                                'GeoSystems Mesh Files'             'geomesh'
     '*.bct;*.bcc;*.bcb'                                    'Delft3D-FLOW Bound. Cond. Files'   'bct'
     '*.am?;*.spw;*.wnd'                                    'Delft3D/SOBEK Meteo Files'         'asciiwind'
     'gcmplt.*;gcmtsr.*'                                    'ECOMSED Binary Files'              'ecomsed-binary'

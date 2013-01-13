@@ -138,12 +138,14 @@ switch cmd
          switch lower(en)
             case {'.grd','.rgf'}
                trytp='wlgrid';
-             case {'.n','.e','.node','.ele'}
-                 trytp='nodelemesh';
-             case {'.14'}
-                 trytp='adcircmesh';
-             case {'.mesh'}
-                 trytp='mikemesh';
+            case {'.n','.e','.node','.ele'}
+               trytp='nodelemesh';
+            case {'.14'}
+               trytp='adcircmesh';
+            case {'.mesh'}
+               trytp='mikemesh';
+            case {'gem'}
+               trytp='geomesh';
             case {'.mat'}
                trytp='matlab';
             case {'.map'}
@@ -624,6 +626,16 @@ switch cmd
                end
                if ~isempty(FI)
                   FI.Options=0;
+                  Tp=FI.FileType;
+               end
+               trytp='geomesh';
+            case 'geomesh'
+               try
+                  FI=geomesh('open',FileName);
+               end
+               if ~isempty(FI)
+                  FI.Options=0;
+                  FI.DomainName = 'Layer';
                   Tp=FI.FileType;
                end
                trytp='tekal';

@@ -148,6 +148,9 @@ try
     for seg = 1:nLandBndSeg
         Line = fgetl(fid);
         N = sscanf(Line,'%i',2);
+        if length(N)==1
+            N(2) = -999;
+        end
         S.Bnd(nOpenBndSeg+seg).Type = N(2);
         switch N(2)
             case 0 % EXTERNAL NO NORMAL FLOW - ESSENTIAL, FREE SLIP

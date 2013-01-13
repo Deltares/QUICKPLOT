@@ -98,12 +98,16 @@ DimFlag=Props.DimFlag;
 % initialize and read indices ...
 idx={[] [] 0 [] []};
 fidx=find(DimFlag);
+
 idx(fidx(1:length(varargin)))=varargin;
 
-if isequal(idx{M_},0)
-    Faces = FI.Faces;
+if isfield(Props,'ElmLayer')
+    Faces = FI.Faces(FI.ElmLyr==Props.ElmLayer,:);
 else
-    Faces = FI.Faces(idx{M_},:);
+    Faces = FI.Faces;
+end
+if ~isequal(idx{M_},0)
+    Faces = Faces(idx{M_},:);
 end
 i = Faces>0;
 %
@@ -140,12 +144,32 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 PropNames={'Name'                   'Units' 'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVal' 'SubFld' 'ClosedPoly'};
 DataProps={'mesh'                   ''     'POLYG' 'xy'    [0 0 6 0 0]  0           0      []         1};
 Out=cell2struct(DataProps,PropNames,2);
+if isfield(FI,'ElmLyr') && domain<=length(FI.Layers)
+    Out.ElmLayer = FI.Layers(domain);
+end
 % -----------------------------------------------------------------------------
-
 
 % -----------------------------------------------------------------------------
 function sz=getsize(FI,Props)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 sz=[0 0 0 0 0];
-sz(M_) = size(FI.Faces,1);
+if isfield(Props,'ElmLayer')
+    sz(M_) = sum(FI.ElmLyr==Props.ElmLayer);
+else
+    sz(M_) = size(FI.Faces,1);
+end
+% -----------------------------------------------------------------------------
+
+% -----------------------------------------------------------------------------
+function Domains=domains(FI)
+if isfield(FI,'ElmLyr')
+    nLyr = length(FI.Layers);
+    Domains = cell(1,nLyr+1);
+    for i = 1:nLyr
+        Domains{i} = sprintf('%i',FI.Layers(i));
+    end
+    Domains{end} = 'All';
+else
+    Domains = {};
+end
 % -----------------------------------------------------------------------------
