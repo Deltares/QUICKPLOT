@@ -111,27 +111,35 @@ if ~isequal(idx{M_},0)
 end
 i = Faces>0;
 %
-X = Faces;
-Y = Faces;
-X(i) = FI.NodeCoor(Faces(i),1);
-Y(i) = FI.NodeCoor(Faces(i),2);
-X(~i) = NaN;
-Y(~i) = NaN;
-X(:,end+1:end+2) = NaN;
-Y(:,end+1:end+2) = NaN;
-for i=1:size(X,1)
-    for j=1:size(X,2)
-        if isnan(X(i,j))
-            X(i,j) = X(i,1);
-            Y(i,j) = Y(i,1);
-            break
+switch Props.Geom
+    case 'POLYG'
+        X = Faces;
+        Y = Faces;
+        X(i) = FI.NodeCoor(Faces(i),1);
+        Y(i) = FI.NodeCoor(Faces(i),2);
+        X(~i) = NaN;
+        Y(~i) = NaN;
+        X(:,end+1:end+2) = NaN;
+        Y(:,end+1:end+2) = NaN;
+        for i=1:size(X,1)
+            for j=1:size(X,2)
+                if isnan(X(i,j))
+                    X(i,j) = X(i,1);
+                    Y(i,j) = Y(i,1);
+                    break
+                end
+            end
         end
-    end
+        X = X';
+        Y = Y';
+        Ans.X = X(:);
+        Ans.Y = Y(:);
+    case 'TRI'
+        Ans.TRI = Faces;
+        sz = size(FI.NodeCoor);
+        Ans.XYZ = reshape(FI.NodeCoor,[1 sz(1) 1 sz(2)]);
+        Ans.Val = FI.NodeCoor(:,3);
 end
-X = X';
-Y = Y';
-Ans.X = X(:);
-Ans.Y = Y(:);
 %
 varargout={Ans FI};
 % -----------------------------------------------------------------------------
@@ -142,10 +150,14 @@ function Out=infile(FI,domain)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'                   'Units' 'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVal' 'SubFld' 'ClosedPoly'};
-DataProps={'mesh'                   ''     'POLYG' 'xy'    [0 0 6 0 0]  0           0      []         1};
+DataProps={'mesh'                   ''     'POLYG' 'xy'    [0 0 6 0 0]  0            0      []         1
+           'value'                  ''     'TRI'   'xy'    [0 0 6 0 0]  0            1      []         1};
 Out=cell2struct(DataProps,PropNames,2);
+if size(FI.Faces,2)~=3
+    DataProps(2,:) = [];
+end
 if isfield(FI,'ElmLyr') && domain<=length(FI.Layers)
-    Out.ElmLayer = FI.Layers(domain);
+    [Out.ElmLayer] = deal(FI.Layers(domain));
 end
 % -----------------------------------------------------------------------------
 

@@ -140,7 +140,7 @@ switch cmd
                trytp='wlgrid';
             case {'.n','.e','.node','.ele'}
                trytp='nodelemesh';
-            case {'.14'}
+            case {'.14','.gr3'}
                trytp='adcircmesh';
             case {'.mesh'}
                trytp='mikemesh';
