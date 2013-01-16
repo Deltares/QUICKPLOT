@@ -109,6 +109,8 @@ Set.filefilterselection       = '"ARC/INFO Ascii Grid Files","Delft3D Grid Files
 Set.debugging                 = 0;
 Set.showinactiveopt           = 0;
 %
+Set.delwaq_procdef            = 'auto';
+%
 Set.shipma_spacestep          = 500; %m
 Set.shipma_tickwidth          = 200; %m
 Set.shipma_timestep           = 300; %s

@@ -1652,15 +1652,38 @@ end
 % -----------------------------------------------------------------------------
 
 
-function [Full,Unit,GroupID]=substdb(Abb)
+function [Full,Unit,GroupID]=substdb(Abb,cmd)
 % substance database
 persistent x
+if nargin==2
+    switch cmd
+        case 'filename'
+            if isempty(x)
+                substdb;
+            end
+            if isfield(x,'ProcDefFile')
+                Full = x.ProcDefFile;
+            else
+                Full = '[unable to locate]';
+            end
+        case 'reload'
+            x=[];
+            substdb;
+    end
+    return
+end
+%
+% nargin == 0 or 1
+%
 if isempty(x)
     ErrMsg='';
     x=-1;
     try
         ErrMsg='Cannot find or open ';
-        tbl=cat(2,getenv('D3D_HOME'),filesep,getenv('ARCH'),filesep,'waq',filesep,'default',filesep,'proc_def.dat');
+        tbl=qp_settings('delwaq_procdef');
+        if isequal(tbl,'auto') || ~exist(tbl,'file')
+            tbl=cat(2,getenv('D3D_HOME'),filesep,getenv('ARCH'),filesep,'waq',filesep,'default',filesep,'proc_def.dat');
+        end
         if ~exist(tbl,'file') && ispc
             for drive = 'cdef'
                 subdir = dir([drive ':\S*']);
@@ -1691,6 +1714,7 @@ if isempty(x)
             x.NM=NM;
             x.GRPID=GRPID;
             x.UNIT=UNIT;
+            x.ProcDefFile=tbl;
         end
     catch
         ui_message('error',[ErrMsg tbl]);
@@ -1850,6 +1874,52 @@ switch cmd
                     end
             end
         end
+        options(FI,mfig,'updateprocdef');
+        
+    case {'updateprocdef'}
+        f1 = findobj(mfig,'tag','autoprocdef');
+        f2 = findobj(mfig,'tag','procdefname');
+        f3 = findobj(mfig,'tag','procdefbrowse');
+        if strcmp(qp_settings('delwaq_procdef'),'auto')
+            set(f1,'value',1,'enable','on')
+            set(f2,'string',substdb('cmd','filename'),'enable','inactive')
+            set(f2,'backgroundcolor',[1 1 0],'backgroundcolor',Inactive) % need dummy backgroundcolor to get proper color set (R2012a)
+            set(f3,'enable','off')
+        else
+            set(f1,'value',0,'enable','on')
+            set(f2,'string',substdb('cmd','filename'),'enable','on','backgroundcolor',Active)
+            set(f3,'enable','on')
+        end
+        
+    case {'autoprocdef'}
+        f1 = findobj(mfig,'tag','autoprocdef');
+        if get(f1,'value')
+            % now auto
+            qp_settings('delwaq_procdef','auto')
+            substdb('cmd','reload')
+        else
+            % now manual
+            qp_settings('delwaq_procdef','manual but not yet specied')
+        end
+        options(FI,mfig,'updateprocdef');
+
+    case {'procdefname'}
+        f1 = findobj(mfig,'tag','procdefname');
+        qp_settings('delwaq_procdef',get(f1,'string'))
+        substdb('cmd','reload')
+        options(FI,mfig,'updateprocdef');
+        
+    case {'procdefbrowse'}
+        procdef = qp_settings('delwaq_procdef');
+        if isequal(procdef,'auto')
+            procdef = 'proc_def.dat';
+        end
+        [fn,pn]=uigetfile({'proc_def.dat','Process definition files'},'Select process definition file',procdef);
+        if ischar(fn)
+            qp_settings('delwaq_procdef',[pn fn])
+            substdb('cmd','reload')
+        end
+        options(FI,mfig,'updateprocdef');
         
     case {'loadvolflux'}
         NewFI.Attributes = [];
@@ -1962,6 +2032,39 @@ uicontrol('Parent',h0, ...
     'Position',[11 voffset 160 20], ...
     'String','Load Volumes, Fluxes, ...', ...
     'Tag','loadvolflux')
+%
+voffset=voffset-30;
+h2 = uicontrol('Parent',h0, ...
+    'Style','checkbox', ...
+    'BackgroundColor',Inactive, ...
+    'Callback','d3d_qp fileoptions autoprocdef', ...
+    'Horizontalalignment','left', ...
+    'Position',[11 voffset width 18], ...
+    'String','Auto Locate Process Definition File', ...
+    'Enable','off', ...
+    'Tooltip','Automatically locate process definition file', ...
+    'Tag','autoprocdef');
+voffset=voffset-25;
+h2 = uicontrol('Parent',h0, ...
+    'Style','edit', ...
+    'BackgroundColor',Inactive, ...
+    'Callback','d3d_qp fileoptions procdefname', ...
+    'Horizontalalignment','left', ...
+    'Position',[11 voffset width-30 20], ...
+    'String','procdef.dat', ...
+    'Enable','off', ...
+    'Tooltip','Process definition file', ...
+    'Tag','procdefname');
+h2 = uicontrol('Parent',h0, ...
+    'Style','pushbutton', ...
+    'BackgroundColor',Inactive, ...
+    'Callback','d3d_qp fileoptions procdefbrowse', ...
+    'Horizontalalignment','left', ...
+    'Position',[21+width-30 voffset 20 20], ...
+    'String','...', ...
+    'Enable','off', ...
+    'Tooltip','Browse for process definition file', ...
+    'Tag','procdefbrowse');
 OK=1;
 % -----------------------------------------------------------------------------
 
