@@ -140,6 +140,9 @@ end
 %
 FI.FileName = FileName;
 FI.UnzipFolder = [p filesep strrep(f,'.','_') '_' e(2:end) '.emb'];
+if ~exist(FI.UnzipFolder,'dir') % for the active scenario before an official save
+    FI.UnzipFolder = p;
+end
 %
 FI.XML = xmlread(FileName);
 Doc = FI.XML.getFirstChild;

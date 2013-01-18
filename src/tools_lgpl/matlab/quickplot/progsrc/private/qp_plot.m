@@ -622,9 +622,6 @@ PName=strrep(PName,'\','\\');
 PName=strrep(PName,'{','\{');
 PName=strrep(PName,'}','\}');
 PName=strrep(PName,'_','\_');
-if ~isempty(Units)
-    PName=[PName ' (' Units ')'];
-end
 
 TStr='';
 if isfield(data,'Time') && length(data(1).Time)==1
@@ -940,6 +937,7 @@ if ~isempty(Ops.basicaxestype)
         end
     else
         dimension3 = PName;
+        unit3 = Units;
     end
     setaxesprops(Parent,Ops.axestype,dimension1,unit1,dimension2,unit2,dimension3,unit3);
 end

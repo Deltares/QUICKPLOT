@@ -159,6 +159,7 @@ else
                 end
                 if isequal(AxisQuant{i},'Val')
                     quantity = dimension3;
+                    unit = unit3;
                 end
                 setlabel(Parent,dir,quantity,unit)
             end

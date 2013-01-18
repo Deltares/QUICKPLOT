@@ -114,6 +114,19 @@ Set.delwaq_procdef            = 'auto';
 Set.shipma_spacestep          = 500; %m
 Set.shipma_tickwidth          = 200; %m
 Set.shipma_timestep           = 300; %s
+Set.shipma_figa               = 1;
+Set.shipma_figb               = 1;
+Set.shipma_figbquantity       = 'waves';
+Set.shipma_figc               = 1;
+Set.shipma_figd               = 1;
+Set.shipma_fige               = 1;
+Set.shipma_fige_wind          = 1;
+Set.shipma_fige_waves         = 1;
+Set.shipma_fige_swell         = 1;
+Set.shipma_fige_banksuction   = 1;
+Set.shipma_figf               = 1;
+Set.shipma_figf_tugs          = 1;
+Set.shipma_figf_thrusters     = 1;
 %
 if isfield(Set,param)
     val=getfield(Set,param);
