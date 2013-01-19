@@ -152,10 +152,10 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 PropNames={'Name'                   'Units' 'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVal' 'SubFld' 'ClosedPoly'};
 DataProps={'mesh'                   ''     'POLYG' 'xy'    [0 0 6 0 0]  0            0      []         1
            'value'                  ''     'TRI'   'xy'    [0 0 6 0 0]  0            1      []         1};
-Out=cell2struct(DataProps,PropNames,2);
-if size(FI.Faces,2)~=3
+if size(FI.NodeCoor,2)<3
     DataProps(2,:) = [];
 end
+Out=cell2struct(DataProps,PropNames,2);
 if isfield(FI,'ElmLyr') && domain<=length(FI.Layers)
     [Out.ElmLayer] = deal(FI.Layers(domain));
 end

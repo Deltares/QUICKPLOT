@@ -834,6 +834,9 @@ else
     Param.multiple=multiple;
     Param.FirstFrame=FirstFrame;
     Param.PName=PName;
+    if ~isempty(Units)
+        Param.PName=[Param.PName ' (' Units ')'];
+    end
     Param.TStr=TStr;
     Param.Selected=Selected;
     Param.quivopt=quivopt;
@@ -890,6 +893,7 @@ if ~isempty(Ops.basicaxestype)
         dimension1 = '';
     elseif isequal(axestype{1},'Val')
         dimension1 = PName;
+        unit1 = Units;
     elseif isequal(axestype{1},'Distance')
         dimension1 = 'distance';
         if isfield(data,'XUnits') && ~isempty(data(1).XUnits)

@@ -948,6 +948,7 @@ switch cmd
         end
         set(h,'string',sprintf('%g',step))
         qp_settings(cmd,step)
+        cmdargs={cmd,step};
     case {'shipma_figa','shipma_figb','shipma_figc','shipma_figd','shipma_fige', ...
             'shipma_fige_wind','shipma_fige_waves','shipma_fige_swell','shipma_fige_banksuction', ...
             'shipma_figf','shipma_figf_tugs','shipma_figf_thrusters'}
@@ -986,6 +987,7 @@ switch cmd
                     end
                 end
         end
+        cmdargs={cmd,v};
     case {'shipma_figbquantity'}
         h = findobj(mfig,'tag','figb-list');
         str = get(h,'string');
@@ -999,6 +1001,7 @@ switch cmd
         if i>0
             set(h,'value',i)
             qp_settings(cmd,str{i})
+            cmdargs={cmd,str{i}};
         end
     otherwise
         error(['Unknown option command: ',cmd])
