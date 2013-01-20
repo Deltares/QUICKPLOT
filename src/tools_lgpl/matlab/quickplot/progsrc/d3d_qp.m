@@ -2551,18 +2551,31 @@ try
                 end
             end
             
-        case 'axescolour'
+        case {'axescolour','xcolour','ycolour'}
             ax = qpsa;
             if isempty(cmdargs)
-                clr=uisetcolor(get(ax,'color'),'Specify the axes colour ...');
+                if strcmp(get(gcbo,'style'),'checkbox') && ~get(gcbo,'value')
+                    clr='none';
+                else
+                    clr=get(ax,'color');
+                    if ischar(clr) % none
+                        clr=get(get(ax,'parent'),'color');
+                    end
+                    clr=uisetcolor(clr,sprintf('Specify the %s colour ...',cmd(1:end-6)));
+                end
             else
                 clr=cmdargs{1};
             end
-            if ischar(clr)
+            if ischar(clr) && ~strcmpi(clr,'none')
                 clr = str2color(clr);
             end
-            if isequal(size(clr),[1 3])
-                set(ax,'color',clr)
+            if isequal(size(clr),[1 3]) || (strcmp(cmd,'axescolour') && strcmpi(clr,'none'))
+                switch cmd
+                    case 'axescolour'
+                        set(ax,'color',clr)
+                    case {'xcolour','ycolour'}
+                        set(ax,[cmd(1) 'color'],clr)
+                end
                 d3d_qp refreshaxprop
                 if logfile
                     writelog(logfile,logtype,cmd,clr);
@@ -2594,6 +2607,12 @@ try
                 end
             end
             if isequal(size(xlm),[1 2]) && isequal(size(ylm),[1 2])
+                if any(xlm<0) && strcmp(get(ax,'xscale'),'log')
+                    set(ax,'xscale','linear')
+                end
+                if any(ylm<0) && strcmp(get(ax,'yscale'),'log')
+                    set(ax,'yscale','linear')
+                end
                 set(ax,'xlim',xlm,'ylim',ylm)
                 setaxesprops(ax)
                 d3d_qp refreshaxprop
@@ -2619,6 +2638,49 @@ try
                 d3d_qp refreshaxprop
                 if logfile
                     writelog(logfile,logtype,cmd,xgrid,ygrid);
+                end
+            end
+            
+        case 'axesloc'
+            ax = qpsa;
+            PM = UD.PlotMngr;
+            xlcs = get(PM.XLoc,'string');
+            ylcs = get(PM.YLoc,'string');
+            if isempty(cmdargs)
+                xlc = xlcs{get(PM.XLoc,'value')};
+                ylc = ylcs{get(PM.YLoc,'value')};
+            else
+                xlc = cmdargs{1};
+                ylc = cmdargs{2};
+            end
+            ixlc = ustrcmpi(xlc,xlcs);
+            iylc = ustrcmpi(ylc,ylcs);
+            if ixlc>0 && iylc>0
+                set(ax,'xaxislocation',xlc,'yaxislocation',ylc);
+                d3d_qp refreshaxprop
+                if logfile
+                    writelog(logfile,logtype,cmd,xlc,ylc);
+                end
+            end
+            
+        case 'axesscale'
+            ax = qpsa;
+            PM = UD.PlotMngr;
+            scales = get(PM.XScale,'string');
+            if isempty(cmdargs)
+                xsc = scales{get(PM.XScale,'value')};
+                ysc = scales{get(PM.YScale,'value')};
+            else
+                xsc = cmdargs{1};
+                ysc = cmdargs{2};
+            end
+            ixsc = ustrcmpi(xsc,scales);
+            iysc = ustrcmpi(ysc,scales);
+            if ixsc>0 && iysc>0
+                set(ax,'xscale',xsc,'yscale',ysc);
+                d3d_qp refreshaxprop
+                if logfile
+                    writelog(logfile,logtype,cmd,xsc,ysc);
                 end
             end
             

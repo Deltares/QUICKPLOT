@@ -89,23 +89,36 @@ switch cmd
         shiftcontrol(PM.FigColor,aligntop)
         %
         shiftcontrol(PM.AxColorTxt,aligntop)
-        shiftcontrol(PM.AxColor,aligntop)
+        shiftcontrol(PM.HasAxColor,aligntop)
+        shiftcontrol(PM.AxColor,aligntop+stretch5)
         shiftcontrol(PM.AxBox,aligntop+shift5+stretch5)
-        shiftcontrol(PM.GridTxt,aligntop+2*shift5+stretch5)
-        shiftcontrol(PM.XGrid,aligntop+3*shift5+stretch5)
-        shiftcontrol(PM.YGrid,aligntop+4*shift5+stretch5)
-        shiftcontrol(PM.XLimitTxt,aligntop)
-        shiftcontrol(PM.XLimitMin,aligntop+stretch5)
-        shiftcontrol(PM.XLimitMax,aligntop+shift5+stretch5)
-        shiftcontrol(PM.YLimitTxt,aligntop+2*shift5+stretch5)
-        shiftcontrol(PM.YLimitMin,aligntop+3*shift5+stretch5)
-        shiftcontrol(PM.YLimitMax,aligntop+4*shift5+stretch5)
+        %
         shiftcontrol(PM.AxPosition,aligntop)
         shiftcontrol(PM.AxXLowerLeft,aligntop+stretch5)
         shiftcontrol(PM.AxYLowerLeft,aligntop+shift5+stretch5)
         shiftcontrol(PM.AxWidth,aligntop+2*shift5+stretch5)
         shiftcontrol(PM.AxHeight,aligntop+3*shift5+stretch5)
         shiftcontrol(PM.AxPosUnit,aligntop+4*shift5+stretch5)
+        %
+        shiftcontrol(PM.XLimitTxt,aligntop)
+        shiftcontrol(PM.XLimitMin,aligntop+stretch5)
+        shiftcontrol(PM.XLimitMax,aligntop+shift5+stretch5)
+        shiftcontrol(PM.XScale,aligntop+2*shift5+stretch5)
+        shiftcontrol(PM.XGrid,aligntop+3*shift5+stretch5)
+        shiftcontrol(PM.XLoc,aligntop+4*shift5+stretch5)
+        shiftcontrol(PM.XColor,aligntop+5*shift5)
+        shiftcontrol(PM.XLabelTxt,aligntop)
+        shiftcontrol(PM.XLabel,aligntop+5*stretch5)
+        %
+        shiftcontrol(PM.YLimitTxt,aligntop)
+        shiftcontrol(PM.YLimitMin,aligntop+stretch5)
+        shiftcontrol(PM.YLimitMax,aligntop+shift5+stretch5)
+        shiftcontrol(PM.YScale,aligntop+2*shift5+stretch5)
+        shiftcontrol(PM.YGrid,aligntop+3*shift5+stretch5)
+        shiftcontrol(PM.YLoc,aligntop+4*shift5+stretch5)
+        shiftcontrol(PM.YColor,aligntop+5*shift5)
+        shiftcontrol(PM.YLabelTxt,aligntop)
+        shiftcontrol(PM.YLabel,aligntop+5*stretch5)
         %
         shiftcontrol(PM.ItTxt2,aligntop)
         shiftcontrol(PM.ItList2,aligntop+stretchhor)
@@ -1143,8 +1156,16 @@ switch cmd
         ax = qpsa;
         PM = UD.PlotMngr;
         if length(ax)==1
-            set(PM.AxColor,'backgroundcolor',get(ax,'color'), ...
-                'enable','on')
+            clr = get(ax,'color');
+            if isequal(clr,'none')
+                set(PM.HasAxColor,'enable','on','value',0)
+                set(PM.AxColor,'string','X','backgroundcolor',Inactive, ...
+                    'enable','on')
+            else
+                set(PM.HasAxColor,'enable','on','value',1)
+                set(PM.AxColor,'backgroundcolor',clr,'string','', ...
+                    'enable','on')
+            end
             xlim = get(ax,'xlim');
             ylim = get(ax,'ylim');
             set([PM.XLimitMin PM.XLimitMax PM.YLimitMin PM.YLimitMax], ...
@@ -1157,6 +1178,12 @@ switch cmd
             xgr  = valuemap(get(ax,'xgrid'),{'on' 'off'},[1 0]);
             ygr  = valuemap(get(ax,'ygrid'),{'on' 'off'},[1 0]);
             lbx  = valuemap(get(ax,'box'),{'on' 'off'},[1 0]);
+            xsc  = valuemap(get(ax,'xscale'),{'linear','log'},[1 2]);
+            ysc  = valuemap(get(ax,'yscale'),{'linear','log'},[1 2]);
+            xlc  = valuemap(get(ax,'xaxislocation'),{'top','bottom'},[1 2]);
+            ylc  = valuemap(get(ax,'yaxislocation'),{'left','right'},[1 2]);
+            xcl  = get(ax,'xcolor');
+            ycl  = get(ax,'ycolor');
             posu = get(ax,'unit');
             if ismember(posu,{'points','pixels','characters'})
                 set(ax,'unit','centimeters')
@@ -1164,10 +1191,44 @@ switch cmd
             end
             pos = get(ax,'position');
             %
+            if all(xlim>0)
+                set(PM.XScale,'value',xsc, ...
+                    'backgroundcolor',Active, ...
+                    'enable','on')
+            else
+                set(PM.XScale,'value',1, ...
+                    'backgroundcolor',Inactive, ...
+                    'enable','off')
+            end
             set(PM.XGrid,'value',xgr, ...
                 'enable','on')
+            set(PM.XLoc,'value',xlc, ...
+                'backgroundcolor',Active, ...
+                'enable','on')
+            set(PM.XColor,'backgroundcolor',xcl, ...
+                'enable','on')
+            set(PM.XLabel,'string',get(get(ax,'xlabel'),'string'), ...
+                'backgroundcolor',Active, ...
+                'enable','inactive')
+            if all(ylim>0)
+                set(PM.YScale,'value',ysc, ...
+                    'backgroundcolor',Active, ...
+                    'enable','on')
+            else
+                set(PM.YScale,'value',1, ...
+                    'backgroundcolor',Inactive, ...
+                    'enable','off')
+            end
             set(PM.YGrid,'value',ygr, ...
                 'enable','on')
+            set(PM.YLoc,'value',ylc, ...
+                'backgroundcolor',Active, ...
+                'enable','on')
+            set(PM.YColor,'backgroundcolor',ycl, ...
+                'enable','on')
+            set(PM.YLabel,'string',get(get(ax,'ylabel'),'string'), ...
+                'backgroundcolor',Active, ...
+                'enable','inactive')
             set(PM.AxBox,'value',lbx, ...
                 'enable','on')
             %
@@ -1193,17 +1254,22 @@ switch cmd
                 'backgroundcolor',Active, ...
                 'enable','on')
         else
-            set([PM.AxColor PM.AxPosUnit], ...
+            set([PM.HasAxColor PM.AxColor PM.AxPosUnit PM.XColor PM.YColor], ...
                 'backgroundcolor',Inactive, ...
                 'enable','off')
             set([PM.XLimitMin PM.XLimitMax PM.YLimitMin PM.YLimitMax ...
-                PM.AxXLowerLeft PM.AxYLowerLeft PM.AxWidth PM.AxHeight], ...
+                PM.AxXLowerLeft PM.AxYLowerLeft PM.AxWidth PM.AxHeight ...
+                PM.XLabel PM.YLabel], ...
                 'backgroundcolor',Inactive, ...
                 'string','', ...
                 'enable','off')
             set([PM.XGrid PM.YGrid PM.AxBox], ...
                 'backgroundcolor',Inactive, ...
                 'value',0, ...
+                'enable','off')
+            set([PM.XLoc PM.YLoc PM.XScale PM.YScale], ...
+                'backgroundcolor',Inactive, ...
+                'value',1, ...
                 'enable','off')
         end
 
