@@ -57,6 +57,7 @@ persistent PL
 if isempty(PL)
     PL={1  'PS file'                     '-'                 '-'        1
         1  'EPS file'                    '-'                 '-'        1
+        1  'PDF file'                    '-'                 '-'        1
         0  'TIF file'                    '-'                 '-'        2
         0  'BMP file'                    '-'                 '-'        2
         0  'PNG file'                    '-'                 '-'        2
@@ -219,7 +220,7 @@ while i<length(figlist)
             switch Printer
                 case 'cancel'
                     % nothing to do
-                case {'TIF file','BMP file','PNG file','JPG file','EPS file','PS file','EMF file'}
+                case {'TIF file','BMP file','PNG file','JPG file','EPS file','PS file','EMF file','PDF file'}
                     switch Printer
                         case 'TIF file'
                             ext='tif';
@@ -233,6 +234,9 @@ while i<length(figlist)
                         case 'JPG file'
                             ext='jpg';
                             dvr='-djpeg';
+                        case 'PDF file'
+                            ext='pdf';
+                            dvr='-dpdf';
                         case 'EPS file'
                             ext='eps';
                             dvr='-deps';
