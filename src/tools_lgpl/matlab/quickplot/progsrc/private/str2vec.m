@@ -1,27 +1,19 @@
 function vec=str2vec(str,varargin)
 %STR2VEC Convert string into a vector.
-%   Colon processing to be used with the compiler
-%   of MATLAB 5 for standalone programs.
+%   V=STR2VEC(S) converts the string S containing a space separated list of
+%   integers into a (numeric) vector V. The string may also contain one or
+%   more colon operators to represent series of equidistant numbers.
 %
-%   V=STR2VEC(S)
-%   Converts the string S containing a space separated
-%   list of integers into a (numeric) vector V. The
-%   string may contain the MATLAB colon operator.
+%   ...,'%f') retrieves a list of floating point values.
+%   ...,'%d') retrieves a list of integers (default).
 %
-%   ...,'%f')
-%   Retrieve a list of floating point values.
-%   ...,'%d')
-%   Retrieve a list of integers (default).
+%   ...,'range',[Min Max]) checks also whether all integers of V are within
+%   the specified range. If the string starts with a colon, the Min value
+%   is assumed to preceed, if the string ends with a colon, the Max value
+%   is assumed to follow. That is, :2: equals Min:2:Max.
 %
-%   ...,'range',[Min Max])
-%   Checks also whether all integers of V are within
-%   the specified range. If the string starts with a
-%   colon, the Min value is assumed to preceed, if
-%   the string ends with a colon, the Max value is
-%   assumed to follow. That is, :2: equals Min:2:Max.
-%
-%   ...,'applylimit')
-%   Applies the limits instead of producing an error.
+%   ...,'applylimit') replaces out of bounds values to the limit values
+%   instead of producing an error.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -85,13 +77,13 @@ while 1
     end
     if n<=length(s)
         if isequal(s(n),':')
-            if length(vec)==0
+            if isempty(vec)
                 if isempty(maxint)
                     error('String starts with colon.')
                 else
                     vec=maxint(1);
                 end
-            elseif length(colonafter)>0 & colonafter(end)==length(vec)
+            elseif ~isempty(colonafter) && colonafter(end)==length(vec)
                 error('Double colon encountered.')
             end
             colonafter(end+1)=length(vec);
@@ -104,7 +96,7 @@ while 1
     end
     s=s(n:end);
 end
-if (length(colonafter)>0) & (colonafter(end)==length(vec))
+if ~isempty(colonafter) && colonafter(end)==length(vec)
     if isempty(maxint)
         error('String ends with colon.')
     end
@@ -113,7 +105,7 @@ end
 while ~isempty(colonafter)
     f1=colonafter(1);
     i=2;
-    while (i<=length(colonafter)) & (colonafter(i)==f1+i-1)
+    while (i<=length(colonafter)) && (colonafter(i)==f1+i-1)
         i=i+1;
     end
     i=i-1;
@@ -151,7 +143,7 @@ if ApplyLimit
     vec=max(vec,maxint(1));
 end
 if ~isempty(maxint)
-    if any(vec<maxint(1)) | any(vec>maxint(end));
+    if any(vec<maxint(1)) || any(vec>maxint(end))
         error('Out of range value encountered.')
     end
 end

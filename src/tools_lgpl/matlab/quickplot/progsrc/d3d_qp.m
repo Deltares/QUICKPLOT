@@ -1863,22 +1863,44 @@ try
                 writelog(logfile,logtype,cmd,Str);
             end
             
-        case {'thresholds'}
-            cv=findobj(UOH,'tag',[cmd '=?']);
+        case {'thresholds','thresholdstep'}
+            cv=findobj(UOH,'tag','thresholds=?');
             if isempty(cmdargs)
                 Str=get(cv,'string');
             else
                 Str=cmdargs{1};
             end
-            if ischar(Str)
-                c=unique(str2vec(Str,'%f'));
+            if strcmp(cmd,'thresholdstep')
+                if ischar(Str)
+                    c.step=str2double(Str);
+                else
+                    c.step=Str;
+                end
+            elseif ischar(Str)
+                if length(Str)>1 && Str(1)==':' && Str(end)==':'
+                    c=[];
+                    c.step=str2double(Str(2:end-1));
+                else
+                    c=unique(str2vec(Str,'%f'));
+                end
             else
                 c=Str;
             end
-            set(cv,'string',vec2str(c,'noones','nobrackets'),'userdata',c)
-            if strcmp(cmd,'thresholds')
-                d3d_qp updateoptions
+            if isstruct(c)
+                if isnan(c.step)
+                    error('Invalid %s input string: ''%s''',cmd,Str)
+                elseif c.step<=0
+                    error('Threshold step size should be strictly positive')
+                end
+                cmd='thresholdstep';
             end
+            if isstruct(c)
+                set(cv,'string',sprintf(':%g:',c.step),'userdata',c)
+                c=c.step;
+            else
+                set(cv,'string',vec2str(c,'noones','nobrackets'),'userdata',c)
+            end
+            d3d_qp updateoptions
             if logfile
                 writelog(logfile,logtype,cmd,c);
             end

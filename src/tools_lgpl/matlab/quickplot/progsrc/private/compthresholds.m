@@ -43,7 +43,10 @@ if abs(lm(end))>eps(0)*1e6
     lm(end)=lm(end)+eps(lm(end));
 end
 %
-if isequal(size(Thresholds),[1 1]) && ...
+if isstruct(Thresholds)
+    step = Thresholds.step;
+    Thresholds=step*(floor(lm(1)/step):ceil(lm(2)/step));
+elseif isequal(size(Thresholds),[1 1]) && ...
         isequal(Thresholds,round(Thresholds)) && ...
         Thresholds>0
     if ~isempty(Ops.colourlimits)

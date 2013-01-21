@@ -1,17 +1,14 @@
 function Str=vec2str(OrigVec,varargin)
 %VEC2STR Creates a string of a vector.
+%   S=VEC2STR(V)converts the rows vector V into a string representation S.
+%   The string will contain opening and closing brackets. Depending on the
+%   data the string may also contain the colon operator, and the ones and
+%   zeros function calls.
 %
-%   S=VEC2STR(V)
-%   Converts the rows vector V into a string representation S.
-%   The string will contain opening and closing brackets.
-%   Depending on the data the string may also contain the colon
-%   operator, and the ones and zeros function calls.
+%   ...,'nobrackets') prevents the output of the opening and closing
+%   brackets.
 %
-%   ...,'nobrackets')
-%   Prevents the output of the opening and closing brackets.
-%
-%   ...,'noones')
-%   Prevents the output of ones and zeros function calls.
+%   ...,'noones') prevents the output of ones and zeros function calls.
 %
 %   Example
 %      Str=vec2str([1 2 3 4 5 6 7 -1 -1 -1 -1 -1 NaN inf inf inf])
@@ -59,7 +56,7 @@ for i=1:nargin-1
             error('Unknown input argument %i.',i+1)
     end
 end
-if nargin<1,
+if nargin<1
     error('Not enough input arguments.');
 elseif isempty(OrigVec)
     if Brackets
@@ -123,8 +120,8 @@ else
             Str=[Str sprintf(' %g',E(1,i))];
         elseif E(4,i)==2
             Str=[Str sprintf(' %g %g',E([1 3],i))];
-        elseif (E(2,i)==0) | isnan(E(2,i))
-            if E(4,i)>3,
+        elseif (E(2,i)==0) || isnan(E(2,i))
+            if E(4,i)>3
                 if Ones
                     if E(1,i)==0
                         Str=[Str sprintf(' zeros(1,%i)',E(4,i))];
@@ -136,7 +133,7 @@ else
                 end
             else
                 Str=[Str sprintf(' %g',E(1,i)*ones(1,E(4,i)))];
-            end;
+            end
         else
             if E(2,i)==1
                 Str=[Str sprintf(' %g:%g',E([1 3],i))];

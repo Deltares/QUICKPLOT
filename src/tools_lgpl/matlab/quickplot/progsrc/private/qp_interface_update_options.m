@@ -1164,7 +1164,7 @@ if ~strcmp(Ops.thresholds,'none')
     set(findobj(OH,'tag','thresholds=?'),'enable','on','backgroundcolor',Active)
     Ops.thresholds=get(findobj(OH,'tag','thresholds=?'),'userdata');
     if isempty(Ops.thresholds) || ...
-            (isequal(size(Ops.thresholds),[1 1]) && isequal(Ops.thresholds,round(Ops.thresholds)) && Ops.thresholds>0)
+            (isequal(size(Ops.thresholds),[1 1]) && isnumeric(Ops.thresholds) && isequal(Ops.thresholds,round(Ops.thresholds)) && Ops.thresholds>0)
         thrd=findobj(OH,'tag','threshdistr=?');
         set(thrd,'enable','on','backgroundcolor',Active)
         thrdStr=get(thrd,'string'); % linear, logarithmic, anti-logarithmic
