@@ -131,6 +131,9 @@ elseif isequal(firstchar,'PK')
     %
     unzip(FileName,unzipDir)
     FileName = [unzipDir filesep f e];
+    if ~exist(FileName,'file')
+        FileName = [unzipDir filesep 'scenario.xml'];
+    end
     FI = LocalShipmaOpen(FileName);
     FI.CleanUp = CleanUp;
     return
