@@ -73,15 +73,19 @@ else
         case 'Time-Val'
             setlabel(Parent,'x','time','')
             setlabel(Parent,'y',dimension3,unit3)
+            set_2d_axes_behavior(Parent)
         case 'Time-Z'
             setlabel(Parent,'x','time','')
             setlabel(Parent,'y',dimension3,unit3)
+            set_2d_axes_behavior(Parent)
         case 'X-Time'
             setlabel(Parent,'x',dimension1,unit1)
             setlabel(Parent,'y','time','')
+            set_2d_axes_behavior(Parent)
         case 'Time-X'
             setlabel(Parent,'x','time','')
             setlabel(Parent,'y',dimension1,unit1)
+            set_2d_axes_behavior(Parent)
         case 'X-Time-Val'
             setlabel(Parent,'x',dimension1,unit1)
             setlabel(Parent,'y','time','')
@@ -96,12 +100,15 @@ else
         case 'Val-Val'
             setlabel(Parent,'x',dimension1,unit1)
             setlabel(Parent,'y',dimension3,unit3)
+            set_2d_axes_behavior(Parent)
         case 'X-Val'
             setlabel(Parent,'x',dimension1,unit1)
             setlabel(Parent,'y',dimension3,unit3)
+            set_2d_axes_behavior(Parent)
         case 'Val-Z'
             setlabel(Parent,'x',dimension1,unit1)
             setlabel(Parent,'y',dimension3,unit3)
+            set_2d_axes_behavior(Parent)
         case 'X-Y-Val'
             setlabel(Parent,'x',dimension1,unit1)
             setlabel(Parent,'y',dimension2,unit2)
@@ -119,9 +126,11 @@ else
             sethscale(Parent,1)
             setlabel(Parent,'x',dimension1,unit1)
             setlabel(Parent,'y',dimension2,unit2)
+            set_2d_axes_behavior(Parent)
         case 'X-Z'
             setlabel(Parent,'x',dimension1,unit1)
             setlabel(Parent,'y',dimension3,unit3)
+            set_2d_axes_behavior(Parent)
         case 'X-Y-Z'
             sethscale(Parent,1)
             setlabel(Parent,'x',dimension1,unit1)
@@ -132,6 +141,7 @@ else
             sethscale_lonlat(Parent)
             setlabel(Parent,'x','longitude','deg')
             setlabel(Parent,'y','latitude','deg')
+            set_2d_axes_behavior(Parent)
         case 'Lon-Lat-Z'
             setappdata(Parent,'LonLat',1)
             sethscale_lonlat(Parent)
@@ -162,6 +172,9 @@ else
                     unit = unit3;
                 end
                 setlabel(Parent,dir,quantity,unit)
+            end
+            if length(AxisQuant)<3
+                set_2d_axes_behavior(Parent)
             end
     end
     %
@@ -275,3 +288,10 @@ tick(ax,dir,'%g',1/unitQ(scale))
 quantity = getappdata(ax,[dir 'quantity']);
 %setappdata(ax,[dir 'unit'],unitS{scale})
 set(get(ax,[dir 'label']),'string',sprintf('%s (%s) \\rightarrow',quantity,unitS{scale}))
+
+function set_2d_axes_behavior(ax)
+try
+    bh = hggetbehavior(ax,'rotate3d');
+    set(bh,'Enable',false);
+catch
+end
