@@ -133,44 +133,48 @@ try
     S.Faces = Elm(3:end,:)';
     %
     Line = fgetl(fid);
-    nOpenBndSeg = sscanf(Line,'%i',1);
-    fgetl(fid); % line contains total number of open boundary nodes
-    for seg = 1:nOpenBndSeg
-        Line = fgetl(fid);
-        nBndSegNod = sscanf(Line,'%i',1);
-        S.Bnd(seg).Type = 'open';
-        S.Bnd(seg).Nodes = readmat(fid,1,nBndSegNod,sprintf('open boundary segment %i',seg));
-    end
-    %
-    Line = fgetl(fid);
-    nLandBndSeg = sscanf(Line,'%i',1);
-    fgetl(fid); % line contains total number of land boundary nodes
-    for seg = 1:nLandBndSeg
-        Line = fgetl(fid);
-        N = sscanf(Line,'%i',2);
-        if length(N)==1
-            N(2) = -999;
+    if ischar(Line)
+        nOpenBndSeg = sscanf(Line,'%i',1);
+        fgetl(fid); % line contains total number of open boundary nodes
+        for seg = 1:nOpenBndSeg
+            Line = fgetl(fid);
+            nBndSegNod = sscanf(Line,'%i',1);
+            S.Bnd(seg).Type = 'open';
+            S.Bnd(seg).Nodes = readmat(fid,1,nBndSegNod,sprintf('open boundary segment %i',seg));
         end
-        S.Bnd(nOpenBndSeg+seg).Type = N(2);
-        switch N(2)
-            case 0 % EXTERNAL NO NORMAL FLOW - ESSENTIAL, FREE SLIP
-                NVal = 1;
-            case 3 % EXTERNAL BARRIER - ESSENTIAL, FREE SLIP
-                % NODE NO.,BARLANHT, BARLANCFSP
-                NVal = 3;
-            case 24 % INTERNAL BARRIER - NATURAL, FREE SLIP
-                % NODE NO.,IBCONN,BARINHT,BARINCFSB,BARINCFSP
-                NVal = 5;
-            otherwise
-                % don't know, try to be smart ...
-                here = ftell(fid);
+        %
+        Line = fgetl(fid);
+        if ischar(Line)
+            nLandBndSeg = sscanf(Line,'%i',1);
+            fgetl(fid); % line contains total number of land boundary nodes
+            for seg = 1:nLandBndSeg
                 Line = fgetl(fid);
-                [dummy,NVal] = sscanf(Line,'%f');
-                fseek(fid,here,-1);
+                N = sscanf(Line,'%i',2);
+                if length(N)==1
+                    N(2) = -999;
+                end
+                S.Bnd(nOpenBndSeg+seg).Type = N(2);
+                switch N(2)
+                    case 0 % EXTERNAL NO NORMAL FLOW - ESSENTIAL, FREE SLIP
+                        NVal = 1;
+                    case 3 % EXTERNAL BARRIER - ESSENTIAL, FREE SLIP
+                        % NODE NO.,BARLANHT, BARLANCFSP
+                        NVal = 3;
+                    case 24 % INTERNAL BARRIER - NATURAL, FREE SLIP
+                        % NODE NO.,IBCONN,BARINHT,BARINCFSB,BARINCFSP
+                        NVal = 5;
+                    otherwise
+                        % don't know, try to be smart ...
+                        here = ftell(fid);
+                        Line = fgetl(fid);
+                        [dummy,NVal] = sscanf(Line,'%f');
+                        fseek(fid,here,-1);
+                end
+                Data = readmat(fid,NVal,N(1),sprintf('land boundary segment %i',seg));
+                S.Bnd(nOpenBndSeg+seg).Nodes = Data(1,:);
+                S.Bnd(nOpenBndSeg+seg).Data = Data(2:end,:);
+            end
         end
-        Data = readmat(fid,NVal,N(1),sprintf('land boundary segment %i',seg));
-        S.Bnd(nOpenBndSeg+seg).Nodes = Data(1,:);
-        S.Bnd(nOpenBndSeg+seg).Data = Data(2:end,:);
     end
     fclose(fid);
 catch
