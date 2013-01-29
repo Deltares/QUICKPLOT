@@ -95,7 +95,7 @@ switch NVal
         set(get(Parent,'title'),'string',{PName TStr})
     case 1
         axestype = strtok(Ops.axestype);
-        if strcmp(axestype,'Distance-Val') || strcmp(axestype,'Time-Val')
+        if strcmp(axestype,'Distance-Val') || strcmp(axestype,'Time-Val') || strcmp(axestype,'Time-Z')
         %if multiple(T_)
             switch axestype
                 case 'Distance-Val'
