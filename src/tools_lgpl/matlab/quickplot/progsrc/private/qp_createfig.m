@@ -109,6 +109,45 @@ if isempty(fig)
     qp_figurebars(fig)
 end
 
+dfp = qp_settings('defaultfigurepos');
+MonPos = [];
+if isnumeric(dfp)
+    % manual
+    setpixels(fig,'position',dfp)
+elseif strcmp(dfp,'qp main')
+    % same as QUICKPLOT main window
+    mfig=findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
+    pos = getpixels(mfig,'position');
+    % determine 4 corners
+    pos = [pos(1) pos(2); pos(1)+pos(3) pos(2); pos(1) pos(2)+pos(4); pos(1)+pos(3) pos(2)+pos(4)];
+    %
+    MonPos = getpixels(0,'MonitorPositions');
+    for i = 1:size(MonPos,1)
+        % determine first screen in which some corner is located
+        if any(pos(:,1)>=MonPos(i,1) & pos(:,1)<MonPos(i,1)+MonPos(i,3) & ...
+                pos(:,2)>=MonPos(i,2) & pos(:,2)<MonPos(i,2)+MonPos(i,4))
+            MonPos = MonPos(i,:);
+            break
+        end
+    end
+elseif length(dfp)>8 && strcmp(dfp(1:8),'monitor ')
+    screen = sscanf(dfp(9:end),'%i',1);
+    %
+    MonPos = getpixels(0,'MonitorPositions');
+    if screen>size(MonPos,1)
+        screen = 1;
+    end
+    MonPos = MonPos(end-screen+1,:);
+else % strcmp(dfp,'auto') or unknown
+    % nothing to do: keep default
+end
+if ~isempty(MonPos)
+    width = min(MonPos(3),560);
+    height = min(MonPos(4),420);
+    dfp = [floor((MonPos(3)-width)/2) max(MonPos(4)-102-height,0) width height];
+    setpixels(fig,'position',dfp)
+end
+
 uic=findobj(fig,'Tag','animslid');
 if isempty(uic)
     qp_createscroller(fig)
@@ -178,3 +217,15 @@ for i=m*n:-1:1
     set(ax,'tag',tags{i},'userdata',axoptions,'drawmode','fast');
 end
 md_paper('no edit',orient,'7box',varargin{:});
+
+function val = getpixels(h,quant)
+u = get(h,'units');
+set(h,'units','pixels')
+val = get(h,quant);
+set(h,'units',u)
+
+function setpixels(h,quant,val)
+u = get(h,'units');
+set(h,'units','pixels')
+set(h,quant,val)
+set(h,'units',u)

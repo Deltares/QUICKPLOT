@@ -31,6 +31,9 @@ function qp_prefs(UD,mfig,cmd,cmdargs)
 %   $HeadURL$
 %   $Id$
 
+Inactive=get(0,'defaultuicontrolbackgroundcolor');
+Active=[1 1 1];
+
 switch cmd
     case 'preferences'
         qp_preferences_interface;
@@ -97,7 +100,40 @@ switch cmd
         catch
             cd(currentdir);
         end
-
+        
+    case 'defaultfigurepos'
+        dfpm = findobj(gcbf,'tag','defaultfigurepos-menu');
+        dfpe = findobj(gcbf,'tag','defaultfigurepos-edit');
+        FigPos = get(dfpm,'string');
+        fpval = get(dfpm,'value');
+        if fpval==2 % Manual
+            if isequal(gcbo,dfpe)
+                fp = get(dfpe,'string');
+                pos = sscanf(fp,'%i')';
+                if length(pos)~=4 || pos(3)<=0 || pos(4)<=0
+                    pos = [];
+                end
+            else
+                pos = [];
+            end
+            if isempty(pos)
+                f = qp_createfig('quick',[]);
+                set(f,'units','pixels')
+                pos = get(f,'position');
+                delete(f)
+            end
+            fp = sprintf('%i %i %i %i',pos);
+            set(dfpe,'enable','on', ...
+                'string',fp, ...
+                'backgroundcolor',Active)
+            qp_settings('defaultfigurepos',fp)
+        else
+            qp_settings('defaultfigurepos',lower(FigPos{fpval}))
+            set(dfpe,'enable','off', ...
+                'string','', ...
+                'backgroundcolor',Inactive)
+        end
+        
     case {'gridviewbackgroundcolor','gridviewgridcolor', ...
             'gridviewselectioncolor','gridviewlandboundarycolor', ...
             'defaultfigurecolor','defaultaxescolor'}

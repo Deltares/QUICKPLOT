@@ -94,6 +94,7 @@ Set.gridviewselectioncolor    = [255 0 0];
 Set.gridviewlandboundarycolor = [0 0 0];
 Set.gridviewshowindices       = 1;
 Set.defaultfigure             = '';
+Set.defaultfigurepos          = 'auto';
 Set.defaultfigurecolor        = get(0,'factoryuicontrolbackgroundcolor')*255;
 Set.defaultaxescolor          = [255 255 255];
 Set.boundingbox               = 0;
