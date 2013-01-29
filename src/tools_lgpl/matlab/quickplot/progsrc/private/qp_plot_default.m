@@ -280,9 +280,9 @@ switch NVal
                         zz=flipud(fliplr(zz));
                     end
                     if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
-                        x=pathdistance(xx,yy,zz,'geographic');
+                        x=pathdistance(xx,yy,'geographic');
                     else
-                        x=pathdistance(xx,yy,zz);
+                        x=pathdistance(xx,yy);
                     end
                     if strcmp(Ops.plotcoordinate,'reverse path distance')
                         x=flipud(fliplr(x));
