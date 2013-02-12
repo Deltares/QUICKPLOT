@@ -4,7 +4,7 @@ function h = plot_tidalellipses(X,Y,argtype,varargin)
 %   on a map at the X,Y locations based on the amplitudes and phases of the
 %   two velocity components. The dimensions of X, Y, amplitude and phase
 %   arrays should be identical. For the conversion of amplitudes and phases
-%   into ellipse parameters the AP2EP routine is used.
+%   into ellipse parameters the private AP2EP routine is used.
 %
 %   PLOT_TIDALELLIPSES(X,Y,'EP',SEMA,ECC,INC,PHA) plots tidal ellipses
 %   on a map at the X,Y locations based on the given by the semi-major
@@ -34,7 +34,7 @@ function h = plot_tidalellipses(X,Y,argtype,varargin)
 %      'Color'       - sets the line color.
 %      'LineStyle'   - sets the line style.
 %
-%   See also TBA_PLOTELLIPSES, AP2EP.
+%   See also TBA_PLOTELLIPSES.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               

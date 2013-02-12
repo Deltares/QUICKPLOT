@@ -64,6 +64,7 @@
 %
 % Generic helper routines
 %   abbrevfn                    - Abbreviate filename.
+%   ap2ep                       - Convert tidal amplitude and phase lag (ap-) parameters into tidal ellipse
 %   asciiload                   - A compiler compatible version of LOAD -ASCII.
 %   avi                         - MATLAB AVI interface.
 %   clockwise                   - Determines polygon orientation.

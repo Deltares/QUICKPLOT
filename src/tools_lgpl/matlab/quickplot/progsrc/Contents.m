@@ -101,7 +101,6 @@
 %   $Id$
 
 % Helper routines
-%   ap2ep               - Convert tidal amplitude and phase lag (ap-) parameters into tidal ellipse
 %   calldll             - Calls a DLL.
 %   cellarea            - Compute surface area of grid cells.
 %   clrmap              - Creates a colormap based on a few colors.
