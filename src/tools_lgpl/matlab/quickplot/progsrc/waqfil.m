@@ -119,7 +119,8 @@ switch lower(cmd(1:4))
             case '.len'
                 S = readlen(file,varargin{:});
             case '.chz'
-                S = readchz(file,varargin{:});
+                %S = readchz(file,varargin{:});
+                S = file.Chezy(varargin{end},:)';
             case {'.srf','.dps'}
                 %S = readsrf(file,varargin{:});
                 S = file.Srf;
@@ -221,7 +222,7 @@ S.NLayers = fread(fid,1,'int32');
 S.Dims    = fread(fid,[1 2],'int32');
 S.NAct    = fread(fid,1,'int32');
 S.XXX     = fread(fid,[1 3],'int32');
-S.Chezy   = fread(fid,[S.NAct 2],'float32')';
+S.Chezy   = fread(fid,[prod(S.Dims) 2],'float32')';
 S.ChezyLabels = {'Chezy_Direction1','Chezy_Direction2'};
 %
 fclose(fid);

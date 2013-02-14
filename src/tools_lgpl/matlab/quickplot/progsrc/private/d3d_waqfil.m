@@ -509,7 +509,7 @@ elseif (strcmp(subtype,'map') && mapgrid) || strcmp(subtype,'plot') || strcmp(su
         %
         % Delwaq Vol, Flux, ... file
         %
-        val1=waqfil('read',FI.Attributes.(Props.Val1),idx{T_})';
+        val1=waqfil('read',FI.Attributes.(Props.Val1),idx{T_},Props.AttPar{:})';
         if strcmp(Props.Name,'bed level')
             val1 = -val1;
         end
@@ -922,6 +922,7 @@ switch Type
             Out(2).Coords(end+(1:2))='+z';
         end
         if isfield(FI,'Attributes') && isstruct(FI.Attributes)
+            [Out(:).AttPar] = deal({});
             flds = fieldnames(FI.Attributes);
             for i = 1:length(flds)
                 Out(end+1) = Out(2);
@@ -963,8 +964,17 @@ switch Type
                         name = 'lengths';
                         units = 'm';
                     case 'chz'
-                        name = 'chezy';
+                        name = 'chezy - direction 1';
                         units = 'm^{1/2}/s';
+                        Out(end).Name = name;
+                        Out(end).Units = units;
+                        Out(end).DimFlag(K_) = 0;
+                        Out(end).AttPar = {1};
+                        Out(end+1) = Out(end);
+                        %
+                        name = 'chezy - direction 2';
+                        units = 'm^{1/2}/s';
+                        Out(end).AttPar = {2};
                     case 'srf'
                         name = 'surface areas';
                         units = 'm^2';
@@ -1940,7 +1950,7 @@ switch cmd
                         NewFI.Attributes.(ext) = waqfil('open',[base ext],FI.NoSeg);
                     case {'.are','.flo','.poi','.len'}
                         %NewFI.Attributes.(ext) = waqfil('open',[base ext],sum(FI.NoExchMNK));
-                    case {'.srf','.dps'}
+                    case {'.srf','.dps','.chz'}
                         NewFI.Attributes.(ext) = waqfil('open',[base ext]);
                 end
             catch
