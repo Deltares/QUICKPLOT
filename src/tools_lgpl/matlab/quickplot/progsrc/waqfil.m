@@ -229,12 +229,33 @@ fclose(fid);
 
 %% Srf File
 function S = opensrf(file)
-fid = fopen(file,'r');
 S.FileName = file;
+
+fid = fopen(file,'r','b');
+uf1 = fread(fid,1,'int32');
+X = fread(fid,[1 6],'int32');
+uf2 = fread(fid,1,'int32');
+if isequal(uf1,24) && isequal(uf2,24)
+    S.ByteOrder = 'b';
+    S.FormatType = 'formatted4';
+else
+    S.ByteOrder = 'l';
+    S.FormatType = 'binary';
+    fclose(fid);
+    fid = fopen(file,'r','l');
+    X = fread(fid,[1 6],'int32');
+end
 %
-S.Dims    = fread(fid,[1 2],'int32');
-S.NAct    = fread(fid,1,'int32');
-S.XXX     = fread(fid,[1 3],'int32');
+S.Dims    = X(1:2);
+S.NAct    = X(3);
+S.XXX     = X(4:6);
+if strcmp(S.FormatType,'formatted4')
+    uf1 = fread(fid,1,'int32');
+    if ~isequal(uf1,4*S.NAct)
+        fclose(fid);
+        error('Unexpected format size %i while expecting %i',uf1,4*S.NAct)
+    end
+end
 S.Srf     = fread(fid,[S.NAct 1],'float32');
 %
 fclose(fid);
