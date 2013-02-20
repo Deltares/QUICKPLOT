@@ -191,7 +191,7 @@ if ~all(sz1==sz1(1)) | ~all(sz2==sz2(1)),
    error('Data sets should be of equal size');
 end;
 switch lower(PC);
-   case {'pc','pcwin','dos','windows','l','ieee-le'},
+   case {'pc','pcwin','dos','windows','l','ieee-le','pcwin64'},
       fid=fopen(filename,'w','l');
    case {'hp','sg','sgi','sgi64','unix','b','sol','sol2','ieee-be'},
       fid=fopen(filename,'w','b');
