@@ -38,27 +38,27 @@ function Out=telemac(cmd,varargin)
 %   $HeadURL$
 %   $Id$
 
-switch cmd,
-    case 'open',
+switch cmd
+    case 'open'
         Out=telemac_open(varargin{:});
-    case 'read',
+    case 'read'
         Out=telemac_read(varargin{:});
-    otherwise,
+    otherwise
         error('Unknown command: %s.',cmd)
-end;
+end
 
 
 function Struct=telemac_open(filename)
 Struct.Check='NotOK';
 Struct.FileType='Serafin';
 
-if (nargin==0) | strcmp(filename,'?'),
+if (nargin==0) || strcmp(filename,'?')
     [fname,fpath]=uigetfile('*.slf','Select Telemac file');
-    if ~ischar(fname),
-        return;
-    end;
+    if ~ischar(fname)
+        return
+    end
     filename=fullfile(fpath,fname);
-end;
+end
 
 Struct.FileName=filename;
 fid=fopen(Struct.FileName,'r','b');
@@ -66,8 +66,14 @@ if fid<0
     return
 end
 
+% 1 record containing the title of the study (72 characters) and a 8
+% characters string indicating the type of format (SERAFIN or SERAFIND)
+% [NOTE: the SERAFIN/SERAFIND keyword isn't there in general]
 Struct.Title=char(fortranread(fid,[40 2],'uchar')');
 
+% 1 record containing the two integers NBV(1) and NBV(2) (number of linear
+% and quadratic variables, NBV(2) with the value of 0 for Telemac, as
+% quadratic values are not saved so far)
 Struct.NVar=fortranread(fid,[1 2],'int32');
 NVar1=Struct.NVar(1);
 NVar2=Struct.NVar(2);
@@ -80,8 +86,22 @@ for i=1:NVar
     Struct.Var(i).Type = 1 + (i>NVar1);
 end
 
+%if IPARAM (3) ? 0: the value corresponds to the x-coordinate of the origin
+%                   of the mesh,
+%if IPARAM (4) ? 0: the value corresponds to the y-coordinate of the origin
+%                   of the mesh,
+%if IPARAM (7) ? 0: the value corresponds to the number of planes on the
+%                   vertical (3D computation),
+%if IPARAM (8) ? 0: the value corresponds to the number of boundary points
+%                   (in parallel),
+%if IPARAM (9) ? 0: the value corresponds to the number of interface points
+%                   (in parallel),
+%if IPARAM(8) or IPARAM(9)?0: the array IPOBO below is replaced by the
+%                             array KNOLG (total initial number of points).
+%                             All the other numbers are local to the
+%                             sub-domain, including IKLE.
+%if IPARAM (10) = 1: a record containing the computation starting date,
 Struct.IParam=fortranread(fid,[1 10],'int32');
-
 if Struct.IParam(10)
     Time=fortranread(fid,[1 6],'int32');
     Struct.RefTime=datenum(Time(1),Time(2),Time(3),Time(4),Time(5),Time(6));
@@ -89,7 +109,8 @@ end
 
 %
 % Size of grid
-%
+% 1 record containing the integers NELEM,NPOIN,NDP,1 (number of elements,
+% number of points, number of points per element and the value 1),
 X=fortranread(fid,[1 4],'int32');
 Struct.Discr(1).NElem=X(1);
 Struct.Discr(1).NPnts=X(2);
@@ -105,7 +126,9 @@ end
 
 %
 % Element definition: reference to corner points in global index array
-%
+% 1 record containing table IKLE (integer array of dimension (NDP,NELEM)
+% which is the connectivity table. Attention: in TELEMAC-2D, the dimensions
+% of this array are (NELEM,NDP)),
 Struct.Discr(1).Elem=fortranread(fid,[Struct.Discr(1).NPntsPerElem Struct.Discr(1).NElem],'int32')';
 if NVar2>0
     Struct.Discr(2).Elem=fortranread(fid,[Struct.Discr(2).NPntsPerElem Struct.Discr(2).NElem],'int32')';
@@ -113,8 +136,10 @@ end
 
 %
 % Boundary definition: for each point index in array of boundary points (0
-% if not the point is not a boundary point).
-%
+% if the point is not a boundary point).
+% 1 record containing table IPOBO (integer array of dimension NPOIN); the
+% value of one element is 0 for an internal point, and gives the numbering
+% of boundary points for the others,
 Struct.Discr(1).BoundPnt=fortranread(fid,[Struct.Discr(1).NPnts 1],'int32');
 if NVar2>0
     Struct.Discr(2).BoundPnt=fortranread(fid,[Struct.Discr(2).NPnts 1],'int32');
@@ -122,7 +147,8 @@ end
 
 %
 % X co-ordinates.
-%
+% 1 record containing table X (real array of dimension NPOIN containing the
+% abscissae of the points),
 Struct.Discr(1).X=fortranread(fid,[Struct.Discr(1).NPnts 1],'float32');
 if NVar2>0
     Struct.Discr(2).X=fortranread(fid,[Struct.Discr(2).NPnts 1],'float32');
@@ -130,7 +156,8 @@ end
 
 %
 % Y co-ordinates.
-%
+% 1 record containing table Y (real array of dimension NPOIN containing the
+% ordinates of the points),
 Struct.Discr(1).Y=fortranread(fid,[Struct.Discr(1).NPnts 1],'float32');
 if NVar2>0
     Struct.Discr(2).Y=fortranread(fid,[Struct.Discr(2).NPnts 1],'float32');
@@ -154,12 +181,49 @@ fseek(fid,0,1);
 FileSize=ftell(fid);
 RNTimes=(FileSize-Struct.Offset)/Struct.RecordSize;
 if Struct.NTimes~=RNTimes
-    warning(sprintf('%i time steps read, %g time steps according to file size.',Struct.NTimes,RNTimes))
+    warning('%i time steps read, %g time steps according to file size.',Struct.NTimes,RNTimes)
 end
 
 fclose(fid);
 Struct.Check='OK';
 
+
+function clidata = telemac_opencli(filename)
+fid=fopen(filename,'r');
+if fid<0
+    clidata = [];
+    return
+end
+clidata = fscanf(fid,'%f',[13 inf]);
+% LIHBOR, LIUBOR, LIVBOR, HBOR, UBOR, VBOR, AUBOR, LITBOR, TBOR, ATBOR, BTBOR, N, K
+% LIHBOR: depth boundary type codes
+%         1. incident wave
+%         2. closed boundary (wall)
+%         4. free depth
+%         5. prescribed depth
+% LIUBOR: flowrate/velocity boundary type codes
+% LIVBOR: flowrate/velocity boundary type codes
+%         0. closed boundary with one or two nil velocity components
+%         1. incident wave
+%         2. slip or friction
+%         4. free velocity
+%         5. prescribed flow rate
+%         6. prescribed velocity
+% HBOR  : prescribed depth if LIHBOR=5
+% UBOR  : prescribed u velocity if LIUBOR=6
+% VBOR  : prescribed v velocity if LIVBOR=6
+% AUBOR : friction coefficient at boundary in case LIUBOR or LIVBOR=2
+%         (du/dn = aubor * u, dv/dn = aubor * v)
+% LITBOR: tracer boundary type codes
+%         2. closed boundary (wall)
+%         4. free tracer
+%         5. prescribed tracer
+% TBOR  : prescribed tracer concentation if LITBOR=5
+% ATBOR : coefficient in dT/dn = atbor*t + btbor
+% BTBOR : coefficient in dT/dn = atbor*t + btbor
+% N     : global index of boundary point
+% K     : boundary clour number
+fclose(fid);
 
 function Data=telemac_read(Struct,time,var,pnts)
 if any(time>Struct.NTimes)
