@@ -135,17 +135,25 @@ S = openfile(file,nseg);
 
 function D = readvol(file,itime,ipar)
 if nargin<3
-    ipar = 1:file.NPar;
+    ipar = ':';
 end
 fid = fopen(file.FileName,'r');
+if isfield(file,'Grouped') && strcmp(file.Grouped,'parameters')
+    sz = [file.NPar file.NVals];
+    sub = {ipar,':'};
+else
+    sz = [file.NVals file.NPar];
+    sub = {':',ipar};
+end
 fseek(fid,((itime-1)*(file.NVals*file.NPar+1)+1)*4,-1);
-D = fread(fid,[file.NVals file.NPar],'float32');
+D = fread(fid,sz,'float32');
 fclose(fid);
-D = D(:,ipar);
+D = D(sub{:});
 
 %% Segfun or Par file
 function S = opensegfun(file,nseg,npar)
 S = openfile(file,nseg,npar);
+%S.Grouped = 'parameters'; % seems to be necessary for par, but for segfun?
 
 function D = readpar(file,iseg,ipar)
 if nargin<3
@@ -161,23 +169,40 @@ D = D(ipar,iseg);
 function S = openare(file,nexch)
 sum_noq = sum(nexch);
 S = openfile(file,sum_noq);
+S.Grouped = 'parameters';
 
 %% Vol, Are or Flo File
 function S = openfile(file,nval,npar)
 if nargin<3
-    npar = 1;
+    npar = -1;
 end
 fid = fopen(file,'r');
 S.FileName = file;
 S.NVals = nval;
-S.NPar = npar;
+S.Grouped = 'segments';
 %
 %time=fread(fid,1,'int32');
 %vals=fread(fid,nval,'float32');
 %
 fseek(fid,0,1);
 fz = ftell(fid);
+if npar<0 % auto detect number of parameters
+    npartime = floor(fz/nval/4); % this number is too big if ntime>nval
+    while 1
+       ntime = (fz-npartime*nval*4)/4;
+       npar = npartime/ntime;
+       if npar==round(npar) % perfect match
+           break
+       elseif npar<1 % give up
+           npar = 1;
+           break
+       else % try reducing npartime (necessary if ntime>nval)
+           npartime = npartime-1;
+       end
+    end
+end
 nbytes_pertime = (nval*npar+1)*4;
+S.NPar = npar;
 S.NTimes = fz/nbytes_pertime;
 %
 fseek(fid,0,-1);
