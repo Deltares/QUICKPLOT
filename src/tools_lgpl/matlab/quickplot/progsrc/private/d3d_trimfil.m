@@ -216,40 +216,44 @@ if XYRead
         y=reshape(y,[1 size(y)]);
         y=repmat(y,[1 1 1 nk]);
     elseif fixedlayers && (DimFlag(K_) || computeDZ)
-        h=vs_let(FI,'map-const','ZK','quiet!');
-        h(1)=-inf;
-        h(end)=inf;
-        s=vs_let(FI,'map-series',idx(T_),'S1',idx([M_ N_]),'quiet!');
-        szz=[size(s) length(h)];
-        z=repmat(reshape(h,[1 1 1 length(h)]),[szz(1:3),1]);
-        z=reshape(z,[prod(szz(1:3)) szz(4)]);
-        s=s(:);
-        for i=1:szz(4)
-            fl=z(:,i)>s;
-            z(fl,i)=s(fl);
-        end
-        dp=readdps(FI,idx);
-        if size(dp,1)==1
-            z=reshape(z,[szz(1) prod(szz(2:3)) szz(4)]);
-            dp=reshape(dp,[1 prod(szz(2:3))]);
-            for t=1:szz(1)
+        if isstruct(vs_disp(FI,'map-series','LAYER_INTERFACE'))
+            z=vs_let(FI,'map-series',idx(T_),'LAYER_INTERFACE',[idx([M_ N_]) {0}],'quiet!');
+        else
+            h=vs_let(FI,'map-const','ZK','quiet!');
+            h(1)=-inf;
+            h(end)=inf;
+            s=vs_let(FI,'map-series',idx(T_),'S1',idx([M_ N_]),'quiet!');
+            szz=[size(s) length(h)];
+            z=repmat(reshape(h,[1 1 1 length(h)]),[szz(1:3),1]);
+            z=reshape(z,[prod(szz(1:3)) szz(4)]);
+            s=s(:);
+            for i=1:szz(4)
+                fl=z(:,i)>s;
+                z(fl,i)=s(fl);
+            end
+            dp=readdps(FI,idx);
+            if size(dp,1)==1
+                z=reshape(z,[szz(1) prod(szz(2:3)) szz(4)]);
+                dp=reshape(dp,[1 prod(szz(2:3))]);
+                for t=1:szz(1)
+                    for i=1:szz(4)
+                        fl=z(t,:,i)<dp;
+                        if any(fl)
+                            z(t,fl,i)=dp(1,fl);
+                        end
+                    end
+                end
+            else
+                dp=dp(:);
                 for i=1:szz(4)
-                    fl=z(t,:,i)<dp;
+                    fl=z(:,i)<dp;
                     if any(fl)
-                        z(t,fl,i)=dp(1,fl);
+                        z(fl,i)=dp(fl);
                     end
                 end
             end
-        else
-            dp=dp(:);
-            for i=1:szz(4)
-                fl=z(:,i)<dp;
-                if any(fl)
-                    z(fl,i)=dp(fl);
-                end
-            end
+            z=reshape(z,szz);
         end
-        z=reshape(z,szz);
         if computeDZ
             dz=diff(z,1,4);
         end
