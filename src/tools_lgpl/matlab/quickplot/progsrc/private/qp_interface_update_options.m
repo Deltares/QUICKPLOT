@@ -602,8 +602,10 @@ if (nval==2 || nval==3) && ~vectors
     nval=1;
 end
 if isequal(Ops.vectorcomponent,'vector')
-    geometry='sSEG';
-    Props.Geom='sSEG';
+    if ~isequal(geometry,'TRI')
+        geometry='sSEG';
+        Props.Geom='sSEG';
+    end
     Props.ClosedPoly=0;
 end
 %--------------------------------------------------------------------------

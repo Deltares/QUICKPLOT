@@ -143,6 +143,9 @@ switch cmd
 end
 
 [LocFI,isbinary,subtype,DELWAQ,casemod]=KeyParamFI(FI);
+if isfield(FI,'Grid') && isfield(FI.Grid,'FileType') && strcmp(FI.Grid.FileType,'Serafin')
+    DataInCell=0;
+end
 
 DimFlag=Props.DimFlag;
 
@@ -479,10 +482,11 @@ if mapgrid
 end
 TDam=0;
 T=[];
-if ~isempty(Props.SubFld)
-    elidx(end+1)={Props.SubFld}; % last dimension automatically dropped after reading
+if ~isempty(Props.SubFld) && isnumeric(Props.SubFld)
+    % for S1/S2 quantities we read only the last layer
+    elidx(end+1)={Props.SubFld};
 end
-if strcmp(Props.Name,'grid') & ~strcmp(Props.Geom,'POLYG')
+if strcmp(Props.Name,'grid') && ~strcmp(Props.Geom,'POLYG')
     if isequal(FI.FileType,'DelwaqLGA')
         L=FI.Index(:,:,1);
     else
@@ -547,11 +551,27 @@ elseif (strcmp(subtype,'map') && mapgrid) || strcmp(subtype,'plot') || strcmp(su
             end
         end
     end
+    if isempty(Props.Val2)
+        val2=[];
+    else
+        if isbinary
+            [T,val2]=delwaq('read',LocFI,Props.Val2,0,idx{T_});
+            val2=permute(val2,[3 2 1]);
+        else
+            [val2,Chk]=vs_let(LocFI,Props.Group,idx(T_),Props.Val2,'quiet'); % load all
+        end
+    end
     if strcmp(subtype,'plot')
         if DimFlag(K_)
             val1=reshape(val1,[size(val1,1) sz([M_ N_ K_])]);
+            if ~isempty(val2)
+               val2=reshape(val2,[size(val2,1) sz([M_ N_ K_])]);
+            end
         else
             val1=reshape(val1,[size(val1,1) sz([M_ N_])]);
+            if ~isempty(val2)
+                val2=reshape(val2,[size(val2,1) sz([M_ N_])]);
+            end
         end
         %val1=permute(val1,[1 3 2 4]);
     else
@@ -570,21 +590,19 @@ elseif (strcmp(subtype,'map') && mapgrid) || strcmp(subtype,'plot') || strcmp(su
             val1=reshape(index,[1 size(index)]);
         else
             val1=val1(:,max(index,1));
+            if ~isempty(val2)
+                val2=val2(:,max(index,1));
+            end
         end
         val1(:,index<=0)=NaN;
         val1=reshape(val1,[size(val1,1) size(index)]);
+        if ~isempty(val2)
+            val2(:,index<=0)=NaN;
+            val2=reshape(val2,[size(val2,1) size(index)]);
+        end
     end
     val1=val1(:,elidx{:});
-    if isempty(Props.Val2)
-        val2=[];
-    else
-        if isbinary
-            [T,val2]=delwaq('read',LocFI,Props.Val2,0,idx{T_});
-        else
-            [val2,Chk]=vs_let(LocFI,Props.Group,idx(T_),Props.Val2,'quiet'); % load all
-        end
-        val2=val2(:,max(FI.Grid.Index,1));
-        val2=reshape(val2,[size(val2,1) size(FI.Grid.Index)]);
+    if ~isempty(val2)
         val2=val2(:,elidx{:});
     end
 else
@@ -636,7 +654,7 @@ if ~isempty(val1)
 end
 if ~isempty(val2)
     if ~isempty(z)
-        val1(any(isnan(z),4))=NaN;
+        val2(isnan(z(:,:,:,2:end)))=NaN;
     end
     val2(val2==-999)=NaN;
     val2(val2==missingvalue)=NaN;
@@ -1414,6 +1432,28 @@ if ~isempty(i)
             Ins(end).DimFlag(1)=0;
         end
     end
+    % find vectors
+    iX=find(strncmpi('x-comp',{Ins.Name}',6))';
+    for i = iX
+        ystr = Ins(i).Name;
+        ystr(1) = 'y';
+        iY = find(strcmpi(ystr,{Ins.Name}'));
+        if length(iY)==1
+            if length(Ins(i).Name)>15 && isequal('x-component of ',Ins(i).Name(1:15))
+               Ins(i).Name = Ins(i).Name(16:end);
+            elseif length(Ins(i).Name)>10 && isequal('x-comp of ',Ins(i).Name(1:10))
+               Ins(i).Name = Ins(i).Name(11:end);
+            else
+                continue
+            end
+            Ins(i).Val2 = Ins(iY).Val1;
+            Ins(i).ShortName = {Ins(i).ShortName Ins(iY).ShortName};
+            Ins(i).NVal = 2;
+            Ins(iY).Name = '*already processed*';
+        end
+    end
+    Ins(strmatch('*already processed*',{Ins.Name}))=[];
+    %
     [dummy,reorder]=sort({Ins.SubsGrp});
     Ins=Ins(reorder);
     [subsgrp,I,J]=unique({Ins.SubsGrp});
