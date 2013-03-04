@@ -1433,13 +1433,19 @@ if ~isempty(i)
         end
     end
     % find vectors
-    iX=find(strncmpi('x-comp',{Ins.Name}',6))';
+    iX=find(strncmpi('x-comp',{Ins.Name}',6) | strcmpi('horizontal flow velocity first direction',{Ins.Name}'))';
     for i = iX
-        ystr = Ins(i).Name;
-        ystr(1) = 'y';
+        if Ins(i).Name(1)=='x'
+           ystr = Ins(i).Name;
+           ystr(1) = 'y';
+        else
+           ystr = 'horizontal flow velocity second direction';
+        end
         iY = find(strcmpi(ystr,{Ins.Name}'));
         if length(iY)==1
-            if length(Ins(i).Name)>15 && isequal('x-component of ',Ins(i).Name(1:15))
+            if Ins(i).Name(1)~='x'
+               Ins(i).Name = 'horizontal flow velocity';
+            elseif length(Ins(i).Name)>15 && isequal('x-component of ',Ins(i).Name(1:15))
                Ins(i).Name = Ins(i).Name(16:end);
             elseif length(Ins(i).Name)>10 && isequal('x-comp of ',Ins(i).Name(1:10))
                Ins(i).Name = Ins(i).Name(11:end);
