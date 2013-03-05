@@ -375,7 +375,7 @@ DataProps={'grid'             ''       'TRI'  'xy'     [0 0 6 0 0]  0          0
     'velocity'                 'm/s'    'TRI'  'xy'     [0 0 6 0 0]  0          2     ''        ''    ''       'CURRENT'    'Ux_veloc'       'Uy_veloc'   1         ''
     %   'relative radiation freqency' '1/s' 'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'CURRENT'    'Omega_rel'      ''           1         ''
     '-------'                  ''       ''     ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''
-    'relative breaking intensity' ''     'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'BREAKING'   'Gamma_b'        ''           1         ''
+    'relative breaking intensity' ''     'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'BREAKING'   'Gamma_b'        ''           1         'nfreq'
     'weighted mean wave height dir.' 'm' 'TRI'  'xy'    [0 0 6 0 0]  0          1     ''        ''    ''       'HS_dir'     'HS_directional' ''           1         'md'
     'wave height'              'm'      'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'POTENTIALS' 'PHI_r'          'PHI_i'      1         'nrun'
     'wave height'              'm'      'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'PHIs_r'         'PHIs_i'     1         'sf'
