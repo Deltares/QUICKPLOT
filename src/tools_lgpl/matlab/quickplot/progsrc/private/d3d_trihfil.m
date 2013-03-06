@@ -602,6 +602,10 @@ DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     '' 
     'depth averaged discharge'  'm^3/s'  [1 5 0 0 0]  0         2     'u'      'z'   'z'       'c'     'his-series'     'ZQXK'     'ZQYK'     []       1
     'discharge'                 'm^3/s'  [1 5 0 0 1]  0         2     'u'      'z'   'z'       'c'     'his-series'     'ZQXK'     'ZQYK'     []       1
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    'wind speed'                'm/s'    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZWNDSPD'  ''         []       0
+    'wind direction'            'deg'    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZWNDDIR'  ''         []       0
+    'air pressure'              'Pa'     [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'PATM'     ''         []       0
+    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'density'                   'kg/m^3' [1 5 0 0 1]  0         1     ''       'z'   'z'       'c'     'his-series'     'ZRHO'     ''         []       0
     'non-hydrostatic pressure'  ''       [1 5 0 0 1]  0         1     ''       'z'   'z'       'c'     'his-series'     'HYDPRES'  ''         []       0
     '--constituents'            ''       [1 5 0 0 1]  0         1     ''       'z'   'z'       'c'     'his-series'     'GRO'      ''         []       0
