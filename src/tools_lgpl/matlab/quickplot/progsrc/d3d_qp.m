@@ -2178,7 +2178,10 @@ try
                     if exist(manp)
                         found = 1;
                         if nargout==0
-                           system(['start ' manp]);
+                            if ~isempty(strfind(manp,' '))
+                                manp = sprintf('"%s%"',manp);
+                            end
+                            system(['start "Manual" ' manp]);
                         end
                         break
                     end
