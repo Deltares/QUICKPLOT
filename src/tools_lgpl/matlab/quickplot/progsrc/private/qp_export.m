@@ -62,7 +62,7 @@ if isequal(ExpType(1),'-'),
 end
 
 expType=lower(ExpType);
-retreive='griddata';
+retrieve='griddata';
 AllTAtOnce=0;
 MATfile=0;
 switch expType
@@ -100,11 +100,11 @@ switch expType
         end
         switch Ops.presentationtype
             case {'patches','patches with lines','grid','polylines','polygons',''}
-                retreive='gridcelldata';
+                retrieve='gridcelldata';
             case {'markers','values'}
-                retreive='griddata';
+                retrieve='griddata';
             otherwise
-                retreive='';
+                retrieve='';
         end
     case 'sample file'
         % assumptions: one timestep
@@ -119,7 +119,7 @@ switch expType
         end
         switch Ops.presentationtype
             case {'patches','patches with lines'}
-                retreive='gridcelldata';
+                retrieve='gridcelldata';
         end
         saveops={};
         switch expType
@@ -177,7 +177,7 @@ for f=1:ntim
     LocSelected = Selected;
     LocSelected(~Props.DimFlag)=[];
 
-    switch retreive
+    switch retrieve
         case 'griddata'
             [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'griddata',Subfield{:},LocSelected{:});
         case 'gridcelldata'
@@ -498,7 +498,7 @@ for f=1:ntim
                     else
                         d=1;
                         if isfield(Props,'Tri') && Props.Tri
-                            if strcmp(retreive,'gridcelldata')
+                            if strcmp(retrieve,'gridcelldata')
                                 xv=data(d).XYZ(1,:,1,1:2);
                                 xv=reshape(xv,[size(xv,2) 2]);
                                 fv=data(d).TRI;
@@ -511,7 +511,7 @@ for f=1:ntim
                         else
                             data(d).X=data(d).X(:,:,1); % remove 3rd dimension when appropriate
                             data(d).Y=data(d).Y(:,:,1); % remove 3rd dimension when appropriate
-                            if strcmp(retreive,'gridcelldata')
+                            if strcmp(retrieve,'gridcelldata')
                                 faces=reshape(1:prod(size(data(d).X)),size(data(d).X));
                                 faces=faces(1:end-1,1:end-1);
                                 xv=[data(d).X(:) data(d).Y(:)];
@@ -562,7 +562,7 @@ for f=1:ntim
                             end
                             cv={cLabels,cv};
                         end
-                        if strcmp(retreive,'gridcelldata')
+                        if strcmp(retrieve,'gridcelldata')
                             %
                             % make sure that polygons are stored clockwise ...
                             %
