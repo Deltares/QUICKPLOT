@@ -648,6 +648,8 @@ switch cmd
                      FI=[];
                   elseif strcmp(FI.Check,'NotOK')
                      FI=[];
+                  elseif isempty(FI.Field) % only accept non-empty files
+                     FI=[];
                   else
                      Tp='Tekal';
                      [pn,fn,ex]=fileparts(FI.FileName);

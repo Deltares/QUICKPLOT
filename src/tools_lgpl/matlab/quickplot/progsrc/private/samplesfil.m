@@ -117,17 +117,21 @@ if XYRead
     nPnt=size(FI.XYZ,1);
     nCrd=size(FI.XYZ,2);
     Ans.XYZ=reshape(FI.XYZ,[1 nPnt 1 nCrd]);
-    if isfield(FI,'TRI')
-        Ans.TRI=FI.TRI;
+    if strcmp(Props.Geom,'TRI')
+       if isfield(FI,'TRI')
+          Ans.TRI=FI.TRI;
+       else
+          try
+             [xy,I]=unique(FI.XYZ(:,1:2),'rows');
+             tri=delaunay(xy(:,1),xy(:,2));
+             Ans.TRI=I(tri);
+             FI.TRI=Ans.TRI;
+          catch
+             Ans.TRI=zeros(0,3);
+          end
+       end
     else
-        try
-            [xy,I]=unique(FI.XYZ(:,1:2),'rows');
-            tri=delaunay(xy(:,1),xy(:,2));
-            Ans.TRI=I(tri);
-            FI.TRI=Ans.TRI;
-        catch
-            Ans.TRI=zeros(0,3);
-        end
+       Ans.TRI=zeros(0,3);
     end
 end
 
@@ -152,8 +156,11 @@ varargout={Ans FI};
 function Out=infile(FI,domain)
 
 %======================== SPECIFIC CODE =======================================
-PropNames={'Name'                       'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc' 'Tri' 'SubFld'};
-DataProps={'samples'                    [0 0 4 0 0]  0          1     ''        ''    ''       1     3};
+PropNames={'Name'                       'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc' 'Geom' 'Coords' 'SubFld'};
+DataProps={'locations'                    [0 0 4 0 0]  0          0     ''        ''    ''     'PNT'  'xy'      []
+  'triangulated locations'                [0 0 4 0 0]  0          0     ''        ''    ''     'TRI'  'xy'      []
+  '-------'                               [0 0 0 0 0]  0          0     ''        ''    ''     ''     ''        []
+  'sample data'                           [0 0 4 0 0]  0          1     ''        ''    ''     'TRI'  'xy'      3};
 
 %======================== SPECIFIC CODE DIMENSIONS ============================
 Out=cell2struct(DataProps,PropNames,2);
@@ -162,14 +169,20 @@ Out=cell2struct(DataProps,PropNames,2);
 
 %======================== SPECIFIC CODE ADD ===================================
 NPar=size(FI.XYZ,2)-2;
-Out=repmat(Out,max(1,NPar),1);
 if NPar>0
+   Out=cat(1,Out(1:3),repmat(Out(4),NPar,1));
     for i=1:NPar
-        Out(i).SubFld=i+2;
-        Out(i).Name=FI.Params{i+2};
+        Out(i+3).SubFld=i+2;
+        Out(i+3).Name=FI.Params{i+2};
     end
 else
-    Out.NVal=0;
+   Out=Out(1:2);
+end
+if size(FI.XYZ,1)<3
+   Out(2)=[];
+   for i=1:NPar
+      Out(i+2).Geom='PNT';
+   end
 end
 % -----------------------------------------------------------------------------
 

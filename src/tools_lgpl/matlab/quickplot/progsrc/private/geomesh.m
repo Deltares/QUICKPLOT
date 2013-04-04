@@ -58,6 +58,7 @@ if fid<0
 end
 Line = fgetl(fid);
 if ~strcmp(Line,'MESH FILE')
+   fclose(fid);
     error('%s does not start with string MESH FILE',FileName)
 end
 %

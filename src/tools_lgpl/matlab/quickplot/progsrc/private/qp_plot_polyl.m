@@ -67,6 +67,7 @@ switch NVal
             else
                 bs=[1 length(vNaN)];
             end
+            hNew=zeros(1,size(bs,1));
             for i=1:size(bs,1)
                 if data.X(bs(i,1))==data.X(bs(i,2)) && ...
                         data.Y(bs(i,1))==data.Y(bs(i,2))

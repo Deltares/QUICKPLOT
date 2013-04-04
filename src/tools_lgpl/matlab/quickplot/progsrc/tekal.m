@@ -335,9 +335,12 @@ while 1
                 end
             end
         else
-            if ~isempty(line) && ischar(line) && ~TryToCorrect
+            if ~TryToCorrect
+               if ~ischar(line) % EOF
+                  line = '';
+               end
                 fclose(fid);
-                error('Cannot determine field size from %s',line)
+                error('Cannot determine field size from "%s"',line)
             end
             % remove field
             FileInfo.Field(variable)=[];
