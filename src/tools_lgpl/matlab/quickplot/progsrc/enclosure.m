@@ -87,6 +87,7 @@ function Enc=Local_encread(filename)
 %   % Delft3D, Waqua
 % read an enclosure file
 Enc=[];
+delimiters = {'(';')';',';';'};
 
 if (nargin==0) | strcmp(filename,'?')
     [fname,fpath]=uigetfile('*.*','Select enclosure file');
@@ -104,8 +105,23 @@ if fid>0
         if ~ischar(line)
             break
         end
-        X=sscanf(line,'%i',[1 2]);
-        if length(X)==2,
+        
+        %
+        % TK : X returned empty on comgrid scaloost model waqua,
+        %      remove the delimiters
+        %
+        for i_lim = 1: length(delimiters)
+            line(line == delimiters{i_lim}) = ' ';
+        end
+        
+        X=sscanf(line,'%i');
+       
+       if length(X)>=2,
+            %
+            % Multiple coordinate pairs on 1 single line ==> reshape
+            %
+            X = reshape(X,2,size(X,1)/2)';
+            
             Enc=[Enc; X];
         end
     end
