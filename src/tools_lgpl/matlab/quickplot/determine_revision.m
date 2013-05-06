@@ -42,7 +42,7 @@ while ~found
     iter = iter+1;
 end
 
-[s,revstring] = system(['"' SvnVersion '" ' dirname]);
+[s,revstring] = system(['"' SvnVersion '" "' dirname '"']);
 if s==0
     changed = ismember('M',revstring);
     rev = sscanf(revstring,'%i:%i');
