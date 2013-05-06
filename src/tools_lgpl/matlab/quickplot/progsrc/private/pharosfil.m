@@ -271,6 +271,7 @@ switch Props.NVal
                         Weights = Weights(:);
                         if size(Amp,1)~=NRun
                             Weights = Weights(idx{T_});
+                            Weights(:)=1; % reset weights to one, to generate same wave image from combined file as from individual file.
                         end
                         for i=1:size(Amp,1)
                             Amp(i,:) = Weights(i)*Amp(i,:);
@@ -468,6 +469,13 @@ for i=size(Out,1):-1:1
     elseif ~isstruct(Info2) | Info.SizeDim==0
         % remove references to non-stored data fields
         Out(i)=[];
+    elseif strcmp(Out(i).Name,'relative breaking intensity')
+        % old Pharos files have only one breaking intensity field: don't
+        % use it
+        Info=vs_disp(FI,'SPECTRAL-INFO',[]);
+        if isstruct(Info) && Info.SizeDim~=Info2.SizeDim
+            Out(i).SubFld='';
+        end
     end
 end
 
@@ -608,9 +616,13 @@ switch Props.SubFld
                 end
             end
             %
-            if NRun>1 & strcmp(Props.Name,'wave image') % & ~spectral
-                subf{end+1}='combined';
-            end
+            % Don't include "combined" wave image since it guarantees only to
+            % reproduce maximum for point with maximum amplitude and not for
+            % any other point.
+            %
+            %if NRun>1 & strcmp(Props.Name,'wave image') % & ~spectral
+            %    subf{end+1}='combined';
+            %end
         end
 end
 if nargin>2 & f~=0
