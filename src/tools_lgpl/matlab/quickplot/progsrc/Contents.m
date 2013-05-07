@@ -109,6 +109,7 @@
 %   dimprint            - Convert dimension structure into string for printing.
 %   face2surf           - Construct surface data from values at patch face centers.
 %   grib                - Read GRIB files. (BETA VERSION)
+%   inifile             - Read/write INI files.
 %   isenvironment       - Checks the code evaluation environment.
 %   matlabversionnumber - Obtain the MATLAB version number.
 %   md_colormap         - Colour map editor.
@@ -136,5 +137,6 @@
 %   qpsi                - Get tag object of the current QuickPlot item.
 %   tricontour          - Contour plot for triangulated data.
 %   tricontourf         - Filled contour plot for triangulated data.
+%   waqua               - Read SIMONA SDS files (low level).
 %   waquaio             - Read SIMONA SDS file.
 %   waqfil              - Read various Delwaq binary files.

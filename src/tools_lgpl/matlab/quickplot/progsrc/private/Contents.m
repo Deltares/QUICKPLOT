@@ -25,7 +25,6 @@
 %   grib_find                   - Get block index from meta-info
 %   gsharp                      - Read/write GSharp files.
 %   incremental                 - Read Delft-FLS, SOBEK2D and SIMONA incremental files.
-%   inifile                     - Read/write INI files.
 %   jspost                      - Read JSPost files.
 %   map2golder                  - Convert bed stratigraphy into Golder input file.
 %   mike                        - Read/write DHI Mike files.
@@ -46,7 +45,6 @@
 %   telemac                     - Read Telemac selafin files.
 %   trtarea                     - Read Delft3D trachytope/WAQUA ecotope area files.
 %   unibest                     - Read Unibest files.
-%   waqua                       - Read SIMONA SDS files (low level).
 %
 % Special graphics routines
 %   balanceplot                 - Create a balance plot.
