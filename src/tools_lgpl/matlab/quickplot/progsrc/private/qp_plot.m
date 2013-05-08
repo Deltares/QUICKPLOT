@@ -524,6 +524,15 @@ if isequal(quivopt,{'automatic'})
         if isfield(data,'ZComp') && isfield(data,'Z')
             V=V+data(d).ZComp.^2;
         end
+        if isfield(data,'X')
+            V(isnan(data(d).X))=NaN;
+        end
+        if isfield(data,'Y')
+            V(isnan(data(d).Y))=NaN;
+        end
+        if isfield(data,'Z')
+            V(isnan(data(d).Z))=NaN;
+        end
         maxlen=max(maxlen,max(V(:)));
     end
     if del2~=0

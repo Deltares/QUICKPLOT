@@ -174,4 +174,15 @@ for d=1:length(data)
             ui_message('error','Unexpected colour/plot type encountered: %s.',vpt);
             scalar=0;
     end
+    if isfield(data,'Val')
+        if isfield(data,'X') && isequal(size(data(d).Val),size(data(d).X))
+            data(d).Val(isnan(data(d).X))=NaN;
+        end
+        if isfield(data,'Y') && isequal(size(data(d).Val),size(data(d).Y))
+            data(d).Val(isnan(data(d).Y))=NaN;
+        end
+        if isfield(data,'Z') && isequal(size(data(d).Val),size(data(d).Z))
+            data(d).Val(isnan(data(d).Z))=NaN;
+        end
+    end
 end

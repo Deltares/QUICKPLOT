@@ -359,6 +359,9 @@ elseif Props.Time
 elseif DimFlag(M_) && DimFlag(N_) && DimFlag(K_)
     val1=Data(idx{[M_ N_ K_]},idx{ST_}+3);
 elseif DimFlag(M_) && DimFlag(N_)
+    if Props.NVal==2 && isempty(idx{ST_})
+        idx{ST_}=[1 2];
+    end
     val1=Data(idx{[M_ N_]},idx{ST_}+2);
     if size(val1,3)>1
         val2=val1(:,:,2);
@@ -376,6 +379,8 @@ elseif DimFlag(M_) && DimFlag(N_)
             y(~act)=NaN;
         end
     end
+    val1(val1==-999)=NaN;
+    val2(val2==-999)=NaN;
 elseif DimFlag(M_)
     switch FI.FileType
         case 'tekal'
@@ -573,6 +578,15 @@ switch FI.FileType
                                     end
                                 else
                                     DP{1}=FI.Field(i).Name;
+                                    if FI.Field(i).Size(2)==4 && ...
+                                            strncmpi(FI.Field(i).ColLabels{3},'x component',11) && ...
+                                            strncmpi(FI.Field(i).ColLabels{4},'y component',11)
+                                        DP{6}=2;
+                                        DP{4}(2)=0;
+                                        if strncmpi(FI.Field(i).ColLabels{3},'x component of ',15)
+                                            DP{1}=FI.Field(i).ColLabels{3}(16:end);
+                                        end
+                                    end
                                 end
                                 DataProps(end+1,:)=DP;
                             case 5 % 3D
@@ -796,10 +810,12 @@ switch FI.FileType
             S=Data{2};
         else
             i0=sum(Props.DimFlag([M_ N_ K_])~=0);
-            if Props.Time, i0=Props.Time; end
+            if Props.Time
+                i0=Props.Time;
+            end
             S=FI.Field(Props.Block).ColLabels(i0+1:end);
-            for i=1:length(S),
-                if isempty(S{i}),
+            for i=1:length(S)
+                if isempty(S{i})
                     S{i}=sprintf('column %i',i+i0);
                 end
             end

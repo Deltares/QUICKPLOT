@@ -42,8 +42,12 @@ if matlabversionnumber>=7
     try
         warnstate = warning('query','MATLAB:quiver:DeprecatedV6Argument');
         warnstate(2) = warning('query','MATLAB:quiver3:DeprecatedV6Argument');
+        warnstate(3) = warning('query','MATLAB:usev6plotapi:DeprecatedV6Argument');
+        warnstate(4) = warning('query','MATLAB:usev6plotapi:DeprecatedV6ArgumentForFilename');
         warning('off','MATLAB:quiver:DeprecatedV6Argument')
         warning('off','MATLAB:quiver3:DeprecatedV6Argument')
+        warning('off','MATLAB:usev6plotapi:DeprecatedV6Argument');
+        warning('off','MATLAB:usev6plotapi:DeprecatedV6ArgumentForFilename');
     catch
     end
 end

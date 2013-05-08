@@ -863,7 +863,9 @@ switch NVal
             set(hNew,Ops.LineParams{:});
 
         else
-
+            strxcomp = 'n/a';
+            strycomp = 'n/a';
+            strzcomp = 'n/a';
             if isfield(data,'XComp')
                 strxcomp = sprintf(Ops.numformat,data.XComp);
             end
