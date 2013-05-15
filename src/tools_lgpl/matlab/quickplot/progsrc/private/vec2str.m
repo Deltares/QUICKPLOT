@@ -44,6 +44,12 @@ function Str=vec2str(OrigVec,varargin)
 %   $HeadURL$
 %   $Id$
 
+if all(OrigVec==round(OrigVec))
+    % if all integers then use %i which is better for BIG INTEGERS
+    fmt = '%i';
+else
+    fmt = '%g';
+end
 Brackets=1;
 Ones=1;
 for i=1:nargin-1
@@ -66,9 +72,9 @@ elseif isempty(OrigVec)
     end
 elseif length(OrigVec)==1
     if Brackets
-        Str=sprintf('[ %g ]',OrigVec);
+        Str=sprintf(['[ ',fmt,' ]'],OrigVec);
     else
-        Str=sprintf('%g',OrigVec);
+        Str=sprintf(fmt,OrigVec);
     end
 else
     ColVec = size(OrigVec,1)>1;
@@ -117,28 +123,28 @@ else
     end
     for i=1:size(E,2)
         if E(4,i)==1
-            Str=[Str sprintf(' %g',E(1,i))];
+            Str=[Str sprintf([' ',fmt],E(1,i))];
         elseif E(4,i)==2
-            Str=[Str sprintf(' %g %g',E([1 3],i))];
+            Str=[Str sprintf([' ',fmt,' ',fmt],E([1 3],i))];
         elseif (E(2,i)==0) || isnan(E(2,i))
             if E(4,i)>3
                 if Ones
                     if E(1,i)==0
                         Str=[Str sprintf(' zeros(1,%i)',E(4,i))];
                     else
-                        Str=[Str sprintf(' %g*ones(1,%i)',E(1,i),E(4,i))];
+                        Str=[Str sprintf([' ',fmt,'*ones(1,%i)'],E(1,i),E(4,i))];
                     end
                 else
-                    Str=[Str sprintf(' %g',E(1,i)*ones(1,E(4,i)))];
+                    Str=[Str sprintf([' ',fmt],E(1,i)*ones(1,E(4,i)))];
                 end
             else
-                Str=[Str sprintf(' %g',E(1,i)*ones(1,E(4,i)))];
+                Str=[Str sprintf([' ',fmt],E(1,i)*ones(1,E(4,i)))];
             end
         else
             if E(2,i)==1
-                Str=[Str sprintf(' %g:%g',E([1 3],i))];
+                Str=[Str sprintf([' ',fmt,':',fmt],E([1 3],i))];
             else
-                Str=[Str sprintf(' %g:%g:%g',E(1:3,i))];
+                Str=[Str sprintf([' ',fmt,':',fmt,':',fmt],E(1:3,i))];
             end
         end
     end

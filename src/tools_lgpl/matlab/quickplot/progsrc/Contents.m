@@ -127,6 +127,7 @@
 %   topodescription     - Returns a topology description string for a location.
 %   ui_inspectstruct    - Inspect a structure.
 %   ui_message          - Graphical display for errors/warnings.
+%   uislider            - Create high resolution integer slider
 %   vs_copy             - Copy data from one NEFIS file to another.
 %   vs_def              - Changes the groups, cells and element definitions.
 %   vs_ini              - Creates a NEFIS file.

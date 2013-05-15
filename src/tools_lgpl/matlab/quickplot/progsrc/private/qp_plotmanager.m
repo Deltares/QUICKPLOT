@@ -560,7 +560,7 @@ switch cmd
                     if iscell(InfoOld)
                         TagOld = InfoOld{1};
                         for i = length(valOld):-1:1
-                            val(i) = ustrcmpi(TagOld(valOld(i)),Tags);
+                            val(i) = ustrcmpi(TagOld{valOld(i)},Tags);
                         end
                         val(val<0) = [];
                     end
@@ -577,7 +577,7 @@ switch cmd
                     %
                     % if there are only separators, select none
                     %
-                    if strcmp(Nms{val},separator)
+                    if all(strcmp(Nms(val),separator))
                         val=[];
                     end
                     set(UD.PlotMngr.ItList,'string',Nms, ...
@@ -939,9 +939,11 @@ switch cmd
             else
                 t=hItUD.PlotState.Selected{t_};
             end
-            AnimMax=NSteps;
-            sstep=[min(1/(AnimMax-1),.1) min(10/(AnimMax-1),.9)];
-            set(animsld,'userdata',AnimObj,'value',1,'sliderstep',sstep,'Max',AnimMax,'enable','on','value',t)
+            %AnimMax=NSteps;
+            %sstep=[min(1/(AnimMax-1),.1) min(10/(AnimMax-1),.9)];
+            %set(animsld,'userdata',AnimObj,'value',1,'sliderstep',sstep,'Max',AnimMax,'enable','on','value',t)
+            uislider(animsld,'min',1,'value',t,'max',NSteps)
+            set(animsld,'userdata',AnimObj,'enable','on')
             Str=sprintf('%i',t);
             if t_==0
                 [Chk,sflds] = qp_getdata(hItUD.PlotState.FI, ...

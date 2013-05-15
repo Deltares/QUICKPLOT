@@ -129,7 +129,9 @@ for i = 1:length(UDs)
             Str=sprintf('%i',t);
             t=find(AS.Values==t);
         end
-        set(animslid,'userdata',AS,'value',1,'sliderstep',sstep,'Max',NAnimValues,'enable','on','value',t)
+        %set(animslid,'userdata',AS,'value',1,'sliderstep',sstep,'Max',NAnimValues,'enable','on','value',t)`
+        uislider(animslid,'value',t,'Max',NAnimValues)
+        set(animslid,'userdata',AS,'enable','on')
         set(hAnimSel,'checked','on')
         set(animslid,'tooltip',sprintf('%s(%i)=%s',DimStr{t_},t,Str));
     end

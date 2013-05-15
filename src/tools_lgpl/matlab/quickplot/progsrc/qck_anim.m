@@ -126,8 +126,8 @@ switch cmd
         psh=findobj(par_fig,'tag','animpush');
         animstop=findall(par_fig,'tag','stopanim');
         set(animstop,'userdata',0)
-        i0=get(asld,'min');
-        i1=get(asld,'max');
+        i0=getappdata(asld,'minival');
+        i1=getappdata(asld,'maxival');
         background=0;
         animloop=0;
         maxfps=25;
@@ -400,7 +400,8 @@ switch cmd
                     else
                         Str=sprintf('%i',AS(1).Values(t));
                     end
-                    set(sld(i),'value',t,'tooltip',sprintf('%s(%i)=%s',DimStr{t_+1},t,Str));
+                    uislider(sld(i),'value',t);
+                    set(sld(i),'tooltip',sprintf('%s(%i)=%s',DimStr{t_+1},t,Str));
                 end
             end
             ish=ishandle(sld);
@@ -414,7 +415,7 @@ switch cmd
         if nargin>2
             t=ANISteps;
         else
-            t=get(sld,'value');
+            t=getappdata(sld,'currentvalue');
         end
         selected=AnimObj.PlotState.Selected;
         if t_==0
@@ -426,16 +427,13 @@ switch cmd
             end
         end
         if t>current_t
-            t=min(max(round(t),current_t+1),get(sld,'max'));
+            t=min(max(round(t),current_t+1),getappdata(sld,'maxival'));
         elseif t<current_t
             t=max(min(round(t),current_t-1),1);
         end
         %
         sld=findall(par_fig,'tag','animslid');
-        set(sld,'value',t)
-        for sldi=sld(:)'
-            setappdata(sldi,'SliderValue',t)
-        end
+        uislider(sld,'value',t)
         %
         if iscellstr(AS(1).Values)
             Str=AS(1).Values{t};
@@ -529,7 +527,7 @@ switch cmd
             end
         end
         %
-        NStep=get(animslid,'max');
+        NStep=getappdata(animslid,'maxival');
         NoUpdateNec=1;
         ASold=get(animslid,'userdata');
         if isstruct(ASold)
@@ -540,10 +538,7 @@ switch cmd
         if (NStep==AnimMax) & (AS.Fld==ASoldFld)
             Ans=questdlg('Link with previous object(s)?','','Yes','No','No');
             if strcmp(Ans,'Yes')
-                t1=get(animslid,'value');
-                if t1~=round(t1)
-                    t1=getappdata(animslid,'SliderValue');
-                end
+                t1=getappdata(animslid,'currentvalue');
                 if t~=t1
                     NoUpdateNec=0;
                     t=t1;
@@ -555,7 +550,9 @@ switch cmd
         else
             set(hChecked,'checked','off');
         end
-        set(animslid,'userdata',AS,'value',1,'sliderstep',sstep,'Max',AnimMax,'enable','on','value',t)
+        %set(animslid,'userdata',AS,'value',1,'sliderstep',sstep,'Max',AnimMax,'enable','on','value',t)
+        uislider(animslid,'value',t,'max',AnimMax)
+        set(animslid,'userdata',AS,'enable','on')
         %
         if iscellstr(AS(1).Values)
             Str=AS(1).Values{t};
