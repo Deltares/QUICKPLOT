@@ -48,8 +48,8 @@ function uislider ( cmd, varargin )
 %
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: $
-%   $Id: $
+%   $HeadURL$
+%   $Id$
 
 if nargin==0
     f=figure('name','Slider Test');
