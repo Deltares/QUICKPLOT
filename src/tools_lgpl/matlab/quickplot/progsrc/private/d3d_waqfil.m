@@ -180,6 +180,11 @@ end
 %  sz([M_ N_])=sz([N_ M_]);
 %  idx([M_ N_])=idx([N_ M_]);
 %end
+if isfield(FI,'clipwherezundefined')
+    clipZ = FI.clipwherezundefined;
+else
+    clipZ = 1;
+end
 
 %========================= GENERAL CODE =======================================
 allidx=zeros(size(sz));
@@ -646,14 +651,14 @@ if allt
     idx{T_}=allt_;
 end
 if ~isempty(val1)
-    if ~isempty(z)
+    if ~isempty(z) && clipZ
         val1(isnan(z(:,:,:,2:end)))=NaN;
     end
     val1(val1==-999)=NaN;
     val1(val1==missingvalue)=NaN;
 end
 if ~isempty(val2)
-    if ~isempty(z)
+    if ~isempty(z) && clipZ
         val2(isnan(z(:,:,:,2:end)))=NaN;
     end
     val2(val2==-999)=NaN;
@@ -1896,7 +1901,7 @@ switch cmd
             case 'delwaqlga'
                 cellflds = {'loadvolflux'};
             otherwise
-                cellflds = {'treatas1d','balancefile'};
+                cellflds = {'treatas1d','balancefile','clipwherezundefined'};
         end
         for cellfld = cellflds
             Fld = cellfld{1};
@@ -1904,7 +1909,12 @@ switch cmd
             if isfield(FI,Fld)
                 value = getfield(FI,Fld);
             else
-                value = 0;
+                switch Fld
+                    case {'clipwherezundefined'}
+                        value = 1;
+                    otherwise
+                        value = 0;
+                end
             end
             set(f,'value',value,'enable','on')
             %
@@ -2006,7 +2016,7 @@ switch cmd
         f = findobj(mfig,'tag','loadvolflux');
         set(f,'string','Reload Volumes, Fluxes, ...')
         
-    case {'treatas1d','balancefile','nettransport'}
+    case {'treatas1d','balancefile','nettransport','clipwherezundefined'}
         f = findobj(mfig,'tag',cmd);
         if nargin>3
             Log = varargin{1};
@@ -2121,6 +2131,18 @@ h2 = uicontrol('Parent',h0, ...
     'Enable','off', ...
     'Tooltip','Browse for process definition file', ...
     'Tag','procdefbrowse');
+%
+voffset=voffset-30;
+h2 = uicontrol('Parent',h0, ...
+    'Style','checkbox', ...
+    'BackgroundColor',Inactive, ...
+    'Callback','d3d_qp fileoptions clipwherezundefined', ...
+    'Horizontalalignment','left', ...
+    'Position',[11 voffset width 18], ...
+    'String','Clip Where Z Undefined', ...
+    'Enable','off', ...
+    'Tooltip','Clip values where Z Coordinate is undefined', ...
+    'Tag','clipwherezundefined');
 OK=1;
 % -----------------------------------------------------------------------------
 

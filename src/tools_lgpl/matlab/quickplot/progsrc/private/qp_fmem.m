@@ -255,8 +255,11 @@ switch cmd
                   end
                end
                
-               if isfield(FI,'SubType') && (strcmp(FI.SubType,'Delft3D-trim') || strcmp(FI.SubType,'Delft3D-com') || strcmp(FI.SubType,'Delft3D-trih'))
-                  FI.Options=1;
+               if isfield(FI,'SubType')
+                   switch lower(FI.SubType)
+                       case {'delft3d-trim','delft3d-com','delft3d-trih','delft3d-waq-map','delft3d-par-map'}
+                           FI.Options=1;
+                   end
                end
                trytp='matlab';
             case 'matlab'
@@ -394,8 +397,6 @@ switch cmd
                if ~isempty(FI)
                   Tp=FI.FileType;
                   switch lower(Tp)
-                     case 'delwaqlga'
-                        FI.Options=1;
                      case 'delwaqmap'
                         filterspec='';
                         maybeusegrid=1;
@@ -424,7 +425,6 @@ switch cmd
                   end
                   FI.balancefile=0;
                   if strcmp(FI.FileType,'DelwaqHIS')
-                     FI.Options=1;
                      [pn,fn,fne]=fileparts(FI.FileName);
                      if isequal(lower(fne),'.bal')
                         FI.balancefile=1;
@@ -433,6 +433,7 @@ switch cmd
                         FI.balancefile=1;
                      end
                   end
+                  FI.Options=1;
                end
                trytp='fls';
             case 'fls'
