@@ -866,6 +866,10 @@ if XYRead
             Ans.Y = y(:);
         case 'TRI'
             Ans.TRI=FI.Grid.Discr.Elem;
+            if size(x,1)>1 %2D
+                x=reshape(x,[1 size(x)]);
+                y=reshape(y,[1 size(y)]);
+            end
             if size(z,1)>1
                 x=repmat(x,[size(z,1) 1 1 1]);
                 y=repmat(y,[size(z,1) 1 1 1]);
@@ -1025,7 +1029,7 @@ switch Type
         DataProps={'--constituents'       ''      '' 'xy'    [1 5 0 0 0]  1         1     ''       'z'   'z'       'c'     feval(casemod,'DELWAQ_RESULTS') feval(casemod,'SUBST_001')     ''    []       0 0};
         if isfield(FI,'Grid') && ~isempty(FI.Grid)
             DataProps{5}=[1 0 1 1 0];
-            if FI.Grid.MNK(3)>1
+            if length(FI.Grid.MNK)>2 && FI.Grid.MNK(3)>1
                 DataProps{4}(end+(1:2))='+z';
                 DataProps{5}(K_)=1;
             end

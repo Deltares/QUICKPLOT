@@ -41,7 +41,7 @@ PerLayer=0;
 CouldReadGridData = 0;
 filters = {'*.cco;*.lga' 'Delft3D Grid (Aggregation) Files'
    '*.m2b' 'SOBEK Grid Aggregation Files'
-   '*.geo;geo*' 'Telemac Grid Files'
+   '*.geo;geo*;*.slf' 'Telemac Grid Files'
    '*.nc' 'UGRID netCDF Files (D-Flow FM, Untrim)'};
 if nargin<3
    filterspec = '';
@@ -251,7 +251,7 @@ while 1
                G=telemac('open',GridFileName);
                GridSeg=G.Discr.NPnts;
                PerLayer=GridSeg;
-               G.MNK=[GridSeg 1];
+               G.MNK=[GridSeg 1 1];
                G.Index=(1:GridSeg)';
                CouldReadGridData = 1;
             catch
