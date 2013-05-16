@@ -51,7 +51,7 @@ function varargout=cfx(cmd,varargin)
 %     DATA = CFX('read',FILEDATA,'monitoring point') reads the data for the
 %     monitoring point from the CFX output file.
 
-% Copyright (C)  Stichting Deltares, 2011-2012.
+% Copyright (C)  Stichting Deltares, 2011-2013.
 
 if nargin==0
     if nargout>0

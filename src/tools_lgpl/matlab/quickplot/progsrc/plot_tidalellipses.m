@@ -38,7 +38,7 @@ function h = plot_tidalellipses(X,Y,argtype,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2012 Stichting Deltares.                                     
+%   Copyright (C) 2011-2013 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
