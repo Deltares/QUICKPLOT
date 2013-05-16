@@ -40,8 +40,8 @@ function L = none(A,dim)
 %                                                                               
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: https://svn.oss.deltares.nl/repos/delft3d/trunk/src/tools_lgpl/matlab/quickplot/progsrc/d3d_qp.m $
-%   $Id: d3d_qp.m 1238 2012-02-05 22:57:00Z jagers $
+%   $HeadURL$
+%   $Id$
 
 if nargin==2
     L = ~any(A,dim);
