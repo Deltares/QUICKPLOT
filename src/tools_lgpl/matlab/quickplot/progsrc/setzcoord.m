@@ -52,8 +52,10 @@ for i = 1:length(h)
             set(h(i),'position',coord)
         case 'patch'
             coord = get(h(i),'vertices');
-            coord(:,3) = z;
-            set(h(i),'vertices',coord)
+            if ~isempty(coord)
+                coord(:,3) = z;
+                set(h(i),'vertices',coord)
+            end
         otherwise
             % don't do anything for root, figure, axes, image, uicontrol, etc.
     end

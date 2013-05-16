@@ -18,7 +18,7 @@ function H=tricontourf(tri,x,y,z,v,varargin)
 %   Options
 %     Return: [ data | {handles} ]
 %     ZPlane: ZVal (contours projected on the plane z=ZVal
-%     CLevel: [ min | max | index | {classic} ]
+%     CLevel: [ min | max | index | index0 | {classic} ]
 %
 %   Example
 %      x=rand(20); y=rand(20); z=rand(20); tri=delaunay(x,y);
@@ -99,7 +99,7 @@ else
                 getdata=strcmp('data',varargin{i+1});
             case 'clevel'
                 switch lower(varargin{i+1})
-                    case {'min','max','index'}
+                    case {'min','max','index','index0','classic'}
                         clevelname=lower(varargin{i+1});
                     otherwise
                         error('Invalid CLevel name')
@@ -612,6 +612,8 @@ for LevelNr=1:length(levels)+1
                 clevel=level;
             case 'index'
                 clevel=LevelNr;
+            case 'index0'
+                clevel=LevelNr-1;
             case 'classic'
                 clevel=LevelNr;
                 userdataopt={'userdata',level};
