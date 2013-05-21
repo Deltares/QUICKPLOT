@@ -114,6 +114,7 @@
 %   matlabversionnumber - Obtain the MATLAB version number.
 %   md_colormap         - Colour map editor.
 %   none                - True if all elements of a vector are zero.
+%   noosfile            - Read MATROOS/NOOS time-series files.
 %   pathdistance        - Computes the distance along a path.
 %   printdims           - Display dimension information.
 %   qck_anim            - Helper function for QuickPlot Animations.

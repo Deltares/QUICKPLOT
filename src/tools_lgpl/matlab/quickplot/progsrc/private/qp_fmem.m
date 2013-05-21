@@ -196,6 +196,8 @@ switch cmd
                trytp='DelwaqTimFile';
             case {'.bil','.hdr'}
                trytp='bil/hdr';
+             case {'.noos'}
+                 trytp='NOOS time series';
          end
       end
       
@@ -983,15 +985,19 @@ switch cmd
                      Tp=trytp;
                   end
                end
+               trytp='NOOS time series';
+             case 'NOOS time series'
+               try
+                   FI=noosfile('open',FileName);
+                   Tp=trytp;
+               end
                trytp='shipma';
             case 'shipma'
                try
                    FI=shipma('open',FileName);
-               end
-               if ~isempty(FI)
-                  Tp=trytp;
-                  FI.DomainName = 'Proj\Case';
-                  FI.Options=1;
+                   Tp=trytp;
+                   FI.DomainName = 'Proj\Case';
+                   FI.Options=1;
                end
                trytp='unibest';
             case 'unibest'

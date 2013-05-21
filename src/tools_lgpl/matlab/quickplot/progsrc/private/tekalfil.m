@@ -282,6 +282,8 @@ switch FI.FileType
                 Data(ito,1+j)=FI.Table(i).Data(ifrom,c+1);
             end
         end
+    case {'NOOS'}
+        Data = FI.Series(Props.Block).val';
 end
 
 % return grid ...
@@ -347,6 +349,10 @@ if Ann
     end
 elseif Props.Time
     switch Props.Time
+        case -1
+            T = readtim(FI,Props);
+            val1 = Data(idx{T_},idx{ST_});
+            val1(:,SToutofrange)=NaN;
         case 1
             T=Data(idx{T_},1);
             val1=Data(idx{T_},idx{ST_}+1);
@@ -652,6 +658,14 @@ switch FI.FileType
             DataProps(end+1,:)=DP;
         end
         DataProps(1,:)=[];
+    case {'NOOS'}
+        DP = {'field X'                         'PNT'   'xy' [1 5 0 0 0]  0          1       -1      -1      0          []      {}  };
+        nseries = length(FI.Series);
+        DataProps = repmat(DP,nseries,1);
+        for i=1:nseries
+            DataProps{i,1} = FI.Series(i).unit;
+            DataProps{i,7} = i;
+        end
 end
 
 %======================== SPECIFIC CODE DIMENSIONS ============================
@@ -758,6 +772,9 @@ switch FI.FileType
         end
         sz(T_)=length(T);
         sz(ST_)=St;
+    case {'NOOS'}
+        sz(T_)  = length(FI.Series(Props.Block).times);
+        sz(ST_) = 1;
 end
 % -----------------------------------------------------------------------------
 
@@ -790,6 +807,8 @@ if Props.Time
                     T = union(T,T0);
                 end
             end
+        case {'NOOS'}
+            T = FI.Series(Props.Block).times;
     end
     if nargin>2 && ~isequal(t,0)
         T=T(t);
@@ -827,6 +846,8 @@ switch FI.FileType
                 S{end+1}=FI.Table(i).Location;
             end
         end
+    case 'NOOS'
+        S={FI.Series(Props.Block).location};
 end
 if nargin>2 && ~isequal(t,0)
     S=S{t};

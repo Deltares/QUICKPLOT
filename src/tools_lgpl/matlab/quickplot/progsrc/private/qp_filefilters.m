@@ -75,6 +75,7 @@ filtertbl={...
     '*.mat'                                                'MATLAB Files (Exported from QP)'   'matlab'
     '*.sma'                                                'Shipma Project Files'              'shipma'
     '*.dmp'                                                'CFX4 Dump Files'                   'CFX dmp'
+    '*.noos'                                               'NOOS and MATROOS Files'            'NOOS time series'
     };
 
 if nargin<1

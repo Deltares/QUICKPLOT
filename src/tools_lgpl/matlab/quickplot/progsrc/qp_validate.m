@@ -130,8 +130,13 @@ try
          cd(fullfile(val_dir,d(i).name));
          CaseInfo='case.ini';
          if isempty(dir('data'))
-            ensure_directory('data');
-            movefile('*','data');
+             f = dir('*');
+             ensure_directory('data');
+             for ii=1:length(f)
+                 if ~strcmp(f(ii).name,'.') && ~strcmp(f(ii).name,'..')
+                     movefile(f(ii).name,'data');
+                 end
+             end
          end
          dd=dir(['data' fs '*']);
          if ~localexist(CaseInfo) && length(dd)>2
@@ -541,7 +546,7 @@ try
          if UserInterrupt
             result='FAILED: User interrupt.';
          else
-            result='FAILED: Validation test crashed.';
+            result='FAILED: Validation test crashed - ';
          end
       end
       d3d_qp('closefile');
@@ -551,6 +556,8 @@ try
          end
          fprintf(logid2,'</body>');
          fclose(logid2);
+      elseif ~isempty(CrashMsg)
+          result = [result CrashMsg];
       end
       CaseFailed = ~isempty(strmatch('FAILED',frresult)) | ~isempty(strmatch('FAILED',lgresult)) | ~isempty(strmatch('FAILED',result));
       NFailed=NFailed + double(CaseFailed);

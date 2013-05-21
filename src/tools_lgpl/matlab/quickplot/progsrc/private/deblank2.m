@@ -1,6 +1,10 @@
 function s1 = deblank2(s)
 %DEBLANK2 Remove leading and trailing blanks.
-%   DEBLANK2(S) removes trailing blanks from string S.
+%   DEBLANK2(S) removes both leading and trailing blanks from string S. In
+%   recent MATLAB version, this function could be replaced by a call to
+%   STRTRIM.
+%
+%   See also DEBLANK2, STRTRIM.
 
 %   Based on DEBLANK by L. Shure, 6-17-92.
 %                       Copyright (c) 1984-98 by The MathWorks, Inc.
