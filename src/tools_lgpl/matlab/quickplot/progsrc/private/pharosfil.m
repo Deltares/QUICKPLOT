@@ -473,6 +473,7 @@ for i=size(Out,1):-1:1
         % old Pharos files have only one breaking intensity field: don't
         % use it
         Info=vs_disp(FI,'SPECTRAL-INFO',[]);
+        Info2=vs_disp(FI,Out(i).Group,[]);
         if isstruct(Info) && Info.SizeDim~=Info2.SizeDim
             Out(i).SubFld='';
         end
