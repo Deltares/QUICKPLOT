@@ -141,7 +141,7 @@ if simplexyz
                     end
                     j = strfind(xyz.Header{i},'SWAN version:');
                     if ~isempty(j)
-                        xyz.SWAN_version = strtok(xyz.Header{i}(j+1:end));
+                        xyz.SWAN_version = strtok(xyz.Header{i}(j+13:end));
                     end
                     j1 = strfind(xyz.Header{i},'[');
                     j2 = strfind(xyz.Header{i},']');

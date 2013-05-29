@@ -272,7 +272,7 @@ switch cmd
                      FI=load('-mat',FileName);
                   end
                end
-               if ~isempty(FI)
+               if isstruct(FI)
                   f=fieldnames(FI);
                   if length(f)==1 && strcmp(lower(f{1}),'data')
                      FI=getfield(FI,f{1});
@@ -281,6 +281,8 @@ switch cmd
                   else
                      FI=[];
                   end
+               else
+                  FI=[];
                end
                trytp='ecomsed-binary';
             case 'ecomsed-binary'
