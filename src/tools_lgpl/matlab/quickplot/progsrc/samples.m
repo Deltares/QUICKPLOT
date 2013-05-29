@@ -1,16 +1,24 @@
 function [x,y,z]=samples(cmd,varargin)
 %SAMPLES Read/write sample data from file.
 %     XYZ = SAMPLES('read',FILENAME) read the specified file and return the
-%     samples as one Nx3 array.
+%     data contained in it. In the classic case of a simple plain Delft3D
+%     samples file contain three data columns, the function returns an Nx3
+%     array with the data. Due to the algorithm used, the file may contain
+%     any number of comments in MATLAB style, i.e. starting with %. As a
+%     generalization beyond the classic samples file, the number of columns
+%     may differ from 3.
 %
 %     [X,Y,Z] = SAMPLES('read',FILENAME) read the specified file and return
 %     the samples in three separate Nx1 arrays.
 %
-%     SAMPLES('write',FILENAME,XYZ) write samples given in a Nx3 array to
-%     file.
+%     SAMPLES('write',FILENAME,XYZ) write samples given in a Nx3 (or 3xN)
+%     array to a samples file. Because of the automatic transpose option,
+%     this function does not support any other number of data columns.
 %
-%     SAMPLES('write',FILENAME,X,Y,Z) write samples given in three Nx1
-%     arrays to file.
+%     SAMPLES('write',FILENAME,X,Y,Z) write samples given in three Nx1 (or
+%     1xN) arrays to a samples file. Because of the automatic transpose
+%     option, this function does not support any other number of data
+%     columns.
 
 %----- LGPL --------------------------------------------------------------------
 %
@@ -62,7 +70,7 @@ switch lower(cmd)
         error('Unknown command: %s',var2str(cmd)) 
 end
 
-function xyz=Local_read_samples(filename)
+function xyz=Local_read_samples(filename,opt)
 if (nargin==0) || strcmp(filename,'?')
     [fname,fpath]=uigetfile('*.xyz','Select sample file');
     if ~ischar(fname)
@@ -72,21 +80,83 @@ if (nargin==0) || strcmp(filename,'?')
     filename=[fpath,fname];
 end
 
-if exist(filename)~=2
-    error(['Cannot open ',filename,'.']);
-end
-simplexyz=0;
-try
-    xyz=load(filename);
-    simplexyz=1;
-catch
-    try
-        xyz=asciiload(filename);
-        simplexyz=1;
-    catch
+readtype='default';
+if nargin>1
+    opt = lower(opt);
+    switch opt
+        case {'simple','struct'}
+            readtype = opt;
+        otherwise
+            error('Invalid samples read option: %s',opt)
     end
 end
-if ~simplexyz
+
+if exist(filename)~=2
+    error('Cannot open %s.',filename)
+end
+try
+    xyz0 = load(filename);
+    simplexyz = 1;
+catch
+    try
+        xyz0 = asciiload(filename);
+        simplexyz = 1;
+    catch
+        simplexyz = 0;
+    end
+end
+
+if simplexyz
+    switch readtype
+        case {'simple','default'}
+            xyz = xyz0;
+        otherwise
+            xyz.XYZ = xyz0;
+            npar = size(xyz0,2);            
+            xyz.Params = cell(1,npar);
+            for i=1:npar
+                xyz.Params{i}=sprintf('Parameter %i',i);
+            end
+            xyz.FileType = 'samples';
+            xyz.FileName = filename;
+            %
+            fid=fopen(filename,'r');
+            str=fgetl(fid);
+            xyz.Header = {};
+            while ~isempty(str) && str(1)=='%'
+                xyz.Header{end+1} = str;
+                str=fgetl(fid);
+            end
+            fclose(fid);
+            %
+            if ~isempty(xyz.Header)
+                for i = length(xyz.Header):-1:1
+                    j = strfind(xyz.Header{i},'Run:');
+                    if ~isempty(j)
+                        xyz.Run = strtok(xyz.Header{i}(j+4:end));
+                    end
+                    j = strfind(xyz.Header{i},'Table:');
+                    if ~isempty(j)
+                        xyz.Table = strtok(xyz.Header{i}(j+6:end));
+                    end
+                    j = strfind(xyz.Header{i},'SWAN version:');
+                    if ~isempty(j)
+                        xyz.SWAN_version = strtok(xyz.Header{i}(j+1:end));
+                    end
+                    j1 = strfind(xyz.Header{i},'[');
+                    j2 = strfind(xyz.Header{i},']');
+                    if length(j1) == npar && length(j2) == npar
+                        xyz.ParamUnits = repmat({''},1,npar);
+                        for j = 1:npar
+                            xyz.ParamUnits{j} = xyz.Header{i}(j1(j)+1:j2(j)-1);
+                        end
+                        par = textscan(xyz.Header{i-1}(2:end),'%s');
+                        xyz.Params = par{1};
+                    end
+                end
+            end
+    end
+else % readtype always forced to 'struct'
     fid=fopen(filename,'r');
     try
         cloc=0;
@@ -160,6 +230,59 @@ if ~simplexyz
     xyz.Params=Params;
     xyz.FileType='samples';
     xyz.FileName=filename;
+    
+    if strcmp(readtype,'simple')
+        xyz = xyz.XYZ;
+    end
+end
+%
+if isstruct(xyz)
+    xyz.X = [];
+    xyz.Y = [];
+    xyz.Time = [];
+    for i = 1:length(xyz.Params)
+        switch lower(xyz.Params{i})
+            case {'xp','x-coordinate','x coordinate'}
+                xyz.X = i;
+            case {'yp','y-coordinate','y coordinate'}
+                xyz.Y = i;
+            case {'time'}
+                xyz.Time = i;
+        end
+    end
+    if isempty(xyz.X) && isempty(xyz.Y)
+        xyz.X = find(strcmp(xyz.Params,'Parameter 1'));
+        if ~isempty(xyz.X)
+           xyz.Y = find(strcmp(xyz.Params,'Parameter 2'));
+        end
+    end
+    %
+    if ~isempty(xyz.Time)
+        [Times,idum,iTime] = unique(xyz.XYZ(:,xyz.Time));
+        d = floor(Times);
+        s = round((Times - d)*1000000);
+        m = floor(d/100);
+        d = d - 100*m;
+        y = floor(m/100);
+        m = m - 100*y;
+        %
+        mn = floor(s/100);
+        s  = s - mn*100;
+        h = floor(mn/100);
+        mn = mn - h*100;
+        %
+        xyz.Times = datenum(y,m,d,h,mn,s);
+        xyz.iTime = iTime;
+        %
+        nLoc = hist(xyz.iTime,max(xyz.iTime));
+        if all(nLoc==nLoc(1))
+            xyz.nLoc = nLoc(1);
+        else
+            xyz.nLoc = nLoc;
+        end
+    else
+        xyz.nLoc = size(xyz.XYZ,1);
+    end
 end
 
 

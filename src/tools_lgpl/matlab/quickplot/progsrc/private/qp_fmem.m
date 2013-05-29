@@ -917,31 +917,19 @@ switch cmd
                end
                trytp='samples';
             case 'samples'
-               FI=[];
                try
-                  XYZ=samples('read',FileName);
+                  XYZ=samples('read',FileName,'struct');
                catch
                   XYZ=[];
                end
                if isempty(XYZ)
-                  FI=[];
-               elseif isstruct(XYZ)
-                  if isfield(XYZ,'FileType')
-                     FI=XYZ;
-                     Tp=FI.FileType;
-                     FI.Options=0;
-                  else
-                     FI=[];
-                  end
+                   FI=[];
+               elseif isfield(XYZ,'FileType')
+                   FI=XYZ;
+                   Tp=FI.FileType;
+                   FI.Options=0;
                else
-                  FI.XYZ=XYZ;
-                  for i=1:size(FI.XYZ,2)
-                     FI.Params{i}=sprintf('Parameter %i',i);
-                  end
-                  FI.FileType='samples';
-                  FI.FileName=FileName;
-                  FI.Options=0;
-                  Tp=FI.FileType;
+                   FI=[];
                end
                trytp='BNA File';
             case 'BNA File'

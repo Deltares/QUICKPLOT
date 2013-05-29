@@ -191,7 +191,9 @@ if isfield(data,'TRI')
     switch lower(Ops.thinningmode)
         case 'none'
             data.X=data.XYZ(:,:,:,1);
-            data.Y=data.XYZ(:,:,:,2);
+            if size(data.XYZ,4)>1
+                data.Y=data.XYZ(:,:,:,2);
+            end
             if size(data.XYZ,4)>2
                 data.Z=data.XYZ(:,:,:,3);
             end

@@ -1101,11 +1101,11 @@ switch cmd
       try1=1;
       trytp='trtarea';
       [pn,fn,en]=fileparts(FileName);
-      if strmatch('bag',lower(fn)),
+      if strmatch('bag',lower(fn))
          trytp='bagmap';
-      elseif strmatch('tri-rst',lower(fn)),
+      elseif strmatch('tri-rst',lower(fn))
          trytp='trirst';
-      elseif strmatch('swanout',lower(fn)),
+      elseif strmatch('swanout',lower(fn))
          trytp='swanout';
       else
          switch lower(en),
@@ -1137,11 +1137,7 @@ switch cmd
                trytp='swanout';
             case 'swanout'
                try
-                  % Note: this feature has been disabled because it caused
-                  % the testcase 'Grid - grensproject' to hang on reading
-                  % the bagmap file.
-                  DataFI=[];
-                  %DataFI=swan('read',FileName,size(NewFI.X));
+                  DataFI=swan('read',FileName,size(NewFI.X));
                catch
                end
                if ~isempty(DataFI)
@@ -1374,10 +1370,12 @@ switch cmd
          if try1
             trytp='trtarea';
             try1=0;
+         else
+             ui_message('error','Unable to load file\n%s\nonto grid: verify file contents.',FileName)
          end
       end
       if isempty(DataFI)
-         return;
+         return
       end
       if isempty(File)
          Str={abbrevfn(FileName,60)};

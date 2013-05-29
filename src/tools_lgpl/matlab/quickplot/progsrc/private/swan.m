@@ -75,12 +75,12 @@ IsComment = 1;
 while IsComment
     loc = ftell(fid);
     Line = fgetl(fid);
-    if ~ischar(Line) | length(Line)<1
+    if ~ischar(Line) || length(Line)<1
         IsComment = 0;
     else
         IsComment = Line(1)=='%';
         if IsComment
-            FI.Comment{end+1} = Line;
+            FI.Comments{end+1} = Line;
         end
     end
 end
@@ -103,6 +103,9 @@ fclose(fid);
 % Check data read
 %
 temp = Nread/nvalperline;
+if nargin<2
+    dims = temp;
+end
 if temp ~= round(temp)
     error('Invalid number of values in file.')
 elseif temp < prod(dims)
@@ -114,7 +117,7 @@ end
 FI.Data = FI.Data';
 FI.Data = reshape(FI.Data,[dims nvalperline]);
 for i=1:nvalperline
-    FI.Parameters{i} = sprintf('field %i of %s',i,FI.FileName)
+    FI.Parameters{i} = sprintf('field %i of %s',i,FI.FileName);
 end
 
 function FI = Local_read_swanin(filename)
@@ -127,7 +130,7 @@ FI.FileType = 'SWAN-input';
 FI.Comments = {};
 %
 Line = '';
-while ischar(Line) & isempty(Line)
+while ischar(Line) && isempty(Line)
     Line = fgetl(fid);
 end
 if ~ischar(Line)
@@ -208,7 +211,7 @@ while ~isempty(Pars)
     for i=1:size(keyw,1)
         keyword = keyw{i,1};
         lkw = length(keyword);
-        if length(Par)>=lkw & strcmp(Par(1:lkw),keyword)
+        if length(Par)>=lkw && strcmp(Par(1:lkw),keyword)
             found = 1;
             break
         end

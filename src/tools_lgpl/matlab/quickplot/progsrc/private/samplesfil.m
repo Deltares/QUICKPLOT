@@ -85,7 +85,7 @@ switch cmd
         varargout={readtim(FI,Props,varargin{:})};
         return
     case 'stations'
-        varargout={{}};
+        varargout={readsts(FI,Props,varargin{:})};
         return
     case 'subfields'
         varargout={{}};
@@ -110,13 +110,42 @@ if DimFlag(T_)
     if isequal(idx{T_},0)
         idx{T_}=1:sz(T_);
     end
+elseif ~isempty(FI.Time)
+    idx{T_} = 1;
+end
+nTim = max(1,length(idx{T_}));
+nLoc = max([1 sz(M_) sz(ST_)]); % catch case of varying number of locations; in which case sz(M_)=0
+if DimFlag(ST_)
+    idxM = idx{ST_};
+    szM = sz(ST_);
+else
+    idxM = idx{M_};
+    szM = sz(M_);
+end
+if isempty(idx{T_})
+    if isequal(idxM,0)
+        dim1 = ':';
+    else
+        dim1 = idxM;
+        nLoc = length(idxM);
+    end
+else
+    dim1 = ismember(FI.iTime,idx{T_});
+    %
+    if ~isequal(idxM,0) % can only happen if number of locations if constant, i.e. FI.nLoc scalar
+        z = zeros(szM,1);
+        z(idxM) = 1;
+        dim1 = dim1 & repmat(z,[sz(T_) 1]);
+        nLoc = length(idxM);
+    end
 end
 
 % generate output ...
 if XYRead
-    nPnt=size(FI.XYZ,1);
-    nCrd=size(FI.XYZ,2);
-    Ans.XYZ=reshape(FI.XYZ,[1 nPnt 1 nCrd]);
+    xyz = FI.XYZ(dim1,[FI.X FI.Y]);
+    nPnt=size(xyz,1)/nTim;
+    nCrd=size(xyz,2);
+    Ans.XYZ=reshape(xyz,[nTim nPnt 1 nCrd]);
     if strcmp(Props.Geom,'TRI')
        if isfield(FI,'TRI')
           Ans.TRI=FI.TRI;
@@ -138,7 +167,7 @@ end
 switch Props.NVal
     case 0
     case 1
-        Ans.Val=FI.XYZ(:,Props.SubFld);
+        Ans.Val=reshape(FI.XYZ(dim1,Props.SubFld),[nTim nLoc]);
     otherwise
         Ans.XComp=[];
         Ans.YComp=[];
@@ -155,34 +184,67 @@ varargout={Ans FI};
 % -----------------------------------------------------------------------------
 function Out=infile(FI,domain)
 
-%======================== SPECIFIC CODE =======================================
-PropNames={'Name'                       'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc' 'Geom' 'Coords' 'SubFld'};
-DataProps={'locations'                    [0 0 4 0 0]  0          0     ''        ''    ''     'PNT'  'xy'      []
-  'triangulated locations'                [0 0 4 0 0]  0          0     ''        ''    ''     'TRI'  'xy'      []
-  '-------'                               [0 0 0 0 0]  0          0     ''        ''    ''     ''     ''        []
-  'sample data'                           [0 0 4 0 0]  0          1     ''        ''    ''     'TRI'  'xy'      3};
+PropNames={'Name'                       'Units' 'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc' 'Geom' 'Coords' 'SubFld'};
+DataProps={'locations'                  ''       [0 0 1 0 0]  0          0     ''        ''    ''     'PNT'  'xy'      []
+  'triangulated locations'              ''       [0 0 1 0 0]  0          0     ''        ''    ''     'TRI'  'xy'      []
+  '-------'                             ''       [0 0 0 0 0]  0          0     ''        ''    ''     ''     ''        []
+  'sample data'                         ''       [0 0 1 0 0]  0          1     ''        ''    ''     'TRI'  'xy'      -999};
 
-%======================== SPECIFIC CODE DIMENSIONS ============================
 Out=cell2struct(DataProps,PropNames,2);
 
-%======================== SPECIFIC CODE REMOVE ================================
+params = 1:size(FI.XYZ,2);
+params = setdiff(params,[FI.X FI.Y FI.Time]);
+if ~isempty(FI.Time)
+    if length(FI.nLoc)==1
+        f1 = 1; % single or multiple time steps
+        f3 = 1;
+    else
+        f1 = 5; % only single time step
+        f3 = inf; % variable number of nodes
+    end
+    %
+    Out(end).DimFlag(1) = f1;
+    for i = [1 2 4]
+        Out(i).DimFlag(3) = f3;
+    end
+end
 
-%======================== SPECIFIC CODE ADD ===================================
-NPar=size(FI.XYZ,2)-2;
+% Expand parameters
+NPar=length(params);
 if NPar>0
-   Out=cat(1,Out(1:3),repmat(Out(4),NPar,1));
-    for i=1:NPar
-        Out(i+3).SubFld=i+2;
-        Out(i+3).Name=FI.Params{i+2};
+    Out=cat(1,Out(1:3),repmat(Out(4),NPar,1));
+    for i = 1:NPar
+        Out(i+3).SubFld = params(i);
+        Out(i+3).Name   = FI.Params{params(i)};
+        if isfield(FI,'ParamUnits')
+            Out(i+3).Units  = FI.ParamUnits{params(i)};
+        end
     end
 else
    Out=Out(1:2);
 end
-if size(FI.XYZ,1)<3
+
+% No triangulation possible if only one or two points, or only one
+% coordinate
+if FI.nLoc<2 || isempty(FI.Y) || isempty(FI.X)
    Out(2)=[];
    for i=1:NPar
       Out(i+2).Geom='PNT';
+      if isempty(FI.Y)
+          Out(i+2).Coords='x';
+      elseif isempty(FI.X)
+          Out(i+2).Coords='y';
+      end
    end
+end
+
+if isempty(FI.Y) || isempty(FI.X)
+    for i=1:NPar
+        Out(i+2).DimFlag(2) = 5;
+        Out(i+2).DimFlag(3) = 0;
+    end
+    %
+    Out(1:2) = [];
 end
 % -----------------------------------------------------------------------------
 
@@ -191,17 +253,59 @@ end
 function sz=getsize(FI,Props)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 sz=[0 0 0 0 0];
-
 %======================== SPECIFIC CODE =======================================
-if Props.DimFlag(M_)
-    sz(M_)=size(FI.XYZ,1);
-end;
+if Props.DimFlag(T_)
+    sz(T_) = length(FI.Times);
+end
+if Props.DimFlag(M_) && length(FI.nLoc)==1
+    sz(M_) = FI.nLoc;
+elseif Props.DimFlag(ST_)
+    sz(ST_) = FI.nLoc;
+end
 % -----------------------------------------------------------------------------
 
 
 % -----------------------------------------------------------------------------
 function T=readtim(FI,Props,t)
-
 %======================== SPECIFIC CODE =======================================
-T=0;
+if isempty(FI.Time)
+    T = 0;
+else
+    T=FI.Times;
+    if t~=0
+        T = T(t);
+    end
+end
+% -----------------------------------------------------------------------------
+
+
+% -----------------------------------------------------------------------------
+function S=readsts(FI,Props,t)
+%======================== SPECIFIC CODE =======================================
+if nargin<3 || t==0
+    S = cell(1,FI.nLoc);
+    t=1:FI.nLoc;
+else
+    S = cell(1,length(t));
+end
+for i=1:length(t)
+    XUnit = '';
+    YUnit = '';
+    if isfield(FI,'ParamUnits')
+        if ~isempty(FI.X)
+            XUnit = [' ' FI.ParamUnits{FI.X}];
+        end
+        if ~isempty(FI.Y)
+            YUnit = [' ' FI.ParamUnits{FI.Y}];
+        end
+    end
+    %
+    if ~isempty(FI.X) && isempty(FI.Y)
+        S{i} = sprintf('x = %g%s',FI.XYZ(t(i),FI.X),XUnit);
+    elseif isempty(FI.X) && ~isempty(FI.Y)
+        S{i} = sprintf('y = %g%s',FI.XYZ(t(i),FI.Y),YUnit);
+    else
+        S{i} = sprintf('(x,y) = (%g%s,%g%s)',FI.XYZ(t(i),FI.X),XUnit,FI.XYZ(t(i),FI.Y),YUnit);
+    end
+end
 % -----------------------------------------------------------------------------

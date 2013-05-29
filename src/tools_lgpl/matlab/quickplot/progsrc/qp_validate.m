@@ -593,6 +593,16 @@ if logid>0
 end
 if AnyFail
    ui_message('error','Testbank failed on %i out of %i cases! Check log file.\n',NFailed,NTested)
+   %
+   if matlabversionnumber>5
+       ops={'-browser'};
+   else
+       ops={};
+   end
+   try
+       web(full_ln,ops{:});
+   catch
+   end
 else
    ui_message('','Testbank completed successfully (%i cases).\n',NTested)
 end
