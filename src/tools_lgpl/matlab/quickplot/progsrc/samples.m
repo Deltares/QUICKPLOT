@@ -242,11 +242,11 @@ if isstruct(xyz)
     xyz.Time = [];
     for i = 1:length(xyz.Params)
         switch lower(xyz.Params{i})
-            case {'xp','x-coordinate','x coordinate'}
+            case {'longitude','lon','x','xp','x-coordinate','x coordinate','x_coordinate','x_gpp'}
                 xyz.X = i;
-            case {'yp','y-coordinate','y coordinate'}
+            case {'latitude' ,'lat','y','yp','y-coordinate','y coordinate','y_coordinate','y_gpp'}
                 xyz.Y = i;
-            case {'time'}
+            case {'time','datetime'}
                 xyz.Time = i;
         end
     end
