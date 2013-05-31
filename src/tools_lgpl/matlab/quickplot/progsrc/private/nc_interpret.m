@@ -76,6 +76,7 @@ nvars = length(nc.Dataset);
 [nc.Dataset(1:nvars).YBounds] = deal([]);
 [nc.Dataset(1:nvars).Z] = deal([]);
 [nc.Dataset(1:nvars).Time] = deal([]);
+[nc.Dataset(1:nvars).AuxTime] = deal([]);
 [nc.Dataset(1:nvars).Station] = deal([]);
 [nc.Dataset(1:nvars).SubField] = deal([]);
 [nc.Dataset(1:nvars).TSMNK] = deal([NaN NaN NaN NaN NaN]);
@@ -210,7 +211,44 @@ for ivar = 1:nvars
         continue
     end
     %
-    % look for known units
+    % check standard_name
+    %
+    j = strmatch('standard_name',Attribs,'exact');
+    if ~isempty(j)
+        switch Info.Attribute(j).Value
+            case {'atmosphere_sigma_coordinate', ...
+                        'atmosphere_hybrid_sigma_pressure_coordinate', ...
+                        'atmosphere_hybrid_height_coordinate', ...
+                        'atmosphere_sleve_coordinate', ...
+                        'ocean_sigma_coordinate', ...
+                        'ocean_s_coordinate', ...
+                        'ocean_sigma_z_coordinate', ...
+                        'ocean_double_sigma_coordinate'}
+                %
+                % Vertical dimension
+                %
+                nc = setType(nc,ivar,idim,'z-coordinate');
+                continue
+            case 'latitude'
+                nc = setType(nc,ivar,idim,'latitude');
+                continue
+            case 'longitude'
+                nc = setType(nc,ivar,idim,'longitude');
+                continue
+            case 'projection_x_coordinate'
+                nc = setType(nc,ivar,idim,'x-coordinate');
+                continue
+            case 'projection_y_coordinate'
+                nc = setType(nc,ivar,idim,'y-coordinate');
+                continue
+            case 'time'
+                nc = setType(nc,ivar,idim,'time');
+                % in case of time, continue to interpret the time unit
+                % (reference date and time step)
+        end
+    end
+    %
+    % standard_name not recognized (or time); look for known units
     %
     j = strmatch('units',Attribs,'exact');
     if ~isempty(j)
@@ -270,7 +308,9 @@ for ivar = 1:nvars
             %
             % time dimension
             %
-            nc = setType(nc,ivar,idim,'time');
+            if ~isequal(nc.Dataset(ivar).Type,'time')
+                nc = setType(nc,ivar,idim,'aux-time');
+            end
             refdate = sscanf(unit2,' since %d-%d-%d %d:%d:%f %d:%d',[1 8]);
             if length(refdate)>=6
                 refdate = datenum(refdate(1:6));
@@ -287,42 +327,6 @@ for ivar = 1:nvars
                 nc.Dataset(ivar).Info.RefDate = refdate;
             end
             continue
-        end
-    end
-    %
-    % unit not recognized, check standard_name
-    %
-    j = strmatch('standard_name',Attribs,'exact');
-    if ~isempty(j)
-        switch Info.Attribute(j).Value
-            case {'atmosphere_sigma_coordinate', ...
-                        'atmosphere_hybrid_sigma_pressure_coordinate', ...
-                        'atmosphere_hybrid_height_coordinate', ...
-                        'atmosphere_sleve_coordinate', ...
-                        'ocean_sigma_coordinate', ...
-                        'ocean_s_coordinate', ...
-                        'ocean_sigma_z_coordinate', ...
-                        'ocean_double_sigma_coordinate'}
-                %
-                % Vertical dimension
-                %
-                nc = setType(nc,ivar,idim,'z-coordinate');
-                continue
-            case 'latitude'
-                nc = setType(nc,ivar,idim,'latitude');
-                continue
-            case 'longitude'
-                nc = setType(nc,ivar,idim,'longitude');
-                continue
-            case 'projection_x_coordinate'
-                nc = setType(nc,ivar,idim,'x-coordinate');
-                continue
-            case 'projection_y_coordinate'
-                nc = setType(nc,ivar,idim,'y-coordinate');
-                continue
-            case 'time'
-                nc = setType(nc,ivar,idim,'time');
-                continue
         end
     end
     %
@@ -383,7 +387,8 @@ varNames = {nc.Dataset.Name};
 for ivar = 1:nvars
     Info = nc.Dataset(ivar);
     [coords,ia,ib]=intersect(Info.Coordinates,varNames);
-    for icvar = ib
+    for icvar1 = 1:length(ib)
+        icvar = ib(icvar1);
         vDims = Info.Dimension;
         cvDims = nc.Dataset(icvar).Dimension;
         if nc.Dataset(icvar).Nctype==2
@@ -412,6 +417,8 @@ for ivar = 1:nvars
                 Info.Z = [Info.Z icvar];
             case 'time'
                 Info.Time = [Info.Time icvar];
+            case 'aux-time'
+                Info.AuxTime = [Info.AuxTime icvar];
             case 'label'
                 Info.Station = [Info.Station icvar];
             otherwise
@@ -422,6 +429,10 @@ for ivar = 1:nvars
     % For every dimension I may have multiple (auxiliary) coordinates. How
     % to deal with that?
     %
+    if isempty(Info.Time) && ~isempty(Info.AuxTime)
+        Info.Time = Info.AuxTime;
+        Info.AuxTime = [];
+    end
     if ~isempty(Info.Time)
         %
         % Assumption: time is always unique and coordinate dimension.
