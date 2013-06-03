@@ -1073,23 +1073,27 @@ switch cmd
             filterspec='*.*';
          else
             filterspec={...
-                  '*.*'         'All files'
-               '*.dep;*.qin' 'QuickIn file'
-               'tri-rst.*'   'Delft3D-FLOW restart file'
-               '*.enc'       'Delft3D-FLOW enclosure file'
-               '*.bnd'       'Delft3D-FLOW boundary file'
-               '*.thd'       'Delft3D-FLOW thin dam file'
-               '*.dry'       'Delft3D-FLOW dry points file'
-               '*.obs'       'Delft3D-FLOW observation point file'
-               '*.crs'       'Delft3D-FLOW cross-section file'
-               '*.src'       'Delft3D-FLOW discharge station file'
-               '*.2dw;*.wr'  'Delft3D-FLOW 2D weir file'
-               'bag*.*'      'Delft3D-MOR dredge map output file'
-               '*.inc'       'Incremental file'};
+                  '*.*'         'All files'                         ''
+               '*.dep;*.qin' 'QuickIn file'                         'wldep'
+               '*.*'         'SIMONA box file'                      'boxfile'
+               '*.*'         'Delft3D-MOR field file'               'wlfdep'
+               'tri-rst.*'   'Delft3D-FLOW restart file'            'trirst'
+               '*.enc'       'Delft3D/SIMONA enclosure file'        'enclosure'
+               '*.aru;*.arv' 'Delft3D/SIMONA roughness area file'   'trtarea'
+               'swanout'     'SWAN map output file'                 'swanout'
+               '*.bnd'       'Delft3D-FLOW boundary file'           'attrib'
+               '*.thd'       'Delft3D-FLOW thin dam file'           'attrib'
+               '*.dry'       'Delft3D-FLOW dry points file'         'attrib'
+               '*.obs'       'Delft3D-FLOW observation point file'  'attrib'
+               '*.crs'       'Delft3D-FLOW cross-section file'      'attrib'
+               '*.src'       'Delft3D-FLOW discharge station file'  'attrib'
+               '*.2dw;*.wr'  'Delft3D-FLOW 2D weir file'            'attrib'
+               'bag*.*'      'Delft3D-MOR dredge map output file'   'bagmap'
+               '*.inc'       'Incremental file'                     'fls'};
          end
          currentdir=pwd;
          cd(targetdir);
-         [fn,pn]=uigetfile(filterspec,'Select data file to open ...');
+         [fn,pn]=uigetfile(filterspec(:,1:2),'Select data file to open ...');
          cd(currentdir);
          if ~ischar(fn)
             return
@@ -1099,6 +1103,7 @@ switch cmd
       %autodetect intelligence ...
       DataFI=[];
       try1=1;
+      lasttry=0;
       trytp='trtarea';
       [pn,fn,en]=fileparts(FileName);
       if strmatch('bag',lower(fn))
@@ -1172,9 +1177,8 @@ switch cmd
                end
                if ~isempty(DataFI)
                   if ~isequal(size(DataFI),size(NewFI.X))
-                     ui_message('error','Size of datafield does not match size of grid');
+                     emsg = 'Size of datafield does not match size of grid';
                      DataFI=[];
-                     return
                   else
                      Tmp.Data={DataFI};
                      DataFI=Tmp; Tmp=[];
@@ -1213,17 +1217,14 @@ switch cmd
                   elseif strcmp(DataFI.Check,'NotOK')
                      DataFI=[];
                   elseif ~strcmp(DataFI.FileType,'FLS-inc')
-                     ui_message('error','Don''t know how to plot %s file on grid.',DataFI.FileType);
+                     emsg = sprintf('Don''t know how to relate %s file to grid.',DataFI.FileType);
                      DataFI=[];
-                     return
                   elseif length(DataFI.Domain)~=1
-                     ui_message('error','Multi-domain incremental file not supported on grid');
+                     emsg = 'Multi-domain incremental file not supported on grid.';
                      DataFI=[];
-                     return
                   elseif ~isequal([DataFI.Domain.NRows DataFI.Domain.NCols],size(NewFI.X))
-                     ui_message('error','Size of datafield does not match size of grid');
+                     emsg = 'Size of datafield does not match size of grid.';
                      DataFI=[];
-                     return
                   else
                      Tp=DataFI.FileType;
                   end
@@ -1251,9 +1252,8 @@ switch cmd
                end
                if ~isempty(DataFI)
                   if ~isequal([DataFI.M DataFI.N],size(NewFI.X))
-                     ui_message('error','Size of datafield does not match size of grid');
+                     emsg = 'Size of datafield does not match size of grid.';
                      DataFI=[];
-                     return
                   else
                      DataFI.FileType=trytp;
                      Tp=DataFI.FileType;
@@ -1272,9 +1272,8 @@ switch cmd
                   if isfield(DataFI,'MNu')
                      if (max(max(DataFI.MNu(:,[1 3])))>size(NewFI.X,1)) || (max(max(DataFI.MNv(:,[1 3])))>size(NewFI.X,1)) || ...
                            (max(max(DataFI.MNu(:,[2 4])))>size(NewFI.X,2)) || (max(max(DataFI.MNv(:,[2 4])))>size(NewFI.X,2))
-                        ui_message('error','Weirs/dams outside grid encountered.');
+                        emsg = 'Weirs/dams outside grid encountered.';
                         DataFI=[];
-                        return
                      else
                         DataFI.FileType=trytp;
                         Tp=DataFI.FileType;
@@ -1282,45 +1281,40 @@ switch cmd
                   elseif isfield(DataFI,'MNKu')
                      if (max(max(DataFI.MNKu(:,[1 3])))>size(NewFI.X,1)) || (max(max(DataFI.MNKv(:,[1 3])))>size(NewFI.X,1)) || ...
                            (max(max(DataFI.MNKu(:,[2 4])))>size(NewFI.X,2)) || (max(max(DataFI.MNKv(:,[2 4])))>size(NewFI.X,2))
-                        ui_message('error','Gates/sheets outside grid encountered.');
+                        emsg = 'Gates/sheets outside grid encountered.';
                         DataFI=[];
-                        return
                      else
                         DataFI.FileType=trytp;
                         Tp=DataFI.FileType;
                      end
                   elseif isequal(DataFI.Type,'drypoint')
                      if (max(max(DataFI.MN(:,[1 3])))>size(NewFI.X,1)) || (max(max(DataFI.MN(:,[2 4])))>size(NewFI.X,2))
-                        ui_message('error','Dry points outside grid encountered.');
+                        emsg = 'Dry points outside grid encountered.';
                         DataFI=[];
-                        return
                      else
                         DataFI.FileType=trytp;
                         Tp=DataFI.FileType;
                      end
                   elseif isequal(DataFI.Type,'observation points')
                      if (max(DataFI.MN(:,1))>size(NewFI.X,1)) || (max(DataFI.MN(:,2))>size(NewFI.X,2))
-                        ui_message('error','Observation points outside grid encountered.');
+                        emsg = 'Observation points outside grid encountered.';
                         DataFI=[];
-                        return
                      else
                         DataFI.FileType=trytp;
                         Tp=DataFI.FileType;
                      end
                   elseif isequal(DataFI.Type,'openboundary')
                      if (max(DataFI.MN(:,1))>size(NewFI.X,1)) || (max(DataFI.MN(:,2))>size(NewFI.X,2))
-                        ui_message('error','Boundary locations outside grid encountered.');
+                        emsg = 'Boundary locations outside grid encountered.';
                         DataFI=[];
-                        return
                      else
                         DataFI.FileType=trytp;
                         Tp=DataFI.FileType;
                      end
                   elseif isequal(DataFI.Type,'discharge stations')
                      if (max(DataFI.MNK(:,1))>size(NewFI.X,1)) || (max(DataFI.MNK(:,2))>size(NewFI.X,2))
-                        ui_message('error','Discharge stations outside grid encountered.');
+                        emsg = 'Discharge stations outside grid encountered.';
                         DataFI=[];
-                        return
                      else
                         DataFI.FileType=trytp;
                         Tp=DataFI.FileType;
@@ -1328,15 +1322,14 @@ switch cmd
                   elseif isequal(DataFI.Type,'cross-sections')
                      if (max(max(DataFI.MNMN(:,[1 3])))>size(NewFI.X,1)) || ...
                            (max(max(DataFI.MNMN(:,[2 4])))>size(NewFI.X,2))
-                        ui_message('error','Cross-sections outside grid encountered.');
+                        emsg = 'Cross-sections outside grid encountered.';
                         DataFI=[];
-                        return
                      else
                         DataFI.FileType=trytp;
                         Tp=DataFI.FileType;
                      end
                   else
-                     ui_message('error','%s not yet supported.',DataFI.Type);
+                     emsg = sprintf('%s not yet supported.',DataFI.Type);
                      DataFI=[];
                   end
                else
@@ -1348,13 +1341,12 @@ switch cmd
                try
                   DataTmp=enclosure('read',FileName);
                catch
+                   DataTmp=[];
                end
                if ~isempty(DataTmp)
                   if any(max(DataTmp)>size(NewFI.X))
-                     ui_message('error','Enclosure extends beyond grid');
-                     DataTmp=[];
+                     emsg = 'Enclosure extends beyond grid';
                      DataFI=[];
-                     return
                   else
                      DataFI.Data=DataTmp;
                      DataFI.FileType=trytp;
@@ -1367,15 +1359,27 @@ switch cmd
             otherwise
                break
          end
-         if try1
+         if lasttry
+             if isempty(DataFI)
+                 if isempty(emsg)
+                     emsg = lasterr;
+                 end
+                 ui_message('error','Unable to load attribute file ''%s'' onto grid.\nError reported:\n%s',FileName,emsg)
+                 return
+             end
+             break
+         elseif try1
             trytp='trtarea';
             try1=0;
-         else
-             ui_message('error','Unable to load file\n%s\nonto grid: verify file contents.',FileName)
+         elseif isempty(trytp)
+            [trytp,try_i]=ui_type(filterspec(2:end,2),'windowtitle','Specify file format');
+            if isempty(trytp)
+               return
+            end
+            emsg = '';
+            trytp=filterspec{1+try_i,3};
+            lasttry=1;
          end
-      end
-      if isempty(DataFI)
-         return
       end
       if isempty(File)
          Str={abbrevfn(FileName,60)};
