@@ -59,6 +59,7 @@
 %   ecomsed             - Read an ECOMSED data file.
 %   enclosure           - Read/write enclosure files and convert enclosures.
 %   golder              - Read/write a Golder data file.
+%   gshhg               - Read and plot GSHHG data (in netCDF format).
 %   landboundary        - Read/write land boundary files.
 %   mdf                 - Manipulate Delft3D-FLOW mdf files.
 %   samples             - Read/write sample data from file.
