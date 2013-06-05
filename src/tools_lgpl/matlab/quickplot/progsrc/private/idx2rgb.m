@@ -1,4 +1,4 @@
-function X=idx2rgb(IDX,MAP);
+function X=idx2rgb(IDX,MAP)
 %IDX2RGB Converts an indexed image into a true color RGB image.
 %   Usage: RGBImage=idx2rgb(IndexImage,ColorMap)
 
@@ -33,9 +33,9 @@ function X=idx2rgb(IDX,MAP);
 %   $Id$
 
 szX=size(IDX);
-if strcmp(class(IDX),'uint8'),
+if isa(IDX,'uint8')
     IDX=double(IDX)+1;
-end;
+end
 IDX=reshape(IDX,[prod(szX) 1]);
 IDX=max(min(IDX,size(MAP,1)),1);
 

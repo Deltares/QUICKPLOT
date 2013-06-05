@@ -55,7 +55,7 @@ end
 DimFlag=Props.DimFlag;
 
 Ops=qp_state_version(Ops);
-if isequal(Ops.horizontalalignment,'centre')
+if isfield(Ops,'horizontalalignment') && isequal(Ops.horizontalalignment,'centre')
     Ops.horizontalalignment='center';
 end
 
@@ -134,7 +134,7 @@ Thresholds=[]; % Thresholds is predefined to make sure that Thresholds always ex
 SubSelected=Selected;
 SubSelected(~DimFlag)=[];
 FT=FileInfo.FileType;
-if isequal(Ops.presentationtype,'vector (split m,n)')
+if isfield(Ops,'presentationtype') && isequal(Ops.presentationtype,'vector (split m,n)')
     Props.MNK=-1;
 elseif isfield(Ops,'MNK') && Ops.MNK
     Props.MNK=1.5;
@@ -240,7 +240,7 @@ if isfield(data,'TRI')
                 data.Val  =data.Val(I);
             end
     end
-else
+elseif isfield(Ops,'thinningmode')
     switch lower(Ops.thinningmode)
         case 'none'
         case 'uniform'
@@ -448,55 +448,59 @@ elseif isfield(data,'XDamVal')
     npnt=max(npnt,1);
 end
 
-switch Ops.vectorscalingmode
-    case ''
-        quivopt={};
-    case 'automatic'
-        quivopt={'automatic'};
-    case 'manual'
-        for d=length(data):-1:1
-            if isfield(data,'XComp')
-                data(d).XComp=Ops.vectorscale*data(d).XComp;
-            end
-            if isfield(data,'YComp')
-                data(d).YComp=Ops.vectorscale*data(d).YComp;
-            end
-            if isfield(data,'ZComp')
-                data(d).ZComp=Ops.vectorscale*data(d).ZComp;
-            end
-        end
-        quivopt={0};
-    case {'manual normalised','automatic normalised'}
-        for d=length(data):-1:1
-            if strcmp(vpt,'magnitude')
-                VecMag=data(d).Val;
-            else
-                VecMag=data(d).XComp.^2;
-                if isfield(data,'YComp');
-                    VecMag=VecMag+data(d).YComp.^2;
-                end
-                if isfield(data,'ZComp');
-                    VecMag=VecMag+data(d).ZComp.^2;
-                end
-                VecMag=sqrt(VecMag);
-            end
-            %VecMag(VecMag<1e-3)=NaN;
-            VecMag(VecMag==0)=1;
-            if isfield(data,'XComp')
-                data(d).XComp=Ops.vectorscale*data(d).XComp./VecMag;
-            end
-            if isfield(data,'YComp')
-                data(d).YComp=Ops.vectorscale*data(d).YComp./VecMag;
-            end
-            if isfield(data,'ZComp')
-                data(d).ZComp=Ops.vectorscale*data(d).ZComp./VecMag;
-            end
-        end
-        if strcmp(Ops.vectorscalingmode,'manual normalised')
-            quivopt={0};
-        else
+if isfield(Ops,'vectorscalingmode')
+    switch Ops.vectorscalingmode
+        case ''
+            quivopt={};
+        case 'automatic'
             quivopt={'automatic'};
-        end
+        case 'manual'
+            for d=length(data):-1:1
+                if isfield(data,'XComp')
+                    data(d).XComp=Ops.vectorscale*data(d).XComp;
+                end
+                if isfield(data,'YComp')
+                    data(d).YComp=Ops.vectorscale*data(d).YComp;
+                end
+                if isfield(data,'ZComp')
+                    data(d).ZComp=Ops.vectorscale*data(d).ZComp;
+                end
+            end
+            quivopt={0};
+        case {'manual normalised','automatic normalised'}
+            for d=length(data):-1:1
+                if strcmp(vpt,'magnitude')
+                    VecMag=data(d).Val;
+                else
+                    VecMag=data(d).XComp.^2;
+                    if isfield(data,'YComp');
+                        VecMag=VecMag+data(d).YComp.^2;
+                    end
+                    if isfield(data,'ZComp');
+                        VecMag=VecMag+data(d).ZComp.^2;
+                    end
+                    VecMag=sqrt(VecMag);
+                end
+                %VecMag(VecMag<1e-3)=NaN;
+                VecMag(VecMag==0)=1;
+                if isfield(data,'XComp')
+                    data(d).XComp=Ops.vectorscale*data(d).XComp./VecMag;
+                end
+                if isfield(data,'YComp')
+                    data(d).YComp=Ops.vectorscale*data(d).YComp./VecMag;
+                end
+                if isfield(data,'ZComp')
+                    data(d).ZComp=Ops.vectorscale*data(d).ZComp./VecMag;
+                end
+            end
+            if strcmp(Ops.vectorscalingmode,'manual normalised')
+                quivopt={0};
+            else
+                quivopt={'automatic'};
+            end
+    end
+else
+    quivopt={};
 end
 
 if isequal(quivopt,{'automatic'})
@@ -571,12 +575,12 @@ end
 
 LocLabelClass=0;
 LocStartClass=0;
-if strcmp(Ops.presentationtype,'coloured contour lines')
+if isfield(Ops,'presentationtype') && strcmp(Ops.presentationtype,'coloured contour lines')
     LocLabelClass=1;
     LocStartClass=1;
 end
 
-if ~strcmp(Ops.thresholds,'none')
+if isfield(Ops,'thresholds') && ~strcmp(Ops.thresholds,'none')
     miv = inf;
     mv  = -inf;
     for d = 1:length(data)
@@ -729,18 +733,20 @@ elseif isfield(Ops,'marker')
         'markeredgecolor',Ops.markercolour, ...
         'markerfacecolor',Ops.markerfillcolour};
 end
-Ops.FontParams={'color',Ops.colour, ...
-    'fontunits','points', ...
-    'fontsize',Ops.fontsize, ...
-    'horizontalalignment',Ops.horizontalalignment, ...
-    'verticalalignment',Ops.verticalalignment};
-if matlabversionnumber>=6.05
-    if strcmp(Ops.textboxfacecolour,'none')
-        TextBoxParams={'edgecolor','none','backgroundcolor','none'};
-    else
-        TextBoxParams={'edgecolor',Ops.colour,'backgroundcolor',Ops.textboxfacecolour};
+if isfield(Ops,'fontsize')
+    Ops.FontParams={'color',Ops.colour, ...
+        'fontunits','points', ...
+        'fontsize',Ops.fontsize, ...
+        'horizontalalignment',Ops.horizontalalignment, ...
+        'verticalalignment',Ops.verticalalignment};
+    if matlabversionnumber>=6.05
+        if strcmp(Ops.textboxfacecolour,'none')
+            TextBoxParams={'edgecolor','none','backgroundcolor','none'};
+        else
+            TextBoxParams={'edgecolor',Ops.colour,'backgroundcolor',Ops.textboxfacecolour};
+        end
+        Ops.FontParams=cat(2,Ops.FontParams,TextBoxParams);
     end
-    Ops.FontParams=cat(2,Ops.FontParams,TextBoxParams);
 end
 
 %
@@ -761,7 +767,7 @@ end
 %
 % If it the plot contains a Z co-ordinate.
 %
-if ~isempty(strfind(Ops.basicaxestype,'Z'))
+if isfield(Ops,'basicaxestype') && ~isempty(strfind(Ops.basicaxestype,'Z'))
     %
     % If the elevation unit has not yet been specified, do so now.
     %
@@ -832,7 +838,7 @@ elseif NVal==-1
     hNew{1}=hNewVec;
     hObsolete=setdiff(hOld{1},hNew{1});
     delete(hObsolete(ishandle(hObsolete)));
-    if ~isempty(Ops.axestype)
+    if isfield(Ops,'axestype') && ~isempty(Ops.axestype)
         setaxesprops(Parent,Ops.axestype)
     else
         set(Parent,'layer','top')
@@ -892,7 +898,7 @@ else
     hNewVec=cat(1,hNew{:});
 end
 
-if ~isempty(Ops.basicaxestype)
+if isfield(Ops,'basicaxestype') && ~isempty(Ops.basicaxestype)
     axestype = strrep(strtok(Ops.basicaxestype),'-',' ');
     axestype = multiline(axestype,' ','cell');
     %
@@ -962,11 +968,11 @@ end
 
 Error=0;
 
-if ~isempty(Ops.colourlimits)
+if isfield(Ops,'colourlimits') && ~isempty(Ops.colourlimits)
     if ChangeCLim
         set(Parent,'clim',Ops.colourlimits)
     end
-elseif Ops.symmetriccolourlimits
+elseif isfield(Ops,'symmetriccolourlimits') && Ops.symmetriccolourlimits
     lastCLIMSYMM=0;
     if ~isempty(hOldVec)
         xde=get(hOldVec(end),'xdata');
@@ -981,7 +987,7 @@ elseif Ops.symmetriccolourlimits
     end
 end
 
-if ~isempty(Ops.colourmap)
+if isfield(Ops,'colourmap') && ~isempty(Ops.colourmap)
     if ischar(Ops.colourmap)
         colormap(qp_colormap(Ops.colourmap));
     else
@@ -989,7 +995,7 @@ if ~isempty(Ops.colourmap)
     end
 end
 
-if ~strcmp(Ops.colourbar,'none')
+if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
     Chld=get(pfig,'children');
     h=qp_colorbar(Ops.colourbar,'peer',Parent);
     if ~isempty(h)
@@ -1060,7 +1066,7 @@ if SortObjs
     end
 end
 %
-if ~strcmp(Ops.basicaxestype,'X-Y-Z') && ~strcmp(Ops.basicaxestype,'X-Y-Val')
+if ~isfield(Ops,'basicaxestype') || (~strcmp(Ops.basicaxestype,'X-Y-Z') && ~strcmp(Ops.basicaxestype,'X-Y-Val'))
     setzcoord(hNewVec,Level)
 end
 for i=1:length(hNewVec)

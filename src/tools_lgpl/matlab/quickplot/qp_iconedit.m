@@ -59,7 +59,7 @@ if nargin>0 & ischar(cmd)
                 [PN2, FN2, EX2] = fileparts(FN);
                 if isequal(lower(EX2),'.mat')
                     Icons = load(FN);
-                    selectedIcon = ui_type('Select Icon',fieldnames(Icons));
+                    selectedIcon = ui_type('windowtitle','Select Icon',fieldnames(Icons));
                     if ~isempty(selectedIcon)
                         UD.Icon = getfield(Icons,selectedIcon);
                     end

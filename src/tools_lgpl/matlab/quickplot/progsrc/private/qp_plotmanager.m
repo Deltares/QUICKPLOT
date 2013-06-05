@@ -478,7 +478,9 @@ switch cmd
                             for itloc=it_same_name
                                 switch extend
                                     case 1
-                                        extrastr{itloc}=abbrevfn(UserDatas{itloc}.PlotState.FI.Name);
+                                        if isfield(UserDatas{itloc}.PlotState.FI,'Name')
+                                            extrastr{itloc}=abbrevfn(UserDatas{itloc}.PlotState.FI.Name);
+                                        end
                                     case 2
                                         stat=UserDatas{itloc}.PlotState.Selected{ST_};
                                         if ~isempty(stat)
@@ -525,7 +527,9 @@ switch cmd
                                             extrastr{itloc}=['K=' vec2str(k,'nobrackets')];
                                         end
                                     case 7
-                                        extrastr{itloc}=UserDatas{itloc}.PlotState.Ops.presentationtype;
+                                        if isfield(UserDatas{itloc}.PlotState.Ops,'presentationtype')
+                                            extrastr{itloc}=UserDatas{itloc}.PlotState.Ops.presentationtype;
+                                        end
                                     case 8
                                         t=UserDatas{itloc}.PlotState.Selected{T_};
                                         if isequal(t,0)
@@ -1158,6 +1162,11 @@ switch cmd
         ax = qpsa;
         PM = UD.PlotMngr;
         if length(ax)==1
+            if strcmp(getappdata(ax,'BasicAxesType'),'Lon-Lat') && geodatafil('file_exists')
+                set(PM.GeoData,'enable','on')
+            else
+                set(PM.GeoData,'enable','off')
+            end
             clr = get(ax,'color');
             if isequal(clr,'none')
                 set(PM.HasAxColor,'enable','on','value',0)
@@ -1273,6 +1282,7 @@ switch cmd
                 'backgroundcolor',Inactive, ...
                 'value',1, ...
                 'enable','off')
+            set(PM.GeoData,'enable','off')
         end
 
 end

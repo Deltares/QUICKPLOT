@@ -58,7 +58,7 @@ ListWidth=300;
 ListHeight=300;
 XX=xx_constants;
 
-if nargin==1 & isequal(varargin,{'resize'}) & nargout==0
+if nargin==1 && isequal(varargin,{'resize'}) && nargout==0
     FPos=get(gcbf,'position');
     Fig_Width=FPos(3);
     Fig_Height=FPos(4);
@@ -94,17 +94,18 @@ if nargin==1 & isequal(varargin,{'resize'}) & nargout==0
 end
 seltype='';
 selname=[];
-selnr=[];
 windowtitle='';
 specifyname=1;
 
 varin=varargin;
 i=1;
 while i<=length(varin)
-    if strcmp(lower(varin{i}),'windowtitle') & i<length(varin)
+    if ~ischar(varin{i}) || size(varin{i},1)~=1
+        i = i+1;
+    elseif strcmpi(varin{i},'windowtitle') && i<length(varin)
         windowtitle=varin{i+1};
         varin(i:i+1)=[];
-    elseif strcmp(lower(varin{i}),'specifyname') & i<length(varin)
+    elseif strcmpi(varin{i},'specifyname') && i<length(varin)
         specifyname=varin{i+1};
         if ischar(specifyname)
             switch lower(specifyname)
@@ -155,10 +156,9 @@ switch length(varin)
         error('Too many input arguments or unknown keywords.')
 end
 
-if ischar(types),
+if ischar(types)
     types=cellstr(types);
-elseif iscellstr(types)
-else
+elseif ~iscellstr(types)
     error('Invalid list supplied.')
 end
 if ischar(seltype)
@@ -169,7 +169,7 @@ if ischar(seltype)
         seltype=s;
     end
 else
-    if seltype>length(types) | seltype<1 | seltype~=round(seltype) | ~isequal(size(seltype),[1 1])
+    if seltype>length(types) || seltype<1 || seltype~=round(seltype) || ~isequal(size(seltype),[1 1])
         error('Invalid default type selection number.')
     end
 end
@@ -244,7 +244,7 @@ ListBox=uicontrol('style','listbox', ...
     'string',types, ...
     'value',seltype, ...
     'backgroundcolor',XX.Clr.White, ...
-    'callback',['set(gcbf,''userdata'',1)'], ...
+    'callback','set(gcbf,''userdata'',1)', ...
     'enable','on');
 
 rect(2) = rect(2)+rect(4);
@@ -262,14 +262,14 @@ if specifyname
 else
     varargout={'',-1};
 end
-while 1,
+while 1
     waitfor(fig,'userdata');
     Cmd=get(fig,'userdata');
     set(fig,'userdata',[]);
-    switch Cmd,
-        case -1, % cancel
+    switch Cmd
+        case -1 % cancel
             break;
-        case 0, % continue
+        case 0 % continue
             selnr=get(ListBox,'value');
             seltype=types{selnr};
             if specifyname
@@ -279,8 +279,8 @@ while 1,
                 varargout={seltype,selnr};
             end
             break;
-        case 1, % listbox
+        case 1 % listbox
             set(Edit,'string',types{get(ListBox,'value')});
-    end;
-end;
+    end
+end
 delete(fig);

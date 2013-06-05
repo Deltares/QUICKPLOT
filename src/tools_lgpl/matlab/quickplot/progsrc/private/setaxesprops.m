@@ -200,7 +200,8 @@ end
 lat=mean(ylimv);
 lat=min(max(lat,-89),89);
 sethscale(Parent,cos(lat*pi/180))
-set(Parent,'ylim',ylimv)
+xlim=get(Parent,'xlim'); % force both xlimmode and ylimmode to manual
+set(Parent,'ylim',ylimv,'xlim',xlim)
 
 
 function sethscale(Parent,ratio)

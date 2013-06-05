@@ -107,6 +107,7 @@ F={'Delft3D-com'                'd3d_comfil'
     'GeoSystems mesh'            'flexmeshfil'
     'diff'                       'difffil'
     'shipma'                     'shipmafil'
+    'geodata'                    'geodatafil'
     '<user defined variables>'   'usrdeffil'   };
 
 %
@@ -158,6 +159,7 @@ F={'Delft3D-com'                'd3d_comfil'
 %#function difffil
 %#function shipmafil
 %#function flexmeshfil
+%#function geodatafil
 
 tp=qp_gettype(Info);
 %

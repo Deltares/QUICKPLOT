@@ -787,7 +787,8 @@ PM.AxAll = uicontrol('Parent',PM.Fig, ...
 PM.DelIt = qp_toolbarpush(PM.TB,'deleteitems',1,'Delete items (without confirmation)');
 PM.ItInfo = qp_toolbarpush(PM.TB,'iteminfo',0,'Get some extra information on the selected item');
 PM.ItLink = qp_toolbarpush(PM.TB,'linkitems',0,'Select and link items for animation');
-set([PM.DelIt PM.ItInfo PM.ItLink],'enable','off');
+PM.GeoData = qp_toolbarpush(PM.TB,'geodata',0,'Add geodata item to axes');
+set([PM.DelIt PM.ItInfo PM.ItLink PM.GeoData],'enable','off');
 %
 PM.Show = uicontrol('Parent',PM.Fig, ...
     'Position',[10 Top-80 40 17], ...

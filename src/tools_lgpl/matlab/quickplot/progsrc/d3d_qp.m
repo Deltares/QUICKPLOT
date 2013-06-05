@@ -132,6 +132,26 @@ try
         case {'selectedfigure', 'selectedaxes', 'selecteditem'}
             outdata = qp_plotmanager(cmd,UD,logfile,logtype,cmdargs);
             
+        case 'geodata'
+            pfig = qpsf;
+            parent = qpsa;
+            PS.FI.FileType = 'geodata';
+            PS.Domain = [];
+            PS.Props.Name = 'shore lines';
+            PS.Props.DimFlag = zeros(1,5);
+            PS.Props.NVal = -1;
+            PS.SubField = {};
+            PS.Selected = cell(1,5);
+            PS.Parent = parent;
+            PS.Handles = [];
+            PS.Stations = [];
+            PS.Ops.axestype = getappdata(parent,'AxesType');
+            PS.Ops.basicaxestype = getappdata(parent,'BasicAxesType');
+            [hNew,Error,Info]=qp_plot(PS);
+            set(UD.PlotMngr.FigList,'value',1,'string',listnames(pfig,'showType','no','showHandle','no','showTag','no'),'userdata',pfig);
+            set(UD.PlotMngr.ItList,'value',[]) % clear item selection such that new item will be selected
+            d3d_qp refreshfigs
+
         case 'plotmanagerresize'
             if ~isempty(UD)
                 qp_plotmanager('resize',UD,logfile,logtype);
