@@ -49,11 +49,12 @@ function varargout=geodatafil(FI,domain,field,cmd,varargin)
 persistent root
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
-if isequal(FI,'file_exists')
-    if ~ischar(root)
-        root = search_file;
+if isequal(FI,'file_exists') % domain is proxy for type
+    type = gshhg('type','type',domain);
+    if ~isfield(root,type)
+        root.(type) = search_file(type);
     end
-    varargout={~isequal(root,'')};
+    varargout={~isequal(root.(type),'')};
     return
 elseif nargin<2
     error('Not enough input arguments');
@@ -100,8 +101,9 @@ switch cmd
         Parent=varargin{1};
         Ops=varargin{2};
         %
-        hNew = gshhg('plot','rootfolder',root, ...
-            'type','shore', ...
+        type = gshhg('type','type',Props.Subtype);
+        hNew = gshhg('plot','rootfolder',root.(type), ...
+            'type',Props.Subtype, ...
             'parent',Parent, ...
             'color','k');
         %
@@ -114,8 +116,8 @@ end
 DimFlag=Props.DimFlag;
 
 
-function root = search_file
-file = 'binned_GSHHS_i.nc';
+function root = search_file(type)
+file = ['binned_' type '_i.nc'];
 roots = {qp_basedir('exe') % same folder
     [qp_basedir('exe') filesep 'GSHHG'] % subfolder
     [qp_basedir('exe') filesep '..' filesep 'quickplot' filesep 'bin' filesep 'GSHHG'] % subfolder next to QP (from D3D-MATLAB interface)

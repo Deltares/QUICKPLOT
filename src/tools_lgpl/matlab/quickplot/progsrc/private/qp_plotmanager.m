@@ -1162,8 +1162,23 @@ switch cmd
         ax = qpsa;
         PM = UD.PlotMngr;
         if length(ax)==1
-            if strcmp(getappdata(ax,'BasicAxesType'),'Lon-Lat') && geodatafil('file_exists')
-                set(PM.GeoData,'enable','on')
+            if strcmp(getappdata(ax,'BasicAxesType'),'Lon-Lat')
+                types = get(PM.GeoDataMenu,'children');
+                anyfound = 0;
+                for i = 1:length(types)
+                    tg = get(types(i),'tag');
+                    if geodatafil('file_exists',tg(9:end))
+                        set(types(i),'enable','on')
+                        anyfound = 1;
+                    else
+                        set(types(i),'enable','off')
+                    end
+                end
+                if anyfound
+                    set(PM.GeoData,'enable','on')
+                else
+                   set(PM.GeoData,'enable','off')
+                end
             else
                 set(PM.GeoData,'enable','off')
             end

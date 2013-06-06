@@ -788,6 +788,11 @@ PM.DelIt = qp_toolbarpush(PM.TB,'deleteitems',1,'Delete items (without confirmat
 PM.ItInfo = qp_toolbarpush(PM.TB,'iteminfo',0,'Get some extra information on the selected item');
 PM.ItLink = qp_toolbarpush(PM.TB,'linkitems',0,'Select and link items for animation');
 PM.GeoData = qp_toolbarpush(PM.TB,'geodata',0,'Add geodata item to axes');
+PM.GeoDataMenu = uicontextmenu('parent',PM.Fig);
+qp_uimenu(PM.GeoDataMenu, ...
+    {'geodata_gshhs','Plot GSHHG shore lines',1,1,0
+    'geodata_border','Plot GSHHG borders',1,1,0
+    'geodata_river','Plot GSHHG rivers',1,1,0});
 set([PM.DelIt PM.ItInfo PM.ItLink PM.GeoData],'enable','off');
 %
 PM.Show = uicontrol('Parent',PM.Fig, ...

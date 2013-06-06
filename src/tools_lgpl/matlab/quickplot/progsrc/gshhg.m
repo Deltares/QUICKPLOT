@@ -68,7 +68,7 @@ function data = gshhg(cmd,varargin)
 
 cmd = lower(cmd);
 switch cmd
-    case {'plot','bins','res'}
+    case {'plot','bins','res','type'}
     otherwise
         error('Command "%s" not implemented.',cmd)
 end
@@ -120,6 +120,11 @@ while i<=nargin-1
             color = varargin{i+1};
     end
     i=i+2;
+end
+%
+if strcmp(cmd,'type')
+    data = type;
+    return
 end
 %
 if isequal(parent,'gca')
@@ -241,36 +246,38 @@ while bin_start <= length(ibin)
     %
     first_pnt = double(pnt_id(1));
     npnt_totseg = sum(npnt_seg);
-    x = double(nc_varget(ncfile,'Relative_longitude_from_SW_corner_of_bin',first_pnt,npnt_totseg));
-    y = double(nc_varget(ncfile,'Relative_latitude_from_SW_corner_of_bin',first_pnt,npnt_totseg));
-    x(x<0) = x(x<0) + maxuint16;
-    y(y<0) = y(y<0) + maxuint16;
-    %
-    if nseg>1
-        % allocate space for NaNs in case of multiple segments
-        x(end+nseg-1)=0;
-        y(end+nseg-1)=0;
-    end
-    %
-    lastpnt = npnt_totseg;
-    isegtot = nseg;
-    for j = bin_end:-1:bin_start
-        for iseg = 1:nseg_per_bin(j)
-            ipnt_org = (lastpnt-npnt_seg(isegtot)+1):lastpnt;
-            ipnt_new = ipnt_org+isegtot-1;
-            x(ipnt_new) = deg_per_bin*(ilon_of_bin(j)+x(ipnt_org)/maxuint16);
-            y(ipnt_new) = -90 + deg_per_bin*(ilat_of_bin(j)+y(ipnt_org)/maxuint16);
-            %
-            if ipnt_new(1)>1
-                % insert NaNs in case of multiple segments
-                x(ipnt_new(1)-1) = NaN;
-                y(ipnt_new(1)-1) = NaN;
-            end
-            lastpnt = lastpnt-npnt_seg(isegtot);
-            isegtot = isegtot-1;
+    if npnt_totseg>0
+        x = double(nc_varget(ncfile,'Relative_longitude_from_SW_corner_of_bin',first_pnt,npnt_totseg));
+        y = double(nc_varget(ncfile,'Relative_latitude_from_SW_corner_of_bin',first_pnt,npnt_totseg));
+        x(x<0) = x(x<0) + maxuint16;
+        y(y<0) = y(y<0) + maxuint16;
+        %
+        if nseg>1
+            % allocate space for NaNs in case of multiple segments
+            x(end+nseg-1)=0;
+            y(end+nseg-1)=0;
         end
+        %
+        lastpnt = npnt_totseg;
+        isegtot = nseg;
+        for j = bin_end:-1:bin_start
+            for iseg = 1:nseg_per_bin(j)
+                ipnt_org = (lastpnt-npnt_seg(isegtot)+1):lastpnt;
+                ipnt_new = ipnt_org+isegtot-1;
+                x(ipnt_new) = deg_per_bin*(ilon_of_bin(j)+x(ipnt_org)/maxuint16);
+                y(ipnt_new) = -90 + deg_per_bin*(ilat_of_bin(j)+y(ipnt_org)/maxuint16);
+                %
+                if ipnt_new(1)>1
+                    % insert NaNs in case of multiple segments
+                    x(ipnt_new(1)-1) = NaN;
+                    y(ipnt_new(1)-1) = NaN;
+                end
+                lastpnt = lastpnt-npnt_seg(isegtot);
+                isegtot = isegtot-1;
+            end
+        end
+        handle(bin_start) = line(x,y,'parent',parent);
     end
-    handle(bin_start) = line(x,y,'parent',parent);
     %
     bin_start = bin_end+1;
 end

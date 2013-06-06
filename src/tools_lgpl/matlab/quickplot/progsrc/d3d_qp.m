@@ -133,13 +133,26 @@ try
             outdata = qp_plotmanager(cmd,UD,logfile,logtype,cmdargs);
             
         case 'geodata'
+            pos=get(gcbf,'position');
+            set(UD.PlotMngr.GeoDataMenu,'position',get(0,'pointerlocation')-pos(1:2),'visible','on')
+
+        case {'geodata_gshhs','geodata_border','geodata_river'}
             pfig = qpsf;
             parent = qpsa;
             PS.FI.FileType = 'geodata';
             PS.Domain = [];
-            PS.Props.Name = 'shore lines';
+            subtype = cmd(9:end);
+            switch subtype
+                case 'gshhs'
+                    PS.Props.Name = 'shore lines';
+                case 'border'
+                    PS.Props.Name = 'country and state borders';
+                case 'river'
+                    PS.Props.Name = 'rivers';
+            end
             PS.Props.DimFlag = zeros(1,5);
             PS.Props.NVal = -1;
+            PS.Props.Subtype = subtype;
             PS.SubField = {};
             PS.Selected = cell(1,5);
             PS.Parent = parent;
