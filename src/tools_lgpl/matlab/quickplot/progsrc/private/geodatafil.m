@@ -54,7 +54,7 @@ if isequal(FI,'file_exists') % domain is proxy for type
     if ~isfield(root,type)
         root.(type) = search_file(type);
     end
-    varargout={~isequal(root.(type),'')};
+    varargout = {~isequal(root.(type),'')};
     return
 elseif nargin<2
     error('Not enough input arguments');
@@ -98,10 +98,14 @@ switch cmd
         varargout={getsubfields(FI,Props,varargin{:})};
         return
     case 'plot'
-        Parent=varargin{1};
-        Ops=varargin{2};
-        %
+        Parent = varargin{1};
+        Ops = varargin{2};
         type = gshhg('type','type',Props.Subtype);
+        %
+        if ~isfield(root,type)
+            root.(type) = search_file(type);
+        end
+        %
         hNew = gshhg('plot','rootfolder',root.(type), ...
             'type',Props.Subtype, ...
             'parent',Parent, ...
