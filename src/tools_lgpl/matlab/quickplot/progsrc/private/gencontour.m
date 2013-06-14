@@ -48,6 +48,8 @@ if matlabversionnumber>=7
     warning('off','MATLAB:contour3:DeprecatedErrorOutputArgument')
     warnstate(4) = warning('query','MATLAB:contours:DeprecatedErrorOutputArgument');
     warning('off','MATLAB:contours:DeprecatedErrorOutputArgument')
+    warnstate(5) = warning('query','MATLAB:usev6plotapi:DeprecatedV6ArgumentForFilename');
+    warning('off','MATLAB:usev6plotapi:DeprecatedV6ArgumentForFilename')
 end
 
 %
