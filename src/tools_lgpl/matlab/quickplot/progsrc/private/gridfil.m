@@ -201,11 +201,11 @@ if XYRead
                   sigma = -(0:kmax)-0.5;
             end
          end
-         x = repmat(x,[1 1 kmax]);
-         y = repmat(y,[1 1 kmax]);
+         x = repmat(x,[1 1 length(idx{K_})]);
+         y = repmat(y,[1 1 length(idx{K_})]);
          z = y;
-         for k = 1:kmax
-            z(:,:,k) = sigma(k);
+         for k = 1:length(idx{K_})
+            z(:,:,k) = sigma(idx{K_}(k));
          end
          x = reshape(x,[1 size(x)]);
          y = reshape(y,[1 size(y)]);
