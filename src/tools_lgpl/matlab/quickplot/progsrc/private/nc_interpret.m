@@ -576,6 +576,12 @@ for ivar = 1:nvars
         end
         Info.SubFieldDim = Info.SubFieldDim(4:end);
     end
+    %
+    %if ~isempty(Info.SubFieldDim)
+    %    Info.TSMNK(5+(1:length(Info.SubFieldDim))) = Info.SubFieldDim;
+    %    Info.SubFieldDim = [];
+    %end
+    %
     nc.Dataset(ivar) = Info;
 end
 

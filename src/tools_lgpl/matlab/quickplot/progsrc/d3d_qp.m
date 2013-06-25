@@ -1154,14 +1154,19 @@ try
                 writelog(logfile,logtype,'editt',id);
             end
             
-        case {'allm','alln','allk','allt','alls','allm*','alln*','allk*','allt*','alls*'}
-            M=upper(cmd(4));
+        case {'allm','alln','allk','allt','alls','allm*','alln*','allk*','allt*','alls*', ...
+                'alldim6','alldim7','alldim8','alldim9','alldim10', ...
+                'alldim6*','alldim7*','alldim8*','alldim9*','alldim10*'}
+            M=upper(cmd(4:end));
+            if M(end)=='*'
+                M = M(1:end-1);
+            end
             MW=UD.MainWin;
             UDAllM=getfield(MW,strcat('All',M));
             UDEditM=getfield(MW,strcat('Edit',M));
             pUDM=get(UDAllM,'userdata');
             %
-            if M=='M' || M=='N'
+            if strcmp(M,'M') || strcmp(M,'N')
                 if ~strcmp(getvalstr(MW.HSelType),'M range and N range')
                     d3d_qp('m,n*')
                 end
@@ -1187,15 +1192,15 @@ try
             else
                 pUDM{1}=0;
                 set(UDEditM,'enable','on','backgroundcolor',Active)
-                if M=='S'
+                if strcmp(M,'S')
                     set(findobj(mfig,'tag','stationlist'),'enable','on','backgroundcolor',Active)
-                elseif M=='T'
+                elseif strcmp(M,'T')
                     set(findobj(mfig,'tag','quickview'),'string','Quick View');
                 end
             end
             set(UDAllM,'userdata',pUDM);
             %----------
-            if M=='T'
+            if strcmp(M,'T')
                 if SwitchToAll
                     set(MW.ShowT,'enable','off')
                     d3d_qp showtimes
@@ -1213,13 +1218,22 @@ try
                 writelog(logfile,logtype,cmd(1:4),SwitchToAll);
             end
             
-            if ~strcmp(cmd(end),'*')
+            if ~strcmp(cmd(end),'*') && (strcmp(M,'M') || strcmp(M,'N'))
                 d3d_qp('gridview_update');
             end
             
-        case {'editm','editn','editk','editt','edits','editm*','editn*','editk*','editt*','edits*'}
-            M=upper(cmd(5));
-            m_=find('TSMNK'==M);
+        case {'editm','editn','editk','editt','edits','editm*','editn*','editk*','editt*','edits*', ...
+                'editdim6','editdim7','editdim8','editdim9','editdim10', ...
+                'editdim6*','editdim7*','editdim8*','editdim9*','editdim10*'}
+            M=upper(cmd(5:end));
+            if M(end)=='*'
+                M = M(1:end-1);
+            end
+            if length(M)==1
+                m_=find('TSMNK'==M);
+            else
+                m_=str2double(M(4:end));
+            end
             %
             MW=UD.MainWin;
             UDAllM=MW.(['All' M]);
@@ -1257,8 +1271,8 @@ try
             if isempty(m)
                 m=1;
             end
-            if M~='T'
-                if m_==3 || m_==4
+            if ~strcmp(M,'T')
+                if strcmp(M,'M') || strcmp(M,'N')
                     if ~strcmp(getvalstr(MW.HSelType),'M range and N range')
                         d3d_qp('m,n*')
                     end
@@ -1313,7 +1327,7 @@ try
                 writelog(logfile,logtype,cmd(1:5),m);
             end
             
-            if ~strcmp(cmd(end),'*')
+            if ~strcmp(cmd(end),'*') && (strcmp(M,'M') || strcmp(M,'N'))
                 d3d_qp('gridview_update');
             end
             
@@ -3637,7 +3651,39 @@ try
             waitfor(hpause,'value',0)
             
         otherwise
-            if exist(cmd)==2
+            if (strncmpi(cmd,'all',3) || strncmpi(cmd,'edit',4)) && ~isempty(cmdargs)
+                if strncmpi(cmd,'all',3)
+                    % all
+                    base = cmd(1:3);
+                    dim = cmd(4:end);
+                else
+                    % edit
+                    base = cmd(1:4);
+                    dim = cmd(5:end);
+                end
+                %
+                datafields=findobj(mfig,'tag','selectfield');
+                fld=get(datafields,'value');
+                Props=get(datafields,'userdata');
+                Props=Props(fld);                
+                %
+                if isfield(Props,'DimName')
+                    idim = find(strncmpi(Props.DimName,dim,length(dim)));
+                else
+                    idim = [];
+                end
+                if length(idim)~=1
+                    error('Invalid dimension "%s"',dim)
+                else
+                    if idim<=5
+                        x = {'t' 's' 'm' 'n' 'k'};
+                        cmd = [base x{idim}];
+                    else
+                        cmd = [base num2str(idim)];
+                    end
+                end
+                d3d_qp(cmd,cmdargs{:})
+            elseif exist(cmd)==2
                 [p,f,e]=fileparts(cmd);
                 switch lower(e)
                     case {'.qplog','.m'}

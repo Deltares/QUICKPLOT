@@ -31,6 +31,50 @@ function fig=qp_interface(showUI)
 %   $HeadURL$
 %   $Id$
 
+if ischar(showUI)
+    m = showUI;
+    %
+    mfig = findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
+    UD = getappdata(mfig,'QPHandles');
+    MW = UD.MainWin;
+    %
+    screensize = get(0,'screensize');
+    pos = get(mfig,'position');
+    pos(4)= pos(4)+30;
+    pos(2)=min(pos(2),screensize(4)-pos(4)-60);
+    set(mfig,'position',pos)
+    %
+    ui = findall(mfig,'type','uicontrol');
+    pos = get(ui,'position');
+    for i = 1:length(ui)
+        if ismember(ui(i),[MW.LoadData MW.DefVar MW.Add2Plot MW.QuickV])
+            continue
+        elseif ismember(ui(i),UD.Options.Slider)
+            pos{i}(4) = pos{i}(4)+30;
+            set(ui(i),'position',pos{i})
+        else
+            pos{i}(2) = pos{i}(2)+30;
+            set(ui(i),'position',pos{i})
+        end
+    end
+    %
+    ax = findall(mfig,'type','axes');
+    pos = get(ax,'pos');
+    pos(4) = pos(4)+30;
+    set(ax,'position',pos)
+    %
+    voffset = 40;
+    [NameDim,AllDim,EditDim,MaxDim]=DimControls(mfig,voffset,m);
+    %
+    UD.MainWin.(m)          = NameDim;
+    UD.MainWin.(['All'  m]) = AllDim;
+    UD.MainWin.(['Edit' m]) = EditDim;
+    UD.MainWin.(['Max'  m]) = MaxDim;
+    setappdata(mfig,'QPHandles',UD)
+    %
+    fig = {NameDim AllDim EditDim MaxDim};
+    return
+end
 showpane=1;
 panewidth=180;
 

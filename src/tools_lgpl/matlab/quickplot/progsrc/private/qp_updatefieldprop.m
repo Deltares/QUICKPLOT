@@ -282,34 +282,51 @@ if 1%~DimFlag(K_)
 end
 
 %
-% Update controls for station, m, n and k
+% Update controls for station, m, n, k and optional other fields
 %
-for m_=[ST_ M_ N_ K_]
+for m_ = 2:10 % limit to 10 supported dimensions
     %
     % Get handles of relevant controls ...
     %
-    m=dims{m_};
-    UDM=MW.(m);
-    %
-    mstr=m;
-    if m_ == ST_
-        mstr='Station';
-    end
-    mName = [m 'Name'];
-    if isfield(Props,mName)
-        mstr1 = Props(fld).(mName);
-        if ~isempty(mstr1)
-            mstr = mstr1;
+    if m_<=5
+        m=dims{m_};
+        %
+        mstr=m;
+        if m_ == ST_
+            mstr='Station';
+        end
+        mName = [m 'Name'];
+        if isfield(Props,mName)
+            mstr1 = Props(fld).(mName);
+            if ~isempty(mstr1)
+                mstr = mstr1;
+            end
+        end
+    else
+        m = sprintf('DIM%i',m_);
+        if m_<=length(Props(fld).DimName)
+            mstr = Props(fld).DimName{m_};
+        else
+            mstr = '-';
         end
     end
     %
-    UDAllM  = MW.(['All'  m]);
-    UDEditM = MW.(['Edit' m]);
-    UDMaxM  = MW.(['Max'  m]);
+    if isfield(MW,m)
+        UDM     = MW.(m);
+        UDAllM  = MW.(['All'  m]);
+        UDEditM = MW.(['Edit' m]);
+        UDMaxM  = MW.(['Max'  m]);
+    elseif m_>length(DimFlag)
+        % no edit controls yet, but also not necessary for current quantity
+        break
+    else
+        Handles = qp_interface(m);
+        [UDM,UDAllM,UDEditM,UDMaxM]=deal(Handles{:});
+    end
     %
     % If dimension is active, set controls to appropriate status
     %
-    if DimFlag(m_)
+    if m_<=length(DimFlag) && DimFlag(m_)
         if sz(m_)==1 && m_~=ST_
             %
             % If dimension is degenerate (size one) then there is no choice.
