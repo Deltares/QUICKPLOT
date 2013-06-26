@@ -304,7 +304,7 @@ for m_ = 2:10 % limit to 10 supported dimensions
         end
     else
         m = sprintf('DIM%i',m_);
-        if m_<=length(Props(fld).DimName)
+        if isfield(Props,'DimName') && m_<=length(Props(fld).DimName)
             mstr = Props(fld).DimName{m_};
         else
             mstr = '-';

@@ -41,7 +41,11 @@ else
         tmp.XML = cmd;
         cmd = tmp;
     elseif ~ischar(cmd) && ~isstruct(cmd)
-        error('Structure expected as argument.')
+        try
+           cmd = struct(cmd);
+        catch
+           error('Structure expected as argument.')
+        end
     end
     StructName='';
     if ~isstandalone

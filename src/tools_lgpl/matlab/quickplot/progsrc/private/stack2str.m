@@ -45,5 +45,5 @@ for i = 1:stacklen
     else
         fcn = '';
     end
-    str{i} = sprintf('In %s%s%s at line %i',p,f,fcn,stack(i).line);
+    str{i} = sprintf('In %s%s at line %i',f,fcn,stack(i).line);
 end
