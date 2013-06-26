@@ -1589,10 +1589,10 @@ try
                         DS.Ops=Ops;
                         FileName=qp_export(Ops.exporttype,FileName,DS);
                         set(mfig,'pointer','arrow')
-                    catch
+                    catch Ex
                         FileName='';
                         set(mfig,'pointer','arrow')
-                        ui_message('error',{'Catch in d3d_qp\exportdata',lasterr})
+                        qp_message('Catch in d3d_qp\exportdata',Ex)
                     end
                     if ~isempty(FileName) && logfile
                         writelog(logfile,logtype,cmd,FileName);
@@ -1625,9 +1625,9 @@ try
                         else
                             assignin('base','data',data)
                         end
-                    catch
+                    catch Ex
                         set(mfig,'pointer','arrow')
-                        ui_message('error',{'Catch in d3d_qp\loaddata',lasterr})
+                        qp_message('Catch in d3d_qp\loaddata',Ex)
                     end
                     
                 case {'quickview','addtoplot'},
@@ -1698,8 +1698,8 @@ try
                             PS.Stations=stats;
                             PS.Ops=Ops;
                             [hNew,Error,Info]=qp_plot(PS);
-                        catch
-                            ui_message('error',{'Catch in d3d_qp\quickview',lasterr})
+                        catch Ex
+                            qp_message('Catch in d3d_qp\quickview',Ex)
                         end
                         set(mfig,'pointer','arrow')
                     end
@@ -1967,8 +1967,8 @@ try
                     c=Str;
                     Str=realset(c);
                 end
-            catch
-                ui_message('error',{['Catch in d3d_qp\' cmd],lasterr})
+            catch Ex
+                qp_message(['Catch in d3d_qp\' cmd],Ex)
                 c=get(cv,'userdata');
                 if isstruct(c)
                     Str=realset(c);
@@ -2328,8 +2328,8 @@ try
                         if ~isequal(ans,defaultans)
                             ui_message('warning',var2str(ans))
                         end
-                    catch
-                        ui_message('error',{evalcmd,lasterr})
+                    catch Ex
+                        qp_message(evalcmd,Ex)
                         evalerr=1;
                     end
                     %
@@ -2596,8 +2596,8 @@ try
                     end
                     try
                         logfile=fopen([pn fn],'w');
-                    catch
-                        ui_message('error',{'Catch in d3d_qp\logfile',lasterr})
+                    catch Ex
+                        qp_message('Catch in d3d_qp\logfile',Ex)
                     end
                     set(findobj(mfig,'tag','stoprecord'),'enable','on')
                     set(UD.MainWin.StartRec,'enable','off')
@@ -3697,8 +3697,7 @@ try
             end
     end
 catch Ex
-    stacklist = stack2str(Ex.stack);
-    ui_message('error',{sprintf('Catch in d3d_qp\\%s:',cmd),Ex.message,stacklist{:}})
+    qp_message(sprintf('Catch in d3d_qp\\%s:',cmd),Ex)
 end
 if ~ischar(cmd)
     try
@@ -3788,3 +3787,7 @@ switch str
     otherwise
         clr=str2vec(str,'%f');
 end
+
+function qp_message(msg,Ex)
+stacklist = stack2str(Ex.stack);
+ui_message('error',{msg,Ex.message,stacklist{:}}) 
