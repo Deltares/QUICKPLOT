@@ -50,8 +50,7 @@ end
 Info = FI.Dataset(var+1);
 varid = Info.Varid;
 if isempty(Info)
-    errmsg=sprintf('Variable ''%s'' not found in file.',Info.Name);
-    error(errmsg)
+    error('Variable ''%s'' not found in file.',Info.Name)
 end
 %
 rank=Info.Rank;

@@ -80,7 +80,7 @@ else
 end
 triangles=isequal(geometry,'TRI') | isequal(geometry,'TRI+');
 
-selected=cell(1,5);
+selected=cell(size(DimFlag));
 MW=UD.MainWin;
 if strcmp(get(MW.SubFld,'enable'),'on')
     subf={get(MW.SubFld,'value')};
@@ -164,6 +164,17 @@ switch getvalstr(MW.VSelType)
             end
         end
     case {'Z slice','dZ below surface','dZ above bed'}
+end
+
+for m = 6:length(DimFlag)
+    if DimFlag(m)
+        DIM = sprintf('DIM%i',m);
+        if get(MW.(['All' DIM]),'value')
+            selected{m} = 0;
+        else
+            selected{m} = get(MW.(['Edit' DIM]),'userdata');
+        end
+    end
 end
 set(setdiff(UD.Options.Handles,gcbo),'enable','off','backgroundcolor',Inactive)
 Ops.thinningmode='none';

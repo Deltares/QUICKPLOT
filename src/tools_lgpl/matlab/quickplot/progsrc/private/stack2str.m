@@ -38,6 +38,7 @@ function str = stack2str(stack)
 
 stacklen = length(stack);
 str = repmat({''},stacklen,1);
+mpath = multiline(matlabpath,pathsep,'cell');
 for i = 1:stacklen
     [p,f] = fileparts(stack(i).file);
     if ~strcmp(f,stack(i).name)
@@ -45,5 +46,19 @@ for i = 1:stacklen
     else
         fcn = '';
     end
-    str{i} = sprintf('In %s%s at line %i',f,fcn,stack(i).line);
+    z = zeros(size(mpath));
+    for j = 1:length(mpath)
+        if strncmp(p,mpath{j},length(mpath{j}))
+            z(j) = length(mpath{j});
+        end
+    end
+    [len,j] = max(z);
+    p = p(len+1:end);
+    if ~isempty(p) && isequal(p(1),filesep)
+        p = p(2:end);
+    end
+    if ~isempty(p)
+        p = [p filesep];
+    end
+    str{i} = sprintf('In %s%s%s at line %i',p,f,fcn,stack(i).line);
 end

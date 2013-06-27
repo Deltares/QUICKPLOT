@@ -38,11 +38,10 @@ if ischar(showUI)
     UD = getappdata(mfig,'QPHandles');
     MW = UD.MainWin;
     %
-    screensize = get(0,'screensize');
-    pos = get(mfig,'position');
-    pos(4)= pos(4)+30;
-    pos(2)=min(pos(2),screensize(4)-pos(4)-60);
-    set(mfig,'position',pos)
+    fpos = get(mfig,'position');
+    fpos(4) = fpos(4)+30;
+    fpos(2) = fpos(2)-30;
+    set(mfig,'position',fpos)
     %
     ui = findall(mfig,'type','uicontrol');
     pos = get(ui,'position');
@@ -71,6 +70,8 @@ if ischar(showUI)
     UD.MainWin.(['Edit' m]) = EditDim;
     UD.MainWin.(['Max'  m]) = MaxDim;
     setappdata(mfig,'QPHandles',UD)
+    %
+    update_option_positions(UD,fpos(4)-30+1)
     %
     fig = {NameDim AllDim EditDim MaxDim};
     return

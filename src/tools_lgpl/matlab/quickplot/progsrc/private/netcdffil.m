@@ -113,7 +113,7 @@ end
 
 % select appropriate dimensions ...
 sz=getsize(FI,Props);
-for d_ = [T_ ST_ M_ N_ K_]
+for d_ = 1:length(DimFlag)
     if DimFlag(d_)
         %
         % Rule: if time not specified, use last time

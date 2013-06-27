@@ -98,9 +98,16 @@ for i = 1:length(UDs)
         it=uimenu('label',Props.Name,'parent',uicm,'userdata',ObjTag);
         AnimSel=[];
         hAnimSel=[];
+        %
+        if isfield(Props,'DimName')
+            DimMenu(3:length(Props.DimName)+1) = Props.DimName(2:end);
+            DimStr(3:length(Props.DimName)+1)  = Props.DimName(2:end);
+        end
+        %
         for m_ = 1:length(sz)
             if CanAnim(m_)
                 Anim.Dim=m_-1; %! CONVERT from 1:6 back to AnimLoc (0=subf, 1=time, ...]
+                Anim.Label=DimStr{m_};
                 Anim.Values=Values{m_};
                 hMenu=uimenu('label',DimMenu{m_},'parent',it,'userdata',Anim,'callback','d3d_qp animselect');
                 if isempty(AnimSel)
@@ -113,6 +120,7 @@ for i = 1:length(UDs)
         NAnimValues = length(AnimSel.Values);
         sstep=[min(1/(NAnimValues-1),0.1) min(10/(NAnimValues-1),0.9)];
         AS(end+1).Fld=AnimSel.Dim;
+        AS(end).Label=AnimSel.Label;
         AS(end).Values=AnimSel.Values;
         AS(end).Tag=ObjTag;
         if length(AS)>1

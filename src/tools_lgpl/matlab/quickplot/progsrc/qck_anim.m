@@ -57,7 +57,6 @@ if strcmp(cmd,'animpush')
 end
 %
 T_=1; ST_=2; M_=3; N_=4; K_=5;
-DimStr={'subfield','time step','station','M','N','K'};
 AnimSlid=findobj(afig,'tag','animslid');
 AS=get(AnimSlid,'userdata');
 if isempty(AS)
@@ -133,8 +132,7 @@ switch cmd
         maxfps=25;
         scriptname='';
         if nargin<3
-            dimStr=DimStr{t_+1};
-            [ANISteps,output,Cancel,background,animloop,maxfps,scriptname]=local_ui(i0,i1,dimStr(1:end-1));
+            [ANISteps,output,Cancel,background,animloop,maxfps,scriptname]=local_ui(i0,i1);
             if Cancel
                 return
             end
@@ -401,7 +399,7 @@ switch cmd
                         Str=sprintf('%i',AS(1).Values(t));
                     end
                     uislider(sld(i),'value',t);
-                    set(sld(i),'tooltip',sprintf('%s(%i)=%s',DimStr{t_+1},t,Str));
+                    set(sld(i),'tooltip',sprintf('%s(%i)=%s',AS(1).Label,t,Str));
                 end
             end
             ish=ishandle(sld);
@@ -440,7 +438,7 @@ switch cmd
         else
             Str=sprintf('%i',AS(1).Values(t));
         end
-        set(sld,'tooltip',sprintf('%s(%i)=%s',DimStr{t_+1},t,Str));
+        set(sld,'tooltip',sprintf('%s(%i)=%s',AS(1).Label,t,Str));
     case 'animselect'
         AnimOpt=get(gcbo,'userdata');
         uicm=findobj(par_fig,'tag','animpushuicontextmenu');
@@ -499,6 +497,7 @@ switch cmd
         AS=[];
         AS.Fld=AnimOpt.Dim;
         AS.Tag=AnimTag;
+        AS.Label=AnimOpt.Label;
         AS.Values=AnimOpt.Values;
         h=findall(afig,'tag',AS.Tag);
         UDh=get(h,'userdata');
@@ -559,7 +558,7 @@ switch cmd
         else
             Str=sprintf('%i',AS(1).Values(t));
         end
-        set(animslid,'tooltip',sprintf('%s(%i)=%s',DimStr{t_+1},t,Str));
+        set(animslid,'tooltip',sprintf('%s(%i)=%s',AS(1).Label,t,Str));
         if NoUpdateNec
             return
         end
@@ -609,7 +608,7 @@ function local_eval(scriptname,i)
 eval(scriptname,'')
 
 
-function [ANISteps,output,Cancel,background,animloop,maxfps,scriptname]=local_ui(MinT,MaxT,DimStr)
+function [ANISteps,output,Cancel,background,animloop,maxfps,scriptname]=local_ui(MinT,MaxT)
 Inactive=get(0,'defaultuicontrolbackgroundcolor');
 Active=[1 1 1];
 
@@ -635,9 +634,6 @@ set(Houtp,'string',outputtypes);
 Hrendback=findobj(uifig,'tag','renderback');
 Hoptions=findobj(uifig,'tag','options');
 Hanimloop=findobj(uifig,'tag','animloop');
-
-Hanseq=findobj(uifig,'tag','animation seq');
-set(Hanseq,'string',DimStr);
 
 Hscr=findobj(uifig,'tag','script','style','edit');
 if isstandalone

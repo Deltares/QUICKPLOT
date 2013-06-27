@@ -920,6 +920,7 @@ switch cmd
                         AnimObj(end+1).Fld=AnimInfo.Dim;
                         NSteps=length(AnimInfo.Values);
                         AnimObj(end).Tag=ItTag;
+                        AnimObj(end).Label=AnimInfo.Label;
                         AnimObj(end).Values=AnimInfo.Values;
                     end
                 end
