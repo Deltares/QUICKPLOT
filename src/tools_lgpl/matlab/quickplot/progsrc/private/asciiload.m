@@ -75,7 +75,7 @@ prevcomma=0;
 while ~feof(fid)
     i = i+1;
     txt=fgetl(fid);
-    if ~isempty(txt) && abs(txt(1))==26 % EOF signal
+    if feof(fid) && length(txt)==1 && txt==26 % EOF signal
         break
     end
     cni=0;

@@ -142,7 +142,7 @@ while 1
 
     % check if we are dealing with a non-Tekal binary file ...
     % Tabs (char 9) are acceptable!
-    if feof(fid) && length(line)==1 && line==26
+    if feof(fid) && length(line)==1 && line==26 % EOF signal
         break
     elseif any(line<32 & line~=9) && ~TryToCorrect
         fclose(fid);
