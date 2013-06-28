@@ -82,7 +82,7 @@ switch cmd
 end
 
 
-function Data=Local_read_file(filename)
+function Data=Local_read_file(filename,varargin)
 Data=[];
 if nargin==0
     [fn,fp]=uigetfile('*.ldb');
@@ -92,7 +92,7 @@ if nargin==0
     filename=[fp fn];
 end
 
-T=tekal('open',filename);
+T=tekal('open',filename,varargin{:});
 
 lasterr('')
 try

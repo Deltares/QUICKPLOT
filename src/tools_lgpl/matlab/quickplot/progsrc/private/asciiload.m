@@ -1,4 +1,4 @@
-function z=asciiload(filename,skpcmd,skpnm)
+function z=asciiload(filename,varargin)
 %ASCIILOAD A compiler compatible version of LOAD -ASCII.
 %   X=ASCIILOAD('FileName')
 %   Load data from specified ASCII file into the
@@ -35,25 +35,51 @@ function z=asciiload(filename,skpcmd,skpnm)
 %   $Id$
 
 fid=fopen(filename,'r');
+comment='%';
+i=0; % line number in file
 if nargin>2
-    switch skpcmd
-        case 'seek'
-            fseek(fid,skpnm,-1);
-        case 'skiplines'
-            for i=1:skpnm
-                fgetl(fid);
-            end
+    j=1;
+    while j<=length(varargin)
+        cmd = lower(varargin{j});
+        switch cmd
+            case 'seek' % seek but keep track of line number
+                offset = varargin{j+1};
+                while ftell(fid)<offset && ~feof(fid)
+                    i=i+1;
+                    fgetl(fid);
+                end
+                if ftell(fid)>offset
+                    i=i-1;
+                    fseek(fid,offset,-1);
+                end
+                j = j+2;
+            case 'skiplines'
+                nlines = varargin{j+1};
+                for i = 1:nlines
+                    fgetl(fid);
+                end
+                j = j+2;
+            case 'comment'
+                comment = varargin{j+1};
+                j = j+2;
+            otherwise
+                error('Unkown command option: %s',cmd)
+        end
     end
 end
-z={};
-i=0;
-ll=0;
+ll=0; % line length
+nl=0; % number of data lines processed
+z = zeros(1000,1);
+nlalloc = 1000; % number of data lines allocated
 prevcomma=0;
 while ~feof(fid)
-    i=i+1;
+    i = i+1;
     txt=fgetl(fid);
+    if ~isempty(txt) && abs(txt(1))==26 % EOF signal
+        break
+    end
     cni=0;
-    perc=strfind(txt,'%');
+    perc=strfind(txt,comment);
     if ~isempty(perc)
         str=txt(1:perc-1);
     else
@@ -136,17 +162,22 @@ while ~feof(fid)
         fclose(fid);
         error('Missing value after comma at end of line %i of ASCII file %s:\n%s\n%s^',i,filename,txt,spaces)
     end
-    if ~isempty(values),
+    if ~isempty(values)
         if ll>0 && length(values)~=ll
             fclose(fid);
             error('Number of columns of ASCII file %s do not match.\nLine %i has %i columns, whereas the preceeding lines have %i columns:\n%s',filename,i,length(values),ll,txt)
         else
             ll=length(values);
-            z{end+1}=values;
+            nl = nl+1;
+            if nl>nlalloc
+                nlalloc = 2*nlalloc;
+                z(nlalloc,1) = 0;
+            end
+            z(nl,1:ll) = values;
         end
         %else
         % empty line, skip it
     end
 end
 fclose(fid);
-z=cat(1,z{:});
+z(nl+1:end,:)=[];

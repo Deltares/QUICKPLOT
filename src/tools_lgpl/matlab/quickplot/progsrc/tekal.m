@@ -164,14 +164,21 @@ while 1
         FileInfo.Field(variable).Name=deblank(line);
         FileInfo.Field(variable).Comments=Cmnt;
         % read data dimensions
+        here=ftell(fid);
         line=fgetl(fid);
         if ~ischar(line)
             dim=[];
         else
             dim=sscanf(line,['%f' space],[1 inf]);
             if ~isequal(dim,round(dim))
-                fclose(fid);
-                error('Error reading data dimensions from line: %s',line)
+                if TryToCorrect
+                    dim = inf;
+                    fprintf(1,'Expecting block size but reading: %s\nInterpreting as missing block size; trying to automatically detect block size.\n',line);
+                    fseek(fid,here,-1);
+                else
+                    fclose(fid);
+                    error('Error reading data dimensions from line: %s',line)
+                end
             end
         end
         if ~isempty(dim)
@@ -256,7 +263,7 @@ while 1
                         FileInfo.Field(variable).Size(2)=N;
                     end
                     [Data,Nr]=fscanf(fid,['%f%*[ ,' char(9) char(13) char(10) ']'],dim);
-                    if Nr<prod(dim) % number read less than number expected
+                    if Nr<prod(dim) && isfinite(dim(2)) % number read less than number expected (no auto-detect)
                         %
                         fseek(fid,FileInfo.Field(variable).Offset,-1);
                         [Data,Nr]=fscanf(fid,['%*[^',char(10),']%c'],dim(2));

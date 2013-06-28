@@ -63,12 +63,13 @@ if nargin<2
 end
 FI.SubType = SubType;
 fid = fopen(FileName,'r');
-i = 0;
+fld = 0;
 while ~feof(fid)
+    offset = ftell(fid);
     Line = fgetl(fid);
     if ~isempty(Line) && Line(1)~='*'
-        if i==0
-            i = i+1;
+        if fld == 0
+            fld = 1; % first number in current/waves files
             switch SubType
                 case 'current'
                     FI.WaterLevel = sscanf(Line,'%f',1);
@@ -78,8 +79,15 @@ while ~feof(fid)
                     continue
             end
         end
-        ScaleFactor = sscanf(Line,'%f',1);
-        break
+        if fld<2
+            % first number in wind files, second number in current/waves files
+            fld=2;
+            ScaleFactor = sscanf(Line,'%f',1);
+        else
+            % actual data; unread this line
+            fseek(fid,offset,-1);
+            break
+        end
     end
 end
 Data = fscanf(fid,'%f',[4 inf])';

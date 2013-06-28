@@ -143,7 +143,7 @@ if Props.NVal==0
         case 'fairway contour'
             FileName = PRJ.Sceneries.Data(PRJ.Cases.Data(cse).sceneryNr).fairwayContourFile;
             if exist(FileName)
-                [Ans.X,Ans.Y] = landboundary('read',FileName);
+                [Ans.X,Ans.Y] = landboundary('read',FileName,'autocorrect');
             else
                 Ans.X=[];
                 Ans.Y=[];
@@ -154,11 +154,11 @@ if Props.NVal==0
             Ans.X = [XY{1}(:,1);NaN;XY{2}(:,1)];
             Ans.Y = [XY{1}(:,2);NaN;XY{2}(:,2)];
         case 'desired ship track'
-            [Ans.X,Ans.Y] = landboundary('read',PRJ.Cases.Data(cse).trackFile);
+            [Ans.X,Ans.Y] = landboundary('read',PRJ.Cases.Data(cse).trackFile,'autocorrect');
         case 'distance ticks'
             step = qp_settings('shipma_spacestep');
             width = qp_settings('shipma_tickwidth');
-            %[x,y] = landboundary('read',PRJ.Cases.Data(cse).trackFile);
+            %[x,y] = landboundary('read',PRJ.Cases.Data(cse).trackFile,'autocorrect');
             x = squeeze(val1(1,1,:));
             y = squeeze(val1(2,1,:));
             d = pathdistance(x,y);
@@ -272,7 +272,7 @@ elseif Props.NVal==4
     switch Props.Name
         case 'distance value at ticks'
             step = qp_settings('shipma_spacestep');
-            %[x,y] = landboundary('read',PRJ.Cases.Data(cse).trackFile);
+            %[x,y] = landboundary('read',PRJ.Cases.Data(cse).trackFile,'autocorrect');
             x = squeeze(val1(1,1,:));
             y = squeeze(val1(2,1,:));
             d = pathdistance(x,y);

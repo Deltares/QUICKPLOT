@@ -159,10 +159,10 @@ if simplexyz
 else % readtype always forced to 'struct'
     fid=fopen(filename,'r');
     try
-        cloc=0;
+        skiplines=0;
         str=fgetl(fid);
         while ischar(str) && ~isempty(str) && str(1)=='*'
-            cloc=ftell(fid);
+            skiplines=skiplines+1;
             str=fgetl(fid);
         end
         if ~ischar(str)
@@ -193,7 +193,7 @@ else % readtype always forced to 'struct'
             if ~isempty(str)
                 er='scan remainder of line';
             else
-                cloc=ftell(fid);
+                skiplines=skiplines+1;
                 str=fgetl(fid);
                 [X,n,er]=sscanf(str,'%g');
             end
@@ -226,7 +226,7 @@ else % readtype always forced to 'struct'
         rethrow(lasterror)
     end
     
-    xyz.XYZ=asciiload(filename,'seek',cloc);
+    xyz.XYZ=asciiload(filename,'skiplines',skiplines,'comment','*');
     xyz.Params=Params;
     xyz.FileType='samples';
     xyz.FileName=filename;

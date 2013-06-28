@@ -214,7 +214,7 @@ try
                             end
                         end
                     end
-                    if isempty(grdsize)
+                    if length(grdsize)<2
                         error('Cannot determine grid size.')
                     end
                     grdsize=grdsize(1:2);
@@ -327,6 +327,10 @@ try
             GRID.MissingValue=0;
         otherwise
             error('Unknown grid type: %s',gridtype)
+    end
+    rest = fscanf(fid,'%i',[1 1]);
+    if ~isempty(rest) || ~feof(fid)
+        error('Number of coordinate values in file does not match header')
     end
     fclose(fid);
 catch
