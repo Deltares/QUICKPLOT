@@ -158,9 +158,12 @@ if Props.NVal==0
         case 'distance ticks'
             step = qp_settings('shipma_spacestep');
             width = qp_settings('shipma_tickwidth');
-            %[x,y] = landboundary('read',PRJ.Cases.Data(cse).trackFile,'autocorrect');
-            x = squeeze(val1(1,1,:));
-            y = squeeze(val1(2,1,:));
+            if qp_settings('shipma_distance_along_desired_track')
+                [x,y] = landboundary('read',PRJ.Cases.Data(cse).trackFile,'autocorrect');
+            else
+                x = squeeze(val1(1,1,:));
+                y = squeeze(val1(2,1,:));
+            end
             d = pathdistance(x,y);
             doublepoints = find(diff(d)==0)+1;
             x(doublepoints) = [];
@@ -184,7 +187,7 @@ if Props.NVal==0
             y0(3,:) = NaN;
             Ans.X = x0;
             Ans.Y = y0;
-        case 'ship track'
+        case 'realized ship track'
             Ans.X = squeeze(val1(1,1,:));
             Ans.Y = squeeze(val1(2,1,:));
         case 'swept path'
@@ -220,11 +223,17 @@ if Props.NVal==0
             icontour = ustrcmpi('contour',{PRJ.Ships.Data(ship).Props.Quant});
             contour = PRJ.Ships.Data(ship).Props(icontour).Value;
             %
-            d = val1(4,:);
-            dtick = (0:500:max(d))';
-            xtick = interp1(d,val1(1,:),dtick);
-            ytick = interp1(d,val1(2,:),dtick);
-            itick = interp1(d,1:size(val1,3),dtick);
+            step = qp_settings('shipma_spacestep');
+            if qp_settings('shipma_distance_along_desired_track')
+                d = val1(4,:);
+            else
+                d = pathdistance(val1(1,:),val1(2,:));
+            end
+            dtick = (0:step:max(d))';
+            itick = crossings(d,dtick);
+            i = 1:size(val1,3);
+            xtick = interp1(i,val1(1,:),itick);
+            ytick = interp1(i,val1(2,:),itick);
             atick = val1(3,floor(itick));
             atic2 = val1(3,ceil(itick));
             for i = 1:length(itick)
@@ -245,7 +254,7 @@ if Props.NVal==0
             end
             %
             lenC = size(contour,1);
-            numS = length(dtick);
+            numS = length(xtick);
             Ans.X = repmat(NaN,(lenC+1)*numS-1,1);
             Ans.Y = Ans.X;
             for i = 1:numS
@@ -262,19 +271,28 @@ elseif Props.NVal==1
             Ans.TRI = delaunay(btFI.XYZ(:,1),btFI.XYZ(:,2));
             Ans.Val = btFI.XYZ(:,3);
         case 'speed'
-            Ans.X = val1(3,:)';
+            Ans.X   = val1(3,:)';
             Ans.Val = sqrt(val1(1,:).^2 + val1(2,:).^2)';
+            if ~qp_settings('shipma_distance_along_desired_track')
+                Ans.X = realized_track_distance(PRJ,cse,idx);
+            end
         otherwise
-            Ans.X = val1(2,:)'; %pathdistance(x,y) rather than distance from file?
+            Ans.X   = val1(2,:)';
             Ans.Val = val1(1,:)';
+            if ~qp_settings('shipma_distance_along_desired_track')
+                Ans.X = realized_track_distance(PRJ,cse,idx);
+            end
     end
 elseif Props.NVal==4
     switch Props.Name
         case 'distance value at ticks'
             step = qp_settings('shipma_spacestep');
-            %[x,y] = landboundary('read',PRJ.Cases.Data(cse).trackFile,'autocorrect');
-            x = squeeze(val1(1,1,:));
-            y = squeeze(val1(2,1,:));
+            if qp_settings('shipma_distance_along_desired_track')
+                [x,y] = landboundary('read',PRJ.Cases.Data(cse).trackFile,'autocorrect');
+            else
+                x = squeeze(val1(1,1,:));
+                y = squeeze(val1(2,1,:));
+            end
             d = pathdistance(x,y);
             doublepoints = find(diff(d)==0)+1;
             x(doublepoints) = [];
@@ -379,7 +397,7 @@ if qp_settings('shipma_figa')
     if d3d_qp('selectfield','depth')
         d3d_qp('colourmap','navdepth')
         d3d_qp('presenttype','contour patches')
-        d3d_qp('thresholds',0:5:20)
+        d3d_qp('thresholds',[-inf 0:5:20])
         d3d_qp('colbarhorz',1)
         d3d_qp('addtoplot')
     end
@@ -391,9 +409,14 @@ if qp_settings('shipma_figa')
         d3d_qp('addtoplot')
     end
     if d3d_qp('selectfield','desired ship track')
+        d3d_qp('linestyle','-')
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     if d3d_qp('selectfield','ship snapshots')
+        d3d_qp('linestyle','-')
+        d3d_qp('colour',[ 0 0 0 ])
+        d3d_qp('fillpolygons',1)
         d3d_qp('facecolour',[ 1 0 0 ])
         d3d_qp('addtoplot')
     end
@@ -711,11 +734,11 @@ PropNames={'Name'                   'Units' 'DimFlag'   'DataInCell' 'NVal' 'Geo
 DataProps={'default figures'        ''      [0 0 0 0 0] 0            -2     ''       ''       0            prj       cse     0
     '-------'                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse     0
     'desired ship track'            ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse     -1
+    'realized ship track'           ''      [9 0 0 0 0] 0             0     'PNT'    'xy'     0            prj       cse     0
     'distance ticks'                ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse     0
     'distance value at ticks'       ''      [0 0 0 0 0] 0             4     'sQUAD'  'xy'     0            prj       cse     0
-    %'ship at distance ticks'        ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     0
+    'ship at distance ticks'        ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     0
     'ship snapshots'                ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     0
-    'ship track'                    ''      [9 0 0 0 0] 0             0     'PNT'    'xy'     0            prj       cse     0
     'ship'                          ''      [9 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     0
     'swept path'                    ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     0
     'fairway contour'               ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     -1
@@ -799,7 +822,7 @@ for i = length(Out):-1:1
             else
                 Out(i).Var = [u v track];
             end
-        case {'ship track','distance ticks','distance value at ticks'}
+        case {'realized ship track','distance ticks','distance value at ticks'}
             x = find(strcmpi('x',hisvars));
             y = find(strcmpi('y',hisvars));
             if isempty(x) || isempty(y)
@@ -896,6 +919,10 @@ switch cmd
         step=qp_settings('shipma_timestep');
         set(h,'string',step)
         %
+        h=findobj(mfig,'tag','shipma_distance_along_desired_trackval');
+        step=qp_settings('shipma_distance_along_desired_track');
+        set(h,'value',1+step)
+        %
         for i=1:6
             chari = char('a'+i-1);
             h=findobj(mfig,'tag',['fig' chari]);
@@ -949,6 +976,19 @@ switch cmd
         set(h,'string',sprintf('%g',step))
         qp_settings(cmd,step)
         cmdargs={cmd,step};
+    case 'shipma_distance_along_desired_track'
+        h = findobj(mfig,'tag',[cmd(8:end) 'val']);
+        if isempty(varargin)
+            val = get(h,'value')-1;
+        else
+            val = varargin{1};
+        end
+        if ischar(val)
+            val = str2double(val);
+        end
+        set(h,'value',1+val)
+        qp_settings(cmd,val)
+        cmdargs={cmd,val};
     case {'shipma_figa','shipma_figb','shipma_figc','shipma_figd','shipma_fige', ...
             'shipma_fige_wind','shipma_fige_waves','shipma_fige_swell','shipma_fige_banksuction', ...
             'shipma_figf','shipma_figf_tugs','shipma_figf_thrusters'}
@@ -1020,7 +1060,7 @@ uicontrol('Parent',h0, ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
     'Position',[11 voffset textwidth 18], ...
-    'String','Space step for distance ticks (m)', ...
+    'String','Space Step for Distance Ticks (m)', ...
     'Enable','on', ...
     'Tag','spacestep');
 uicontrol('Parent',h0, ...
@@ -1036,15 +1076,33 @@ uicontrol('Parent',h0, ...
     'Style','text', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
+    'Position',[11 voffset textwidth-50 18], ...
+    'String','Distance Measured Along', ...
+    'Enable','on', ...
+    'Tag','distance_along_desired_track');
+uicontrol('Parent',h0, ...
+    'Style','popupmenu', ...
+    'String',{'Realized Track','Desired Track'}, ...
+    'Value',2, ...
+    'HorizontalAlignment','left', ...
+    'BackgroundColor',Active, ...
+    'Callback','d3d_qp fileoptions shipma_distance_along_desired_track', ...
+    'Position',[21+textwidth-50 voffset 80+50 20], ...
+    'Enable','on', ...
+    'Tag','distance_along_desired_trackval');
+voffset=voffset-25;
+uicontrol('Parent',h0, ...
+    'Style','text', ...
+    'BackgroundColor',Inactive, ...
+    'Horizontalalignment','left', ...
     'Position',[11 voffset textwidth 18], ...
-    'String','Time step for ship snapshots (s)', ...
+    'String','Time Step for Ship Snapshots (s)', ...
     'Enable','on', ...
     'Tag','timestep');
 uicontrol('Parent',h0, ...
     'Style','edit', ...
     'HorizontalAlignment','right', ...
     'BackgroundColor',Active, ...
-    'Horizontalalignment','right', ...
     'Callback','d3d_qp fileoptions shipma_timestep', ...
     'Position',[21+textwidth voffset 80 20], ...
     'Enable','on', ...
@@ -1286,3 +1344,46 @@ if ~any(is1)
 else
     s2 = table{is1,2};
 end
+
+function d = realized_track_distance(PRJ,cse,idx)
+hisvars = PRJ.Cases.Data(cse).TimeSeries.SubsName;
+x = find(strcmpi('x [m]',hisvars));
+y = find(strcmpi('y [m]',hisvars));
+[T,val1] = delwaq('read',PRJ.Cases.Data(cse).TimeSeries,[x y],1,0);
+d = pathdistance(val1(1,:),val1(2,:))';
+if ~isequal(idx{1},0)
+    d = Ans.X(idx{1});
+end
+
+
+function dc = classify(d,dtick)
+if ~isequal(dtick,sort(dtick))
+    error('Ticks must be sorted.')
+end
+dc = zeros(size(d));
+for i = 1:length(dtick)
+   dc = dc + (d>dtick(i));
+end
+
+
+function id = crossings(d,dtick)
+dc = classify(d,dtick); % determine class for each data value
+idc = find(diff(dc)); % find class transitions
+id = zeros(1,length(idc)*length(dtick)); % a class transition may go through multiple class boundaries
+k = 0;
+for j = 1:length(idc) % for each class transition
+    d1 = d(idc(j));
+    c1 = dc(idc(j));
+    d2 = d(idc(j)+1);
+    c2 = dc(idc(j)+1);
+    if c1<c2 % going to higher class
+        range = c1+1:c2;
+    else % going to lower class
+        range = c1:-1:c2+1;
+    end
+    for c = range
+        k = k+1;
+        id(k) = idc(j) + (dtick(c)-d1)/(d2-d1);
+    end
+end
+id(:,k+1:end) = [];

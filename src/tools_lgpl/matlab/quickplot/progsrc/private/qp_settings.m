@@ -112,6 +112,7 @@ Set.showinactiveopt           = 0;
 %
 Set.delwaq_procdef            = 'auto';
 %
+Set.shipma_distance_along_desired_track = 1;
 Set.shipma_spacestep          = 500; %m
 Set.shipma_tickwidth          = 200; %m
 Set.shipma_timestep           = 300; %s
