@@ -995,6 +995,7 @@ if Props.DimFlag(ST_)
             sz(ST_)=Info.SizeDim(1)-1; % remove Open Boundaries
         case {'BALFLUX','BALR1FLUX','BALSDFLUX'}
             % polygon interfaces
+            FI.ElmDef(strcmp('BALNEIGHB',{FI.ElmDef.Name})).Type=3; % make sure BALNEIGB data is read as integers
             Info=vs_disp(FI,'his-bal-const','BALNEIGHB');
             sz(ST_)=Info.SizeDim(2);
         otherwise
@@ -1098,6 +1099,7 @@ switch Props.Val1
         % polygon interfaces
         [BS,Chk]=vs_get(FI,'his-bal-const','BALVOLNAMES','quiet');
         BS = cellstr(BS);
+        FI.ElmDef(strcmp('BALNEIGHB',{FI.ElmDef.Name})).Type=3; % make sure BALNEIGB data is read as integers
         [NB,Chk]=vs_get(FI,'his-bal-const','BALNEIGHB','quiet');
         nInt = size(NB,2);
         S = cell(1,nInt);
