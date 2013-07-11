@@ -114,7 +114,7 @@ elseif ~isempty(FI.Time)
     idx{T_} = 1;
 end
 nTim = max(1,length(idx{T_}));
-nLoc = max([1 sz(M_) sz(ST_)]); % catch case of varying number of locations; in which case sz(M_)=0
+nLoc = max([sz(M_) sz(ST_)]);
 if DimFlag(ST_)
     idxM = idx{ST_};
     szM = sz(ST_);
@@ -149,12 +149,14 @@ if XYRead
     if strcmp(Props.Geom,'TRI')
        if isfield(FI,'TRI')
           Ans.TRI=FI.TRI;
-       else
+       elseif ~isempty(FI.X) && ~isempty(FI.Y)
           try
-             [xy,I]=unique(FI.XYZ(:,1:2),'rows');
+             [xy,I]=unique(xyz,'rows');
              tri=delaunay(xy(:,1),xy(:,2));
              Ans.TRI=I(tri);
-             FI.TRI=Ans.TRI;
+             if length(FI.nLoc)==1
+                 FI.TRI=Ans.TRI;
+             end
           catch
              Ans.TRI=zeros(0,3);
           end
@@ -167,7 +169,11 @@ end
 switch Props.NVal
     case 0
     case 1
-        Ans.Val=reshape(FI.XYZ(dim1,Props.SubFld),[nTim nLoc]);
+        if nLoc==0 % if variable number of locations, then nTim==1
+            Ans.Val=FI.XYZ(dim1,Props.SubFld)';
+        else
+            Ans.Val=reshape(FI.XYZ(dim1,Props.SubFld),[nTim nLoc]);
+        end
     otherwise
         Ans.XComp=[];
         Ans.YComp=[];
@@ -196,14 +202,12 @@ params = 1:size(FI.XYZ,2);
 params = setdiff(params,[FI.X FI.Y FI.Time]);
 if ~isempty(FI.Time)
     if length(FI.nLoc)==1
-        f1 = 1; % single or multiple time steps
         f3 = 1;
     else
-        f1 = 5; % only single time step
         f3 = inf; % variable number of nodes
     end
     %
-    Out(end).DimFlag(1) = f1;
+    Out(end).DimFlag(1) = 1;
     for i = [1 2 4]
         Out(i).DimFlag(3) = f3;
     end
@@ -226,7 +230,7 @@ end
 
 % No triangulation possible if only one or two points, or only one
 % coordinate
-if FI.nLoc<2 || isempty(FI.Y) || isempty(FI.X)
+if (length(FI.nLoc)==1 && FI.nLoc<2) || isempty(FI.Y) || isempty(FI.X)
    Out(2)=[];
    for i=1:NPar
       Out(i+2).Geom='PNT';

@@ -189,7 +189,7 @@ else % readtype always forced to 'struct'
                     break
                 end
             end
-            str=str(ni:end);
+            str=deblank(str(ni:end));
             if ~isempty(str)
                 er='scan remainder of line';
             else
@@ -258,7 +258,22 @@ if isstruct(xyz)
     end
     %
     if ~isempty(xyz.Time)
-        [Times,idum,iTime] = unique(xyz.XYZ(:,xyz.Time));
+        crds = [xyz.X xyz.Y];
+        iTime = [];
+        if ~isempty(crds)
+            sortloc = unique(xyz.XYZ(:,crds),'rows');
+            nLoc = size(sortloc,1);
+            nVal = size(xyz.XYZ,1);
+            locations = xyz.XYZ(1:nLoc,crds); % alternatively use unique(...,'stable')
+            if nVal/nLoc == floor(nVal/nLoc) && isequal(xyz.XYZ(:,crds),repmat(locations,[nVal/nLoc 1]))
+                Times = xyz.XYZ(1:nLoc:nVal,xyz.Time);
+                iTime = cumsum(repmat((1:nLoc)'==1,[nVal/nLoc 1]));
+            end
+        end
+        if isempty(iTime)
+            [Times,idum,iTime] = unique(xyz.XYZ(:,xyz.Time));
+            nLoc = hist(iTime,max(iTime));
+        end
         d = floor(Times);
         s = round((Times - d)*1000000);
         m = floor(d/100);
@@ -274,7 +289,6 @@ if isstruct(xyz)
         xyz.Times = datenum(y,m,d,h,mn,s);
         xyz.iTime = iTime;
         %
-        nLoc = hist(xyz.iTime,max(xyz.iTime));
         if all(nLoc==nLoc(1))
             xyz.nLoc = nLoc(1);
         else
