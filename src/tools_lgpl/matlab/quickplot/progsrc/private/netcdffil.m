@@ -227,7 +227,7 @@ for iCoord = 1:length(coordname)
             CoordInfo2 = FI.Dataset(vdim2);
         end
         %
-        dims{end+1} = setdiff(CoordInfo.Dimension,dims(~cellfun('isempty',dims)));
+        dims(end+1) = setdiff(CoordInfo.Dimension,dims(~cellfun('isempty',dims)));
         id = strmatch(dims{end},{FI.Dimension.Name});
         dimvals{end+1} = 1:FI.Dimension(id).Length;
         coordname{iCoord}=coordname{iCoord}(1);
@@ -283,15 +283,35 @@ for iCoord = 1:length(coordname)
         Coord = reshape(Coord,[prod(szCoord(1:end-1)) szCoord(end)]);
     end
     if isbounds
+        % only polygons supported
         if size(Coord,2)==2
-            % add one NaN to separate the line segments
-            Coord(:,3) = NaN;
-            nboundpnt = 3;
+            % This could be either
+            %   1) 1D edge or
+            %   2) a 2D grid with 1D coordinates.
+            % In the latter case the variable will have both X and Y
+            % dimensions and the dimension names will match the coordinate
+            % variable names.
+            if ~isempty(Info.X) && ~isempty(Info.Y) && isequal(CoordInfo2.Dimension{1},CoordInfo2.Name)
+                % This is the 2D grid case:
+                % Expand the 2-valued bounds to rectangular bounds, but
+                % first of all make sure that we have [min max] order for
+                % the coordinates.
+                Coord = sort(Coord,2);
+                Coord(:,3:6) = NaN;
+                if firstbound
+                    Coord(:,3:5) = Coord(:,[2 1 1]);
+                else
+                    Coord(:,1:5) = Coord(:,[2 2 1 1 2]);
+                end
+            else
+                % This is the 1D edge case:
+                % Just add a NaN column to separate the edges.
+                Coord(:,3) = NaN;
+            end
         else
             % add two NaNs
             % the first one will be used to close the bounds polygons
             % the second one will be used to separate the polygons
-            nboundpnt = size(Coord,2)+2;
             Coord(:,end+1:end+2) = NaN;
             for j=1:size(Coord,1)
                 for k=1:size(Coord,2)
@@ -955,7 +975,8 @@ if length(szData)<length(hdim)
     szData(end+1:length(hdim))=1;
 end
 if ~isequal(szC(hdim),szData(hdim))
-    repC = szData./szC;
+    ndim = length(hdim); % catch bounds dimension
+    repC = szData(1:ndim)./szC(1:ndim);
     repC(~hdim)=1;
     Coord = repmat(Coord,repC);
 end

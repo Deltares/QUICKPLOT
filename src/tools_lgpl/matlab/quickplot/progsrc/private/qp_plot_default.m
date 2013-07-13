@@ -266,7 +266,23 @@ switch NVal
         elseif spatialh==1 && spatial==1
             %Ops.plotcoordinate='(x,y)';
             switch Ops.plotcoordinate
-                case {'path distance','reverse path distance'}
+                case 'x coordinate'
+                    data.X(isnan(data.Val))=NaN;
+                    x=data.X;
+                    y=data.Val;
+                    z=zeros(size(x));
+                case 'y coordinate'
+                    data.Y(isnan(data.Val))=NaN;
+                    x=data.Y;
+                    y=data.Val;
+                    z=zeros(size(x));
+                case '(x,y)'
+                    data.X(isnan(data.Val))=NaN;
+                    data.Y(isnan(data.Val))=NaN;
+                    x=data.X;
+                    y=data.Y;
+                    z=data.Val;
+                otherwise %case {'path distance','reverse path distance'}
                     %data.X(isnan(data.Val))=NaN;
                     xx=data.X;
                     if isfield(data,'Y')
@@ -296,22 +312,6 @@ switch NVal
                     end
                     y=data.Val;
                     z=zeros(size(x));
-                case 'x coordinate'
-                    data.X(isnan(data.Val))=NaN;
-                    x=data.X;
-                    y=data.Val;
-                    z=zeros(size(x));
-                case 'y coordinate'
-                    data.Y(isnan(data.Val))=NaN;
-                    x=data.Y;
-                    y=data.Val;
-                    z=zeros(size(x));
-                case '(x,y)'
-                    data.X(isnan(data.Val))=NaN;
-                    data.Y(isnan(data.Val))=NaN;
-                    x=data.X;
-                    y=data.Y;
-                    z=data.Val;
             end
             if length(data.Time)>1
                 if strcmp(Ops.axestype,'X-Time')
@@ -358,7 +358,7 @@ switch NVal
                     bs=[1 length(vNaN)];
                 end
                 for i=1:size(bs,1)
-                    if x(bs(i,1))==x(bs(i,2)) & ...
+                    if x(bs(i,1))==x(bs(i,2)) && ...
                             y(bs(i,1))==y(bs(i,2))
                         hNew(i)=patch(x(bs(i,1):bs(i,2)), ...
                             y(bs(i,1):bs(i,2)), ...

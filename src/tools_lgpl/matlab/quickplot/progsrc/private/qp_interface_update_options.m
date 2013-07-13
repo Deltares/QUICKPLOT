@@ -265,7 +265,7 @@ switch geometry
         axestype={'X-Y'};
         lineproperties=1;
     case 'sSEG'
-        if multiple(M_)
+        if multiple(M_) || multiple(N_)
             switch nval
                 case {0,2,4}
                     axestype={'X-Y'};
@@ -497,6 +497,14 @@ if ismember(axestype,{'X-Val','X-Z','X-Time','Time-X'})
         set(pd,'string',coords,'value',i,'enable','on','backgroundcolor',Active)
     end
     Ops.plotcoordinate=coords{i};
+elseif SpatialH==1
+    if isfield(Props,'MName') && ~isempty(Props.MName)
+        Ops.plotcoordinate=Props.MName;
+    elseif isfield(Props,'NName') && ~isempty(Props.NName)
+        Ops.plotcoordinate=Props.NName;
+    else
+        Ops.plotcoordinate='index';
+    end
 end
 
 if ~isempty(axestype)

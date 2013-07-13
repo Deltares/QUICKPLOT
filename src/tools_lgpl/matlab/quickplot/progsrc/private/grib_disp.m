@@ -1,4 +1,4 @@
-function grib_disp(FI,varargin)
+function varargout = grib_disp(FI,varargin)
 %GRIB_DISP Display meta-info from grib file
 %
 %      FI = grib('open',FILENAME,<DEBUG_FID>)
@@ -11,6 +11,8 @@ function grib_disp(FI,varargin)
 %   The following <keyword,value> pairs are implemented:
 %   * type: 'disp'  display all meta-info from grib file
 %           'list'  generate list with one line per block
+%           'meta'  extract values of one property, e.g. extract
+%                    all P1 values: >> grib('meta',FI,BLOCKNR,'fieldname','P1');
 %
 %   See also: GRIB, GRIB_FIND
 
@@ -48,9 +50,10 @@ function grib_disp(FI,varargin)
 
 %% input
 
-OPT.blocks = 1:length(FI.Block);
-OPT.type   = 'disp';
-OPT.pause  = 1;
+OPT.blocks    = 1:length(FI.Block);
+OPT.type      = 'disp';
+OPT.pause     = 1;
+OPT.fieldname = 'P1'; % for type==meta
 
 if mod(nargin,2)==0
     OPT.blocks = varargin{1};
@@ -66,11 +69,17 @@ OPT = setProperty(OPT,varargin{nextarg:end});
 if strcmpi(OPT.type,'list')
     disp('#  ParamID LevelID Level.Value P1 ParamName')
     disp('-- ------- ------- ----------- -- ---------')
+elseif strcmpi(OPT.type,'meta')
+    out = {[]};
 end
 
 %% display
 
+n = 0;
+
 for ibl = [OPT.blocks]
+    
+    n = n + 1;
     
     if strcmpi(OPT.type,'disp')
         
@@ -159,7 +168,20 @@ for ibl = [OPT.blocks]
                 FI.Block(ibl).Info.ParamName   ]);
         end
         
+    elseif strcmpi(OPT.type,'meta')
+        
+        out{n} = FI.Block(ibl).Info.(OPT.fieldname);
+        
     end
     
 end % bl
+
+if strcmpi(OPT.type,'meta')
+
+    if isnumeric(out{1}) | isstruct(out{1});
+    out = cell2mat(out);
+    end
+    varargout = {out};
+   
+end
 

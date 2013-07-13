@@ -33,12 +33,12 @@ function [hNew,Thresholds,Param]=qp_plot_polyl(hNew,Parent,Param,data,Ops,Props)
 
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
-FirstFrame=Param.FirstFrame;
-PName=Param.PName;
-TStr=Param.TStr;
-Selected=Param.Selected;
-multiple=Param.multiple;
-NVal=Param.NVal;
+FirstFrame = Param.FirstFrame;
+PName      = Param.PName;
+TStr       = Param.TStr;
+Selected   = Param.Selected;
+multiple   = Param.multiple;
+NVal       = Param.NVal;
 
 DimFlag=Props.DimFlag;
 Thresholds=[];
@@ -48,7 +48,7 @@ switch NVal
         if strcmp(Ops.facecolour,'none')
             if ishandle(hNew)
                 set(hNew,'xdata',data.X, ...
-                    'ydata',data.Y);
+                         'ydata',data.Y);
             else
                 hNew=line(data.X,data.Y, ...
                     'parent',Parent, ...
@@ -125,36 +125,38 @@ switch NVal
         hNew = zeros(length(LEN_BF)+1,1);
         for i=1:length(LEN_BF)
             LBF = LEN_BF(i);
-            nbf = sum(len_bf==LBF);
-            xyd = repmat(NaN,LBF*nbf,2);
-            cl = repmat(NaN,LBF*nbf,1);
-            %
-            k = 1;
-            for j=1:length(len_bf)
-                if len_bf(j)==LBF
-                    range = bf(j,1):bf(j,2)-1;
-                    trange = (k-1)*LBF+(1:LBF);
-                    xyd(trange,1)=data.X(range);
-                    if lines_to_do
-                        data.X(bf(j,1):bf(j,2)) = NaN;
+            if LBF > 0
+                nbf = sum(len_bf==LBF);
+                xyd = repmat(NaN,LBF*nbf,2);
+                cl = repmat(NaN,LBF*nbf,1);
+                %
+                k = 1;
+                for j=1:length(len_bf)
+                    if len_bf(j)==LBF
+                        range = bf(j,1):bf(j,2)-1;
+                        trange = (k-1)*LBF+(1:LBF);
+                        xyd(trange,1)=data.X(range);
+                        if lines_to_do
+                            data.X(bf(j,1):bf(j,2)) = NaN;
+                        end
+                        xyd(trange,2)=data.Y(range);
+                        cl(trange,1)=data.Val(range(1));
+                        k=k+1;
                     end
-                    xyd(trange,2)=data.Y(range);
-                    cl(trange,1)=data.Val(range(1));
-                    k=k+1;
                 end
-            end
-            %
-            hNew(i)=patch('vertices',xyd, ...
-               'faces',reshape(1:LBF*nbf,[LBF nbf])', ...
-               'facevertexcdata',cl, ...
-                'edgecolor','flat', ...
-                'facecolor','flat', ...
-                'linestyle',Ops.linestyle, ...
-                'linewidth',Ops.linewidth, ...
-                'marker',Ops.marker, ...
-                'markeredgecolor',Ops.markercolour, ...
-                'markerfacecolor',Ops.markerfillcolour, ...
-                'parent',Parent);
+                %
+                hNew(i)=patch('vertices',xyd, ...
+                    'faces',reshape(1:LBF*nbf,[LBF nbf])', ...
+                    'facevertexcdata',cl, ...
+                    'edgecolor','flat', ...
+                    'facecolor','flat', ...
+                    'linestyle',Ops.linestyle, ...
+                    'linewidth',Ops.linewidth, ...
+                    'marker',Ops.marker, ...
+                    'markeredgecolor',Ops.markercolour, ...
+                    'markerfacecolor',Ops.markerfillcolour, ...
+                    'parent',Parent);
+            end %  LBF > 0
         end
         %
         if lines_to_do

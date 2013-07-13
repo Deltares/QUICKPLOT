@@ -65,21 +65,21 @@ end
 nvars = length(nc.Dataset);
 %ngatts = length(nc.Attribute);
 
-[nc.Dimension(1:ndims).Type] = deal('unknown');
-[nc.Dataset(1:nvars).Info] = deal([]);
-[nc.Dataset(1:nvars).StdName] = deal('');
-[nc.Dataset(1:nvars).Type] = deal('unknown');
+[nc.Dimension(1:ndims).Type     ] = deal('unknown');
+[nc.Dataset(1:nvars).Info       ] = deal([]);
+[nc.Dataset(1:nvars).StdName    ] = deal('');
+[nc.Dataset(1:nvars).Type       ] = deal('unknown');
 [nc.Dataset(1:nvars).Coordinates] = deal({});
-[nc.Dataset(1:nvars).X] = deal([]);
-[nc.Dataset(1:nvars).XBounds] = deal([]);
-[nc.Dataset(1:nvars).Y] = deal([]);
-[nc.Dataset(1:nvars).YBounds] = deal([]);
-[nc.Dataset(1:nvars).Z] = deal([]);
-[nc.Dataset(1:nvars).Time] = deal([]);
-[nc.Dataset(1:nvars).AuxTime] = deal([]);
-[nc.Dataset(1:nvars).Station] = deal([]);
-[nc.Dataset(1:nvars).SubField] = deal([]);
-[nc.Dataset(1:nvars).TSMNK] = deal([NaN NaN NaN NaN NaN]);
+[nc.Dataset(1:nvars).X          ] = deal([]);
+[nc.Dataset(1:nvars).XBounds    ] = deal([]);
+[nc.Dataset(1:nvars).Y          ] = deal([]);
+[nc.Dataset(1:nvars).YBounds    ] = deal([]);
+[nc.Dataset(1:nvars).Z          ] = deal([]);
+[nc.Dataset(1:nvars).Time       ] = deal([]);
+[nc.Dataset(1:nvars).AuxTime    ] = deal([]);
+[nc.Dataset(1:nvars).Station    ] = deal([]);
+[nc.Dataset(1:nvars).SubField   ] = deal([]);
+[nc.Dataset(1:nvars).TSMNK      ] = deal([NaN NaN NaN NaN NaN]);
 [nc.Dataset(1:nvars).SubFieldDim] = deal([]);
 %[nc.Dataset(1:nvars).Vector] = deal([]);
 
