@@ -376,7 +376,12 @@ else
     version = strtok(rem);
     shipma = [shipma ' ' version];
 end
-texts = {'' protectstring(FI.Project(prj).Name) protectstring(FI.Project(prj).Cases.Names{cse}) shipma};
+texts_template = get_shipma_bordertexts;
+texts_template = local_strrep(texts_template,'%organization%',protectstring(qp_settings('organizationname')));
+texts_template = local_strrep(texts_template,'%project%',protectstring(FI.Project(prj).Name));
+texts_template = local_strrep(texts_template,'%case%',protectstring(FI.Project(prj).Cases.Names{cse}));
+texts_template = local_strrep(texts_template,'%ship%',protectstring(FI.Project(prj).Cases.Data(cse).shipId));
+texts_template = local_strrep(texts_template,'%shipma%',shipma);
 %
 if d3d_qp('selectfield','desired ship track')
     a=d3d_qp('loaddata'); % get ship track for auto zoom limits
@@ -392,7 +397,8 @@ else
 end
 %
 if qp_settings('shipma_figa')
-    texts{1} = 'Track plot and depth';
+    caption = 'Track plot and depth';
+    texts = local_strrep(texts_template,'%caption%',caption);
     d3d_qp('newfigure','1 plot - portrait','SHIPMA Fig A',texts)
     if d3d_qp('selectfield','depth')
         d3d_qp('colourmap','navdepth')
@@ -439,10 +445,11 @@ if qp_settings('shipma_figb')
     %
     switch quant
         case {'wind','waves'}
-            texts{1} = ['Track plot and ' quant];
+            caption = ['Track plot and ' quant];
         case {'current'}
-            texts{1} = ['Track plot and ' quant 's'];
+            caption = ['Track plot and ' quant 's'];
     end
+    texts = local_strrep(texts_template,'%caption%',caption);
     d3d_qp('newfigure','1 plot - portrait','SHIPMA Fig B',texts)
     if d3d_qp('selectfield',quant)
         d3d_qp('component','magnitude')
@@ -486,7 +493,8 @@ if qp_settings('shipma_figb')
 end
 %--------
 if qp_settings('shipma_figc')
-    texts{1} = 'Speed and ruddle angle plots';
+    caption = 'Speed and ruddle angle plots';
+    texts = local_strrep(texts_template,'%caption%',caption);
     d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig C',texts)
     %--
     qpsa('upper plot')
@@ -515,7 +523,8 @@ if qp_settings('shipma_figc')
 end
 %--------
 if qp_settings('shipma_figd')
-    texts{1} = {'Swept path and depth along track','Starboard side (dashed) port side (solid)'};
+    caption = {'Swept path and depth along track','Starboard side (dashed) port side (solid)'};
+    texts = local_strrep(texts_template,'%caption%',caption);
     d3d_qp('newfigure','2 plots, vertical - portrait','SHIPMA Fig D',texts)
     %--
     set(qpsa('upper plot'),'ydir','reverse')
@@ -575,10 +584,11 @@ if qp_settings('shipma_fige')
         if ~isempty(commas)
             quantstr = [quantstr(1:commas(end)-1) ' and' quantstr(commas(end)+1:end)];
         end
-        texts{1} = {'External forces plots' quantstr};
+        caption = {'External forces plots' quantstr};
     else
-        texts{1} = 'External forces plots';
+        caption = 'External forces plots';
     end
+    texts = local_strrep(texts_template,'%caption%',caption);
     d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig E',texts)
     %--
     qpsa('upper plot')
@@ -649,18 +659,19 @@ end
 if qp_settings('shipma_figf')
     if qp_settings('shipma_figf_tugs')
         if qp_settings('shipma_figf_thrusters')
-            texts{1} = {'Tug and thrusters forces plots','Tug forces (solid) and thruster forces (dashed)'};
+            caption = {'Tug and thrusters forces plots','Tug forces (solid) and thruster forces (dashed)'};
             lines = {'-' '--'};
         else
-            texts{1} = 'Tug forces plots';
+            caption = 'Tug forces plots';
             lines = {'-' ''};
         end
     elseif qp_settings('shipma_figf_thrusters')
-        texts{1} = 'Tug forces plots';
+        caption = 'Tug forces plots';
         lines = {'' '-'};
     else
-        texts{1} = '';
+        caption = '';
     end
+    texts = local_strrep(texts_template,'%caption%',caption);
     d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig F',texts)
     %--
     qpsa('upper plot')
@@ -1043,10 +1054,75 @@ switch cmd
             qp_settings(cmd,str{i})
             cmdargs={cmd,str{i}};
         end
+    case 'editborder'
+        fg=figure('visible','off', ...
+            'integerhandle','off', ...
+            'numbertitle','off', ...
+            'name','SHIPMA');
+        hBorder=md_paper(fg,'no edit','a4p','7box',get_shipma_bordertexts);
+        md_paper('editmodal',hBorder)
+        for i=1:7
+            h = findall(hBorder,'tag',sprintf('plottext%i',i));
+            str = get(h,'string');
+            if ischar(str) && size(str,1)>1
+                str = cellstr(str);
+            end
+            if iscell(str)
+                str = str';
+                str(2,:)={'\n'};
+                str(2,end)={''};
+                str = strcat(str{:});
+            end
+            qp_settings(sprintf('shipma_bordertext%i_string',i),str)
+        end
+        delete(fg)
     otherwise
         error(['Unknown option command: ',cmd])
 end
 % -------------------------------------------------------------------------
+
+
+function c = get_shipma_bordertexts
+c = cell(1,7);
+for i = 1:7
+    str = qp_settings(sprintf('shipma_bordertext%i_string',i));
+    str = strrep(str,'\n',char(13));
+    str = splitcellstr(str,char(13));
+    c{i} = str;
+end
+
+function d = local_strrep(c,key,val)
+lkey = lower(key);
+lenkey = length(key);
+%
+d = cell(size(c));
+if iscell(val)
+    val = val(:)';
+    val(2,:)={char(13)};
+    val(2,end)={''};
+    val = [val{:}];
+    breakapart = 1;
+else
+    breakapart = 0;
+end
+for i = 1:length(c)
+    found = 0;
+    for j = 1:length(c{i})
+        k = strfind(lower(c{i}{j}),lkey);
+        for ik = 1:length(k)
+            found = 1;
+            c{i}{j}(k(ik)+(0:lenkey-1)) = lkey;
+        end
+    end
+    d{i} = strrep(c{i},lkey,val);
+    if found && breakapart
+        cstr = d{i}(:)';
+        cstr(2,:)={char(13)};
+        cstr(2,end)={''};
+        cstr = [cstr{:}];
+        d{i} = splitcellstr(cstr,char(13));
+    end
+end
 
 % -------------------------------------------------------------------------
 function OK=optfig(h0)
@@ -1112,9 +1188,18 @@ uicontrol('Parent',h0, ...
     'Style','text', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
-    'Position',[11 voffset textwidth 18], ...
+    'Position',[11 voffset textwidth-50 18], ...
     'String','Default Figures:', ...
     'Enable','on');
+uicontrol('Parent',h0, ...
+    'Style','pushbutton', ...
+    'BackgroundColor',Inactive, ...
+    'Horizontalalignment','left', ...
+    'Position',[21+textwidth-50 voffset 80+50 20], ...
+    'String','Edit Border Text', ...
+    'Callback','d3d_qp fileoptions editborder', ...
+    'Enable','on', ...
+    'Tag','editborder');
 voffset=voffset-25;
 uicontrol('Parent',h0, ...
     'Style','checkbox', ...

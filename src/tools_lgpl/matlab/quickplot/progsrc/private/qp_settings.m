@@ -56,7 +56,12 @@ if iscell(param)
 end
 if nargout==1
     % retrieve value
-    valo=inifile('get',Settings,grp,param,{});
+    if length(param)>6 && strcmpi(param(end-5:end),'string')
+        cmd='getstring';
+    else
+        cmd='get';
+    end
+    valo=inifile(cmd,Settings,grp,param,{});
     if iscell(valo)
         if nargin==1
             val={};
@@ -129,13 +134,20 @@ Set.shipma_fige_banksuction   = 1;
 Set.shipma_figf               = 1;
 Set.shipma_figf_tugs          = 1;
 Set.shipma_figf_thrusters     = 1;
+Set.shipma_bordertext1_string = '%caption%';
+Set.shipma_bordertext2_string = '%project%';
+Set.shipma_bordertext3_string = '%case%';
+Set.shipma_bordertext4_string = '%shipma%';
+Set.shipma_bordertext5_string = '';
+Set.shipma_bordertext6_string = '';
+Set.shipma_bordertext7_string = '%organization%';
 %
 if isfield(Set,param)
-    val=getfield(Set,param);
+    val=Set.(param);
 elseif ~iscell(defval)
     val=defval;
 else
-    error(['Unknown parameter: ',param])
+    error('Unknown parameter: %s',param)
 end
 
 

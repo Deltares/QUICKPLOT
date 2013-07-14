@@ -80,13 +80,18 @@ end
 
 % Count separators
 nparts = cellfun('length',delims)+1;
+if isempty(nparts)
+    maxnparts = 0;
+else
+    maxnparts = max(nparts);
+end
 
 % Split into cell string matrix
-if max(nparts)==1 && iscellstr(cs)
+if maxnparts==1 && iscellstr(cs)
    % Trivial case
    spliced = cs(:);
 else
-   spliced = repmat({''},nlines,max(nparts));
+   spliced = repmat({''},nlines,maxnparts);
    for i = 1:nlines
       if iscell(cs)
          Line = cs{i};

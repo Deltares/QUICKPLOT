@@ -116,6 +116,13 @@ end
 INP=varargin;
 
 NoEdit=0;
+if ishandle(cmd)
+    fg = cmd;
+    cmd = INP{1};
+    INP = INP(2:end);
+else
+    fg = []; % will trigger call to gcf later in CreateBorderAxes
+end
 if strcmp(cmd,'no edit')
     NoEdit=1;
     cmd=INP{1};
@@ -126,7 +133,7 @@ switch lower(cmd)
     case {'apply','done'}
         Fig=gcbf;
         gcba=get(Fig,'userdata');
-        if ~ishandle(gcba),
+        if ~ishandle(gcba)
             delete(gcbf);
             return;
         end;
@@ -158,10 +165,10 @@ switch lower(cmd)
         if strcmp(cmd,'done')
             delete(gcbf);
         end
-    case 'edit'
+    case {'edit','editmodal'}
         if (nargin==1) && (isempty(gcbf) || ~strcmp(get(gcbf,'selectiontype'),'alt'))
-            return;
-        elseif nargin==2,
+            return
+        elseif nargin==2
             gcba=INP{1};
         else
             gcba=get(gcbo,'parent');
@@ -180,6 +187,7 @@ switch lower(cmd)
             end
         end
         Fig=Local_ui_paper(gcba);
+        set(Fig,'windowstyle','modal')
 
         fig=get(gcba,'parent');
         HandleStr=[' ' num2str(fig)];
@@ -207,10 +215,13 @@ switch lower(cmd)
             case 'landscape',
                 set(leftpage,'value',strcmp(get(gcba,'ydir'),'reverse'));
         end
+        if strcmpi(cmd,'editmodal')
+            waitfor(Fig)
+        end
     otherwise
         Orientation=lower(cmd);
         if (strcmp(Orientation,'portrait') || strcmp(Orientation,'landscape')) && length(INP)<2
-            hTempBorder=SimpleBorder(Orientation,INP{:});
+            hTempBorder=SimpleBorder(fg,Orientation,INP{:});
         else
             if strcmp(Orientation,'portrait')
                 Orientation='a4p';
@@ -228,9 +239,9 @@ switch lower(cmd)
                     INP(1)=[];
                 end
             end
-            hTempBorder=Local_createborder(NoEdit,Orientation,BFormat,INP{:});
+            hTempBorder=Local_createborder(fg,NoEdit,Orientation,BFormat,INP{:});
         end
-        if nargout>0,
+        if nargout>0
             hBorder=hTempBorder;
         end
 end
@@ -243,7 +254,7 @@ catch
     organization = 'Deltares';
 end
 
-function hBorder=SimpleBorder(Orientation,varargin)
+function hBorder=SimpleBorder(fg,Orientation,varargin)
 if ~isempty(varargin)
     if isempty(varargin{1}),
         PlotText=locDateStr;
@@ -254,7 +265,7 @@ else
     PlotText=[getorg ' (',locDateStr,')'];
 end
 %
-[ax,fg,allchld,allax,xmax,ymax,hBorder]=CreateBorderAxes('a4letter',Orientation);
+[ax,fg,allchld,allax,xmax,ymax,hBorder]=CreateBorderAxes(fg,'a4letter',Orientation);
 %
 switch Orientation
     case 'portrait'
@@ -278,11 +289,11 @@ AdjustFigPos(ax,fg,Orientation)
 set(fg,'children',[allchld;hBorder]);
 
 
-function hBorder=Local_createborder(NoEdit,Orientation,BFormat,varargin)
+function hBorder=Local_createborder(fg,NoEdit,Orientation,BFormat,varargin)
 if nargin<4
     Strings={};
     INP={};
-elseif iscell(varargin{1})
+elseif ~isempty(varargin) && iscell(varargin{1})
     Strings=varargin{1};
     INP=varargin(2:end);
 else
@@ -455,7 +466,7 @@ for i=1:length(PlotText)
     end
 end
 %
-[ax,fg,allchld,allax,xmax,ymax,hBorder]=CreateBorderAxes(PType,Orientation);
+[ax,fg,allchld,allax,xmax,ymax,hBorder]=CreateBorderAxes(fg,PType,Orientation);
 set(hBorder,'userdata',BFormat)
 %
 Box=fliplr(Box');
@@ -485,13 +496,16 @@ switch Orientation
             if b~=0
                 line([HTabs(m1) HTabs(m2+1) HTabs(m2+1) HTabs(m1)   HTabs(m1)], ...
                     [VTabs(n1) VTabs(n1)   VTabs(n2+1) VTabs(n2+1) VTabs(n1)], ...
-                    'parent',hBorder,'color',Color,'linewidth',LineWidth, ...
+                    'parent',hBorder, ...
+                    'color',Color, ...
+                    'linewidth',LineWidth, ...
                     'buttondownfcn',BDFunction);
             end
             if b>0
                 T=text((HTabs(m1)+HTabs(m2+1))/2, ...
                     (VTabs(n1)+VTabs(n2+1))/2, ...
                     PlotText{b}, ...
+                    'parent',hBorder, ...
                     'horizontalalignment','center', ...
                     'verticalalignment','middle', ...
                     'fontname','helvetica', ...
@@ -606,9 +620,14 @@ AdjustFigPos(ax,fg,Orientation)
 set(fg,'children',[allchld;hBorder]);
 
 
-function [ax,fg,allchld,allax,xmax,ymax,hBorder]=CreateBorderAxes(PType,Orientation)
-ax=gca;
-fg=gcf;
+function [ax,fg,allchld,allax,xmax,ymax,hBorder]=CreateBorderAxes(fg,PType,Orientation)
+if isempty(fg)
+    fg = gcf;
+end
+ax=get(fg,'CurrentAxes');
+if isempty(ax)
+    ax = subplot(1,1,1,'parent',fg);
+end
 allchld=allchild(fg);
 allax=findobj(allchld,'type','axes');
 set(fg,'paperunits','centimeter', ...
@@ -620,6 +639,7 @@ xmax=xmax(1);
 set(fg,'paperposition',[0 0 xmax ymax]);
 hBorder=axes('units','normalized', ...
     'position',[0 0 1 1], ...
+    'parent',fg, ...
     'tag','border', ...
     'xlimmode','manual', ...
     'ylimmode','manual', ...
@@ -630,7 +650,7 @@ setappdata(hBorder,'NonDataObject',[]);
 
 
 function AdjustFigPos(ax,fg,Orientation)
-axes(ax);
+set(fg,'CurrentAxes',ax);
 funits0=get(fg,'paperunits');
 set(fg,'paperunits','centimeters');
 PSize=get(fg,'papersize');
@@ -674,6 +694,9 @@ Str=[t ' ' datestr(now,3) ' ' datestr(now,10)];
 
 
 function fig = Local_ui_paper(hBorder)
+fg = get(hBorder,'parent');
+vs = get(fg,'visible');
+
 BFormat=get(hBorder,'userdata');
 if isempty(BFormat) % backward compatibility and update
     BFormat.Border= 1;
@@ -731,6 +754,7 @@ uicontrol('Parent',h0, ...
     'Style','checkbox', ...
     'BackgroundColor',get(h0,'color'), ...
     'String','left page', ...
+    'Visible',vs, ...
     'Tag','LeftPage');
 
 uicontrol('Parent',h0, ...
@@ -741,6 +765,7 @@ uicontrol('Parent',h0, ...
     'Position',[285 10+25*N 80 20], ...
     'String','apply', ...
     'Callback','md_paper apply', ...
+    'Visible',vs, ...
     'Tag','Apply');
 
 uicontrol('Parent',h0, ...
