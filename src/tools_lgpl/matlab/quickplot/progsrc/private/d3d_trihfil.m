@@ -775,7 +775,9 @@ end
 for i=size(Out,1):-1:1
     Info=vs_disp(FI,Out(i).Group,Out(i).Val1);
     if ~isempty(strmatch('---',Out(i).Name))
-    elseif ~isstruct(Info)
+    elseif ~isstruct(Info) && ...
+            ~strcmp(Out(i).Name,'cumulative discharge') && ...
+            ~strcmp(Out(i).Name,'instantaneous discharge')
         % remove references to non-stored data fields
         Out(i)=[];
         %  ---> if isequal(Info.SizeDim,1) this might be due to the fact
