@@ -1112,6 +1112,8 @@ pos(3)=340;
 %pos(2)=pos(2)-19;
 FO.Fig = qp_uifigure('File Options','fileoptions','FileOptions',pos);
 %set(FO.Fig,'Handlevisibility','callback');
+set(FO.Fig,'resizefcn','d3d_qp fileoptionsresize')
+setappdata(FO.Fig,'DefaultFileOptionsSize',pos(3:4))
 FO.Close = LocButton(FO.Fig,[171 11 160 20],'fileoptions','Close',1,'Close dialog window');
 UD.FilOpt=FO;
 

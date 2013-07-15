@@ -170,6 +170,23 @@ try
                 qp_plotmanager('resize',UD,logfile,logtype);
             end
             
+        case 'resetfileoptionssize'
+            if ~isempty(UD)
+                fp = get(UD.FilOpt.Fig,'pos');
+                fs = getappdata(UD.FilOpt.Fig,'DefaultFileOptionsSize');
+                fp(3:4) = fs;
+                set(UD.FilOpt.Fig,'pos',fp)
+            end
+            
+        case 'fileoptionsresize'
+            if ~isempty(UD)
+                fp = get(UD.FilOpt.Fig,'pos');
+                cp = get(UD.FilOpt.Close,'pos');
+                cp(1) = max(1,fp(3)-169);
+                cp(3) = max(1,fp(3)-cp(1)-9);
+                set(UD.FilOpt.Close,'pos',cp)
+            end
+
         case 'optionsresize'
             pos = get(gcbf,'pos');
             pos(3) = 180;
@@ -188,6 +205,7 @@ try
             dpos = get(UD.Options.Dock,'position');
             dpos(2) = pos(4)-15;
             set(UD.Options.Dock,'position',dpos)
+
         case {'initialize','initialize_background'}
             showUI = isequal(cmd,'initialize');
             mfig=findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
@@ -823,6 +841,7 @@ try
                 set(Handle_FO,'enable','off','state','off')
                 delete(OptionsControls)
                 set(UD.FilOpt.Fig,'visible','off')
+                d3d_qp resetfileoptionssize
                 
             else
                 NrInList=get(Handle_SelectFile,'value');
@@ -830,10 +849,12 @@ try
                 delete(OptionsControls)
                 if File(NrInList).Options
                     set(Handle_FO,'enable','on')
+                    d3d_qp resetfileoptionssize
                     Chk=qp_getdata(File(NrInList),'options',UD.FilOpt.Fig,'initialize');
                 else
                     set(Handle_FO,'enable','off','state','off')
                     set(UD.FilOpt.Fig,'visible','off')
+                    d3d_qp resetfileoptionssize
                 end
                 %
                 Handle_FileOpt=findobj(mfig,'tag','fileoptions');
