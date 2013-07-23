@@ -66,7 +66,7 @@ else
                 case {2,4,6}
                     Format=[Format ',''%s'''];
             end
-            Args{end+1}=varargin{i};
+            Args{end+1}=strrep(varargin{i},'''','''''');
         elseif isequal(size(varargin{i}),[1 1])
             switch logtype
                 case {1,3,5}

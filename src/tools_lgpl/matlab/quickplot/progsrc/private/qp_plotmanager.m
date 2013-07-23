@@ -87,6 +87,7 @@ switch cmd
         %
         shiftcontrol(PM.FigColorTxt,aligntop)
         shiftcontrol(PM.FigColor,aligntop)
+        shiftcontrol(PM.FigBorder,aligntop)
         %
         shiftcontrol(PM.AxColorTxt,aligntop)
         shiftcontrol(PM.HasAxColor,aligntop)
@@ -1154,9 +1155,16 @@ switch cmd
         if length(fig)==1
             set(PM.FigColor,'backgroundcolor',get(fig,'color'), ...
                 'enable','on')
+            hBrdr = findall(fig,'type','axes','tag','border');
+            if ~isempty(hBrdr)
+                set(PM.FigBorder,'enable','on')
+            else
+                set(PM.FigBorder,'enable','off')
+            end
         else
             set(PM.FigColor,'backgroundcolor',Inactive, ...
                 'enable','off')
+            set(PM.FigBorder,'enable','off')
         end
 
     case 'refreshaxprop'

@@ -1,11 +1,10 @@
 function hBorder=md_paper(cmd,varargin)
 %MD_PAPER Add border to plot.
-%   MD_PAPER(PAPERTYPE,BORDERTYPE) sets the appropriate page size for the
-%   current figure and adds an empty border to it. Right click on the
-%   border to fill in the texts via a dialog. PAPERTYPE should equal a
-%   papertype supported by MATLAB followed by 'p' (portrait) or 'l'
-%   (landscape), e.g. 'a4p'. BORDERTYPE should equal one of the following
-%   strings
+%   MD_PAPER(FIG,PAPERTYPE,BORDERTYPE) sets the paper type for the
+%   figure FIG and adds an empty border to it. Right click on the border to
+%   fill in the texts via a dialog. PAPERTYPE should equal a paper type
+%   supported by MATLAB followed by 'p' (portrait) or 'l' (landscape), e.g.
+%   'a4p'. BORDERTYPE should equal one of the following strings
 %      'none'       no border (default) just set paper size
 %      '1box'       Framed figure with just one 2cm high text box and 1 cm
 %                   margins at all sides.
@@ -21,7 +20,10 @@ function hBorder=md_paper(cmd,varargin)
 %                   |             |    |   |         |    |_________|___|
 %                   |_____________|    |___|_________|    |_________|_|_|
 %
-%   MD_PAPER(PAPERTYPE,BORDERTYPE,CTEXTS) does the same thing, but also
+%   If no figure FIG is specified, the settings will be applied to the
+%   current figure.
+%
+%   MD_PAPER(FIG,PAPERTYPE,BORDERTYPE,CTEXTS) does the same thing, but also
 %   fills in the texts by using entries from the CTEXTS cell array of
 %   strings. Right click on the border or texts to add or edit texts.
 %
@@ -45,12 +47,16 @@ function hBorder=md_paper(cmd,varargin)
 %      'Bold'       flags for printing text in bold font
 %                   length of the vector should match the number
 %                   of textboxes
-%      'PlotText'   cell array containing default texts
-%                   length of the vector should match the number
-%                   of textboxes
+%      'BorderText' cell array containing default texts; the length of the
+%                   vector should match the number of textboxes, or
+%                   alternatively one may specify fields 'BorderText1',
+%                   'BorderText2', etc.
 %
 %   hBorder = MD_PAPER('no edit',...) right click editing disabled. Use 
 %   MD_PAPER('edit',hBorder) to edit the texts via a dialog.
+%
+%   BSTRUCT = MD_PAPER(FIG,'getprops') returns the BSTRUCT of the border of
+%   the figure FIG.
 %
 %   NOTE: There are some compatibility problems with the LEGEND function.
 %   When the border is added, all subplots are made slightly smaller. The
@@ -65,18 +71,18 @@ function hBorder=md_paper(cmd,varargin)
 %
 %   Backward compatibility:
 %
-%   MD_PAPER(PAPERTYPE) where PAPERTYPE can be either 'portrait' or
-%   'landscape' adds "Deltares (date and time)" to a figure and sets the
+%   MD_PAPER(ORIENT) where ORIENT can be either 'portrait' or 'landscape'
+%   adds "Deltares (date and time)" to a figure and sets the page size to
+%   A4 portrait/landscape.
+%
+%   MD_PAPER(ORIENT,'String') where ORIENT can be either 'portrait' or
+%   'landscape' adds "String (date and time)" to a figure and sets the
 %   page size to A4 portrait/landscape.
 %
-%   MD_PAPER(PAPERTYPE,'String') where PAPERTYPE can be either 'portrait'
-%   or 'landscape' adds "String (date and time)" to a figure and sets the
-%   page size to A4 portrait/landscape.
-%
-%   MD_PAPER(PAPERTYPE,'String1','String2',...) where PAPERTYPE can be
-%   either 'portrait' or 'landscape' adds the 7 box border to the figure
-%   and sets the page size to A4 portrait/landscape. Right click on the
-%   text to edit the texts.
+%   MD_PAPER(ORIENT,'String1','String2',...) where ORIENT can be either
+%   'portrait' or 'landscape' adds the 7 box border to the figure and sets
+%   the page size to A4 portrait/landscape. Right click on the text to edit
+%   the texts.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -116,30 +122,36 @@ end
 INP=varargin;
 
 NoEdit=0;
-if ishandle(cmd)
+if length(cmd)==1 && ishandle(cmd)
     fg = cmd;
     cmd = INP{1};
     INP = INP(2:end);
 else
     fg = []; % will trigger call to gcf later in CreateBorderAxes
 end
-if strcmp(cmd,'no edit')
+if strcmpi(cmd,'no edit')
     NoEdit=1;
     cmd=INP{1};
     INP=INP(2:end);
 end
 
-switch lower(cmd)
+lcmd = lower(cmd);
+switch lcmd
     case {'apply','done'}
         Fig=gcbf;
         gcba=get(Fig,'userdata');
         if ~ishandle(gcba)
             delete(gcbf);
-            return;
-        end;
+            return
+        end
         hpts=findobj(gcba,'type','text');
-        for i=1:7
+        i = 0;
+        while 1
+            i = i+1;
             hplottext=findobj(hpts,'flat','tag',sprintf('plottext%i',i));
+            if isempty(hplottext)
+                break
+            end
             hedittext=findobj(Fig,'tag',sprintf('Text%i',i));
             str=get(hedittext,'string');
             if isempty(str)
@@ -148,7 +160,7 @@ switch lower(cmd)
             set(hplottext,'string',str);
         end
         leftpage=findobj(Fig,'tag','LeftPage');
-        switch get(get(gcba,'parent'),'paperorientation'),
+        switch get(get(gcba,'parent'),'paperorientation')
             case 'portrait'
                 if get(leftpage,'value'), %=1
                     set(gcba,'xdir','reverse');
@@ -162,9 +174,10 @@ switch lower(cmd)
                     set(gcba,'ydir','normal');
                 end
         end
-        if strcmp(cmd,'done')
+        if strcmp(lcmd,'done')
             delete(gcbf);
         end
+        
     case {'edit','editmodal'}
         if (nargin==1) && (isempty(gcbf) || ~strcmp(get(gcbf,'selectiontype'),'alt'))
             return
@@ -172,7 +185,7 @@ switch lower(cmd)
             gcba=INP{1};
         else
             gcba=get(gcbo,'parent');
-        end;
+        end
         if strcmp(get(gcba,'type'),'figure')
             gcba=findobj(gcba,'type','axes','tag','border');
         end
@@ -187,7 +200,9 @@ switch lower(cmd)
             end
         end
         Fig=Local_ui_paper(gcba);
-        set(Fig,'windowstyle','modal')
+        if strcmpi(lcmd,'editmodal')
+            set(Fig,'windowstyle','modal')
+        end
 
         fig=get(gcba,'parent');
         HandleStr=[' ' num2str(fig)];
@@ -202,8 +217,13 @@ switch lower(cmd)
         set(Fig,'name',[get(Fig,'name') ' for ' StringStr]);
 
         hpts=findobj(gcba,'type','text');
-        for i=1:7
+        i=0;
+        while 1
+            i = i+1;
             hplottext=findobj(hpts,'flat','tag',sprintf('plottext%i',i));
+            if isempty(hplottext)
+                break
+            end
             hedittext=findobj(Fig,'tag',sprintf('Text%i',i));
             set(hedittext,'string',get(hplottext,'string'));
         end
@@ -215,11 +235,51 @@ switch lower(cmd)
             case 'landscape',
                 set(leftpage,'value',strcmp(get(gcba,'ydir'),'reverse'));
         end
-        if strcmpi(cmd,'editmodal')
+        if strcmpi(lcmd,'editmodal')
             waitfor(Fig)
         end
+
+    case 'getprops'
+        if isempty(fg)
+            fg = gcf;
+        end
+        switch get(fg,'type')
+            case 'figure'
+                hBorder = findobj(fg,'type','axes','tag','border');
+            case 'axes'
+                hBorder = fg;
+        end
+        if length(hBorder)>1
+            error('Function doesn''t support multiple borders.')
+        end
+        iBrdr = get(hBorder,'userdata');
+        i = 0;
+        while 1
+            i = i+1;
+            hplottext = findall(hBorder,'tag',sprintf('plottext%i',i));
+            if isempty(hplottext)
+                break
+            end
+            str = get(hplottext,'string');
+            if ischar(str) && size(str,1)>1
+                str = cellstr(str);
+            end
+            if iscell(str)
+                if isempty(str)
+                    str = '';
+                else
+                    str = str';
+                    str(2,:)={'\n{}'};
+                    str(2,end)={''};
+                    str = strcat(str{:});
+                end
+            end
+            iBrdr.(sprintf('BorderText%i',i)) = str;
+        end
+        hBorder = iBrdr;
+
     otherwise
-        Orientation=lower(cmd);
+        Orientation=lcmd;
         if (strcmp(Orientation,'portrait') || strcmp(Orientation,'landscape')) && length(INP)<2
             hTempBorder=SimpleBorder(fg,Orientation,INP{:});
         else
@@ -253,6 +313,7 @@ try
 catch
     organization = 'Deltares';
 end
+
 
 function hBorder=SimpleBorder(fg,Orientation,varargin)
 if ~isempty(varargin)
@@ -324,26 +385,60 @@ if isstruct(BFormat)
     %
     % User specified border ...
     %
-    if isfield(BFormat,'Border'), Border=BFormat.Border; end
-    if isfield(BFormat,'Margin'), Margin=BFormat.Margin; end
-    if isfield(BFormat,'LineWidth'), LineWidth=BFormat.LineWidth; end
-    if isfield(BFormat,'Color'), Color=BFormat.Color; end
-    if isfield(BFormat,'HTabs'), HTabs=BFormat.HTabs; end
-    if isfield(BFormat,'HRange'), HRange=BFormat.HRange; end
-    if isfield(BFormat,'VTabs'), VTabs=BFormat.VTabs; end
-    if isfield(BFormat,'VRange'), VRange=BFormat.VRange; end
-    if isfield(BFormat,'Box'),
+    if isfield(BFormat,'Border')
+        Border=BFormat.Border;
+    end
+    if isfield(BFormat,'Margin')
+        Margin=BFormat.Margin;
+    end
+    if isfield(BFormat,'LineWidth')
+        LineWidth=BFormat.LineWidth;
+    end
+    if isfield(BFormat,'Color')
+        Color=BFormat.Color;
+    end
+    if isfield(BFormat,'HTabs')
+        HTabs=BFormat.HTabs;
+    end
+    if isfield(BFormat,'HRange')
+        HRange=BFormat.HRange;
+    end
+    if isfield(BFormat,'VTabs')
+        VTabs=BFormat.VTabs;
+    end
+    if isfield(BFormat,'VRange')
+        VRange=BFormat.VRange;
+    end
+    if isfield(BFormat,'Box')
         Box=BFormat.Box;
         Bold=zeros(1,max(Box(:)));
         PlotText(1,1:max(Box(:)))={''};
     end
-    if isfield(BFormat,'Bold'), Bold=BFormat.Bold; end
-    if isfield(BFormat,'PlotText'), PlotText=BFormat.PlotText; end
-    if length(HTabs(:))~=size(Box,2)
-        error('Inconsistent frame type')
+    if isfield(BFormat,'Bold')
+        Bold=BFormat.Bold;
     end
-    if length(VTabs(:))~=size(Box,1)
-        error('Inconsistent frame type')
+    %------------------------------------------------
+    if isfield(BFormat,'PlotText')
+        PlotText=BFormat.PlotText;
+    end
+    if isfield(BFormat,'BorderText')
+        PlotText=BFormat.BorderText;
+    end
+    for i = 1:length(PlotText)
+        BText = sprintf('BorderText%i',i);
+        if isfield(BFormat,BText)
+            PlotText{i} = BFormat.(BText);
+        end
+    end
+    %------------------------------------------------
+    ncol = length(HTabs(:));
+    nrow = length(VTabs(:));
+    if ~isequal(size(Box),[nrow ncol])
+        if numel(Box)==nrow*ncol
+            Box = reshape(Box,[nrow ncol]);
+        else
+            error('Inconsistent frame type')
+        end
     end
     if length(Bold(:))~=max(Box(:))
         error('Length of bold vector does not match number of texts')
@@ -402,7 +497,7 @@ end
 i=1;
 while i<=length(INP)
     if ~ischar(INP{i})
-        error('Invalid option.');
+        error('Invalid option.')
     end
     switch lower(INP{i})
         case 'margin'
@@ -479,14 +574,20 @@ switch Orientation
             [Margin(2) Margin(2) ymax-Margin(4) ymax-Margin(4) Margin(2)], ...
             'parent',hBorder,'color',Color,'linewidth',LineWidth, ...
             'tag','border','visible','off');
-        if Border, set(L,'visible','on'); end
+        if Border
+            set(L,'visible','on')
+        end
         %
         % Plot boxes and texts ...
         %
         HRange=min(HRange,xmax-Margin(1)-Margin(3));
         VRange=min(VRange,ymax-Margin(2)-Margin(4));
-        if isempty(HRange), HRange=0; end
-        if isempty(VRange), VRange=0; end
+        if isempty(HRange)
+            HRange=0;
+        end
+        if isempty(VRange)
+            VRange=0;
+        end
         HTabs=cumsum([0 HTabs])*HRange+Margin(1);
         VTabs=cumsum([0 VTabs])*VRange+Margin(2);
         Boxs=unique(Box(:))';
@@ -512,7 +613,9 @@ switch Orientation
                     'tag',sprintf('plottext%i',b), ...
                     'buttondownfcn',BDFunction, ...
                     'color',Color);
-                if Bold(b), set(T,'fontweight','bold'); end
+                if Bold(b)
+                    set(T,'fontweight','bold');
+                end
             elseif b<0
                 pos=[HTabs(m1) VTabs(n1) HTabs(m2+1)-HTabs(m1) VTabs(n2+1)-VTabs(n1)];
                 pos(1:2)=pos(1:2)+0.05*pos(3:4);
@@ -550,14 +653,20 @@ switch Orientation
             [Margin(3) Margin(3) ymax-Margin(1) ymax-Margin(1) Margin(3)], ...
             'parent',hBorder,'color',Color,'linewidth',LineWidth, ...
             'tag','border','visible','off');
-        if Border, set(L,'visible','on'); end
+        if Border
+            set(L,'visible','on');
+        end
         %
         % Plot boxes and texts ...
         %
         HRange=min(HRange,ymax-Margin(1)-Margin(3));
         VRange=min(VRange,xmax-Margin(2)-Margin(4));
-        if isempty(HRange), HRange=0; end
-        if isempty(VRange), VRange=0; end
+        if isempty(HRange)
+            HRange=0;
+        end
+        if isempty(VRange)
+            VRange=0;
+        end
         HTabs=cumsum([0 HTabs])*HRange+Margin(1);
         VTabs=cumsum([0 VTabs])*VRange+Margin(2);
         Boxs=unique(Box(:))';
@@ -581,7 +690,9 @@ switch Orientation
                     'buttondownfcn',BDFunction, ...
                     'color',Color, ...
                     'rotation',270);
-                if Bold(b), set(T,'fontweight','bold'); end
+                if Bold(b)
+                    set(T,'fontweight','bold');
+                end
             elseif b<0
                 pos=[VTabs(n1) ymax-HTabs(m2+1) VTabs(n2+1)-VTabs(n1) HTabs(m2+1)-HTabs(m1)];
                 pos(1:2)=pos(1:2)+0.05*pos(3:4);
@@ -779,4 +890,6 @@ uicontrol('Parent',h0, ...
     'Tag','Done');
 
 set(h0,'Visible','on')
-if nargout > 0, fig = h0; end
+if nargout>0
+    fig = h0;
+end

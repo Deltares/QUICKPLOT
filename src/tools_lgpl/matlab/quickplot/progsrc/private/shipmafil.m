@@ -1289,7 +1289,7 @@ switch cmd
             end
             if iscell(str)
                 str = str';
-                str(2,:)={'\n'};
+                str(2,:)={'\n{}'};
                 str(2,end)={''};
                 str = strcat(str{:});
             end
@@ -1306,7 +1306,7 @@ function c = get_shipma_bordertexts
 c = cell(1,7);
 for i = 1:7
     str = qp_settings(sprintf('shipma_bordertext%i_string',i));
-    str = strrep(str,'\n',char(13));
+    str = strrep(str,'\n{}',char(13));
     str = splitcellstr(str,char(13));
     c{i} = str;
 end

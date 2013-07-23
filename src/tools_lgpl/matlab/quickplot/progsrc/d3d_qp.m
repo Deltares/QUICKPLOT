@@ -2626,6 +2626,44 @@ try
                 end
             end
             
+        case 'figureborder'
+            fig = qpsf;
+            hBrdr = findall(fig,'type','axes','tag','border');
+            %
+            if ~isempty(cmdargs)
+                i = 1;
+                while 1
+                    hTxt = findall(hBrdr,'type','text','tag',sprintf('plottext%i',i));
+                    if isempty(hTxt) || i>length(cmdargs) || ~ischar(cmdargs{i})
+                        break
+                    end
+                    str = strrep(cmdargs{i},'\n{}',char(13));
+                    str = splitcellstr(str,char(13));
+                    set(hTxt,'string',str);
+                    i = i+1;
+                end
+            else
+                md_paper('editmodal',hBrdr)
+            end
+            %
+            bProp = md_paper(hBrdr,'getprops');
+            %
+            i = 1;
+            str = {};
+            while 1
+                hTxt = sprintf('BorderText%i',i);
+                if ~isfield(bProp,hTxt)
+                    break
+                end
+                cstr = bProp.(hTxt);
+                str{i} = cstr;
+                i = i+1;
+            end
+            %
+            if logfile
+                writelog(logfile,logtype,cmd,str{:});
+            end
+            
         case 'figurecolour'
             fig = qpsf;
             if isempty(cmdargs)
