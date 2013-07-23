@@ -780,9 +780,14 @@ Out=FI.Case.Name;
 
 % -----------------------------------------------------------------------------
 function Out=infile(FI,domain)
-prj=FI.Case.Project(domain);
-cse=FI.Case.Case(domain);
-%======================== SPECIFIC CODE =======================================
+if domain > length(FI.Case.Project)
+    prj='';
+    cse='';
+else
+    prj=FI.Case.Project(domain);
+    cse=FI.Case.Case(domain);
+end
+%
 V=inf; % unknown/variable number of points indicated by infinity
 PropNames={'Name'                   'Units' 'DimFlag'   'DataInCell' 'NVal' 'Geom'   'Coords' 'ClosedPoly' 'Project' 'Case' 'Var'   };
 DataProps={'default figures'        ''      [0 0 0 0 0] 0            -2     ''       ''       0            prj       cse     0
@@ -807,7 +812,12 @@ DataProps={'default figures'        ''      [0 0 0 0 0] 0            -2     ''  
     'speed'                         'm/s'   [9 0 0 0 0] 0             1     'PNT'    'd'      0            prj       cse     0
     'his-data'                      ''      [9 0 0 0 0] 0             1     'PNT'    'd'      0            prj       cse     0       };
 Out=cell2struct(DataProps,PropNames,2);
-%======================== SPECIFIC CODE DIMENSIONS ============================
+%
+if domain > length(FI.Case.Project)
+    Out(1:end,:)=[];
+    return
+end
+%
 Proj = FI.Project(prj);
 if isempty(Proj.Cases.Data(cse).TimeSeries)
     hisvars={};

@@ -169,35 +169,39 @@ Proj = Children(strcmp(Name,'shipmaProject'));
 nProj = length(Proj);
 FI.TempFilePath = char(IntProp.getFirstChild.getTextContent);
 %
-FI.Project(nProj).Name = '';
 nCasesTot = 0;
-for p = 1:nProj
-    Children = getChildren(Proj(p));
-    FI.Project(p).Name = getName(Proj(p));
-    ProjFolder = fullfile(FI.UnzipFolder,['shi_' FI.Project(p).Name]);
-    FI.Project(p).Ships = getMembers(Children(1));
-    FI.Project(p).Ships.Data = getShipData(FI.Project(p).Ships.XML);
-    FI.Project(p).Sceneries = getMembers(Children(2));
-    FI.Project(p).Sceneries.Data = getSceneryData(FI.Project(p).Sceneries.XML,ProjFolder);
-    FI.Project(p).Environments = getMembers(Children(3));
-    FI.Project(p).Environments = getEnvironmentData(FI.Project(p).Environments,ProjFolder);
-    FI.Project(p).Manoeuvres = getMembers(Children(4));
-    FI.Project(p).Pilots = getMembers(Children(5));
-    FI.Project(p).TugScenarios = getMembers(Children(6));
-    FI.Project(p).Cases = getMembers(Children(7));
-    FI.Project(p).Cases.Data = getCaseData(FI.Project(p).Cases.XML,ProjFolder);
-    Data = FI.Project(p).Cases.Data;
-    nCases = length(Data);
-    for i=1:nCases
-        Data(i).shipNr    = ustrcmpi(Data(i).shipId,FI.Project(p).Ships.Names);
-        Data(i).windNr    = ustrcmpi(Data(i).windId,FI.Project(p).Environments.Winds.Names);
-        Data(i).wavesNr   = ustrcmpi(Data(i).wavesId,FI.Project(p).Environments.Waves.Names);
-        Data(i).currentNr = ustrcmpi(Data(i).currentId,FI.Project(p).Environments.Currents.Names);
-        Data(i).swellNr   = ustrcmpi(Data(i).swellId,FI.Project(p).Environments.Swells.Names);
-        Data(i).sceneryNr = ustrcmpi(Data(i).sceneryId,FI.Project(p).Sceneries.Names);
+FI.Project(max(nProj,1)).Name = '';
+if nProj==0
+    FI.Project(:,1) = [];
+else
+    for p = 1:nProj
+        Children = getChildren(Proj(p));
+        FI.Project(p).Name = getName(Proj(p));
+        ProjFolder = fullfile(FI.UnzipFolder,['shi_' FI.Project(p).Name]);
+        FI.Project(p).Ships = getMembers(Children(1));
+        FI.Project(p).Ships.Data = getShipData(FI.Project(p).Ships.XML);
+        FI.Project(p).Sceneries = getMembers(Children(2));
+        FI.Project(p).Sceneries.Data = getSceneryData(FI.Project(p).Sceneries.XML,ProjFolder);
+        FI.Project(p).Environments = getMembers(Children(3));
+        FI.Project(p).Environments = getEnvironmentData(FI.Project(p).Environments,ProjFolder);
+        FI.Project(p).Manoeuvres = getMembers(Children(4));
+        FI.Project(p).Pilots = getMembers(Children(5));
+        FI.Project(p).TugScenarios = getMembers(Children(6));
+        FI.Project(p).Cases = getMembers(Children(7));
+        FI.Project(p).Cases.Data = getCaseData(FI.Project(p).Cases.XML,ProjFolder);
+        Data = FI.Project(p).Cases.Data;
+        nCases = length(Data);
+        for i=1:nCases
+            Data(i).shipNr    = ustrcmpi(Data(i).shipId,FI.Project(p).Ships.Names);
+            Data(i).windNr    = ustrcmpi(Data(i).windId,FI.Project(p).Environments.Winds.Names);
+            Data(i).wavesNr   = ustrcmpi(Data(i).wavesId,FI.Project(p).Environments.Waves.Names);
+            Data(i).currentNr = ustrcmpi(Data(i).currentId,FI.Project(p).Environments.Currents.Names);
+            Data(i).swellNr   = ustrcmpi(Data(i).swellId,FI.Project(p).Environments.Swells.Names);
+            Data(i).sceneryNr = ustrcmpi(Data(i).sceneryId,FI.Project(p).Sceneries.Names);
+        end
+        FI.Project(p).Cases.Data = Data;
+        nCasesTot = nCasesTot + nCases;
     end
-    FI.Project(p).Cases.Data = Data;
-    nCasesTot = nCasesTot + nCases;
 end
 %
 FI.Case.Name = cell(nCasesTot,1);
@@ -326,6 +330,10 @@ end
 
 function Data = getSceneryData(Sceneries,UnzipFolder)
 nSceneries = length(Sceneries);
+if nSceneries==0
+    Data = [];
+    return
+end
 Data(nSceneries).fairwayContourFile = [];
 Data(nSceneries).banksuctionFile = [];
 Data(nSceneries).bottomFile  = [];
