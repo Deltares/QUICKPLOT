@@ -39,6 +39,14 @@ datafields=findobj(mfig,'tag','selectfield');
 %
 fld=get(datafields,'value');
 Props=get(datafields,'userdata');
+if isempty(Props)
+    DomainNr = [];
+    subf = [];
+    selected = [];
+    stats =[];
+    Ops.presentationtype = 'failed';
+    return
+end
 Props=Props(fld);
 Units='';
 if isfield(Props,'Units')

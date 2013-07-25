@@ -117,8 +117,19 @@ end
 prj = Props.Project;
 PRJ = FI.Project(prj);
 cse = Props.Case;
+scn = Props.Scenery;
+man = Props.Manoeuvre;
+Name = Props.Name;
+if cse==0
+    i = findstr(Name,':');
+    if isempty(i)
+        Name = strtok(Name);
+    else
+        Name = Name(i+2:end);
+    end
+end
 
-switch Props.Name
+switch Name
     case 'ship snapshots'
         step = qp_settings('shipma_timestep');
         Series = PRJ.Cases.Data(cse).TimeSeries;
@@ -139,9 +150,9 @@ end
 
 % generate output ...
 if Props.NVal==0
-    switch Props.Name
+    switch Name
         case 'fairway contour'
-            FileName = PRJ.Sceneries.Data(PRJ.Cases.Data(cse).sceneryNr).fairwayContourFile;
+            FileName = PRJ.Sceneries.Data(scn).fairwayContourFile;
             if exist(FileName)
                 [Ans.X,Ans.Y] = landboundary('read',FileName,'autocorrect');
             else
@@ -149,12 +160,17 @@ if Props.NVal==0
                 Ans.Y=[];
             end
         case 'bank suction lines'
-            bsFI = tekal('open',PRJ.Sceneries.Data(PRJ.Cases.Data(cse).sceneryNr).banksuctionFile,'nskipdatalines',1);
+            bsFI = tekal('open',PRJ.Sceneries.Data(scn).banksuctionFile,'nskipdatalines',1);
             XY = tekal('read',bsFI,1:2);
             Ans.X = [XY{1}(:,1);NaN;XY{2}(:,1)];
             Ans.Y = [XY{1}(:,2);NaN;XY{2}(:,2)];
         case 'desired ship track'
-            [Ans.X,Ans.Y] = landboundary('read',PRJ.Cases.Data(cse).trackFile,'autocorrect');
+            if cse>0
+                [Ans.X,Ans.Y] = landboundary('read',PRJ.Cases.Data(cse).trackFile,'autocorrect');
+            else
+                Ans.X = PRJ.Manoeuvres.Data(man).track(:,1);
+                Ans.Y = PRJ.Manoeuvres.Data(man).track(:,2);
+            end
         case 'distance ticks'
             step = qp_settings('shipma_spacestep');
             width = qp_settings('shipma_tickwidth');
@@ -264,12 +280,27 @@ if Props.NVal==0
             end
     end
 elseif Props.NVal==1
-    switch Props.Name
+    switch Name
         case 'depth'
-            btFI = samples('read',PRJ.Cases.Data(cse).bottomFile);
+            if cse>0
+                btFN = PRJ.Cases.Data(cse).bottomFile;
+            else
+                btFN = PRJ.Sceneries.Data(scn).bottomFile;
+            end
+            btFI = samples('read',btFN);
             Ans.XYZ = reshape(btFI.XYZ,[1 size(btFI.XYZ,1) 1 3]);
             Ans.TRI = delaunay(btFI.XYZ(:,1),btFI.XYZ(:,2));
             Ans.Val = btFI.XYZ(:,3);
+        case 'swell'
+            if cse>0
+                fld = PRJ.Cases.Data(cse).swellNr;
+            else
+                fld = Props.Manoeuvre;
+            end
+            wFI = shipma('openpar',PRJ.Environments.Swells.Data(fld).file,'swell');
+            Ans.XYZ = reshape(wFI.XY,[1 size(wFI.XY,1) 1 2]);
+            Ans.TRI = delaunay(wFI.XY(:,1),wFI.XY(:,2));
+            Ans.Val = wFI.Swell;
         case 'speed'
             Ans.X   = val1(3,:)';
             Ans.Val = sqrt(val1(1,:).^2 + val1(2,:).^2)';
@@ -284,7 +315,7 @@ elseif Props.NVal==1
             end
     end
 elseif Props.NVal==4
-    switch Props.Name
+    switch Name
         case 'distance value at ticks'
             step = qp_settings('shipma_spacestep');
             if qp_settings('shipma_distance_along_desired_track')
@@ -307,27 +338,42 @@ elseif Props.NVal==4
             end
     end
 elseif Props.NVal==2
-    switch Props.Name
+    switch Name
         case 'speed'
             Ans.X = val1(3,:)';
             Ans.XComp = val1(1,:)';
             Ans.YComp = val1(2,:)';
         case 'wind'
-            wFI = shipma('openpar',PRJ.Environments.Winds.Data(PRJ.Cases.Data(cse).windNr).file,'wind');
+            if cse>0
+                fld = PRJ.Cases.Data(cse).windNr;
+            else
+                fld = Props.Manoeuvre;
+            end
+            wFI = shipma('openpar',PRJ.Environments.Winds.Data(fld).file,'wind');
             Ans.XYZ = reshape(wFI.XY,[1 size(wFI.XY,1) 1 2]);
             Ans.TRI = delaunay(wFI.XY(:,1),wFI.XY(:,2));
             toDir = wFI.WindFromDir*pi/180-pi;
             Ans.XComp = wFI.WindMagnitude.*sin(toDir);
             Ans.YComp = wFI.WindMagnitude.*cos(toDir);
         case 'waves'
-            wFI = shipma('openpar',PRJ.Environments.Waves.Data(PRJ.Cases.Data(cse).wavesNr).file,'waves');
+            if cse>0
+                fld = PRJ.Cases.Data(cse).wavesNr;
+            else
+                fld = Props.Manoeuvre;
+            end
+            wFI = shipma('openpar',PRJ.Environments.Waves.Data(fld).file,'waves');
             Ans.XYZ = reshape(wFI.XY,[1 size(wFI.XY,1) 1 2]);
             Ans.TRI = delaunay(wFI.XY(:,1),wFI.XY(:,2));
             toDir = wFI.WaveToDir*pi/180;
             Ans.XComp = wFI.WaveHeight.*sin(toDir);
             Ans.YComp = wFI.WaveHeight.*cos(toDir);
         case 'current'
-            wFI = shipma('openpar',PRJ.Environments.Currents.Data(PRJ.Cases.Data(cse).currentNr).file,'current');
+            if cse>0
+                fld = PRJ.Cases.Data(cse).currentNr;
+            else
+                fld = Props.Manoeuvre;
+            end
+            wFI = shipma('openpar',PRJ.Environments.Currents.Data(fld).file,'current');
             Ans.XYZ = reshape(wFI.XY,[1 size(wFI.XY,1) 1 2]);
             Ans.TRI = delaunay(wFI.XY(:,1),wFI.XY(:,2));
             toDir = wFI.CurrentToDir*pi/180;
@@ -782,36 +828,97 @@ Out=FI.Case.Name;
 function Out=infile(FI,domain)
 if domain > length(FI.Case.Project)
     prj='';
-    cse='';
+    cse=0;
 else
     prj=FI.Case.Project(domain);
     cse=FI.Case.Case(domain);
 end
+scn = 0;
+man = 0;
 %
 V=inf; % unknown/variable number of points indicated by infinity
-PropNames={'Name'                   'Units' 'DimFlag'   'DataInCell' 'NVal' 'Geom'   'Coords' 'ClosedPoly' 'Project' 'Case' 'Var'   };
-DataProps={'default figures'        ''      [0 0 0 0 0] 0            -2     ''       ''       0            prj       cse     0
-    '-------'                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse     0
-    'desired ship track'            ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse     -1
-    'realized ship track'           ''      [9 0 0 0 0] 0             0     'PNT'    'xy'     0            prj       cse     0
-    'distance ticks'                ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse     0
-    'distance value at ticks'       ''      [0 0 0 0 0] 0             4     'sQUAD'  'xy'     0            prj       cse     0
-    'ship at distance ticks'        ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     0
-    'ship snapshots'                ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     0
-    'ship'                          ''      [9 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     0
-    'swept path'                    ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     0
-    'fairway contour'               ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse     -1
-    'bank suction lines'            ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse     -1
-    '-------'                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse     0
-    'wind'                          'm/s'   [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse     -1
-    'waves'                         'm'     [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse     -1
-    'swell'                         'm'     [0 0 V 0 0] 0             1     'TRI'    'xy'     0            prj       cse     -1
-    'current'                       'm/s'   [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse     -1
-    'depth'                         'm'     [0 0 V 0 0] 0             1     'TRI'    'xy'     0            prj       cse     -1
-    '-------'                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse     0
-    'speed'                         'm/s'   [9 0 0 0 0] 0             1     'PNT'    'd'      0            prj       cse     0
-    'his-data'                      ''      [9 0 0 0 0] 0             1     'PNT'    'd'      0            prj       cse     0       };
-Out=cell2struct(DataProps,PropNames,2);
+PropNames={'Name'                       'Units' 'DimFlag'   'DataInCell' 'NVal' 'Geom'   'Coords' 'ClosedPoly' 'Project' 'Case' 'Scenery' 'Manoeuvre' 'Var'   };
+Sep      ={'-------'                    ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse    scn       man          0      }; 
+if cse>0
+    scn=FI.Project(prj).Cases.Data(cse).sceneryNr;
+    DataProps={'default figures'        ''      [0 0 0 0 0] 0            -2     ''       ''       0            prj       cse    scn       man          0
+        '-------'                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse    scn       man          0
+        'desired ship track'            ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse    scn       man          -1
+        'realized ship track'           ''      [9 0 0 0 0] 0             0     'PNT'    'xy'     0            prj       cse    scn       man          0
+        'distance ticks'                ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse    scn       man          0
+        'distance value at ticks'       ''      [0 0 0 0 0] 0             4     'sQUAD'  'xy'     0            prj       cse    scn       man          0
+        'ship at distance ticks'        ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse    scn       man          0
+        'ship snapshots'                ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse    scn       man          0
+        'ship'                          ''      [9 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse    scn       man          0
+        'swept path'                    ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse    scn       man          0
+        'fairway contour'               ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse    scn       man          -1
+        'bank suction lines'            ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse    scn       man          -1
+        '-------'                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse    scn       man          0
+        'wind'                          'm/s'   [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse    scn       man          -1
+        'waves'                         'm'     [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse    scn       man          -1
+        'swell'                         'm'     [0 0 V 0 0] 0             1     'TRI'    'xy'     0            prj       cse    scn       man          -1
+        'current'                       'm/s'   [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse    scn       man          -1
+        'depth'                         'm'     [0 0 V 0 0] 0             1     'TRI'    'xy'     0            prj       cse    scn       man          -1
+        '-------'                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse    scn       man          0
+        'speed'                         'm/s'   [9 0 0 0 0] 0             1     'PNT'    'd'      0            prj       cse    scn       man          0
+        'his-data'                      ''      [9 0 0 0 0] 0             1     'PNT'    'd'      0            prj       cse    scn       man          0       };
+    Out=cell2struct(DataProps,PropNames,2);
+else
+    DataProps={};
+    %
+    man = 0;
+    for scn = 1:length(FI.Project(prj).Sceneries.Names)
+        nm = FI.Project(prj).Sceneries.Names{scn};
+        sc = sprintf('scenery %s: ',nm);
+        DataProps = cat(1,DataProps, ...
+        {[sc 'fairway contour']         ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse    scn       man          -1
+        [sc 'bank suction lines']       ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse    scn       man          -1
+        [sc 'depth']                    'm'     [0 0 V 0 0] 0             1     'TRI'    'xy'     0            prj       cse    scn       man          -1});
+    end
+    %
+    DataProps = cat(1,DataProps,Sep);
+    for e = 1:length(FI.Project(prj).Environments.Names)
+        Envs = FI.Project(prj).Environments.Names{e};
+        env = lower(Envs(1:end-1));
+        if strcmp(env,'wave')
+            env = 'waves';
+        end
+        for i = 1:length(FI.Project(prj).Environments.(Envs).Names)
+            nm = FI.Project(prj).Environments.(Envs).Names{i};
+            qnt = sprintf('%s %s',env,nm);
+            switch env
+                case {'wind','current'}
+                    un = 'm/s';
+                    nv = 2;
+                case 'waves'
+                    un = 'm';
+                    nv = 2;
+                case 'swell'
+                    un = 'm';
+                    nv = 1;
+                otherwise
+                    continue
+            end
+            scn = Envs;
+            man = i;
+            DataProps = cat(1,DataProps, ...
+                {qnt                    un      [0 0 V 0 0] 0             nv    'TRI'    'xy'     0            prj       cse    scn       man          -1});
+        end
+    end
+    %
+    scn = 0;
+    DataProps = cat(1,DataProps,Sep);
+    for man = 1:length(FI.Project(prj).Manoeuvres.Names)
+        nm = FI.Project(prj).Manoeuvres.Names{man};
+        track = sprintf('manoeuvre %s: desired ship track',nm);
+        DataProps = cat(1,DataProps, ...
+        {track                          ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse    scn       man          -1});
+    end
+    %
+    DataProps = cat(1,DataProps,Sep);
+    Out=cell2struct(DataProps,PropNames,2);
+    return
+end
 %
 if domain > length(FI.Case.Project)
     Out(1:end,:)=[];

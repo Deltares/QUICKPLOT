@@ -169,7 +169,6 @@ Proj = Children(strcmp(Name,'shipmaProject'));
 nProj = length(Proj);
 FI.TempFilePath = char(IntProp.getFirstChild.getTextContent);
 %
-nCasesTot = 0;
 FI.Project(max(nProj,1)).Name = '';
 if nProj==0
     FI.Project(:,1) = [];
@@ -185,13 +184,13 @@ else
         FI.Project(p).Environments = getMembers(Children(3));
         FI.Project(p).Environments = getEnvironmentData(FI.Project(p).Environments,ProjFolder);
         FI.Project(p).Manoeuvres = getMembers(Children(4));
+        FI.Project(p).Manoeuvres.Data = getManoeuvreData(FI.Project(p).Manoeuvres.XML);
         FI.Project(p).Pilots = getMembers(Children(5));
         FI.Project(p).TugScenarios = getMembers(Children(6));
         FI.Project(p).Cases = getMembers(Children(7));
         FI.Project(p).Cases.Data = getCaseData(FI.Project(p).Cases.XML,ProjFolder);
         Data = FI.Project(p).Cases.Data;
-        nCases = length(Data);
-        for i=1:nCases
+        for i=1:length(Data)
             Data(i).shipNr    = ustrcmpi(Data(i).shipId,FI.Project(p).Ships.Names);
             Data(i).windNr    = ustrcmpi(Data(i).windId,FI.Project(p).Environments.Winds.Names);
             Data(i).wavesNr   = ustrcmpi(Data(i).wavesId,FI.Project(p).Environments.Waves.Names);
@@ -200,19 +199,27 @@ else
             Data(i).sceneryNr = ustrcmpi(Data(i).sceneryId,FI.Project(p).Sceneries.Names);
         end
         FI.Project(p).Cases.Data = Data;
-        nCasesTot = nCasesTot + nCases;
     end
 end
 %
-FI.Case.Name = cell(nCasesTot,1);
-FI.Case.Project = zeros(1,nCasesTot);
-FI.Case.Case = zeros(1,nCasesTot);
+nTot = 0;
+for p = 1:length(FI.Project)
+    nTot = nTot + 1 ...
+        + length(FI.Project(p).Cases.Names); ...
+end
+%
+FI.Case.Name = cell(nTot,1);
+FI.Case.Project = zeros(1,nTot);
+FI.Case.Case = zeros(1,nTot);
 j = 0;
-for p=1:length(FI.Project)
-    nCases = length(FI.Project(p).Cases.Data);
-    for i=1:nCases
+for p = 1:length(FI.Project)
+    j = j+1;
+    FI.Case.Name{j}    = sprintf('%s',FI.Project(p).Name);
+    FI.Case.Project(j) = p;
+    FI.Case.Case(j)    = 0;
+    for i = 1:length(FI.Project(p).Cases.Names)
         j = j+1;
-        FI.Case.Name{j}    = sprintf('%s\\%s',FI.Project(p).Name,FI.Project(p).Cases.Names{i});
+        FI.Case.Name{j}    = sprintf('%s/%s',FI.Project(p).Name,FI.Project(p).Cases.Names{i});
         FI.Case.Project(j) = p;
         FI.Case.Case(j)    = i;
     end
@@ -261,6 +268,30 @@ for i = 2:nChild
     c{i} = c{i-1}.getNextSibling;
 end
 Children = [c{:}];
+
+
+function Data = getManoeuvreData(Manoeuvres)
+nManoeuvres = length(Manoeuvres);
+if nManoeuvres==0
+    Data = [];
+    return
+end
+Data(nManoeuvres).track = [];
+for m = 1:nManoeuvres
+    ManProps = getChildren(Manoeuvres(m));
+    try
+        checkName(ManProps(1),'ManoeuvreTrack')
+        Points = getChildren(ManProps(1));
+        nPoints = length(Points);
+        track = zeros(nPoints,2);
+        for i = 1:nPoints
+            Point = getChildren(Points(i));
+            track(i,1) = str2double(char(Point(1).getTextContent));
+            track(i,2) = str2double(char(Point(2).getTextContent));
+        end
+        Data(m).track = track;
+    end
+end
 
 
 function Env = getEnvironmentData(Env,UnzipFolder)

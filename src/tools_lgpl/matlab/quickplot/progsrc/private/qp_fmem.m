@@ -986,7 +986,7 @@ switch cmd
                try
                    FI=shipma('open',FileName);
                    Tp=trytp;
-                   FI.DomainName = 'Proj\Case';
+                   FI.DomainName = 'Proj/Case';
                    FI.Options=1;
                end
                trytp='unibest';
