@@ -164,7 +164,7 @@ if Props.NVal==0
             XY = tekal('read',bsFI,1:2);
             Ans.X = [XY{1}(:,1);NaN;XY{2}(:,1)];
             Ans.Y = [XY{1}(:,2);NaN;XY{2}(:,2)];
-        case 'desired ship track'
+        case {'desired ship track','route waypoints'}
             if cse>0
                 [Ans.X,Ans.Y] = landboundary('read',PRJ.Cases.Data(cse).trackFile,'autocorrect');
             else
@@ -912,7 +912,7 @@ else
     DataProps = cat(1,DataProps,Sep);
     for man = 1:length(FI.Project(prj).Manoeuvres.Names)
         nm = FI.Project(prj).Manoeuvres.Names{man};
-        track = sprintf('manoeuvre %s: desired ship track',nm);
+        track = sprintf('manoeuvre %s: route waypoints',nm);
         DataProps = cat(1,DataProps, ...
         {track                          ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse    scn       man          -1});
     end
