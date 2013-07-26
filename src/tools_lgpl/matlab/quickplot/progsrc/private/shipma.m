@@ -57,6 +57,8 @@ if nargin<2
             SubType = 'waves';
         case '.wnd'
             SubType = 'wind';
+        case '.swl'
+            SubType = 'swell';
         otherwise
             SubType = 'unknown';
     end
@@ -96,7 +98,7 @@ switch SubType
     case 'current'
         FI.CurrentMagnitude = Data(:,3)*ScaleFactor;
         FI.CurrentToDir     = Data(:,4); % 0 = current to north
-    case 'waves'
+    case {'waves','swell'}
         FI.WaveHeight = Data(:,3)*ScaleFactor;
         FI.WaveToDir  = Data(:,4);
     case 'wind'
@@ -290,6 +292,8 @@ for m = 1:nManoeuvres
             track(i,2) = str2double(char(Point(2).getTextContent));
         end
         Data(m).track = track;
+    catch
+        Data(m).track = zeros(0,2);
     end
 end
 

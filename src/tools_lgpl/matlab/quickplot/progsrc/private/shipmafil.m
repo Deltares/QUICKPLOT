@@ -291,16 +291,6 @@ elseif Props.NVal==1
             Ans.XYZ = reshape(btFI.XYZ,[1 size(btFI.XYZ,1) 1 3]);
             Ans.TRI = delaunay(btFI.XYZ(:,1),btFI.XYZ(:,2));
             Ans.Val = btFI.XYZ(:,3);
-        case 'swell'
-            if cse>0
-                fld = PRJ.Cases.Data(cse).swellNr;
-            else
-                fld = Props.Manoeuvre;
-            end
-            wFI = shipma('openpar',PRJ.Environments.Swells.Data(fld).file,'swell');
-            Ans.XYZ = reshape(wFI.XY,[1 size(wFI.XY,1) 1 2]);
-            Ans.TRI = delaunay(wFI.XY(:,1),wFI.XY(:,2));
-            Ans.Val = wFI.Swell;
         case 'speed'
             Ans.X   = val1(3,:)';
             Ans.Val = sqrt(val1(1,:).^2 + val1(2,:).^2)';
@@ -362,6 +352,18 @@ elseif Props.NVal==2
                 fld = Props.Manoeuvre;
             end
             wFI = shipma('openpar',PRJ.Environments.Waves.Data(fld).file,'waves');
+            Ans.XYZ = reshape(wFI.XY,[1 size(wFI.XY,1) 1 2]);
+            Ans.TRI = delaunay(wFI.XY(:,1),wFI.XY(:,2));
+            toDir = wFI.WaveToDir*pi/180;
+            Ans.XComp = wFI.WaveHeight.*sin(toDir);
+            Ans.YComp = wFI.WaveHeight.*cos(toDir);
+        case 'swell'
+            if cse>0
+                fld = PRJ.Cases.Data(cse).swellNr;
+            else
+                fld = Props.Manoeuvre;
+            end
+            wFI = shipma('openpar',PRJ.Environments.Swells.Data(fld).file,'swell');
             Ans.XYZ = reshape(wFI.XY,[1 size(wFI.XY,1) 1 2]);
             Ans.TRI = delaunay(wFI.XY(:,1),wFI.XY(:,2));
             toDir = wFI.WaveToDir*pi/180;
@@ -519,7 +521,7 @@ if qp_settings('shipma_figb')
     cmax  = qp_settings('shipma_figb_contourmax');
     %
     switch quant
-        case {'wind','waves'}
+        case {'wind','waves','swell'}
             caption = ['Track plot and ' quant];
         case {'current'}
             caption = ['Track plot and ' quant 's'];
@@ -856,7 +858,7 @@ if cse>0
         '-------'                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse    scn       man          0
         'wind'                          'm/s'   [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse    scn       man          -1
         'waves'                         'm'     [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse    scn       man          -1
-        'swell'                         'm'     [0 0 V 0 0] 0             1     'TRI'    'xy'     0            prj       cse    scn       man          -1
+        'swell'                         'm'     [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse    scn       man          -1
         'current'                       'm/s'   [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse    scn       man          -1
         'depth'                         'm'     [0 0 V 0 0] 0             1     'TRI'    'xy'     0            prj       cse    scn       man          -1
         '-------'                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse    scn       man          0
@@ -895,7 +897,7 @@ else
                     nv = 2;
                 case 'swell'
                     un = 'm';
-                    nv = 1;
+                    nv = 2;
                 otherwise
                     continue
             end
@@ -1712,7 +1714,7 @@ uicontrol('Parent',h0, ...
     'BackgroundColor',Active, ...
     'Horizontalalignment','left', ...
     'Position',[21+textwidth voffset 80 20], ...
-    'String',{'wind','waves','current'}, ...
+    'String',{'wind','waves','swell','current'}, ...
     'Callback','d3d_qp fileoptions shipma_figb_quantity', ...
     'Enable','on', ...
     'Tag','figb_list');

@@ -83,7 +83,7 @@ end
 
 
 function Data=Local_read_file(filename,varargin)
-Data=[];
+Data=zeros(0,2);
 if nargin==0
     [fn,fp]=uigetfile('*.ldb');
     if ~ischar(fn)

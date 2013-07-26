@@ -358,7 +358,11 @@ while 1
 end
 fclose(fid);
 if ~isfield(FileInfo,'Field')
-    error('File is empty: %s',FileInfo.FileName)
+    if TryToCorrect
+        FileInfo.Field=[];
+    else
+        error('File is empty: %s',FileInfo.FileName)
+    end
 end
 if ~ErrorFound
     FileInfo.Check='OK';
