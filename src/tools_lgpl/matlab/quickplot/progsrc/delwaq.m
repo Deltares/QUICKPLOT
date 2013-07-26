@@ -840,8 +840,8 @@ if tim==0
         Data=Data(subs,1,:);
     elseif nseg>1
         Data=zeros(nseg,S.NTimes);
-        for i=seg
-            fseek(fid,S.DataStart+FormRecSize+4+4*(i-1)*NSubs+4*(subs-1),-1);
+        for i=1:length(seg)
+            fseek(fid,S.DataStart+FormRecSize+4+4*(seg(i)-1)*NSubs+4*(subs-1),-1);
             Data(i,:)=local_fread(fid,can_use_skip,[1 S.NTimes],'float32',4*NTot+2*FormRecSize);
         end
         Data=reshape(Data,1,nseg,S.NTimes);
