@@ -392,7 +392,7 @@ if length(axestype)>1
         % type is supported, otherwise use the default first axes type.
         %
         ax=qpsa;
-        if isempty(ax)
+        if length(ax)~=1 % no axes selected, or multiple axes selected
             i=1;
         else
             paxestype = getappdata(ax,'BasicAxesType');
