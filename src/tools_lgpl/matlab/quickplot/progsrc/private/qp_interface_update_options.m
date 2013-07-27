@@ -251,6 +251,12 @@ switch geometry
                 axestype={'Time-Val','Distance-Val','Text'};
             elseif nval==0
                 axestype={'X-Y'};
+            elseif ~isempty(findstr(coordinates,'xy'))
+                if nval==4
+                    axestype={'X-Y','Text'};
+                else
+                    axestype={'X-Y','Time-Val','Text'};
+                end
             else
                 axestype={'Time-Val','Text'};
             end
