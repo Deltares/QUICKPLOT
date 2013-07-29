@@ -447,12 +447,17 @@ end
 for c = {'a' 'a1'}
     if qp_settings(['shipma_fig' c{1}])
         caption = 'Overview plot of track';
+        fignr = 'Fig. A';
         if isequal(c,{'a1'})
             caption = 'Zoomed plot of track';
+            fignr = 'Fig. A1';
             zoombox = qp_settings('shipma_figa1_zoombox');
             if any(isnan(zoombox))
                 ui_message('error','Skipping Fig A1 because zoombox coordinates are incomplete')
                 continue
+            else
+                zoombox(1:2) = sort(zoombox(1:2));
+                zoombox(3:4) = sort(zoombox(3:4));
             end
         end
         if qp_settings('shipma_figa_depth')
@@ -461,6 +466,7 @@ for c = {'a' 'a1'}
         cstep = qp_settings('shipma_figa_contourstep');
         cmax  = qp_settings('shipma_figa_contourmax');
         texts = local_strrep(texts_template,'%caption%',caption);
+        texts = local_strrep(texts,'%fignr%',fignr);
         d3d_qp('newfigure','1 plot - portrait',['SHIPMA Fig ' upper(c{1})],texts)
         if qp_settings('shipma_figa_depth') && d3d_qp('selectfield','depth')
             d3d_qp('colourmap','navdepth')
@@ -526,7 +532,9 @@ if qp_settings('shipma_figb')
         case {'current'}
             caption = ['Track plot and ' quant 's'];
     end
+    fignr = 'Fig. B';
     texts = local_strrep(texts_template,'%caption%',caption);
+    texts = local_strrep(texts,'%fignr%',fignr);
     d3d_qp('newfigure','1 plot - portrait','SHIPMA Fig B',texts)
     if d3d_qp('selectfield',quant)
         d3d_qp('component','magnitude')
@@ -585,7 +593,9 @@ end
 %--------
 if qp_settings('shipma_figc')
     caption = 'Speed and ruddle angle plots';
+    fignr = 'Fig. C';
     texts = local_strrep(texts_template,'%caption%',caption);
+    texts = local_strrep(texts,'%fignr%',fignr);
     d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig C',texts)
     %--
     qpsa('upper plot')
@@ -615,7 +625,9 @@ end
 %--------
 if qp_settings('shipma_figd')
     caption = {'Swept path and depth along track','Starboard side (dashed) port side (solid)'};
+    fignr = 'Fig. D';
     texts = local_strrep(texts_template,'%caption%',caption);
+    texts = local_strrep(texts,'%fignr%',fignr);
     d3d_qp('newfigure','2 plots, vertical - portrait','SHIPMA Fig D',texts)
     %--
     set(qpsa('upper plot'),'ydir','reverse')
@@ -679,7 +691,9 @@ if qp_settings('shipma_fige')
     else
         caption = 'External forces plots';
     end
+    fignr = 'Fig. E';
     texts = local_strrep(texts_template,'%caption%',caption);
+    texts = local_strrep(texts,'%fignr%',fignr);
     d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig E',texts)
     %--
     qpsa('upper plot')
@@ -762,7 +776,9 @@ if qp_settings('shipma_figf')
     else
         caption = '';
     end
+    fignr = 'Fig. F';
     texts = local_strrep(texts_template,'%caption%',caption);
+    texts = local_strrep(texts,'%fignr%',fignr);
     d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig F',texts)
     %--
     qpsa('upper plot')
@@ -1115,9 +1131,9 @@ switch cmd
                                 'figb_list','figb_contourstep','figb_contourstepval', ...
                                 'figb_contourmax','figb_contourmaxval'};
                             if get(findobj(mfig,'tag','figa1'),'value')
-                                set(h,'string','Fig B, as Fig A1 replacing depth by')
+                                set(h,'string','Fig B, as Fig A1 now showing')
                             else
-                                set(h,'string','Fig B, as Fig A replacing depth by')
+                                set(h,'string','Fig B, as Fig A now showing')
                             end
                         case 'e'
                             taglist = {'fige_wind','fige_waves','fige_swell','fige_banksuction'};
@@ -1228,18 +1244,16 @@ switch cmd
         if isempty(varargin)
             % get from Fig A1 if exists, otherwise from Fig A if exists
             fg = 'A1';
-            Figs = findall(0,'type','figure','name','QuickPlot: SHIPMA Fig A1');
-            if isempty(Figs)
-                fg = 'A';
-                Figs = findall(0,'type','figure','name','QuickPlot: SHIPMA Fig A');
-            end
-            if length(Figs)>1
-                ui_message('error','Multiple Fig %s open. Don''t know which one to use.',fg)
-                return
-            elseif isempty(Figs)
-                ui_message('error','No Fig A or A1 open to get zoombox coordinates from.')
+            Figs = findall(0,'type','figure');
+            FigsA = [findall(0,'type','figure','name','QuickPlot: SHIPMA Fig A');
+                findall(0,'type','figure','name','QuickPlot: SHIPMA Fig A1');
+                findall(0,'type','figure','name','QuickPlot: SHIPMA Fig B')];
+            isA = ismember(Figs,FigsA);
+            if none(isA)
+                ui_message('error','No Fig A, A1 or B open to get zoombox coordinates from.')
                 return
             end
+            Figs = Figs(find(isA,1,'first')); % get first (=topmost) figure
             Ax = findall(Figs,'type','axes','tag','plot area');
             if length(Ax)~=1
                 ui_message('error','Invalid Fig %s found.',fg)
@@ -1259,7 +1273,7 @@ switch cmd
         end
         cmds = {'shipma_figa1_xmin','shipma_figa1_xmax','shipma_figa1_ymin','shipma_figa1_ymax'};
         for i = 1:4
-            options(FI,mfig,cmds{i},val(i))
+            options(FI,mfig,cmds{i},val(i));
         end
         cmdargs={cmd,val};
         
@@ -1314,9 +1328,9 @@ switch cmd
         %
         if strcmp(cmd,'shipma_figa1') || strcmp(cmd,'shipma_figb')
             if get(findobj(mfig,'tag','figa1'),'value')
-                set(findobj(mfig,'tag','figb'),'string','Fig B, as Fig A1 replacing depth by')
+                set(findobj(mfig,'tag','figb'),'string','Fig B, as Fig A1 now showing')
             else
-                set(findobj(mfig,'tag','figb'),'string','Fig B, as Fig A replacing depth by')
+                set(findobj(mfig,'tag','figb'),'string','Fig B, as Fig A now showing')
             end
         end
         switch cmd
@@ -1705,7 +1719,7 @@ uicontrol('Parent',h0, ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
     'Position',[21 voffset textwidth 18], ...
-    'String','Fig B, as Fig A1 replacing depth by', ...
+    'String','Fig B, as Fig A1 now showing', ...
     'Callback','d3d_qp fileoptions shipma_figb', ...
     'Enable','on', ...
     'Tag','figb');

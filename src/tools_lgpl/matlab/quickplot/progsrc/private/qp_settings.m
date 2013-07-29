@@ -148,7 +148,7 @@ Set.shipma_bordertext2_string = '%project%';
 Set.shipma_bordertext3_string = '%case%';
 Set.shipma_bordertext4_string = '%shipma%';
 Set.shipma_bordertext5_string = '';
-Set.shipma_bordertext6_string = '';
+Set.shipma_bordertext6_string = '%fignr%';
 Set.shipma_bordertext7_string = '%organization%';
 %
 if isfield(Set,param)
