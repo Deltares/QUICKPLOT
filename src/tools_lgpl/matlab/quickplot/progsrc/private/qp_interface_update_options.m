@@ -1025,7 +1025,7 @@ if strcmp(Ops.thinningmode,'?')
     set(findobj(OH,'tag','thinfld'),'enable','on');
     thinfld=findobj(OH,'tag','thinfld=?');
     set(thinfld,'enable','on','backgroundcolor',Active)
-    thinmodes = {'none','uniform','distance'}';
+    thinmodes = {'none','uniform','distance'}'; %,'regrid'
     if triangles
         thinmodes(2)=[];
     end
@@ -1043,7 +1043,7 @@ if strcmp(Ops.thinningmode,'?')
             thinfact=findobj(OH,'tag','thinfact=?');
             set(thinfact,'enable','on','backgroundcolor',Active);
             Ops.thinningfactors=get(thinfact,'userdata')*[1 1 1];
-        case 'distance'
+        case {'distance','regrid'}
             set(findobj(OH,'tag','thindist'),'enable','on');
             thindist=findobj(OH,'tag','thindist=?');
             set(thindist,'enable','on','backgroundcolor',Active);

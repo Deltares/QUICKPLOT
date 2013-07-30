@@ -239,6 +239,33 @@ if isfield(data,'TRI')
             if isfield(data,'Val')
                 data.Val  =data.Val(I);
             end
+        case 'regrid'
+            rangemin = squeeze(min(data.XYZ,[],2));
+            rangemax = squeeze(max(data.XYZ,[],2));
+            drange = rangemax - rangemin;
+            x = (0:floor(drange(1)/Ops.thinningdistance))*Ops.thinningdistance;
+            x = x + (drange(1)-x(end))/2 + rangemin(1);
+            y = (0:floor(drange(2)/Ops.thinningdistance))*Ops.thinningdistance;
+            y = y + (drange(2)-y(end))/2 + rangemin(2);
+            [X,Y]=meshgrid(x,y);
+            if size(data.XYZ,4)>2
+                data.Z=griddata(data.XYZ(1,:,1,1),data.XYZ(1,:,1,2),data.XYZ(1,:,1,3),X,Y);
+            end
+            if isfield(data,'XComp')
+                data.XComp=griddata(data.XYZ(1,:,1,1),data.XYZ(1,:,1,2),data.XComp,X,Y);
+            end
+            if isfield(data,'YComp')
+                data.YComp=griddata(data.XYZ(1,:,1,1),data.XYZ(1,:,1,2),data.YComp,X,Y);
+            end
+            if isfield(data,'ZComp')
+                data.ZComp=griddata(data.XYZ(1,:,1,1),data.XYZ(1,:,1,2),data.ZComp,X,Y);
+            end
+            if isfield(data,'Val')
+                data.Val=griddataa(data.XYZ(1,:,1,1),data.XYZ(1,:,1,2),data.Val,X,Y);
+            end
+            data = rmfield(data,'XYZ');
+            data.X = X;
+            data.Y = Y;
     end
 elseif isfield(Ops,'thinningmode')
     switch lower(Ops.thinningmode)
