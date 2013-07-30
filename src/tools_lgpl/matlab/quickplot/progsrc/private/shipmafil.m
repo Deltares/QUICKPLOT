@@ -291,7 +291,7 @@ elseif Props.NVal==1
             Ans.XYZ = reshape(btFI.XYZ,[1 size(btFI.XYZ,1) 1 3]);
             Ans.TRI = delaunay(btFI.XYZ(:,1),btFI.XYZ(:,2));
             Ans.Val = btFI.XYZ(:,3);
-        case 'speed'
+        case 'ship speed'
             Ans.X   = val1(3,:)';
             Ans.Val = sqrt(val1(1,:).^2 + val1(2,:).^2)';
             if ~qp_settings('shipma_distance_along_desired_track')
@@ -329,7 +329,7 @@ elseif Props.NVal==4
     end
 elseif Props.NVal==2
     switch Name
-        case 'speed'
+        case 'ship speed'
             Ans.X = val1(3,:)';
             Ans.XComp = val1(1,:)';
             Ans.YComp = val1(2,:)';
@@ -442,38 +442,75 @@ if d3d_qp('selectfield','desired ship track')
     xrange = mean(xrange)+[-1 1]*diff(yrange)/fac/2;
 else
     a=[];
+    xrange = [];
 end
 %
-for c = {'a' 'a1'}
+for c = {'a' 'a1' 'a2'}
     if qp_settings(['shipma_fig' c{1}])
         caption = 'Overview plot of track';
         fignr = 'Fig. A';
-        if isequal(c,{'a1'})
-            caption = 'Zoomed plot of track';
-            fignr = 'Fig. A1';
-            zoombox = qp_settings('shipma_figa1_zoombox');
-            if any(isnan(zoombox))
-                ui_message('error','Skipping Fig A1 because zoombox coordinates are incomplete')
-                continue
-            else
-                zoombox(1:2) = sort(zoombox(1:2));
-                zoombox(3:4) = sort(zoombox(3:4));
-            end
-        end
-        if qp_settings('shipma_figa_depth')
-            caption = [caption ' and depth'];
-        end
         cstep = qp_settings('shipma_figa_contourstep');
         cmax  = qp_settings('shipma_figa_contourmax');
+        switch c{1}
+            case 'a'
+                if qp_settings('shipma_figa_depth')
+                    caption = [caption ' and depth'];
+                end
+            case 'a1'
+                caption = 'Zoomed plot of track';
+                if qp_settings('shipma_figa_depth')
+                    caption = [caption ' and depth'];
+                end
+                fignr = 'Fig. A1';
+                zoombox = qp_settings('shipma_figa1_zoombox');
+                if any(isnan(zoombox))
+                    ui_message('error','Skipping Fig A1 because zoombox coordinates are incomplete')
+                    continue
+                else
+                    zoombox(1:2) = sort(zoombox(1:2));
+                    zoombox(3:4) = sort(zoombox(3:4));
+                end
+            case 'a2'
+                quant = qp_settings('shipma_figa2_quantity');
+                cstep = qp_settings('shipma_figa2_contourstep');
+                cmax  = qp_settings('shipma_figa2_contourmax');
+                %
+                switch quant
+                    case {'wind','waves','swell'}
+                        caption = ['Track plot and ' quant];
+                    case {'current'}
+                        caption = ['Track plot and ' quant 's'];
+                end
+                fignr = 'Fig. A2';
+        end
         texts = local_strrep(texts_template,'%caption%',caption);
         texts = local_strrep(texts,'%fignr%',fignr);
         d3d_qp('newfigure','1 plot - portrait',['SHIPMA Fig ' upper(c{1})],texts)
-        if qp_settings('shipma_figa_depth') && d3d_qp('selectfield','depth')
-            d3d_qp('colourmap','navdepth')
-            d3d_qp('presenttype','contour patches')
-            d3d_qp('thresholds',[-inf 0:cstep:cmax])
-            d3d_qp('colbarhorz',1)
-            d3d_qp('addtoplot')
+        switch c{1}
+            case {'a','a1'}
+                if qp_settings('shipma_figa_depth') && d3d_qp('selectfield','depth')
+                    d3d_qp('colourmap','navdepth')
+                    d3d_qp('presenttype','contour patches')
+                    d3d_qp('thresholds',[-inf 0:cstep:cmax])
+                    d3d_qp('colbarhorz',1)
+                    d3d_qp('addtoplot')
+                end
+            case 'a2'
+                if d3d_qp('selectfield',quant)
+                    d3d_qp('component','magnitude')
+                    d3d_qp('presenttype','contour patches')
+                    d3d_qp('thresholds',0:cstep:cmax)
+                    d3d_qp('colourmap','revhot')
+                    d3d_qp('addtoplot')
+                    d3d_qp('component','vector')
+                    d3d_qp('colourvectors',0)
+                    d3d_qp('colour',[ 0 0 1 ])
+                    if ~isempty(xrange)
+                        d3d_qp('thinfld','distance')
+                        d3d_qp('thindist',diff(xrange)/100)
+                    end
+                    d3d_qp('addtoplot')
+                end
         end
         if qp_settings('shipma_figa_fairway') && d3d_qp('selectfield','fairway contour')
             d3d_qp('linestyle','-')
@@ -511,92 +548,24 @@ for c = {'a' 'a1'}
             d3d_qp('addtoplot')
         end
         d3d_qp('axesboxed',1)
-        if isequal(c,{'a1'})
-            d3d_qp('axeslimits',zoombox(1:2),zoombox(3:4))
-        else
-            if ~isempty(a)
-                d3d_qp('axeslimits',xrange,yrange)
-            end
+        switch c{1}
+            case 'a1'
+                % impacts also a2
+                xrange = zoombox(1:2);
+                yrange = zoombox(3:4);
         end
-    end
-end
-%--------
-if qp_settings('shipma_figb')
-    quant = qp_settings('shipma_figb_quantity');
-    cstep = qp_settings('shipma_figb_contourstep');
-    cmax  = qp_settings('shipma_figb_contourmax');
-    %
-    switch quant
-        case {'wind','waves','swell'}
-            caption = ['Track plot and ' quant];
-        case {'current'}
-            caption = ['Track plot and ' quant 's'];
-    end
-    fignr = 'Fig. B';
-    texts = local_strrep(texts_template,'%caption%',caption);
-    texts = local_strrep(texts,'%fignr%',fignr);
-    d3d_qp('newfigure','1 plot - portrait','SHIPMA Fig B',texts)
-    if d3d_qp('selectfield',quant)
-        d3d_qp('component','magnitude')
-        d3d_qp('presenttype','contour patches')
-        d3d_qp('thresholds',0:cstep:cmax)
-        d3d_qp('colourmap','revhot')
-        d3d_qp('addtoplot')
-        d3d_qp('component','vector')
-        d3d_qp('colourvectors',0)
-        d3d_qp('colour',[ 0 0 1 ])
-        d3d_qp('thinfld','distance')
-        d3d_qp('thindist',diff(xrange)/100)
-        d3d_qp('addtoplot')
-    end
-    if qp_settings('shipma_figa_fairway') && d3d_qp('selectfield','fairway contour')
-        d3d_qp('linestyle','-')
-        d3d_qp('colour',[ 0 0 0 ])
-        d3d_qp('fillpolygons',1)
-        d3d_qp('facecolour',cartoyellow)
-        d3d_qp('addtoplot')
-    end
-    if qp_settings('shipma_figa_banksuction') && d3d_qp('selectfield','bank suction lines')
-        d3d_qp('linestyle','--')
-        d3d_qp('colour',[ 0 0 0 ])
-        d3d_qp('fillpolygons',0)
-        d3d_qp('addtoplot')
-    end
-    if d3d_qp('selectfield','desired ship track')
-        d3d_qp('colour',[ 0 0 0 ])
-        d3d_qp('addtoplot')
-    end
-    if d3d_qp('selectfield','ship snapshots')
-        d3d_qp('colour',[ 0 0 0 ])
-        d3d_qp('facecolour',[ 1 0 0 ])
-        d3d_qp('addtoplot')
-    end
-    if d3d_qp('selectfield','distance ticks')
-        d3d_qp('colour',[ 0 0 0 ])
-        d3d_qp('addtoplot')
-    end
-    if d3d_qp('selectfield','distance value at ticks')
-        d3d_qp('colour',[ 0 0 0 ])
-        d3d_qp('presenttype','labels')
-        d3d_qp('fontsize',6)
-        d3d_qp('addtoplot')
-    end
-    d3d_qp('axesboxed',1)
-    if qp_settings('shipma_figa1')
-        d3d_qp('axeslimits',zoombox(1:2),zoombox(3:4))
-    else
-        if ~isempty(a)
+        if ~isempty(xrange)
             d3d_qp('axeslimits',xrange,yrange)
         end
     end
 end
 %--------
-if qp_settings('shipma_figc')
-    caption = 'Speed and ruddle angle plots';
-    fignr = 'Fig. C';
+if qp_settings('shipma_figb')
+    caption = 'Propeller speed, ship speed and ruddle angle plots';
+    fignr = 'Fig. B';
     texts = local_strrep(texts_template,'%caption%',caption);
     texts = local_strrep(texts,'%fignr%',fignr);
-    d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig C',texts)
+    d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig B',texts)
     %--
     qpsa('upper plot')
     d3d_qp('allt',1)
@@ -609,7 +578,7 @@ if qp_settings('shipma_figc')
     d3d_qp('axesboxed',1)
     %--
     qpsa('middle plot')
-    if d3d_qp('selectfield','speed')
+    if d3d_qp('selectfield','ship speed')
         d3d_qp('addtoplot')
     end
     d3d_qp('axesgrid',1,1)
@@ -623,12 +592,12 @@ if qp_settings('shipma_figc')
     d3d_qp('axesboxed',1)
 end
 %--------
-if qp_settings('shipma_figd')
+if qp_settings('shipma_figc')
     caption = {'Swept path and depth along track','Starboard side (dashed) port side (solid)'};
-    fignr = 'Fig. D';
+    fignr = 'Fig. C';
     texts = local_strrep(texts_template,'%caption%',caption);
     texts = local_strrep(texts,'%fignr%',fignr);
-    d3d_qp('newfigure','2 plots, vertical - portrait','SHIPMA Fig D',texts)
+    d3d_qp('newfigure','2 plots, vertical - portrait','SHIPMA Fig C',texts)
     %--
     set(qpsa('upper plot'),'ydir','reverse')
     if d3d_qp('selectfield','swept path port side')
@@ -656,25 +625,25 @@ end
 lstyle = {'-','--','-.',':'};
 lstylename = {'solid','dashed','dash-dotted','dotted'};
 i=0;
-if qp_settings('shipma_fige')
+if qp_settings('shipma_figd')
     lines = {'' '' '' ''};
     quants = {};
-    if qp_settings('shipma_fige_wind')
+    if qp_settings('shipma_figd_wind')
         i=i+1;
         lines{1} = lstyle{i};
         quants{i} = sprintf('wind (%s)',lstylename{i});
     end
-    if qp_settings('shipma_fige_waves')
+    if qp_settings('shipma_figd_waves')
         i=i+1;
         lines{2} = lstyle{i};
         quants{i} = sprintf('waves (%s)',lstylename{i});
     end
-    if qp_settings('shipma_fige_swell')
+    if qp_settings('shipma_figd_swell')
         i=i+1;
         lines{3} = lstyle{i};
         quants{i} = sprintf('swell (%s)',lstylename{i});
     end
-    if qp_settings('shipma_fige_banksuction')
+    if qp_settings('shipma_figd_banksuction')
         i=i+1;
         lines{4} = lstyle{i};
         quants{i} = sprintf('bank suction (%s)',lstylename{i});
@@ -691,26 +660,26 @@ if qp_settings('shipma_fige')
     else
         caption = 'External forces plots';
     end
-    fignr = 'Fig. E';
+    fignr = 'Fig. D';
     texts = local_strrep(texts_template,'%caption%',caption);
     texts = local_strrep(texts,'%fignr%',fignr);
-    d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig E',texts)
+    d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig D',texts)
     %--
     qpsa('upper plot')
-    if qp_settings('shipma_fige_wind') && d3d_qp('selectfield','longitudinal wind force')
+    if qp_settings('shipma_figd_wind') && d3d_qp('selectfield','longitudinal wind force')
         d3d_qp('axestype','Distance-Val')
         d3d_qp('linestyle',lines{1})
         d3d_qp('addtoplot')
     end
-    if qp_settings('shipma_fige_waves') && d3d_qp('selectfield','longitudinal wave force')
+    if qp_settings('shipma_figd_waves') && d3d_qp('selectfield','longitudinal wave force')
         d3d_qp('linestyle',lines{2})
         d3d_qp('addtoplot')
     end
-    if qp_settings('shipma_fige_swell') && d3d_qp('selectfield','longitudinal swell force')
+    if qp_settings('shipma_figd_swell') && d3d_qp('selectfield','longitudinal swell force')
         d3d_qp('linestyle',lines{3})
         d3d_qp('addtoplot')
     end
-    if qp_settings('shipma_fige_banksuction') && d3d_qp('selectfield','longitudinal bank suction force')
+    if qp_settings('shipma_figd_banksuction') && d3d_qp('selectfield','longitudinal bank suction force')
         d3d_qp('linestyle',lines{4})
         d3d_qp('addtoplot')
     end
@@ -719,19 +688,19 @@ if qp_settings('shipma_fige')
     newylabel(qpsa,'longitudinal forces',1)
     %--
     qpsa('middle plot')
-    if qp_settings('shipma_fige_wind') && d3d_qp('selectfield','transverse wind force')
+    if qp_settings('shipma_figd_wind') && d3d_qp('selectfield','transverse wind force')
         d3d_qp('linestyle',lines{1})
         d3d_qp('addtoplot')
     end
-    if qp_settings('shipma_fige_waves') && d3d_qp('selectfield','transverse wave force')
+    if qp_settings('shipma_figd_waves') && d3d_qp('selectfield','transverse wave force')
         d3d_qp('linestyle',lines{2})
         d3d_qp('addtoplot')
     end
-    if qp_settings('shipma_fige_swell') && d3d_qp('selectfield','transverse swell force')
+    if qp_settings('shipma_figd_swell') && d3d_qp('selectfield','transverse swell force')
         d3d_qp('linestyle',lines{3})
         d3d_qp('addtoplot')
     end
-    if qp_settings('shipma_fige_banksuction') && d3d_qp('selectfield','transverse bank suction force')
+    if qp_settings('shipma_figd_banksuction') && d3d_qp('selectfield','transverse bank suction force')
         d3d_qp('linestyle',lines{4})
         d3d_qp('addtoplot')
     end
@@ -740,19 +709,19 @@ if qp_settings('shipma_fige')
     newylabel(qpsa,'transverse forces',1)
     %--
     qpsa('lower plot')
-    if qp_settings('shipma_fige_wind') && d3d_qp('selectfield','wind moment on ship')
+    if qp_settings('shipma_figd_wind') && d3d_qp('selectfield','wind moment on ship')
         d3d_qp('linestyle',lines{1})
         d3d_qp('addtoplot')
     end
-    if qp_settings('shipma_fige_waves') && d3d_qp('selectfield','wave moment')
+    if qp_settings('shipma_figd_waves') && d3d_qp('selectfield','wave moment')
         d3d_qp('linestyle',lines{2})
         d3d_qp('addtoplot')
     end
-    if qp_settings('shipma_fige_swell') && d3d_qp('selectfield','swell moment')
+    if qp_settings('shipma_figd_swell') && d3d_qp('selectfield','swell moment')
         d3d_qp('linestyle',lines{3})
         d3d_qp('addtoplot')
     end
-    if qp_settings('shipma_fige_banksuction') && d3d_qp('selectfield','moment due to bank suction')
+    if qp_settings('shipma_figd_banksuction') && d3d_qp('selectfield','moment due to bank suction')
         d3d_qp('linestyle',lines{4})
         d3d_qp('addtoplot')
     end
@@ -761,28 +730,28 @@ if qp_settings('shipma_fige')
     newylabel(qpsa,'moment',1)
 end
 %--------
-if qp_settings('shipma_figf')
-    if qp_settings('shipma_figf_tugs')
-        if qp_settings('shipma_figf_thrusters')
+if qp_settings('shipma_fige')
+    if qp_settings('shipma_fige_tugs')
+        if qp_settings('shipma_fige_thrusters')
             caption = {'Tug and thrusters forces plots','Tug forces (solid) and thruster forces (dashed)'};
             lines = {'-' '--'};
         else
             caption = 'Tug forces plots';
             lines = {'-' ''};
         end
-    elseif qp_settings('shipma_figf_thrusters')
+    elseif qp_settings('shipma_fige_thrusters')
         caption = 'Tug forces plots';
         lines = {'' '-'};
     else
         caption = '';
     end
-    fignr = 'Fig. F';
+    fignr = 'Fig. E';
     texts = local_strrep(texts_template,'%caption%',caption);
     texts = local_strrep(texts,'%fignr%',fignr);
-    d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig F',texts)
+    d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig E',texts)
     %--
     qpsa('upper plot')
-    if qp_settings('shipma_figf_tugs') && d3d_qp('selectfield','longitudinal total tug force')
+    if qp_settings('shipma_fige_tugs') && d3d_qp('selectfield','longitudinal total tug force')
         d3d_qp('axestype','Distance-Val')
         d3d_qp('linestyle',lines{1})
         d3d_qp('addtoplot')
@@ -792,11 +761,11 @@ if qp_settings('shipma_figf')
     newylabel(qpsa,'longitudinal force',1)
     %--
     qpsa('middle plot')
-    if qp_settings('shipma_figf_tugs') && d3d_qp('selectfield','transverse total tug force')
+    if qp_settings('shipma_fige_tugs') && d3d_qp('selectfield','transverse total tug force')
         d3d_qp('linestyle',lines{1})
         d3d_qp('addtoplot')
     end
-    if qp_settings('shipma_figf_thrusters') && d3d_qp('selectfield','transverse thruster force')
+    if qp_settings('shipma_fige_thrusters') && d3d_qp('selectfield','transverse thruster force')
         d3d_qp('linestyle',lines{2})
         d3d_qp('addtoplot')
     end
@@ -805,11 +774,11 @@ if qp_settings('shipma_figf')
     newylabel(qpsa,'transverse force',1)
     %--
     qpsa('lower plot')
-    if qp_settings('shipma_figf_tugs') && d3d_qp('selectfield','total tug moment')
+    if qp_settings('shipma_fige_tugs') && d3d_qp('selectfield','total tug moment')
         d3d_qp('linestyle',lines{1})
         d3d_qp('addtoplot')
     end
-    if qp_settings('shipma_figf_thrusters') && d3d_qp('selectfield','moment due to thrusters')
+    if qp_settings('shipma_fige_thrusters') && d3d_qp('selectfield','moment due to thrusters')
         d3d_qp('linestyle',lines{2})
         d3d_qp('addtoplot')
     end
@@ -878,7 +847,7 @@ if cse>0
         'current'                       'm/s'   [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse    scn       man          -1
         'depth'                         'm'     [0 0 V 0 0] 0             1     'TRI'    'xy'     0            prj       cse    scn       man          -1
         '-------'                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse    scn       man          0
-        'speed'                         'm/s'   [9 0 0 0 0] 0             1     'PNT'    'd'      0            prj       cse    scn       man          0
+        'ship speed'                    'm/s'   [9 0 0 0 0] 0             1     'PNT'    'd'      0            prj       cse    scn       man          0
         'his-data'                      ''      [9 0 0 0 0] 0             1     'PNT'    'd'      0            prj       cse    scn       man          0       };
     Out=cell2struct(DataProps,PropNames,2);
 else
@@ -1003,9 +972,9 @@ for i = length(Out):-1:1
             elseif isempty(Proj.Environments.Currents.Data(Proj.Cases.Data(cse).currentNr).file)
                 Out(i)=[];
             end
-        case 'speed'
-            u = find(strcmpi('longitudinal vessel speed',hisvars));
-            v = find(strcmpi('transverse vessel speed',hisvars));
+        case 'ship speed'
+            u = find(strcmpi('longitudinal ship speed',hisvars));
+            v = find(strcmpi('transverse ship speed',hisvars));
             if isempty(u) || isempty(v) || isempty(track)
                 Out(i)=[];
             else
@@ -1127,18 +1096,18 @@ switch cmd
                                 'figa_contourstep','figa_contourstepval', ...
                                 'figa_contourmax','figa_contourmaxval', ...
                                 'figa1_xmin','figa1_xminval','figa1_xmax','figa1_xmaxval', ...
-                                'figa1_ymin','figa1_yminval','figa1_ymax','figa1_ymaxval', 'figa1_zoombox', ...
-                                'figb_list','figb_contourstep','figb_contourstepval', ...
-                                'figb_contourmax','figb_contourmaxval'};
+                                'figa1_ymin','figa1_yminval','figa1_ymax','figa1_ymaxval', ...
+                                'figa2_list','figa2_contourstep','figa2_contourstepval', ...
+                                'figa2_contourmax','figa2_contourmaxval'};
                             if get(findobj(mfig,'tag','figa1'),'value')
-                                set(h,'string','Fig B, as Fig A1 now showing')
+                                set(h,'string','Fig A2, as Fig A1 now showing')
                             else
-                                set(h,'string','Fig B, as Fig A now showing')
+                                set(h,'string','Fig A2, as Fig A now showing')
                             end
                         case 'e'
-                            taglist = {'fige_wind','fige_waves','fige_swell','fige_banksuction'};
+                            taglist = {'figd_wind','figd_waves','figd_swell','figd_banksuction'};
                         case 'f'
-                            taglist = {'figf_tugs','figf_thrusters'};
+                            taglist = {'fige_tugs','fige_thrusters'};
                     end
                     for tg = taglist
                         h = findobj(mfig,'tag',tg{1});
@@ -1165,8 +1134,7 @@ switch cmd
                                     get(findobj(mfig,'tag','figa1'),'value')) && ...
                                     get(findobj(mfig,'tag','figa_depth'),'value');
                                 opt = {'string',qp_settings(['shipma_' tg{1}(1:end-3)])};
-                            case {'figa1_xmin','figa1_xmax','figa1_ymin','figa1_ymax', ...
-                                    'figa1_zoombox'}
+                            case {'figa1_xmin','figa1_xmax','figa1_ymin','figa1_ymax'}
                                 vloc = get(findobj(mfig,'tag','figa1'),'value');
                             case {'figa1_xminval','figa1_xmaxval','figa1_yminval','figa1_ymaxval'}
                                 switch tg{1}
@@ -1183,8 +1151,8 @@ switch cmd
                                 if ~isnan(zb(iz))
                                     opt = {'string',zb(iz)};
                                 end
-                            case {'figb_list','figb_contourstep','figb_contourmax'}
-                            case {'figb_contourstepval','figb_contourmaxval'}
+                            case {'figa2_list','figa2_contourstep','figa2_contourmax'}
+                            case {'figa2_contourstepval','figa2_contourmaxval'}
                                 opt = {'string',qp_settings(['shipma_' tg{1}(1:end-3)])};
                             otherwise
                                 v2=qp_settings(['shipma_' tg{1}]);
@@ -1205,14 +1173,14 @@ switch cmd
             end
         end
         %
-        h=findobj(mfig,'tag','figb_list');
-        quant=qp_settings('shipma_figb_quantity');
+        h=findobj(mfig,'tag','figa2_list');
+        quant=qp_settings('shipma_figa2_quantity');
         str=get(h,'string');
         i=ustrcmpi(quant,str);
         if i>0
             set(h,'value',i)
         end
-    case {'shipma_spacestep','shipma_timestep','shipma_figa_contourstep','shipma_figb_contourstep'}
+    case {'shipma_spacestep','shipma_timestep','shipma_figa_contourstep','shipma_figa2_contourstep'}
         h = findobj(mfig,'tag',[cmd(8:end) 'val']);
         if isempty(varargin)
             step = get(h,'string');
@@ -1242,15 +1210,15 @@ switch cmd
         
     case 'shipma_figa1_zoombox'
         if isempty(varargin)
-            % get from Fig A1 if exists, otherwise from Fig A if exists
+            % get zoombox from Fig A, A1 or A2
             fg = 'A1';
             Figs = findall(0,'type','figure');
             FigsA = [findall(0,'type','figure','name','QuickPlot: SHIPMA Fig A');
                 findall(0,'type','figure','name','QuickPlot: SHIPMA Fig A1');
-                findall(0,'type','figure','name','QuickPlot: SHIPMA Fig B')];
+                findall(0,'type','figure','name','QuickPlot: SHIPMA Fig A2')];
             isA = ismember(Figs,FigsA);
             if none(isA)
-                ui_message('error','No Fig A, A1 or B open to get zoombox coordinates from.')
+                ui_message('error','No Fig A, A1 or A2 open to get zoombox coordinates from.')
                 return
             end
             Figs = Figs(find(isA,1,'first')); % get first (=topmost) figure
@@ -1274,6 +1242,9 @@ switch cmd
         cmds = {'shipma_figa1_xmin','shipma_figa1_xmax','shipma_figa1_ymin','shipma_figa1_ymax'};
         for i = 1:4
             options(FI,mfig,cmds{i},val(i));
+        end
+        if ~qp_settings('shipma_figa1')
+            d3d_qp('fileoptions','shipma_figa1',1)
         end
         cmdargs={cmd,val};
         
@@ -1307,10 +1278,10 @@ switch cmd
         qp_settings('shipma_figa1_zoombox',zb)
         cmdargs={cmd,val};
         
-    case {'shipma_figa','shipma_figa1','shipma_figb','shipma_figc','shipma_figd','shipma_fige', ...
+    case {'shipma_figa','shipma_figa1','shipma_figa2','shipma_figb','shipma_figc','shipma_figd', ...
             'shipma_figa_fairway','shipma_figa_banksuction','shipma_figa_depth', ...
-            'shipma_fige_wind','shipma_fige_waves','shipma_fige_swell','shipma_fige_banksuction', ...
-            'shipma_figf','shipma_figf_tugs','shipma_figf_thrusters'}
+            'shipma_figd_wind','shipma_figd_waves','shipma_figd_swell','shipma_figd_banksuction', ...
+            'shipma_fige','shipma_fige_tugs','shipma_fige_thrusters'}
         h = findobj(mfig,'tag',cmd(8:end));
         if isempty(varargin)
             v = get(h,'value');
@@ -1326,31 +1297,30 @@ switch cmd
         adjustv = 0;
         vloc = v;
         %
-        if strcmp(cmd,'shipma_figa1') || strcmp(cmd,'shipma_figb')
+        if strcmp(cmd,'shipma_figa1') || strcmp(cmd,'shipma_figa2')
             if get(findobj(mfig,'tag','figa1'),'value')
-                set(findobj(mfig,'tag','figb'),'string','Fig B, as Fig A1 now showing')
+                set(findobj(mfig,'tag','figa2'),'string','Fig A2, as Fig A1 now showing')
             else
-                set(findobj(mfig,'tag','figb'),'string','Fig B, as Fig A now showing')
+                set(findobj(mfig,'tag','figa2'),'string','Fig A2, as Fig A now showing')
             end
         end
         switch cmd
-            case {'shipma_figa','shipma_figa1','shipma_figb'}
+            case {'shipma_figa','shipma_figa1','shipma_figa2'}
                 taglist = {'figa_fairway','figa_banksuction','figa_depth', ...
                     'figa_contourstep','figa_contourstepval', ...
                     'figa_contourmax','figa_contourmaxval', ...
                     'figa1_xmin','figa1_xminval','figa1_xmax','figa1_xmaxval', ...
                     'figa1_ymin','figa1_yminval','figa1_ymax','figa1_ymaxval', ...
-                    'figa1_zoombox', ...
-                    'figb_list','figb_contourstep','figb_contourstepval', ...
-                    'figb_contourmax','figb_contourmaxval'};
+                    'figa2_list','figa2_contourstep','figa2_contourstepval', ...
+                    'figa2_contourmax','figa2_contourmaxval'};
                 adjustv = 1;
             case 'shipma_figa_depth'
                 taglist = {'figa_contourstep','figa_contourstepval', ...
                     'figa_contourmax','figa_contourmaxval'};
+            case 'shipma_figd'
+                taglist = {'figd_wind','figd_waves','figd_swell','figd_banksuction'};
             case 'shipma_fige'
-                taglist = {'fige_wind','fige_waves','fige_swell','fige_banksuction'};
-            case 'shipma_figf'
-                taglist = {'figf_tugs','figf_thrusters'};
+                taglist = {'fige_tugs','fige_thrusters'};
             otherwise
                 taglist = {};
         end
@@ -1361,7 +1331,7 @@ switch cmd
                     case {'figa_fairway','figa_banksuction'}
                         vloc = get(findobj(mfig,'tag','figa'),'value') || ...
                             get(findobj(mfig,'tag','figa1'),'value') || ...
-                            get(findobj(mfig,'tag','figb'),'value');
+                            get(findobj(mfig,'tag','figa2'),'value');
                     case {'figa_depth'}
                         vloc = get(findobj(mfig,'tag','figa'),'value') || ...
                             get(findobj(mfig,'tag','figa1'),'value');
@@ -1373,8 +1343,8 @@ switch cmd
                             'figa1_ymin','figa1_yminval','figa1_ymax','figa1_ymaxval', ...
                             'figa1_zoombox'}
                         vloc = get(findobj(mfig,'tag','figa1'),'value');
-                    case {'figb_list','figb_contourstep','figb_contourstepval','figb_contourmax','figb_contourmaxval'}
-                        vloc = get(findobj(mfig,'tag','figb'),'value');
+                    case {'figa2_list','figa2_contourstep','figa2_contourstepval','figa2_contourmax','figa2_contourmaxval'}
+                        vloc = get(findobj(mfig,'tag','figa2'),'value');
                     otherwise
                         vloc = 0;
                 end
@@ -1392,8 +1362,8 @@ switch cmd
             end
         end
         cmdargs={cmd,v};
-    case {'shipma_figb_quantity'}
-        h = findobj(mfig,'tag','figb_list');
+    case {'shipma_figa2_quantity'}
+        h = findobj(mfig,'tag','figa2_list');
         str = get(h,'string');
         if isempty(varargin)
             i = get(h,'value');
@@ -1719,19 +1689,19 @@ uicontrol('Parent',h0, ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
     'Position',[21 voffset textwidth 18], ...
-    'String','Fig B, as Fig A1 now showing', ...
-    'Callback','d3d_qp fileoptions shipma_figb', ...
+    'String','Fig A2, as Fig A1 now showing', ...
+    'Callback','d3d_qp fileoptions shipma_figa2', ...
     'Enable','on', ...
-    'Tag','figb');
+    'Tag','figa2');
 uicontrol('Parent',h0, ...
     'Style','popupmenu', ...
     'BackgroundColor',Active, ...
     'Horizontalalignment','left', ...
     'Position',[21+textwidth voffset 80 20], ...
     'String',{'wind','waves','swell','current'}, ...
-    'Callback','d3d_qp fileoptions shipma_figb_quantity', ...
+    'Callback','d3d_qp fileoptions shipma_figa2_quantity', ...
     'Enable','on', ...
-    'Tag','figb_list');
+    'Tag','figa2_list');
 voffset=voffset-25;
 uicontrol('Parent',h0, ...
     'Style','text', ...
@@ -1740,15 +1710,15 @@ uicontrol('Parent',h0, ...
     'Position',[41 voffset 80 18], ...
     'String','Contour step', ...
     'Enable','on', ...
-    'Tag','figb_contourstep');
+    'Tag','figa2_contourstep');
 uicontrol('Parent',h0, ...
     'Style','edit', ...
     'HorizontalAlignment','right', ...
     'BackgroundColor',Active, ...
-    'Callback','d3d_qp fileoptions shipma_figb_contourstep', ...
+    'Callback','d3d_qp fileoptions shipma_figa2_contourstep', ...
     'Position',[131 voffset 60 20], ...
     'Enable','on', ...
-    'Tag','figb_contourstepval');
+    'Tag','figa2_contourstepval');
 uicontrol('Parent',h0, ...
     'Style','text', ...
     'BackgroundColor',Inactive, ...
@@ -1756,23 +1726,33 @@ uicontrol('Parent',h0, ...
     'Position',[201 voffset 40 18], ...
     'String','Max', ...
     'Enable','on', ...
-    'Tag','figb_contourmax');
+    'Tag','figa2_contourmax');
 uicontrol('Parent',h0, ...
     'Style','edit', ...
     'HorizontalAlignment','right', ...
     'BackgroundColor',Active, ...
-    'Callback','d3d_qp fileoptions shipma_figb_contourmax', ...
+    'Callback','d3d_qp fileoptions shipma_figa2_contourmax', ...
     'Position',[251 voffset 80 20], ...
     'Enable','on', ...
-    'Tag','figb_contourmaxval');
+    'Tag','figa2_contourmaxval');
 voffset=FigPos(4)-130;
 hoffset=340;
 uicontrol('Parent',h0, ...
     'Style','checkbox', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
+    'Position',[hoffset+21 voffset textwidth+80 18], ...
+    'String','Fig B, ship & propeller speed and rudder angle plots', ...
+    'Callback','d3d_qp fileoptions shipma_figb', ...
+    'Enable','on', ...
+    'Tag','figb');
+voffset=voffset-25;
+uicontrol('Parent',h0, ...
+    'Style','checkbox', ...
+    'BackgroundColor',Inactive, ...
+    'Horizontalalignment','left', ...
     'Position',[hoffset+21 voffset textwidth-10 18], ...
-    'String','Fig C, speed and rudder angle plots', ...
+    'String','Fig C, swept path and depth plots', ...
     'Callback','d3d_qp fileoptions shipma_figc', ...
     'Enable','on', ...
     'Tag','figc');
@@ -1782,7 +1762,7 @@ uicontrol('Parent',h0, ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
     'Position',[hoffset+21 voffset textwidth-10 18], ...
-    'String','Fig D, swept path and depth plots', ...
+    'String','Fig D, external forces plots', ...
     'Callback','d3d_qp fileoptions shipma_figd', ...
     'Enable','on', ...
     'Tag','figd');
@@ -1791,8 +1771,46 @@ uicontrol('Parent',h0, ...
     'Style','checkbox', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
+    'Position',[hoffset+41 voffset 80 18], ...
+    'String','wind', ...
+    'Callback','d3d_qp fileoptions shipma_figd_wind', ...
+    'Enable','on', ...
+    'Tag','figd_wind');
+uicontrol('Parent',h0, ...
+    'Style','checkbox', ...
+    'BackgroundColor',Inactive, ...
+    'Horizontalalignment','left', ...
+    'Position',[hoffset+131 voffset 80 18], ...
+    'String','waves', ...
+    'Callback','d3d_qp fileoptions shipma_figd_waves', ...
+    'Enable','on', ...
+    'Tag','figd_waves');
+uicontrol('Parent',h0, ...
+    'Style','checkbox', ...
+    'BackgroundColor',Inactive, ...
+    'Horizontalalignment','left', ...
+    'Position',[hoffset+221 voffset 80 18], ...
+    'String','swell', ...
+    'Callback','d3d_qp fileoptions shipma_figd_swell', ...
+    'Enable','on', ...
+    'Tag','figd_swell');
+voffset=voffset-25;
+uicontrol('Parent',h0, ...
+    'Style','checkbox', ...
+    'BackgroundColor',Inactive, ...
+    'Horizontalalignment','left', ...
+    'Position',[hoffset+41 voffset 80 18], ...
+    'String','bank suction', ...
+    'Callback','d3d_qp fileoptions shipma_figd_banksuction', ...
+    'Enable','on', ...
+    'Tag','figd_banksuction');
+voffset=voffset-25;
+uicontrol('Parent',h0, ...
+    'Style','checkbox', ...
+    'BackgroundColor',Inactive, ...
+    'Horizontalalignment','left', ...
     'Position',[hoffset+21 voffset textwidth-10 18], ...
-    'String','Fig E, external forces plots', ...
+    'String','Fig E, tugs and thrusters plots', ...
     'Callback','d3d_qp fileoptions shipma_fige', ...
     'Enable','on', ...
     'Tag','fige');
@@ -1802,67 +1820,19 @@ uicontrol('Parent',h0, ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
     'Position',[hoffset+41 voffset 80 18], ...
-    'String','wind', ...
-    'Callback','d3d_qp fileoptions shipma_fige_wind', ...
-    'Enable','on', ...
-    'Tag','fige_wind');
-uicontrol('Parent',h0, ...
-    'Style','checkbox', ...
-    'BackgroundColor',Inactive, ...
-    'Horizontalalignment','left', ...
-    'Position',[hoffset+131 voffset 80 18], ...
-    'String','waves', ...
-    'Callback','d3d_qp fileoptions shipma_fige_waves', ...
-    'Enable','on', ...
-    'Tag','fige_waves');
-uicontrol('Parent',h0, ...
-    'Style','checkbox', ...
-    'BackgroundColor',Inactive, ...
-    'Horizontalalignment','left', ...
-    'Position',[hoffset+221 voffset 80 18], ...
-    'String','swell', ...
-    'Callback','d3d_qp fileoptions shipma_fige_swell', ...
-    'Enable','on', ...
-    'Tag','fige_swell');
-voffset=voffset-25;
-uicontrol('Parent',h0, ...
-    'Style','checkbox', ...
-    'BackgroundColor',Inactive, ...
-    'Horizontalalignment','left', ...
-    'Position',[hoffset+41 voffset 80 18], ...
-    'String','bank suction', ...
-    'Callback','d3d_qp fileoptions shipma_fige_banksuction', ...
-    'Enable','on', ...
-    'Tag','fige_banksuction');
-voffset=voffset-25;
-uicontrol('Parent',h0, ...
-    'Style','checkbox', ...
-    'BackgroundColor',Inactive, ...
-    'Horizontalalignment','left', ...
-    'Position',[hoffset+21 voffset textwidth-10 18], ...
-    'String','Fig F, tugs and thrusters plots', ...
-    'Callback','d3d_qp fileoptions shipma_figf', ...
-    'Enable','on', ...
-    'Tag','figf');
-voffset=voffset-25;
-uicontrol('Parent',h0, ...
-    'Style','checkbox', ...
-    'BackgroundColor',Inactive, ...
-    'Horizontalalignment','left', ...
-    'Position',[hoffset+41 voffset 80 18], ...
     'String','tugs', ...
-    'Callback','d3d_qp fileoptions shipma_figf_tugs', ...
+    'Callback','d3d_qp fileoptions shipma_fige_tugs', ...
     'Enable','on', ...
-    'Tag','figf_tugs');
+    'Tag','fige_tugs');
 uicontrol('Parent',h0, ...
     'Style','checkbox', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
     'Position',[hoffset+131 voffset 80 18], ...
     'String','thrusters', ...
-    'Callback','d3d_qp fileoptions shipma_figf_thrusters', ...
+    'Callback','d3d_qp fileoptions shipma_fige_thrusters', ...
     'Enable','on', ...
-    'Tag','figf_thrusters');
+    'Tag','fige_thrusters');
 OK=1;
 % -------------------------------------------------------------------------
 
@@ -1873,8 +1843,8 @@ table = {'track' 'track distance'
     'Heading' 'heading'
     'dy' 'lateral offset (from desired track)'
     'dpsi' 'course deviation'
-    'u' 'longitudinal vessel speed'
-    'v' 'transverse vessel speed'
+    'u' 'longitudinal ship speed'
+    'v' 'transverse ship speed'
     'r' 'rate of turn'
     'rudder1' 'rudder angle'
     'n1' 'propeller speed'
