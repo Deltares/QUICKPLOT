@@ -57,7 +57,8 @@ persistent PL
 if isempty(PL)
     PL={1  'PS file'                     '-'                 '-'        1
         1  'EPS file'                    '-'                 '-'        1
-        1  'PDF file'                    '-'                 '-'        1
+        1  'PDF file (single page)'      '-'                 '-'        2
+        1  'PDF file (multi page)'       '-'                 '-'        1
         0  'TIF file'                    '-'                 '-'        2
         0  'BMP file'                    '-'                 '-'        2
         0  'PNG file'                    '-'                 '-'        2
@@ -176,11 +177,11 @@ end
 
 i=0;
 tempfil='';
+pagenr = 1;
 while i<length(figlist)
     i=i+1;
     if ishandle(figlist(i))
         if strcmp(get(figlist(i),'type'),'figure')
-            MoreToCome=0;
             if LocSettings.PrtID<0
                 figure(figlist(i));
                 if i>1
@@ -195,7 +196,7 @@ while i<length(figlist)
                 tempfil=[tempname,'.'];
                 MoreToCome=LocSettings.AllFigures;
             else % LocSettings.AllFigures continued
-                MoreToCome=(i<length(figlist));
+                MoreToCome=i<length(figlist);
             end
             if isempty(tempfil)
                 tempfil=[tempname,'.'];
@@ -220,7 +221,7 @@ while i<length(figlist)
             switch Printer
                 case 'cancel'
                     % nothing to do
-                case {'TIF file','BMP file','PNG file','JPG file','EPS file','PS file','EMF file','PDF file'}
+                case {'TIF file','BMP file','PNG file','JPG file','EPS file','PS file','EMF file','PDF file (single page)','PDF file (multi page)'}
                     switch Printer
                         case 'TIF file'
                             ext='tif';
@@ -234,9 +235,15 @@ while i<length(figlist)
                         case 'JPG file'
                             ext='jpg';
                             dvr='-djpeg';
-                        case 'PDF file'
+                        case 'PDF file (single page)'
                             ext='pdf';
                             dvr='-dpdf';
+                        case 'PDF file (multi page)'
+                            ext='pdf';
+                            dvr='-dps';
+                            if LocSettings.Color
+                                dvr='-dpsc';
+                            end
                         case 'EPS file'
                             ext='eps';
                             dvr='-deps';
@@ -253,9 +260,9 @@ while i<length(figlist)
                             ext='emf';
                             dvr='-dmeta';
                     end
-                    if nargin<3
+                    if nargin<3 & pagenr==1
                         [fn,pn]=uiputfile(['default.' ext],'Specify file name');
-                        fn=[pn,fn];
+                        fn = [pn,fn];
                     end
                     if ischar(fn)
                         ih=get(figlist(i),'inverthardcopy');
@@ -265,8 +272,25 @@ while i<length(figlist)
                             LocSettings.InvertHardcopy=1;
                             set(figlist(i),'inverthardcopy','on');
                         end
+                        if strcmp(Printer,'PDF file (multi page)')
+                            switch pagenr
+                                case 1
+                                    pdfname = fn;
+                                    pagenr = 1;
+                                    fn = [tempname '.ps'];
+                                case 2
+                                    PrtMth{end+1}='-append';
+                            end
+                        end
                         try
                             print(fn,FigStr,dvr,PrtMth{:});
+                            if strcmp(Printer,'PDF file (multi page)')
+                                add_bookmark(fn, sprintf('page %i',pagenr),pagenr==1)
+                                if ~MoreToCome
+                                    ps2pdf('psfile',fn,'pdffile',pdfname,'gspapersize','a4','deletepsfile',1)
+                                end
+                                pagenr = pagenr+1;
+                            end
                         catch
                             ui_message('error','error encountered creating %s:%s',fn,lasterr);
                         end
@@ -767,3 +791,43 @@ Settings.InvertHardcopy=InvertHardcopy;
 if Cancel
     Settings.PrtID=0;
 end
+
+function add_bookmark(fname, bookmark_text, append)
+% Adds a bookmark to the temporary EPS file after %%EndPageSetup
+% Derived from BSD licensed export_fig by Oliver Woodford from MATLAB Central
+% Based on original idea by Petr Nechaev
+
+% Read in the file
+fh = fopen(fname, 'r');
+if fh == -1
+    error('File %s not found.', fname);
+end
+try
+    fstrm = fread(fh, '*char')';
+catch ex
+    fclose(fh);
+    rethrow(ex);
+end
+fclose(fh);
+
+if nargin<3 || ~append
+    % Include standard pdfmark prolog to maximize compatibility
+    fstrm = strrep(fstrm, '%%BeginProlog', sprintf('%%%%BeginProlog\n/pdfmark where {pop} {userdict /pdfmark /cleartomark load put} ifelse'));
+end
+pages = findstr(fstrm, '%%EndPageSetup');
+lastpage = pages(end);
+% Add page bookmark
+fstrm = [fstrm(1:lastpage-1) strrep(fstrm(lastpage:end), '%%EndPageSetup', sprintf('%%%%EndPageSetup\n[ /Title (%s) /OUT pdfmark',bookmark_text))];
+
+% Write out the updated file
+fh = fopen(fname, 'w');
+if fh == -1
+    error('Unable to open %s for writing.', fname);
+end
+try
+    fwrite(fh, fstrm, 'char*1');
+catch ex
+    fclose(fh);
+    rethrow(ex);
+end
+fclose(fh);
