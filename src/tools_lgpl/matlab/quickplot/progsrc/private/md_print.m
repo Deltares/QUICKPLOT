@@ -46,7 +46,7 @@ function [Settings,fn]=md_print(varargin)
 %   $HeadURL$
 %   $Id$
 
-%  Painters   'Printer Name'         'PC/WIN'            'UNIX'    'COLOR'
+%  Painters   'Printer Name'         Platforms    COLOR    MultiPage
 %  COLOR=0 Never, COLOR=1 User Specified, COLOR=2 Always
 
 % Called by print -dsetup:
@@ -55,56 +55,42 @@ function [Settings,fn]=md_print(varargin)
 persistent PL
 
 if isempty(PL)
-    PL={1  'PS file'                     '-'                 '-'        1
-        1  'EPS file'                    '-'                 '-'        1
-        1  'PDF file (single page)'      '-'                 '-'        2
-        1  'PDF file (multi page)'       '-'                 '-'        1
-        0  'TIF file'                    '-'                 '-'        2
-        0  'BMP file'                    '-'                 '-'        2
-        0  'PNG file'                    '-'                 '-'        2
-        0  'JPG file'                    '-'                 '-'        2
-        1  'EMF file'                    '-'                 ''         1
-        1  'Windows printer'             '-'                 ''         1
-        0  'Bitmap to clipboard'         '-'                 ''         2
-        1  'Metafile to clipboard'       '-'                 ''         2
-        -1  'MATLAB fig file'             '-'                 '-'        2};
-    if exist('md_printers.txt')
-        fid=fopen('md_printers.txt','r');
-        j=0;
-        while ~feof(fid)
-            j=j+1;
-            Pr=fgetl(fid);
-            if ischar(Pr)
-                FirstChar=sscanf(Pr,' %1[%'']',1);
-                if isempty(FirstChar)
-                    warning(sprintf('Cannot interpret line %i: %s',j,Pr));
-                elseif FirstChar=='%' % comment line, skip it!
-                else % first character is a quote: count quotes
-                    Qt=strfind(Pr,'''');
-                    if length(Qt)~=6
-                        warning(sprintf('Cannot interpret line %i: %s',j,Pr));
-                    else
-                        PL(end+1,1:5)={1 Pr(Qt(1)+1:Qt(2)-1) Pr(Qt(3)+1:Qt(4)-1) Pr(Qt(5)+1:Qt(6)-1) 1};
-                    end
-                end
-            end
-        end
-        fclose(fid);
-    end
+    W  = 1;
+    WD = 2;
+    U  = 4;
+    UD = 8;
+    all = W+WD+U+UD;
+    win = W+WD;
+    unx = U+UD;
     %
-    if isunix
-        Remove=logical(zeros(size(PL,1),1));
-        for i=1:size(PL,1)
-            Remove(i)=isempty(PL{i,4});
+    PL={1  'PS file'                     all        1     0
+        1  'EPS file'                    all        1     0
+        1  'PDF file'                    all        1     1
+        0  'TIF file'                    all        2     0
+        0  'BMP file'                    all        2     0
+        0  'PNG file'                    all        2     0
+        0  'JPG file'                    all        2     0
+        1  'EMF file'                    win        2     0
+        1  'Windows default printer'     WD         2     0
+        1  'Windows printer'             win        2     0
+        0  'Bitmap to clipboard'         win        2     0
+        1  'Metafile to clipboard'       win        2     0
+        -1  'MATLAB fig file'            all        2     0};
+    if isdeployed
+        if ispc
+            code = WD;
+        else
+            code = UD;
         end
-        PL(Remove,:)=[];
     else
-        Remove=logical(zeros(size(PL,1),1));
-        for i=1:size(PL,1)
-            Remove(i)=isempty(PL{i,3});
+        if ispc
+            code = W;
+        else
+            code = U;
         end
-        PL(Remove,:)=[];
     end
+    Remove = ~bitget(cat(1,PL{:,3}),log2(code)+1);
+    PL(Remove,:)=[];
 end
 
 getsettings = 0;
@@ -135,7 +121,7 @@ else
 end
 
 selfiglist=intersect(figlist,allchild(0));
-if ~isequal(sort(figlist),selfiglist) & ~isempty(figlist)
+if ~isequal(sort(figlist),selfiglist) && ~isempty(figlist)
     fprintf('Non-figure handles removed from print list.\n');
     figlist=selfiglist;
 end
@@ -157,7 +143,7 @@ if isfield(LocSettings,'SelectFrom')
     Local_ui_args={LocSettings.SelectFrom figlist};
 end
 
-if (isempty(figlist) & nargout>0) | getsettings
+if (isempty(figlist) && nargout>0) || getsettings
     if nargout>0
         [Settings,figlist]=Local_ui(PL,0,LocSettings,Local_ui_args{:});
         Settings.AllFigures=1;
@@ -221,7 +207,7 @@ while i<length(figlist)
             switch Printer
                 case 'cancel'
                     % nothing to do
-                case {'TIF file','BMP file','PNG file','JPG file','EPS file','PS file','EMF file','PDF file (single page)','PDF file (multi page)'}
+                case {'TIF file','BMP file','PNG file','JPG file','EPS file','PS file','EMF file','PDF file'}
                     switch Printer
                         case 'TIF file'
                             ext='tif';
@@ -235,10 +221,7 @@ while i<length(figlist)
                         case 'JPG file'
                             ext='jpg';
                             dvr='-djpeg';
-                        case 'PDF file (single page)'
-                            ext='pdf';
-                            dvr='-dpdf';
-                        case 'PDF file (multi page)'
+                        case 'PDF file'
                             ext='pdf';
                             dvr='-dps';
                             if LocSettings.Color
@@ -260,19 +243,19 @@ while i<length(figlist)
                             ext='emf';
                             dvr='-dmeta';
                     end
-                    if nargin<3 & pagenr==1
+                    if nargin<3 && pagenr==1
                         [fn,pn]=uiputfile(['default.' ext],'Specify file name');
                         fn = [pn,fn];
                     end
                     if ischar(fn)
                         ih=get(figlist(i),'inverthardcopy');
-                        if isfield(LocSettings,'InvertHardcopy') & ~LocSettings.InvertHardcopy
+                        if isfield(LocSettings,'InvertHardcopy') && ~LocSettings.InvertHardcopy
                             set(figlist(i),'inverthardcopy','off');
                         else
                             LocSettings.InvertHardcopy=1;
                             set(figlist(i),'inverthardcopy','on');
                         end
-                        if strcmp(Printer,'PDF file (multi page)')
+                        if strcmp(Printer,'PDF file')
                             switch pagenr
                                 case 1
                                     pdfname = fn;
@@ -284,10 +267,15 @@ while i<length(figlist)
                         end
                         try
                             print(fn,FigStr,dvr,PrtMth{:});
-                            if strcmp(Printer,'PDF file (multi page)')
-                                add_bookmark(fn, sprintf('page %i',pagenr),pagenr==1)
+                            if strcmp(Printer,'PDF file')
+                                figname = getappdata(figlist(i),'md_print_name');
+                                if isempty(figname)
+                                    figname = sprintf('page %i',pagenr);
+                                end
+                                add_bookmark(fn, figname,pagenr==1)
                                 if ~MoreToCome
                                     ps2pdf('psfile',fn,'pdffile',pdfname,'gspapersize','a4','deletepsfile',1)
+                                    fn = pdfname;
                                 end
                                 pagenr = pagenr+1;
                             end
@@ -313,42 +301,33 @@ while i<length(figlist)
                         ccd=cd;
                         cd(tempdir);
                         ih=get(figlist(i),'inverthardcopy');
-                        if isfield(LocSettings,'InvertHardcopy') & ~LocSettings.InvertHardcopy
+                        if isfield(LocSettings,'InvertHardcopy') && ~LocSettings.InvertHardcopy
                             set(figlist(i),'inverthardcopy','off');
                         else
                             LocSettings.InvertHardcopy=1;
                             set(figlist(i),'inverthardcopy','on');
                         end
                         switch Printer
-                            case 'Windows printer'
+                            case {'Windows printer','Windows default printer'}
                                 paperpos=get(figlist(i),'paperposition');
                                 %set(figlist(i),'paperposition',paperpos-[0.5 0 0.5 0]);
-                                ColStr='-dwin';
-                                if LocSettings.Color
-                                    ColStr='-dwinc';
+                                if isdeployed && strcmp(Printer,'Windows default printer')
+                                    deployprint(figlist(i))
+                                elseif isdeployed && strcmp(Printer,'Windows printer')
+                                    printdlg(figlist(i))
+                                else
+                                    dvr='-dwin';
+                                    if LocSettings.Color
+                                        dvr='-dwinc';
+                                    end
+                                    print(FigStr,dvr,PrtMth{:});
                                 end
-                                print(FigStr,PrtMth{:},ColStr);
                                 set(figlist(i),'paperposition',paperpos);
                             case 'Bitmap to clipboard'
                                 set(figlist(i),'inverthardcopy','off');
                                 print(FigStr,'-dbitmap');
                             case 'Metafile to clipboard'
                                 print(FigStr,PrtMth{:},'-dmeta');
-                            otherwise
-                                ColStr='-dps';
-                                if LocSettings.Color
-                                    ColStr='-dpsc';
-                                end
-                                print(FigStr,ColStr,PrtMth{:},tempfil,'-append');
-                                if ~MoreToCome
-                                    if isunix
-                                        unix(['lp -c -oraw -d',PL{LocSettings.PrtID,4},' ',tempfil]);
-                                        unix(['rm ',tempfil]);
-                                    else
-                                        dos(['copy ',tempfil,' ',PL{LocSettings.PrtID,3},' /b  | exit']);
-                                        dos(['del ',tempfil,' | exit']);
-                                    end
-                                end
                         end
                         set(figlist(i),'inverthardcopy',ih);
                         cd(ccd);
@@ -371,7 +350,7 @@ while i<length(figlist)
     end
 end
 
-function [Settings,FigID]=Local_ui(PrinterList,CanApplyAll,Settings,SelectFrom,FigID)
+function [Settings,FigID]=Local_ui(PL,CanApplyAll,Settings,SelectFrom,FigID)
 persistent PrtID Method DPI ApplyAll Clr InvertHardcopy
 if isempty(PrtID)
     PrtID=1;
@@ -381,7 +360,7 @@ if isempty(PrtID)
     InvertHardcopy=1;
     Clr=1;
 end
-if nargin>2 & isstruct(Settings)
+if nargin>2 && isstruct(Settings)
     if isfield(Settings,'PrtID')
         PrtID=Settings.PrtID;
         if PrtID<=0
@@ -406,7 +385,7 @@ if nargin>2 & isstruct(Settings)
 end
 
 Reselect = 0;
-if nargin>3 & ~isempty(SelectFrom)
+if nargin>3 && ~isempty(SelectFrom)
     Reselect = 1;
 end
 if nargin<5
@@ -585,7 +564,7 @@ rect(4) = XX.But.Height;
 Printer=uicontrol('style','popupmenu', ...
     'position',rect, ...
     'parent',fig, ...
-    'string',strvcat(PrinterList{:,2}), ...
+    'string',PL(:,2), ...
     'value',PrtID, ...
     'horizontalalignment','left', ...
     'backgroundcolor',XX.Clr.White, ...
@@ -629,12 +608,12 @@ end
 set(fig,'visible','on','color',XX.Clr.LightGray);
 set(fig,'userdata',{});
 
-if strcmp(PrinterList{PrtID,2},'Windows printer')
+if strcmp(PL{PrtID,2},'Windows printer') & ~isdeployed
     set(Opt,'enable','on');
 else
     set(Opt,'enable','off');
 end
-switch PrinterList{PrtID,1}
+switch PL{PrtID,1}
     case -1 % painters/zbuffer irrelevant
         set(Painter,'value',1,'enable','off');
         set(ZBuf,'value',0,'enable','off');
@@ -709,12 +688,12 @@ while ~gui_quit
                 end
             case 'Printer'
                 PrtID=get(Printer,'value');
-                if strcmp(PrinterList{PrtID,2},'Windows printer')
+                if strcmp(PL{PrtID,2},'Windows printer') & ~isdeployed
                     set(Opt,'enable','on');
                 else
                     set(Opt,'enable','off');
                 end
-                switch PrinterList{PrtID,1}
+                switch PL{PrtID,1}
                     case -1 % painters/zbuffer irrelevant
                         set(Painter,'value',1,'enable','off');
                         set(ZBuf,'value',0,'enable','off');
@@ -729,7 +708,7 @@ while ~gui_quit
                         set(Painter,'enable','on');
                         set(ZBuf,'enable','on');
                 end
-                switch PrinterList{PrtID,5}
+                switch PL{PrtID,4}
                     case 0 % NEVER
                         set(Color,'enable','off','value',0);
                         Clr=0;
@@ -752,7 +731,7 @@ while ~gui_quit
                 Method=2;
             case 'DPI'
                 X=eval(get(Resol,'string'),'NaN');
-                if isnumeric(X) & isequal(size(X),[1 1]) & (round(X)==X)
+                if isnumeric(X) && isequal(size(X),[1 1]) && (round(X)==X)
                     if X<50
                         DPI=50;
                     elseif X>2400

@@ -486,6 +486,7 @@ for c = {'a' 'a1' 'a2'}
         texts = local_strrep(texts_template,'%caption%',caption);
         texts = local_strrep(texts,'%fignr%',fignr);
         d3d_qp('newfigure','1 plot - portrait',['SHIPMA Fig ' upper(c{1})],texts)
+        setappdata(qpsf,'md_print_name',fignr)
         switch c{1}
             case {'a','a1'}
                 if qp_settings('shipma_figa_depth') && d3d_qp('selectfield','depth')
@@ -566,6 +567,7 @@ if qp_settings('shipma_figb')
     texts = local_strrep(texts_template,'%caption%',caption);
     texts = local_strrep(texts,'%fignr%',fignr);
     d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig B',texts)
+    setappdata(qpsf,'md_print_name',fignr)
     %--
     qpsa('upper plot')
     d3d_qp('allt',1)
@@ -598,6 +600,7 @@ if qp_settings('shipma_figc')
     texts = local_strrep(texts_template,'%caption%',caption);
     texts = local_strrep(texts,'%fignr%',fignr);
     d3d_qp('newfigure','2 plots, vertical - portrait','SHIPMA Fig C',texts)
+    setappdata(qpsf,'md_print_name',fignr)
     %--
     set(qpsa('upper plot'),'ydir','reverse')
     if d3d_qp('selectfield','swept path port side')
@@ -664,6 +667,7 @@ if qp_settings('shipma_figd')
     texts = local_strrep(texts_template,'%caption%',caption);
     texts = local_strrep(texts,'%fignr%',fignr);
     d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig D',texts)
+    setappdata(qpsf,'md_print_name',fignr)
     %--
     qpsa('upper plot')
     if qp_settings('shipma_figd_wind') && d3d_qp('selectfield','longitudinal wind force')
@@ -749,6 +753,7 @@ if qp_settings('shipma_fige')
     texts = local_strrep(texts_template,'%caption%',caption);
     texts = local_strrep(texts,'%fignr%',fignr);
     d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig E',texts)
+    setappdata(qpsf,'md_print_name',fignr)
     %--
     qpsa('upper plot')
     if qp_settings('shipma_fige_tugs') && d3d_qp('selectfield','longitudinal total tug force')
