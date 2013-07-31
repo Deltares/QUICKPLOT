@@ -278,7 +278,7 @@ while i<length(figlist)
                                     pdfname = fn;
                                     pagenr = 1;
                                     fn = [tempname '.ps'];
-                                case 2
+                                otherwise
                                     PrtMth{end+1}='-append';
                             end
                         end

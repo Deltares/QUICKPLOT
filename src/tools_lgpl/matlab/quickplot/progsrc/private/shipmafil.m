@@ -1082,16 +1082,16 @@ switch cmd
         set(h,'value',1+step)
         %
         zb = qp_settings('shipma_figa1_zoombox');
-        for cellchari = {'a' 'a1' 'b' 'c' 'd' 'e' 'f'}
+        for cellchari = {'a' 'a1' 'a2' 'b' 'c' 'd' 'e'}
             chari = cellchari{1};
             h=findobj(mfig,'tag',['fig' chari]);
             v=qp_settings(['shipma_fig' chari]);
             set(h,'value',v)
             %
             switch chari
-                case {'b','e','f'}
+                case {'a2','d','e'}
                     switch chari
-                        case 'b'
+                        case 'a2'
                             taglist = {'figa_fairway','figa_banksuction','figa_depth', ...
                                 'figa_contourstep','figa_contourstepval', ...
                                 'figa_contourmax','figa_contourmaxval', ...
@@ -1104,9 +1104,9 @@ switch cmd
                             else
                                 set(h,'string','Fig A2, as Fig A now showing')
                             end
-                        case 'e'
+                        case 'd'
                             taglist = {'figd_wind','figd_waves','figd_swell','figd_banksuction'};
-                        case 'f'
+                        case 'e'
                             taglist = {'fige_tugs','fige_thrusters'};
                     end
                     for tg = taglist
