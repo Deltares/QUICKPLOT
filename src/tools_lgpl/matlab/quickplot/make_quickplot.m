@@ -73,6 +73,8 @@ fstrrep('d3d_qp.m','<VERSION>',qpversion)
 fstrrep('d3d_qp.m','<CREATIONDATE>',TStr)
 fstrrep('wl_identification.c','<VERSION>',qpversion)
 fstrrep('wl_identification.c','<CREATIONDATE>',TStr)
+g = which('-all','gscript');
+copyfile(g{1},'.')
 make_exe
 X={'*.asv'
     '*.bak'
