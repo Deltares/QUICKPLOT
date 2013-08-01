@@ -1185,7 +1185,8 @@ switch cmd
         if i>0
             set(h,'value',i)
         end
-    case {'shipma_spacestep','shipma_timestep','shipma_figa_contourstep','shipma_figa2_contourstep'}
+
+    case {'shipma_spacestep','shipma_timestep','shipma_figa_contourstep','shipma_figa_contourmax','shipma_figa2_contourstep','shipma_figa2_contourmax'}
         h = findobj(mfig,'tag',[cmd(8:end) 'val']);
         if isempty(varargin)
             step = get(h,'string');
@@ -1401,11 +1402,20 @@ switch cmd
                 str(2,end)={''};
                 str = strcat(str{:});
             end
-            qp_settings(sprintf('shipma_bordertext%i_string',i),str)
+            d3d_qp('fileoptions',sprintf('shipma_bordertext%i_string',i),str)
         end
         delete(fg)
+    case {'shipma_bordertext1_string', 'shipma_bordertext2_string', ...
+            'shipma_bordertext3_string', 'shipma_bordertext4_string', ...
+            'shipma_bordertext5_string', 'shipma_bordertext6_string', ...
+            'shipma_bordertext7_string'}
+        % the user interface doesn't call these commands directly, so we
+        % we always need a string argument
+        str = varargin{1};
+        qp_settings(cmd,str)
+        cmdargs={cmd,str};
     otherwise
-        error(['Unknown option command: ',cmd])
+        error('Unknown option command: %s',cmd)
 end
 % -------------------------------------------------------------------------
 
