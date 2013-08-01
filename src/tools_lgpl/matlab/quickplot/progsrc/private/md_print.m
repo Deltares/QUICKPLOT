@@ -63,19 +63,20 @@ if isempty(PL)
     win = W+WD;
     unx = U+UD;
     %
-    PL={1  'PS file'                     all        1     0
+    PL={1  'PDF file'                    all        1     1
+        1  'PS file'                     all        1     0
         1  'EPS file'                    all        1     0
-        1  'PDF file'                    all        1     1
         0  'TIF file'                    all        2     0
         0  'BMP file'                    all        2     0
         0  'PNG file'                    all        2     0
         0  'JPG file'                    all        2     0
         1  'EMF file'                    win        2     0
-        1  'Windows default printer'     WD         2     0
-        1  'Windows printer'             win        2     0
+        -1  'MATLAB fig file'            all        2     0
         0  'Bitmap to clipboard'         win        2     0
         1  'Metafile to clipboard'       win        2     0
-        -1  'MATLAB fig file'            all        2     0};
+        1  'Windows printer'             W          2     0
+        1  'default Windows printer'     WD         2     0
+        1  'other Windows printer'       WD         2     0};
     if isdeployed
         if ispc
             code = WD;
@@ -308,12 +309,12 @@ while i<length(figlist)
                             set(figlist(i),'inverthardcopy','on');
                         end
                         switch Printer
-                            case {'Windows printer','Windows default printer'}
+                            case {'other Windows printer','default Windows printer','Windows printer'}
                                 paperpos=get(figlist(i),'paperposition');
                                 %set(figlist(i),'paperposition',paperpos-[0.5 0 0.5 0]);
-                                if isdeployed && strcmp(Printer,'Windows default printer')
+                                if isdeployed && strcmp(Printer,'default Windows printer')
                                     deployprint(figlist(i))
-                                elseif isdeployed && strcmp(Printer,'Windows printer')
+                                elseif isdeployed && strcmp(Printer,'other Windows printer')
                                     printdlg(figlist(i))
                                 else
                                     dvr='-dwin';
@@ -608,7 +609,7 @@ end
 set(fig,'visible','on','color',XX.Clr.LightGray);
 set(fig,'userdata',{});
 
-if strcmp(PL{PrtID,2},'Windows printer') & ~isdeployed
+if strcmp(PL{PrtID,2},'Windows printer')
     set(Opt,'enable','on');
 else
     set(Opt,'enable','off');
@@ -688,7 +689,7 @@ while ~gui_quit
                 end
             case 'Printer'
                 PrtID=get(Printer,'value');
-                if strcmp(PL{PrtID,2},'Windows printer') & ~isdeployed
+                if strcmp(PL{PrtID,2},'Windows printer')
                     set(Opt,'enable','on');
                 else
                     set(Opt,'enable','off');
