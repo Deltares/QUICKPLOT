@@ -464,7 +464,7 @@ switch NVal
                     mz=max(data.Z(:));
                     s(isnan(s))=ms;
                     data.Z(isnan(data.Z))=mz;
-                    hNew=gencontour(hNew,Ops,Parent,s,data.Z,data.Val,Thresholds,Param);
+                    hNew=gencontour(hNew,Ops,Parent,s,data.Z,data.Val,Thresholds);
 
             end
             if FirstFrame

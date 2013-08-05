@@ -218,6 +218,7 @@ if XYRead
     elseif fixedlayers && (DimFlag(K_) || computeDZ)
         if isstruct(vs_disp(FI,'map-series','LAYER_INTERFACE'))
             z=vs_let(FI,'map-series',idx(T_),'LAYER_INTERFACE',[idx([M_ N_]) {0}],'quiet!');
+            z(z==-999) = NaN;
         else
             h=vs_let(FI,'map-const','ZK','quiet!');
             h(1)=-inf;
