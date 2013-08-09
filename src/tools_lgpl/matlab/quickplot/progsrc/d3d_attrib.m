@@ -330,7 +330,7 @@ for tpC = types
                 i=0;
                 while 1
                     Line=fgetl(fid);
-                    if ~ischar(Line)
+                    if isempty(Line)
                         break
                     end
                     i=i+1;
