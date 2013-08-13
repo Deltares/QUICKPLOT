@@ -164,10 +164,8 @@ if FI.XML.getLength~=1 || ...
         ~isequal(char(Doc.getAttribute('key')),'Shipma Projects')
     error('First level of Shipma XML file should be a single documentTag with key=Shipma Projects')
 end
-Children = getChildren(Doc);
-Name = getNodeName(Children,true);
-IntProp = Children(strcmp(Name,'internal_properties'));
-Proj = Children(strcmp(Name,'shipmaProject'));
+IntProp = getNamedChild(Doc,'internal_properties');
+Proj = getNamedChild(Doc,'shipmaProject');
 nProj = length(Proj);
 FI.TempFilePath = char(IntProp.getFirstChild.getTextContent);
 %
@@ -176,20 +174,19 @@ if nProj==0
     FI.Project(:,1) = [];
 else
     for p = 1:nProj
-        Children = getChildren(Proj(p));
         FI.Project(p).Name = getName(Proj(p));
         ProjFolder = fullfile(FI.UnzipFolder,['shi_' FI.Project(p).Name]);
-        FI.Project(p).Ships = getMembers(Children(1));
+        FI.Project(p).Ships = getMembers(getNamedChild(Proj(p),'shipmaShips'));
         FI.Project(p).Ships.Data = getShipData(FI.Project(p).Ships.XML);
-        FI.Project(p).Sceneries = getMembers(Children(2));
+        FI.Project(p).Sceneries = getMembers(getNamedChild(Proj(p),'shipmaSceneries'));
         FI.Project(p).Sceneries.Data = getSceneryData(FI.Project(p).Sceneries.XML,ProjFolder);
-        FI.Project(p).Environments = getMembers(Children(3));
+        FI.Project(p).Environments = getMembers(getNamedChild(Proj(p),'shipmaEnvironment'));
         FI.Project(p).Environments = getEnvironmentData(FI.Project(p).Environments,ProjFolder);
-        FI.Project(p).Manoeuvres = getMembers(Children(4));
+        FI.Project(p).Manoeuvres = getMembers(getNamedChild(Proj(p),'shipmaManoeuvres'));
         FI.Project(p).Manoeuvres.Data = getManoeuvreData(FI.Project(p).Manoeuvres.XML);
-        FI.Project(p).Pilots = getMembers(Children(5));
-        FI.Project(p).TugScenarios = getMembers(Children(6));
-        FI.Project(p).Cases = getMembers(Children(7));
+        FI.Project(p).Pilots = getMembers(getNamedChild(Proj(p),'shipmaPilots'));
+        FI.Project(p).TugScenarios = getMembers(getNamedChild(Proj(p),'shipmaTugScenarios'));
+        FI.Project(p).Cases = getMembers(getNamedChild(Proj(p),'shipmaCases'));
         FI.Project(p).Cases.Data = getCaseData(FI.Project(p).Cases.XML,ProjFolder);
         Data = FI.Project(p).Cases.Data;
         for i=1:length(Data)
