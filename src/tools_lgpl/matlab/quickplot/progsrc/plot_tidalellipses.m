@@ -4,12 +4,13 @@ function h = plot_tidalellipses(X,Y,argtype,varargin)
 %   on a map at the X,Y locations based on the amplitudes and phases of the
 %   two velocity components. The dimensions of X, Y, amplitude and phase
 %   arrays should be identical. For the conversion of amplitudes and phases
-%   into ellipse parameters the private AP2EP routine is used.
+%   into ellipse parameters the private AP2EP routine is used. PHIU,PHIV 
+%   are in degrees.
 %
 %   PLOT_TIDALELLIPSES(X,Y,'EP',SEMA,ECC,INC,PHA) plots tidal ellipses
 %   on a map at the X,Y locations based on the given by the semi-major
 %   axes, eccentricity, inclination, and phase angles. The dimensions of
-%   these six arrays should be identical.
+%   these six arrays should be identical, INC and PHA are in degrees.
 %
 %   H = PLOT_TIDALELLIPSES(...) returns a handle to the created line
 %   object.

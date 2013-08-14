@@ -34,6 +34,15 @@ function varargout = grib(cmd,varargin)
 %   The names refer to numeric or character fieldnames 
 %   in the FI.Block(:).Info struct.
 %
+%      grib('meta',FI,<BLOCKNRS>,<fieldname>,<name,value>)
+%
+%   extract the specific meta-data field from each block.
+%   Supported field are all fields of FI.Block(:).Info.
+%   By default fieldname is 'P1', this allows to get
+%   all analysis times [0 3 6 9 12 18] hr for one parameter, e.g.
+%     ind.p = grib('find',FI,'ParamID', 1,'LevelID',105,'OK',1);
+%     P1    = grib('meta',FI,ind.p,'fieldname','P1');
+%
 %   Example:
 %
 %        FI = grib('open','HIRLAM_SURFACE_1997010200.grib')
@@ -96,6 +105,8 @@ switch lower(cmd)
         [varargout{1:nargout}] = grib_disp(varargin{:},'type','disp');
     case 'list'
         [varargout{1:nargout}] = grib_disp(varargin{:},'type','list');
+    case 'meta'
+        [varargout{1:nargout}] = grib_disp(varargin{:},'type','meta');
     case 'find'
         [varargout{1:nargout}] = grib_find(varargin{:});
     case 'time'

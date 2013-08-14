@@ -282,7 +282,8 @@ for i = 1:length(Info.Table)
 
     nperc = length(strfind(fmt,'%'));
     if nperc==0
-       fmt = '%15.7e';
+       fmt   = '%15.7e';
+       nperc = 1;
     end
     if nperc==1
        fmt = [repmat([' ',deblank2(fmt)],1,nval-1),'\n'];

@@ -16,6 +16,9 @@ function varargout=wlgrid(cmd,varargin)
 %     'Y'               : Y-coordinates (can be a 1D vector 'stick' of an
 %                         orthogonal grid)
 %     'Enclosure'       : Enclosure array
+%     'AutoEnclosure'   : Use this keyword to automatically generate an
+%                         enclosure from the fields 'X and 'Y' if you don't
+%                         specify one.
 %     'CoordinateSystem': Coordinate system 'Cartesian' (default) or
 %                         'Spherical'
 %     'Format'          : 'NewRGF'   - keyword based, double precision file
@@ -383,6 +386,7 @@ function OK = Local_write_grid(varargin)
 
 fileformat = 'newrgf';
 %
+autoenc    = 0;
 i          = 1;
 filename   = '';
 nparset    = 0;
@@ -390,6 +394,8 @@ Grd.CoordinateSystem='Cartesian';
 while i<=nargin
     if ischar(varargin{i})
         switch lower(varargin{i})
+            case {'autoenc','autoenclosure'}
+                autoenc = 1;
             case 'oldrgf'
                 fileformat      ='oldrgf';
             case 'newrgf'
@@ -474,7 +480,11 @@ end
 
 % enclosure
 if ~isfield(Grd,'Enclosure')
-    Grd.Enclosure=[];
+    if autoenc
+        Grd.Enclosure=enclosure('extract',Grd.X,Grd.Y);
+    else
+        Grd.Enclosure=[];
+    end
 end
 if ~isfield(Grd,'MissingValue')
     Grd.MissingValue=0;

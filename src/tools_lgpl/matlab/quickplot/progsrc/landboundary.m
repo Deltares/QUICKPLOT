@@ -7,12 +7,13 @@ function varargout=landboundary(cmd,varargin)
 %
 %   LANDBOUNDARY('write',FILENAME,XY) writes a landboundary to file. XY
 %   should either be a Nx2 array containing NaN separated line segments or
-%   a cell array containing one line segment per cell.
+%   a cell array containing one line segment per cell. If XY is an a 2xN
+%   array with N not equal to 2, then XY is transposed.
 %
 %   LANDBOUNDARY('write',FILENAME,X,Y) writes a landboundary to file. X
 %   and Y supplied as separate Nx1 arrays containing NaN separated line
 %   segments or cell arrays containing one line segment per cell. The X and
-%   Y line segments should correspond in length.
+%   Y line segments should correspond in length. If X or Y
 %
 %   LANDBOUNDARY(...,'-1') does not write line segments of length 1.
 %
@@ -174,30 +175,39 @@ for c = 1:Ncell
         data1 = Data1{c};
         if XYSep
             data2 = Data2{c};
-            if size(data1,1)~=numel(data1)
-                data1 = data1(:);
-                data2 = data2(:);
-            end
-        else
-            if ndims(data1)>2
+        end
+    end
+    % convert to column vector if needed
+    if XYSep
+        if size(data1,1)~=numel(data1)
+            data1 = data1(:);
+        end
+        if size(data2,1)~=numel(data2)
+            data2 = data2(:);
+        end
+        if any(size(data1)~=size(data2))
+            error('Number of x coordinates differs from number of y coordinates for array %i',c)
+        end
+    else
+        if ndims(data1)>2
+            error('Invalid size of data array %i.',c)
+        elseif size(data1,2)~=2
+            if size(data1,1)==2
+                data1 = data1';
+            else
                 error('Invalid size of data array %i.',c)
-            elseif size(data1,2)~=2
-                if size(data1,1)==2
-                    data1 = data1';
-                else
-                    error('Invalid size of data array %i.',c)
-                end
             end
         end
     end
-    %
-    I=[0; find(isnan(data1(:,1))); size(data1,1)+1];
     if ~DoSplit
         I=[0;size(data1,1)+1];
         data1(isnan(data1))=999.999;
         if XYSep
             data2(isnan(data2))=999.999;
         end
+    else
+        % assume that data1 and data2 have NaN at the same indices
+        I=[0; find(isnan(data1(:,1))); size(data1,1)+1];
     end
     for i=1:(length(I)-1)
         if I(i+1)>(I(i)+1+RemoveLengthOne)

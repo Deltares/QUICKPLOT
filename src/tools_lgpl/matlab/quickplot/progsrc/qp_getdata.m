@@ -1,5 +1,9 @@
 function [varargout]=qp_getdata(varargin)
 %QP_GETDATA General interface for various data files
+%   Core implementation of QPREAD functionality. See QPREAD for syntax details.
+%   The only difference between QPREAD and this function is the treatment of
+%   the flag "Success".
+%
 %   [Success,Dimensions]            = QP_GETDATA(FI,'dimensions')
 %   [Success,Locations ]            = QP_GETDATA(FI,'locations')
 %   [Success,Quantities]            = QP_GETDATA(FI,'quantities')
@@ -21,13 +25,17 @@ function [varargout]=qp_getdata(varargin)
 %   [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'griddata',subf,t,station,m,n,k)
 %   [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'gridcelldata',subf,t,station,m,n,k)
 %
+%   where FI = qpfopen(filename)
+%
 %   The DataFld can be either a unique datafield name or an element of
 %   the DataProps structure. The Domain parameter is optional and will
 %   only be used if the function call to QP_GETDATA(FI,'domains')
 %   returns a non-empty cell array. The subf(ield) parameter should only
 %   be specified if and only if the call 'subfields' returns a non-empty
 %   result.
-
+%
+%   See also QPREAD, QPFOPEN.
+ 
 %
 %   Extra function calls for QuickPlot.
 %
