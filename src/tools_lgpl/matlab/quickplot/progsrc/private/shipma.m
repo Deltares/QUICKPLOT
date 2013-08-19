@@ -165,7 +165,7 @@ if FI.XML.getLength~=1 || ...
     error('First level of Shipma XML file should be a single documentTag with key=Shipma Projects')
 end
 IntProp = getNamedChild(Doc,'internal_properties');
-Proj = getNamedChild(Doc,'shipmaProject');
+Proj = getNamedChildren(Doc,'shipmaProject');
 nProj = length(Proj);
 FI.TempFilePath = char(IntProp.getFirstChild.getTextContent);
 %
@@ -496,6 +496,16 @@ if nargout==0
     end
 else
     OK = ok;
+end
+
+function Items = getNamedChildren(Parent,name)
+AllItems = getChildren(Parent);
+for i = length(AllItems):-1:1
+    matching(i) = checkName(AllItems(i),name);
+end
+Items = AllItems(matching);
+if isempty(Items)
+    error('Tag <%s> does not include child tag <%s>',char(Parent.getNodeName),name)
 end
 
 function Item = getNamedChild(Parent,name)

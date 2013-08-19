@@ -1012,10 +1012,12 @@ for i = length(Out):-1:1
             Out(i).Var = [x y dir];
             %
             ship = Proj.Cases.Data(cse).shipNr;
-            icontour = ustrcmpi('contour',{Proj.Ships.Data(ship).Props.Quant});
-            contour = Proj.Ships.Data(ship).Props(icontour).Value;
+            if ship>0
+                icontour = ustrcmpi('contour',{Proj.Ships.Data(ship).Props.Quant});
+                contour = Proj.Ships.Data(ship).Props(icontour).Value;
+            end
             %
-            if isempty(x) || isempty(y) || isempty(dir)
+            if isempty(x) || isempty(y) || isempty(dir) || ship<=0
                 Out(i)=[];
             else
                 switch Out(i).Name
