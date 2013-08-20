@@ -3359,6 +3359,20 @@ try
                     runfil=-1;
                 end
             else
+                %
+                % Check if -data argument has been specified
+                %
+                for i = 2:length(cmdargs)
+                    if isequal('-data',cmdargs{i})
+                        %
+                        % Both data file and log file specified. First load
+                        % data file and then run log file.
+                        %
+                        d3d_qp('openfile',cmdargs{i+1:end})
+                        cmdargs(i:end)=[];
+                        break
+                    end
+                end
                 runfil=fopen(cmdargs{1},'r');
             end
             cmdargs={};
