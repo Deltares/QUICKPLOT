@@ -87,7 +87,7 @@ switch style
            % this does not yet work in R13 compiler of June 2002
            v  = ver;
            im = strmatch('MATLAB',{v.Name},'exact');
-           dm = datevec(v(im).Date);
+           dm = datevec(v(im(1)).Date);
         catch
            dm = [2002 6 20 0 0 0];
         end
