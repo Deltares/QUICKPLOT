@@ -72,10 +72,38 @@ nl=0; % number of data lines processed
 z = zeros(1000,1);
 nlalloc = 1000; % number of data lines allocated
 prevcomma=0;
+tryquick=1;
 while ~feof(fid)
     i = i+1;
+    if ll~=0 && tryquick
+        loc = ftell(fid);
+        data = textscan(fid,repmat('%f ',1,ll),'CommentStyle',comment);
+        if ~feof(fid)
+            % reading problem encountered, go slowly
+            tryquick = 0;
+        else
+            % end of file reached, but is data consistent?
+            ndata = length(data{end});
+            for cl = 1:length(data)
+                if length(data{cl})>ndata
+                    % data column length inconsistent
+                    data{cl} = data{cl}(1:ndata);
+                    tryquick = 0;
+                    break
+                end
+            end
+        end
+        if tryquick
+            z(nl+(1:ndata),1:ll) = cat(2,data{:});
+            nl = nl+ndata;
+            i = i+ndata;
+        else
+            % attempt failed, go back
+            fseek(fid,loc,-1);
+        end
+    end
     txt=fgetl(fid);
-    if feof(fid) && length(txt)==1 && txt==26 % EOF signal
+    if feof(fid) && (~ischar(txt) || (length(txt)==1 && txt==26)) % EOF signal
         break
     end
     cni=0;

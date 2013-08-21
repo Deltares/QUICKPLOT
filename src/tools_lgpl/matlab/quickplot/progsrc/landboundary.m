@@ -97,18 +97,22 @@ T=tekal('open',filename,varargin{:});
 
 lasterr('')
 try
-    Sz=cat(1,T.Field.Size);
-    if ~all(Sz(:,2)==Sz(1,2))
-        error('The number of columns in the files is not constant.')
+    if isempty(T.Field)
+        Data = zeros(0,2);
+    else
+        Sz=cat(1,T.Field.Size);
+        if ~all(Sz(:,2)==Sz(1,2))
+            error('The number of columns in the files is not constant.')
+        end
+        Sz=[sum(Sz(:,1))+size(Sz,1)-1 Sz(1,2)];
+        offset=0;
+        Data=repmat(NaN,Sz);
+        for i=1:length(T.Field)
+            Data(offset+(1:T.Field(i).Size(1)),:)=tekal('read',T,i);
+            offset=offset+T.Field(i).Size(1)+1;
+        end
+        Data( (Data(:,1)==999.999) & (Data(:,2)==999.999) ,:)=NaN;
     end
-    Sz=[sum(Sz(:,1))+size(Sz,1)-1 Sz(1,2)];
-    offset=0;
-    Data=repmat(NaN,Sz);
-    for i=1:length(T.Field)
-        Data(offset+(1:T.Field(i).Size(1)),:)=tekal('read',T,i);
-        offset=offset+T.Field(i).Size(1)+1;
-    end
-    Data( (Data(:,1)==999.999) & (Data(:,2)==999.999) ,:)=NaN;
 catch
     fprintf(1,'ERROR: Error extracting landboundary from tekal file:\n%s\n',lasterr);
 end

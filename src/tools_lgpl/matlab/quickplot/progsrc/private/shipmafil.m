@@ -153,7 +153,7 @@ if Props.NVal==0
     switch Name
         case 'fairway contour'
             FileName = PRJ.Sceneries.Data(scn).fairwayContourFile;
-            if exist(FileName)
+            if exist(FileName,'file')
                 [Ans.X,Ans.Y] = landboundary('read',FileName,'autocorrect');
             else
                 Ans.X=[];
@@ -819,11 +819,12 @@ Out=FI.Case.Name;
 % -----------------------------------------------------------------------------
 function Out=infile(FI,domain)
 if domain > length(FI.Case.Project)
-    prj='';
-    cse=0;
+    prj  = 'none';
+    cse  = 0;
 else
-    prj=FI.Case.Project(domain);
-    cse=FI.Case.Case(domain);
+    prj  = FI.Case.Project(domain);
+    cse  = FI.Case.Case(domain);
+    Proj = FI.Project(prj);
 end
 scn = 0;
 man = 0;
@@ -831,7 +832,11 @@ man = 0;
 V=inf; % unknown/variable number of points indicated by infinity
 PropNames={'Name'                       'Units' 'DimFlag'   'DataInCell' 'NVal' 'Geom'   'Coords' 'ClosedPoly' 'Project' 'Case' 'Scenery' 'Manoeuvre' 'Var'   };
 Sep      ={'-------'                    ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse    scn       man          0      }; 
-if cse>0
+if domain > length(FI.Case.Project)
+    Out=cell2struct(Sep,PropNames,2);
+    Out(1:end,:)=[];
+    return
+elseif cse>0
     scn=FI.Project(prj).Cases.Data(cse).sceneryNr;
     DataProps={'default figures'        ''      [0 0 0 0 0] 0            -2     ''       ''       0            prj       cse    scn       man          0
         '-------'                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse    scn       man          0
@@ -855,6 +860,27 @@ if cse>0
         'ship speed'                    'm/s'   [9 0 0 0 0] 0             1     'PNT'    'd'      0            prj       cse    scn       man          0
         'his-data'                      ''      [9 0 0 0 0] 0             1     'PNT'    'd'      0            prj       cse    scn       man          0       };
     Out=cell2struct(DataProps,PropNames,2);
+    %
+    if isempty(Proj.Cases.Data(cse).TimeSeries)
+        hisvars={};
+    else
+        hisvars = Proj.Cases.Data(cse).TimeSeries.SubsName;
+    end
+    startVal = length(Out)-1;
+    nVal = length(hisvars);
+    Out = cat(1,Out(1:startVal),repmat(Out(end),nVal,1));
+    track = find(strcmpi('track [m]',hisvars));
+    for i=1:nVal
+        var = hisvars{i};
+        uStart = strfind(var,'[');
+        name = translate(deblank(var(1:uStart-1)));
+        unit = var(uStart+1:end-1);
+        %
+        hisvars{i} = name;
+        Out(startVal+i).Name = name;
+        Out(startVal+i).Units = unit;
+        Out(startVal+i).Var = [i track];
+    end
 else
     DataProps={};
     %
@@ -909,72 +935,105 @@ else
     %
     DataProps = cat(1,DataProps,Sep);
     Out=cell2struct(DataProps,PropNames,2);
-    return
-end
-%
-if domain > length(FI.Case.Project)
-    Out(1:end,:)=[];
-    return
-end
-%
-Proj = FI.Project(prj);
-if isempty(Proj.Cases.Data(cse).TimeSeries)
-    hisvars={};
-else
-    hisvars = Proj.Cases.Data(cse).TimeSeries.SubsName;
-end
-startVal = length(Out)-1;
-nVal = length(hisvars);
-Out = cat(1,Out(1:startVal),repmat(Out(end),nVal,1));
-track = find(strcmpi('track [m]',hisvars));
-for i=1:nVal
-    var = hisvars{i};
-    uStart = strfind(var,'[');
-    name = translate(deblank(var(1:uStart-1)));
-    unit = var(uStart+1:end-1);
-    %
-    hisvars{i} = name;
-    Out(startVal+i).Name = name;
-    Out(startVal+i).Units = unit;
-    Out(startVal+i).Var = [i track];
 end
 %
 for i = length(Out):-1:1
-    switch Out(i).Name
+    Name = Out(i).Name;
+    if Out(i).Case==0
+        ic = findstr(Name,':');
+        if isempty(ic)
+            Name = strtok(Name);
+        else
+            Name = Name(ic+2:end);
+        end
+    end
+    switch Name
         case 'x'
             Out(i)=[];
         case 'y'
             Out(i)=[];
+        case 'depth'
+            if cse>0
+                btFN = Proj.Cases.Data(cse).bottomFile;
+            else
+                scn = Out(3).Scenery;
+                btFN = Proj.Sceneries.Data(scn).bottomFile;
+            end
+            if isempty(btFN)
+                Out(i)=[];
+            elseif ~exist(btFN,'file')
+                Out(i)=[];
+            end
         case 'wind'
-            if ~Proj.Cases.Data(cse).windIsSelected || Proj.Cases.Data(cse).windNr<0
+            if cse>0
+                if ~Proj.Cases.Data(cse).windIsSelected || Proj.Cases.Data(cse).windNr<0
+                    fld = 0;
+                else
+                    fld = Proj.Cases.Data(cse).windNr;
+                    if ~Proj.Environments.Winds.Data(fld).fileSelected
+                        fld = 0;
+                    end
+                end
+            else
+                fld = Out(i).Manoeuvre;
+            end
+            if fld==0 || isempty(Proj.Environments.Winds.Data(fld).file)
                 Out(i)=[];
-            elseif ~Proj.Environments.Winds.Data(Proj.Cases.Data(cse).windNr).fileSelected
-                Out(i)=[];
-            elseif isempty(Proj.Environments.Winds.Data(Proj.Cases.Data(cse).windNr).file)
+            elseif ~exist(Proj.Environments.Winds.Data(fld).file,'file')
                 Out(i)=[];
             end
         case 'waves'
-            if ~Proj.Cases.Data(cse).wavesIsSelected || Proj.Cases.Data(cse).wavesNr<0
+            if cse>0
+                if ~Proj.Cases.Data(cse).wavesIsSelected || Proj.Cases.Data(cse).wavesNr<0
+                    fld = 0;
+                else
+                    fld = Proj.Cases.Data(cse).wavesNr;
+                    if ~Proj.Environments.Waves.Data(fld).fileSelected
+                        fld = 0;
+                    end
+                end
+            else
+                fld = Out(i).Manoeuvre;
+            end
+            if fld==0 || isempty(Proj.Environments.Waves.Data(fld).file)
                 Out(i)=[];
-            elseif ~Proj.Environments.Waves.Data(Proj.Cases.Data(cse).wavesNr).fileSelected
-                Out(i)=[];
-            elseif isempty(Proj.Environments.Waves.Data(Proj.Cases.Data(cse).wavesNr).file)
+            elseif ~exist(Proj.Environments.Waves.Data(fld).file,'file')
                 Out(i)=[];
             end
         case 'swell'
-            if ~Proj.Cases.Data(cse).swellIsSelected || Proj.Cases.Data(cse).swellNr<0
+            if cse>0
+                if ~Proj.Cases.Data(cse).swellIsSelected || Proj.Cases.Data(cse).swellNr<0
+                    fld = 0;
+                else
+                    fld = Proj.Cases.Data(cse).swellNr;
+                    if ~Proj.Environments.Swells.Data(fld).fileSelected
+                        fld = 0;
+                    end
+                end
+            else
+                fld = Out(i).Manoeuvre;
+            end
+            if fld==0 || isempty(Proj.Environments.Swells.Data(fld).file)
                 Out(i)=[];
-            elseif ~Proj.Environments.Swells.Data(Proj.Cases.Data(cse).swellNr).fileSelected
-                Out(i)=[];
-            elseif isempty(Proj.Environments.Swells.Data(Proj.Cases.Data(cse).swellNr).file)
+            elseif ~exist(Proj.Environments.Swells.Data(fld).file,'file')
                 Out(i)=[];
             end
         case 'current'
-            if ~Proj.Cases.Data(cse).currentIsSelected || Proj.Cases.Data(cse).currentNr<0
+            if cse>0
+                if ~Proj.Cases.Data(cse).currentIsSelected || Proj.Cases.Data(cse).currentNr<0
+                    fld = 0;
+                else
+                    fld = Proj.Cases.Data(cse).currentNr;
+                    if ~Proj.Environments.Currents.Data(fld).fileSelected
+                        fld = 0;
+                    end
+                end
+            else
+                fld = Out(i).Manoeuvre;
+            end
+            if fld==0 || isempty(Proj.Environments.Currents.Data(fld).file)
                 Out(i)=[];
-            elseif ~Proj.Environments.Currents.Data(Proj.Cases.Data(cse).currentNr).fileSelected
-                Out(i)=[];
-            elseif isempty(Proj.Environments.Currents.Data(Proj.Cases.Data(cse).currentNr).file)
+            elseif ~exist(Proj.Environments.Currents.Data(fld).file,'file')
                 Out(i)=[];
             end
         case 'ship speed'
@@ -994,15 +1053,33 @@ for i = length(Out):-1:1
                 Out(i).Var = [x y];
             end
         case 'fairway contour'
-            if ~Proj.Cases.Data(cse).sceneryIsSelected || ~exist(Proj.Sceneries.Data(Proj.Cases.Data(cse).sceneryNr).fairwayContourFile)
+            if cse>0
+                if ~Proj.Cases.Data(cse).sceneryIsSelected || Proj.Cases.Data(cse).sceneryNr<0
+                    scn = 0;
+                else
+                    scn = Proj.Cases.Data(cse).sceneryNr;
+                end
+            else
+                scn = Out(i).Scenery;
+            end
+            if scn==0 || ~exist(Proj.Sceneries.Data(scn).fairwayContourFile,'file')
                 Out(i)=[];
             end
         case 'bank suction lines'
-            if ~Proj.Cases.Data(cse).sceneryIsSelected || ~exist(Proj.Sceneries.Data(Proj.Cases.Data(cse).sceneryNr).banksuctionFile)
+            if cse>0
+                if ~Proj.Cases.Data(cse).sceneryIsSelected || Proj.Cases.Data(cse).sceneryNr<0
+                    scn = 0;
+                else
+                    scn = Proj.Cases.Data(cse).sceneryNr;
+                end
+            else
+                scn = Out(i).Scenery;
+            end
+            if scn==0 || ~exist(Proj.Sceneries.Data(scn).banksuctionFile,'file')
                 Out(i)=[];
             end
         case 'desired ship track'
-            if ~exist(Proj.Cases.Data(cse).trackFile)
+            if ~exist(Proj.Cases.Data(cse).trackFile,'file')
                 Out(i)=[];
             end
         case {'ship','ship snapshots','ship at distance ticks','swept path'}

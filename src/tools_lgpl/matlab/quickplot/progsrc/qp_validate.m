@@ -246,7 +246,7 @@ try
                            ppn={PropRef.Name};
                            dpn=setdiff(pn,ppn);
                            dppn=setdiff(ppn,pn);
-                           if dm>1
+                           if length(Props)>1
                               fprintf(logid2,'<b>Domain ''%s''</b><br>\n',Dms{dm});
                            end
                            if ~isempty(dpn)

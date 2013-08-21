@@ -504,9 +504,6 @@ for i = length(AllItems):-1:1
     matching(i) = checkName(AllItems(i),name);
 end
 Items = AllItems(matching);
-if isempty(Items)
-    error('Tag <%s> does not include child tag <%s>',char(Parent.getNodeName),name)
-end
 
 function Item = getNamedChild(Parent,name)
 Items = getChildren(Parent);

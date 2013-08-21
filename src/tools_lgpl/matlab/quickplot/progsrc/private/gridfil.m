@@ -1061,6 +1061,28 @@ switch cmd
       Handle_SelectFile=findobj(mfig,'tag','selectfile');
       sel=get(Handle_SelectFile,'value');
       Str=get(Handle_SelectFile,'string');
+      if matlabversionnumber<6
+          filterspec='*.*';
+      else
+          filterspec={...
+              '*.*'         'All files'                            ''
+              '*.dep;*.qin' 'QuickIn file'                         'wldep'
+              '*.*'         'SIMONA box file'                      'boxfile'
+              '*.*'         'Delft3D-MOR field file'               'wlfdep'
+              'tri-rst.*'   'Delft3D-FLOW restart file'            'trirst'
+              '*.enc'       'Delft3D/SIMONA enclosure file'        'enclosure'
+              '*.aru;*.arv' 'Delft3D/SIMONA roughness area file'   'trtarea'
+              'swanout'     'SWAN map output file'                 'swanout'
+              '*.bnd'       'Delft3D-FLOW boundary file'           'attrib'
+              '*.thd'       'Delft3D-FLOW thin dam file'           'attrib'
+              '*.dry'       'Delft3D-FLOW dry points file'         'attrib'
+              '*.obs'       'Delft3D-FLOW observation point file'  'attrib'
+              '*.crs'       'Delft3D-FLOW cross-section file'      'attrib'
+              '*.src'       'Delft3D-FLOW discharge station file'  'attrib'
+              '*.2dw;*.wr'  'Delft3D-FLOW 2D weir file'            'attrib'
+              'bag*.*'      'Delft3D-MOR dredge map output file'   'bagmap'
+              '*.inc'       'Incremental file'                     'fls'};
+      end
       if nargin>3
          FileName=varargin{1};
       else
@@ -1068,28 +1090,6 @@ switch cmd
             targetdir=fileparts(File(sel).Name);
          else
             targetdir=fileparts(NewFI.FileName);
-         end
-         if matlabversionnumber<6
-            filterspec='*.*';
-         else
-            filterspec={...
-                  '*.*'         'All files'                         ''
-               '*.dep;*.qin' 'QuickIn file'                         'wldep'
-               '*.*'         'SIMONA box file'                      'boxfile'
-               '*.*'         'Delft3D-MOR field file'               'wlfdep'
-               'tri-rst.*'   'Delft3D-FLOW restart file'            'trirst'
-               '*.enc'       'Delft3D/SIMONA enclosure file'        'enclosure'
-               '*.aru;*.arv' 'Delft3D/SIMONA roughness area file'   'trtarea'
-               'swanout'     'SWAN map output file'                 'swanout'
-               '*.bnd'       'Delft3D-FLOW boundary file'           'attrib'
-               '*.thd'       'Delft3D-FLOW thin dam file'           'attrib'
-               '*.dry'       'Delft3D-FLOW dry points file'         'attrib'
-               '*.obs'       'Delft3D-FLOW observation point file'  'attrib'
-               '*.crs'       'Delft3D-FLOW cross-section file'      'attrib'
-               '*.src'       'Delft3D-FLOW discharge station file'  'attrib'
-               '*.2dw;*.wr'  'Delft3D-FLOW 2D weir file'            'attrib'
-               'bag*.*'      'Delft3D-MOR dredge map output file'   'bagmap'
-               '*.inc'       'Incremental file'                     'fls'};
          end
          currentdir=pwd;
          cd(targetdir);

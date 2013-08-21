@@ -460,7 +460,9 @@ switch cmd
                   if ~isfield(FI,'OK')
                      FI=[];
                   elseif FI.OK~=1
-                     error(FI.Error)
+                     err = FI.Error;
+                     FI = [];
+                     error(err)
                   end
                end
                if ~isempty(FI)
