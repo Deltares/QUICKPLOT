@@ -456,8 +456,8 @@ end
 
 voffset=voffset+25;
 dims=[width voffset+5];
-sz=get(0,'screensize');
-pos(1:2)=(sz(3:4)-dims)/2;
+sz=qp_getscreen;
+pos(1:2)=sz(1:2)+(sz(3:4)-dims)/2;
 pos(3:4)=dims;
 
 set(h0,'Position',pos, ...

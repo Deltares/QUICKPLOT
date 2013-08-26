@@ -115,8 +115,8 @@ Width=220;
 First=0;
 if isempty(Fg)
     sz=[360 60];
-    ssz=get(0,'screensize');
-    pos=[ssz(3:4)/2-sz/2 sz];
+    ssz=qp_getscreen;
+    pos=[ssz(1:2)+ssz(3:4)/2-sz/2 sz];
     Inactive=get(0,'defaultuicontrolbackgroundcolor');
 
     Fg=figure('position',pos,'numbertitle','off','name','0%','resize','off','menubar','none','color',Inactive,'closerequestfcn','','integerhandle','off','handlevisibility','off','tag','DelftProgressBar');

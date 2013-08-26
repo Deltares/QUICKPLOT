@@ -769,19 +769,18 @@ set(fg,'paperunits',funits0);
 units0=get(0,'units');
 %
 set(0,'units','centimeters');
-maxdim=get(0,'screensize');
-maxdim=maxdim(3:4);
+maxdim=qp_getscreen;
 if strcmp(Orientation,'landscape')
-    pos1=round(PSize*min(maxdim./PSize));
-    pos2=round(PSize*min(fliplr(maxdim)./PSize));
+    pos1=round(PSize*min(maxdim(3:4)./PSize));
+    pos2=round(PSize*min(fliplr(maxdim(3:4))./PSize));
     pos=min(pos1,pos2);
 else % 'portrait'
-    pos1=round(PSize*min(fliplr(maxdim)./PSize));
-    pos2=round(PSize*min(maxdim./PSize));
+    pos1=round(PSize*min(fliplr(maxdim(3:4))./PSize));
+    pos2=round(PSize*min(maxdim(3:4)./PSize));
     pos=min(pos1,pos2);
 end
 pos=pos*0.85;
-pos=[(maxdim(1)-pos(1))/2 (maxdim(2)-pos(2))/2 pos];
+pos=[maxdim(1)+(maxdim(3)-pos(1))/2 maxdim(2)+(maxdim(4)-pos(2))/2 pos];
 set(fg, ...
     'units','centimeters', ...
     'position',pos);

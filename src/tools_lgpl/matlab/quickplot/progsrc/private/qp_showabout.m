@@ -37,11 +37,11 @@ if ~isempty(ifig)
     return
 end
 Inactive=get(0,'defaultuicontrolbackgroundcolor');
-ssz=get(0,'screensize');
+ssz=qp_getscreen;
 pos(3)=300;
 pos(4)=150;
-pos(1)=ssz(3)/2-pos(3)/2;
-pos(2)=ssz(4)/2-pos(4)/2;
+pos(1)=ssz(1)+ssz(3)/2-pos(3)/2;
+pos(2)=ssz(2)+ssz(4)/2-pos(4)/2;
 %
 uicontrolfont = qp_fontsettings('DefaultUicontrolFont');
 %

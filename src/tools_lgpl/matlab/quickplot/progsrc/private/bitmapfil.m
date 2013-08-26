@@ -189,12 +189,12 @@ switch cmd,
         cmdargs={cmd x};
     case 'bitmapfig'
         sz=[FI.FileInfo.Width FI.FileInfo.Height];
-        ssz=get(0,'screensize')-[0 0 0 50];
+        ssz=qp_getscreen;
         fac=max(sz./ssz(3:4));
         if fac>1
             sz=floor(sz/fac);
         end
-        pos=[ssz(3:4)/2-sz/2 sz];
+        pos=[ssz(1:2)+ssz(3:4)/2-sz/2 sz];
         Fg=qp_createfig('free format figure',FI.FileName);
         set(Fg,'units','pixels','position',pos,'resize','off');
         %

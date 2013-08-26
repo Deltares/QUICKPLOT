@@ -66,11 +66,11 @@ else
     Fig_Height=2*XX.Margin+XX.But.Height+ ...
         NQuestions*(XX.Margin+XX.But.Height+XX.Txt.Height);
 
-    ss = get(0,'ScreenSize');
+    ss = qp_getscreen;
     swidth = ss(3);
     sheight = ss(4);
-    left = (swidth-Fig_Width)/2;
-    bottom = (sheight-Fig_Height)/2;
+    left = ss(1)+(swidth-Fig_Width)/2;
+    bottom = ss(2)+(sheight-Fig_Height)/2;
     rect = [left bottom Fig_Width Fig_Height];
 
     Cmd='stdinputdlg';

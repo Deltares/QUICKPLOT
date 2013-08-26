@@ -79,8 +79,8 @@ end
 showpane=1;
 panewidth=180;
 
-screensize=get(0,'screensize');
-PosUR=qp_settings('MainPositionUR',screensize(3:4)/2+[270 200]);
+screensize=qp_getscreen;
+PosUR=qp_settings('MainPositionUR',screensize(1:2)+screensize(3:4)/2+[270 200]);
 dims=[339+panewidth 400];
 pos(1:2)=PosUR-dims+[panewidth*(1-showpane) 0];
 pos(3:4)=dims-[panewidth*(1-showpane) 0];
@@ -746,7 +746,7 @@ UD.Options.Pos=p;
 %
 PMsize = [445 300];
 PMsizeMin = [445 190];
-pos=[qp_settings('PlotMngrPositionUL',screensize(3:4)/2+PMsize/2) PMsize];
+pos=[qp_settings('PlotMngrPositionUL',screensize(1:2)+screensize(3:4)/2+PMsize/2) PMsize];
 pos(2)=pos(2)-pos(4);
 %
 ArrowActive=repmat(reshape(UD.Inactive,[1 1 3]),[16,16,1]);

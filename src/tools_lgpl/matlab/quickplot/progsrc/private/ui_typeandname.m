@@ -183,11 +183,11 @@ Fig_Height=3*XX.Margin+ListHeight+XX.Txt.Height+XX.But.Height;
 if specifyname
     Fig_Height=Fig_Height+XX.Margin+XX.Txt.Height+XX.But.Height;
 end
-ss = get(0,'ScreenSize');
+ss = qp_getscreen;
 swidth = ss(3);
 sheight = ss(4);
-left = (swidth-Fig_Width)/2;
-bottom = (sheight-Fig_Height)/2;
+left = ss(1)+(swidth-Fig_Width)/2;
+bottom = ss(2)+(sheight-Fig_Height)/2;
 rect = [left bottom Fig_Width Fig_Height];
 
 fig=qp_uifigure(windowtitle,'','ui_typeandname',rect);

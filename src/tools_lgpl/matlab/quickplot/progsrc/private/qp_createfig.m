@@ -110,7 +110,10 @@ if isempty(fig)
 end
 
 dfp = qp_settings('defaultfigurepos');
-MonPos = [];
+MonPos = getpixels(0,'MonitorPositions');
+shift = -min(MonPos(:,2))+1;
+MonPos(:,[2 4]) = MonPos(:,[2 4])+shift;
+MonPos(:,[4 2]) = max(MonPos(:,4)) - MonPos(:,[2 4])+1;
 if isnumeric(dfp)
     % manual
     setpixels(fig,'position',dfp)
@@ -121,7 +124,6 @@ elseif strcmp(dfp,'qp main')
     % determine 4 corners
     pos = [pos(1) pos(2); pos(1)+pos(3) pos(2); pos(1) pos(2)+pos(4); pos(1)+pos(3) pos(2)+pos(4)];
     %
-    MonPos = getpixels(0,'MonitorPositions');
     for i = 1:size(MonPos,1)
         % determine first screen in which some corner is located
         if any(pos(:,1)>=MonPos(i,1) & pos(:,1)<MonPos(i,1)+MonPos(i,3) & ...
@@ -133,18 +135,17 @@ elseif strcmp(dfp,'qp main')
 elseif length(dfp)>8 && strcmp(dfp(1:8),'monitor ')
     screen = sscanf(dfp(9:end),'%i',1);
     %
-    MonPos = getpixels(0,'MonitorPositions');
     if screen>size(MonPos,1)
         screen = 1;
     end
-    MonPos = MonPos(end-screen+1,:);
+    MonPos = MonPos(screen,:);
 else % strcmp(dfp,'auto') or unknown
     % nothing to do: keep default
 end
-if ~isempty(MonPos)
-    width = min(MonPos(3),560);
-    height = min(MonPos(4),420);
-    dfp = [floor((MonPos(3)-width)/2) max(MonPos(4)-102-height,0) width height];
+if size(MonPos,1)==1
+    width = min(MonPos(3)-MonPos(1)+1,560);
+    height = min(MonPos(4)-MonPos(2)+1,420);
+    dfp = [MonPos(1)+floor((MonPos(3)-MonPos(1)+1-width)/2) MonPos(2)+max(MonPos(4)-MonPos(2)+1-102-height,0) width height];
     setpixels(fig,'position',dfp)
 end
 

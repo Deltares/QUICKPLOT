@@ -62,8 +62,8 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 %
 Hpb=progressbar('cancel','delete(gcbf)','pause','on');
 pHpb=get(Hpb,'position');
-ssz=get(0,'screensize');
-set(Hpb,'position',[10 ssz(4)-pHpb(4)-30 pHpb(3) pHpb(4)])
+ssz=qp_getscreen;
+set(Hpb,'position',[ssz(1)+10 ssz(2)+ssz(4)-pHpb(4)-30 pHpb(3) pHpb(4)])
 %
 UserInterrupt=0;
 if matlabversionnumber>=7.02

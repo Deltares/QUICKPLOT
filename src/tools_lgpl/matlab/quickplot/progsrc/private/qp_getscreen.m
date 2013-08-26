@@ -1,5 +1,5 @@
-function url = uigeturl
-%UIGETLINK Open URL dialog box.
+function screensize = qp_getscreen(ref)
+%QP_GETSCREEN Get position of current screen
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -28,44 +28,51 @@ function url = uigeturl
 %                                                                               
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL$
-%   $Id$
+%   $HeadURL: https://svn.oss.deltares.nl/repos/delft3d/trunk/src/tools_lgpl/matlab/quickplot/progsrc/private/qp_uifigure.m $
+%   $Id: qp_uifigure.m 2498 2013-05-16 12:38:27Z jagers $
 
-pos = qp_getscreen;
-sz  = [500 70];
-pos = floor([pos(1:2)+pos(3:4)/2-sz/2 sz]);
+MonPos = getpixels(0,'MonitorPositions');
+shift = -min(MonPos(:,2))+1;
+MonPos(:,[2 4]) = MonPos(:,[2 4])+shift;
+MonPos(:,[4 2]) = max(MonPos(:,4)) - MonPos(:,[2 4])+1; 
 
-Fig = qp_uifigure('Select URL to open ...','','SelectURL',pos);
-hURL = uicontrol('Parent',Fig, ...
-    'FontUnits','pixels', ...
-    'Callback','', ...
-    'Style','edit', ...
-    'Backgroundcolor',[1 1 1], ...
-    'Enable','on', ...
-    'FontSize',12, ...
-    'Horizontalalignment','left', ...
-    'Position',[11 41 pos(3)-20 20], ...
-    'tag','URL', ...
-    'String','http://');
-uicontrol('Parent',Fig, ...
-    'Callback','delete(gcbf)', ...
-    'Style','pushbutton', ...
-    'Enable','on', ...
-    'Position',[pos(3)-80 11 70 20], ...
-    'tag','Cancel', ...
-    'String','Cancel');
-uicontrol('Parent',Fig, ...
-    'Callback','set(gcbf,''Visible'',''off'')', ...
-    'Style','pushbutton', ...
-    'Enable','on', ...
-    'Position',[pos(3)-160 11 70 20], ...
-    'tag','Open', ...
-    'String','Open');
-set(Fig,'Visible','on')
-
-waitfor(Fig,'Visible','off')
-if ishandle(Fig)
-    url = get(hURL,'string');
+if nargin==1
+    if isequal(size(ref),[1 4])
+        pos = ref;
+    elseif isequal(size(ref),[1 1]) && ishandle(ref) && strcmp(get(ref,'type'),'figure')
+        pos = getpixels(ref,'position');
+    else
+        error('Invalid reference given for qp_getscreen.')
+    end
 else
-    url = 0;
+    gcf = get(0,'currentFigure');
+    qpf = findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
+    if ~isempty(gcbf)
+        pos = getpixels(gcbf,'position');
+    elseif ~isempty(gcf)
+        pos = getpixels(gcf,'position');
+    elseif ~isempty(qpf)
+        pos = getpixels(qpf,'position');
+    else
+        pos = 1;
+    end
 end
+%
+if length(pos)==1
+   scr = pos;
+else
+   posx = pos;
+   posx(3:4) = posx(1:2)+posx(3:4);
+   %
+   posint = [max(repmat(posx(1:2),size(MonPos,1),1),MonPos(:,1:2)) min(repmat(posx(3:4),size(MonPos,1),1),MonPos(:,3:4))];
+   area = prod(max(0,posint(:,3:4)-posint(:,1:2)),2);
+   [mxarea,scr] = max(area);
+end
+screensize = MonPos(scr,:);
+screensize(3:4) = screensize(3:4)-screensize(1:2)+1;
+   
+function val = getpixels(h,quant)
+u = get(h,'units');
+set(h,'units','pixels')
+val = get(h,quant);
+set(h,'units',u) 

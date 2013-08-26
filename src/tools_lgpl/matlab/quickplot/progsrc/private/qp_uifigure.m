@@ -40,10 +40,10 @@ end
 uicontrolfont = qp_fontsettings('DefaultUicontrolFont');
 %
 %Force onscreen:
-%MATLAB 6: movegui(H,'onscreen')
-screensize=get(0,'screensize');
-pos(1:2)=max(pos(1:2),0);
-pos(1:2)=min(pos(1:2),screensize(3:4)-pos(3:4)-[0 70]);
+%MATLAB 6 and one screen: movegui(H,'onscreen')
+MonPos = qp_getscreen(pos);
+pos(1:2)=max(pos(1:2),MonPos(1:2));
+pos(1:2)=min(pos(1:2),MonPos(1:2)+MonPos(3:4)-pos(3:4)-[0 70]);
 % -[0 70] added such that toolbar, menu and window title will be on screen
 % also in R13 compiled mode
 %

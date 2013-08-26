@@ -140,12 +140,12 @@ end
 %
 % Initialize
 %
-screensize=get(0,'screensize');
+screensize=qp_getscreen;
 Active = [1 1 1];
 %
 width = 400;
 pos = [width 350];
-pos = [screensize(3:4)/2-pos/2 pos];
+pos = [screensize(1:2)+screensize(3:4)/2-pos/2 pos];
 delete(mfig)
 mfig = qp_uifigure(Title,'ui_getdir:cancel','UIGETDIR',pos,'ui_getdir');
 set(mfig,'userdata',StartPath)

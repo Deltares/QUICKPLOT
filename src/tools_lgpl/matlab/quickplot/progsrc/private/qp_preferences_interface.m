@@ -40,10 +40,10 @@ TabHeight=WinHeight-3*Margin-20;
 
 u = get(0,'units');
 set(0,'units','pixels')
-screensize=get(0,'screensize');
+screensize=qp_getscreen;
 set(0,'units',u)
 dims=[HOffset+TabWidth WinHeight];
-PosLL=floor((screensize(3:4)-dims)/2);
+PosLL=floor((screensize(1:2)+screensize(3:4)-dims)/2);
 %PosLL=qp_settings('PrefPos',PosLL);
 pos(1:2)=PosLL;
 pos(3:4)=dims;

@@ -950,8 +950,8 @@ end
 width=300;
 height=360;
 labelwidth=75;
-sz = get(0,'screensize');
-pos = [sz(3)-width-50 sz(4)-height-50 width height];
+sz = qp_getscreen;
+pos = [sz(1)+sz(3)-width-50 sz(2)+sz(4)-height-50 width height];
 vers=d3d_qp('version');
 Fig = qp_uifigure(['ECO-Plot ' vers],'closereq','ECO-Plot',pos,'ecoplot');
 

@@ -143,11 +143,11 @@ if isempty(fig) || ~ishandle(fig)
    Min_Fig_Width=MinListWidth+2*XX.Margin;
    Min_Fig_Height=3*XX.Margin+MinListHeight+XX.But.Height;
 
-   ss = get(0,'ScreenSize');
+   ss = qp_getscreen;
    swidth = ss(3);
    sheight = ss(4);
-   left = (swidth-Fig_Width)/2;
-   bottom = (sheight-Fig_Height)/2;
+   left = ss(1)+(swidth-Fig_Width)/2;
+   bottom = ss(2)+(sheight-Fig_Height)/2;
    rect = [left bottom Fig_Width Fig_Height];
 
    fig=qp_uifigure('Message Window','','UI_MESSAGE window',rect);

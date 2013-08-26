@@ -729,11 +729,11 @@ function a=local_draw_ui
 Inactive=get(0,'defaultuicontrolbackgroundcolor');
 Active=[1 1 1];
 
-ss=get(0,'screensize');
+ss=qp_getscreen;
 figsize=[320 45+6*25];
 VOffset=figsize(2)-5;
 
-a=qp_uifigure('Specify Animation Parameters','','QuickPlot animate items',[(ss(3:4)-figsize)/2 figsize]);
+a=qp_uifigure('Specify Animation Parameters','','QuickPlot animate items',[ss(1:2)+(ss(3:4)-figsize)/2 figsize]);
 %
 % Output format ...
 %

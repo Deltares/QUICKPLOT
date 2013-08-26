@@ -69,12 +69,12 @@ if ~ischar(cmd)
 
     Units=get(0,'units');
     set(0,'units','pixels');
-    ss = get(0,'ScreenSize');
+    ss = qp_getscreen;
     set(0,'units',Units);
     swidth = ss(3);
     sheight = ss(4);
-    left = (swidth-Fig_Width)/2;
-    bottom = (sheight-Fig_Height)/2;
+    left = ss(1)+(swidth-Fig_Width)/2;
+    bottom = ss(2)+(sheight-Fig_Height)/2;
     rect = [left bottom Fig_Width Fig_Height];
     
     %

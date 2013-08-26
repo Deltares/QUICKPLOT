@@ -523,12 +523,12 @@ end
 if nargin<2
     uicontrolfont.DefaultUicontrolFontWeight = get(0,'DefaultUicontrolFontWeight');
 end
-sz=get(0,'screensize');
+sz=qp_getscreen;
 
 Inactive=get(0,'defaultuicontrolbackgroundcolor');
 Active=[1 1 1];
 dims=[390 225];
-pos(1:2)=(sz(3:4)-dims)/2;
+pos(1:2)=sz(1:2)+(sz(3:4)-dims)/2;
 pos(3:4)=dims;
 
 if ~isfield(S,'Name')

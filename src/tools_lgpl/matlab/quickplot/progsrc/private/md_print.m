@@ -407,11 +407,11 @@ Fig_Height=6*XX.Margin+7*XX.But.Height+XX.Txt.Height+ ...
     (XX.Margin+FigListHeight)*Reselect + ...
     (XX.Margin+XX.But.Height)*double(CanApplyAll);
 
-ss = get(0,'ScreenSize');
+ss = qp_getscreen;
 swidth = ss(3);
 sheight = ss(4);
-left = (swidth-Fig_Width)/2;
-bottom = (sheight-Fig_Height)/2;
+left = ss(1)+(swidth-Fig_Width)/2;
+bottom = ss(2)+(sheight-Fig_Height)/2;
 rect = [left bottom Fig_Width Fig_Height];
 
 fig=qp_uifigure('Print/Export','','md_print',rect);
