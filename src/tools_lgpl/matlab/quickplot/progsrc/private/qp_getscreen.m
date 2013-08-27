@@ -28,8 +28,8 @@ function screensize = qp_getscreen(ref)
 %                                                                               
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: https://svn.oss.deltares.nl/repos/delft3d/trunk/src/tools_lgpl/matlab/quickplot/progsrc/private/qp_uifigure.m $
-%   $Id: qp_uifigure.m 2498 2013-05-16 12:38:27Z jagers $
+%   $HeadURL$
+%   $Id$
 
 MonPos = getpixels(0,'MonitorPositions');
 shift = -min(MonPos(:,2))+1;
