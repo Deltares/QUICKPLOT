@@ -210,36 +210,7 @@ if XYRead
         y=xy([2 4],:);
     end
     
-    if (DimFlag(K_) || computeDZ) && fixedlayers
-        [h,Chk]=vs_let(FI,'his-const','ZK','quiet');
-        h(1)=-inf;
-        h(end)=inf;
-        [s,Chk]=vs_let(FI,'his-series',{idx{T_}},'ZWL',idx(ST_),'quiet');
-        nt=length(idx{T_});
-        ns=length(idx{ST_});
-        nk=length(h);
-        z=repmat(reshape(h,[1 1 nk]),[nt ns]);
-        for i=1:nk
-            z(:,:,i)=min(z(:,:,i),s);
-        end
-        [dp,Chk]=vs_get(FI,'his-const','DPS',idx(ST_),'quiet');
-        dp=repmat(reshape(-dp,[1 ns]),[1 1 nk]);
-        for i=1:nt
-            z(i,:,:)=max(z(i,:,:),dp);
-        end
-        if computeDZ
-            dz=diff(z,1,3);
-        end
-        if strcmp(Props.Loc3D,'c')
-            z=(z(:,:,1:end-1)+z(:,:,2:end))/2;
-        end
-        idxK_=idx{K_};
-        if DimFlag(K_)
-            z=z(:,:,idxK_);
-            x=repmat(x,[1 1 length(idxK_)]);
-            y=repmat(y,[1 1 length(idxK_)]);
-        end
-    elseif DimFlag(K_)
+    if DimFlag(K_) || computeDZ
         if isstruct(vs_disp(FI,'his-sed-series','ZDPS'))
             [dp,Chk]=vs_let(FI,'his-sed-series',{idx{T_}},'ZDPS',idx(ST_),'quiet');
         elseif isstruct(vs_disp(FI,'his-series','DPS'))
@@ -251,25 +222,54 @@ if XYRead
         dp(dp==-999) = NaN; % filter missing values for moving observation points
         dp = -dp;
         %
-        [h,Chk]=vs_let(FI,'his-series',{idx{T_}},'ZWL',idx(ST_),'quiet');
-        h=h-dp;
-        [thk,Chk]=vs_let(FI,'his-const','THICK','quiet');
-        switch Props.Loc3D
-            case 'i'
-                cthk=cumsum([0 thk]);
-            case 'c'
-                cthk=cumsum(thk)-thk/2;
+        if fixedlayers
+            [h,Chk]=vs_let(FI,'his-const','ZK','quiet');
+            h(1)=-inf;
+            h(end)=inf;
+            [s,Chk]=vs_let(FI,'his-series',{idx{T_}},'ZWL',idx(ST_),'quiet');
+            nt=length(idx{T_});
+            ns=length(idx{ST_});
+            nk=length(h);
+            z=repmat(reshape(h,[1 1 nk]),[nt ns]);
+            for i=1:nk
+                z(:,:,i)=min(z(:,:,i),s);
+            end
+            dp=repmat(reshape(dp,[nt ns]),[1 1 nk]);
+            z = max(z,dp);
+            if computeDZ
+                dz=diff(z,1,3);
+            end
+            if strcmp(Props.Loc3D,'c')
+                z=(z(:,:,1:end-1)+z(:,:,2:end))/2;
+            end
+            idxK_=idx{K_};
+            if DimFlag(K_)
+                z=z(:,:,idxK_);
+                x=repmat(x,[1 1 length(idxK_)]);
+                y=repmat(y,[1 1 length(idxK_)]);
+            end
+        else
+            [h,Chk]=vs_let(FI,'his-series',{idx{T_}},'ZWL',idx(ST_),'quiet');
+            h=h-dp;
+            [thk,Chk]=vs_let(FI,'his-const','THICK','quiet');
+            switch Props.Loc3D
+                case 'i'
+                    cthk=cumsum([0 thk]);
+                case 'c'
+                    cthk=cumsum(thk)-thk/2;
+            end
+            cthk=cthk(idx{K_});
+            z=zeros([size(h) length(cthk)]);
+            for k=1:length(cthk)
+                z(:,:,k)=dp+(1-cthk(k))*h;
+            end
+            x=repmat(x,[1 1 length(cthk)]);
+            y=repmat(y,[1 1 length(cthk)]);
         end
-        cthk=cthk(idx{K_});
-        z=zeros([size(h) length(cthk)]);
-        for k=1:length(cthk)
-            z(:,:,k)=dp+(1-cthk(k))*h;
-        end
-        x=repmat(x,[1 1 length(cthk)]);
-        y=repmat(y,[1 1 length(cthk)]);
     end
     %========================= GENERAL CODE =======================================
 end
+        z(:)
 
 % grid interpolation in z direction ...
 
