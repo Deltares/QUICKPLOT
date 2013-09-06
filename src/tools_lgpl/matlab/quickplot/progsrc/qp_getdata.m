@@ -511,7 +511,7 @@ end
 %
 if dic
     triangles = 0;
-    if isfield(X{2},'Tri') && X{2}.Tri
+    if isfield(X{2},'Tri') && isequal(X{2}.Tri,1)
         triangles = 1;
     elseif isfield(X{2},'Geom') && strcmp(X{2}.Geom,'TRI')
         triangles = 1;

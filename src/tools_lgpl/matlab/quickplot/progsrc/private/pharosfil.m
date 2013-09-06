@@ -361,7 +361,7 @@ varargout={Ans FI};
 
 
 % -----------------------------------------------------------------------------
-function Out=infile(FI,domain);
+function Out=infile(FI,domain)
 
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'             'Units'  'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc' 'Group'      'Val1'           'Val2'      'UseGrid' 'SubFld'};
@@ -538,7 +538,7 @@ if isstruct(Info) & Info.SizeDim>0
             Out(end).SubFld = '';
             Out(end).DimFlag = [0 5 0 0 0];
             Out(end).NVal = -1;
-            Out(end).Tri = 0;
+            Out(end).Geom = 'PNT';
             Out(end).Data = Out(i);
         end
     end
