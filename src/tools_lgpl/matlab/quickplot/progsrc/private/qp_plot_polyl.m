@@ -41,7 +41,7 @@ multiple   = Param.multiple;
 NVal       = Param.NVal;
 
 DimFlag=Props.DimFlag;
-Thresholds=[];
+Thresholds=Ops.Thresholds;
 
 switch NVal
     case 0
