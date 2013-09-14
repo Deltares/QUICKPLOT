@@ -195,7 +195,11 @@ if XYRead
     
     %======================== SPECIFIC CODE =======================================
     if ~isempty(Props.Loc)
-        if isstruct(vs_disp(FI,'his-series','XYSTAT'))
+        if strcmp(Props.Name,'location tidal turbines')
+            [xy,Chk]=vs_let(FI,'his-const','XYTURBINES',{idx{ST_} 0},'quiet');
+            x = xy(1);
+            y = xy(2);
+        elseif isstruct(vs_disp(FI,'his-series','XYSTAT'))
             [xy,Chk]=vs_let(FI,'his-series',{idx{T_}},'XYSTAT',{0 idx{ST_}},'quiet');
             x=reshape(xy(:,1,:),[size(xy,1) size(xy,3)]);
             y=reshape(xy(:,2,:),[size(xy,1) size(xy,3)]);
@@ -269,7 +273,6 @@ if XYRead
     end
     %========================= GENERAL CODE =======================================
 end
-        z(:)
 
 % grid interpolation in z direction ...
 
@@ -286,6 +289,11 @@ if DataRead
             elidx{K_-1}=0;
             DimFlag(K_)=1;
             kidx=sum(DimFlag~=0);
+        case {'location tidal turbines'}
+            PropC = Props;
+            Props.Group = 'his-const';
+            Props.Val1 = 'NAMTURBINES';
+            idxT = idx{T_};
         case {'location observation points'}
             PropC = Props;
             Props.Group = 'his-const';
@@ -380,7 +388,7 @@ if DataRead
             DimFlag =DimFlag([1 3:end]);
     end
     switch Props.Name
-        case {'location observation points'}
+        case {'location observation points','location tidal turbines'}
             sz=size(val1);
             val1=cellstr(reshape(val1,sz(2:3)));
             Props = PropC;
@@ -592,7 +600,8 @@ function Out=infile(FI,domain)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'            'Units'   'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc'  'Loc3D' 'Group'          'Val1'     'Val2'    'SubFld' 'MNK'};
-DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     ''       'z'   'z'       ''      'his-series'     'XYSTAT'   ''         []       0
+DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     ''       'z'   'z'       ''      'his-series'     'XYSTAT'   ''  []       0
+    'location tidal turbines'   ''       [1 5 0 0 0]  0         4     ''       'z'   'z'       ''      'his-const'      'XYTURBINES'   ''     []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'water level'               'm'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZWL'      ''         []       0
     'water depth'               'm'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZWL'      ''         []       0
@@ -695,6 +704,11 @@ DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     '' 
     % note 1: 'cumulative total transp.' needs to differ from 'cumulative total transport' at transects used above
     % note 2: 'cumulative total transp.' includes morfac (and bedload) whereas cumulative flux does not include either
     'cumulative total transp.'  'kg'     [1 5 0 0 0]  0         1     ''       'NA'  ''        ''      'his-bal-series' 'BALSDFLUX' ''        'fs'     0
+    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    'thrust'                    'N'      [1 5 0 0 0]  0         1     ''       ''    ''        ''      'his-series'     'INST_THRUST' ''      []       0
+    'power'                     'W'      [1 5 0 0 0]  0         1     ''       ''    ''        ''      'his-series'     'INST_POWER'  ''      []       0
+    'cumulative thrust'         'N*s'    [1 5 0 0 0]  0         1     ''       ''    ''        ''      'his-series'     'CUM_THRUST'  ''      []       0
+    'cumulative power'          'W*s'    [1 5 0 0 0]  0         1     ''       ''    ''        ''      'his-series'     'CUM_POWER'   ''      []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'time fraction ploughing'        '-'     [1 5 0 0 0]  0     1     ''       ''    ''        ''      'his-dad-series' 'PLOUGH_TFRAC' ''     []       0
     'time fraction dredging'         '-'     [1 5 0 0 0]  0     1     ''       ''    ''        ''      'his-dad-series' 'DREDGE_TFRAC' ''     []       0
@@ -969,6 +983,10 @@ sz=[0 0 0 0 0];
 %end;
 if Props.DimFlag(ST_)
     switch Props.Val1
+        case {'XYTURBINES','INST_THRUST','CUM_THRUST','INST_POWER','CUM_POWER'}
+            % turbines
+            Info=vs_disp(FI,Props.Group,Props.Val1);
+            sz(ST_)=Info.SizeDim(1);
         case {'RINT','ZQ_SUM','ZQ'}
             % discharges
             Info=vs_disp(FI,'his-dis-series',Props.Val1);
@@ -1055,6 +1073,8 @@ end
 function S=readsts(FI,Props,t)
 %======================== SPECIFIC CODE =======================================
 switch Props.Val1
+    case {'XYTURBINES','INST_THRUST','CUM_THRUST','INST_POWER','CUM_POWER'}
+        [S,Chk]=vs_get(FI,'his-const','NAMTURBINES','quiet');
     case {'RINT','ZQ_SUM','ZQ'}
         [S,Chk]=vs_get(FI,'his-dis-const','DISCHARGES','quiet');
     case {'FLTR','CTR'}
