@@ -195,7 +195,7 @@ if XYRead
     
     %======================== SPECIFIC CODE =======================================
     if ~isempty(Props.Loc)
-        if strcmp(Props.Name,'location tidal turbines')
+        if strcmp(Props.Loc,'turbines')
             [xy,Chk]=vs_let(FI,'his-const','XYTURBINES',{idx{ST_} 0},'quiet');
             x = xy(1);
             y = xy(2);
@@ -599,9 +599,10 @@ varargout={Ans FI};
 function Out=infile(FI,domain)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
+TRB='turbines';
 PropNames={'Name'            'Units'   'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc'  'Loc3D' 'Group'          'Val1'     'Val2'    'SubFld' 'MNK'};
 DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     ''       'z'   'z'       ''      'his-series'     'XYSTAT'   ''  []       0
-    'location tidal turbines'   ''       [1 5 0 0 0]  0         4     ''       'z'   'z'       ''      'his-const'      'XYTURBINES'   ''     []       0
+    'location tidal turbines'   ''       [1 5 0 0 0]  0         4     ''       TRB   'z'       ''      'his-const'      'XYTURBINES'   ''     []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'water level'               'm'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZWL'      ''         []       0
     'water depth'               'm'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZWL'      ''         []       0
@@ -705,10 +706,10 @@ DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     '' 
     % note 2: 'cumulative total transp.' includes morfac (and bedload) whereas cumulative flux does not include either
     'cumulative total transp.'  'kg'     [1 5 0 0 0]  0         1     ''       'NA'  ''        ''      'his-bal-series' 'BALSDFLUX' ''        'fs'     0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
-    'thrust'                    'N'      [1 5 0 0 0]  0         1     ''       ''    ''        ''      'his-series'     'INST_THRUST' ''      []       0
-    'power'                     'W'      [1 5 0 0 0]  0         1     ''       ''    ''        ''      'his-series'     'INST_POWER'  ''      []       0
-    'cumulative thrust'         'N*s'    [1 5 0 0 0]  0         1     ''       ''    ''        ''      'his-series'     'CUM_THRUST'  ''      []       0
-    'cumulative power'          'W*s'    [1 5 0 0 0]  0         1     ''       ''    ''        ''      'his-series'     'CUM_POWER'   ''      []       0
+    'thrust'                    'N'      [1 5 0 0 0]  0         1     ''       TRB   ''        ''      'his-series'     'INST_THRUST' ''      []       0
+    'power'                     'W'      [1 5 0 0 0]  0         1     ''       TRB   ''        ''      'his-series'     'INST_POWER'  ''      []       0
+    'cumulative thrust'         'N*s'    [1 5 0 0 0]  0         1     ''       TRB   ''        ''      'his-series'     'CUM_THRUST'  ''      []       0
+    'cumulative power'          'W*s'    [1 5 0 0 0]  0         1     ''       TRB   ''        ''      'his-series'     'CUM_POWER'   ''      []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'time fraction ploughing'        '-'     [1 5 0 0 0]  0     1     ''       ''    ''        ''      'his-dad-series' 'PLOUGH_TFRAC' ''     []       0
     'time fraction dredging'         '-'     [1 5 0 0 0]  0     1     ''       ''    ''        ''      'his-dad-series' 'DREDGE_TFRAC' ''     []       0
@@ -813,7 +814,7 @@ for i=size(Out,1):-1:1
                 elseif NTr>1 && isequal(Info.SizeDim,1)
                     Out(i)=[];
                 end
-            case {'LINK_SUM','MORFAC','RINT'}
+            case {'LINK_SUM','MORFAC','RINT','CUM_THRUST','CUM_POWER','INST_THRUST','INST_POWER'}
             otherwise
                 % point
                 if NSt==0
