@@ -1019,6 +1019,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'cum. erosion/sedimentation'       'm'      [1 0 1 1 0]  1         1    ''        'd'   'z'       ''      'map-const'      'DP0'     ''       []       0
     'morphological acceleration factor' '-'     [1 0 0 0 0]  0         1    ''        'NA'  ''        ''    'map-infsed-serie' 'MORFAC'  ''       []       0
     '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
+    'available mass in fluff layer'    'kg/m^2' [1 0 1 1 0]  1         1    ''        ''    'z'       'b'     'map-sed-series' 'MFLUFF'  ''       's'      0
     'available mass of sediment'       'kg/m^2' [1 0 1 1 1]  1         1    ''        ''    'z'       'b'     'map-sed-series' 'MSED'    ''       'sb'     0
     'available mass of sediment'       'kg/m^2' [1 0 1 1 0]  1         1    ''        ''    'z'       ''      'map-sed-series' 'BODSED'  ''       'sb'     0
     'available mass of sediment'       'kg/m^2' [1 0 1 1 0]  1         1    ''        ''    'z'       ''      'map-mor-series' 'BODSED'  ''       'sb'     0
