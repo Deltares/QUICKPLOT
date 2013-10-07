@@ -224,9 +224,9 @@ while 1
             else
                 line=fgetl(fid);
                 fseek(fid,FileInfo.Field(variable).Offset,-1);
-                [X,N]=sscanf(line,['%f' space]);
+                [X,N,Err]=sscanf(line,['%f' space]);
                 FileInfo.Field(variable).DataTp='numeric';
-                if dim(1)==N+1 % annotation mode
+                if ~isempty(Err) && dim(1)==N+1 % annotation mode
                     FileInfo.Field(variable).DataTp='annotation';
                     if LoadData
                         Data=[];

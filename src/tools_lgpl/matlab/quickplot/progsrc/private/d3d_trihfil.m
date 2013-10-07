@@ -76,7 +76,7 @@ else
 end
 
 cmd=lower(cmd);
-switch cmd,
+switch cmd
     case 'size'
         varargout={getsize(FI,Props)};
         return;
@@ -161,6 +161,15 @@ for i=[M_ N_ K_]
     end
 end
 
+multiturbine=0;
+switch Props.Val1
+    case {'INST_THRUST','CUM_THRUST','INST_POWER','CUM_POWER'}
+        if idx{ST_}==sz(ST_) && sz(ST_)>1
+            idx{ST_} = 1:sz(ST_)-1;
+            multiturbine=1;
+        end
+end
+
 % read grid ...
 x=[];
 y=[];
@@ -196,9 +205,14 @@ if XYRead
     %======================== SPECIFIC CODE =======================================
     if ~isempty(Props.Loc)
         if strcmp(Props.Loc,'turbines')
-            [xy,Chk]=vs_let(FI,'his-const','XYTURBINES',{idx{ST_} 0},'quiet');
-            x = xy(1);
-            y = xy(2);
+            if multiturbine
+                x=[];
+                y=[];
+            else
+                [xy,Chk]=vs_get(FI,'his-const','XYTURBINES',{idx{ST_} 0},'quiet');
+                x = xy(:,1);
+                y = xy(:,2);
+            end
         elseif isstruct(vs_disp(FI,'his-series','XYSTAT'))
             [xy,Chk]=vs_let(FI,'his-series',{idx{T_}},'XYSTAT',{0 idx{ST_}},'quiet');
             x=reshape(xy(:,1,:),[size(xy,1) size(xy,3)]);
@@ -372,6 +386,8 @@ if DataRead
     [val1,Chk]=vs_let(FI,Props.Group,{idx{T_}},Props.Val1,elidx,'quiet');
     if ~Chk
         error(val1)
+    elseif multiturbine
+        val1 = sum(val1,2);
     end
     if isempty(Props.Val2)
         val2=[];
@@ -602,7 +618,7 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 TRB='turbines';
 PropNames={'Name'            'Units'   'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc'  'Loc3D' 'Group'          'Val1'     'Val2'    'SubFld' 'MNK'};
 DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     ''       'z'   'z'       ''      'his-series'     'XYSTAT'   ''  []       0
-    'location tidal turbines'   ''       [1 5 0 0 0]  0         4     ''       TRB   'z'       ''      'his-const'      'XYTURBINES'   ''     []       0
+    'location tidal turbines'   ''       [1 3 0 0 0]  0         4     ''       TRB   'z'       ''      'his-const'      'XYTURBINES'   ''     []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'water level'               'm'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZWL'      ''         []       0
     'water depth'               'm'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZWL'      ''         []       0
@@ -706,6 +722,7 @@ DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     '' 
     % note 2: 'cumulative total transp.' includes morfac (and bedload) whereas cumulative flux does not include either
     'cumulative total transp.'  'kg'     [1 5 0 0 0]  0         1     ''       'NA'  ''        ''      'his-bal-series' 'BALSDFLUX' ''        'fs'     0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    'reference velocity'        'm/s'    [1 5 0 0 0]  0         1     ''       TRB   ''        ''      'his-series'     'UTURBINES'   ''      []       0
     'thrust'                    'N'      [1 5 0 0 0]  0         1     ''       TRB   ''        ''      'his-series'     'INST_THRUST' ''      []       0
     'power'                     'W'      [1 5 0 0 0]  0         1     ''       TRB   ''        ''      'his-series'     'INST_POWER'  ''      []       0
     'cumulative thrust'         'N*s'    [1 5 0 0 0]  0         1     ''       TRB   ''        ''      'his-series'     'CUM_THRUST'  ''      []       0
@@ -754,6 +771,9 @@ end
 i=strmatch('location observation points',{Out.Name});
 Out(i).Geom = 'PNT';
 Out(i).Coords = 'xy';
+i=strmatch('location tidal turbines',{Out.Name});
+Out(i).Geom = 'PNT';
+Out(i).Coords = 'xy';
 %======================== SPECIFIC CODE CHANGE ================================
 
 Info=vs_disp(FI,'his-series','DPS');
@@ -787,6 +807,11 @@ Info=vs_disp(FI,'his-dis-const','DISCHARGES');
 if isstruct(Info)
     NDis=Info.SizeDim(1);
 end
+NTurbines=0;
+Info=vs_disp(FI,'his-const','NAMTURBINES');
+if isstruct(Info)
+    NTurbines=Info.SizeDim(1);
+end
 for i=size(Out,1):-1:1
     Info=vs_disp(FI,Out(i).Group,Out(i).Val1);
     if ~isempty(strmatch('---',Out(i).Name))
@@ -814,7 +839,12 @@ for i=size(Out,1):-1:1
                 elseif NTr>1 && isequal(Info.SizeDim,1)
                     Out(i)=[];
                 end
-            case {'LINK_SUM','MORFAC','RINT','CUM_THRUST','CUM_POWER','INST_THRUST','INST_POWER'}
+            case {'CUM_THRUST','CUM_POWER','INST_THRUST','INST_POWER','XYTURBINES','UTURBINES'}
+                % turbines
+                if NTurbines==0
+                    Out(i)=[];
+                end
+            case {'LINK_SUM','MORFAC','RINT'}
             otherwise
                 % point
                 if NSt==0
@@ -984,10 +1014,14 @@ sz=[0 0 0 0 0];
 %end;
 if Props.DimFlag(ST_)
     switch Props.Val1
-        case {'XYTURBINES','INST_THRUST','CUM_THRUST','INST_POWER','CUM_POWER'}
+        case {'XYTURBINES','UTURBINES'}
             % turbines
             Info=vs_disp(FI,Props.Group,Props.Val1);
             sz(ST_)=Info.SizeDim(1);
+        case {'INST_THRUST','CUM_THRUST','INST_POWER','CUM_POWER'}
+            % turbines
+            Info=vs_disp(FI,Props.Group,Props.Val1);
+            sz(ST_)=Info.SizeDim(1)+1;
         case {'RINT','ZQ_SUM','ZQ'}
             % discharges
             Info=vs_disp(FI,'his-dis-series',Props.Val1);
@@ -1074,8 +1108,14 @@ end
 function S=readsts(FI,Props,t)
 %======================== SPECIFIC CODE =======================================
 switch Props.Val1
-    case {'XYTURBINES','INST_THRUST','CUM_THRUST','INST_POWER','CUM_POWER'}
+    case {'XYTURBINES','UTURBINES'}
         [S,Chk]=vs_get(FI,'his-const','NAMTURBINES','quiet');
+    case {'INST_THRUST','CUM_THRUST','INST_POWER','CUM_POWER'}
+        [S,Chk]=vs_get(FI,'his-const','NAMTURBINES','quiet');
+        S=cellstr(S);
+        if length(S)>1
+            S{end+1}='sum over all turbines';
+        end
     case {'RINT','ZQ_SUM','ZQ'}
         [S,Chk]=vs_get(FI,'his-dis-const','DISCHARGES','quiet');
     case {'FLTR','CTR'}
