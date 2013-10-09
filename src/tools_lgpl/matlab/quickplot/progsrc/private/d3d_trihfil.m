@@ -163,7 +163,7 @@ end
 
 multiturbine=0;
 switch Props.Val1
-    case {'INST_THRUST','CUM_THRUST','INST_POWER','CUM_POWER'}
+    case {'INST_SIMTHRUST','CUM_SIMTHRUST','INST_THRUST','CUM_THRUST','INST_POWER','CUM_POWER'}
         if idx{ST_}==sz(ST_) && sz(ST_)>1
             idx{ST_} = 1:sz(ST_)-1;
             multiturbine=1;
@@ -723,8 +723,13 @@ DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     '' 
     'cumulative total transp.'  'kg'     [1 5 0 0 0]  0         1     ''       'NA'  ''        ''      'his-bal-series' 'BALSDFLUX' ''        'fs'     0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'reference velocity'        'm/s'    [1 5 0 0 0]  0         1     ''       TRB   ''        ''      'his-series'     'UTURBINES'   ''      []       0
+    'power coefficient'         '-'      [1 5 0 0 0]  0         1     ''       TRB   ''        ''      'his-series'     'POWERCOEF'   ''      []       0
+    'thrust coefficient'        '-'      [1 5 0 0 0]  0         1     ''       TRB   ''        ''      'his-series'     'THRUSTCOEF'  ''      []       0
+    'loss coefficient'          '-'      [1 5 0 0 0]  0         1     ''       TRB   ''        ''      'his-series'     'LOSSCOEF'    ''      []       0
+    'simulated thrust'          'N'      [1 5 0 0 0]  0         1     ''       TRB   ''        ''      'his-series'     'INST_SIMTHRUST' ''   []       0
     'thrust'                    'N'      [1 5 0 0 0]  0         1     ''       TRB   ''        ''      'his-series'     'INST_THRUST' ''      []       0
     'power'                     'W'      [1 5 0 0 0]  0         1     ''       TRB   ''        ''      'his-series'     'INST_POWER'  ''      []       0
+    'cumulative simulated thrust' 'N*s'  [1 5 0 0 0]  0         1     ''       TRB   ''        ''      'his-series'     'CUM_SIMTHRUST' ''    []       0
     'cumulative thrust'         'N*s'    [1 5 0 0 0]  0         1     ''       TRB   ''        ''      'his-series'     'CUM_THRUST'  ''      []       0
     'cumulative power'          'W*s'    [1 5 0 0 0]  0         1     ''       TRB   ''        ''      'his-series'     'CUM_POWER'   ''      []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
@@ -839,7 +844,7 @@ for i=size(Out,1):-1:1
                 elseif NTr>1 && isequal(Info.SizeDim,1)
                     Out(i)=[];
                 end
-            case {'CUM_THRUST','CUM_POWER','INST_THRUST','INST_POWER','XYTURBINES','UTURBINES'}
+            case {'CUM_SIMTHRUST','CUM_THRUST','CUM_POWER','INST_SIMTHRUST','INST_THRUST','INST_POWER','XYTURBINES','UTURBINES','POWERCOEF','THRUSTCOEF','LOSSCOEF'}
                 % turbines
                 if NTurbines==0
                     Out(i)=[];
@@ -1014,11 +1019,11 @@ sz=[0 0 0 0 0];
 %end;
 if Props.DimFlag(ST_)
     switch Props.Val1
-        case {'XYTURBINES','UTURBINES'}
+        case {'XYTURBINES','UTURBINES','POWERCOEF','THRUSTCOEF','LOSSCOEF'}
             % turbines
             Info=vs_disp(FI,Props.Group,Props.Val1);
             sz(ST_)=Info.SizeDim(1);
-        case {'INST_THRUST','CUM_THRUST','INST_POWER','CUM_POWER'}
+        case {'INST_SIMTHRUST','CUM_SIMTHRUST','INST_THRUST','CUM_THRUST','INST_POWER','CUM_POWER'}
             % turbines
             Info=vs_disp(FI,Props.Group,Props.Val1);
             sz(ST_)=Info.SizeDim(1)+1;
@@ -1108,9 +1113,9 @@ end
 function S=readsts(FI,Props,t)
 %======================== SPECIFIC CODE =======================================
 switch Props.Val1
-    case {'XYTURBINES','UTURBINES'}
+    case {'XYTURBINES','UTURBINES','POWERCOEF','THRUSTCOEF','LOSSCOEF'}
         [S,Chk]=vs_get(FI,'his-const','NAMTURBINES','quiet');
-    case {'INST_THRUST','CUM_THRUST','INST_POWER','CUM_POWER'}
+    case {'INST_SIMTHRUST','CUM_SIMTHRUST','INST_THRUST','CUM_THRUST','INST_POWER','CUM_POWER'}
         [S,Chk]=vs_get(FI,'his-const','NAMTURBINES','quiet');
         S=cellstr(S);
         if length(S)>1
