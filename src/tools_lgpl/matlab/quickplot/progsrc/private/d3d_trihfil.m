@@ -483,7 +483,7 @@ if DataRead
         end
     end
     
-    if fixedlayers
+    if fixedlayers && Props.NVal~=4
         if ~isempty(val1)
             val1(val1==-999)=NaN;
         end
