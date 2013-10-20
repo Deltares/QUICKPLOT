@@ -974,7 +974,7 @@ switch cmd
                             jj(ii)=0;
                         elseif ~isequal(SZ{ii}(T_),SZi(T_)) & ~isequal(SZ{ii}(T_),1) & FI(ii).DimFlag(T_) & ~isequal(1,SZi(T_)) & FI(i).DimFlag(T_)
                             jj(ii)=0;
-                        elseif any(SZ{ii}([M_ N_ K_])~=SZi([M_ N_ K_]) & SZ{ii}([M_ N_ K_])~=1 & SZi([M_ N_ K_])~=1)
+                        elseif any(SZ{ii}([M_ N_ K_])~=SZi([M_ N_ K_]) & SZ{ii}([M_ N_ K_])~=0 & SZ{ii}([M_ N_ K_])~=1 & SZi([M_ N_ K_])~=0 & SZi([M_ N_ K_])~=1)
                             jj(ii)=0;
                         elseif any(SZ{ii}([M_ N_ K_])~=SZi([M_ N_ K_]) & SZ{ii}([M_ N_ K_])~=1 & SZi([M_ N_ K_])==1) & ...
                                 any(SZ{ii}([M_ N_ K_])~=SZi([M_ N_ K_]) & SZ{ii}([M_ N_ K_])==1 & SZi([M_ N_ K_])~=1)

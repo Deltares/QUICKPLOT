@@ -231,7 +231,7 @@ end
 for jj=IA,
     nl=CS(2,I(jj));
     lev=CS(1,I(jj));
-    if (lev ~= minz | draw_min ),
+    if (lev ~= -realmax) & (lev ~= minz | draw_min ),
         mp=CS(1,I(jj)+(1:nl));
         np=CS(2,I(jj)+(1:nl));
         ipm=floor(mp);

@@ -479,16 +479,39 @@ switch NVal
                 c2 = squeeze(data.Z);
                 c1 = repmat(data.Time,1,size(c2,2));
                 v = squeeze(data.Val);
+                set(Parent,'NextPlot','add');
+                switch Ops.presentationtype
+                    %case {'patches','patches with lines'}
+                    %    if isfield(Props,'ThreeD')
+                    %        hNew=genfaces(hNew,Ops,Parent,data.Val,data.X,data.Y,data.Z);
+                    %    else
+                    %        hNew=genfaces(hNew,Ops,Parent,data.Val,s,data.Z);
+                    %    end
+                        
+                    case 'values'
+                        I=~isnan(data.Val);
+                        hNew=gentextfld(hNew,Ops,Parent,v,c1,c2);
+                        
+                    case 'continuous shades'
+                        hNew=gensurface(hNew,Ops,Parent,v,c1,c2,v);
+                        
+                    case 'markers'
+                        hNew=genmarkers(hNew,Ops,Parent,v,c1,c2);
+                        
+                    case {'contour lines','coloured contour lines','contour patches','contour patches with lines'}
+                        if isequal(size(c1),size(v)+1)
+                            [c1,c2,v]=face2surf(c1,c2,v);
+                        end
+                        v(isnan(c1) | isnan(c2))=NaN;
+                        ms=max(c1(:));
+                        mz=max(c2(:));
+                        c1(isnan(c1))=ms;
+                        c2(isnan(c2))=mz;
+                        hNew=gencontour(hNew,Ops,Parent,c1,c2,v,Thresholds);
+                        
+                end
                 if FirstFrame
-                    hNew=surface(c1,c2,v,v, ...
-                        'parent',Parent, ...
-                        'facecolor','interp', ...
-                        'edgecolor','none');
-                    set(Parent,'layer','top')
-                else
-                    set(hNew,'xdata',c1, ...
-                        'ydata',c2, ...
-                        'cdata',v);
+                    set(Parent,'layer','top');
                 end
             elseif FirstFrame
                 hNew=line(squeeze(data.Val),squeeze(data.Z), ...

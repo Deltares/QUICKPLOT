@@ -471,7 +471,7 @@ Ops.spatial=Spatial;
 Ops.spatialh=SpatialH;
 Ops.spatialv=SpatialV;
 
-if strcmp(axestype,'X-Y-Z') || (multiple(K_) && DimFlag(N_) && nval==2) % cannot plot 3D volumes and vector datasets containing no vertical component
+if strcmp(axestype,'X-Y-Z') % cannot plot 3D volumes
     %won't plot
     axestype='noplot';
 end
@@ -583,6 +583,10 @@ if nval==2 || nval==3
         ii=strmatch('vector (split',compList);
         compList(ii)=[];
     elseif Ops.spatial==1
+        ii=strmatch('vector',compList);
+        compList(ii)=[];
+    end
+    if nval==2 && Ops.spatialv && Ops.spatial>=2 % don't plot vectors without vertical component in 2DV and 3D
         ii=strmatch('vector',compList);
         compList(ii)=[];
     end
