@@ -766,10 +766,8 @@ funits0=get(fg,'paperunits');
 set(fg,'paperunits','centimeters');
 PSize=get(fg,'papersize');
 set(fg,'paperunits',funits0);
-units0=get(0,'units');
 %
-set(0,'units','centimeters');
-maxdim=qp_getscreen;
+maxdim=qp_getscreen(fg);
 if strcmp(Orientation,'landscape')
     pos1=round(PSize*min(maxdim(3:4)./PSize));
     pos2=round(PSize*min(fliplr(maxdim(3:4))./PSize));
@@ -782,10 +780,8 @@ end
 pos=pos*0.85;
 pos=[maxdim(1)+(maxdim(3)-pos(1))/2 maxdim(2)+(maxdim(4)-pos(2))/2 pos];
 set(fg, ...
-    'units','centimeters', ...
+    'units','pixels', ...
     'position',pos);
-set(fg,'units','pixels');
-set(0,'units',units0);
 
 
 function Str=locDateStr
