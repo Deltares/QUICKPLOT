@@ -96,6 +96,11 @@ switch lower(cmd)
             error('Too many output arguments.')
         end
         Out1=Local_delwaq_open(varargin{:});
+    case 'openlga'
+        if nargout>1
+            error('Too many output arguments.')
+        end
+        Out1=Local_lga_open(varargin{:});
     case 'read'
         [Out1,Out2]=Local_delwaq_read(varargin{:});
     case 'write'
@@ -178,13 +183,11 @@ try
             floc=ftell(fid);
             Nsubs=fread(fid,1,'int32');
             if Nsubs>1e8
-                fclose(fid);
                 error('Unable to handle 100 million substances.')
             elseif Nsubs==-1
                 DelparPlot=1;
                 Delpar3DMode=1;
             elseif Nsubs<0
-                fclose(fid);
                 error('Negative number of substances.')
             else
                 Nseg=fread(fid,1,'int32');
@@ -453,6 +456,16 @@ function S=Local_lga_open(filebase)
 % LOCAL_LGA_OPEN  Read data from pair of LGA/CCO files.
 S.Check='NotOK';
 S.FileType='DelwaqLGA';
+[p,f,e] = fileparts(filebase);
+switch lower(e)
+    case '.'
+        % extension already removed
+    case {'.lga','.cco'}
+        % remove extension
+        filebase = filebase(1:end-3);
+    otherwise
+        error('LGA/CCO file extension should match .lga/.cco')
+end
 S.FileBase=filebase;
 %
 % Start by reading the LGA file (note: on case sensitive platforms this

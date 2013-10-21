@@ -42,12 +42,24 @@ CouldReadGridData = 0;
 filters = {'*.cco;*.lga' 'Delft3D Grid (Aggregation) Files'
    '*.m2b' 'SOBEK Grid Aggregation Files'
    '*.geo;geo*;*.slf' 'Telemac Grid Files'
+   'T2DD12;*.dwq' 'DIDO Aggregation File (for Telemac)'
    '*.nc' 'UGRID netCDF Files (D-Flow FM, Untrim)'};
+telemacfilter = filters(3,:);
 if nargin<3
    filterspec = '';
 end
 first = 1;
+semicol = findstr(filterspec,';');
+if ~isempty(semicol)
+    allfilterspec = splitcellstr(filterspec,';');
+    filterspec = allfilterspec{1};
+else
+    allfilterspec = {};
+end
 while 1
+    if ~first
+        allfilterspec={};
+    end
    if exist(filterspec)==2
       if first
          GridFileName=filterspec;
@@ -74,7 +86,7 @@ while 1
          trytp = '.lga';
       case {'.m2b','.arc'} % multiple extensions supported
          trytp = '.m2b';
-      case {'.grd','.geo','.nc'} % single extension cases
+      case {'.grd','.geo','.nc','.dwq'} % single extension cases
          %trytp = trytp;
       otherwise
          trytp = '.lga';
@@ -88,7 +100,7 @@ while 1
       switch trytp
          case '.lga'
             try
-               G=delwaq('open',GridFileName);
+               G=delwaq('openlga',GridFileName);
                GridSeg=G.NoSeg;
                PerLayer=G.NoSegPerLayer;
                CouldReadGridData = 1;
@@ -255,8 +267,47 @@ while 1
                G.Index=(1:GridSeg)';
                CouldReadGridData = 1;
             catch
-               trytp = '.lga';
+               trytp = '.dwq';
             end
+          case '.dwq'
+              try
+                  DWQ=open_dwq(GridFileName);
+                  NumNode = length(DWQ.AggrTable);
+                  GridSeg = length(unique(DWQ.AggrTable));
+                  PerLayer = GridSeg;
+                  %
+                  if MapSeg==GridSeg
+                      if length(allfilterspec)>=2
+                          gridfil2 = allfilterspec{2};
+                      else
+                          cp=pwd;
+                          cd(pn);
+                          [gfn,gpn]=uigetfile(telemacfilter,'Select Telemac grid file ...');
+                          cd(cp);
+                          if ~ischar(gfn)
+                              G=[];
+                              break
+                          end
+                          gridfil2=[gpn gfn];
+                      end
+                      G = telemac('open',gridfil2);
+                      if NumNode==G.Discr.NPnts
+                          G.MNK=[NumNode 1 1];
+                          GridFileName = [GridFileName ';' G.FileName];
+                          %
+                          % Renumber boundary neighbours
+                          %
+                          BND = find(DWQ.AggrTable<0);
+                          DWQ.AggrTable(BND) = max(DWQ.AggrTable)-DWQ.AggrTable(BND);
+                          %
+                          G.Index=DWQ.AggrTable;
+                          G.AggrFile=DWQ.FileName;
+                          CouldReadGridData = 1;
+                      end
+                  end
+              catch
+                  trytp = '.lga';
+              end
       end
       if CouldReadGridData || GetError
          break
@@ -297,3 +348,29 @@ while 1
       ui_message('error',lasterr);
    end
 end
+
+function DWQ = open_dwq(filename)
+DWQ = [];
+fid = fopen(filename,'r');
+L = fgetl(fid);
+[A,cnt,err,idx]=sscanf(L,'%i',inf);
+if ~strcmp(err,'')
+    fclose(fid);
+    error('Unexpected character in first line of dwq file.\n%s\n%s^',L,repmat(' ',1,idx-1))
+elseif cnt~=5
+    fclose(fid);
+    error('First line of dwq file should contain 5 integers.')
+end
+DWQ.FileName = filename;
+[DWQ.AggrTable,cnt] = fscanf(fid,'%i',A(1));
+if cnt<A(1)
+    fclose(fid);
+    error('Error reading segment numbers in dwq file:\%s',err)
+else
+    [Dum,cnt] = fscanf(fid,'%i',1);
+    if cnt>0 || ~feof(fid)
+        fclose(fid);
+        error('Too many segment numbers in dwq file.')
+    end
+end
+fclose(fid);

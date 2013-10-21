@@ -309,7 +309,7 @@ switch subtype
                 if isbinary
                     X=LocFI.PlotWindow;
                 else
-                    [X,Chk]=vs_let(LocFI,feval(casemod,[DELWAQ '_PARAMS']),feval(casemod,'PLOT_WINDOW'),'quiet');
+                    [X,Chk]=vs_let(LocFI,casemod([DELWAQ '_PARAMS']),casemod('PLOT_WINDOW'),'quiet');
                 end
                 gidx=idx;
                 if DataInCell
@@ -326,7 +326,7 @@ switch subtype
             if isbinary
                 names=LocFI.SubsName;
             else
-                [names,Chk]=vs_get(LocFI,feval(casemod,[DELWAQ '_PARAMS']),feval(casemod,'SUBST_NAMES'),'quiet');
+                [names,Chk]=vs_get(LocFI,casemod([DELWAQ '_PARAMS']),casemod('SUBST_NAMES'),'quiet');
             end
             ld=strmatch('localdepth',lower(names));
             if iscell(ld)
@@ -369,16 +369,16 @@ switch subtype
                 else
                     if iscell(ld)
                         for k=length(ld):-1:1
-                            [z(:,:,k),Chk]=vs_let(LocFI,feval(casemod,[DELWAQ '_RESULTS']),idx(T_), ...
-                                feval(casemod,sprintf('SUBST_%3.3i',ld(k))),'quiet');
+                            [z(:,:,k),Chk]=vs_let(LocFI,casemod([DELWAQ '_RESULTS']),idx(T_), ...
+                                casemod(sprintf('SUBST_%3.3i',ld(k))),'quiet');
                         end
                     else
-                        [z,Chk]=vs_let(LocFI,feval(casemod,[DELWAQ '_RESULTS']),idx(T_), ...
-                            feval(casemod,sprintf('SUBST_%3.3i',ld)),'quiet');
+                        [z,Chk]=vs_let(LocFI,casemod([DELWAQ '_RESULTS']),idx(T_), ...
+                            casemod(sprintf('SUBST_%3.3i',ld)),'quiet');
                     end
                     if ~isempty(wlflag)
-                        [wl,Chk]=vs_let(LocFI,feval(casemod,[DELWAQ '_RESULTS']),idx(T_), ...
-                            feval(casemod,sprintf('SUBST_%3.3i',wlflag)),'quiet');
+                        [wl,Chk]=vs_let(LocFI,casemod([DELWAQ '_RESULTS']),idx(T_), ...
+                            casemod(sprintf('SUBST_%3.3i',wlflag)),'quiet');
                     end
                 end
                 if isfield(Props,'BedLayer') && Props.BedLayer == -1
@@ -1018,45 +1018,51 @@ switch Type
         [Out.UseGrid]=deal(1);
         return
     case {'delft3d-waq-history','delwaqhis','delft3d-par-his','delft3d-par-history'}
-        DataProps={'--constituents'       ''      '' ''    [1 5 0 0 0]  0         1     ''       'z'   'z'       'c'     feval(casemod,'DELWAQ_RESULTS') feval(casemod,'SUBST_001')     ''    []       0 0};
+        DataProps={'--constituents'       ''      '' ''    [1 5 0 0 0]  0         1     ''       'z'   'z'       'c'     casemod('DELWAQ_RESULTS') casemod('SUBST_001')     ''    []       0 0};
         if isfield(FI,'treatas1d') && FI.treatas1d
             DataProps{5}=[1 0 1 0 0];
         end
     case {'delft3d-par-detailed_plot','delparplot','delft3d-par-plot','delft3d-par-psf'}
         plotfile=1;
-        DataProps={'--constituents'       ''      '' 'xy'    [1 0 1 1 0]  1         1     ''       'z'   'z'       'c'     feval(casemod,'DELPAR_RESULTS') feval(casemod,'SUBST_001')     ''    []       0 0};
+        DataProps={'--constituents'       ''      '' 'xy'    [1 0 1 1 0]  1         1     ''       'z'   'z'       'c'     casemod('DELPAR_RESULTS') casemod('SUBST_001')     ''    []       0 0};
     otherwise
-        DataProps={'--constituents'       ''      '' 'xy'    [1 5 0 0 0]  1         1     ''       'z'   'z'       'c'     feval(casemod,'DELWAQ_RESULTS') feval(casemod,'SUBST_001')     ''    []       0 0};
+        DataProps={'segment number'       ''     '' 'xy'     [0 0 1 1 0]  1         1     ''       'z'   'z'       'c'     ''               ''              ''    []       0 0
+                   '-------'              ''     '' ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''              ''    []       0 0
+                   '--constituents'       ''     '' 'xy'     [1 5 0 0 0]  1         1     ''       'z'   'z'       'c'     casemod('DELWAQ_RESULTS') casemod('SUBST_001')     ''    []       0 0};
         if isfield(FI,'Grid') && ~isempty(FI.Grid)
-            DataProps{5}=[1 0 1 1 0];
+            DataProps{3,5}=[1 0 1 1 0];
             if length(FI.Grid.MNK)>2 && FI.Grid.MNK(3)>1
-                DataProps{4}(end+(1:2))='+z';
-                DataProps{5}(K_)=1;
+                DataProps{3,4}(end+(1:2))='+z';
+                DataProps{3,5}(K_)=1;
             end
             if isfield(FI.Grid,'FileType') 
                 switch FI.Grid.FileType
                     case {'Serafin'} % triangular
                         includegrid=0;
                         enablegridview=0;
-                        DataProps{3}='TRI';
-                        DataProps{4}='xy';
-                        DataProps{5}(M_)=6;
-                        DataProps{5}(N_)=0;
-                        DataProps{6}=0;
+                        for r=[1 3]
+                            DataProps{r,3}='TRI';
+                            DataProps{r,4}='xy';
+                            DataProps{r,5}(M_)=6;
+                            DataProps{r,5}(N_)=0;
+                            DataProps{r,6}=0;
+                        end
                     case {'netCDF'} % polygon bounds
                         enablegridview=0;
-                        DataProps{3}='POLYG';
-                        DataProps{4}='xy';
-                        DataProps{5}(M_)=6;
-                        DataProps{5}(N_)=0;
-                        DataProps{6}=1;
-                        DataProps{end}=1; %closedpoly
+                        for r=[1 3]
+                            DataProps{r,3}='POLYG';
+                            DataProps{r,4}='xy';
+                            DataProps{r,5}(M_)=6;
+                            DataProps{r,5}(N_)=0;
+                            DataProps{r,6}=1;
+                            DataProps{r,end}=1; %closedpoly
+                        end
                 end
             end
         end
 end
 Out=cell2struct(DataProps,PropNames,2);
-Out.Group=feval(casemod,[DELWAQ '_RESULTS']);
+[Out.Group]=deal(casemod([DELWAQ '_RESULTS']));
 %======================== SPECIFIC CODE REMOVE ================================
 %for i=size(Out,1):-1:1
 %  Info=vs_disp(LocFI,Out(i).Group,Out(i).Val1);
@@ -1075,16 +1081,20 @@ Out.Group=feval(casemod,[DELWAQ '_RESULTS']);
 %  end
 %end
 %======================== SPECIFIC CODE ADD ===================================
-i=strmatch('--constituents',{Out.Name});
+icnst=strmatch('--constituents',{Out.Name});
 ii=0;
 if ~isfield(FI,'balancefile')
     FI.balancefile=0;
 end
-if ~isempty(i)
+if ~isempty(icnst)
+    [Out.BedLayer]=deal(0);
+    [Out.ShortName]=deal('');
+    [Out.SubsGrp]=deal('');
+    %
     if isbinary
         names=LocFI.SubsName;
     else
-        [names,Chk]=vs_get(LocFI,feval(casemod,[DELWAQ '_PARAMS']),feval(casemod,'SUBST_NAMES'),'quiet');
+        [names,Chk]=vs_get(LocFI,casemod([DELWAQ '_PARAMS']),casemod('SUBST_NAMES'),'quiet');
     end
     if FI.balancefile
         if iscell(names)
@@ -1102,7 +1112,7 @@ if ~isempty(i)
         end
         [names,dummy,index]=unique(nn1,'rows');
         names=cellstr(names);
-        Ins=Out(i*ones(length(names),1));
+        Ins=Out(icnst*ones(length(names),1));
         for j=1:length(names)
             sub = find(index==j);
             Ins(j).Name=names{j};
@@ -1119,7 +1129,7 @@ if ~isempty(i)
         end
     else
         names=cellstr(names);
-        Ins=Out(i*ones(length(names),1));
+        Ins=Out(icnst*ones(length(names),1));
         for j=1:length(names)
             Ins(j).Name=names{j};
             Ins(j).Val1=j;
@@ -1130,10 +1140,10 @@ if ~isempty(i)
     if isfield(LocFI,'K')
         KnownMultilayer=LocFI.K>1;
     elseif ~isbinary
-        InfoPLOT=vs_disp(LocFI,feval(casemod,'PLO-VERSION'),[]);
-        InfoPSF=vs_disp(LocFI,feval(casemod,'PSF-VERSION'),[]);
+        InfoPLOT=vs_disp(LocFI,casemod('PLO-VERSION'),[]);
+        InfoPSF=vs_disp(LocFI,casemod('PSF-VERSION'),[]);
         if isstruct(InfoPLOT) || isstruct(InfoPSF)
-            [PloDimensions,Chk]=vs_get(LocFI,feval(casemod,'DELPAR_PARAMS'),feval(casemod,'SIZES'),'quiet');
+            [PloDimensions,Chk]=vs_get(LocFI,casemod('DELPAR_PARAMS'),casemod('SIZES'),'quiet');
             KnownMultilayer=PloDimensions(4)>1;
         end
     end
@@ -1146,7 +1156,7 @@ if ~isempty(i)
             if isbinary
                 Ins(j).Val1=j+ii;
             else
-                Ins(j).Val1=feval(casemod,sprintf('SUBST_%3.3i',j+ii));
+                Ins(j).Val1=casemod(sprintf('SUBST_%3.3i',j+ii));
             end
         else%if plotfile
             if length(Ins(j).Name)>17 && strcmp(Ins(j).Name(15:17),'lay')
@@ -1174,7 +1184,7 @@ if ~isempty(i)
                     else
                         Ins(j+jj).Val1={};
                         for s=0:nlayplo-1,
-                            Ins(j+jj).Val1{s+1}=feval(casemod,sprintf('SUBST_%3.3i',j+ii+jj+s*nsubplo));
+                            Ins(j+jj).Val1{s+1}=casemod(sprintf('SUBST_%3.3i',j+ii+jj+s*nsubplo));
                         end
                     end
                 end
@@ -1228,7 +1238,7 @@ if ~isempty(i)
                     else
                         Ins(j+jj).Val1={};
                         for s=0:nlayplo-1,
-                            Ins(j+jj).Val1{s+1}=feval(casemod,sprintf('SUBST_%3.3i',j+ii+jj+s*nsubplo));
+                            Ins(j+jj).Val1{s+1}=casemod(sprintf('SUBST_%3.3i',j+ii+jj+s*nsubplo));
                         end
                     end
                 end
@@ -1248,7 +1258,7 @@ if ~isempty(i)
                 if isbinary
                     Ins(j).Val1=j+ii;
                 else
-                    Ins(j).Val1=feval(casemod,sprintf('SUBST_%3.3i',j+ii));
+                    Ins(j).Val1=casemod(sprintf('SUBST_%3.3i',j+ii));
                 end
             elseif strcmp(subtype,'history') && length(Ins(j).Name)>3 && strcmp(Ins(j).Name(end-2:end),'_01')
                 idx = j;
@@ -1266,7 +1276,7 @@ if ~isempty(i)
                 else
                     Ins(j).Val1={};
                     for s=1:length(idx)
-                        Ins(j).Val1{s}=feval(casemod,sprintf('SUBST_%3.3i',idx(s)));
+                        Ins(j).Val1{s}=casemod(sprintf('SUBST_%3.3i',idx(s)));
                     end
                 end
                 Ins(j).DimFlag = [1 5 0 0 1];
@@ -1278,7 +1288,7 @@ if ~isempty(i)
                 j0 = Ins(j).Val1;
                 Ins(j).Val1=j0+ii;
             else
-                Ins(j).Val1=feval(casemod,sprintf('SUBST_%3.3i',j+ii));
+                Ins(j).Val1=casemod(sprintf('SUBST_%3.3i',j+ii));
             end
         end
     end
@@ -1295,7 +1305,7 @@ if ~isempty(i)
         if isbinary
             bedlayer = FI.DwqBin.NumSegm==noseg_ifbedlayer;
         else
-            Info = vs_disp(FI.Nfs,feval(casemod,[DELWAQ '_RESULTS']),feval(casemod,'SUBST_001'));
+            Info = vs_disp(FI.Nfs,casemod([DELWAQ '_RESULTS']),casemod('SUBST_001'));
             bedlayer = Info.SizeDim==noseg_ifbedlayer;
         end
         if bedlayer
@@ -1328,7 +1338,7 @@ if ~isempty(i)
             else
                 NoSegPerLayer = prod(PloDimensions(5:6));
                 LastLayer = NoSegPerLayer*(PloDimensions(4)-1)+(1:NoSegPerLayer);
-                [val1,Chk]=vs_let(LocFI,feval(casemod,Ins(iLD).Group),{1},feval(casemod,Ins(iLD).Val1),'quiet'); % load all
+                [val1,Chk]=vs_let(LocFI,casemod(Ins(iLD).Group),{1},casemod(Ins(iLD).Val1),'quiet'); % load all
             end
             SecLastLayer = LastLayer - NoSegPerLayer;
             %
@@ -1488,7 +1498,7 @@ if ~isempty(i)
         end
     end
     %end
-    Out=Ins;
+    Out = [Out(1:icnst-1); Ins; Out(icnst+1:end)];
 end
 if isfield(FI,'Grid') && ~isempty(FI.Grid) && includegrid
     Out=Out([1 1 1 1:length(Out)]);
@@ -1613,7 +1623,7 @@ switch subtype
         if isbinary
             sz([M_ N_])=FI.GridSize;
         else
-            [X,Chk]=vs_get(LocFI,feval(casemod,'DELPAR_PARAMS'),feval(casemod,'SIZES'),'quiet');
+            [X,Chk]=vs_get(LocFI,casemod('DELPAR_PARAMS'),casemod('SIZES'),'quiet');
             sz([M_ N_])=X([5 6]);
         end
         if Props.DimFlag(K_)
@@ -1676,15 +1686,15 @@ elseif isbinary
     T=delwaq('read',LocFI,1,1,t);
 else
     if strcmp(subtype,'plot')
-        [X,Chk]=vs_get(LocFI,feval(casemod,[DELWAQ '_PARAMS']),feval(casemod,'TIME_OFFSET'),'quiet');
+        [X,Chk]=vs_get(LocFI,casemod([DELWAQ '_PARAMS']),casemod('TIME_OFFSET'),'quiet');
         T0=datenum(X(1),X(2),X(3)/3600/24);
         TStep=1/(24*3600);
     else
-        [Str,Chk]=vs_get(LocFI,feval(casemod,[DELWAQ '_PARAMS']),feval(casemod,'TITLE'),'quiet');
+        [Str,Chk]=vs_get(LocFI,casemod([DELWAQ '_PARAMS']),casemod('TITLE'),'quiet');
         [T0,TStep] = delwaqt0(Str(4,:));
     end
-    if isequal(Props.Group,feval(casemod,[DELWAQ '_RESULTS']))
-        [T,Chk]=vs_let(LocFI,feval(casemod,[DELWAQ '_RESULTS']),{t},feval(casemod,'TIME'),'quiet');
+    if isequal(Props.Group,casemod([DELWAQ '_RESULTS']))
+        [T,Chk]=vs_let(LocFI,casemod([DELWAQ '_RESULTS']),{t},casemod('TIME'),'quiet');
         T=T0+T*TStep;
     else % ONE FIELD
         T=T0;
@@ -1707,7 +1717,7 @@ else
     if isfield(LocFI,'SegmentName')
         S=LocFI.SegmentName;
     else
-        [S,Chk]=vs_get(LocFI,feval(casemod,[DELWAQ '_PARAMS']),feval(casemod,'LOCATION_NAMES'),'quiet');
+        [S,Chk]=vs_get(LocFI,casemod([DELWAQ '_PARAMS']),casemod('LOCATION_NAMES'),'quiet');
         S=cellstr(S);
     end
 end
