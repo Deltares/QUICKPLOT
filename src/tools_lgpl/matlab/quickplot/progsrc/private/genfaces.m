@@ -31,6 +31,7 @@ function hNew=genfaces(hOld,Ops,Parent,Val,X,Y,Z)
 %   $HeadURL$
 %   $Id$
 
+special_edges = 0;
 if nargin==4
     if isempty(hOld) || ~ishandle(hOld)
         error('Invalid handle')
@@ -64,8 +65,37 @@ else
         %
         % ---> X=XYZ and Y=TRI
         %
-        xv = squeeze(X(1,:,1,:));
-        fv = Y;
+        if length(Val) == size(Y,1)
+            % one data value provided per triangular patch
+            xv = squeeze(X(1,:,1,:));
+            fv = Y;
+        else
+            % assume one data value per node
+            special_edges = 1;
+            ncoord = size(X,4);
+            nnodes = size(X,2);
+            nfaces = size(Y,1);
+            nedges = size(Y,2);
+            xv = zeros(nnodes+(nedges+1)*nfaces,ncoord);
+            xv(1:nnodes,:) = squeeze(X(1,:,1,:));
+            for i = 1:ncoord
+                x = squeeze(X(1,:,1,i));
+                xv(nnodes+1:nnodes+nfaces,i) = mean(x(Y),2);
+                for e = 1:nedges
+                    xv(nnodes+e*nfaces+1:nnodes+(e+1)*nfaces,i) = mean(x(Y(:,[e mod(e,nedges)+1])),2);
+                end
+            end
+            fv = zeros(nedges*nfaces,4);
+            for e = 1:nedges
+                em = e-1;
+                if em==0
+                    em = nedges;
+                end
+                fv(nfaces*(e-1)+1:nfaces*e,:) = [Y(:,e) transpose(nnodes+e*nfaces+1:nnodes+(e+1)*nfaces) transpose(nnodes+1:nnodes+nfaces) transpose(nnodes+em*nfaces+1:nnodes+(em+1)*nfaces)];
+            end
+            Val = Val(Y);
+            Val = Val(:);
+        end
     else
         %
         % ---> X and Y
@@ -140,7 +170,28 @@ else
             end
         end
         if strcmp(Ops.presentationtype,'patches with lines')
-            set(hNew,'edgecolor',Ops.colour)
+            if special_edges
+                ln = fv(:,[2 3 3])';
+                %
+                ln2 = zeros(nedges*nfaces,2);
+                for e = 1:nedges
+                    ln2(nfaces*(e-1)+1:nfaces*e,:) = Y(:,[e mod(e,nedges)+1]);
+                end
+                ln2 = sortrows(sort(ln2,2));
+                % remove duplicate, i.e. inner, edges
+                d = any(diff([-ln2(1,:);ln2]),2);
+                d(d(2:end)==0)=0;
+                ln2 = ln2(d,[1 2 2])';
+                %
+                ln = [ln(:);ln2(:)];
+                x = xv(ln,1);
+                y = xv(ln,2);
+                x(3:3:end) = NaN;
+                y(3:3:end) = NaN;
+                hNew(end+1) = line(x,y,'color',Ops.colour,'parent',Parent);
+            else
+                set(hNew,'edgecolor',Ops.colour)
+            end
         end
     else
         hNew=hOld;

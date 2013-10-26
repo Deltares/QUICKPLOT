@@ -1045,7 +1045,7 @@ switch Type
                             DataProps{r,4}='xy';
                             DataProps{r,5}(M_)=6;
                             DataProps{r,5}(N_)=0;
-                            DataProps{r,6}=0;
+                            %DataProps{r,6}=0;
                         end
                     case {'netCDF'} % polygon bounds
                         enablegridview=0;
