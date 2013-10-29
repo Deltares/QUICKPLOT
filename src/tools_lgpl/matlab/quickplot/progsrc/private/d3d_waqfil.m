@@ -1030,10 +1030,12 @@ switch Type
                    '-------'              ''     '' ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''              ''    []       0 0
                    '--constituents'       ''     '' 'xy'     [1 5 0 0 0]  1         1     ''       'z'   'z'       'c'     casemod('DELWAQ_RESULTS') casemod('SUBST_001')     ''    []       0 0};
         if isfield(FI,'Grid') && ~isempty(FI.Grid)
-            DataProps{3,5}=[1 0 1 1 0];
-            if length(FI.Grid.MNK)>2 && FI.Grid.MNK(3)>1
-                DataProps{3,4}(end+(1:2))='+z';
-                DataProps{3,5}(K_)=1;
+            for r = [1 3]
+                DataProps{r,5}=[1 0 1 1 0];
+                if length(FI.Grid.MNK)>2 && FI.Grid.MNK(3)>1
+                    DataProps{r,4}(end+(1:2))='+z';
+                    DataProps{r,5}(K_)=1;
+                end
             end
             if isfield(FI.Grid,'FileType') 
                 switch FI.Grid.FileType
@@ -1062,7 +1064,9 @@ switch Type
         end
 end
 Out=cell2struct(DataProps,PropNames,2);
-[Out.Group]=deal(casemod([DELWAQ '_RESULTS']));
+if ~isempty(DELWAQ)
+    [Out.Group]=deal(casemod([DELWAQ '_RESULTS']));
+end
 %======================== SPECIFIC CODE REMOVE ================================
 %for i=size(Out,1):-1:1
 %  Info=vs_disp(LocFI,Out(i).Group,Out(i).Val1);
@@ -1443,6 +1447,7 @@ if ~isempty(icnst)
                     Ins(j).BalSubFld{2}{k}=substdb(Ins(j).BalSubFld{2}{k});
                 end
             end
+            Out(1).BalSubFld=[];
         end
         if isequal(Ins(j).Name,'Limit Chlo') || isequal(Ins(j).Name,'total chlorophyll in algae')
             Ins(end+1)=Ins(j);
@@ -1501,7 +1506,21 @@ if ~isempty(icnst)
     Out = [Out(1:icnst-1); Ins; Out(icnst+1:end)];
 end
 if isfield(FI,'Grid') && ~isempty(FI.Grid) && includegrid
-    Out=Out([1 1 1 1:length(Out)]);
+    if isequal(Out(1).Name,'segment number')
+        Out=Out([1 1:length(Out)]);
+    else
+        Out=Out([1 1 1 1:length(Out)]);
+        Out(2).Name='segment number';
+        Out(2).Units='';
+        %
+        Out(3).Name='-------';
+        Out(3).Units='';
+        Out(3).DimFlag=[0 0 0 0 0];
+        Out(3).Group='';
+        Out(3).Val1='';
+        Out(3).ShortName='';
+        Out(3).SubsGrp='';
+    end
     Out(1).Name='grid';
     Out(1).Units='';
     Out(1).DimFlag=Out(4).DimFlag;
@@ -1516,8 +1535,6 @@ if isfield(FI,'Grid') && ~isempty(FI.Grid) && includegrid
     Out(1).SubFld=[];
     Out(1).Loc='d';
     Out(1).ReqLoc='d';
-    Out(2).Name='segment number';
-    Out(2).Units='';
     %
     % if the first field is a quantity in a sediment layer, then the
     % 3D segment information might get lost. Let's verify whether any of
@@ -1525,7 +1542,7 @@ if isfield(FI,'Grid') && ~isempty(FI.Grid) && includegrid
     %
     hask=0;
     for i=3:length(Out)
-       hask = hask | Out(i).DimFlag(K_);
+        hask = hask | Out(i).DimFlag(K_);
     end
     %
     Out(2).DimFlag(K_)=hask; %1
@@ -1537,13 +1554,6 @@ if isfield(FI,'Grid') && ~isempty(FI.Grid) && includegrid
     Out(2).ReqLoc='z';
     %Out(2).Group='';
     Out(2).Val1='';
-    Out(3).Name='-------';
-    Out(3).Units='';
-    Out(3).DimFlag=[0 0 0 0 0];
-    Out(3).Group='';
-    Out(3).Val1='';
-    Out(3).ShortName='';
-    Out(3).SubsGrp='';
 end
 
 if isPartFile(FI)

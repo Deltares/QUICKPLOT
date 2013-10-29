@@ -123,7 +123,7 @@ for tpC = types
                 i=0;
                 while 1
                     Line=fgetl(fid);
-                    if (isempty(deblank(Line)) || ~ischar(Line)) && feof(fid)
+                    if (~ischar(Line) || isempty(deblank(Line)) ) && feof(fid)
                         break
                     end
                     i=i+1;
@@ -290,7 +290,7 @@ for tpC = types
                 i=0;
                 while 1
                     Line=fgetl(fid);
-                    if (isempty(deblank(Line)) || ~ischar(Line)) && feof(fid)
+                    if (~ischar(Line) || isempty(deblank(Line)) ) && feof(fid)
                         break
                     end
                     i=i+1;
@@ -330,7 +330,7 @@ for tpC = types
                 i=0;
                 while 1
                     Line=fgetl(fid);
-                    if (isempty(deblank(Line)) || ~ischar(Line)) && feof(fid)
+                    if (~ischar(Line) || isempty(deblank(Line)) ) && feof(fid)
                         break
                     end
                     i=i+1;
@@ -345,7 +345,7 @@ for tpC = types
                 i=0;
                 while 1
                     Line=fgetl(fid);
-                    if (isempty(deblank(Line)) || ~ischar(Line)) && feof(fid)
+                    if (~ischar(Line) || isempty(deblank(Line)) ) && feof(fid)
                         break
                     end
                     i=i+1;

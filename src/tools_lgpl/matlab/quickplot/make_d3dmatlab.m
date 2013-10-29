@@ -54,6 +54,7 @@ exportsrc(sourcedir,targetdir)
 
 disp('Modifying files ...');
 fstrrep([targetdir,filesep,'d3d_qp.m'],'<VERSION>',qpversion)
+fstrrep([targetdir,filesep,'d3d_qp.m'],'<CREATIONDATE>',TStr)
 fstrrep([targetdir,filesep,'Contents.m'],'<VERSION>',qpversion)
 fstrrep([targetdir,filesep,'Contents.m'],'<CREATIONDATE>',TStr)
 
