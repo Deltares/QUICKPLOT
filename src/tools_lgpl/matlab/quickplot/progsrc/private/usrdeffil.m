@@ -792,7 +792,7 @@ else
         DomainNr=Props.Domain;
     end
     [Chk,S]=qp_getdata(Props.FileInfo,DomainNr,Props.Props,'stations',s);
-    if length(S)>length(s)
+    if ~isequal(s,0) && length(S)>length(s)
         S=S(s);
     end
 end
