@@ -625,6 +625,7 @@ else
             ival = Props.Val1;
         end
         [T,val1]=delwaq('read',LocFI,ival,idx{st_},idx{T_});
+        val1=permute(val1,[3 2 1]);
     else
         if iscell(Props.Val1) && DimFlag(K_)
             %
@@ -645,6 +646,7 @@ else
     else
         if isbinary
             [T,val2]=delwaq('read',LocFI,Props.Val2,idx{st_},idx{T_});
+            val1=permute(val1,[3 2 1]);
         else
             [val2,Chk]=vs_let(LocFI,Props.Group,idx(T_),Props.Val2,idx(st_),'quiet'); % load station
         end
