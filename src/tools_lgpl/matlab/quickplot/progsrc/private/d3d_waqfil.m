@@ -594,7 +594,7 @@ elseif (strcmp(subtype,'map') && mapgrid) || strcmp(subtype,'plot') || strcmp(su
         if ~DimFlag(K_) && isempty(Props.SubFld)
             index=index(:,:,1);
         end
-        if isempty(val1)
+        if isempty(val1) % segment number
             val1=reshape(index,[1 size(index)]);
         else
             val1=val1(:,max(index,1));
@@ -757,7 +757,7 @@ if Props.NVal>0 && ~TDam && ~strcmp(subtype,'history')
 end
 
 % read time ...
-if ~isbinary % for delwaqbin the time is already read when the data is read
+if DimFlag(T_) && isempty(T)
     T=readtim(FI,Props,idx{T_});
 end
 
@@ -1080,6 +1080,7 @@ switch Type
                 if length(FI.Grid.MNK)>2 && FI.Grid.MNK(3)>1
                     DataProps{r,4}(end+(1:2))='+z';
                     DataProps{r,5}(K_)=1;
+                    DataProps{r,5}(T_)=1; % in case of 3D data set, Z may be time dependent and hence "segment number" will be time dependent
                 end
             end
         else % map as his
