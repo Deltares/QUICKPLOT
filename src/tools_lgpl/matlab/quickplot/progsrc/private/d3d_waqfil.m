@@ -692,10 +692,12 @@ end
 
 %======================== SPECIFIC CODE =======================================
 % select active points ...
+act_from_z = 0;
 if strcmp(subtype,'map') && mapgrid && ~strcmp(Props.Geom,'TRI') && ~strcmp(Props.Geom,'POLYG')
     act=FI.Grid.Index(idx{[M_ N_]},1)~=0;
     gridact=~isnan(x(:,:,:,1));
 elseif strcmp(subtype,'plot') && ~isempty(z)
+    act_from_z = 1;
     act=~isnan(z(:,:,:,1));
     gridact=1;
 else
@@ -705,22 +707,26 @@ end
 %========================= GENERAL CODE =======================================
 if XYRead && ~strcmp(subtype,'history')
     if DimFlag(K_)
-        szx=[size(x) 1]; % extent szx for the case that dataset in K dir. is 1
-        szx1=szx([1:2 4:end]);
-        szx1(2)=szx(2)*szx(3);
-        x=reshape(x,szx1);
-        x(:,gridact~=1,:)=NaN;
-        x=reshape(x,szx);
-        y=reshape(y,szx1);
-        y(:,gridact~=1,:)=NaN;
-        y=reshape(y,szx);
+        if ~isequal(gridact,1)
+            szx=[size(x) 1]; % extent szx for the case that dataset in K dir. is 1
+            szx1=szx([1:2 4:end]);
+            szx1(2)=szx(2)*szx(3);
+            x=reshape(x,szx1);
+            x(:,gridact~=1,:)=NaN;
+            x=reshape(x,szx);
+            y=reshape(y,szx1);
+            y(:,gridact~=1,:)=NaN;
+            y=reshape(y,szx);
+        end
         %---
-        szz=[size(z) 1]; % extent szx for the case that dataset in K dir. is 1
-        szz1=szz([1:2 4:end]);
-        szz1(2)=szz(2)*szz(3);
-        z=reshape(z,szz1);
-        z(:,act~=1,:)=NaN;
-        z=reshape(z,szz);
+        if ~act_from_z
+            szz=[size(z) 1]; % extent szx for the case that dataset in K dir. is 1
+            szz1=szz([1:2 4:end]);
+            szz1(2)=szz(2)*szz(3);
+            z=reshape(z,szz1);
+            z(:,act~=1,:)=NaN;
+            z=reshape(z,szz);
+        end
     else
         x(gridact~=1)=NaN;
         y(gridact~=1)=NaN;
@@ -731,11 +737,17 @@ if Props.NVal>0 && ~TDam && ~strcmp(subtype,'history')
     %    act=permute(act,[1 3 2]);
     %  end
     szz=[size(val1) 1]; % extent szx for the case that dataset in K dir. is 1
-    szz1=szz([1:2 4:end]);
-    szz1(2)=szz(2)*szz(3);
-    %val1=z;
-    val1=reshape(val1,szz1);
-    val1(:,act~=1,:)=NaN;
+    if act_from_z
+        szz1=szz([1 4:end]);
+        szz1(1)=szz(1)*szz(2)*szz(3);
+        val1=reshape(val1,szz1);
+        val1(act~=1,:)=NaN;
+    else
+        szz1=szz([1:2 4:end]);
+        szz1(2)=szz(2)*szz(3);
+        val1=reshape(val1,szz1);
+        val1(:,act~=1,:)=NaN;
+    end
     val1=reshape(val1,szz);
     if ~isempty(val2)
         val2(:,isnan(val1))=NaN;
@@ -820,23 +832,28 @@ if DimFlag(ST_) && length(idx{ST_})==1
 end
 
 % reshape if a single timestep is selected ...
-% if (~DimFlag(T_) || (DimFlag(T_) && isequal(size(idx{T_}),[1 1]))) && ~strcmp(Props.Geom,'TRI')
-%     sz=size(val1);
-%     sz=[sz(1) 1 sz(end)];
-%     if isempty(val2)
-%         val1=reshape(val1,sz);
-%     else
-%         val1=reshape(val1,sz);
-%         val2=reshape(val2,sz);
-%     end
-%     if XYRead && any(DimFlag([M_ N_ K_]))
-%         x=reshape(x,sz);
-%         y=reshape(y,sz);
-%         if DimFlag(K_)
-%             z=reshape(z,sz);
-%         end
-%     end
-% end
+if (~DimFlag(T_) || (DimFlag(T_) && isequal(size(idx{T_}),[1 1]))) && ~strcmp(Props.Geom,'TRI')
+    sz=size(val1); sz=[sz(2:end) 1];
+    if Props.NVal==1
+        val1=reshape(val1,sz);
+    elseif Props.NVal==2
+        val1=reshape(val1,sz);
+        val2=reshape(val2,sz);
+    end
+    if XYRead && any(DimFlag([M_ N_ K_]))
+        if ~isempty(x)
+            sz=size(x); sz=[sz(2:end) 1];
+            x=reshape(x,sz);
+            if ~isempty(y)
+                y=reshape(y,sz);
+            end
+        end
+        if DimFlag(K_)
+            sz=size(z); sz=[sz(2:end) 1];
+            z=reshape(z,sz);
+        end
+    end
+end
 
 % generate output ...
 if XYRead
