@@ -840,7 +840,7 @@ if (~DimFlag(T_) || (DimFlag(T_) && isequal(size(idx{T_}),[1 1]))) && ~strcmp(Pr
         val1=reshape(val1,sz);
         val2=reshape(val2,sz);
     end
-    if XYRead && any(DimFlag([M_ N_ K_]))
+    if DimFlag(K_)
         if ~isempty(x)
             sz=size(x); sz=[sz(2:end) 1];
             x=reshape(x,sz);
@@ -848,7 +848,7 @@ if (~DimFlag(T_) || (DimFlag(T_) && isequal(size(idx{T_}),[1 1]))) && ~strcmp(Pr
                 y=reshape(y,sz);
             end
         end
-        if DimFlag(K_)
+        if ~isempty(z) && DimFlag(K_)
             sz=size(z); sz=[sz(2:end) 1];
             z=reshape(z,sz);
         end
