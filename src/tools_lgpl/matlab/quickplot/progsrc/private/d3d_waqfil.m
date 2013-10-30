@@ -625,7 +625,6 @@ else
             ival = Props.Val1;
         end
         [T,val1]=delwaq('read',LocFI,ival,idx{st_},idx{T_});
-        val1=permute(val1,[3 2 1]);
     else
         if iscell(Props.Val1) && DimFlag(K_)
             %
@@ -640,7 +639,6 @@ else
         else
             [val1,Chk]=vs_let(LocFI,Props.Group,idx(T_),Props.Val1,idx(st_),'quiet'); % load station
         end
-        val1=permute(val1,[3 2 1]);
     end
     if isempty(Props.Val2)
         val2=[];
@@ -650,7 +648,6 @@ else
         else
             [val2,Chk]=vs_let(LocFI,Props.Group,idx(T_),Props.Val2,idx(st_),'quiet'); % load station
         end
-        val2=permute(val2,[3 2 1]);
     end
 end
 if allt
@@ -779,7 +776,7 @@ if DimFlag(K_) && isempty(z)
         k = -idx{K_}+0.5;
     end
     z = reshape(k,[1 1 1 length(k)]);
-    szx = size(x);
+    szx = [size(x) 1];
     z = repmat(z,[szx(1:3) 1]); % for all time, M and N
 end
 if ~all(allidx(DimMask & DimFlag))
@@ -931,7 +928,9 @@ else
 end
 
 % read time ...
-Ans.Time=T;
+if DimFlag(T_)
+    Ans.Time=T;
+end
 
 % create updated data info
 if isfield(FI,'DwqBin')
@@ -1048,41 +1047,41 @@ switch Type
         plotfile=1;
         DataProps={'--constituents'       ''      '' 'xy'    [1 0 1 1 0]  1         1     ''       'z'   'z'       'c'     casemod('DELPAR_RESULTS') casemod('SUBST_001')     ''    []       0 0};
     otherwise
-        DataProps={'segment number'       ''     '' 'xy'     [0 0 1 1 0]  1         1     ''       'z'   'z'       'c'     ''               ''              ''    []       0 0
+        DataProps={'segment number'       ''     '' 'xy'     [0 5 0 0 0]  1         1     ''       'z'   'z'       'c'     ''               ''              ''    []       0 0
                    '-------'              ''     '' ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''              ''    []       0 0
                    '--constituents'       ''     '' 'xy'     [1 5 0 0 0]  1         1     ''       'z'   'z'       'c'     casemod('DELWAQ_RESULTS') casemod('SUBST_001')     ''    []       0 0};
         if isfield(FI,'Grid') && ~isempty(FI.Grid)
             for r = [1 3]
-                DataProps{r,5}=[1 0 1 1 0];
+                DataProps{r,5}(ST_)=0;
+                DataProps{r,5}(M_)=1;
+                DataProps{r,5}(N_)=1;
+                if isfield(FI.Grid,'FileType')
+                    switch FI.Grid.FileType
+                        case {'Serafin'} % triangular
+                            includegrid=0;
+                            enablegridview=0;
+                            %
+                            DataProps{r,3}='TRI';
+                            DataProps{r,5}(M_)=6;
+                            DataProps{r,5}(N_)=0;
+                            %DataProps{r,6}=0;
+                        case {'netCDF'} % polygon bounds
+                            enablegridview=0;
+                            %
+                            DataProps{r,3}='POLYG';
+                            DataProps{r,5}(M_)=6;
+                            DataProps{r,5}(N_)=0;
+                            DataProps{r,6}=1;
+                            DataProps{r,end}=1; %closedpoly
+                    end
+                end
                 if length(FI.Grid.MNK)>2 && FI.Grid.MNK(3)>1
                     DataProps{r,4}(end+(1:2))='+z';
                     DataProps{r,5}(K_)=1;
                 end
             end
-            if isfield(FI.Grid,'FileType') 
-                switch FI.Grid.FileType
-                    case {'Serafin'} % triangular
-                        includegrid=0;
-                        enablegridview=0;
-                        for r=[1 3]
-                            DataProps{r,3}='TRI';
-                            DataProps{r,4}='xy';
-                            DataProps{r,5}(M_)=6;
-                            DataProps{r,5}(N_)=0;
-                            %DataProps{r,6}=0;
-                        end
-                    case {'netCDF'} % polygon bounds
-                        enablegridview=0;
-                        for r=[1 3]
-                            DataProps{r,3}='POLYG';
-                            DataProps{r,4}='xy';
-                            DataProps{r,5}(M_)=6;
-                            DataProps{r,5}(N_)=0;
-                            DataProps{r,6}=1;
-                            DataProps{r,end}=1; %closedpoly
-                        end
-                end
-            end
+        else % map as his
+            DataProps=DataProps(3,:);
         end
 end
 Out=cell2struct(DataProps,PropNames,2);
@@ -1592,7 +1591,7 @@ if isPartFile(FI)
             Out(i-1).Units = 'kg/m^3';
             Out(i).Name = [Substance ' (sticking)'];
             Out(i).Units = 'kg/m^2';
-            lasti = i+2;
+            lasti = i;
         end
     end
     for i = lasti+1:length(Out)
