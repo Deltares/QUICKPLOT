@@ -242,9 +242,12 @@ missingvalue = clip2single(999.999);
 switch subtype
     case 'history'
         if Props.DimFlag(ST_)
-            nstations = length(idx{ST_});
+            stations = idx{ST_};
         else
-            nstations = length(idx{M_});
+            stations = idx{M_};
+        end
+        if isfield(FI,'treatas1d') && FI.treatas1d
+            x = stations;
         end
         if DimFlag(K_)
             if DataInCell
@@ -255,7 +258,7 @@ switch subtype
             cthk=-(0:sz(K_));
             cthk=cthk(idxK_);
             cthk=reshape(cthk,[1 1 length(cthk)]);
-            z=repmat(cthk,[1 nstations 1]);
+            z=repmat(cthk,[1 length(stations) 1]);
         end
     case 'grid'
         x=FI.X(idx{[M_ N_]});
