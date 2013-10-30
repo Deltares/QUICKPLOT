@@ -242,9 +242,9 @@ missingvalue = clip2single(999.999);
 switch subtype
     case 'history'
         if Props.DimFlag(ST_)
-            x=idx{ST_};
+            nstations = length(idx{ST_});
         else
-            x=idx{M_};
+            nstations = length(idx{M_});
         end
         if DimFlag(K_)
             if DataInCell
@@ -255,7 +255,7 @@ switch subtype
             cthk=-(0:sz(K_));
             cthk=cthk(idxK_);
             cthk=reshape(cthk,[1 1 length(cthk)]);
-            z=repmat(cthk,[1 length(x) 1]);
+            z=repmat(cthk,[1 nstations 1]);
         end
     case 'grid'
         x=FI.X(idx{[M_ N_]});
@@ -622,6 +622,7 @@ else
             ival = Props.Val1;
         end
         [T,val1]=delwaq('read',LocFI,ival,idx{st_},idx{T_});
+        val1=permute(val1,[3 2 1]);
     else
         if iscell(Props.Val1) && DimFlag(K_)
             %
@@ -636,6 +637,7 @@ else
         else
             [val1,Chk]=vs_let(LocFI,Props.Group,idx(T_),Props.Val1,idx(st_),'quiet'); % load station
         end
+        val1=permute(val1,[3 2 1]);
     end
     if isempty(Props.Val2)
         val2=[];
@@ -645,6 +647,7 @@ else
         else
             [val2,Chk]=vs_let(LocFI,Props.Group,idx(T_),Props.Val2,idx(st_),'quiet'); % load station
         end
+        val2=permute(val2,[3 2 1]);
     end
 end
 if allt
@@ -762,7 +765,7 @@ if DimFlag(K_) && isempty(z)
     end
     z = reshape(k,[1 1 1 length(k)]);
     szx = size(x);
-    z = repmat(z,[szx(1:3) 1]);
+    z = repmat(z,[szx(1:3) 1]); % for all time, M and N
 end
 if ~all(allidx(DimMask & DimFlag))
     if XYRead
@@ -817,24 +820,23 @@ if DimFlag(ST_) && length(idx{ST_})==1
 end
 
 % reshape if a single timestep is selected ...
-if (~DimFlag(T_) || (DimFlag(T_) && isequal(size(idx{T_}),[1 1]))) && ~strcmp(Props.Geom,'TRI')
-    sz=size(x); sz=[sz(2:end) 1];
-    if DimFlag(K_)
-        x=reshape(x,sz);
-        if ~isempty(y)
-            y=reshape(y,sz);
-        end
-        sz=size(z); sz=[sz(2:end) 1];
-        z=reshape(z,sz);
-    end
-    sz=size(val1); sz=[sz(2:end) 1];
-    if Props.NVal==1
-        val1=reshape(val1,sz);
-    elseif Props.NVal==2
-        val1=reshape(val1,sz);
-        val2=reshape(val2,sz);
-    end
-end
+% if (~DimFlag(T_) || (DimFlag(T_) && isequal(size(idx{T_}),[1 1]))) && ~strcmp(Props.Geom,'TRI')
+%     sz=size(val1);
+%     sz=[sz(1) 1 sz(end)];
+%     if isempty(val2)
+%         val1=reshape(val1,sz);
+%     else
+%         val1=reshape(val1,sz);
+%         val2=reshape(val2,sz);
+%     end
+%     if XYRead && any(DimFlag([M_ N_ K_]))
+%         x=reshape(x,sz);
+%         y=reshape(y,sz);
+%         if DimFlag(K_)
+%             z=reshape(z,sz);
+%         end
+%     end
+% end
 
 % generate output ...
 if XYRead
@@ -1570,7 +1572,7 @@ if isPartFile(FI)
             Out(i-1).Units = 'kg/m^3';
             Out(i).Name = [Substance ' (sticking)'];
             Out(i).Units = 'kg/m^2';
-            lasti = i;
+            lasti = i+2;
         end
     end
     for i = lasti+1:length(Out)
@@ -1904,6 +1906,8 @@ else
     for i = 1:length(Subs)
         sub = Subs{i};
         if length(sub)>5 && strcmp(sub(end-4:end),'stick')
+            bool = 1;
+        elseif length(sub)>8 && strcmp(sub(end-7:end),'stick_01')
             bool = 1;
         end
     end
