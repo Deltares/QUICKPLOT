@@ -99,4 +99,12 @@ if isempty(fMZO) % MATLAB 7
 end
 set(fMZO,'clickedcallback','d3d_qp printfigure');
 %--------------------------------------------------------------------------
+off(m1,'Exploration.DataCursor')
+off(m1,'Annotation.InsertLegend')
+off(m1,'Annotation.InsertColorbar')
+off(m1,'DataManager.Linking')
+off(m1,'Exploration.Brushing')
+%--------------------------------------------------------------------------
 
+function off(m1,tag)
+set(findall(m1,'tag',tag),'visible','off','separator','off')
