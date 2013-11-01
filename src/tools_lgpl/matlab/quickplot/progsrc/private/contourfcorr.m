@@ -46,12 +46,15 @@ function [cout,H,CS] = contourfcorr(varargin)
 % This function solves this problem by basing the ordering on
 % a dummy, rectangular grid.
 
+% Original version
 %   Author: R. Pawlowicz (IOS)  rich@ios.bc.ca   12/14/94
 %   Copyright (c) 1984-98 by The MathWorks, Inc.
 %   %Revision: 1.23 %  %Date: 1998/04/09 13:17:29 %
 %
-%   Correction by H.R.A. Jagers (Deltares)
-%                        bert.jagers@deltares.nl, 2001/07/18
+% Modified and improved version
+%   http://www.deltaressystems.com
+%   $HeadURL$
+%   $Id$ 
 
 error(nargchk(1,5,nargin));
 
