@@ -961,6 +961,7 @@ end
 plotfile=0;
 includegrid=1;
 enablegridview=1;
+mass_per='n/a';
 switch Type
     case {'delwaqlga'}
         DataProps={'grid'          ''     '' 'xy'     [0 0 1 1 0]  0         0     ''       'd'   'd'       ''      ''               ''              ''    []       0 0
@@ -1045,13 +1046,16 @@ switch Type
         if isfield(FI,'treatas1d') && FI.treatas1d
             DataProps{5}=[1 0 1 0 0];
         end
+        mass_per='cell';
     case {'delft3d-par-detailed_plot','delparplot','delft3d-par-plot','delft3d-par-psf'}
         plotfile=1;
         DataProps={'--constituents'       ''      '' 'xy'    [1 0 1 1 0]  1         1     ''       'z'   'z'       'c'     casemod('DELPAR_RESULTS') casemod('SUBST_001')     ''    []       0 0};
+        mass_per='cell';
     otherwise
         DataProps={'segment number'       ''     '' 'xy'     [0 5 0 0 0]  1         1     ''       'z'   'z'       'c'     ''               ''              ''    []       0 0
                    '-------'              ''     '' ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''              ''    []       0 0
                    '--constituents'       ''     '' 'xy'     [1 5 0 0 0]  1         1     ''       'z'   'z'       'c'     casemod('DELWAQ_RESULTS') casemod('SUBST_001')     ''    []       0 0};
+        mass_per='cell';
         if isfield(FI,'Grid') && ~isempty(FI.Grid)
             for r = [1 3]
                 DataProps{r,5}(ST_)=0;
@@ -1090,6 +1094,18 @@ end
 Out=cell2struct(DataProps,PropNames,2);
 if ~isempty(DELWAQ)
     [Out.Group]=deal(casemod([DELWAQ '_RESULTS']));
+end
+if isequal(mass_per,'cell')
+    if isfield(FI,'DwqBin')
+        Header = FI.DwqBin.Header;
+    elseif isfield(FI,'Nfs')
+        Header = vs_get(FI.Nfs,casemod([DELWAQ '_PARAMS']),casemod('TITLE'));
+    else
+        Header = '';
+    end
+    if ~isempty(Header) && strcmpi(Header(3,34:40),'mass/m2')
+        mass_per='m2';
+    end
 end
 %======================== SPECIFIC CODE REMOVE ================================
 %for i=size(Out,1):-1:1
@@ -1455,7 +1471,7 @@ if ~isempty(icnst)
     end
     for j=1:length(Ins)
         Ins(j).ShortName = Ins(j).Name;
-        [Ins(j).Name,Ins(j).Units,Ins(j).SubsGrp]=substdb(Ins(j).Name);
+        [Ins(j).Name,Ins(j).Units,Ins(j).SubsGrp]=substdb(Ins(j).Name,mass_per);
         if Ins(j).BedLayer>0
             Ins(j).SubsGrp=[Ins(j).SubsGrp '-bedlayer'];
             Ins(j).Name=[Ins(j).Name ' (bed layer)'];
@@ -1468,7 +1484,7 @@ if ~isempty(icnst)
             Ins(j).Units = [Ins(j).Units '/d'];
             if Ins(j).NVal<0
                 for k=1:length(Ins(j).BalSubFld{2})
-                    Ins(j).BalSubFld{2}{k}=substdb(Ins(j).BalSubFld{2}{k});
+                    Ins(j).BalSubFld{2}{k}=substdb(Ins(j).BalSubFld{2}{k},mass_per);
                 end
             end
             Out(1).BalSubFld=[];
@@ -1775,11 +1791,14 @@ if nargin==2
             else
                 Full = '[unable to locate]';
             end
+            return
         case 'reload'
             x=[];
             substdb;
+            return
     end
-    return
+else
+    cmd = 'n/a'; % mass_per not specified as 2nd argument
 end
 %
 % nargin == 0 or 1
@@ -1817,6 +1836,10 @@ if isempty(x)
         [NM,Chk]=vs_get(TBL,'TABLE_P2','ITEM_NM','quiet');
         [GRPID,Chk]=vs_get(TBL,'TABLE_P2','GROUPID','quiet');
         [UNIT,Chk]=vs_get(TBL,'TABLE_P2','UNIT','quiet');
+        [SUBS,Chk]=vs_get(TBL,'TABLE_R2','R2_SID','quiet');
+        isSubs=ismember(ID,SUBS,'rows');
+        [WK,Chk]=vs_get(TBL,'TABLE_P2','WK','quiet');
+        isTransp=WK=='x';
         if Chk
             x=[];
             x.ID=lower(ID);
@@ -1824,6 +1847,7 @@ if isempty(x)
             x.GRPID=GRPID;
             x.UNIT=UNIT;
             x.ProcDefFile=tbl;
+            x.NonTranspSubs=isSubs & ~isTransp;
         end
     catch
         ui_message('error',[ErrMsg tbl]);
@@ -1849,6 +1873,29 @@ if isempty(x)
           end
           Unit=deblank(x.UNIT(db,:));
           Unit=Unit(2:end-1);
+          if strcmp(Unit,'no unit')
+              Unit = '-';
+          elseif strcmp(Unit,'various') || strcmp(Unit,'?')
+              Unit = '';
+          elseif x.NonTranspSubs(db,:)
+              if strcmp(cmd,'m2') % data file indicates /m2
+                  if length(Unit)>3 && strcmp(Unit(end-2:end),'/m2')
+                      % procdef also says /m2 --> OK, no change needed
+                  else
+                      % procdef says /cell --> add per m2
+                      Unit = [Unit '/m2'];
+                  end
+              elseif strcmp(cmd,'cell') % data file indicates /cell
+                  if length(Unit)>3 && strcmp(Unit(end-2:end),'/m2')
+                      % procdef says /m2 --> strip off m2
+                      Unit = Unit(1:end-3);
+                  else
+                      % procdef also says /cell --> OK, no change needed
+                  end
+              else % strcmp(cmd,'n/a')
+                  % don't care, no change needed
+              end
+          end
           GroupID=deblank(x.GRPID(db,:));
        else
           Full=Abb;
