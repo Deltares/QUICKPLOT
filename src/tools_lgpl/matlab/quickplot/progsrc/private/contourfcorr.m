@@ -48,7 +48,7 @@ function [cout,H,CS] = contourfcorr(varargin)
 
 %   Author: R. Pawlowicz (IOS)  rich@ios.bc.ca   12/14/94
 %   Copyright (c) 1984-98 by The MathWorks, Inc.
-%   $Revision$  $Date$
+%   %Revision: 1.23 %  %Date: 1998/04/09 13:17:29 %
 %
 %   Correction by H.R.A. Jagers (Deltares)
 %                        bert.jagers@deltares.nl, 2001/07/18
