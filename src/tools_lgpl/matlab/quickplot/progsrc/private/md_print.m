@@ -266,6 +266,11 @@ while i<length(figlist)
                                     PrtMth{end+1}='-append';
                             end
                         end
+                        normtext = findall(figlist(i),'fontunits','normalized');
+                        if ~isempty(normtext)
+                            set(normtext,'fontunits','points')
+                            drawnow % needed to get output file nicely formatted
+                        end
                         try
                             print(fn,FigStr,dvr,PrtMth{:});
                             if strcmp(Printer,'PDF file')
@@ -282,6 +287,9 @@ while i<length(figlist)
                             end
                         catch
                             ui_message('error','error encountered creating %s:%s',fn,lasterr);
+                        end
+                        if ~isempty(normtext)
+                            set(normtext,'fontunits','normalized')
                         end
                         set(figlist(i),'inverthardcopy',ih);
                     end

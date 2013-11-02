@@ -586,7 +586,7 @@ if nval==2 || nval==3
         ii=strmatch('vector',compList);
         compList(ii)=[];
     end
-    if nval==2 && Ops.spatialv && Ops.spatial>=2 % don't plot vectors without vertical component in 2DV and 3D
+    if nval==2 && Ops.spatialv && Ops.spatial>=2 && ~strcmp(nvalstr,'xz') % don't plot vectors without vertical component in 2DV and 3D
         ii=strmatch('vector',compList);
         compList(ii)=[];
     end

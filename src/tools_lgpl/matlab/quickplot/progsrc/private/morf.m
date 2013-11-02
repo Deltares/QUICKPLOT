@@ -555,6 +555,10 @@ if plottime
         'horizontalalignment','right', ...
         'verticalalignment','bottom');
 end
+l=findall(ax,'type','line');
+p=findall(ax,'type','patch');
+set(l,'linewidth',0.00001)
+set(p,'linewidth',0.00001)
 
 
 function Handle=Local_text(ax,YLim,x,y,z,Str)
