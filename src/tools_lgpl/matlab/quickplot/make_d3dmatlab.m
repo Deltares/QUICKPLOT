@@ -1,4 +1,4 @@
-function make_d3dmatlab(basedir)
+function make_d3dmatlab(basedir,varargin)
 %MAKE_D3DMATLAB Pre-compile Delft3D-MATLAB toolbox
 %   Pre-compile MATLAB m-code to p-code for distribution as Delft3D-MATLAB toolbox.
 %
@@ -7,24 +7,32 @@ function make_d3dmatlab(basedir)
 
 %   $Id$
 
-curd=pwd;
+curdir=pwd;
+addpath(curdir)
+%
+% comment lines for
+% consistency with
+% make_quickplot and
+% make_ecoplot
+%
 if nargin>0
     cd(basedir);
 end
 try
-    err=localmake(curd);
+    err=localmake(varargin{:});
 catch
     err=lasterr;
 end
 if nargin>0
-    cd(curd);
+    cd(curdir);
 end
+rmpath(curdir)
 if ~isempty(err)
     error(err)
 end
 
 
-function err=localmake(rootdir)
+function err=localmake(qpversion,T)
 err='';
 if ~exist('progsrc','dir')
     err='Cannot locate source'; return
@@ -34,9 +42,12 @@ V=version; V=str2num(V(1));
 tdir = 'delft3d_matlab';
 sourcedir=[pwd,filesep,'progsrc'];
 targetdir=[pwd,filesep,tdir];
-qpversion=read_identification(sourcedir,'d3d_qp.m');
+if nargin<2
+    qpversion=read_identification(sourcedir,'d3d_qp.m');
+    T=now;
+end
 disp(['Delft3D-MATLAB interface version: ' qpversion]);
-T=round(clock);
+T=datevec(T);
 TStr=[datestr(datenum(T(1),T(2),T(3),T(4),T(5),T(6)),3) sprintf(' %2.2i %i %2.2i:%2.2i:%2.2i',T([3 1 4 5 6]))];
 disp(['Current date and time           : ' TStr]);
 
@@ -66,7 +77,6 @@ svnstripfile(targetdir)
 
 disp('Cleaning up directory ...');
 cd(tdir)
-addpath(rootdir)
 X={ '*.asv'
     '*.bak'
     '*.scc'
@@ -78,7 +88,6 @@ disp('Removing unneeded subdirectories ...');
 X={'org'};
 cleanup(X)
 
-rmpath(rootdir)
 cd ..
 disp('Finished.');
 

@@ -1,4 +1,4 @@
-function make_quickplot(basedir)
+function make_quickplot(basedir,varargin)
 %MAKE_QUICKPLOT Compile QUICKPLOT executable
 %   Compile MATLAB code to QUICKPLOT executable
 %
@@ -16,16 +16,15 @@ if ~exist('mcc')
     error('Cannot find MATLAB compiler. Use another MATLAB installation!')
 end
 if nargin>0
-    curd=pwd;
     cd(basedir);
 end
 try
-    err=localfunc;
+    err=localmake(varargin{:});
 catch
     err=lasterr;
 end
 if nargin>0
-    cd(curd);
+    cd(curdir);
 end
 rmpath(curdir)
 if ~isempty(err)
@@ -33,7 +32,7 @@ if ~isempty(err)
 end
 
 
-function err=localfunc
+function err=localmake(qpversion,T)
 err='';
 if ~exist('progsrc','dir')
     err='Cannot locate source'; return
@@ -66,9 +65,12 @@ copyfile('../../../../third_party_open/netcdf/matlab/netcdfAll-4.1.jar','.')
 addpath ../../../../third_party_open/netcdf/matlab/mexnc
 addpath ../../../../third_party_open/netcdf/matlab/snctools
 %
-qpversion=read_identification(sourcedir,'d3d_qp.m');
+if nargin<2
+    qpversion=read_identification(sourcedir,'d3d_qp.m');
+    T=now;
+end
 fprintf('\nBuilding Delft3D-QUICKPLOT version %s\n\n',qpversion);
-TStr = datestr(now);
+TStr = datestr(T);
 fstrrep('d3d_qp.m','<VERSION>',qpversion)
 fstrrep('d3d_qp.m','<CREATIONDATE>',TStr)
 fstrrep('wl_identification.c','<VERSION>',qpversion)
