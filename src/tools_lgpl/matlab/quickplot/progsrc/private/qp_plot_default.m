@@ -314,80 +314,101 @@ switch NVal
                     z=zeros(size(x));
             end
             if length(data.Time)>1
+                nx = numel(x);
+                nt = numel(data.Time);
                 if strcmp(Ops.axestype,'X-Time')
-                    c1 = x;
-                    c2 = data.Time;
+                    c1 = repmat(reshape(x, [1 nx]), [nt 1]);
+                    c2 = repmat(reshape(data.Time, [nt 1]), [1 nx]);
                     v = squeeze(data.Val);
                 else
-                    c1 = data.Time;
-                    c2 = x;
-                    v = squeeze(data.Val)';
+                    c1 = repmat(reshape(data.Time, [nt 1]), [1 nx]);
+                    c2 = repmat(reshape(x, [1 nx]), [nt 1]);
+                    v = squeeze(data.Val);
+                end
+                set(Parent,'NextPlot','add');
+                switch Ops.presentationtype
+                    case 'values'
+                        I=~isnan(data.Val);
+                        hNew=gentextfld(hNew,Ops,Parent,v,c1,c2);
+                        
+                    case 'continuous shades'
+                        hNew=gensurface(hNew,Ops,Parent,v,c1,c2,v);
+                        
+                    case 'markers'
+                        hNew=genmarkers(hNew,Ops,Parent,v,c1,c2);
+                        
+                    case {'contour lines','coloured contour lines','contour patches','contour patches with lines'}
+                        if isequal(size(c1),size(v)+1)
+                            [c1,c2,v]=face2surf(c1,c2,v);
+                        end
+                        v(isnan(c1) | isnan(c2))=NaN;
+                        ms=max(c1(:));
+                        mz=max(c2(:));
+                        c1(isnan(c1))=ms;
+                        c2(isnan(c2))=mz;
+                        hNew=gencontour(hNew,Ops,Parent,c1,c2,v,Thresholds);
+                        
                 end
                 if FirstFrame
-                    hNew=surface(c1,c2,v,v, ...
-                        'parent',Parent, ...
-                        'facecolor','interp', ...
-                        'edgecolor','none');
-                    set(Parent,'layer','top')
-                else
-                    set(hNew,'xdata',c1, ...
-                        'ydata',c2, ...
-                        'cdata',v);
+                    set(Parent,'view',[0 90],'layer','top');
                 end
-            elseif strcmp(Ops.facecolour,'none')
-                if FirstFrame
-                    hNew=line(x,y,z, ...
-                        'parent',Parent, ...
-                        Ops.LineParams{:});
-                    set(Parent,'layer','top')
-                elseif ishandle(hNew)
-                    set(hNew,'xdata',x, ...
-                        'ydata',y, ...
-                        'zdata',z);
-                else
-                    return
-                end
+                set(get(Parent,'title'),'string',PName)
             else
-                if ~FirstFrame
-                    delete(hNew)
-                end
-                vNaN=isnan(y);
-                if any(vNaN)
-                    bs=findseries(~vNaN);
-                else
-                    bs=[1 length(vNaN)];
-                end
-                for i=1:size(bs,1)
-                    if x(bs(i,1))==x(bs(i,2)) && ...
-                            y(bs(i,1))==y(bs(i,2))
-                        hNew(i)=patch(x(bs(i,1):bs(i,2)), ...
-                            y(bs(i,1):bs(i,2)), ...
-                            1, ...
-                            'edgecolor',Ops.colour, ...
-                            'facecolor',Ops.facecolour, ...
-                            'linestyle',Ops.linestyle, ...
-                            'linewidth',Ops.linewidth, ...
-                            'marker',Ops.marker, ...
-                            'markeredgecolor',Ops.markercolour, ...
-                            'markerfacecolor',Ops.markerfillcolour, ...
-                            'parent',Parent);
-                    else
-                        hNew(i)=line(x(bs(i,1):bs(i,2)), ...
-                            y(bs(i,1):bs(i,2)), ...
+                if strcmp(Ops.facecolour,'none')
+                    if FirstFrame
+                        hNew=line(x,y,z, ...
                             'parent',Parent, ...
                             Ops.LineParams{:});
+                        set(Parent,'layer','top')
+                    elseif ishandle(hNew)
+                        set(hNew,'xdata',x, ...
+                            'ydata',y, ...
+                            'zdata',z);
+                    else
+                        return
                     end
+                else
+                    if ~FirstFrame
+                        delete(hNew)
+                    end
+                    vNaN=isnan(y);
+                    if any(vNaN)
+                        bs=findseries(~vNaN);
+                    else
+                        bs=[1 length(vNaN)];
+                    end
+                    for i=1:size(bs,1)
+                        if x(bs(i,1))==x(bs(i,2)) && ...
+                                y(bs(i,1))==y(bs(i,2))
+                            hNew(i)=patch(x(bs(i,1):bs(i,2)), ...
+                                y(bs(i,1):bs(i,2)), ...
+                                1, ...
+                                'edgecolor',Ops.colour, ...
+                                'facecolor',Ops.facecolour, ...
+                                'linestyle',Ops.linestyle, ...
+                                'linewidth',Ops.linewidth, ...
+                                'marker',Ops.marker, ...
+                                'markeredgecolor',Ops.markercolour, ...
+                                'markerfacecolor',Ops.markerfillcolour, ...
+                                'parent',Parent);
+                        else
+                            hNew(i)=line(x(bs(i,1):bs(i,2)), ...
+                                y(bs(i,1):bs(i,2)), ...
+                                'parent',Parent, ...
+                                Ops.LineParams{:});
+                        end
+                    end
+                    set(Parent,'layer','top')
                 end
-                set(Parent,'layer','top')
+                tit = {};
+                if ~isempty(stn)
+                    tit{end+1}=stn;
+                end
+                if ~isempty(TStr)
+                    tit{end+1}=TStr;
+                end
+                set(get(Parent,'title'),'string',tit)
             end
-            tit = {};
-            if ~isempty(stn)
-                tit{end+1}=stn;
-            end
-            if ~isempty(TStr)
-                tit{end+1}=TStr;
-            end
-            set(get(Parent,'title'),'string',tit)
 
         elseif spatialh==1 && spatial==2
 
@@ -511,24 +532,27 @@ switch NVal
                         
                 end
                 if FirstFrame
-                    set(Parent,'layer','top');
+                    set(Parent,'view',[0 90],'layer','top');
                 end
-            elseif FirstFrame
-                hNew=line(squeeze(data.Val),squeeze(data.Z), ...
-                    'parent',Parent, ...
-                    Ops.LineParams{:});
-            elseif ishandle(hNew)
-                set(hNew,'xdata',squeeze(data.Val), ...
-                    'ydata',squeeze(data.Z));
+                set(get(Parent,'title'),'string',PName)
             else
-                return
+                if FirstFrame
+                    hNew=line(squeeze(data.Val),squeeze(data.Z), ...
+                        'parent',Parent, ...
+                        Ops.LineParams{:});
+                elseif ishandle(hNew)
+                    set(hNew,'xdata',squeeze(data.Val), ...
+                        'ydata',squeeze(data.Z));
+                else
+                    return
+                end
+                if ~isempty(stn)
+                    Str={stn,TStr};
+                else
+                    Str={TStr};
+                end
+                set(get(Parent,'title'),'string',Str);
             end
-            if ~isempty(stn)
-                Str={stn,TStr};
-            else
-                Str={TStr};
-            end
-            set(get(Parent,'title'),'string',Str);
 
         elseif multiple(T_) && spatial==0
             if FirstFrame
