@@ -1,26 +1,38 @@
 function varargout=landboundary(cmd,varargin)
 %LANDBOUNDARY Read/write land boundary files.
-%   XY = LANDBOUNDARY('read',FILENAME) reads the specified file and returns
-%   the data as one Nx2 array.
+%   XY = LANDBOUNDARY('read',FILENAME, ...) reads the data from the
+%   specified land boundary file and returns the x and y coordinates as one
+%   Nx2 array.
 %
-%   [X,Y] = LANDBOUNDARY(...) returns separate X and Y arrays.
+%   [X,Y] = LANDBOUNDARY('read',FILENAME, ...) returns the coordinates as
+%   two separate Nx1 arrays X and Y.
 %
-%   LANDBOUNDARY('write',FILENAME,XY) writes a landboundary to file. XY
-%   should either be a Nx2 array containing NaN separated line segments or
-%   a cell array containing one line segment per cell. If XY is an a 2xN
+%   The following optional arguments are supported for the read call:
+%
+%    * 'autocorrect'      : try to correct for some file format errors.
+%    * 'nskipdatalines',N : skip the first N data lines. Comment lines
+%                           (starting with *) are always skipped.
+%
+%   LANDBOUNDARY('write',FILENAME,XY, ...) writes a landboundary to file.
+%   XY should either be a Nx2 array containing NaN separated line segments
+%   or a cell array containing one line segment per cell. If XY is an a 2xN
 %   array with N not equal to 2, then XY is transposed.
 %
-%   LANDBOUNDARY('write',FILENAME,X,Y) writes a landboundary to file. X
-%   and Y supplied as separate Nx1 arrays containing NaN separated line
-%   segments or cell arrays containing one line segment per cell. The X and
-%   Y line segments should correspond in length. If X or Y
+%   LANDBOUNDARY('write',FILENAME,X,Y, ...) writes a landboundary to file.
+%   X and Y may be supplied as separate Nx1 arrays containing NaN separated
+%   line segments or cell arrays containing one line segment per cell. The
+%   X and Y line segments should correspond in length.
 %
-%   LANDBOUNDARY(...,'-1') does not write line segments of length 1.
+%   The following optional arguments are supported for the write call:
 %
-%   LANDBOUNDARY(...,'dosplit') saves line segments as separate TEKAL
-%   blocks instead of saving them as one long line interrupted by missing
-%   values. This approach is well suited for spline files, but less suited
-%   for landboundaries with a large number of segments.
+%    * '-1'               : does not write line segments of length 1.
+%    * 'dosplit'          : saves line segments as separate TEKAL blocks
+%                           instead of saving them as one long line
+%                           interrupted by missing values. This approach is
+%                           well suited for spline files, but less suited
+%                           for landboundaries with a large number of
+%                           segments.
+%    * 'format',FMT       : format for line segment names (default '%4i')
 %
 %   FILE = LANDBOUNDARY('write',...) returns a file info structure for the
 %   file written. This structure can be used to read the file using the
@@ -93,7 +105,12 @@ if nargin==0
     filename=[fp fn];
 end
 
-T=tekal('open',filename,varargin{:});
+% By default switch on loaddata because we'll need all data immediately in
+% the code below. Since we won't have to read the data twice, this will
+% usually be faster. The only benefit of not reading the data is that this
+% will create a lot of small arrays in memory for all line segments
+% individually whereas we eventually need it all in one big array.
+T=tekal('open',filename,'loaddata',varargin{:});
 
 lasterr('')
 try

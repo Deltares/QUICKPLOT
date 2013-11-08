@@ -5,7 +5,6 @@
 %   adcircmesh                  - Read an Adcirc fort.14 mesh topology file.
 %   ai_ungen                    - Read/write ArcInfo (un)generate files.
 %   arcgrid                     - Read/write operations for arcgrid files.
-%   asciiwind                   - Read operations for ascii wind files.
 %   aukepc                      - Read AUKE/pc files.
 %   bagdpt                      - Read output files BAGGER-BOS-RIZA bagger option.
 %   bagmap                      - Read output files BAGGER-BOS-RIZA bagger option.

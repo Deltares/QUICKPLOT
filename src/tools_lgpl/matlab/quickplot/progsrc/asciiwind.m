@@ -1,9 +1,31 @@
 function varargout = asciiwind(cmd,varargin)
 %ASCIIWIND Read operations for ascii wind files.
-%   FileData = ASCIIWIND('open',filename) opens the ascii wind file and
-%   determines the wind time series characteristics.
+%   INFO = ASCIIWIND('open',FILENAME) opens the ascii wind file and
+%   determines the wind time series characteristics. Supported file types
+%   include: 'meteo_on_equidistant_grid', 'meteo_on_curvilinear_grid',
+%   'meteo_on_spiderweb_grid', and 'meteo_on_computational_grid'.
+%
+%   DATA = ASCIIWIND('read',INFO,QUANT,TIME,ROWS,COLS) read data for
+%   quantity QUANT (specified either as index in the array of quantities or
+%   as string specifying the name of the requested quantity) at the
+%   specified TIME (use : for all times). The optional ROWS and COLS
+%   determine the grid indices for which to return data (use : for all
+%   indices, which is the default).
+%
+%   [X,Y,UNIT] = ASCIIWIND('grid',INFO,TIME,ROWS,COLS) return x and y
+%   coordinates (as well as string indicating coordinate unit) associated
+%   with the data at the specified TIME (use : for all times at which data
+%   is provided). The optional ROWS and COLS determine the grid indices for
+%   which to return data (use : for all indices, which is the default). The
+%   coordinates are only time-dependent for 'meteo_on_spiderweb_grid'; for
+%   all other files, the same coordinates are returned for all selected
+%   times.
 %
 %   See also ARCGRID.
+
+%   MERGED = ASCIIWIND('merge',INFO1,INFO2) verifies whether INFO1 and
+%   INFO2 are compatible data structures and if so, it returns INFO1 as
+%   MERGED with an extra field called 'Vector' containing the INFO2.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -56,12 +78,20 @@ end
 
 
 function Data = Local_read_file(Structure,Quant,t,varargin)
-if ischar(Quant)
+if nargin<2
+    if Structure.Header.n_quantity>1
+        error('No quantity selected')
+    else
+        Quant=1;
+    end
+elseif ischar(Quant)
     iQuant = ustrcmpi(Quant,Structure.Header.quantity);
     if iQuant<0
         error('Unknown quantity: %s',Quant)
     end
     Quant = iQuant;
+elseif any(Quant<0)
+    error('Quantity index %i out of range',min(Quant))
 elseif any(Quant>Structure.Header.n_quantity)
     error('Quantity index %i out of range',max(Quant))
 end
@@ -71,12 +101,26 @@ if length(Quant)>1
 end
 QuantName = [Structure.Header.quantity{Quant} '_spw_eye'];
 %
-if isequal(t,':')
+if nargin<3
+    if length(Structure.Data)==1
+        t = 1;
+    else
+        error('No time selected')
+    end
+elseif isequal(t,':')
     t = 1:length(Structure.Data);
 end
 %
-rows = varargin{1};
-cols = varargin{2};
+if nargin>3
+    rows = varargin{1};
+else
+    rows = ':';
+end
+if nargin>4
+    cols = varargin{2};
+else
+    cols = ':';
+end
 fid = fopen(Structure.FileName,'r');
 for i = 1:length(t)
     fseek(fid,Structure.Data(t(i)).offset,-1);
@@ -134,15 +178,29 @@ fclose(fid);
 
 
 function [X,Y,grid_unit] = Local_get_grid(Structure,t,varargin)
-if isequal(t,':')
+if nargin<2
+    if ~strcmpi(Structure.Header.filetype,'meteo_on_spiderweb_grid') || length(Structure.Data)==1
+        t = 1;
+    else
+        error('No time selected')
+    end
+elseif isequal(t,':')
     t = 1:length(Structure.Data);
 elseif isempty(t)
     t = 1;
 end
 %
 Header = Structure.Header;
-rows = varargin{1};
-cols = varargin{2};
+if nargin>2
+    rows = varargin{1};
+else
+    rows = ':';
+end
+if nargin>3
+    cols = varargin{2};
+else
+    cols = ':';
+end
 grid_unit = '';
 for i = 1:length(t)
     switch lower(Header.filetype)

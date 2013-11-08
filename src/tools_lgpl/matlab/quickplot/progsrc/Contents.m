@@ -54,6 +54,7 @@
 %   vs_diff             - Locates the differences between two NEFIS files.
 %
 % Other data access functions
+%   asciiwind           - Read operations for ascii wind files.
 %   bct_io              - Read/write boundary condition tables.
 %   d3d_attrib          - Read/write a various Delft3D attribute files.
 %   ecomsed             - Read an ECOMSED data file.

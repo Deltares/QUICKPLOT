@@ -1,9 +1,21 @@
 function Out=tekal(cmd,varargin)
 %TEKAL Read/write for Tekal files.
-%   INFO = TEKAL('open',FILENAME) reads the specified Tekal file. If the
-%   FILENAME is not specified you will be asked to select a file
+%   INFO = TEKAL('open',FILENAME, ...) reads the specified Tekal file. If
+%   the FILENAME is not specified you will be asked to select a file
 %   interactively. The returned structure contains the metadata of the
 %   Tekal file.
+%
+%   The following optional arguments are supported for the read call:
+%
+%    * 'autocorrect'      : try to correct for some file format errors.
+%    * 'loaddata'         : load data into structure while reading file.
+%                           This creates a bigger INFO data structure, but
+%                           prevents further file access during 'read'
+%                           calls. Switched off by default.
+%    * 'nskipdatalines',N : skip the first N data lines. Comment lines
+%                           (starting with *) are always skipped.
+%    * 'sorted'           : return data blocks not in read order, but in
+%                           ASCII dictionary order of the data block names.
 %
 %   DATA = TEKAL('read',INFO,RECORD) reads the selected data record from
 %   the specified file. The RECORD may be specified as integer (data block
@@ -16,11 +28,17 @@ function Out=tekal(cmd,varargin)
 %   returns a structure INFO containing the metadata of the newly created
 %   file.
 %
-%   NEWINFO = TEKAL('write',FILENAME,INFO) writes a more complete new Tekal
-%   file based on the information in the INFO structure. INFO should be a
-%   structure with at least a field called Field having two subfields Name
-%   and Data. An optional subfield Comments will also be processed and
+%   NEWINFO = TEKAL('write',FILENAME,INFO, ...) writes a more complete new
+%   Tekal file based on the information in the INFO structure. INFO should
+%   be a structure with at least a field called Field having two subfields
+%   Name and Data. An optional subfield Comments will also be processed and
 %   written to file.
+%
+%   The following optional argument is supported for the write call:
+%
+%    * 'sorted'           : write data blocks not in specified order, but
+%                           in ASCII dictionary order of the data block
+%                           names.
 %
 %   Example
 %      % Data for block 1
@@ -92,6 +110,7 @@ end
 function FileInfo=Local_open_file(varargin)
 FileInfo.Check='NotOK';
 TryToCorrect=0;
+Sorted=0;
 LoadData=0;
 nSkipDataLines=0;
 if nargin==0
@@ -111,6 +130,8 @@ while i<=length(INP)
             TryToCorrect=1;
         case 'loaddata'
             LoadData=1;
+        case 'sorted'
+            Sorted=1;
         case 'nskipdatalines'
             nSkipDataLines=INP{i+1};
             i=i+1;
@@ -269,7 +290,7 @@ while 1
                         [Data,Nr]=fscanf(fid,['%*[^',char(10),']%c'],dim(2));
                         %
                         if Nr<dim(2)-1
-                            Msg=sprintf('End of file reached while skipping data field %i.\nData is probably damaged.',variable);
+                            Msg=sprintf('End of file reached while processing data field %i.\nData is probably damaged.',variable);
                             if ~TryToCorrect
                                 fclose(fid);
                                 error(Msg)
@@ -323,19 +344,21 @@ while 1
                         end
                     end
 
-                    % replace 999999 by Not-a-Numbers
-                    Data(Data(:)==999999)=NaN;
-
-                    % transpose data if it has two dimensions
-                    if length(dim)>1
-                        Data=Data';
+                    if LoadData
+                        % replace 999999 by Not-a-Numbers
+                        Data(Data(:)==999999)=NaN;
+                        
+                        % transpose data if it has two dimensions
+                        if length(dim)>1
+                            Data=Data';
+                        end
+                        
+                        % reshape to match Size
+                        if length(FileInfo.Field(variable).Size)>2,
+                            Data=reshape(Data,[FileInfo.Field(variable).Size(3:end) FileInfo.Field(variable).Size(2)]);
+                        end
+                        FileInfo.Field(variable).Data=Data;
                     end
-
-                    % reshape to match Size
-                    if length(FileInfo.Field(variable).Size)>2,
-                        Data=reshape(Data,[FileInfo.Field(variable).Size(3:end) FileInfo.Field(variable).Size(2)]);
-                    end
-                    FileInfo.Field(variable).Data=Data;
 
                     % read closing end of line
                     fgetl(fid);
@@ -363,6 +386,10 @@ if ~isfield(FileInfo,'Field')
     else
         error('File is empty: %s',FileInfo.FileName)
     end
+end
+if Sorted
+    [dumNames,Idx] = sort({FileInfo.Field.Name});
+    FileInfo.Field = FileInfo.Field(Idx);
 end
 if ~ErrorFound
     FileInfo.Check='OK';
@@ -452,22 +479,46 @@ else %if ~isnan(FileInfo.Field(var).Offset)
     end
 end
 
-function NewFileInfo=Local_write_file(filename,FileInfo)
+function NewFileInfo=Local_write_file(filename,FileInfo,varargin)
 fid=fopen(filename,'w');
 NewFileInfo.Check='NotOK';
 if fid<0
     error('invalid filename')
 end
 
+Sorted=0;
+i=1;
+while i<=length(varargin)
+    switch lower(varargin{i})
+        case 'sorted'
+            Sorted=1;
+    end
+    i=i+1;
+end
+
 if isstruct(FileInfo)
-    %  uiwait(msgbox('Not yet implemented','modal'));
-    % sprintf('%s',[FileInfo.Field(var).Name char(32*ones(1,4-length(FileInfo.Field(var).Name)))]) % Write a name of at least four characters
     NewFileInfo.FileName=filename;
+    %
     for i=1:length(FileInfo.Field)
-        NewFileInfo.Field(i).Size=size(FileInfo.Field(i).Data);
-        if ndims(FileInfo.Field(i).Data)>2
+        if isempty(FileInfo.Field(i).Name)
+            FileInfo.Field(i).Name = sprintf('BL%2.2i',i);
+        end
+    end
+    %
+    if Sorted
+        [dumNames,Idx] = sort({FileInfo.Field.Names});
+        FileInfo.Field = FileInfo.Field(Idx);
+    end
+    %
+    for i=1:length(FileInfo.Field)
+        Data = FileInfo.Field(i).Data;
+        if isempty(Data) && isfield(FileInfo.Field(i),'Offset')
+            Data = tekal('read',FileInfo,i);
+        end
+        NewFileInfo.Field(i).Size=size(Data);
+        if ndims(Data)>2
             NewFileInfo.Field(i).Size=[prod(NewFileInfo.Field(i).Size(1:end-1)) NewFileInfo.Field(i).Size(end) NewFileInfo.Field(i).Size(1:end-1)];
-            FileInfo.Field(i).Data=reshape(FileInfo.Field(i).Data,NewFileInfo.Field(i).Size(1:2));
+            Data=reshape(Data,NewFileInfo.Field(i).Size(1:2));
         end
 
         ncol=NewFileInfo.Field(i).Size(2);
@@ -489,25 +540,24 @@ if isstruct(FileInfo)
             NewFileInfo.Field(i).ColLabels=getcollabels(ncol,NewFileInfo.Field(i).Comments);
         end
 
-        if isempty(FileInfo.Field(i).Name)
-            FileInfo.Field(i).Name = sprintf('BL%2.2i',i);
-        end
         NewFileInfo.Field(i).Name=FileInfo.Field(i).Name;
         fprintf(fid,'%s\n',FileInfo.Field(i).Name);
 
         fprintf(fid,' %i',NewFileInfo.Field(i).Size); fprintf(fid,'\n');
         NewFileInfo.Field(i).Offset=ftell(fid);
 
-        if length(NewFileInfo.Field(i).ColLabels)>1 && strcmp(NewFileInfo.Field(i).ColLabels(1),'Date') & strcmp(NewFileInfo.Field(i).ColLabels(2),'Time')
-            Format=['%08i %06i' repmat(' %.15g',1,size(FileInfo.Field(i).Data,2)-2) '\n'];
+        if length(NewFileInfo.Field(i).ColLabels)>1 && ...
+                strcmp(NewFileInfo.Field(i).ColLabels(1),'Date') && ...
+                strcmp(NewFileInfo.Field(i).ColLabels(2),'Time')
+            Format=['%08i %06i' repmat(' %.15g',1,size(Data,2)-2) '\n'];
         else
-            Format=[repmat(' %.15g',1,size(FileInfo.Field(i).Data,2)) '\n'];
+            Format=[repmat(' %.15g',1,size(Data,2)) '\n'];
         end
 
-        if any(isnan(FileInfo.Field(i).Data(:)))
-            FileInfo.Field(i).Data(isnan(FileInfo.Field(i).Data))=-999;
+        if any(isnan(Data(:)))
+            Data(isnan(Data))=-999;
         end
-        fprintf(fid,Format,FileInfo.Field(i).Data');
+        fprintf(fid,Format,Data');
 
         NewFileInfo.Field(i).Data=[];
         NewFileInfo.Field(i).DataTp='numeric';
@@ -519,9 +569,6 @@ else
     fprintf(fid,'DATA\n');
     NewFileInfo.Field.Name='DATA';
     NewFileInfo.Field.Size=size(FileInfo);
-    %  if size(FileInfo,2)>1, % if matrix (or row vector)
-    %    FileInfo=FileInfo';
-    %  end;
     if ndims(FileInfo)>2
         NewFileInfo.Field.Size=[prod(NewFileInfo.Field.Size(1:end-1)) NewFileInfo.Field.Size(end) NewFileInfo.Field.Size(1:end-1)];
         FileInfo=reshape(FileInfo,NewFileInfo.Field.Size(1:2));
@@ -535,6 +582,7 @@ else
 end
 
 fclose(fid);
+
 
 function ColLabels=getcollabels(ncol,Cmnt)
 ColLabels={}; % necessary for standalone version
