@@ -41,11 +41,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		// If it is not you can call splash.SetFullPath
 		_T("d3d_qp.exec") 
 		) ;
-#ifdef _DEBUG
-	// In debug mode you may wish to a specify a full path to the application as it may not 
-	// be in your output folder to run using a relative path 
-	splash.SetFullPath(_T("D:\\projectswpf\\SplashScreen\\SplashScreenTester.exe"));
-#endif
+//#ifdef _DEBUG
+//	// In debug mode you may wish to a specify a full path to the application as it may not 
+//	// be in your output folder to run using a relative path 
+//	splash.SetFullPath(_T("D:\\projectswpf\\SplashScreen\\SplashScreenTester.exe"));
+//#endif
 	splash.Show();
 }
 
