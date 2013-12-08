@@ -920,7 +920,7 @@ else
         end
     end
     
-    ChangeCLim = strcmp(Thresholds,'none');
+    ChangeCLim = strcmp(Thresholds,'none') || ~isempty(Ops.colourlimits);
 
     hNewVec=cat(1,hNew{:});
 end
