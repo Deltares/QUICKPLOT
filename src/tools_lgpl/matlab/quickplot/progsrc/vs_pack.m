@@ -242,7 +242,8 @@ else
       % define all elements
       allelm=unique([gElms{:}]);
       [dummy,dummy2,ie]=intersect(allelm,{VS.ElmDef.Name});
-      for i=ie
+      ie = sort(ie);
+      for i=ie(1):ie(end)
          if vs_debug
             fprintf(vs_debug,'Creating element: %s\n',VS.ElmDef(i).Name);
          end
