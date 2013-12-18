@@ -1,10 +1,10 @@
 function Out=bil(cmd,varargin)
 %BIL Read bil/hdr files.
-%   FileData = bil('open',filename);
+%   FileData = BIL('open',filename)
 %      Opens the file and interprets and verifies the header
 %      information.
 %
-%   Data = bil('read',FileData,Idx,Precision);
+%   Data = BIL('read',FileData,Idx,Precision)
 %      Reads data field Idx from the selected file.
 %      Returns the data as a variable of the specified precision.
 %      By default, the function returns the data in the same precision
@@ -51,15 +51,63 @@ switch cmd
         Out=Local_open_file(varargin{:});
     case 'read'
         Out=Local_read_file(varargin{:});
+    case 'write'
+        if nargout>0
+            error('Too many output arguments')
+        end
+        Local_write_file(varargin{:});
     otherwise
         error('Unknown command: "%s"',cmd)
 end
+
+function [KnownKeywords,nStringKeywords] = getKnownKeywords
+KnownKeywords = {'ByteOrder','Layout','PixelType','nRows','nCols', ...
+    'nBands','nBlocks','nBits','BandRowBytes','TotalRowBytes', ...
+    'BandGapBytes','NoData','ULXmap','ULYmap','Xdim','Ydim','SkipBytes'};
+nStringKeywords = 3;
+
+function Local_write_file(filename,Structure,Data)
+if ~isequal(size(Data),[Structure.nRows Structure.nCols])
+    error('Size of Data array does not match grid size defined by Structure')
+end
+%
+Structure.FileBase = filename;
+fidhdr = fopen([filename '.hdr'],'w');
+if fidhdr<0
+    error('Cannot open header file ''%s''.',filename)
+end
+%
+% always force one band/block and no dummy bytes at the beginning (or end)
+% of the file
+%
+Structure.nBands = 1;
+Structure.nBlocks = 1;
+Structure.SkipBytes = 0;
+%
+KnownKeywords = getKnownKeywords;
+for i = 1:length(KnownKeywords)
+    str = KnownKeywords{i};
+    if isfield(Structure,str)
+        val = Structure.(str);
+        if isequal(str,'PixelType') && isequal(val,'undefined')
+            % skip
+        elseif ischar(val)
+            fprintf(fidhdr,'%s %s\n',str,val);
+        else
+            fprintf(fidhdr,'%s %g\n',str,val);
+        end
+    end
+end
+fclose(fidhdr);
+%
+actual_io('write',Structure,1,Data);
+
 
 function Structure=Local_open_file(filename)
 Structure.Check = 'NotOK';
 Structure.FileType = 'HDR Raster File - BIP/BIL/BSQ';
 
-if (nargin==0) | strcmp(filename,'?')
+if (nargin==0) || strcmp(filename,'?')
     [fn,fp] = uigetfile('*.hdr');
     if ~ischar(fn)
         return
@@ -83,15 +131,14 @@ Structure.nBits = 8;
 [c,maxsize,Structure.ByteOrder] = computer;
 Structure.SkipBytes = 0;
 Structure.Layout = 'BIL';
+Structure.PixelType = 'undefined';
 %
 filename = Structure.FileName;
 fid=fopen(filename,'r');
 if fid<0
     error('Cannot open header file ''%s''.',filename)
 end
-KnownKeywords = {'ByteOrder','Layout','nRows','nCols','nBands', ...
-    'nBlocks','nBits','BandRowBytes','TotalRowBytes','BandGapBytes', ...
-    'NoData','ULXmap','ULYmap','Xdim','Ydim','SkipBytes'};
+[KnownKeywords,nStringKeywords] = getKnownKeywords;
 LowerKeywords = lower(KnownKeywords);
 iLine=0;
 while ~feof(fid)
@@ -112,7 +159,7 @@ while ~feof(fid)
     end
     iT = strmatch(lower(T),LowerKeywords,'exact');
     if ~isempty(iT)
-        if iT>2
+        if iT>nStringKeywords
             R = sscanf(R,'%f',1);
         end
         Structure = setfield(Structure,KnownKeywords{iT},R);
@@ -130,24 +177,24 @@ for i=1:length(RequiredKeywords)
     end
 end
 %
-if Structure.nBits == 1 & Structure.nBands~=1
+if Structure.nBits == 1 && Structure.nBands~=1
     error('A file with nBits equal to one, should have nBands also equal to one.')
 end
 %
-if isfield(Structure,'Xdim') & ~isfield(Structure,'Ydim')
+if isfield(Structure,'Xdim') && ~isfield(Structure,'Ydim')
     error('Missing Ydim keyword.')
-elseif isfield(Structure,'Ydim') & ~isfield(Structure,'Xdim')
+elseif isfield(Structure,'Ydim') && ~isfield(Structure,'Xdim')
     error('Missing Xdim keyword.')
-elseif ~isfield(Structure,'Xdim') & ~isfield(Structure,'Ydim')
+elseif ~isfield(Structure,'Xdim') && ~isfield(Structure,'Ydim')
     Structure.Xdim = 1;
     Structure.Ydim = 1;
 end
 %
-if isfield(Structure,'ULXmap') & ~isfield(Structure,'ULYmap')
+if isfield(Structure,'ULXmap') && ~isfield(Structure,'ULYmap')
     error('Missing ULYmap keyword.')
-elseif isfield(Structure,'ULYmap') & ~isfield(Structure,'ULXmap')
+elseif isfield(Structure,'ULYmap') && ~isfield(Structure,'ULXmap')
     error('Missing ULXmap keyword.')
-elseif ~isfield(Structure,'ULXmap') & ~isfield(Structure,'ULYmap')
+elseif ~isfield(Structure,'ULXmap') && ~isfield(Structure,'ULYmap')
     Structure.ULXmap = Structure.Xdim/2;
     Structure.ULYmap = Structure.Ydim*(Structure.nRows-0.5);
 end
@@ -189,7 +236,35 @@ end
 Structure.Check='OK';
 
 %--------------------------------------------------------------------------
-function Data=Local_read_file(Structure,i,tFormatUser)
+function [sFormat,tFormat]=getFormats(Structure)
+switch Structure.nBits % depends also on PixelType
+    case 1
+        sFormat = 'bit1';
+        tFormat = 'int8';
+    case 2
+        sFormat = 'bit2';
+        tFormat = 'int8';
+    case 4
+        sFormat = 'bit4';
+        tFormat = 'int8';
+    case 8
+        sFormat = 'int8';
+        tFormat = 'int8';
+    case 16
+        sFormat = 'int16';
+        tFormat = 'int16';
+    case 32
+        sFormat = 'float32';
+        tFormat = 'float32';
+    case 64
+        sFormat = 'float64';
+        tFormat = 'float64';
+    otherwise
+        error('Invalid number of bits (%i)',Structure.nBits)
+end
+
+%--------------------------------------------------------------------------
+function Data=Local_read_file(Structure,i,varargin)
 if isequal(i,'xcc')
     Data = Structure.ULXmap+Structure.Xdim*(0:Structure.nCols-1);
     if nargin>2
@@ -211,94 +286,103 @@ elseif isequal(i,'yco')
         Data = repmat(Data,1,Structure.nCols);
     end
 elseif isnumeric(i)
-    if i~=round(i) | i<1 | i>Structure.nBands
+    if i~=round(i) || i<1 || i>Structure.nBands
         error('Invalid band index %g.',i)
     else
-        filename = [Structure.FileBase use_ext(Structure,'BIL')];
-        switch upper(Structure.ByteOrder)
-            case {'I','L'}
-                bOrder = 'l';
-            case {'M','B'}
-                bOrder = 'b';
-        end
-        fid=fopen(filename,'r',bOrder);
-        if fid<0
-            error('Cannot open BIL file ''%s''.',filename)
-        end
-        fseek(fid,Structure.SkipBytes,-1);
-        switch Structure.nBits
-            case 1
-                sFormat = 'bit1';
-                tFormat = 'int8';
-            case 2
-                sFormat = 'bit2';
-                tFormat = 'int8';
-            case 4
-                sFormat = 'bit4';
-                tFormat = 'int8';
-            case 8
-                sFormat = 'int8';
-                tFormat = 'int8';
-            case 16
-                sFormat = 'int16';
-                tFormat = 'int16';
-            case 32
-                sFormat = 'float32';
-                tFormat = 'float32';
-            case 64
-                sFormat = 'float64';
-                tFormat = 'float64';
-            otherwise
-                error('Invalid number of bits (%i)',Structure.nBits)
-        end
-        if nargin>2
-            tFormat = tFormatUser;
-            cFormat = [sFormat '=>' tFormat];
-        else
-            cFormat = ['*' sFormat];
-        end
-        %
-        switch tFormat
-            case 'int8'
-                nodata = int8(Structure.NoData);
-            case 'int16'
-                nodata = int16(Structure.NoData);
-            case 'float32'
-                nodata = single(Structure.NoData);
-            case 'float64'
-                nodata = Structure.NoData;
-        end
-        %
-        switch Structure.Layout
-            case 'BIL'
-                Data = repmat(nodata,Structure.nRows,Structure.nCols);
-                fseek(fid,(i-1)*Structure.BandRowBytes,0);
-                SkipBytes = (Structure.nBands-1)*Structure.BandRowBytes;
-                for r = 1:Structure.nRows
-                    DataRow = fread(fid,[1 Structure.nCols],cFormat);
-                    Data(r,:) = DataRow;
-                    fseek(fid,SkipBytes,0);
-                end
-            case 'BIP'
-                fseek(fid,(i-1)*Structure.nBits/8,0);
-                Skip = Structure.nBits*(Structure.nBands-1);
-                if ~strcmp('bit',sFormat(1:3))
-                    Skip = Skip/8;
-                end
-                Data = fread(fid,[Structure.nCols Structure.nRows],cFormat,Skip);
-                Data = Data';
-            case 'BSQ'
-                fseek(fid,(i-1)*Structure.nCols*Structure.nRows*Structure.nBits/8,0);
-                Data = fread(fid,[Structure.nCols Structure.nRows],cFormat);
-                Data = Data';
-        end
-        Data(Data == nodata) = NaN;
-        fclose(fid);
+        Data = actual_io('read',Structure,i,varargin{:});
     end
 else
     error('Invalid field indicator.')
 end
 
+%--------------------------------------------------------------------------
+function Data = actual_io(cmd,Structure,i,varargin)
+read = strcmp(cmd,'read');
+filename = [Structure.FileBase use_ext(Structure,'BIL')];
+switch upper(Structure.ByteOrder)
+    case {'I','L'}
+        bOrder = 'l';
+    case {'M','B'}
+        bOrder = 'b';
+end
+if read
+    fid=fopen(filename,'r',bOrder);
+else
+    fid=fopen(filename,'w',bOrder);
+end
+if fid<0
+    error('Cannot open BIL file ''%s''.',filename)
+end
+fseek(fid,Structure.SkipBytes,-1);
+[sFormat,tFormat]=getFormats(Structure);
+if read
+    if length(varargin)>0
+        tFormat = varargin{1};
+    end
+    cFormat = [sFormat '=>' tFormat];
+else
+    Data = varargin{1};
+    cFormat = sFormat;
+end
+%
+switch tFormat
+    case 'int8'
+        nodata = int8(Structure.NoData);
+    case 'int16'
+        nodata = int16(Structure.NoData);
+    case 'float32'
+        nodata = single(Structure.NoData);
+    case 'float64'
+        nodata = Structure.NoData;
+end
+%
+if ~read
+    Data(isnan(Data)) = nodata;
+end
+%
+switch Structure.Layout
+    case 'BIL'
+        if read
+            Data = repmat(nodata,Structure.nRows,Structure.nCols);
+        end
+        fseek(fid,(i-1)*Structure.BandRowBytes,0);
+        SkipBytes = (Structure.nBands-1)*Structure.BandRowBytes;
+        for r = 1:Structure.nRows
+            if read
+                DataRow = fread(fid,[1 Structure.nCols],cFormat);
+                Data(r,:) = DataRow;
+            else
+                fwrite(fid,Data(r,:),cFormat);
+            end
+            fseek(fid,SkipBytes,0);
+        end
+    case 'BIP'
+        fseek(fid,(i-1)*Structure.nBits/8,0);
+        Skip = Structure.nBits*(Structure.nBands-1);
+        if ~strcmp('bit',sFormat(1:3))
+            Skip = Skip/8;
+        end
+        if read
+            Data = fread(fid,[Structure.nCols Structure.nRows],cFormat,Skip);
+            Data = Data';
+        else
+            fwrite(fid,Data,cFormat,Skip);
+        end
+    case 'BSQ'
+        fseek(fid,(i-1)*Structure.nCols*Structure.nRows*Structure.nBits/8,0);
+        if read
+            Data = fread(fid,[Structure.nCols Structure.nRows],cFormat);
+            Data = Data';
+        else
+            fwrite(fid,Data,cFormat);
+        end
+end
+if read
+    Data(Data == nodata) = NaN;
+end
+fclose(fid);
+
+        
 %--------------------------------------------------------------------------
 function bil=use_ext(Structure,bilstr)
 bil = char(Structure.HdrExtension-' HDR'+[' ' bilstr]);

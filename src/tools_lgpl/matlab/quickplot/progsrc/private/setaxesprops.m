@@ -292,7 +292,8 @@ set(get(ax,[dir 'label']),'string',sprintf('%s (%s) \\rightarrow',quantity,unitS
 
 function set_2d_axes_behavior(ax)
 try
+    view(0,90)
     bh = hggetbehavior(ax,'rotate3d');
-    set(bh,'Enable',false);
+    set(bh,'Enable',false)
 catch
 end

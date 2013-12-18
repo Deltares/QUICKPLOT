@@ -234,7 +234,7 @@ elseif isstruct(s1) || isobject(s1)
 else  % some numeric type of equal size
     if isempty(s1)  % same size, numeric, empty -> no difference
         return
-    elseif isa(s1,'double')
+    elseif isa(s1,'double') || isa(s1,'single')
         NaNorEqual=(isnan(s1) & isnan(s2)) | (s1==s2);
         DiffFound=~all(NaNorEqual(:));
     else
