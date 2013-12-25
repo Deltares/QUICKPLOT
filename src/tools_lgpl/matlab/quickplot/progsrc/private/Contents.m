@@ -4,11 +4,9 @@
 % Data data access functions
 %   adcircmesh                  - Read an Adcirc fort.14 mesh topology file.
 %   ai_ungen                    - Read/write ArcInfo (un)generate files.
-%   arcgrid                     - Read/write operations for arcgrid files.
 %   aukepc                      - Read AUKE/pc files.
 %   bagdpt                      - Read output files BAGGER-BOS-RIZA bagger option.
 %   bagmap                      - Read output files BAGGER-BOS-RIZA bagger option.
-%   bil                         - Read bil/hdr files.
 %   bna                         - Read/write for ArcInfo (un)generate files.
 %   boxfile                     - Read/write SIMONA box files.
 %   cfx                         - File operations for CFX file.

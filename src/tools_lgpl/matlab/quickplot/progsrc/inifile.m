@@ -207,7 +207,7 @@ if isequal(size(key),[1 1])
             val=lni;
         end
     end
-elseif isempty(key) & nargin>=4
+elseif isempty(key) & nargin>=5
     val=def;
 elseif ~isempty(key)
     val=Keywords(key,2);

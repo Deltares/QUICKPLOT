@@ -1,14 +1,23 @@
 function Out=bil(cmd,varargin)
-%BIL Read bil/hdr files.
-%   FileData = BIL('open',filename)
-%      Opens the file and interprets and verifies the header
-%      information.
+%BIL Read/write bil/hdr files.
+%   FILEDATA = BIL('open',FILENAME) checks the extension of the selected
+%   FILENAME. The FILENAME should refer to either the header (.hdr) or the
+%   actual binary data file (.bil/.bip/.bsq). The call reads the header
+%   file and determines the dimensions of the grid. This call does not
+%   immediately read the actual data.
 %
-%   Data = BIL('read',FileData,Idx,Precision)
-%      Reads data field Idx from the selected file.
-%      Returns the data as a variable of the specified precision.
-%      By default, the function returns the data in the same precision
-%      as stored in the file.
+%   DATA = BIL('read',FILEDATA,IDX,PREC) reads the selected data field IDX
+%   from the bil/hdr file previously opened using a BIL('open',FILENAME)
+%   call. It returns the data as a variable of the specified precision; the
+%   precision PREC should be specified as one of the formats supported by
+%   FREAD.
+%
+%   DATA = BIL('write',FILEBASE,FILEDATA,DATA) writes the DATA to files
+%   with names given by FILEBASE and extensions .hdr and .bil based on the
+%   meta data specified in FILEDATA which should mirror the data structure
+%   as obtained from a BIL('open',FILENAME) call.
+%
+%   See also ARCGRID, FREAD.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -157,12 +166,12 @@ while ~feof(fid)
         fclose(fid);
         error('Too many tokens on line %i.',iLine)
     end
-    iT = strmatch(lower(T),LowerKeywords,'exact');
+    iT = find(strcmp(lower(T),LowerKeywords));
     if ~isempty(iT)
         if iT>nStringKeywords
             R = sscanf(R,'%f',1);
         end
-        Structure = setfield(Structure,KnownKeywords{iT},R);
+        Structure.(KnownKeywords{iT}) = R;
     else
         fclose(fid);
         error('Unknown keyword ''%s''.',T)
@@ -316,7 +325,7 @@ end
 fseek(fid,Structure.SkipBytes,-1);
 [sFormat,tFormat]=getFormats(Structure);
 if read
-    if length(varargin)>0
+    if ~isempty(varargin)
         tFormat = varargin{1};
     end
     cFormat = [sFormat '=>' tFormat];
@@ -325,18 +334,19 @@ else
     cFormat = sFormat;
 end
 %
+nodata = [];
 switch tFormat
     case 'int8'
         nodata = int8(Structure.NoData);
     case 'int16'
         nodata = int16(Structure.NoData);
-    case 'float32'
+    case {'single','float32'}
         nodata = single(Structure.NoData);
-    case 'float64'
+    case {'double','float64'}
         nodata = Structure.NoData;
 end
 %
-if ~read
+if ~read && ~isempty(nodata)
     Data(isnan(Data)) = nodata;
 end
 %

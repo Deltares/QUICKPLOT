@@ -1,27 +1,37 @@
 function [Out,Out2]=arcgrid(cmd,varargin)
-%ARCGRID Read/write operations for arcgrid files.
-%   FileData = arcgrid('open',filename);
-%      Opens data from an arcgrid file
-%      and determines the dimensions of
-%      the grid. Detects the presence of
-%      multiple arcgrid-files (for FLS).
+%ARCGRID Read/write arcgrid files.
+%   FILEDATA = ARCGRID('open',FILENAME) opens the FILENAME as an arcgrid
+%   file and determines the dimensions of the grid. This call does not
+%   immediately read the actual data. Detects the presence of a time series
+%   of arcgrid-files; the file names should have same base name followed by
+%   numbers, e.g. base1.asc, base2.asc, etc. The time associated with each
+%   file will be determined by:
+%     1. 'time=' string in comment line (starting with /*) at top of file.
+%        The subsequent value (%f) is interpreted as the time in hours.
+%     2. If 1 is not specified, the the number in the file name is assumed
+%        to represent the time in hours.
+%   If the extension of the FILENAME is .amu or .amv, then the routine will
+%   also verify the existence of files with the other extension and if
+%   present interpret the pair as a vector quantity.
 %
-%   Data = arcgrid('read',filename);
-%      Reads data from a not-opened
-%      arcgrid file.
+%   DATA = ARCGRID('read',FILEDATA) read the data from an arcgrid data file
+%   previously opened using an ARCGRID('open',FILENAME) call.
+%   DATA = ARCGRID('read',FILEDATA,I) reads the i-th data file in a series
+%   of data files previously opened using an ARCGRID('open',FILENAME) call.
 %
-%   Data = arcgrid('read',FileData);
-%      Reads data from an opened
-%      arcgrid file.
-%   Data = arcgrid('read',FileData,i);
-%      Reads data from the i-th data
-%      file in a series.
+%   DATA = ARCGRID('read',FILENAME) opens the FILENAME and immediately
+%   reads the data.
 %
-%   arcgrid('write',FileData,filename);
-%      Writes data to an arcgrid file.
+%   ARCGRID('write',FILEDATA,FILENAME) writes data to an arcgrid file. The
+%   FILEDATA should mirror the structure obtained from an
+%   ARCGRID('open',FILENAME) call.
 %
-%   AxesHandle = arcgrid('plot',FileData);
-%      Plots arcgrid data as elevations.
+%   H = ARCGRID('plot',FILEDATA,AXES) reads the data from an arcgrid file
+%   previously opened using an ARCGRID('open',FILENAME) call. The data is
+%   plotted as elevations in the specified AXES (defaults to current axes
+%   if not specified).
+%
+%   See also BIL.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -116,7 +126,7 @@ end
 Structure.Extension=e(2:end);
 Line=fgetl(fid); % First lines might be comment lines: /* ....
 time_in_file=0;
-while strmatch('/*',Line)
+while strncmp('/*',Line,2)
     if ~isempty(strfind(Line,'time=')) || ~isempty(strfind(Line,'time ='))
         time_in_file=1;
     end
@@ -131,7 +141,7 @@ Structure.CellSize=0;
 Structure.NoData=NaN;
 Structure.DataStart=0;
 %
-while ~feof(fid)
+while ischar(Line) && ~isempty(Line)
     [keyw,remLine]=strtok(Line);
     switch lower(keyw)
         case 'ncols'
@@ -180,7 +190,7 @@ end
 %
 Line=fgetl(fid);
 Time=[];
-while strmatch('/*',Line)
+while strncmp('/*',Line,2)
     Structure.DataStart=ftell(fid);
     if isempty(Time)
         Time=sscanf(lower(Line),'/* time (hrs) %f',1);
@@ -277,7 +287,7 @@ end
 
 
 function [Times,FileNr]=getfiletimes(FileBase,Extension,time_in_file)
-[FilePath,FileName]=fileparts(FileBase);
+[FilePath,FileName]=fileparts([FileBase '.x']); % dummy extension needed to avoid stripping off extension
 last_char=length(FileName);
 len_ext=length(Extension)+1;
 %
@@ -308,9 +318,11 @@ else
     Times=zeros(ntimes,1);
     for i=1:ntimes
         FileNr{i}=Files(i).name(last_char+1:end-len_ext);
-        Times(i)=(FileNr{i}-48)*10.^(length(FileNr{i})-1:-1:0)';
+        Times(i)=str2double(FileNr{i});
     end
 end
+FileNr(isnan(Times))=[];
+Times(isnan(Times))=[];
 [Times,I] = sort(Times);
 FileNr = FileNr(I);
 
