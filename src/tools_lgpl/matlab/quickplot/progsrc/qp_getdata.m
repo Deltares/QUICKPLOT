@@ -142,6 +142,7 @@ try
             % [Success,Dimensions]            = QP_GETDATA(FI,'dimensions')
             % [Success,Locations ]            = QP_GETDATA(FI,'locations')
             % [Success,Domains   ]            = QP_GETDATA(FI,'domains')
+            % [Success,DomainName]            = QP_GETDATA(FI,'domainname')
             % [Success,Quantities]            = QP_GETDATA(FI,'quantities')
             % [Success,NewFI     ]            = QP_GETDATA(FI,'optionstransfer',FI_to)
             % [Success,DataProps ]            = QP_GETDATA(FI,Domain)
@@ -158,7 +159,20 @@ try
             % Check for domain index ... add if necessary
             %
             if ~isempty(X)
-                if isequal(X{1},'domains') || ...
+                if isequal(X{1},'domainname')
+                    %
+                    % [Success,DomainName]            = QP_GETDATA(FI,'domainname')
+                    %
+                    % Add empty array for dummy domain argument.
+                    %
+                    varargout{2} = 'Domain';
+                    if isfield(FI,'DomainName')
+                        varargout{2} = FI(1).DomainName;
+                    end
+                    varargout{1} = OK;
+                    return
+                elseif isequal(X{1},'domains') || ...
+                        isequal(X{1},'domainname') || ...
                         isequal(X{1},'dimensions') || ...
                         isequal(X{1},'locations') || ...
                         isequal(X{1},'quantities')
@@ -166,6 +180,7 @@ try
                     % [Success,Dimensions]            = QP_GETDATA(FI,'dimensions')
                     % [Success,Locations ]            = QP_GETDATA(FI,'locations')
                     % [Success,Domains   ]            = QP_GETDATA(FI,'domains')
+                    % [Success,DomainName]            = QP_GETDATA(FI,'domainname')
                     % [Success,Quantities]            = QP_GETDATA(FI,'quantities')
                     %
                     % Add empty array for dummy domain argument.

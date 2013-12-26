@@ -1086,12 +1086,7 @@ d0=tdelft3d(Date(1),Date(2));
 if isequal(Props.Group,'his-const') || isequal(Props.Group,'his-bal-const')
     T=d0;
 else
-    dispt='hydrodynamic time';
-    if isfield(FI,'displaytime')
-        dispt=FI.displaytime;
-    end
-    %
-    switch dispt
+    switch lower(qp_option(FI,'displaytime'))
         case 'hydrodynamic time'
             grp = 'his-info-series';
             Info = vs_disp(FI,grp,[]);
@@ -1214,11 +1209,8 @@ switch cmd,
         Info=vs_disp(FI,'his-infsed-serie','MORFT');
         if isstruct(Info)
             set(findobj(mfig,'tag','displaytime'),'enable','on');
-            dispnr=1;
             Hdispt=findobj(mfig,'tag','displaytime=?');
-            if isfield(FI,'displaytime')
-                dispnr=strmatch(FI.displaytime,get(Hdispt,'string'));
-            end
+            dispnr=strmatch(qp_option(FI,'displaytime'),get(Hdispt,'string'));
             set(Hdispt,'enable','on','backgroundcolor',Active,'value',dispnr);
         end
     case 'displaytime'
@@ -1226,7 +1218,7 @@ switch cmd,
         dispts=get(Hdispt,'string');
         if nargin>3
             dispstr=varargin{1};
-            dispnr=strmatch(lower(dispstr),dispts,'exact');
+            dispnr=find(strcmpi(dispstr,dispts));
             if isempty(dispnr)
                 dispnr=1;
             end
@@ -1235,7 +1227,7 @@ switch cmd,
             dispnr=get(Hdispt,'value');
         end
         dispstr=dispts{dispnr};
-        NewFI.displaytime=dispstr;
+        NewFI.QP_options.displaytime=dispstr;
         cmdargs={cmd dispstr};
     otherwise
         error(['Unknown option command: ',cmd])
@@ -1260,7 +1252,7 @@ uicontrol('Parent',h0, ...
     'BackgroundColor',Inactive, ...
     'Callback','d3d_qp fileoptions displaytime', ...
     'Position',[91 voffset 240 20], ...
-    'String',{'hydrodynamic time','morphologic time'}, ...
+    'String',{'Hydrodynamic Time','Morphologic Time'}, ...
     'Enable','off', ...
     'Tag','displaytime=?');
 OK=1;
@@ -1314,10 +1306,4 @@ switch typ
     case 'bedload'
         sediments = setdiff(sediments,constituents);
 end
-% -----------------------------------------------------------------------------
-
-
-% -----------------------------------------------------------------------------
-function NewFI=optionstransfer(NewFI,FI)
-NewFI=transferfields(NewFI,FI,{'displaytime'});
 % -----------------------------------------------------------------------------

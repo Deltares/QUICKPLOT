@@ -52,7 +52,7 @@ first = 1;
 semicol = findstr(filterspec,';');
 if ~isempty(semicol)
     allfilterspec = splitcellstr(filterspec,';');
-    filterspec = allfilterspec{1};
+    filterspec = absfullfile(allfilterspec{1});
 else
     allfilterspec = {};
 end
@@ -278,7 +278,7 @@ while 1
                   %
                   if MapSeg==GridSeg
                       if length(allfilterspec)>=2
-                          gridfil2 = allfilterspec{2};
+                          gridfil2 = absfullfile(allfilterspec{2});
                       else
                           cp=pwd;
                           cd(pn);

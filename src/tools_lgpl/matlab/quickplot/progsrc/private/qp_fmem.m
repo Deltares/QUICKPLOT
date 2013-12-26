@@ -200,6 +200,7 @@ switch cmd
                  trytp='NOOS time series';
          end
       end
+      FileName = absfullfile(FileName);
       
       %try opening the file ...
       userasked=0;
@@ -228,7 +229,7 @@ switch cmd
                         maybeusegrid=1;
                         if FileFromCall
                            if nargin>2
-                              filterspec=varargin{2};
+                              filterspec=varargin{2}; % no absfullfile here since filterspec may be concat of multiple file names using ;
                            else
                               maybeusegrid=0;
                               G=[];
@@ -249,6 +250,13 @@ switch cmd
                            F.Grid=G;
                            FI=F;
                         end
+                     case {'delft3d-trim'}
+                        FI.QP_options.morfac      = 1;
+                        FI.QP_options.morstt      = 0;
+                        FI.QP_options.dps         = '';
+                        FI.QP_options.displaytime = 'hydrodynamic time';
+                     case {'delft3d-trih'}
+                        FI.QP_options.displaytime = 'hydrodynamic time';
                   end
                   if isfield(FI,'SubType')
                      Tp=FI.SubType;
@@ -302,7 +310,7 @@ switch cmd
                         askforgrid=1;
                         if FileFromCall
                            if nargin>2
-                              filterspec=varargin{2};
+                              filterspec=varargin{2}; % no absfullfile here since filterspec may be concat of multiple file names using ;
                            else
                               askforgrid=0;
                               G=[];
@@ -406,7 +414,7 @@ switch cmd
                         maybeusegrid=1;
                         if FileFromCall
                            if nargin>2
-                              filterspec=varargin{2};
+                              filterspec=varargin{2}; % no absfullfile here since filterspec may be concat of multiple file names using ;
                            else
                               maybeusegrid=0;
                               G=[];
@@ -499,7 +507,7 @@ switch cmd
                      if strcmp(FI.Header.filetype,'meteo_on_computational_grid')
                         if FileFromCall
                            if nargin>2
-                              gridspec=varargin{2};
+                              gridspec=absfullfile(varargin{2});
                            else
                               gridspec='';
                            end
@@ -523,7 +531,7 @@ switch cmd
                           strcmp(FI.Header.quantity{1}(2:end),'_wind')
                       if FileFromCall
                           if nargin>2
-                              veccomp2=varargin{2};
+                              veccomp2=absfullfile(varargin{2});
                           else
                               veccomp2='';
                           end
@@ -693,7 +701,7 @@ switch cmd
                      if can_be_kub
                         ppn = '';
                         if nargin>2
-                           pfn=varargin{2};
+                           pfn=absfullfile(varargin{2});
                         else
                            pfn='';
                         end

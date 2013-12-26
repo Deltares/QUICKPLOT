@@ -37,7 +37,11 @@ if isequal(FI,[])
     Info=[];
 else
     if isfield(Info,'QPF')
-        Info.Data=FI;
+        if Info.QPF==2
+            Info=qp_proxy('store',Info,FI);
+        else
+            Info.Data=FI;
+        end
     else
         Info=FI;
     end

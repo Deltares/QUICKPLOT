@@ -323,33 +323,17 @@ try
                 NewRecord = qp_refresh(File(sel));
             elseif isempty(cmdargs)
                 if strcmp(cmd,'openurl')
-                    [FI,FileName,Tp,Otherargs]=qp_fmem('openurl');
+                    [NewRecord,FileName,Tp,Otherargs]=qp_proxy('openurl');
                 else
                     pn=get(OpenFile,'userdata');
-                    [FI,FileName,Tp,Otherargs]=qp_fmem('opennew',pn);
+                    [NewRecord,FileName,Tp,Otherargs]=qp_proxy('opennew',pn);
                 end
             else
-                [FI,FileName,Tp,Otherargs]=qp_fmem('open',cmdargs{:});
+                [NewRecord,FileName,Tp,Otherargs]=qp_proxy('open',cmdargs{:});
             end
             %
             if isempty(NewRecord)
-                if isempty(FI)
-                    return
-                end
-                NewRecord.QPF=1;
-                NewRecord.Name=FileName;
-                NewRecord.Data=FI;
-                NewRecord.FileType=Tp;
-                if isfield(FI,'Options')
-                    NewRecord.Options=FI.Options;
-                else
-                    NewRecord.Options=0;
-                end
-                NewRecord.Otherargs=Otherargs;
-                %
-                if strcmp(cmd,'reloadfile') && File(sel).Options
-                    [Chk,NewRecord]=qp_getdata(NewRecord,'optionstransfer',File(sel));
-                end
+                return
             else
                 FileName = NewRecord.Name;
                 Otherargs = NewRecord.Otherargs;
@@ -596,7 +580,7 @@ try
             NrInList=get(Handle_FileI,'value');
             %
             if ~isempty(cmdargs)
-                [FI,FileName,Tp,Otherargs]=qp_fmem('open',cmdargs{:});
+                [NewRecord,FileName,Tp,Otherargs]=qp_proxy('open',cmdargs{:});
             else
                 if ~isempty(File)
                     pn = fileparts(File(NrInList).Name);
@@ -604,21 +588,10 @@ try
                     OpenFile=findobj(mfig,'tag','openfile','type','uipushtool');
                     pn=get(OpenFile,'userdata');
                 end
-                [FI,FileName,Tp,Otherargs]=qp_fmem('opennew',pn);
+                [NewRecord,FileName,Tp,Otherargs]=qp_proxy('opennew',pn);
             end
             %
-            if ~isempty(FI)
-                NewRecord.QPF=1;
-                NewRecord.Name=FileName;
-                NewRecord.Data=FI;
-                NewRecord.FileType=Tp;
-                if isfield(FI,'Options')
-                    NewRecord.Options=FI.Options;
-                else
-                    NewRecord.Options=0;
-                end
-                NewRecord.Otherargs=Otherargs;
-                %
+            if ~isempty(NewRecord)
                 if isempty(File)
                     Str={abbrevfn(FileName,60)};
                     NrInList=1;
@@ -782,9 +755,17 @@ try
             Str=get(Handle_SelectFile,'string');
             NrInList=get(Handle_SelectFile,'value');
             if strcmp(cmd,'closeallfiles')
+                for i = 1:length(File)
+                    try
+                        qp_proxy('clear',File(i))
+                    end
+                end
                 File(:)=[];
                 Str(:)=[];
             elseif ~isempty(File)
+                try
+                    qp_proxy('clear',File(NrInList))
+                end
                 File(NrInList)=[];
                 Str(NrInList)=[];
             end
@@ -898,7 +879,8 @@ try
             
         case 'fileinfo'
             Fil=qpfile;
-            ui_inspectstruct(Fil.Data,Fil.Name)
+            Data=qp_unwrapfi(Fil);
+            ui_inspectstruct(Data,Fil.Name)
             
         case 'fileoptions'
             if nargin==1
@@ -932,20 +914,15 @@ try
             File=get(Handle_SelectFile,'userdata');
             NrInList=get(Handle_SelectFile,'value');
             Succes=~isempty(File);
-            domainstr = 'Domain';
-            if Succes
-                Info=File(NrInList);
-                if isfield(Info.Data,'DomainName')
-                    domainstr = Info.Data(1).DomainName;
-                end
-            end
             
             domaintxt=findobj(mfig,'tag','domain');
             domains=findobj(mfig,'tag','selectdomain');
             if ~Succes
                 set(domains,'string',' ','value',1,'enable','off','backgroundcolor',Inactive);
-                set(domaintxt,'enable','off','string',domainstr);
+                set(domaintxt,'enable','off','string','Domain');
             else
+                Info=File(NrInList);
+                [Chk,domainstr]=qp_getdata(Info,'domainname');
                 [Chk,Domains]=qp_getdata(Info,'domains');
                 if ~Chk || isempty(Domains)
                     set(domains,'string',' ','value',1,'enable','off','backgroundcolor',Inactive);
@@ -2476,7 +2453,7 @@ try
         case {'showgridviewldb'}
             OpenFile=findobj(mfig,'tag','openfile','type','uipushtool');
             pn=get(OpenFile,'userdata');
-            [FI,FileName,Tp,Otherargs]=qp_fmem('openldb',pn);
+            [FI,FileName,Tp,Otherargs]=qp_proxy('openldb',pn);
             GVAxes=findobj(UD.GridView.Fig,'type','axes');
             zoomupdate=0;
             switch Tp

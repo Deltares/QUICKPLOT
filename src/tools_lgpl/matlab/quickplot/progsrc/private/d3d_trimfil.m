@@ -1159,7 +1159,7 @@ for i=size(Out,1):-1:1
         if isequal(nfltp,'dp')
             Out(i).Loc='z';
             Out(i).ReqLoc='z';
-        elseif isfield(FI,'dps') && isequal(FI.dps,'dp')
+        elseif isequal(qp_option(FI,'dps'),'dp')
             Out(i).Loc='z';
             Out(i).ReqLoc='z';
         end
@@ -1522,7 +1522,7 @@ for i = size(Out,1):-1:1
         nfltp = lower(deblank(nfltp));
         if isequal(nfltp,'dp')
             Out(i).Stagger = 'Faces2D';
-        elseif isfield(FI,'dps') && isequal(FI.dps,'dp')
+        elseif isequal(qp_option(FI,'dps'),'dp')
             Out(i).Stagger = 'Faces2D';
         end
     end
@@ -2239,10 +2239,6 @@ Dt=vs_get(FI,'map-const','DT','quiet!');
 Tunit=vs_get(FI,'map-const','TUNIT','quiet!');
 Date=vs_get(FI,'map-const','ITDATE','quiet!');
 d0=tdelft3d(Date(1),Date(2));
-dispt='hydrodynamic time';
-if isfield(FI,'displaytime')
-    dispt=FI.displaytime;
-end
 %
 TLikeFlow=0;
 switch Props.Group
@@ -2262,7 +2258,7 @@ end
 %
 if TLikeFlow
     %
-    switch lower(dispt)
+    switch lower(qp_option(FI,'displaytime'))
         case 'hydrodynamic time'
             %
             switch Props.Group
@@ -2307,8 +2303,8 @@ tmpidx{1}=1;
 % is stored as a field called 'dps0' of the FI. Note that it is
 % stored only in a local copy of FI, so, that is less efficient
 % than storing it in the main FI. However, because the user may
-% change the FI.dps value of the main FI, storing it locally is
-% the only correct thing to do.
+% change the qp_option dps value of the main FI, storing it
+% locally is the only correct thing to do.
 %
 if strcmp(Name,'cum. erosion/sedimentation')
     dps0=0;
@@ -2423,9 +2419,11 @@ else
         %
         dp=vs_get(FI,'map-const','DP0',idx([M_ N_]),'quiet!');
         dp(dp==-999)=NaN;
-        nfltp=vs_get(FI,'map-const','DRYFLP','quiet!');
-        nfltp=lower(deblank(nfltp));
-        if isfield(FI,'dps'), nfltp=FI.dps; end
+        nfltp=qp_option(FI,'dps');
+        if isempty(nfltp)
+            nfltp=vs_get(FI,'map-const','DRYFLP','quiet!');
+            nfltp=lower(deblank(nfltp));
+        end
         switch nfltp
             case {'mean','mean_dpd','mean_dp'}
                 dp=interp2cen(-dp);
@@ -2504,7 +2502,7 @@ switch cmd,
                 set(dpslst,'value',idpsops)
             end
         else
-            set(dpslst,'value',strmatch(FI.dps,dpsops),'enable','on','backgroundcolor',Active)
+            set(dpslst,'value',strmatch(qp_option(FI,'dps'),dpsops),'enable','on','backgroundcolor',Active)
             set(dpstxt,'enable','on')
         end
         Info=vs_disp(FI,'map-series',[]);
@@ -2530,21 +2528,15 @@ switch cmd,
             dispnr=1;
             Hdispt=findobj(mfig,'tag','displaytime=?');
             if isfield(FI,'displaytime')
-                dispnr=ustrcmpi(FI.displaytime,get(Hdispt,'string'));
+                dispnr=ustrcmpi(qp_option(FI,'displaytime'),get(Hdispt,'string'));
             end
             set(Hdispt,'enable','on','backgroundcolor',Active,'value',dispnr);
             Info=vs_disp(FI,'map-infsed-serie','MORFAC');
             if ~isstruct(Info)
-                if ~isfield(FI,'morfac')
-                    FI.morfac=1;
-                end
-                if ~isfield(FI,'morstt')
-                    FI.morstt=0;
-                end
                 set(findobj(mfig,'tag','Tmorfac'),'enable','on')
-                set(findobj(mfig,'tag','Emorfac'),'enable','on','backgroundcolor',Active,'string',num2str(FI.morfac))
+                set(findobj(mfig,'tag','Emorfac'),'enable','on','backgroundcolor',Active,'string',num2str(qp_option(FI,'morfac')))
                 set(findobj(mfig,'tag','Tmorstt'),'enable','on')
-                set(findobj(mfig,'tag','Emorstt'),'enable','on','backgroundcolor',Active,'string',num2str(FI.morstt))
+                set(findobj(mfig,'tag','Emorstt'),'enable','on','backgroundcolor',Active,'string',num2str(qp_option(FI,'morstt')))
                 set(findobj(mfig,'tag','Umorstt'),'enable','on')
             end
         end
@@ -2663,21 +2655,23 @@ switch cmd,
             dps=get(dpslst,'value');
         end
         dpsname=dpsops{dps};
-        NewFI.dps=dpsname;
+        NewFI = qp_option(NewFI,'dps',dpsname);
         cmdargs={cmd dpsname};
     case 'displaytime'
         Hdispt=findobj(mfig,'tag','displaytime=?');
         dispts=get(Hdispt,'string');
         if nargin>3
             dispstr=varargin{1};
-            dispnr=ustrcmpi(dispstr,dispts);
-            if isempty(dispnr), dispnr=1; end
+            dispnr=find(strcmpi(dispstr,dispts));
+            if isempty(dispnr)
+                dispnr=1;
+            end
             set(Hdispt,'value',dispnr)
         else
             dispnr=get(Hdispt,'value');
         end
         dispstr=dispts{dispnr};
-        NewFI.displaytime=dispstr;
+        NewFI = qp_option(NewFI,'displaytime',dispstr);
         cmdargs={cmd dispstr};
     otherwise
         error(['Unknown option command: ',cmd])
@@ -2876,9 +2870,4 @@ switch typ
     case 'bedload'
         sediments = setdiff(sediments,constituents);
 end
-% -------------------------------------------------------------------------
-
-% -------------------------------------------------------------------------
-function NewFI=optionstransfer(NewFI,FI)
-NewFI=transferfields(NewFI,FI,{'dps','displaytime','morfac','morstt'});
 % -------------------------------------------------------------------------

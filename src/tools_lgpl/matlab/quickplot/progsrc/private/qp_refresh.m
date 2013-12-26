@@ -35,23 +35,5 @@ if strcmp(File.FileType,'diff')
     File.Data(1) = qp_refresh(File.Data(1));
     File.Data(2) = qp_refresh(File.Data(2));
 else
-    [FI,FileName,Tp,Otherargs] = qp_fmem('open',File.Name,File.Otherargs{:});
-    if ~isempty(FI)
-        NewRecord.QPF = 1;
-        NewRecord.Name = FileName;
-        NewRecord.Data = FI;
-        NewRecord.FileType = Tp;
-        if isfield(FI,'Options')
-            NewRecord.Options = FI.Options;
-        else
-            NewRecord.Options = 0;
-        end
-        NewRecord.Otherargs = Otherargs;
-        %
-        if File.Options
-            [Chk,NewRecord] = qp_getdata(NewRecord,'optionstransfer',File);
-        end
-        %
-        File = NewRecord;
-    end
+    qp_proxy('reload',File)
 end

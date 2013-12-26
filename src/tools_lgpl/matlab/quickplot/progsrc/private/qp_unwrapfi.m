@@ -34,7 +34,11 @@ function [FI,Info]=qp_unwrapfi(Info)
 %   $Id$
 
 if isfield(Info,'QPF')
-    FI=Info.Data;
+    if Info.QPF==2
+        FI=qp_proxy('load',Info);
+    else
+        FI=Info.Data;
+    end
 else
     FI=Info;
 end
