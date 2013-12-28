@@ -1,5 +1,5 @@
 function Str=vec2str(OrigVec,varargin)
-%VEC2STR Creates a string of a vector.
+%VEC2STR Create a string representation of a vector.
 %   S=VEC2STR(V)converts the rows vector V into a string representation S.
 %   The string will contain opening and closing brackets. Depending on the
 %   data the string may also contain the colon operator, and the ones and
@@ -13,6 +13,8 @@ function Str=vec2str(OrigVec,varargin)
 %   Example
 %      Str=vec2str([1 2 3 4 5 6 7 -1 -1 -1 -1 -1 NaN inf inf inf])
 %      % returns '[ 1:7 -1*ones(1,5) NaN Inf Inf Inf ]'
+%
+%   See also STR2VEC, NUM2STR.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               

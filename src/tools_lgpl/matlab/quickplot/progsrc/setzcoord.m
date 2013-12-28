@@ -1,7 +1,7 @@
 function setzcoord(h,z)
-%SETZ Sets the z coordinate.
-%   SETZ(H,Z) sets the z coordinate of the objects referred to be array of
-%   handles H to the specified value Z.
+%SETZCOORD Sets the z coordinate.
+%   SETZCOORD(H,Z) sets the z coordinate of the objects referred to by handles
+%   H to the specified value Z.
 %
 %   See also SET.
 

@@ -1,5 +1,5 @@
 function varargout=cfxfil(FI,domain,field,cmd,varargin)
-% CFXFIL
+%CFXFIL QP support for CFX4 files.
 %      Domains                 = XXXFIL(FI,[],'domains')
 %      DataProps               = XXXFIL(FI,Domain)
 %      Size                    = XXXFIL(FI,Domain,DataFld,'size')
@@ -57,8 +57,6 @@ elseif ischar(field)
     switch field
         case 'options'
             [varargout{1:2}]=options(FI,cmd,varargin{:});
-        case 'optionstransfer'
-            varargout{1}=optionstransfer(FI,cmd);
         case 'domains'
             varargout={{}};
     end

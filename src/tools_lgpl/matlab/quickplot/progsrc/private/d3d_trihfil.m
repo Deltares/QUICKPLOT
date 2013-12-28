@@ -57,8 +57,6 @@ elseif ischar(field)
     switch field
         case 'options'
             [varargout{1:2}]=options(FI,cmd,varargin{:});
-        case 'optionstransfer'
-            varargout{1}=optionstransfer(FI,cmd);
         case 'domains'
             varargout={domains(FI)};
         case 'dimensions'

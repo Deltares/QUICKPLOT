@@ -15,8 +15,8 @@
 %   delwaqt0                    - Parse Delwaq T0 string.
 %   dbase                       - Read data from a dBase file.
 %   delwaqtimfile               - Reads in a Delwaq .tim input file (Lex Yacc type).
-%   flexmeshfil                 - QP support for various unstructured mesh files.
 %   fls                         - Read Delft-FLS and SOBEK2D incremental files.
+%   geomesh                     - Read a Geo mesh topology file.
 %   getlds                      - Get LDS information from SDS file.
 %   grib_disp                   - Display meta-info from grib file
 %   grib_find                   - Get block index from meta-info
@@ -36,6 +36,7 @@
 %   read_ecom_modelgrid         - Read ECOMSED grid file.
 %   readswan                    - Read SWAN 1D and 2D spectral files.
 %   shapewrite                  - Write ESRI shape files.
+%   shipma                      - Read Shipma project (and embedded) files.
 %   sobek                       - Read and plot SOBEK topology.
 %   swan                        - Read/write SWAN files.
 %   tecplot                     - Read/write for Tecplot files.
@@ -59,6 +60,7 @@
 %
 % Generic helper routines
 %   abbrevfn                    - Abbreviate filename.
+%   absfullfile                 - Build full absolute file name from parts.
 %   ap2ep                       - Convert tidal amplitude and phase lag (ap-) parameters into tidal ellipse
 %   asciiload                   - A compiler compatible version of LOAD -ASCII.
 %   avi                         - MATLAB AVI interface.
@@ -74,11 +76,11 @@
 %   int_lntri                   - Intersection of line and triangular mesh.
 %   isstandalone                - Determines stand alone execution.
 %   multiline                   - Converts a string containing LineFeeds to a char matrix.
-%   pathdistance                - Computes the distance along a path.
 %   realset                     - Manipulate sets of real values.
 %   reducepoints                - Filters a set points using a distance threshold.
 %   reducepoints_r13_6p5        - MEX file for REDUCEPOINTS compiled with R13.
 %   reducepoints_r2007a_7p4     - MEX file for REDUCEPOINTS compiled with R2007A.
+%   relativepath                - Determine file name relative to second file.
 %   removequant                 - QP support function for removing quantities from poperty lists.
 %   setProperty                 - Generic routine to set values in PropertyName-PropertyValue pairs
 %   stdbeep                     - Produce beep sound.
@@ -98,7 +100,7 @@
 %   bctfil                      - QP support for Delft3D boundary files.
 %   bilhdrfil                   - QP support for BIL files.
 %   bitmapfil                   - QP support for bitmap files.
-%   cfxfil                      - CFXFIL
+%   cfxfil                      - QP support for CFX4 files.
 %   d3d_bagrfil                 - QP support for Delft3D-MOR dredge type 1 files.
 %   d3d_bothfil                 - QP support for Delft3D-MOR bottom module history files.
 %   d3d_botmfil                 - QP support for Delft3D-MOR bottom module map files.
@@ -112,7 +114,9 @@
 %   d3d_waqfil                  - QP support for Delft3D-WAQ and -PART map and history files.
 %   difffil                     - QP support for file differences.
 %   ecomsedfil                  - QP support for binary ECOM/ECOMSED files.
+%   flexmeshfil                 - QP support for various unstructured mesh files.
 %   flsfil                      - QP support for FLS and SOBEK incremental files.
+%   geodatafil                  - QP support for geodata items.
 %   gribfil                     - QP support for GRIB files.
 %   gridfil                     - QP support for Delft3D grid and attribute files.
 %   jspostfil                   - QP support for JSPost files.
@@ -125,6 +129,7 @@
 %   pharosfil                   - QP support for Pharos files.
 %   resourceobject              - Implements old interface for new QUICKPLOT Data Resource Object.
 %   samplesfil                  - QP support for XYZ sample files.
+%   shipmafil                   - QP support for Shipma project files.
 %   skyllafil                   - QP support for Skylla files.
 %   sobekfil                    - QP support for SOBEK-RE and Rural/Urban/River network and output files.
 %   swanfil                     - QP support for SWAN spectral files.
@@ -153,11 +158,14 @@
 %   gensurface                  - Generic plot routine for surface plot.
 %   gentext                     - Generic plot routine for a single text.
 %   gentextfld                  - Generic plot routine for a text field.
+%   geodist                     - Distance between two points on a sphere.
+%   valuemap                    - One-to-one mapping of enumerables.
 %   get_matching_grid           - Get grid file that matches size of current dataset.
 %   get_nondialogs              - Get handles of all non-dialog windows.
 %   getdata                     - Default implementation for getdata.
 %   getsubfields                - Default implementation for subfields.
 %   getvalstr                   - Get string associated with value of object.
+%   grid_fopen                  - Routine for opening attribute files on grid.
 %   gridcelldata                - Convert gridcelldata string to boolean flags.
 %   gridinterp                  - Compute grid locations from corner co-ordinates.
 %   insstruct                   - Insert array.
@@ -169,11 +177,11 @@
 %   md_dialog                   - Simple dialog tool.
 %   md_print                    - Send a figure to a printer.
 %   options                     - Default implementation for options.
-%   optionstransfer             - Default implementation for optionstransfer.
 %   piecewise                   - Checks and fixes a piecewise grid line.
 %   plotstatestruct             - Create old cell plot state to structure plot state.
 %   procargs                    - General function for argument processing.
 %   protectstring               - Protect special characters in strings.
+%   ps2pdf                      - Function to convert a PostScript file to PDF using Ghostscript
 %   qp_basedir                  - Get various base directories.
 %   qp_cmdstr                   - Process QuickPlot command string.
 %   qp_colormap                 - QuickPlot colormap repository.
@@ -182,15 +190,19 @@
 %   qp_createscroller           - Create a QuickPlot animation scroller bar.
 %   qp_datafield_name2prop      - Convert data field string to structure.
 %   qp_defaultaxessettings      - Set axes preferences for plot axes.
+%   qp_dimsqueeze               - Average data for non-plotted data dimensions.
 %   qp_export                   - Export data set from a QuickPlot support data source.
 %   qp_figurebars               - Update menu and toolbars for QuickPlot figures.
 %   qp_file2function            - Retrieve function name associated with file structure.
+%   qp_filefilters              - Obtain a list of file filters.
 %   qp_fmem                     - Routine for opening data files.
 %   qp_fontsettings             - Convert between INI file font settings and font structures.
+%   qp_getscreen                - Get position of current screen
 %   qp_gettype                  - Determine file type for file structure.
 %   qp_icon                     - QuickPlot icon repository.
 %   qp_interface                - Initialize QuickPlot user interface.
 %   qp_interface_update_options - Update QuickPlot user interface options.
+%   qp_option                   - Set/get QuickPlot file options.
 %   qp_plot                     - Plot function of QuickPlot.
 %   qp_plot_default             - Plot function of QuickPlot for structured data sets.
 %   qp_plot_pnt                 - Plot function of QuickPlot for point data sets.
@@ -199,11 +211,15 @@
 %   qp_plotmanager              - QuickPlot Plot Manager callback functions.
 %   qp_preferences_interface    - Show QuickPlot preferences user interface.
 %   qp_prefs                    - QuickPlot preferences dialog callback functions.
+%   qp_proj_rotatepole          - Support routine to convert rotated pole coordinates to regular longitude and latitude.
+%   qp_proxy                    - Proxy for file data in figures.
 %   qp_refresh                  - Refresh data for current data resource.
+%   qp_scalarfield              - Plot scalar data for curvilinear and triangular meshes.
 %   qp_settings                 - Routine to store and retreive settings.
 %   qp_showabout                - Show QuickPlot about window.
 %   qp_state_startup            - Initialize QuickPlot plot state.
 %   qp_state_version            - Check state.
+%   qp_time2str                 - Convert time double to cell of time strings.
 %   qp_toolbarpush              - Create a toolbar push button.
 %   qp_toolbartoggle            - Create a toolbar toggle button.
 %   qp_tooltip                  - Add a tooltip to gui or toolbar button.
@@ -225,6 +241,7 @@
 %   simsteps                    - Performs an timestep analysis.
 %   spatiallystructured         - Convert MNK space to xyz equivalent.
 %   spirint                     - Computes spiral intensity from 3D flow field.
+%   stack2str                   - Convert exception stack into cell string.
 %   stdinputdlg                 - Input dialog box using standard settings.
 %   str2file                    - Convert string to filename.
 %   str2vec                     - Convert string into a vector.
@@ -235,10 +252,11 @@
 %   updateuicontrols            - Force an update of the uicontrol properties.
 %   uv2cen                      - Interpolate velocities.
 %   var2str                     - Generic "display" function with string output.
-%   vec2str                     - Creates a string of a row vector.
+%   vec2str                     - Create a string representation of a vector.
 %   writelog                    - Write QuickPlot logfile or MATLAB script.
 %   xx_constants                - Define several constants.
 %   xx_logo                     - Plot a logo in an existing coordinate system.
+%
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
 %   Copyright (C) 2011-2013 Stichting Deltares.                                     

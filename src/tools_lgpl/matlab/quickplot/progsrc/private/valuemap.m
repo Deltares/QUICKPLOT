@@ -1,5 +1,5 @@
 function valOut = valuemap(valIn,MapIn,MapOut)
-%VALUEMAP Map values.
+%VALUEMAP One-to-one mapping of enumerables.
 %   OUT = VALUEMAP(IN,MAPIN,MAPOUT) maps the value IN as member of the
 %   value list MAPIN to the corresponding value OUT in the value list
 %   MAPOUT.
@@ -45,10 +45,16 @@ if iscellstr(MapIn)
 else
     selected = MapIn==valIn;
 end
-if sum(selected)==0
-    valOut = [];
-elseif iscellstr(MapOut)
+empty = sum(selected)==0;
+if empty
+    selected = 1;
+end   
+if iscellstr(MapOut)
     valOut = MapOut{selected};
 else
     valOut = MapOut(selected);
+end
+if empty
+    valOut(1,:) = [];
+    valOut = reshape(valOut,[0 0]);
 end

@@ -14,6 +14,8 @@ function vec=str2vec(str,varargin)
 %
 %   ...,'applylimit') replaces out of bounds values to the limit values
 %   instead of producing an error.
+%
+%   See also VEC2STR, EVAL, NUM2STR.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               

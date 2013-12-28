@@ -1,5 +1,5 @@
 function [OPT Set Default] = setproperty(OPT, inputCell, varargin)
-% SETPROPERTY  generic routine to set values in PropertyName-PropertyValue pairs
+% SETPROPERTY  Generic routine to set values in PropertyName-PropertyValue pairs
 %
 % Routine to set properties based on PropertyName-PropertyValue 
 % pairs (aka <keyword,value> pairs). Can be used in any function 

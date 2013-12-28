@@ -1,5 +1,5 @@
 function FI = shipma(cmd,varargin)
-%SHIPMA Read Shipma project (and embedded) files. (BETA VERSION)
+%SHIPMA Read Shipma project (and embedded) files.
 %   STRUCT = SHIPMA('open',FILENAME) opens the specified Shipma file, and
 %   (partly) reads the associated embedded data files.
 %

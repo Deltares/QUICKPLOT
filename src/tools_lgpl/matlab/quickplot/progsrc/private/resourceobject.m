@@ -57,8 +57,6 @@ elseif ischar(field)
     switch field
         case 'options'
             [varargout{1:2}]=options(DataRes,cmd,varargin{:});
-        case 'optionstransfer'
-            varargout{1}=optionstransfer(DataRes,cmd);
         case 'domains'
             varargout={domains(DataRes)};
         case 'dimensions'

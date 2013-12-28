@@ -126,6 +126,7 @@
 %   qp_getdata          - General interface for various data files
 %   qp_gridview         - Helper routine for Grid View interface.
 %   qp_validate         - Helper function to validate Delft3D-QUICKPLOT.
+%   setzcoord           - Sets the z coordinate.
 %   splitcellstr        - Split cell string at delimiters.
 %   stagprint           - Convert stagger name into string for printing.
 %   tdelft3d            - Conversion procedure for Delft3D date & time.

@@ -144,7 +144,6 @@ try
             % [Success,Domains   ]            = QP_GETDATA(FI,'domains')
             % [Success,DomainName]            = QP_GETDATA(FI,'domainname')
             % [Success,Quantities]            = QP_GETDATA(FI,'quantities')
-            % [Success,NewFI     ]            = QP_GETDATA(FI,'optionstransfer',FI_to)
             % [Success,DataProps ]            = QP_GETDATA(FI,Domain)
             % [Success,DataProps ]            = QP_GETDATA(FI,Domain,DimMask)
             % [Success,Size      ]            = QP_GETDATA(FI,Domain,DataFld,'size')
@@ -187,26 +186,6 @@ try
                     %
                     calltype=X{1};
                     X={[] X{1}};
-                elseif isequal(X{1},'optionstransfer')
-                    %
-                    % [Success,NewFI     ]            = QP_GETDATA(FI,'optionstransfer',FI_to)
-                    %
-                    % Add empty array for dummy domain argument.
-                    %
-                    calltype='optionstransfer';
-                    if length(X)~=2
-                        error('Incorrect number of arguments.')
-                    else
-                        %
-                        % transfer options
-                        %
-                        OldFI = X{2};
-                        OldFI = qp_unwrapfi(OldFI);
-                        FI = feval(Fcn,FI,[],'optionstransfer',OldFI);
-                        varargout{2}=qp_wrapfi(FI,Info);
-                        varargout{1}=OK;
-                        return
-                    end
                 elseif ischar(X{1}) && length(X)==1
                     %
                     % Cannot understand input.
