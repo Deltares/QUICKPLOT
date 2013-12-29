@@ -141,7 +141,7 @@ y=[];
 z=[];
 triangular = 0;
 if XYRead && DimFlag(M_)
-    if FI.Unstructured
+    if isfield(FI,'Unstructured') && FI.Unstructured
         triangular = 1;
         xid = strmatch('X-coord',{FI.Item.Name},'exact');
         x=mike('read',FI,xid,1);
@@ -158,11 +158,17 @@ if XYRead && DimFlag(M_)
         TRI = reshape(TRI,[NND(1) length(TRI)/NND(1)])';
         if NND(1)==6
             TRI = reshape(TRI,[FI.NumLayers FI.NumCells NND(1)]);
-            if idx{K_}==FI.NumLayers+1
-                TRI = squeeze(TRI(idx{K_}-1,:,4:6));
-            else
-                TRI = squeeze(TRI(idx{K_},:,1:3));
-            end
+            TRI = squeeze(TRI(1,:,1:3));
+            inodes = unique(TRI(:));
+            map(inodes)=1:FI.NumNodes;
+            TRI = map(TRI);
+            %
+            x = reshape(x,[FI.NumLayers+1 FI.NumNodes])';
+            y = reshape(y,[FI.NumLayers+1 FI.NumNodes])';
+            z = reshape(z,[FI.NumLayers+1 FI.NumNodes])';
+            x = x(:,idx{K_});
+            y = y(:,idx{K_});
+            z = z(:,idx{K_});
         end
     else
         if isfield(FI,'Grid') % Mike21C grid
@@ -198,8 +204,11 @@ if triangular
     elseif sz(M_)==FI.NumCells
         val1 = reshape(val1,[length(idx{T_}) sz(K_) sz(M_)]);
         val1 = val1(:,idx{K_},:);
+        val1 = permute(val1,[1 3 2]);
     else
-        val1 = reshape(val1,[length(idx{T_}) 1 sz(K_)*sz(M_)]);
+        val1 = reshape(val1,[length(idx{T_}) sz(K_) sz(M_)]);
+        val1 = val1(:,idx{K_},:);
+        val1 = permute(val1,[1 3 2]);
     end
 else
     elidx=idx([M_ N_ K_]);
@@ -228,7 +237,7 @@ if XYRead
     if triangular
         Ans.TRI=TRI;
         if ~isempty(z)
-            Ans.XYZ=reshape([x y z],[1 length(x) 1 3]);
+            Ans.XYZ=reshape([x(:) y(:) z(:)],[1 size(x) 3]);
         else
             Ans.XYZ=reshape([x y],[1 length(x) 1 2]);
         end
@@ -268,7 +277,7 @@ function Out=infile(FI,domain)
 PropNames={'Name'                         'DimFlag'    'NVal' 'DataInCell' 'Index' 'UseGrid' 'Tri'};
 DataProps={'data field'                    [1 0 0 0 0]  1           1       0          1       0};
 Out=cell2struct(DataProps,PropNames,2);
-if FI.Unstructured
+if isfield(FI,'Unstructured') && FI.Unstructured
     Out(1).Tri=1;
     fm=strmatch('MIKE_FM',{FI.Attrib.Name},'exact');
     if FI.Attrib(fm).Data(3)==3
