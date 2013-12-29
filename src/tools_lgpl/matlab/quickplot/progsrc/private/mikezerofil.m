@@ -140,8 +140,8 @@ x=[];
 y=[];
 z=[];
 triangular = 0;
-if XYRead & DimFlag(M_)
-    if isequal(FI.NumCoords,'u')
+if XYRead && DimFlag(M_)
+    if FI.Unstructured
         triangular = 1;
         xid = strmatch('X-coord',{FI.Item.Name},'exact');
         x=mike('read',FI,xid,1);
@@ -156,6 +156,14 @@ if XYRead & DimFlag(M_)
         nnd = strmatch('No of nodes',{FI.Item.Name},'exact');
         NND=mike('read',FI,nnd,1);
         TRI = reshape(TRI,[NND(1) length(TRI)/NND(1)])';
+        if NND(1)==6
+            TRI = reshape(TRI,[FI.NumLayers FI.NumCells NND(1)]);
+            if idx{K_}==FI.NumLayers+1
+                TRI = squeeze(TRI(idx{K_}-1,:,4:6));
+            else
+                TRI = squeeze(TRI(idx{K_},:,1:3));
+            end
+        end
     else
         if isfield(FI,'Grid') % Mike21C grid
             x=mike('read',FI.Grid,1,1);
@@ -185,8 +193,14 @@ end
 % read data ...
 val1=mike('read',FI,Props.Index,idx{T_});
 if triangular
-    %nothing
-    reshape(val1,[length(idx{T_}) NND(1) length(TRI)])
+    if sz(K_)==0
+        val1 = reshape(val1,[length(idx{T_}) 1 sz(M_)]);
+    elseif sz(M_)==FI.NumCells
+        val1 = reshape(val1,[length(idx{T_}) sz(K_) sz(M_)]);
+        val1 = val1(:,idx{K_},:);
+    else
+        val1 = reshape(val1,[length(idx{T_}) 1 sz(K_)*sz(M_)]);
+    end
 else
     elidx=idx([M_ N_ K_]);
     elgidx=gidx([M_ N_ K_]);
@@ -254,21 +268,23 @@ function Out=infile(FI,domain)
 PropNames={'Name'                         'DimFlag'    'NVal' 'DataInCell' 'Index' 'UseGrid' 'Tri'};
 DataProps={'data field'                    [1 0 0 0 0]  1           1       0          1       0};
 Out=cell2struct(DataProps,PropNames,2);
-switch FI.NumCoords
-    case 'u'
-        Out(1).Tri=1;
-        fm=strmatch('MIKE_FM',{FI.Attrib.Name},'exact');
-        if FI.Attrib(fm).Data(3)==3
-            Out(1).DimFlag=[1 0 1 1 1];
-        else
-            Out(1).DimFlag=[1 0 1 1 0];
-        end
-    case 1
-        Out(1).DimFlag=[1 0 1 0 0];
-    case 2
-        Out(1).DimFlag=[1 0 1 1 0];
-    case 3
+if FI.Unstructured
+    Out(1).Tri=1;
+    fm=strmatch('MIKE_FM',{FI.Attrib.Name},'exact');
+    if FI.Attrib(fm).Data(3)==3
         Out(1).DimFlag=[1 0 1 1 1];
+    else
+        Out(1).DimFlag=[1 0 1 1 0];
+    end
+else
+    switch FI.NumCoords
+        case 1
+            Out(1).DimFlag=[1 0 1 0 0];
+        case 2
+            Out(1).DimFlag=[1 0 1 1 0];
+        case 3
+            Out(1).DimFlag=[1 0 1 1 1];
+    end
 end
 if ~isempty(FI.Item)
     for i=1:length(FI.Item)
@@ -305,12 +321,23 @@ switch FI.FileType
     case 'MikeDFS'
         idx=Props.Index;
         if Props.Tri
-            fm=strmatch('MIKE_FM',{FI.Attrib.Name},'exact');
-            sz(M_)=FI.Attrib(fm).Data(2);
+            szM = FI.Item(Props.Index).MatrixSize;
             sz(N_)=1;
-            if Props.DimFlag(K_)
-                sz(K_)=FI.Attrib(fm).Data(4)-1;
-                sz(M_)=sz(M_)/sz(K_);
+            if szM == FI.NumCells*FI.NumLayers
+                sz(M_)=FI.NumCells;
+                if Props.DimFlag(K_)
+                    sz(K_)=FI.NumLayers;
+                end
+            elseif szM == FI.NumNodes*(FI.NumLayers+1)
+                sz(M_)=FI.NumNodes;
+                if Props.DimFlag(K_)
+                    sz(K_)=FI.NumLayers+1;
+                end
+            elseif szM == FI.NumNodes*FI.NumLayers
+                sz(M_)=FI.NumNodes;
+                if Props.DimFlag(K_)
+                    sz(K_)=FI.NumLayers;
+                end
             end
         else
             if Props.DimFlag(M_)
@@ -359,7 +386,7 @@ end
 
 
 % -----------------------------------------------------------------------------
-function [NewFI,cmdargs]=options(FI,mfig,cmd,varargin);
+function [NewFI,cmdargs]=options(FI,mfig,cmd,varargin)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
 Inactive=get(0,'defaultuicontrolbackground');
@@ -382,7 +409,7 @@ end
 % -----------------------------------------------------------------------------
 
 % -----------------------------------------------------------------------------
-function OK=optfig(h0);
+function OK=optfig(h0)
 Inactive=get(0,'defaultuicontrolbackground');
 h1 = uicontrol('Parent',h0, ...
     'BackgroundColor',Inactive, ...

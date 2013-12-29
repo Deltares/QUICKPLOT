@@ -252,7 +252,12 @@ try
     % Read substance names.
     %
     SubsNames=char(fread(fid,[20 Nsubs],'uchar')');
-    if ~all(ismember(SubsNames(:),char([0 32:126 160:255])))
+    %
+    % first check one string then check all (better performance if this is
+    % actually not a delwaq file).
+    %
+    if ~all(ismember(SubsNames(1,:),char([0 32:126 160:255]))) || ...
+            ~all(ismember(SubsNames(:),char([0 32:126 160:255])))
         error('Invalid substance names.');
     end
     S.SubsName=deblank2(cellstr(SubsNames));

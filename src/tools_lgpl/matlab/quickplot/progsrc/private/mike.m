@@ -270,13 +270,13 @@ S.Unstructured = isequal(S.NumCoords,'u');
 if S.Unstructured
     fm = strmatch('MIKE_FM',S.Attrib.Name,'exact');
     S.NumCoords = S.Attrib(fm).Data(3);
-    S.NumLayers = max(1,S.Attrib(fm).Data(4)-1);
+    S.NumLayers = max(1,S.Attrib(fm).Data(4));
     if S.NumCoords==3
         S.NumNodes = S.Attrib(fm).Data(1)/(S.NumLayers+1);
     else
         S.NumNodes = S.Attrib(fm).Data(1);
     end
-    S.NumCells = S.Attrib(fm).Data(2)/S.NumLayers;
+    S.NumCells = S.Attrib(fm).Data(2)/max(1,S.NumLayers);
 end
 fclose(fid);
 
