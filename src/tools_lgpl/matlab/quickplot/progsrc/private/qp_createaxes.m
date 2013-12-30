@@ -42,8 +42,7 @@ labels={'One Plot', ...
     'User Positioned Subplot'};
 if d3d_qp('iswl')
     labels=cat(2,labels, ...
-        {'Deltares Logo', ...
-        'Deltares Logo'});
+        {'Deltares Logo'});
 end
 [axtype,axname]=ui_typeandname(labels);
 
@@ -93,17 +92,13 @@ switch axtype
             end
         end
 
-    case {'User Positioned Subplot','Deltares Logo','Deltares Logo'}
+    case {'User Positioned Subplot','Deltares Logo'}
         Pos=getnormpos(fig);
         ax=axes('parent',fig,'units','normalized','position',Pos);
         switch axtype
             case 'User Positioned Subplot'
             case 'Deltares Logo'
                 xx_logo('deltares',ax);
-                axname=axtype;
-                setappdata(ax,'AxesType','<special>')
-            case 'Deltares Logo'
-                xx_logo('dh',ax,1,'k');
                 axname=axtype;
                 setappdata(ax,'AxesType','<special>')
         end

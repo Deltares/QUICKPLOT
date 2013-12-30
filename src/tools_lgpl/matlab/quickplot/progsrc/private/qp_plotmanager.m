@@ -87,6 +87,11 @@ switch cmd
         %
         shiftcontrol(PM.FigColorTxt,aligntop)
         shiftcontrol(PM.FigColor,aligntop)
+        shiftcontrol(PM.FigPaperTypeTxt,aligntop)
+        shiftcontrol(PM.FigPaperType,aligntop)
+        shiftcontrol(PM.FigPaperOrientation,aligntop)
+        shiftcontrol(PM.FigBorderStyleTxt,aligntop)
+        shiftcontrol(PM.FigBorderStyle,aligntop)
         shiftcontrol(PM.FigBorder,aligntop)
         %
         shiftcontrol(PM.AxColorTxt,aligntop)
@@ -1155,15 +1160,31 @@ switch cmd
         if length(fig)==1
             set(PM.FigColor,'backgroundcolor',get(fig,'color'), ...
                 'enable','on')
-            hBrdr = findall(fig,'type','axes','tag','border');
-            if ~isempty(hBrdr)
-                set(PM.FigBorder,'enable','on')
-            else
+            set([PM.FigPaperTypeTxt PM.FigBorderStyleTxt],'enable','on')
+            set([PM.FigPaperType PM.FigBorderStyle PM.FigPaperOrientation], ...
+                'enable','on', ...
+                'backgroundcolor',Active)
+            %
+            pt = get(fig,'PaperType');
+            set(PM.FigPaperType,'value',find(strcmp(pt,get(PM.FigPaperType,'string'))))
+            po = get(fig,'PaperOrientation');
+            set(PM.FigPaperOrientation,'value',find(strcmp(po,get(PM.FigPaperOrientation,'string'))))
+            %
+            hBrdr = md_paper(fig,'getprops');
+            if isempty(hBrdr)
+                set(PM.FigBorderStyle,'value',1);
                 set(PM.FigBorder,'enable','off')
+            else
+                set(PM.FigBorderStyle,'value',find(strcmp(hBrdr.Name,get(PM.FigBorderStyle,'string'))))
+                set(PM.FigBorder,'enable','on')
             end
         else
             set(PM.FigColor,'backgroundcolor',Inactive, ...
                 'enable','off')
+            set([PM.FigPaperTypeTxt PM.FigBorderStyleTxt],'enable','off')
+            set([PM.FigPaperType PM.FigBorderStyle PM.FigPaperOrientation], ...
+                'enable','off', ...
+                'backgroundcolor',Inactive)
             set(PM.FigBorder,'enable','off')
         end
 

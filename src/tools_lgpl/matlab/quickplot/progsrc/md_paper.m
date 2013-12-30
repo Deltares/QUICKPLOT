@@ -127,7 +127,7 @@ if length(cmd)==1 && ishandle(cmd)
     cmd = INP{1};
     INP = INP(2:end);
 else
-    fg = []; % will trigger call to gcf later in CreateBorderAxes
+    fg = []; % will trigger call to gcf later ...
 end
 if strcmpi(cmd,'no edit')
     NoEdit=1;
@@ -135,7 +135,12 @@ if strcmpi(cmd,'no edit')
     INP=INP(2:end);
 end
 
-lcmd = lower(cmd);
+if ischar(cmd)
+    lcmd = lower(cmd);
+else
+    INP  = [{cmd} INP];
+    lcmd = '';
+end
 switch lcmd
     case {'apply','done'}
         Fig=gcbf;
@@ -167,7 +172,7 @@ switch lcmd
                 else %=0
                     set(gcba,'xdir','normal');
                 end
-            case 'landscape'
+            otherwise
                 if get(leftpage,'value'), %=1
                     set(gcba,'ydir','reverse');
                 else %=0
@@ -190,7 +195,7 @@ switch lcmd
             gcba=findobj(gcba,'type','axes','tag','border');
         end
         %first check whether it already exists ...
-        Fig=findobj(allchild(0),'type','figure','tag','Border manager for Matlab (c)');
+        Fig=findobj(allchild(0),'type','figure','tag','MD_PAPER Border Editor');
         if ~isempty(Fig)
             for f=transpose(Fig),
                 if isequal(get(f,'userdata'),gcba)
@@ -230,15 +235,36 @@ switch lcmd
         set(Fig,'userdata',gcba);
         leftpage=findobj(Fig,'tag','LeftPage');
         switch get(get(gcba,'parent'),'paperorientation'),
-            case 'portrait',
+            case 'portrait'
                 set(leftpage,'value',strcmp(get(gcba,'xdir'),'reverse'));
-            case 'landscape',
+            otherwise
                 set(leftpage,'value',strcmp(get(gcba,'ydir'),'reverse'));
         end
         if strcmpi(lcmd,'editmodal')
             waitfor(Fig)
         end
+        
+    case 'remove'
+        if isempty(fg)
+            fg = gcf;
+        end
+        switch get(fg,'type')
+            case 'figure'
+                hOldBorder = findobj(fg,'type','axes','tag','border');
+            case 'axes'
+                hOldBorder = fg;
+        end
+        if ~isempty(hOldBorder)
+            fg = get(hOldBorder,'parent');
+            delete(hOldBorder)
+            MPE = getappdata(fg,'MaximumPlotExtent');
+            remapaxes(fg,MPE,[0 0 1 1])
+            rmappdata(fg,'MaximumPlotExtent');
+        end
 
+    case {'bordertypes','borderstyles'}
+        hBorder = {'none','1box','2box','7box','<custom>'};
+        
     case 'getprops'
         if isempty(fg)
             fg = gcf;
@@ -279,18 +305,29 @@ switch lcmd
         hBorder = iBrdr;
 
     otherwise
+        
         Orientation=lcmd;
         if (strcmp(Orientation,'portrait') || strcmp(Orientation,'landscape')) && length(INP)<2
-            hTempBorder=SimpleBorder(fg,Orientation,INP{:});
+            % MD_PAPER(H,ORIENT)
+            % MD_PAPER(H,ORIENT,STRING)
+            if isempty(fg)
+                fg = gcf;
+            end
+            set(fg,'PaperType','a4','PaperOrientation',Orientation);
+            hTempBorder=SimpleBorder(fg,INP{:});
         else
-            if strcmp(Orientation,'portrait')
-                Orientation='a4p';
+            % MD_PAPER(H,ORIENT,STRING1,STRING2,...)
+            % MD_PAPER(H,TYPEORIENT) - no border, just page shape
+            % MD_PAPER(H,TYPEORIENT,BORDERTYPE,...)
+            % MD_PAPER(H,BORDERTYPE,...)
+            BorderTypes = md_paper('bordertypes');
+            if strcmp(Orientation,'portrait') || strcmp(Orientation,'landscape')
+                Orientation=['a4' Orientation(1)];
                 BFormat='7box';
                 INP={INP};
-            elseif strcmp(Orientation,'landscape')
-                Orientation='a4l';
-                BFormat='7box';
-                INP={INP};
+            elseif any(strcmp(Orientation,BorderTypes))
+                BFormat=Orientation;
+                Orientation='';
             else
                 if isempty(INP)
                     BFormat='none';
@@ -299,7 +336,23 @@ switch lcmd
                     INP(1)=[];
                 end
             end
-            hTempBorder=Local_createborder(fg,NoEdit,Orientation,BFormat,INP{:});
+            %
+            if isempty(Orientation)
+                fgOptions = {};
+            else
+                switch lower(Orientation(end))
+                    case 'p'
+                        fgOptions = {'PaperType',Orientation(1:end-1),'PaperOrientation','portrait'};
+                    case 'l'
+                        fgOptions = {'PaperType',Orientation(1:end-1),'PaperOrientation','landscape'};
+                    otherwise
+                        error('Unrecognized paper type/orientation');
+                end
+            end
+            [hTempBorder,fg]=Local_createborder(fg,NoEdit,fgOptions,BFormat,INP{:});
+        end
+        if ~isempty(Orientation)
+            AdjustFigPos(fg)
         end
         if nargout>0
             hBorder=hTempBorder;
@@ -315,7 +368,7 @@ catch
 end
 
 
-function hBorder=SimpleBorder(fg,Orientation,varargin)
+function hBorder=SimpleBorder(fg,varargin)
 if ~isempty(varargin)
     if isempty(varargin{1}),
         PlotText=locDateStr;
@@ -326,9 +379,9 @@ else
     PlotText=[getorg ' (',locDateStr,')'];
 end
 %
-[ax,fg,allchld,allax,xmax,ymax,hBorder]=CreateBorderAxes(fg,'a4letter',Orientation);
+[ax,allchld,xmax,ymax,hBorder]=CreateBorderAxes(fg);
 %
-switch Orientation
+switch get(fg,'PaperOrientation')
     case 'portrait'
         text(0.98*xmax,0.02*ymax, ...
             PlotText, ...
@@ -336,7 +389,7 @@ switch Orientation
             'fontsize',5, ...
             'horizontalalignment','right', ...
             'verticalalignment','bottom');
-    case 'landscape'
+    case {'landscape','rotated'}
         text(0.02*xmax,0.02*ymax, ...
             PlotText, ...
             'parent',hBorder', ...
@@ -346,11 +399,11 @@ switch Orientation
             'verticalalignment','bottom');
 end
 %
-AdjustFigPos(ax,fg,Orientation)
+set(fg,'CurrentAxes',ax);
 set(fg,'children',[allchld;hBorder]);
 
 
-function hBorder=Local_createborder(fg,NoEdit,Orientation,BFormat,varargin)
+function [hBorder,fg]=Local_createborder(fg,NoEdit,fgOptions,BFormat,varargin)
 if nargin<4
     Strings={};
     INP={};
@@ -380,44 +433,106 @@ HTabs=1; HRange=inf;
 VTabs=[0.5 0.5]; VRange=2;
 Box=[1;1];
 Bold=0;
-PlotText={' '};
+PlotText={};
+BName='<custom>';
+if ischar(BFormat)
+    BName=BFormat;
+elseif isstruct(BFormat)
+    %
+    % Border information from structure ...
+    %
+    if isfield(BFormat,'BName')
+        BName=BFormat.BName;
+    end
+end
+%
+switch lower(BName)
+    %
+    % predefined border type
+    %
+    case {'1box',''}
+        BName = '1box';
+        PlotText={' '};
+    case 'none'
+        BName = 'none';
+        Border=0;
+        Margin=[0 0 0 0];
+        LineWidth=1.5;
+        Color='k';
+        HTabs=[]; HRange=0;
+        VTabs=[]; VRange=0;
+        Box=[];
+        Bold=[];
+        PlotText={};
+    case {'7box','wl'}
+        BName = '7box';
+        Border=1;
+        Margin=[1 1 1 1];
+        LineWidth=1.5;
+        Color='k';
+        HTabs=[0.68 0.16 0.16]; HRange=19;
+        VTabs=[1 1 1]/3;        VRange=2.7;
+        Box=[1 2 3
+            1 4 4
+            7 5 6];
+        Bold=[0 0 0 0 0 0 1];
+        PlotText={' '  ' '  ' '  ' '  ' '  ' '  getorg};
+    case {'2box','spankracht'}
+        BName = '2box';
+        Border=0;
+        Margin=[3 1 1 1];
+        LineWidth=0.5;
+        Color='k';
+        HTabs=[0.32 0.68]; HRange=inf;
+        VTabs=[0.5 0.5];   VRange=1.4;
+        Box=[1 2
+            1 2];
+        Bold=[0 0];
+        PlotText={' '  ' '};
+    case {'<custom>'}
+        %
+        % custom border
+        %
+        if isfield(BFormat,'Name')
+            BName=BFormat.Name;
+        end
+        if isfield(BFormat,'Border')
+            Border=BFormat.Border;
+        end
+        if isfield(BFormat,'Margin')
+            Margin=BFormat.Margin;
+        end
+        if isfield(BFormat,'LineWidth')
+            LineWidth=BFormat.LineWidth;
+        end
+        if isfield(BFormat,'Color')
+            Color=BFormat.Color;
+        end
+        if isfield(BFormat,'HTabs')
+            HTabs=BFormat.HTabs;
+        end
+        if isfield(BFormat,'HRange')
+            HRange=BFormat.HRange;
+        end
+        if isfield(BFormat,'VTabs')
+            VTabs=BFormat.VTabs;
+        end
+        if isfield(BFormat,'VRange')
+            VRange=BFormat.VRange;
+        end
+        if isfield(BFormat,'Box')
+            Box=BFormat.Box;
+            Bold=zeros(1,max(Box(:)));
+            PlotText(1,1:max(Box(:)))={''};
+        end
+        if isfield(BFormat,'Bold')
+            Bold=BFormat.Bold;
+        end
+    otherwise
+        error('Unsupported border format: %s',BFormat)
+end
+%------------------------------------------------
 if isstruct(BFormat)
-    %
-    % User specified border ...
-    %
-    if isfield(BFormat,'Border')
-        Border=BFormat.Border;
-    end
-    if isfield(BFormat,'Margin')
-        Margin=BFormat.Margin;
-    end
-    if isfield(BFormat,'LineWidth')
-        LineWidth=BFormat.LineWidth;
-    end
-    if isfield(BFormat,'Color')
-        Color=BFormat.Color;
-    end
-    if isfield(BFormat,'HTabs')
-        HTabs=BFormat.HTabs;
-    end
-    if isfield(BFormat,'HRange')
-        HRange=BFormat.HRange;
-    end
-    if isfield(BFormat,'VTabs')
-        VTabs=BFormat.VTabs;
-    end
-    if isfield(BFormat,'VRange')
-        VRange=BFormat.VRange;
-    end
-    if isfield(BFormat,'Box')
-        Box=BFormat.Box;
-        Bold=zeros(1,max(Box(:)));
-        PlotText(1,1:max(Box(:)))={''};
-    end
-    if isfield(BFormat,'Bold')
-        Bold=BFormat.Bold;
-    end
-    %------------------------------------------------
     if isfield(BFormat,'PlotText')
         PlotText=BFormat.PlotText;
     end
@@ -430,66 +545,24 @@ if isstruct(BFormat)
             PlotText{i} = BFormat.(BText);
         end
     end
-    %------------------------------------------------
-    ncol = length(HTabs(:));
-    nrow = length(VTabs(:));
-    if ~isequal(size(Box),[nrow ncol])
-        if numel(Box)==nrow*ncol
-            Box = reshape(Box,[nrow ncol]);
-        else
-            error('Inconsistent frame type')
-        end
+end
+%------------------------------------------------
+ncol = length(HTabs(:));
+nrow = length(VTabs(:));
+if ~isequal(size(Box),[nrow ncol])
+    if numel(Box)==nrow*ncol
+        Box = reshape(Box,[nrow ncol]);
+    else
+        error('Inconsistent frame type')
     end
-    if length(Bold(:))~=max(Box(:))
-        error('Length of bold vector does not match number of texts')
-    end
-    if ~iscell(PlotText)
-        error('PlotText should be a cell array')
-    elseif length(PlotText(:))~=max(Box(:))
-        error('Length of plot text vector does not match number of texts')
-    end
-else
-    %
-    % Predefined borders ...
-    %
-    switch lower(BFormat)
-        case {'1box',''}
-        case 'none'
-            Border=0;
-            Margin=[0 0 0 0];
-            LineWidth=1.5;
-            Color='k';
-            HTabs=[]; HRange=0;
-            VTabs=[]; VRange=0;
-            Box=[];
-            Bold=[];
-            PlotText={};
-        case {'7box','wl'}
-            Border=1;
-            Margin=[1 1 1 1];
-            LineWidth=1.5;
-            Color='k';
-            HTabs=[0.68 0.16 0.16]; HRange=19;
-            VTabs=[1 1 1]/3;        VRange=2.7;
-            Box=[1 2 3
-                1 4 4
-                7 5 6];
-            Bold=[0 0 0 0 0 0 1];
-            PlotText={' '  ' '  ' '  ' '  ' '  ' '  getorg};
-        case {'2box','spankracht'}
-            Border=0;
-            Margin=[3 1 1 1];
-            LineWidth=0.5;
-            Color='k';
-            HTabs=[0.32 0.68]; HRange=inf;
-            VTabs=[0.5 0.5];   VRange=1.4;
-            Box=[1 2
-                1 2];
-            Bold=[0 0];
-            PlotText={' '  ' '};
-        otherwise
-            error('Unsupported border format: %s',BFormat)
-    end
+end
+if length(Bold(:))~=max(Box(:))
+    error('Length of bold vector does not match number of texts')
+end
+if ~iscell(PlotText)
+    error('PlotText should be a cell array')
+elseif length(PlotText(:))~=max(Box(:))
+    error('Length of plot text vector does not match number of texts')
 end
 %
 % Process options
@@ -529,6 +602,7 @@ end
 % Store fields in records
 %
 BFormat=[];
+BFormat.Name=BName;
 BFormat.Border=Border;
 BFormat.Margin=Margin;
 BFormat.LineWidth=LineWidth;
@@ -540,32 +614,27 @@ BFormat.VRange=VRange;
 BFormat.Box=Box;
 BFormat.Bold=Bold;
 %
-% Interpret Orientation
-%
-orientation=lower(Orientation);
-if orientation(end)=='p'
-    Orientation='portrait';
-elseif orientation(end)=='l'
-    Orientation='landscape';
-else
-    error('Unrecognized paper type/orientation');
+if isempty(fg)
+    fg = gcf;
 end
-PType=orientation(1:end-1);
+if ~isempty(fgOptions)
+    set(fg,fgOptions{:})
+end
 %
 for i=1:length(PlotText)
     if i<=length(Strings)
         PlotText{i}=Strings{i};
     end
-    if ischar(PlotText{i}),
+    if ischar(PlotText{i})
         PlotText{i}=PlotText(i);
     end
 end
 %
-[ax,fg,allchld,allax,xmax,ymax,hBorder]=CreateBorderAxes(fg,PType,Orientation);
+[ax,allchld,xmax,ymax,hBorder]=CreateBorderAxes(fg);
 set(hBorder,'userdata',BFormat)
 %
 Box=fliplr(Box');
-switch Orientation
+switch get(fg,'PaperOrientation')
     case 'portrait'
         %
         % Draw border ...
@@ -636,16 +705,7 @@ switch Orientation
         plotbox=[Margin(1)+0.1 Margin(2)+VRange+0.1 ...
             xmax-Margin(1)-Margin(3)-0.2 ymax-VRange-Margin(2)-Margin(4)-0.2];
         plotbox=plotbox./[xmax ymax xmax ymax];
-        for i=1:length(allax)
-            set(allax(i),'units','normalized');
-            pos_i=get(allax(i),'position');
-            n_pos_i(1)=plotbox(1)+pos_i(1)*plotbox(3);
-            n_pos_i(2)=plotbox(2)+pos_i(2)*plotbox(4);
-            n_pos_i(3)=pos_i(3)*plotbox(3);
-            n_pos_i(4)=pos_i(4)*plotbox(4);
-            set(allax(i),'position',n_pos_i);
-        end
-    case 'landscape'
+    otherwise
         %
         % Draw border ...
         %
@@ -683,6 +743,7 @@ switch Orientation
                 T=text((VTabs(n1)+VTabs(n2+1))/2, ...
                     ymax-(HTabs(m1)+HTabs(m2+1))/2, ...
                     PlotText{b}, ...
+                    'parent',hBorder, ...
                     'horizontalalignment','center', ...
                     'verticalalignment','middle', ...
                     'fontname','helvetica', ...
@@ -714,75 +775,91 @@ switch Orientation
         plotbox=[Margin(2)+VRange+0.1 Margin(3)+0.1 ...
             xmax-VRange-Margin(2)-Margin(4)-0.2 ymax-Margin(1)-Margin(3)-0.2];
         plotbox=plotbox./[xmax ymax xmax ymax];
-        for i=1:length(allax)
-            set(allax(i),'units','normalized');
-            pos_i=get(allax(i),'position');
-            n_pos_i(1)=plotbox(1)+pos_i(1)*plotbox(3);
-            n_pos_i(2)=plotbox(2)+pos_i(2)*plotbox(4);
-            n_pos_i(3)=pos_i(3)*plotbox(3);
-            n_pos_i(4)=pos_i(4)*plotbox(4);
-            set(allax(i),'position',n_pos_i);
-        end
-    otherwise
-        plotbox=[0 0 1 1];
+end
+oldplotbox = getappdata(fg,'MaximumPlotExtent');
+if isempty(oldplotbox)
+    oldplotbox = [0 0 1 1];
+end
+if ~isequal(plotbox,oldplotbox)
+    remapaxes(fg,oldplotbox,plotbox)
 end
 setappdata(fg,'MaximumPlotExtent',plotbox)
-AdjustFigPos(ax,fg,Orientation)
+set(fg,'CurrentAxes',ax);
 set(fg,'children',[allchld;hBorder]);
 
 
-function [ax,fg,allchld,allax,xmax,ymax,hBorder]=CreateBorderAxes(fg,PType,Orientation)
-if isempty(fg)
-    fg = gcf;
+function remapaxes(fg,from,to)
+allax = findall(fg,'type','axes');
+allax = setdiff(allax,findobj(fg,'type','axes','tag','border'));
+for i=1:length(allax)
+    % skip Colorbar and legend, they will move automatically
+    if ~isappdata(allax(i),'NonDataObject')
+        set(allax(i),'units','normalized');
+        pos_i=get(allax(i),'position');
+        n_pos_i(1)=to(1)+(pos_i(1)-from(1))*to(3)/from(3);
+        n_pos_i(2)=to(2)+(pos_i(2)-from(2))*to(4)/from(4);
+        n_pos_i(3)=pos_i(3)*to(3)/from(3);
+        n_pos_i(4)=pos_i(4)*to(4)/from(4);
+        set(allax(i),'position',n_pos_i);
+    end
 end
+
+
+function [ax,allchld,xmax,ymax,hBorder]=CreateBorderAxes(fg)
 ax=get(fg,'CurrentAxes');
 if isempty(ax)
     ax = subplot(1,1,1,'parent',fg);
 end
 allchld=allchild(fg);
-allax=findobj(allchld,'type','axes');
-set(fg,'paperunits','centimeter', ...
-    'papertype',PType, ...
-    'paperorientation',Orientation);
+set(fg,'paperunits','centimeter');
 xmax=get(fg,'papersize');
 ymax=xmax(2);
 xmax=xmax(1);
 set(fg,'paperposition',[0 0 xmax ymax]);
-hBorder=axes('units','normalized', ...
-    'position',[0 0 1 1], ...
-    'parent',fg, ...
-    'tag','border', ...
-    'xlimmode','manual', ...
-    'ylimmode','manual', ...
-    'xlim',[0 xmax], ...
-    'ylim',[0 ymax], ...
-    'visible','off');
-setappdata(hBorder,'NonDataObject',[]);
-
-
-function AdjustFigPos(ax,fg,Orientation)
-set(fg,'CurrentAxes',ax);
-funits0=get(fg,'paperunits');
-set(fg,'paperunits','centimeters');
-PSize=get(fg,'papersize');
-set(fg,'paperunits',funits0);
-%
-maxdim=qp_getscreen(fg);
-if strcmp(Orientation,'landscape')
-    pos1=round(PSize*min(maxdim(3:4)./PSize));
-    pos2=round(PSize*min(fliplr(maxdim(3:4))./PSize));
-    pos=min(pos1,pos2);
-else % 'portrait'
-    pos1=round(PSize*min(fliplr(maxdim(3:4))./PSize));
-    pos2=round(PSize*min(maxdim(3:4)./PSize));
-    pos=min(pos1,pos2);
+hBorder = findall(gcf,'type','axes','tag','border');
+if ~isempty(hBorder)
+    delete(allchild(hBorder));
+    allchld = setdiff(allchld,hBorder);
+    set(hBorder, ...
+        'xlim',[0 xmax], ...
+        'ylim',[0 ymax]);
+else
+    hBorder=axes('units','normalized', ...
+        'position',[0 0 1 1], ...
+        'parent',fg, ...
+        'tag','border', ...
+        'xlimmode','manual', ...
+        'ylimmode','manual', ...
+        'xlim',[0 xmax], ...
+        'ylim',[0 ymax], ...
+        'visible','off');
+    setappdata(hBorder,'NonDataObject',[]);
 end
-pos=pos*0.85;
-pos=[maxdim(1)+(maxdim(3)-pos(1))/2 maxdim(2)+(maxdim(4)-pos(2))/2 pos];
-set(fg, ...
-    'units','pixels', ...
-    'position',pos);
 
+
+function AdjustFigPos(fg)
+if ~strcmp(get(fg,'WindowStyle'),'docked')
+    set(fg,'units','pixels')
+    %
+    funits0=get(fg,'paperunits');
+    set(fg,'paperunits','centimeters');
+    PSize=get(fg,'papersize');
+    set(fg,'paperunits',funits0);
+    %
+    maxdim=qp_getscreen(fg);
+    if strcmp(get(fg,'PaperOrientation'),'portrait')
+        pos1=round(PSize*min(fliplr(maxdim(3:4))./PSize));
+        pos2=round(PSize*min(maxdim(3:4)./PSize));
+        pos=min(pos1,pos2);
+    else % 'landscape','rotated'
+        pos1=round(PSize*min(maxdim(3:4)./PSize));
+        pos2=round(PSize*min(fliplr(maxdim(3:4))./PSize));
+        pos=min(pos1,pos2);
+    end
+    pos=pos*0.85;
+    pos=[maxdim(1)+(maxdim(3)-pos(1))/2 maxdim(2)+(maxdim(4)-pos(2))/2 pos];
+    set(fg,'position',pos);
+end
 
 function Str=locDateStr
 t=[datestr(now,13) ' on ' datestr(now,8) ' '];
@@ -831,7 +908,7 @@ h0 = figure('Units','points', ...
     'Position',[80 115 460 40+25*N], ...
     'Resize','off', ...
     'Visible','off', ...
-    'Tag','Border manager for Matlab (c)');
+    'Tag','MD_PAPER Border Editor');
 
 Box=fliplr(BFormat.Box');
 for b=1:max(Box(:))

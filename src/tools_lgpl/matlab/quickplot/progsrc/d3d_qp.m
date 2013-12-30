@@ -2603,6 +2603,77 @@ try
                 end
             end
             
+        case 'figurepapertype'
+            fig = qpsf;
+            PM = UD.PlotMngr;
+            %
+            pts = get(PM.FigPaperType,'string');
+            ors = get(PM.FigPaperOrientation,'string');
+            if ~isempty(cmdargs)
+                pt  = cmdargs{1};
+                pti = find(strcmpi(pt,pts));
+                if isempty(pti)
+                    error('Invalid paper type')
+                end
+            else
+                pti = get(PM.FigPaperType,'value');
+                pt  = pts{pti};
+            end
+            %
+            if length(cmdargs)>1
+                or  = cmdargs{2};
+                ori = find(strcmpi(or,ors));
+                if isempty(ori)
+                    error('Invalid paper orientation')
+                end
+            else
+                ori = get(PM.FigPaperOrientation,'value');
+                or  = ors{ori};
+            end
+            %
+            set(fig,'papertype',pt,'paperorientation',or)
+            set(PM.FigPaperType,'value',pti)
+            set(PM.FigPaperOrientation,'value',ori)
+            %
+            % if the figure has a border, adjust it.
+            %
+            brdr = md_paper(fig,'getprops');
+            if ~isempty(brdr)
+                md_paper(fig,'no edit',brdr);
+            end
+            %
+            if logfile
+                writelog(logfile,logtype,cmd,pt,or);
+            end
+            
+        case 'figureborderstyle'
+            fig = qpsf;
+            PM = UD.PlotMngr;
+            %
+            bds = get(PM.FigBorderStyle,'string');
+            if ~isempty(cmdargs)
+                bd  = cmdargs{1};
+                bdi = find(strcmpi(bd,bds));
+                if isempty(bdi)
+                    error('Invalid papertype')
+                end
+            else
+                bdi = get(PM.FigBorderStyle,'value');
+                bd  = bds{bdi};
+            end
+            %
+            md_paper(fig,'no edit',bd)
+            set(PM.FigBorderStyle,'value',bdi)
+            if strcmp(bd,'none')
+                set(PM.FigBorder,'enable','off')
+            else
+                set(PM.FigBorder,'enable','on')
+            end
+            %
+            if logfile
+                writelog(logfile,logtype,cmd,bd);
+            end
+            
         case 'figureborder'
             fig = qpsf;
             hBrdr = findall(fig,'type','axes','tag','border');
