@@ -47,9 +47,9 @@ switch cmd
             Proxy.QPF              = 2;
             Proxy.Name             = FileName;
             Proxy.Data.Key         = [type '_proxy_key_' num2hex(now)];
-            if isfield(FI,'QP_options')
-                Proxy.Data.Options = FI.QP_options;
-                FI = rmfield(FI,'QP_options');
+            if isfield(FI,'QP_Options')
+                Proxy.Data.Options = FI.QP_Options;
+                FI = rmfield(FI,'QP_Options');
             else
                 Proxy.Data.Options = [];
             end
@@ -104,7 +104,7 @@ switch cmd
         end
         if isfield(save,Key)
             Info = save.(Key);
-            Info.QP_options = Proxy.Data.Options;
+            Info.QP_Options = Proxy.Data.Options;
         else
             Info = [];
         end
@@ -114,9 +114,9 @@ switch cmd
         Proxy = varargin{1};
         Key   = Proxy.Data.Key;
         FI    = varargin{2};
-        if isfield(FI,'QP_options')
-            Proxy.Data.Options = FI.QP_options;
-            FI = rmfield(FI,'QP_options');
+        if isfield(FI,'QP_Options')
+            Proxy.Data.Options = FI.QP_Options;
+            FI = rmfield(FI,'QP_Options');
         end
         save.(Key) = FI;
         varargout{1} = Proxy;

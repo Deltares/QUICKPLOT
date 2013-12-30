@@ -251,12 +251,12 @@ switch cmd
                            FI=F;
                         end
                      case {'delft3d-trim'}
-                        FI.QP_options.morfac      = 1;
-                        FI.QP_options.morstt      = 0;
-                        FI.QP_options.dps         = '';
-                        FI.QP_options.displaytime = 'hydrodynamic time';
+                        FI.QP_Options.morfac      = 1;
+                        FI.QP_Options.morstt      = 0;
+                        FI.QP_Options.dps         = '';
+                        FI.QP_Options.displaytime = 'hydrodynamic time';
                      case {'delft3d-trih'}
-                        FI.QP_options.displaytime = 'hydrodynamic time';
+                        FI.QP_Options.displaytime = 'hydrodynamic time';
                   end
                   if isfield(FI,'SubType')
                      Tp=FI.SubType;

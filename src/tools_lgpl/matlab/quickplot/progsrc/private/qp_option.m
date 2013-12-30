@@ -1,9 +1,9 @@
 function val = qp_option(FI,field,setval)
 %QP_OPTION Set/get QuickPlot file options.
-%   STRUCT = QP_OPTION(STRUCT,FIELD,VALUE) sets STRUCT.QP_options.(FIELD) to
+%   STRUCT = QP_OPTION(STRUCT,FIELD,VALUE) sets STRUCT.QP_Options.(FIELD) to
 %   the specified VALUE.
 %
-%   VALUE = QP_OPTION(STRUCT,FIELD) returns the STRUCT.QP_options.(FIELD)
+%   VALUE = QP_OPTION(STRUCT,FIELD) returns the STRUCT.QP_Options.(FIELD)
 %   value if it has been set before. Otherwise, it returns [].
 
 %----- LGPL --------------------------------------------------------------------
@@ -38,12 +38,12 @@ function val = qp_option(FI,field,setval)
 
 if nargin>2
     val = FI;
-    val.QP_options.(field) = setval;
+    val.QP_Options.(field) = setval;
 else
     val = [];
-    if isfield(FI,'QP_options')
-        if isfield(FI.QP_options,field)
-            val = FI.QP_options.(field);
+    if isfield(FI,'QP_Options')
+        if isfield(FI.QP_Options,field)
+            val = FI.QP_Options.(field);
         end
     elseif isfield(FI,field)
         val = FI.(field);

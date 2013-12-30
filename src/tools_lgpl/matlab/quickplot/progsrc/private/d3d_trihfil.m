@@ -1225,7 +1225,7 @@ switch cmd,
             dispnr=get(Hdispt,'value');
         end
         dispstr=dispts{dispnr};
-        NewFI.QP_options.displaytime=dispstr;
+        NewFI.QP_Options.displaytime=dispstr;
         cmdargs={cmd dispstr};
     otherwise
         error(['Unknown option command: ',cmd])

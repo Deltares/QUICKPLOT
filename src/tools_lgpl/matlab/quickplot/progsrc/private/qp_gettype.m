@@ -32,7 +32,9 @@ function tp = qp_gettype(Info)
 %   $HeadURL$
 %   $Id$
 
-if isfield(Info,'qp_filetype')
+if isfield(Info,'QP_FileType')
+    tp=Info.QP_FileType;
+elseif isfield(Info,'qp_filetype')
     tp=Info.qp_filetype;
 elseif isfield(Info,'FileType')
     tp=Info.FileType;
