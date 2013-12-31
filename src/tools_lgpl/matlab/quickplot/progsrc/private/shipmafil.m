@@ -298,6 +298,9 @@ elseif Props.NVal==1
         otherwise
             Ans.X   = val1(2,:)';
             Ans.Val = val1(1,:)';
+            if strcmp(Name,'propeller speed') % convert from rev/s to rev/min
+                Ans.Val = Ans.Val*60;
+            end
             if ~qp_settings('shipma_distance_along_desired_track')
                 Ans.X = realized_track_distance(PRJ,cse,idx);
             end
@@ -873,6 +876,10 @@ elseif cse>0
         uStart = strfind(var,'[');
         name = translate(deblank(var(1:uStart-1)));
         unit = var(uStart+1:end-1);
+        %
+        if strcmp(name,'propeller speed') % change unit to rev/min
+            unit = 'rev/min';
+        end
         %
         hisvars{i} = name;
         Out(startVal+i).Name = name;
