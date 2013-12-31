@@ -67,8 +67,10 @@ switch cmd
         alignright = [NewSize(1)-PrevSize(1) 0 0 0];
         stretchhor = [0 0 NewSize(1)-PrevSize(1) 0];
         stretchver = [0 0 0 NewSize(2)-PrevSize(2)];
-        stretch5   = [0 0 (NewSize(1)-PrevSize(1))/5 0];
-        shift5     = [(NewSize(1)-PrevSize(1))/5 0 0 0];
+        stretch2   = stretchhor/2;
+        shift2     = alignright/2;
+        stretch5   = stretchhor/5;
+        shift5     = alignright/5;
         %
         % Shift the buttons
         %
@@ -85,14 +87,25 @@ switch cmd
         shiftcontrol(PM.ItUp,aligntop+alignright)
         shiftcontrol(PM.ItDown,alignright)
         %
-        shiftcontrol(PM.FigColorTxt,aligntop)
-        shiftcontrol(PM.FigColor,aligntop)
+        shiftcontrol(PM.FigNameTxt,aligntop)
+        shiftcontrol(PM.FigName,aligntop+stretchhor)
+        shiftcontrol(PM.FigColorTxt,aligntop+alignright)
+        shiftcontrol(PM.FigColor,aligntop+alignright)
         shiftcontrol(PM.FigPaperTypeTxt,aligntop)
         shiftcontrol(PM.FigPaperType,aligntop)
         shiftcontrol(PM.FigPaperOrientation,aligntop)
+        shiftcontrol(PM.FigPaperWidth,aligntop+stretch2)
+        shiftcontrol(PM.FigPaperX,aligntop+shift2)
+        shiftcontrol(PM.FigPaperHeight,aligntop+shift2+stretch2)
+        shiftcontrol(PM.FigPaperUnit,aligntop+alignright)
         shiftcontrol(PM.FigBorderStyleTxt,aligntop)
         shiftcontrol(PM.FigBorderStyle,aligntop)
         shiftcontrol(PM.FigBorder,aligntop)
+        %
+        shiftcontrol(PM.AxNameTxt,aligntop)
+        shiftcontrol(PM.AxName,aligntop+3*stretch5)
+        shiftcontrol(PM.AxTypeTxt,aligntop+3*shift5)
+        shiftcontrol(PM.AxType,aligntop+3*shift5+2*stretch5)
         %
         shiftcontrol(PM.AxColorTxt,aligntop)
         shiftcontrol(PM.HasAxColor,aligntop)
@@ -125,6 +138,16 @@ switch cmd
         shiftcontrol(PM.YColor,aligntop+5*shift5)
         shiftcontrol(PM.YLabelTxt,aligntop)
         shiftcontrol(PM.YLabel,aligntop+5*stretch5)
+        %
+        shiftcontrol(PM.ZLimitTxt,aligntop)
+        shiftcontrol(PM.ZLimitMin,aligntop+stretch5)
+        shiftcontrol(PM.ZLimitMax,aligntop+shift5+stretch5)
+        shiftcontrol(PM.ZScale,aligntop+2*shift5+stretch5)
+        shiftcontrol(PM.ZGrid,aligntop+3*shift5+stretch5)
+        shiftcontrol(PM.ZLoc,aligntop+4*shift5+stretch5)
+        shiftcontrol(PM.ZColor,aligntop+5*shift5)
+        shiftcontrol(PM.ZLabelTxt,aligntop)
+        shiftcontrol(PM.ZLabel,aligntop+5*stretch5)
         %
         shiftcontrol(PM.ItTxt2,aligntop)
         shiftcontrol(PM.ItList2,aligntop+stretchhor)
@@ -1158,17 +1181,49 @@ switch cmd
         fig = qpsf;
         PM = UD.PlotMngr;
         if length(fig)==1
-            set(PM.FigColor,'backgroundcolor',get(fig,'color'), ...
-                'enable','on')
-            set([PM.FigPaperTypeTxt PM.FigBorderStyleTxt],'enable','on')
-            set([PM.FigPaperType PM.FigBorderStyle PM.FigPaperOrientation], ...
+            set([PM.FigNameTxt PM.FigColorTxt ...
+                PM.FigPaperTypeTxt PM.FigBorderStyleTxt PM.FigPaperX],'enable','on')
+            set([PM.FigName ...
+                PM.FigPaperType PM.FigBorderStyle PM.FigPaperOrientation], ...
                 'enable','on', ...
                 'backgroundcolor',Active)
             %
+            set(PM.FigName,'string',get(fig,'name'))
+            set(PM.FigColor,'backgroundcolor',get(fig,'color'), ...
+                'enable','on')
+            %
             pt = get(fig,'PaperType');
-            set(PM.FigPaperType,'value',find(strcmp(pt,get(PM.FigPaperType,'string'))))
+            pts = get(PM.FigPaperType,'string');
+            pti = find(strcmp(pt,pts));
+            if isempty(pti)
+                pti = length(pts);
+                set(fig,'PaperType','<custom>')
+            end
+            set(PM.FigPaperType,'value',pti)
             po = get(fig,'PaperOrientation');
             set(PM.FigPaperOrientation,'value',find(strcmp(po,get(PM.FigPaperOrientation,'string'))))
+            %
+            pu = get(fig,'PaperUnit');
+            pus = get(PM.FigPaperUnit,'string');
+            pui = find(strcmp(pu,pus));
+            if isempty(pui) % paperunit is normalized; this doesn't work for editing paper size
+                pui = 1;
+                set(fig,'PaperUnit',pus{pui});
+            end
+            %
+            sz = get(fig,'PaperSize');
+            if pti==length(pts)
+                set([PM.FigPaperWidth PM.FigPaperHeight PM.FigPaperUnit], ...
+                    'enable','on', ...
+                    'backgroundcolor',Active)
+            else
+                set([PM.FigPaperWidth PM.FigPaperHeight PM.FigPaperUnit], ...
+                    'enable','off', ...
+                    'backgroundcolor',Inactive)
+            end
+            set(PM.FigPaperWidth,'string',sprintf('%.1f',sz(1)))
+            set(PM.FigPaperHeight,'string',sprintf('%.1f',sz(2)))
+            set(PM.FigPaperUnit,'value',pui)
             %
             hBrdr = md_paper(fig,'getprops');
             if isempty(hBrdr)
@@ -1179,10 +1234,14 @@ switch cmd
                 set(PM.FigBorder,'enable','on')
             end
         else
+            set(PM.FigName,'string','')
             set(PM.FigColor,'backgroundcolor',Inactive, ...
                 'enable','off')
-            set([PM.FigPaperTypeTxt PM.FigBorderStyleTxt],'enable','off')
-            set([PM.FigPaperType PM.FigBorderStyle PM.FigPaperOrientation], ...
+            set([PM.FigNameTxt PM.FigColorTxt ...
+                PM.FigPaperTypeTxt PM.FigBorderStyleTxt PM.FigPaperX],'enable','off')
+            set([PM.FigName ...
+                PM.FigPaperType PM.FigBorderStyle PM.FigPaperOrientation ...
+                PM.FigPaperWidth PM.FigPaperHeight PM.FigPaperUnit], ...
                 'enable','off', ...
                 'backgroundcolor',Inactive)
             set(PM.FigBorder,'enable','off')
@@ -1212,6 +1271,17 @@ switch cmd
             else
                 set(PM.GeoData,'enable','off')
             end
+            %
+            set([PM.AxNameTxt PM.AxColorTxt PM.AxPosition ...
+                PM.XLimitTxt PM.XLabelTxt ...
+                PM.YLimitTxt PM.YLabelTxt],'enable','on')
+            set(PM.AxName, ...
+                'enable','on', ...
+                'backgroundcolor',Active)
+            %
+            axUD = get(ax,'userdata');
+            set(PM.AxName,'string',axUD.Name)
+            %
             clr = get(ax,'color');
             if isequal(clr,'none')
                 set(PM.HasAxColor,'enable','on','value',0)
@@ -1263,8 +1333,10 @@ switch cmd
                 'enable','on')
             set(PM.XColor,'backgroundcolor',xcl, ...
                 'enable','on')
+            set(PM.XLabelAuto,'value',1, ...
+                'enable','inactive')
             set(PM.XLabel,'string',get(get(ax,'xlabel'),'string'), ...
-                'backgroundcolor',Active, ...
+                'backgroundcolor',Inactive, ...
                 'enable','inactive')
             if all(ylim>0)
                 set(PM.YScale,'value',ysc, ...
@@ -1282,8 +1354,10 @@ switch cmd
                 'enable','on')
             set(PM.YColor,'backgroundcolor',ycl, ...
                 'enable','on')
+            set(PM.YLabelAuto,'value',1, ...
+                'enable','inactive')
             set(PM.YLabel,'string',get(get(ax,'ylabel'),'string'), ...
-                'backgroundcolor',Active, ...
+                'backgroundcolor',Inactive, ...
                 'enable','inactive')
             set(PM.AxBox,'value',lbx, ...
                 'enable','on')
@@ -1310,20 +1384,28 @@ switch cmd
                 'backgroundcolor',Active, ...
                 'enable','on')
         else
-            set([PM.HasAxColor PM.AxColor PM.AxPosUnit PM.XColor PM.YColor], ...
+            set([PM.AxNameTxt PM.AxColorTxt PM.AxPosition ...
+                PM.XLimitTxt PM.XLabelTxt PM.XLabelAuto ...
+                PM.YLimitTxt PM.YLabelTxt PM.YLabelAuto ...
+                PM.ZLimitTxt PM.ZLabelTxt PM.ZLabelAuto],'enable','off')
+            set([PM.AxName PM.HasAxColor PM.AxColor ...
+                PM.AxPosUnit PM.XColor PM.YColor], ...
                 'backgroundcolor',Inactive, ...
                 'enable','off')
-            set([PM.XLimitMin PM.XLimitMax PM.YLimitMin PM.YLimitMax ...
-                PM.AxXLowerLeft PM.AxYLowerLeft PM.AxWidth PM.AxHeight ...
-                PM.XLabel PM.YLabel], ...
+            set([PM.AxXLowerLeft PM.AxYLowerLeft PM.AxWidth PM.AxHeight ...
+                PM.XLimitMin PM.XLimitMax PM.XLabel ...
+                PM.YLimitMin PM.YLimitMax PM.YLabel ...
+                PM.ZLimitMin PM.ZLimitMax PM.ZLabel], ...
                 'backgroundcolor',Inactive, ...
                 'string','', ...
                 'enable','off')
-            set([PM.XGrid PM.YGrid PM.AxBox], ...
+            set([PM.XGrid PM.YGrid PM.ZGrid PM.AxBox], ...
                 'backgroundcolor',Inactive, ...
                 'value',0, ...
                 'enable','off')
-            set([PM.XLoc PM.YLoc PM.XScale PM.YScale], ...
+            set([PM.XLoc PM.XScale ...
+                PM.YLoc PM.YScale ...
+                PM.ZLoc PM.ZScale], ...
                 'backgroundcolor',Inactive, ...
                 'value',1, ...
                 'enable','off')

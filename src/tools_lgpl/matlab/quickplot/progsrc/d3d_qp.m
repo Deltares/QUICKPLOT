@@ -2602,6 +2602,37 @@ try
                     set(UD.MainWin.RecTB,'enable','off')
                 end
             end
+        case 'figurename'
+            fig = qpsf;
+            PM = UD.PlotMngr;
+            %
+            if length(cmdargs)>1
+                nm = cmdargs{1};
+            else
+                nm = get(PM.FigName,'string');
+            end
+            set(fig,'name',nm)
+            %
+            nms = get(PM.FigList,'string');
+            nmi = get(PM.FigList,'value');
+            nms{nmi} = nm;
+            set(PM.FigList,'string',nms)
+            set(PM.FigName,'string',nm)
+            %
+            if logfile
+                writelog(logfile,logtype,cmd,nm);
+            end
+            
+        case 'figurepaperunit'
+            fig = qpsf;
+            PM = UD.PlotMngr;
+            %
+            pus = get(PM.FigPaperUnit,'string');
+            pui = get(PM.FigPaperUnit,'value');
+            pu  = pus{pui};
+            set(fig,'paperunit',pu)
+            %
+            d3d_qp refreshfigprop
             
         case 'figurepapertype'
             fig = qpsf;
@@ -2609,10 +2640,11 @@ try
             %
             pts = get(PM.FigPaperType,'string');
             ors = get(PM.FigPaperOrientation,'string');
+            pus = get(PM.FigPaperUnit,'string');
             if ~isempty(cmdargs)
                 pt  = cmdargs{1};
-                pti = find(strcmpi(pt,pts));
-                if isempty(pti)
+                pti = ustrcmpi(pt,pts);
+                if pti<0
                     error('Invalid paper type')
                 end
             else
@@ -2622,8 +2654,8 @@ try
             %
             if length(cmdargs)>1
                 or  = cmdargs{2};
-                ori = find(strcmpi(or,ors));
-                if isempty(ori)
+                ori = ustrcmpi(or,ors);
+                if ori<0
                     error('Invalid paper orientation')
                 end
             else
@@ -2631,9 +2663,31 @@ try
                 or  = ors{ori};
             end
             %
-            set(fig,'papertype',pt,'paperorientation',or)
-            set(PM.FigPaperType,'value',pti)
-            set(PM.FigPaperOrientation,'value',ori)
+            if strcmp(pt,'<custom>')
+                if length(cmdargs)>3
+                    sz = varargin{2};
+                    pu = varargin{3};
+                    pui = ustrcmpi(pu,pus);
+                    if pui<0
+                        error('Invalid paper unit')
+                    end
+                else
+                    sz = get(fig,'papersize');
+                    if ~strcmp(get(PM.FigPaperWidth,'string'),getappdata(PM.FigPaperWidth','refstring'))
+                        sz(1) = str2double(get(PM.FigPaperWidth,'string'));
+                    end
+                    if ~strcmp(get(PM.FigPaperHeight,'string'),getappdata(PM.FigPaperHeight','refstring'))
+                        sz(2) = str2double(get(PM.FigPaperHeight,'string'));
+                    end
+                    pui = get(PM.FigPaperUnit,'value');
+                    pu  = pus{pui};
+                end
+                psz = {'paperunit' pu 'papersize' sz};
+            else
+                psz = {};
+            end
+            %
+            set(fig,'papertype',pt,'paperorientation',or,psz{:})
             %
             % if the figure has a border, adjust it.
             %
@@ -2642,8 +2696,14 @@ try
                 md_paper(fig,'no edit',brdr);
             end
             %
+            d3d_qp refreshfigprop
+            %
             if logfile
-                writelog(logfile,logtype,cmd,pt,or);
+                if strcmp(pt,'<custom>')
+                    writelog(logfile,logtype,cmd,pt,sz,pu);
+                else
+                    writelog(logfile,logtype,cmd,pt,or);
+                end
             end
             
         case 'figureborderstyle'
@@ -2728,6 +2788,29 @@ try
                 if logfile
                     writelog(logfile,logtype,cmd,clr);
                 end
+            end
+            
+        case 'axesname'
+            ax = qpsa;
+            PM = UD.PlotMngr;
+            %
+            if length(cmdargs)>1
+                nm = cmdargs{1};
+            else
+                nm = get(PM.AxName,'string');
+            end
+            axUD = get(ax,'UserData');
+            axUD.Name = nm;
+            set(ax,'UserData',axUD,'tag',nm)
+            %
+            nms = get(PM.AxList,'string');
+            nmi = get(PM.AxList,'value');
+            nms(nmi) = listnames(ax);
+            set(PM.AxList,'string',nms)
+            set(PM.AxName,'string',nm)
+            %
+            if logfile
+                writelog(logfile,logtype,cmd,nm);
             end
             
         case {'axescolour','xcolour','ycolour'}
