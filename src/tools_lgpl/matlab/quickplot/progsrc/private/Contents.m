@@ -219,6 +219,7 @@
 %   qp_showabout                - Show QuickPlot about window.
 %   qp_state_startup            - Initialize QuickPlot plot state.
 %   qp_state_version            - Check state.
+%   qp_strrep                   - Replace string with another (case insensitive).
 %   qp_time2str                 - Convert time double to cell of time strings.
 %   qp_toolbarpush              - Create a toolbar push button.
 %   qp_toolbartoggle            - Create a toolbar toggle button.

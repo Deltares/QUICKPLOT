@@ -2799,9 +2799,7 @@ try
             else
                 nm = get(PM.AxName,'string');
             end
-            axUD = get(ax,'UserData');
-            axUD.Name = nm;
-            set(ax,'UserData',axUD,'tag',nm)
+            set(ax,'tag',nm)
             %
             nms = get(PM.AxList,'string');
             nmi = get(PM.AxList,'value');
@@ -3017,6 +3015,65 @@ try
             d3d_qp refreshaxprop
             if logfile
                 writelog(logfile,logtype,cmd,posulist{posi});
+            end
+            
+        case {'xlabel','ylabel'}
+            ax = qpsa;
+            PM = UD.PlotMngr;
+            x  = lower(cmd(1));
+            X  = upper(cmd(1));
+            XLblAuto = PM.([X 'LabelAuto']);
+            XLbl     = PM.([X 'Label']);
+            %
+            if isempty(cmdargs)
+                auto = get(XLblAuto,'value');
+                if ~auto
+                    lbl = get(XLbl,'string');
+                end
+            else
+                lbl = varargin{1};
+                auto = strcmp(lbl,'<automatic>');
+            end
+            %
+            if auto
+                lbl = '<automatic>';
+                if isappdata(ax,[x 'labelauto'])
+                    expanded_lbl = getappdata(ax,[x 'labelauto']);
+                else
+                    expanded_lbl = '';
+                end
+            else
+                quantity = getappdata(ax,[x 'quantity']);
+                unit = getappdata(ax,[x 'unit']);
+                if isempty(quantity)
+                    quantity = '';
+                end
+                if isempty(unit)
+                    unit = '';
+                end
+                expanded_lbl = qp_strrep(lbl,'%quantity%',quantity);
+                expanded_lbl = qp_strrep(expanded_lbl,'%unit%',unit);
+            end
+            %
+            switch x
+                case 'x'
+                    xlabel(ax,expanded_lbl)
+                case 'y'
+                    ylabel(ax,expanded_lbl)
+                case 'z'
+                    zlabel(ax,expanded_lbl)
+            end
+            set(XLblAuto,'value',auto)
+            if auto
+                rmappdata(ax,[x 'label'])
+                set(XLbl,'backgroundColor',Inactive,'enable','off','string',expanded_lbl)
+            else
+                setappdata(ax,[x 'label'],lbl)
+                set(XLbl,'backgroundColor',Active,'enable','on','string',lbl)
+            end
+            %
+            if logfile
+                writelog(logfile,logtype,cmd,lbl);
             end
             
         case 'zoomdown'

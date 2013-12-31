@@ -1,4 +1,4 @@
-function [ax,axoptions]=qp_createaxes(fig)
+function ax = qp_createaxes(fig)
 %QP_CREATEAXES Create an axes for plotting.
 
 %----- LGPL --------------------------------------------------------------------
@@ -32,9 +32,6 @@ function [ax,axoptions]=qp_createaxes(fig)
 %   $Id$
 
 ax=[];
-axoptions.Editable=1;
-axoptions.Type='undefined';
-axoptions.Name='[axes]';
 
 % which kind of axes should be created?
 labels={'One Plot', ...
@@ -53,8 +50,7 @@ end
 switch axtype
     case 'One Plot'
         ax=Local_subplot(fig,1,1,1);
-        axoptions.Name=axname;
-        set(ax,'tag',axoptions.Name,'userdata',axoptions);
+        set(ax,'tag',axname)
 
     case 'User Selected Subplot'
         labels={'Number of Plots per Column','2'; ...
@@ -80,8 +76,8 @@ switch axtype
             if Correct
                 for i=length(NP(:)):-1:1;
                     ax(i)=Local_subplot(fig,NR,NC,NP(i));
-                    axoptions.Name=sprintf([axname ' (%d,%d,%d)'],NR,NC,NP(i));
-                    set(ax(i),'tag',axoptions.Name,'userdata',axoptions);
+                    axname_i=sprintf([axname ' (%d,%d,%d)'],NR,NC,NP(i));
+                    set(ax(i),'tag',axname_i);
                 end
             else
                 Str=lasterr;
@@ -102,8 +98,7 @@ switch axtype
                 axname=axtype;
                 setappdata(ax,'AxesType','<special>')
         end
-        axoptions.Name=axname;
-        set(ax,'tag',axname,'userdata',axoptions);
+        set(ax,'tag',axname);
 
     otherwise
         Str=sprintf('Requested axes type not yet implemented.');

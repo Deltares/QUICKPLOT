@@ -426,11 +426,11 @@ else
     shipma = [shipma ' ' version];
 end
 texts_template = get_shipma_bordertexts;
-texts_template = local_strrep(texts_template,'%organization%',protectstring(qp_settings('organizationname')));
-texts_template = local_strrep(texts_template,'%project%',protectstring(FI.Project(prj).Name));
-texts_template = local_strrep(texts_template,'%case%',protectstring(FI.Project(prj).Cases.Names{cse}));
-texts_template = local_strrep(texts_template,'%ship%',protectstring(FI.Project(prj).Cases.Data(cse).shipId));
-texts_template = local_strrep(texts_template,'%shipma%',shipma);
+texts_template = qp_strrep(texts_template,'%organization%',protectstring(qp_settings('organizationname')));
+texts_template = qp_strrep(texts_template,'%project%',protectstring(FI.Project(prj).Name));
+texts_template = qp_strrep(texts_template,'%case%',protectstring(FI.Project(prj).Cases.Names{cse}));
+texts_template = qp_strrep(texts_template,'%ship%',protectstring(FI.Project(prj).Cases.Data(cse).shipId));
+texts_template = qp_strrep(texts_template,'%shipma%',shipma);
 %
 if d3d_qp('selectfield','desired ship track')
     a=d3d_qp('loaddata'); % get ship track for auto zoom limits
@@ -484,8 +484,8 @@ for c = {'a' 'a1' 'a2'}
                 end
                 fignr = 'Fig. A2';
         end
-        texts = local_strrep(texts_template,'%caption%',caption);
-        texts = local_strrep(texts,'%fignr%',fignr);
+        texts = qp_strrep(texts_template,'%caption%',caption);
+        texts = qp_strrep(texts,'%fignr%',fignr);
         d3d_qp('newfigure','1 plot - portrait',['SHIPMA Fig ' upper(c{1})],texts)
         setappdata(qpsf,'md_print_name',fignr)
         switch c{1}
@@ -565,8 +565,8 @@ end
 if qp_settings('shipma_figb')
     caption = 'Propeller speed, ship speed and ruddle angle plots';
     fignr = 'Fig. B';
-    texts = local_strrep(texts_template,'%caption%',caption);
-    texts = local_strrep(texts,'%fignr%',fignr);
+    texts = qp_strrep(texts_template,'%caption%',caption);
+    texts = qp_strrep(texts,'%fignr%',fignr);
     d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig B',texts)
     setappdata(qpsf,'md_print_name',fignr)
     %--
@@ -598,8 +598,8 @@ end
 if qp_settings('shipma_figc')
     caption = {'Swept path and depth along track','Starboard side (dashed) port side (solid)'};
     fignr = 'Fig. C';
-    texts = local_strrep(texts_template,'%caption%',caption);
-    texts = local_strrep(texts,'%fignr%',fignr);
+    texts = qp_strrep(texts_template,'%caption%',caption);
+    texts = qp_strrep(texts,'%fignr%',fignr);
     d3d_qp('newfigure','2 plots, vertical - portrait','SHIPMA Fig C',texts)
     setappdata(qpsf,'md_print_name',fignr)
     %--
@@ -665,8 +665,8 @@ if qp_settings('shipma_figd')
         caption = 'External forces plots';
     end
     fignr = 'Fig. D';
-    texts = local_strrep(texts_template,'%caption%',caption);
-    texts = local_strrep(texts,'%fignr%',fignr);
+    texts = qp_strrep(texts_template,'%caption%',caption);
+    texts = qp_strrep(texts,'%fignr%',fignr);
     d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig D',texts)
     setappdata(qpsf,'md_print_name',fignr)
     %--
@@ -751,8 +751,8 @@ if qp_settings('shipma_fige')
         caption = '';
     end
     fignr = 'Fig. E';
-    texts = local_strrep(texts_template,'%caption%',caption);
-    texts = local_strrep(texts,'%fignr%',fignr);
+    texts = qp_strrep(texts_template,'%caption%',caption);
+    texts = qp_strrep(texts,'%fignr%',fignr);
     d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig E',texts)
     setappdata(qpsf,'md_print_name',fignr)
     %--
@@ -1511,39 +1511,6 @@ for i = 1:7
     str = strrep(str,'\n{}',char(13));
     str = splitcellstr(str,char(13));
     c{i} = str;
-end
-
-function d = local_strrep(c,key,val)
-lkey = lower(key);
-lenkey = length(key);
-%
-d = cell(size(c));
-if iscell(val)
-    val = val(:)';
-    val(2,:)={char(13)};
-    val(2,end)={''};
-    val = [val{:}];
-    breakapart = 1;
-else
-    breakapart = 0;
-end
-for i = 1:length(c)
-    found = 0;
-    for j = 1:length(c{i})
-        k = strfind(lower(c{i}{j}),lkey);
-        for ik = 1:length(k)
-            found = 1;
-            c{i}{j}(k(ik)+(0:lenkey-1)) = lkey;
-        end
-    end
-    d{i} = strrep(c{i},lkey,val);
-    if found && breakapart
-        cstr = d{i}(:)';
-        cstr(2,:)={char(13)};
-        cstr(2,end)={''};
-        cstr = [cstr{:}];
-        d{i} = splitcellstr(cstr,char(13));
-    end
 end
 
 % -------------------------------------------------------------------------

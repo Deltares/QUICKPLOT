@@ -235,9 +235,6 @@ end
 
 function setlabel(ax,dir,quantity,unit)
 axlabel = get(ax,[dir 'label']);
-if ~isempty(get(axlabel,'string')) && isempty(get(axlabel,'userdata'))
-    return
-end
 %
 arrow = '\rightarrow';
 if ~isempty(unit)
@@ -246,15 +243,16 @@ else
     dimstr = sprintf('%s %s',quantity,arrow);
 end
 %
-set(axlabel,'string',dimstr)
-set(axlabel,'userdata','autolabel')
 setappdata(ax,[dir 'quantity'],quantity)
 setappdata(ax,[dir 'unit'],unit)
+setappdata(ax,[dir 'labelauto'],dimstr)
 update_axticks(ax,dir)
 
 
 function update_axticks(Parent,dir)
 quantity = getappdata(Parent,[dir 'quantity']);
+unit = getappdata(Parent,[dir 'unit']);
+units = {'mm' 'm' 'km'};
 if ~isempty(quantity)
     switch quantity
         case {'longitude','latitude'}
@@ -264,12 +262,12 @@ if ~isempty(quantity)
             set(Parent,[dir 'ticklabelmode'],'auto',[dir 'tickmode'],'auto');
             tick(Parent,dir,'autodate');
         case {'distance','x coordinate','y coordinate'}
-            if strcmp(getappdata(Parent,[dir 'unit']),'m')
+            if ismember(unit,units)
                distanceticks(Parent,dir)
             end
         otherwise
             if strncmp(quantity,'distance along',14) && ...
-                    strcmp(getappdata(Parent,[dir 'unit']),'m')
+                    ismember(unit,units)
                distanceticks(Parent,dir)
             end
     end
@@ -282,13 +280,21 @@ unitS={'mm'  'm' 'km'};
 %
 dx=max(abs(get(ax,[dir 'lim'])));
 scale=sum(dx>unitT);
+unit =unitS{scale};
 %
 set(ax,[dir 'ticklabelmode'],'auto',[dir 'tickmode'],'auto');
 tick(ax,dir,'%g',1/unitQ(scale))
 %
 quantity = getappdata(ax,[dir 'quantity']);
-%setappdata(ax,[dir 'unit'],unitS{scale})
-set(get(ax,[dir 'label']),'string',sprintf('%s (%s) \\rightarrow',quantity,unitS{scale}))
+setappdata(ax,[dir 'unit'],unitS{scale})
+dimstr = sprintf('%s (%s) \\rightarrow',quantity,unit);
+setappdata(ax,[dir 'labelauto'],dimstr)
+if isappdata(ax,[dir 'label'])
+    dimstr = getappdata(ax,[dir 'label']);
+    dimstr = qp_strrep(dimstr,'%quantity%',quantity);
+    dimstr = qp_strrep(dimstr,'%unit%',unit);
+end
+set(get(ax,[dir 'label']),'string',dimstr)
 
 function set_2d_axes_behavior(ax)
 try
