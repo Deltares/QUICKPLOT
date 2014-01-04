@@ -34,7 +34,13 @@ function [hNew,Thresholds,Param]=qp_plot_seg(hNew,Parent,Param,data,Ops,Props)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 FirstFrame=Param.FirstFrame;
-PName=Param.PName;
+Quant=Param.PName;
+Units=Param.Units;
+if ~isempty(Units)
+    PName=sprintf('%s (%s)',Quant,Units);
+else
+    PName=Quant;
+end
 TStr=Param.TStr;
 Selected=Param.Selected;
 multiple=Param.multiple;
@@ -43,7 +49,7 @@ NVal=Param.NVal;
 DimFlag=Props.DimFlag;
 Thresholds=[];
 
-switch NVal,
+switch NVal
     case 0
         if multiple(M_) % network
             if ishandle(hNew)
@@ -140,5 +146,6 @@ switch NVal,
     case 4
         hNew=gentextfld(hNew,Ops,Parent,data.Val,data.XY(:,1),data.XY(:,2));
 end
-set(get(Parent,'title'),'string',{PName,TStr})
+qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
+
 

@@ -32,7 +32,7 @@ function qp_createscroller(fig)
 %   $Id$
 
 set(fig,'toolbar','figure')
-Inactive=get(0,'defaultuicontrolbackgroundcolor');
+Inactive = qp_settings('UIInActiveColor');
 
 uic=uicontrol('Parent',fig, ...
     'FontUnits','pixels', ...

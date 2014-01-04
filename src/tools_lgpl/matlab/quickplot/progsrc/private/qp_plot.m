@@ -1,4 +1,4 @@
-function [hNewVec,Error,FileInfo]=qp_plot(PlotState)
+function [hNewVec,Error,FileInfo,PlotState]=qp_plot(PlotState)
 %QP_PLOT Plot function of QuickPlot.
 
 %----- LGPL --------------------------------------------------------------------
@@ -670,6 +670,34 @@ if isfield(data,'Time') && length(data(1).Time)==1
     TStr = qp_time2str(data(1).Time,DimFlag(T_));
 end
 
+fld = 'XYZ';
+for dir = 1:3
+    X = fld(dir);
+    if isfield(data,[X 'Units']) && ~isempty(data(1).([X 'Units']))
+        fac = qp_unitconversion(data.([X 'Units']),'m');
+        if ischar(fac) %distance unit not compatible with m
+            % conversion not possible
+        elseif fac==1
+            % conversion not needed
+        elseif isfield(data,X)
+            for d = length(data):-1:1
+                data(d).(X) = data(d).(X)*fac;
+                data(d).([X 'Units']) = 'm';
+            end
+        elseif isfield(data,'XYZ')
+            for d = length(data):-1:1
+                sz      = size(data(d).XYZ);
+                if dir<=sz(end)
+                    sl      = repmat({':'},size(sz));
+                    sl(end) = dir;
+                    data(d).XYZ(sl{:}) = data(d).XYZ(sl{:})*fac;
+                    data(d).([X 'Units']) = 'm';
+                end
+            end
+        end
+    end
+end
+
 clippingspatial = 0;
 for clipi=1:3
     switch clipi
@@ -741,10 +769,10 @@ if isfield(data,'XYZ') && clippingspatial
     val=[];
 end
 
-if ~isempty(Parent) && ishandle(Parent) && strcmp(get(Parent,'type'),'axes')
-    pfig=get(Parent,'parent');
+if ~isempty(Parent) && all(ishandle(Parent)) && strcmp(get(Parent(1),'type'),'axes')
+    pfig=get(Parent(1),'parent');
     set(0,'currentfigure',pfig)
-    set(pfig,'currentaxes',Parent)
+    set(pfig,'currentaxes',Parent(1))
 end
 
 if isfield(Ops,'linestyle') && isfield(Ops,'marker')
@@ -878,9 +906,7 @@ else
     Param.multiple=multiple;
     Param.FirstFrame=FirstFrame;
     Param.PName=PName;
-    if ~isempty(Units)
-        Param.PName=[Param.PName ' (' Units ')'];
-    end
+    Param.Units=Units;
     Param.TStr=TStr;
     Param.Selected=Selected;
     Param.quivopt=quivopt;
@@ -916,7 +942,8 @@ else
             case {'POLYL','POLYG'}
                 [hNew{d},Thresholds,Param]=qp_plot_polyl(plotargs{:});
             otherwise
-                [hNew{d},Thresholds,Param]=qp_plot_default(plotargs{:});
+                [hNew{d},Thresholds,Param,Parent]=qp_plot_default(plotargs{:});
+                PlotState.Parent=Parent;
         end
     end
     
@@ -925,69 +952,79 @@ else
     hNewVec=cat(1,hNew{:});
 end
 
-if isfield(Ops,'basicaxestype') && ~isempty(Ops.basicaxestype)
-    axestype = strrep(strtok(Ops.basicaxestype),'-',' ');
-    axestype = multiline(axestype,' ','cell');
+if isfield(Ops,'basicaxestype') && ~isempty(Ops.basicaxestype) && length(Parent)==1
+    axestype = multiline(strtok(Ops.basicaxestype),'-','cell');
+    nAxes = length(axestype);
     %
-    unit1 = '';
-    unit2 = '';
-    unit3 = '';
+    dimension = cell(1,nAxes);
+    unit = cell(1,nAxes);
     %
-    if isempty(axestype)
-        dimension1 = '';
-    elseif isequal(axestype{1},'Val')
-        dimension1 = PName;
-        unit1 = Units;
-    elseif isequal(axestype{1},'Distance')
-        dimension1 = 'distance';
-        if isfield(data,'XUnits') && ~isempty(data(1).XUnits)
-            unit1 = data(1).XUnits;
-            if strcmp(data(1).XUnits,'deg')
-                unit1 = 'm';
-            end
-        end
-    else
-        dimension1 = diststr;%'distance';
-        if isfield(Ops,'plotcoordinate') && strcmp(Ops.plotcoordinate,'y coordinate')
-            if isfield(Props,'NName') && ~isempty(Props.NName)
-                dimension1 = Props.NName;
-            end
-            if isfield(data,'YUnits') && ~isempty(data(1).YUnits)
-                unit1 = data(1).YUnits;
-            end
-        else
-            if isfield(Props,'MName') && ~isempty(Props.MName)
-                dimension1 = Props.MName;
-            end
-            if isfield(data,'XUnits') && ~isempty(data(1).XUnits)
-                unit1 = data(1).XUnits;
-            end
-        end
-        if isdist && strcmp(unit1,'deg')
-            unit1 = 'm';
+    for d = 1:nAxes
+        switch axestype{d}
+            case 'Time'
+                dimension{d} = 'time';
+                unit{d} = '';
+            case 'Distance'
+                dimension{d} = 'distance';
+                if isfield(data,'XUnits') && ~isempty(data(1).XUnits)
+                    unit{d} = data(1).XUnits;
+                    if strcmp(data(1).XUnits,'deg')
+                        unit{d} = 'm';
+                    end
+                end
+            case 'Val'
+                dimension{d} = PName;
+                unit{d} = Units;
+            case 'Y'
+                dimension{d} = 'y coordinate';%'distance';
+                if isfield(Props,'NName') && ~isempty(Props.NName)
+                    dimension{d} = Props.NName;
+                end
+                if isfield(data,'YUnits') && ~isempty(data(1).YUnits)
+                    unit{d} = data(1).YUnits;
+                end
+            case 'Z'
+                dimension{d} = 'elevation';
+                if isfield(data,'ZUnits')
+                    if ~isempty(data(1).ZUnits)
+                        unit{d} = data(1).ZUnits;
+                    end
+                elseif isfield(data,'Units') && ~isempty(data(1).Units)
+                    % only use data unit for "elevation" if this is a level unit as
+                    % recognized in qp_interface_update_options. The requirements
+                    % are:
+                    % 1) Name should contain level
+                    if ~isempty(strfind(data(1).Name,'level'))
+                        % 2) Unit should be compatible with m
+                        if ~ischar(qp_unitconversion(Units,'m')) || ...
+                                ~ischar(qp_unitconversion(Units,''))
+                            unit{d} = data(1).Units;
+                        end
+                    end
+                end
+            otherwise
+                dimension{d} = diststr;%'distance';
+                if isfield(Ops,'plotcoordinate') && strcmp(Ops.plotcoordinate,'y coordinate')
+                    if isfield(Props,'NName') && ~isempty(Props.NName)
+                        dimension{d} = Props.NName;
+                    end
+                    if isfield(data,'YUnits') && ~isempty(data(1).YUnits)
+                        unit{d} = data(1).YUnits;
+                    end
+                else
+                    if isfield(Props,'MName') && ~isempty(Props.MName)
+                        dimension{d} = Props.MName;
+                    end
+                    if isfield(data,'XUnits') && ~isempty(data(1).XUnits)
+                        unit{d} = data(1).XUnits;
+                    end
+                end
+                if isdist && strcmp(unit{d},'deg')
+                    unit{d} = 'm';
+                end
         end
     end
-    dimension2 = 'y coordinate';%'distance';
-    if isfield(Props,'NName') && ~isempty(Props.NName)
-        dimension2 = Props.NName;
-    end
-    if isfield(data,'YUnits') && ~isempty(data(1).YUnits)
-        unit2 = data(1).YUnits;
-    end
-    if ~isempty(strfind(Ops.basicaxestype,'Z'))
-        dimension3 = 'elevation';
-        if isfield(data,'ZUnits')
-            if ~isempty(data(1).ZUnits)
-                unit3 = data(1).ZUnits;
-            end
-        elseif isfield(data,'Units') && ~isempty(data(1).Units)
-            unit3 = data(1).Units;
-        end
-    else
-        dimension3 = PName;
-        unit3 = Units;
-    end
-    setaxesprops(Parent,Ops.axestype,dimension1,unit1,dimension2,unit2,dimension3,unit3);
+    setaxesprops(Parent,Ops.axestype,dimension,unit)
 end
 %==========================================================================
 % End of actual plotting
@@ -1023,10 +1060,13 @@ if isfield(Ops,'colourmap') && ~isempty(Ops.colourmap)
 end
 
 if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
-    Chld=get(pfig,'children');
+    Chld =allchild(pfig);
+    isAx =strcmp(get(Chld,'type'),'axes');
+    nonAx=Chld(~isAx);
+    Ax   =Chld(isAx);
     h=qp_colorbar(Ops.colourbar,'peer',Parent);
     if ~isempty(h)
-        set(pfig,'children',[h;Chld(ishandle(Chld) & (Chld~=h))]);
+        set(pfig,'children',[nonAx;h;Ax(ishandle(Ax) & (Ax~=h))])
         cbratio = qp_settings('colorbar_ratio');
         if cbratio>1
             switch Ops.colourbar

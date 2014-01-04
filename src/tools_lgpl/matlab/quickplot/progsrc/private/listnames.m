@@ -39,7 +39,7 @@ handle=handle(:);
 if isempty(handle)
     objectname={};
     return
-elseif any(~isnumeric(handle)) | any(~ishandle(handle))
+elseif any(~ishandle(handle))
     objectname={};
     warning('Invalid handle passed to function LISTNAMES.')
     return
@@ -61,11 +61,17 @@ if ~isempty(handle)
     for i=1:length(handle)
         TagStr=get(handle(i),'tag');
         TypeStr=get(handle(i),'type');
-        HandleStr=num2str(handle(i));
+        if isnumeric(handle(i))
+            HandleStr=num2str(handle(i));
+        elseif strcmp(get(handle(i),'type'),'figure') && ~isempty(get(handle(i),'Number'))
+            HandleStr=num2str(get(handle(i),'Number'));
+        else
+            HandleStr='';
+        end
         switch TypeStr
             case 'figure'
                 StringStr=get(handle(i),'name');
-                if strcmp(get(handle(i),'numbertitle'),'on')
+                if strcmp(get(handle(i),'numbertitle'),'on') && ~isempty(HandleStr)
                     if matlabversionnumber < 7
                         NoString = ' No. ';
                     else

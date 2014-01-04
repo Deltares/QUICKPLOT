@@ -58,41 +58,6 @@ ListWidth=300;
 ListHeight=300;
 XX=xx_constants;
 
-if nargin==1 && isequal(varargin,{'resize'}) && nargout==0
-    FPos=get(gcbf,'position');
-    Fig_Width=FPos(3);
-    Fig_Height=FPos(4);
-    %---
-    ed=findobj(gcbf,'tag','edit');
-    specifyname=double(~isempty(ed));
-    ymin=2*XX.Margin+XX.But.Height+specifyname*(XX.Margin+XX.But.Height+XX.Txt.Height);
-    ListWidth=max(100,Fig_Width-2*XX.Margin);
-    ListHeight=max(2*XX.Txt.Height,Fig_Height-ymin-XX.Txt.Height-XX.Margin);
-    Fig_Width=ListWidth+2*XX.Margin;
-    Fig_Height=ListHeight+ymin+XX.Txt.Height+XX.Margin;
-    FPos(3)=Fig_Width;
-    FPos(2)=FPos(2)+FPos(4)-Fig_Height;
-    FPos(4)=Fig_Height;
-    set(gcbf,'position',FPos)
-    %---
-    cn=findobj(gcbf,'tag','cancel');
-    set(cn,'position',[XX.Margin XX.Margin (Fig_Width-3*XX.Margin)/2 XX.But.Height ])
-    co=findobj(gcbf,'tag','continue');
-    set(co,'position',[(Fig_Width+XX.Margin)/2 XX.Margin (Fig_Width-3*XX.Margin)/2 XX.But.Height ])
-    %---
-    ed=findobj(gcbf,'tag','edit');
-    specifyname=double(~isempty(ed));
-    set(ed,'position',[XX.Margin 2*XX.Margin+XX.But.Height Fig_Width-2*XX.Margin XX.But.Height ])
-    %---
-    ls=findobj(gcbf,'tag','list');
-    set(ls,'position',[XX.Margin ymin Fig_Width-2*XX.Margin max(1,Fig_Height-ymin-XX.Txt.Height-XX.Margin)])
-    %---
-    st=findobj(gcbf,'tag','selecttext');
-    set(st,'position',[XX.Margin Fig_Height-XX.Margin-XX.Txt.Height Fig_Width-2*XX.Margin XX.Txt.Height ])
-    %---
-    return
-end
-seltype='';
 selname=[];
 windowtitle='';
 specifyname=1;
@@ -191,7 +156,7 @@ bottom = ss(2)+(sheight-Fig_Height)/2;
 rect = [left bottom Fig_Width Fig_Height];
 
 fig=qp_uifigure(windowtitle,'','ui_typeandname',rect);
-set(fig,'resize','on','resizefcn','ui_typeandname resize')
+set(fig,'resize','on','resizefcn',@ui_typeandname_resize)
 
 rect = [XX.Margin XX.Margin (Fig_Width-3*XX.Margin)/2 XX.But.Height];
 uicontrol('style','pushbutton', ...
@@ -284,3 +249,38 @@ while 1
     end
 end
 delete(fig);
+
+function ui_typeandname_resize(source,event)
+XX=xx_constants;
+
+FPos=get(gcbf,'position');
+Fig_Width=FPos(3);
+Fig_Height=FPos(4);
+%---
+ed=findobj(gcbf,'tag','edit');
+specifyname=double(~isempty(ed));
+ymin=2*XX.Margin+XX.But.Height+specifyname*(XX.Margin+XX.But.Height+XX.Txt.Height);
+ListWidth=max(100,Fig_Width-2*XX.Margin);
+ListHeight=max(2*XX.Txt.Height,Fig_Height-ymin-XX.Txt.Height-XX.Margin);
+Fig_Width=ListWidth+2*XX.Margin;
+Fig_Height=ListHeight+ymin+XX.Txt.Height+XX.Margin;
+FPos(3)=Fig_Width;
+FPos(2)=FPos(2)+FPos(4)-Fig_Height;
+FPos(4)=Fig_Height;
+set(gcbf,'position',FPos)
+%---
+cn=findobj(gcbf,'tag','cancel');
+set(cn,'position',[XX.Margin XX.Margin (Fig_Width-3*XX.Margin)/2 XX.But.Height ])
+co=findobj(gcbf,'tag','continue');
+set(co,'position',[(Fig_Width+XX.Margin)/2 XX.Margin (Fig_Width-3*XX.Margin)/2 XX.But.Height ])
+%---
+ed=findobj(gcbf,'tag','edit');
+specifyname=double(~isempty(ed));
+set(ed,'position',[XX.Margin 2*XX.Margin+XX.But.Height Fig_Width-2*XX.Margin XX.But.Height ])
+%---
+ls=findobj(gcbf,'tag','list');
+set(ls,'position',[XX.Margin ymin Fig_Width-2*XX.Margin max(1,Fig_Height-ymin-XX.Txt.Height-XX.Margin)])
+%---
+st=findobj(gcbf,'tag','selecttext');
+set(st,'position',[XX.Margin Fig_Height-XX.Margin-XX.Txt.Height Fig_Width-2*XX.Margin XX.Txt.Height ])
+%---

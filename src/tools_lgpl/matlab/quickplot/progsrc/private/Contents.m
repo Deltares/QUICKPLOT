@@ -75,6 +75,7 @@
 %   int_lnln                    - Intersection of two lines.
 %   int_lntri                   - Intersection of line and triangular mesh.
 %   isstandalone                - Determines stand alone execution.
+%   legendbox                   - Display legend.
 %   multiline                   - Converts a string containing LineFeeds to a char matrix.
 %   realset                     - Manipulate sets of real values.
 %   reducepoints                - Filters a set points using a distance threshold.
@@ -89,7 +90,6 @@
 %   ui_type                     - Simple selection dialog.
 %   ui_typeandname              - Selection dialog with name specification.
 %   uigetfolder                 - Standard Windows browse for folder dialog box.
-%   vardiff                     - Determines the differences between two variables.
 %   writeavi                    - MEX interface to Windows AVI functions.
 %
 % QuickPlot file dependent routines
@@ -192,6 +192,7 @@
 %   qp_defaultaxessettings      - Set axes preferences for plot axes.
 %   qp_dimsqueeze               - Average data for non-plotted data dimensions.
 %   qp_export                   - Export data set from a QuickPlot support data source.
+%   qp_figaspect                - Reshapes figure to match paper size.
 %   qp_figurebars               - Update menu and toolbars for QuickPlot figures.
 %   qp_file2function            - Retrieve function name associated with file structure.
 %   qp_filefilters              - Obtain a list of file filters.

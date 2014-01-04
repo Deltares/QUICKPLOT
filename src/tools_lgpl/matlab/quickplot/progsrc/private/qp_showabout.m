@@ -36,7 +36,6 @@ if ~isempty(ifig)
     figure(ifig);
     return
 end
-Inactive=get(0,'defaultuicontrolbackgroundcolor');
 ssz=qp_getscreen;
 pos(3)=300;
 pos(4)=150;
@@ -61,7 +60,7 @@ ifig=figure('units','pixels', ...
     'closerequestfcn','closereq', ...
     'tag','AboutQP', ...
     uicontrolfont, ...
-    'color',Inactive);
+    'color',get(0,'defaultuicontrolbackgroundcolor'));
 
 vers = qpversion;
 if vers(1)=='v'

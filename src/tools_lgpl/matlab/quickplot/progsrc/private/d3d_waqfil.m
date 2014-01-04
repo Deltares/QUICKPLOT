@@ -1097,7 +1097,7 @@ if isequal(mass_per,'cell')
     if isfield(FI,'DwqBin')
         Header = FI.DwqBin.Header;
     elseif isfield(FI,'Nfs')
-        Header = vs_get(FI.Nfs,casemod([DELWAQ '_PARAMS']),casemod('TITLE'));
+        Header = vs_get(FI.Nfs,casemod([DELWAQ '_PARAMS']),casemod('TITLE'),'quiet');
     else
         Header = '';
     end

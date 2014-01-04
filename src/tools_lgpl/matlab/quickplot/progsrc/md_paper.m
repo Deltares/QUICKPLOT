@@ -210,9 +210,15 @@ switch lcmd
         end
 
         fig=get(gcba,'parent');
-        HandleStr=[' ' num2str(fig)];
+        if isnumeric(fig)
+            HandleStr=[' ' num2str(fig)];
+        elseif ~isempty(get(fig,'Number'))
+            HandleStr=[' ' num2str(get(fig,'Number'))];
+        else
+            HandleStr='';
+        end
         StringStr=get(fig,'name');
-        if strcmp(get(fig,'numbertitle'),'on')
+        if strcmp(get(fig,'numbertitle'),'on') && ~isempty(HandleStr)
             if isempty(StringStr)
                 StringStr=['Figure No.' HandleStr];
             else
@@ -796,6 +802,7 @@ allax = setdiff(allax,findobj(fg,'type','axes','tag','border'));
 for i=1:length(allax)
     % skip Colorbar and legend, they will move automatically
     if ~isappdata(allax(i),'NonDataObject')
+        axu = get(allax(i),'units');
         set(allax(i),'units','normalized');
         pos_i=get(allax(i),'position');
         n_pos_i(1)=to(1)+(pos_i(1)-from(1))*to(3)/from(3);
@@ -803,6 +810,7 @@ for i=1:length(allax)
         n_pos_i(3)=pos_i(3)*to(3)/from(3);
         n_pos_i(4)=pos_i(4)*to(4)/from(4);
         set(allax(i),'position',n_pos_i);
+        set(allax(i),'units',axu)
     end
 end
 
@@ -823,7 +831,7 @@ set(fg,'paperunits',pu)
 hBorder = findall(gcf,'type','axes','tag','border');
 if ~isempty(hBorder)
     delete(allchild(hBorder));
-    allchld = setdiff(allchld,hBorder);
+    allchld(ismember(allchld,hBorder))=[];
     set(hBorder, ...
         'xlim',[0 xmax], ...
         'ylim',[0 ymax]);

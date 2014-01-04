@@ -34,7 +34,13 @@ function [hNew,Thresholds,Param]=qp_plot_pnt(hNew,Parent,Param,data,Ops,Props)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 FirstFrame=Param.FirstFrame;
-PName=Param.PName;
+Quant=Param.PName;
+Units=Param.Units;
+if ~isempty(Units)
+    PName=sprintf('%s (%s)',Quant,Units);
+else
+    PName=Quant;
+end
 TStr=Param.TStr;
 Selected=Param.Selected;
 multiple=Param.multiple;
@@ -92,7 +98,7 @@ switch NVal
         if ~isempty(stn)
             PName = [PName ': ' stn];
         end
-        set(get(Parent,'title'),'string',{PName TStr})
+        qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
     case 1
         axestype = strtok(Ops.axestype);
         if strcmp(axestype,'Distance-Val') || strcmp(axestype,'Time-Val') || strcmp(axestype,'Time-Z')
@@ -120,7 +126,7 @@ switch NVal
             else
                 Str='';
             end
-            set(get(Parent,'title'),'string',Str)
+            qp_title(Parent,Str,'quantity',Quant,'unit',Units,'time',TStr)
         else
             switch Ops.presentationtype
                 case 'values'
@@ -202,7 +208,7 @@ switch NVal
                     end
             end
             set(Parent,'layer','top')
-            set(get(Parent,'title'),'string',{PName,TStr})
+            qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
         end
     case {2,3}
         if multiple(M_) % network

@@ -107,6 +107,10 @@ switch cmd
         shiftcontrol(PM.AxTypeTxt,aligntop+3*shift5)
         shiftcontrol(PM.AxType,aligntop+3*shift5+2*stretch5)
         %
+        shiftcontrol(PM.AxTitleTxt,aligntop)
+        shiftcontrol(PM.AxTitleAuto,aligntop)
+        shiftcontrol(PM.AxTitle,aligntop+5*stretch5)
+        %
         shiftcontrol(PM.AxColorTxt,aligntop)
         shiftcontrol(PM.HasAxColor,aligntop)
         shiftcontrol(PM.AxColor,aligntop+stretch5)
@@ -127,6 +131,7 @@ switch cmd
         shiftcontrol(PM.XLoc,aligntop+4*shift5+stretch5)
         shiftcontrol(PM.XColor,aligntop+5*shift5)
         shiftcontrol(PM.XLabelTxt,aligntop)
+        shiftcontrol(PM.XLabelAuto,aligntop)
         shiftcontrol(PM.XLabel,aligntop+5*stretch5)
         %
         shiftcontrol(PM.YLimitTxt,aligntop)
@@ -137,6 +142,7 @@ switch cmd
         shiftcontrol(PM.YLoc,aligntop+4*shift5+stretch5)
         shiftcontrol(PM.YColor,aligntop+5*shift5)
         shiftcontrol(PM.YLabelTxt,aligntop)
+        shiftcontrol(PM.YLabelAuto,aligntop)
         shiftcontrol(PM.YLabel,aligntop+5*stretch5)
         %
         shiftcontrol(PM.ZLimitTxt,aligntop)
@@ -147,6 +153,7 @@ switch cmd
         shiftcontrol(PM.ZLoc,aligntop+4*shift5+stretch5)
         shiftcontrol(PM.ZColor,aligntop+5*shift5)
         shiftcontrol(PM.ZLabelTxt,aligntop)
+        shiftcontrol(PM.ZLabelAuto,aligntop)
         shiftcontrol(PM.ZLabel,aligntop+5*stretch5)
         %
         shiftcontrol(PM.ItTxt2,aligntop)
@@ -172,6 +179,10 @@ switch cmd
         end
         
     case 'newaxes'
+        pos=get(gcbf,'position');
+        set(UD.PlotMngr.NewAxMenu,'position',get(0,'pointerlocation')-pos(1:2),'visible','on')
+
+    case {'newaxes_oneplot', 'newaxes_matrix', 'newaxes_specloc'}
         FigIDs=get(UD.PlotMngr.FigList,'userdata');
         if isempty(FigIDs)
             set(UD.PlotMngr.AxList,'string',{''},'userdata',[],'value',1, ...
@@ -181,21 +192,24 @@ switch cmd
             setappdata(mfig,'QPHandles',UD)
             d3d_qp refreshitems
             d3d_qp refreshaxprop
-        else
+        else 
             FigVal=get(UD.PlotMngr.FigList,'value');
             Fig=FigIDs(FigVal);
             if ~ishandle(Fig)
                 d3d_qp refreshfigs
             else
-                h=qp_createaxes(Fig);
+                [h,createops]=qp_createaxes(Fig,cmd(9:end));
                 if ~isempty(h)
                     set(UD.PlotMngr.AxList,'value',1,'string',listnames(h),'userdata',h);
                     d3d_qp refreshaxes
                     d3d_qp refreshfigprop
                 end
             end
+            if logfile && ~isempty(h)
+                writelog(logfile,logtype,cmd,createops{:});
+            end
         end
-        
+                
     case 'openfigure'
         figuredir=qp_settings('figuredir');
         if ~isempty(cmdargs)
@@ -418,12 +432,15 @@ switch cmd
                     Items=Items';
                     Items=cat(1,Items{:});
                 end
-                Tags=get(Items,'tag');
-                for t=find(Items==0)'
+                Types=cget(Items,'type');
+                null = strcmp(Types,'root');
+                %
+                Tags=cget(Items,'tag');
+                for t=find(null)'
                     Tags(t)={sprintf('QPPlotTag---%i',t)};
                 end
-                UserDatas=get(Items,'userdata');
-                UserDatas(Items==0)={'---'};
+                UserDatas=cget(Items,'userdata');
+                UserDatas(null)={'---'};
                 %---
                 TUDvalid=~cellfun('isempty',Tags) & ~cellfun('isempty',UserDatas);
                 Items=Items(TUDvalid);
@@ -802,8 +819,8 @@ switch cmd
         if length(Ax)==1 && ishandle(Ax)
             pfig=get(Ax,'parent');
             Items=allchild(Ax);
-            Tags=get(Items,'tag');
-            UserDatas=get(Items,'userdata');
+            Tags=cget(Items,'tag');
+            UserDatas=cget(Items,'userdata');
             TUDvalid=~cellfun('isempty',Tags) & ~cellfun('isempty',UserDatas);
             Tags=Tags(TUDvalid);
             QPTag=strncmp('QPPlotTag',Tags,9);
@@ -1272,7 +1289,7 @@ switch cmd
                 set(PM.GeoData,'enable','off')
             end
             %
-            set([PM.AxNameTxt PM.AxColorTxt PM.AxPosition ...
+            set([PM.AxNameTxt PM.AxTitleTxt PM.AxColorTxt PM.AxPosition ...
                 PM.XLimitTxt PM.XLabelTxt ...
                 PM.YLimitTxt PM.YLabelTxt],'enable','on')
             set(PM.AxName, ...
@@ -1281,10 +1298,38 @@ switch cmd
             %
             set(PM.AxName,'string',get(ax,'tag'))
             axt = getappdata(ax,'BasicAxesType');
-            if isempty(axt)
+            set(PM.AxTypeTxt,'enable','on')
+            if isempty(axt) || strcmp(axt,'undefined')
                 axt = 'undefined';
+                set(PM.AxType, ...
+                    'backgroundcolor',Active, ...
+                    'value',1, ...
+                    'string',{axt,'legend'}, ...
+                    'enable','on')
+            else
+                set(PM.AxType, ...
+                    'value',1, ...
+                    'string',{axt}, ...
+                    'enable','inactive')
             end
-            set(PM.AxType,'string',axt)
+            %
+            if isappdata(ax,'title')
+                set(PM.AxTitleAuto,'value',0, ...
+                    'enable','on')
+                set(PM.AxTitle,'string',getappdata(ax,'title'), ...
+                    'backgroundcolor',Active, ...
+                    'enable','on')
+            else
+                set(PM.AxTitleAuto,'value',1, ...
+                    'enable','on')
+                str = get(get(ax,'title'),'string');
+                if iscell(str)
+                    str = strjoin(str(:)','\\n{}');
+                end
+                set(PM.AxTitle,'string',str, ...
+                    'backgroundcolor',Inactive, ...
+                    'enable','off')
+            end
             %
             clr = get(ax,'color');
             if isequal(clr,'none')
@@ -1305,15 +1350,7 @@ switch cmd
             set(PM.XLimitMax,'string',num2str(xlim(2)))
             set(PM.YLimitMin,'string',num2str(ylim(1)))
             set(PM.YLimitMax,'string',num2str(ylim(2)))
-            xgr  = valuemap(get(ax,'xgrid'),{'on' 'off'},[1 0]);
-            ygr  = valuemap(get(ax,'ygrid'),{'on' 'off'},[1 0]);
             lbx  = valuemap(get(ax,'box'),{'on' 'off'},[1 0]);
-            xsc  = valuemap(get(ax,'xscale'),{'linear','log'},[1 2]);
-            ysc  = valuemap(get(ax,'yscale'),{'linear','log'},[1 2]);
-            xlc  = valuemap(get(ax,'xaxislocation'),{'top','bottom'},[1 2]);
-            ylc  = valuemap(get(ax,'yaxislocation'),{'left','right'},[1 2]);
-            xcl  = get(ax,'xcolor');
-            ycl  = get(ax,'ycolor');
             posu = get(ax,'unit');
             if ismember(posu,{'points','pixels','characters'})
                 set(ax,'unit','centimeters')
@@ -1321,64 +1358,58 @@ switch cmd
             end
             pos = get(ax,'position');
             %
-            if all(xlim>0)
-                set(PM.XScale,'value',xsc, ...
+            XYZ = 'XYZ';
+            for d = 1:2
+                X = XYZ(d);
+                x = lower(X);
+                %
+                Xlim = get(ax,[x 'lim']);
+                Xgr  = valuemap(get(ax,[x 'grid']),{'on' 'off'},[1 0]);
+                Xsc  = valuemap(get(ax,[x 'scale']),{'linear','log'},[1 2]);
+                switch X
+                    case 'X'
+                        Xlc  = valuemap(get(ax,'xaxislocation'),{'top','bottom'},[1 2]);
+                    case 'Y'
+                        Xlc  = valuemap(get(ax,'yaxislocation'),{'left','right'},[1 2]);
+                    case 'Z'
+                        Xlc = [];
+                end
+                Xcl  = get(ax,[x 'color']);
+                %
+                if all(Xlim>0)
+                    set(PM.([X 'Scale']),'value',Xsc, ...
+                        'backgroundcolor',Active, ...
+                        'enable','on')
+                else
+                    set(PM.([X 'Scale']),'value',1, ...
+                        'backgroundcolor',Inactive, ...
+                        'enable','off')
+                end
+                set(PM.([X 'Grid']),'value',Xgr, ...
+                    'enable','on')
+                set(PM.([X 'Loc']),'value',Xlc, ...
                     'backgroundcolor',Active, ...
                     'enable','on')
-            else
-                set(PM.XScale,'value',1, ...
-                    'backgroundcolor',Inactive, ...
-                    'enable','off')
-            end
-            set(PM.XGrid,'value',xgr, ...
-                'enable','on')
-            set(PM.XLoc,'value',xlc, ...
-                'backgroundcolor',Active, ...
-                'enable','on')
-            set(PM.XColor,'backgroundcolor',xcl, ...
-                'enable','on')
-            if isappdata(ax,'xlabel')
-                set(PM.XLabelAuto,'value',0, ...
+                set(PM.([X 'Color']),'backgroundcolor',Xcl, ...
                     'enable','on')
-                set(PM.XLabel,'string',get(get(ax,'xlabel'),'string'), ...
-                    'backgroundcolor',Active, ...
-                    'enable','on')
-            else
-                set(PM.XLabelAuto,'value',1, ...
-                    'enable','on')
-                set(PM.XLabel,'string',get(get(ax,'xlabel'),'string'), ...
-                    'backgroundcolor',Inactive, ...
-                    'enable','off')
-            end
-            %
-            if all(ylim>0)
-                set(PM.YScale,'value',ysc, ...
-                    'backgroundcolor',Active, ...
-                    'enable','on')
-            else
-                set(PM.YScale,'value',1, ...
-                    'backgroundcolor',Inactive, ...
-                    'enable','off')
-            end
-            set(PM.YGrid,'value',ygr, ...
-                'enable','on')
-            set(PM.YLoc,'value',ylc, ...
-                'backgroundcolor',Active, ...
-                'enable','on')
-            set(PM.YColor,'backgroundcolor',ycl, ...
-                'enable','on')
-            if isappdata(ax,'ylabel')
-                set(PM.YLabelAuto,'value',0, ...
-                    'enable','on')
-                set(PM.YLabel,'string',get(get(ax,'ylabel'),'string'), ...
-                    'backgroundcolor',Active, ...
-                    'enable','on')
-            else
-                set(PM.YLabelAuto,'value',1, ...
-                    'enable','on')
-                set(PM.YLabel,'string',get(get(ax,'ylabel'),'string'), ...
-                    'backgroundcolor',Inactive, ...
-                    'enable','off')
+                if isappdata(ax,[x 'label'])
+                    set(PM.([X 'LabelAuto']),'value',0, ...
+                        'enable','on')
+                    str=getappdata(ax,[x 'label']);
+                    set(PM.([X 'Label']),'string',str, ...
+                        'backgroundcolor',Active, ...
+                        'enable','on')
+                else
+                    set(PM.([X 'LabelAuto']),'value',1, ...
+                        'enable','on')
+                    str=get(get(ax,[x 'label']),'string');
+                    if iscell(str)
+                        str = strjoin(str(:)','\\n{}');
+                    end
+                    set(PM.([X 'Label']),'string',str, ...
+                        'backgroundcolor',Inactive, ...
+                        'enable','off')
+                end
             end
             set(PM.AxBox,'value',lbx, ...
                 'enable','on')
@@ -1405,7 +1436,9 @@ switch cmd
                 'backgroundcolor',Active, ...
                 'enable','on')
         else
-            set([PM.AxNameTxt PM.AxColorTxt PM.AxPosition ...
+            set([PM.AxTitleTxt PM.AxTitleAuto ...
+                PM.AxNameTxt PM.AxTypeTxt ...
+                PM.AxColorTxt PM.AxPosition ...
                 PM.XLimitTxt PM.XLabelTxt PM.XLabelAuto ...
                 PM.YLimitTxt PM.YLabelTxt PM.YLabelAuto ...
                 PM.ZLimitTxt PM.ZLabelTxt PM.ZLabelAuto],'enable','off')
@@ -1413,6 +1446,11 @@ switch cmd
                 PM.AxPosUnit PM.XColor PM.YColor], ...
                 'backgroundcolor',Inactive, ...
                 'enable','off')
+            set(PM.AxType, ...
+                'backgroundcolor',Inactive, ...
+                'enable','off', ...
+                'value',1, ...
+                'string',{' '})
             set([PM.AxXLowerLeft PM.AxYLowerLeft PM.AxWidth PM.AxHeight ...
                 PM.XLimitMin PM.XLimitMax PM.XLabel ...
                 PM.YLimitMin PM.YLimitMax PM.YLabel ...
@@ -1444,4 +1482,12 @@ if get(UD.PlotMngr.FigAll,'value') || ...
     Ax=AxIDs;
 else
     Ax=AxIDs(AxVal);
+end
+
+function v = cget(handle,prop)
+v = get(handle,prop);
+if isempty(v)
+    v = {};
+elseif ~iscell(v)
+    v = {v};
 end

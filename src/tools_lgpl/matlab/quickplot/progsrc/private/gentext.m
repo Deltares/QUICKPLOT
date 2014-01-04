@@ -39,6 +39,5 @@ else
         'color',Ops.colour, ...
         'horizontalalignment','center', ...
         'parent',Parent);
-    set(Parent,'visible','off','xlim',[0 1],'ylim',[0 1])
     setaxesprops(Parent,'Text')
 end

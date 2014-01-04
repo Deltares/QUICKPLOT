@@ -31,9 +31,6 @@ function qp_prefs(UD,mfig,cmd,cmdargs)
 %   $HeadURL$
 %   $Id$
 
-Inactive=get(0,'defaultuicontrolbackgroundcolor');
-Active=[1 1 1];
-
 switch cmd
     case 'preferences'
         qp_preferences_interface;
@@ -102,6 +99,9 @@ switch cmd
         end
         
     case 'defaultfigurepos'
+        Inactive = UD.Inactive;
+        Active   = UD.Active;
+        %
         dfpm = findobj(gcbf,'tag','defaultfigurepos-menu');
         dfpe = findobj(gcbf,'tag','defaultfigurepos-edit');
         FigPos = get(dfpm,'string');

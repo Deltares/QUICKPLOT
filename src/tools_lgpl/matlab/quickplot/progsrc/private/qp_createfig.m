@@ -106,42 +106,25 @@ if isempty(fig)
 end
 
 dfp = qp_settings('defaultfigurepos');
-MonPos = getpixels(0,'MonitorPositions');
-shift = -min(MonPos(:,2))+1;
-MonPos(:,[2 4]) = MonPos(:,[2 4])+shift;
-MonPos(:,[4 2]) = max(MonPos(:,4)) - MonPos(:,[2 4])+1;
 if isnumeric(dfp)
     % manual
     setpixels(fig,'position',dfp)
+    MonPos = [];
 elseif strcmp(dfp,'qp main')
     % same as QUICKPLOT main window
     mfig=findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
-    pos = getpixels(mfig,'position');
-    % determine 4 corners
-    pos = [pos(1) pos(2); pos(1)+pos(3) pos(2); pos(1) pos(2)+pos(4); pos(1)+pos(3) pos(2)+pos(4)];
-    %
-    for i = 1:size(MonPos,1)
-        % determine first screen in which some corner is located
-        if any(pos(:,1)>=MonPos(i,1) & pos(:,1)<MonPos(i,1)+MonPos(i,3) & ...
-                pos(:,2)>=MonPos(i,2) & pos(:,2)<MonPos(i,2)+MonPos(i,4))
-            MonPos = MonPos(i,:);
-            break
-        end
-    end
+    MonPos = qp_getscreen(mfig);
 elseif length(dfp)>8 && strcmp(dfp(1:8),'monitor ')
     screen = sscanf(dfp(9:end),'%i',1);
-    %
-    if screen>size(MonPos,1)
-        screen = 1;
-    end
-    MonPos = MonPos(screen,:);
+    MonPos = qp_getscreen('screen');
 else % strcmp(dfp,'auto') or unknown
     % nothing to do: keep default
+    MonPos = [];
 end
 if size(MonPos,1)==1
-    width = min(MonPos(3)-MonPos(1)+1,560);
-    height = min(MonPos(4)-MonPos(2)+1,420);
-    dfp = [MonPos(1)+floor((MonPos(3)-MonPos(1)+1-width)/2) MonPos(2)+max(MonPos(4)-MonPos(2)+1-102-height,0) width height];
+    width = min(MonPos(3),560);
+    height = min(MonPos(4),420);
+    dfp = [MonPos(1)+floor((MonPos(3)-width)/2) MonPos(2)+max(MonPos(4)-102-height,0) width height];
     setpixels(fig,'position',dfp)
 end
 
@@ -183,10 +166,13 @@ switch(figtype)
         standardfig(2,2,{'upper left plot','upper right plot','lower left plot','lower right plot'},'a4l',varargin{:});
     case 'free format figure'
         set(fig, ...
-            'papertype','a4letter', ...
+            'papertype','a4', ...
             'paperpositionmode','auto');
         set(findall(fig,'tag','editborder'),'visible','off')
     case 'quick'
+%         set(fig, ...
+%             'papertype','a4', ...
+%             'paperpositionmode','auto');
         set(fig,'inverthardcopy','on');
         set(findall(fig,'tag','editborder'),'visible','off')
     otherwise
@@ -195,7 +181,9 @@ switch(figtype)
         Str=sprintf('Requested figure type not yet implemented.');
         uiwait(msgbox(Str,'modal'));
 end
-
+if strcmp(get(fig,'paperpositionmode'),'manual') && ~strcmp(figtype,'quick')
+    qp_figaspect(fig)
+end
 set(fig,'userdata',figoptions,'visible','on');
 
 

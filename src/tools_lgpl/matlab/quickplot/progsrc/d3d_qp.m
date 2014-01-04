@@ -120,13 +120,15 @@ try
                 'gridviewall','gridviewarbrect','gridviewarbarea', ...
                 'gridviewpath'}
             qp_gridview(cmd,cmdargs{:});
+
         case {'newfigure', 'newaxes', 'openfigure', 'refreshfigs', ...
                 'allfigures', 'refreshaxes', 'allaxes', 'pmshowselect', ...
                 'refreshitems', 'itemlist', 'iteminfo', 'deleteaxes', ...
                 'deleteitems', 'linkitems', 'selectfigure', ...
                 'selectaxes', 'selectitem','refreshfigprop', ...
                 'refreshaxprop','moveitemup','moveitemdown', ...
-                'updatearrows'}
+                'updatearrows', 'newaxes_oneplot', 'newaxes_matrix', ...
+                'newaxes_specloc'}
             qp_plotmanager(cmd,UD,logfile,logtype,cmdargs);
             
         case {'selectedfigure', 'selectedaxes', 'selecteditem'}
@@ -274,6 +276,13 @@ try
                     else
                         ui_message('error',{'Copy the following line:',Str,['to ' whatfile ' to start QuickPlot.']})
                         return
+                    end
+                end
+                %
+                if ~isstandalone
+                    cmdx = qp_settings('autoruncmd',{});
+                    for i = 1:length(cmdx)
+                        eval(cmdx{i});
                     end
                 end
                 %
@@ -1665,7 +1674,8 @@ try
                             end
                         end
                         if isempty(ax)
-                            Parent=axes('color',qp_settings('defaultaxescolor')/255);
+                            %Parent=qp_createaxes(pfig,'oneplot');
+                            Parent=axes('layer','top','color',qp_settings('defaultaxescolor')/255);
                             if qp_settings('boundingbox')
                                 set(Parent,'box','on');
                             end
@@ -2021,16 +2031,16 @@ try
                     p = num2cell(p,2);
                     set(A,{'position'},p)
                     %
+                    UD.Options.ActPos(:,1) = UD.Options.ActPos(:,1) - hshift;
+                    UD.Options.Pos(:,1) = UD.Options.Pos(:,1) - hshift;
+                    setappdata(mfig,'QPHandles',UD)
+                    %
                     set(UD.Options.Dock, ...
                         'CData',qp_icon('dock','nan'), ...
                         'UserData',1)
                     set(mfig,'position',pos)
                     set(ofig,'visible','on')
                     set(findall(mfig,'tag','dock','type','uimenu'),'visible','on')
-                    %
-                    UD.Options.ActPos(:,1) = UD.Options.ActPos(:,1) - hshift;
-                    UD.Options.Pos(:,1) = UD.Options.Pos(:,1) - hshift;
-                    setappdata(mfig,'QPHandles',UD)
                 case 1
                     %
                     % from undocked to docked
@@ -2645,7 +2655,11 @@ try
                 pt  = cmdargs{1};
                 pti = ustrcmpi(pt,pts);
                 if pti<0
-                    error('Invalid paper type')
+                    if ischar(pt)
+                        error('Invalid paper type: %s',pt)
+                    else
+                        error('Invalid paper type: <non string>')
+                    end
                 end
             else
                 pti = get(PM.FigPaperType,'value');
@@ -2669,7 +2683,11 @@ try
                     pu = varargin{3};
                     pui = ustrcmpi(pu,pus);
                     if pui<0
-                        error('Invalid paper unit')
+                        if ischar(pu)
+                            error('Invalid paper unit: %s',pu)
+                        else
+                            error('Invalid paper unit: <non string>')
+                        end
                     end
                 else
                     sz = get(fig,'papersize');
@@ -2688,6 +2706,8 @@ try
             end
             %
             set(fig,'papertype',pt,'paperorientation',or,psz{:})
+            % reshape the figure to match selected paper size
+            qp_figaspect(fig)
             %
             % if the figure has a border, adjust it.
             %
@@ -2697,6 +2717,7 @@ try
             end
             %
             d3d_qp refreshfigprop
+            d3d_qp refreshaxprop
             %
             if logfile
                 if strcmp(pt,'<custom>')
@@ -2715,7 +2736,11 @@ try
                 bd  = cmdargs{1};
                 bdi = find(strcmpi(bd,bds));
                 if isempty(bdi)
-                    error('Invalid papertype')
+                    if ischar(bd)
+                        error('Invalid borderstyle: %s', bd)
+                    else
+                        error('Invalid borderstyle: <non string>')
+                    end
                 end
             else
                 bdi = get(PM.FigBorderStyle,'value');
@@ -2729,6 +2754,8 @@ try
             else
                 set(PM.FigBorder,'enable','on')
             end
+            %
+            d3d_qp refreshaxprop
             %
             if logfile
                 writelog(logfile,logtype,cmd,bd);
@@ -2794,7 +2821,7 @@ try
             ax = qpsa;
             PM = UD.PlotMngr;
             %
-            if length(cmdargs)>1
+            if ~isempty(cmdargs)
                 nm = cmdargs{1};
             else
                 nm = get(PM.AxName,'string');
@@ -2809,6 +2836,36 @@ try
             %
             if logfile
                 writelog(logfile,logtype,cmd,nm);
+            end
+            
+        case 'setaxestype'
+            ax = qpsa;
+            PM = UD.PlotMngr;
+            %
+            tps = get(PM.AxType,'string');
+            if ~isempty(cmdargs)
+                tp  = cmdargs{1};
+                itp = ustrcmpi(tp,tps);
+                if itp<0
+                    if ischar(tp)
+                        error('Invalid axestype: %s', tp)
+                    else
+                        error('Invalid axestyp: <non string>')
+                    end
+                end
+            else
+                tps = get(PM.AxType,'string');
+                itp = get(PM.AxType,'value');
+            end
+            %
+            if itp>1 % itp==1: 'undefined'
+                tp = tps{itp};
+                setaxesprops(ax,tp)
+                d3d_qp refreshaxes
+                %
+                if logfile
+                    writelog(logfile,logtype,cmd,tp);
+                end
             end
             
         case {'axescolour','xcolour','ycolour'}
@@ -3017,13 +3074,21 @@ try
                 writelog(logfile,logtype,cmd,posulist{posi});
             end
             
-        case {'xlabel','ylabel'}
+        case {'xlabel','ylabel','zlabel','title'}
             ax = qpsa;
             PM = UD.PlotMngr;
-            x  = lower(cmd(1));
-            X  = upper(cmd(1));
-            XLblAuto = PM.([X 'LabelAuto']);
-            XLbl     = PM.([X 'Label']);
+            if strcmp(cmd,'title')
+                XLblAuto = PM.('AxTitleAuto');
+                XLbl     = PM.('AxTitle');
+                xlbl     = 'title';
+                x        = 'title';
+            else
+                x        = cmd(1);
+                X        = upper(x);
+                XLblAuto = PM.([X 'LabelAuto']);
+                XLbl     = PM.([X 'Label']);
+                xlbl     = [x 'label'];
+            end
             %
             if isempty(cmdargs)
                 auto = get(XLblAuto,'value');
@@ -3037,8 +3102,8 @@ try
             %
             if auto
                 lbl = '<automatic>';
-                if isappdata(ax,[x 'labelauto'])
-                    expanded_lbl = getappdata(ax,[x 'labelauto']);
+                if isappdata(ax,[xlbl 'auto'])
+                    expanded_lbl = getappdata(ax,[xlbl 'auto']);
                 else
                     expanded_lbl = '';
                 end
@@ -3054,8 +3119,13 @@ try
                 expanded_lbl = qp_strrep(lbl,'%quantity%',quantity);
                 expanded_lbl = qp_strrep(expanded_lbl,'%unit%',unit);
             end
+            if ~isempty(strfind(expanded_lbl,'\n{}'))
+                expanded_lbl = strsplit(expanded_lbl,'\\n{}');
+            end
             %
             switch x
+                case 'title'
+                    title(ax,expanded_lbl)
                 case 'x'
                     xlabel(ax,expanded_lbl)
                 case 'y'
@@ -3065,11 +3135,14 @@ try
             end
             set(XLblAuto,'value',auto)
             if auto
-                rmappdata(ax,[x 'label'])
-                set(XLbl,'backgroundColor',Inactive,'enable','off','string',expanded_lbl)
+                rmappdata(ax,xlbl)
             else
-                setappdata(ax,[x 'label'],lbl)
-                set(XLbl,'backgroundColor',Active,'enable','on','string',lbl)
+                setappdata(ax,xlbl,lbl)
+            end
+            if strcmp(cmd,'title')
+                d3d_qp refreshaxes
+            else
+                d3d_qp refreshaxprop
             end
             %
             if logfile

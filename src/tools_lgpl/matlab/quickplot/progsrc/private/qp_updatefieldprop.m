@@ -564,57 +564,56 @@ d3d_qp updateoptions
 
 
 function disablecontrols(UD)
-Inactive=get(0,'defaultuicontrolbackgroundcolor');
 MW=UD.MainWin;
 %
 % Time controls ...
 %
 set(MW.T,'enable','off')
 set(MW.AllT,'enable','off')
-set(MW.EditT,'enable','off','string','','backgroundcolor',Inactive)
+set(MW.EditT,'enable','off','string','','backgroundcolor',UD.Inactive)
 set(MW.MaxT,'enable','off','string','-')
 set(MW.ShowT,'enable','off')
-set(MW.TList,'enable','off','max',2,'value',[],'string','','backgroundcolor',Inactive,'userdata',0)
+set(MW.TList,'enable','off','max',2,'value',[],'string','','backgroundcolor',UD.Inactive,'userdata',0)
 %
 % Station controls ...
 %
 set(MW.S,'enable','off')
 set(MW.AllS,'enable','off','visible','off')
-set(MW.EditS,'enable','off','string','','backgroundcolor',Inactive,'visible','off')
+set(MW.EditS,'enable','off','string','','backgroundcolor',UD.Inactive,'visible','off')
 set(MW.MaxS,'enable','off','string','-','visible','off')
-set(MW.StList,'enable','off','value',1,'string',' ','backgroundcolor',Inactive)
+set(MW.StList,'enable','off','value',1,'string',' ','backgroundcolor',UD.Inactive)
 %
 % MNK/XYZ selection controls ...
 %
-set(MW.HSelType,'enable','off','backgroundcolor',Inactive)
-set(MW.VSelType,'enable','off','backgroundcolor',Inactive)
+set(MW.HSelType,'enable','off','backgroundcolor',UD.Inactive)
+set(MW.VSelType,'enable','off','backgroundcolor',UD.Inactive)
 %
 % MN/XY controls ...
 %
 set(MW.MN,'enable','off')
-set(MW.EditMN,'enable','off','backgroundcolor',Inactive)
+set(MW.EditMN,'enable','off','backgroundcolor',UD.Inactive)
 set(MW.XY,'enable','off')
-set(MW.EditXY,'enable','off','backgroundcolor',Inactive)
+set(MW.EditXY,'enable','off','backgroundcolor',UD.Inactive)
 %
 % M controls ...
 %
 set(MW.M,'enable','off')
 set(MW.AllM,'enable','off')
-set(MW.EditM,'enable','off','string','','backgroundcolor',Inactive)
+set(MW.EditM,'enable','off','string','','backgroundcolor',UD.Inactive)
 set(MW.MaxM,'enable','off','string','-')
 %
 % N controls ...
 %
 set(MW.N,'enable','off')
 set(MW.AllN,'enable','off')
-set(MW.EditN,'enable','off','string','','backgroundcolor',Inactive)
+set(MW.EditN,'enable','off','string','','backgroundcolor',UD.Inactive)
 set(MW.MaxN,'enable','off','string','-')
 %
 % K controls ...
 %
 set(MW.K,'enable','off')
 set(MW.AllK,'enable','off')
-set(MW.EditK,'enable','off','string','','backgroundcolor',Inactive)
+set(MW.EditK,'enable','off','string','','backgroundcolor',UD.Inactive)
 set(MW.MaxK,'enable','off','string','-')
 %
 % Plot buttons ...
@@ -626,7 +625,7 @@ set(MW.Add2Plot,'enable','off')
 %
 % Options and gridview ...
 %
-set(UD.Options.Handles,'enable','off','visible','off','backgroundcolor',Inactive)
+set(UD.Options.Handles,'enable','off','visible','off','backgroundcolor',UD.Inactive)
 UD.Options.Act(:)=false;
 update_option_positions(UD)
 

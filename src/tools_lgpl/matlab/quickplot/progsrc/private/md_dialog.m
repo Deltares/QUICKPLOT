@@ -280,8 +280,14 @@ for i=1:nItem
             end
     end
 end
-Inactive=get(0,'defaultuicontrolbackgroundcolor');
-Active=[1 1 1];
+
+try
+    Inactive = qp_settings('UIInActiveColor');
+    Active   = qp_settings('UIActiveColor'); 
+catch
+    Inactive = get(0,'defaultuicontrolbackgroundcolor');
+    Active   = [1 1 1];
+end
 width=320;
 margin=10;
 

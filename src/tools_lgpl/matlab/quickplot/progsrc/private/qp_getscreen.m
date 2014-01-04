@@ -1,4 +1,4 @@
-function screensize = qp_getscreen(ref)
+function screensize = qp_getscreen(ref,pos)
 %QP_GETSCREEN Get position of current screen
 
 %----- LGPL --------------------------------------------------------------------
@@ -32,11 +32,22 @@ function screensize = qp_getscreen(ref)
 %   $Id$
 
 MonPos = getpixels(0,'MonitorPositions');
-shift = -min(MonPos(:,2))+1;
-MonPos(:,[2 4]) = MonPos(:,[2 4])+shift;
-MonPos(:,[4 2]) = max(MonPos(:,4)) - MonPos(:,[2 4])+1; 
+if isa(handle(0),'matlab.ui.Root') %HG2
+    % [XLL YLL W H] - Y positive up
+    MonPos(:,3:4) = MonPos(:,1:2)+MonPos(:,3:4)-1;
+else
+    % [XLL YLL XUR YUR] - Y positive down
+    shift = -min(MonPos(:,2))+1;
+    MonPos(:,[2 4]) = MonPos(:,[2 4])+shift;
+    MonPos(:,[4 2]) = max(MonPos(:,4)) - MonPos(:,[2 4])+1;
+end
 
-if nargin==1
+if nargin==2
+    % screen number directly specified using pos
+    if pos>size(MonPos,1)
+        pos = 1;
+    end
+elseif nargin==1
     if isequal(size(ref),[1 4])
         pos = ref;
     elseif isequal(size(ref),[1 1]) && ishandle(ref) && strcmp(get(ref,'type'),'figure')

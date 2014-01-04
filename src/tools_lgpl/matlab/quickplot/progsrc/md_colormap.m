@@ -525,8 +525,14 @@ if nargin<2
 end
 sz=qp_getscreen;
 
-Inactive=get(0,'defaultuicontrolbackgroundcolor');
-Active=[1 1 1];
+try
+    Inactive = qp_settings('UIInActiveColor');
+    Active   = qp_settings('UIActiveColor'); 
+catch
+    Inactive = get(0,'defaultuicontrolbackgroundcolor');
+    Active   = [1 1 1];
+end
+
 dims=[390 225];
 pos(1:2)=sz(1:2)+(sz(3:4)-dims)/2;
 pos(3:4)=dims;
@@ -902,8 +908,13 @@ else
     end
 end
 
-Inactive=get(0,'defaultuicontrolbackgroundcolor');
-Active=[1 1 1];
+try
+    Inactive = qp_settings('UIInActiveColor');
+    Active   = qp_settings('UIActiveColor'); 
+catch
+    Inactive = get(0,'defaultuicontrolbackgroundcolor');
+    Active   = [1 1 1];
+end
 
 cpstr=sprintf('%.4f',index(currentcolor));
 if uniform

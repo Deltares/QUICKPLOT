@@ -31,7 +31,8 @@ function qp_defaultaxessettings(ax)
 %   $HeadURL$
 %   $Id$
 
-set(ax,'color',qp_settings('defaultaxescolor')/255);
+set(ax,'layer','top', ...
+       'color',qp_settings('defaultaxescolor')/255);
 if qp_settings('boundingbox')
     set(ax,'box','on');
 end

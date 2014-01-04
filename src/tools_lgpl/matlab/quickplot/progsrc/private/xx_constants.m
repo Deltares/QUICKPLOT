@@ -32,13 +32,20 @@ function XX=xx_constants
 %   $HeadURL$
 %   $Id$
 
-XX.Clr.LightGray=get(0,'defaultuicontrolbackgroundcolor');
-% used to be [1 1 1]*192/255 or [.8 .8 .8]
-XX.Inactive=XX.Clr.LightGray;
-XX.Clr.White=[1 1 1];
-XX.Active=XX.Clr.White;
+try
+    Inactive = qp_settings('UIInActiveColor');
+    Active   = qp_settings('UIActiveColor'); 
+catch
+    Inactive = get(0,'defaultuicontrolbackgroundcolor');
+    Active   = [1 1 1];
+end 
 
-XX.Margin=10;
-XX.Txt.Height=18;
-XX.But.Height=20;
-XX.Slider=20;
+XX.Clr.LightGray = Inactive;
+XX.Inactive      = XX.Clr.LightGray;
+XX.Clr.White     = Active;
+XX.Active        = XX.Clr.White;
+
+XX.Margin        = 10;
+XX.Txt.Height    = 18;
+XX.But.Height    = 20;
+XX.Slider        = 20;

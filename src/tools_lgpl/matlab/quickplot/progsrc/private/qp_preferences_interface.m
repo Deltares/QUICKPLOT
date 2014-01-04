@@ -48,8 +48,8 @@ PosLL=floor(screensize(1:2)+(screensize(3:4)-dims)/2);
 pos(1:2)=PosLL;
 pos(3:4)=dims;
 
-Inactive=get(0,'defaultuicontrolbackgroundcolor');
-Active=[1 1 1];
+Inactive = qp_settings('UIInActiveColor');
+Active   = qp_settings('UIActiveColor');
 
 mfig = qp_uifigure('Preferences','','PreferenceFig',pos);
 set(mfig,'userdata',1)

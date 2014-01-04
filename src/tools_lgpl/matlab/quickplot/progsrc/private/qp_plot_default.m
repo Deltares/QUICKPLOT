@@ -1,4 +1,4 @@
-function [hNew,Thresholds,Param]=qp_plot_default(hNew,Parent,Param,data,Ops,Props)
+function [hNew,Thresholds,Param,Parent]=qp_plot_default(hNew,Parent,Param,data,Ops,Props)
 %QP_PLOT_DEFAULT Plot function of QuickPlot for structured data sets.
 
 %----- LGPL --------------------------------------------------------------------
@@ -34,7 +34,13 @@ function [hNew,Thresholds,Param]=qp_plot_default(hNew,Parent,Param,data,Ops,Prop
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 FirstFrame=Param.FirstFrame;
-PName=Param.PName;
+Quant=Param.PName;
+Units=Param.Units;
+if ~isempty(Units)
+    PName=sprintf('%s (%s)',Quant,Units);
+else
+    PName=Quant;
+end
 TStr=Param.TStr;
 Selected=Param.Selected;
 multiple=Param.multiple;
@@ -116,7 +122,7 @@ switch NVal
                     set(hNew,'xdata',data.X,'ydata',data.Y);
                 end
             end
-            set(get(Parent,'title'),'string',{PName,TStr})
+            qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
         elseif spatialh==1 && spatial==1
             if FirstFrame
                 hNew=line(data.X,zeros(size(data.X)), ...
@@ -125,7 +131,7 @@ switch NVal
             else
                 set(hNew,'xdata',data.X);
             end
-            set(get(Parent,'title'),'string',{PName,TStr})
+            qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
         elseif spatial==2 && spatialh==1
             switch Ops.plotcoordinate
                 case {'path distance','reverse path distance'}
@@ -177,7 +183,7 @@ switch NVal
             else
                 set(hNew,'xdata',x,'ydata',y,'zdata',z)
             end
-            set(get(Parent,'title'),'string',{PName,TStr})
+            qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
         elseif spatial==1 && spatialh==0
             z=squeeze(data.Z);
             if FirstFrame
@@ -187,7 +193,7 @@ switch NVal
             else
                 set(hNew,'ydata',z);
             end
-            set(get(Parent,'title'),'string',{PName,TStr})
+            qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
         elseif spatial==0
             if FirstFrame
                 hNew=line(data.X,data.Y, ...
@@ -201,7 +207,7 @@ switch NVal
                             set(hNew(i),'zdata',data.Z(:,i));
                         end
                     end
-                    set(get(Parent,'zlabel'),'string','elevation (m) \rightarrow')
+                    %set(get(Parent,'zlabel'),'string','elevation (m) \rightarrow')
                 end
             else
                 if isfield(data,'Z')
@@ -213,9 +219,9 @@ switch NVal
             if ~isempty(stn)
                 Str={PName,stn};
             else
-                Str={PName};
+                Str=PName;
             end
-            set(get(Parent,'title'),'string',Str)
+            qp_title(Parent,Str,'quantity',Quant,'unit',Units)
         else
             hNew=gentext(hNew,Ops,Parent,'Plot not defined');
         end
@@ -235,7 +241,7 @@ switch NVal
                     otherwise
                         hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'TRI',data.TRI,data.XYZ,data.Val,Ops);
                 end                        
-                set(get(Parent,'title'),'string',{PName,TStr})
+                qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
             else
                 data = qp_dimsqueeze(data,Ops.axestype,multiple,DimFlag,Props);
                 if isfield(data,'Z') && 0
@@ -248,7 +254,7 @@ switch NVal
                 else
                     str=sprintf('%s in layer %i',PName,Selected{K_});
                 end
-                set(get(Parent,'title'),'string',{str,TStr})
+                %
                 tit = {str};
                 if ~isempty(stn)
                     tit{end+1}=stn;
@@ -260,7 +266,7 @@ switch NVal
                     tit{1}=[tit{1} ' at ' tit{2}];
                     tit(2)=[];
                 end
-                set(get(Parent,'title'),'string',tit)
+                qp_title(Parent,tit,'quantity',Quant,'unit',Units)
             end
 
         elseif spatialh==1 && spatial==1
@@ -352,7 +358,7 @@ switch NVal
                 if FirstFrame
                     set(Parent,'view',[0 90],'layer','top');
                 end
-                set(get(Parent,'title'),'string',PName)
+                qp_title(Parent,PName,'quantity',Quant,'unit',Units)
             else
                 if strcmp(Ops.facecolour,'none')
                     if FirstFrame
@@ -407,7 +413,7 @@ switch NVal
                 if ~isempty(TStr)
                     tit{end+1}=TStr;
                 end
-                set(get(Parent,'title'),'string',tit)
+                qp_title(Parent,tit,'quantity',Quant,'unit',Units)
             end
 
         elseif spatialh==1 && spatial==2
@@ -490,9 +496,9 @@ switch NVal
             end
             if FirstFrame
                 set(Parent,'view',[0 90],'layer','top');
-                set(get(Parent,'ylabel'),'string','elevation (m) \rightarrow')
+                %set(get(Parent,'ylabel'),'string','elevation (m) \rightarrow')
             end
-            set(get(Parent,'title'),'string',{PName,TStr})
+            qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
 
         elseif spatialh==0 && spatial==1
 
@@ -534,7 +540,7 @@ switch NVal
                 if FirstFrame
                     set(Parent,'view',[0 90],'layer','top');
                 end
-                set(get(Parent,'title'),'string',PName)
+                qp_title(Parent,PName,'quantity',Quant,'unit',Units)
             else
                 if FirstFrame
                     hNew=line(squeeze(data.Val),squeeze(data.Z), ...
@@ -551,7 +557,7 @@ switch NVal
                 else
                     Str={TStr};
                 end
-                set(get(Parent,'title'),'string',Str);
+                qp_title(Parent,Str,'quantity',Quant,'unit',Units,'time',TStr)
             end
 
         elseif multiple(T_) && spatial==0
@@ -570,8 +576,7 @@ switch NVal
             else
                 Str='';
             end
-            set(get(Parent,'title'),'string',Str)
-
+            qp_title(Parent,Str,'quantity',Quant,'unit',Units,'time',TStr)
         else
             strval=sprintf(Ops.numformat,data.Val);
             if isfield(Ops,'axestype') && ...
@@ -604,36 +609,38 @@ switch NVal
             if ~isempty(hNew)
                 delete(hNew)
             end
-
-            ax=subplot(1,3,1);
-            qp_defaultaxessettings(ax)
-            hold on
+            
+            if length(Parent)==1
+                relaxpos = [ ...
+                    0         0         0.2754    1.0000
+                    0.3623    0.5814    0.6377    0.4186
+                    0.3623    0         0.6377    0.4186];
+                Parent = getlinkedparents(Parent,relaxpos);
+            end
+            
+            Qc1 = [Quant ' comp.1'];
+            Qc2 = [Quant ' comp.2'];
+            ax=Parent(1);
             if isfield(data,'YComp')
                 Y=data.YComp;
             else
                 Y=data.ZComp;
             end
-            hNew(1)=plot(data.XComp,Y);
-            xlabel([PName ' comp.1 \rightarrow'])
-            ylabel([PName ' comp.2 \rightarrow'])
-            set(ax,'da',[1 1 1],'layer','top')
+            hNew(1)=line(data.XComp,Y,'parent',ax);
+            setaxesprops(ax,'Val-Val',{Qc1 Qc2},{Units Units});
+            set(ax,'dataAspectRatio',[1 1 1], ...
+                'plotboxAspectRatio',[1 1 1e30])
 
-            ax=subplot(2,3,2:3);
-            qp_defaultaxessettings(ax)
-            hold on
-            hNew(2)=plot(data.Time,data.XComp);
-            setaxesprops(ax,Ops.axestype,PName)
-            ylabel([PName ' comp.1 \rightarrow'])
+            ax=Parent(2);
+            hNew(2)=line(data.Time,data.XComp,'parent',ax);
+            setaxesprops(ax,'Time-Val',{'' Qc1},{'' Units});
             if ~isempty(stn)
-                set(get(ax,'title'),'string',stn)
+                qp_title(ax,stn)
             end
 
-            ax=subplot(2,3,5:6);
-            qp_defaultaxessettings(ax)
-            hold on
-            hNew(3)=plot(data.Time,Y);
-            setaxesprops(ax,Ops.axestype,PName)
-            ylabel([PName ' comp.2 \rightarrow'])
+            ax=Parent(3);
+            hNew(3)=line(data.Time,Y,'parent',ax);
+            setaxesprops(ax,'Time-Val',{'' Qc2},{'' Units});
             set(hNew,Ops.LineParams{:});
 
         elseif spatialh==1 && spatial==2
@@ -816,9 +823,8 @@ switch NVal
                 hNew=line(1,1,'xdata',[],'ydata',[]);
             end
             set(gca,'layer','top')
-            ylabel('elevation (m) \rightarrow')
-            str=PName;
-            set(get(gca,'title'),'string',{str,TStr})
+            %ylabel('elevation (m) \rightarrow')
+            qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
 
         elseif spatial>=1 && spatialh>=1 && isfield(data,'YComp')
             data.XComp((data.XComp==0) & (data.YComp==0))=NaN;
@@ -876,37 +882,45 @@ switch NVal
             else
                 str=sprintf('%s in layer %i',PName,Selected{K_});
             end
-            title({str,TStr})
+            qp_title(Parent,{str,TStr},'quantity',Quant,'unit',Units,'time',TStr)
 
         elseif spatialh==0 && spatial==1
 
             if ~isempty(hNew)
                 delete(hNew)
             end
-
-            ax=subplot(1,2,1);
-            qp_defaultaxessettings(ax)
-            hold on
-            hNew(1)=plot(squeeze(data.XComp),squeeze(data.Z));
-            xlabel([PName ' comp.1 \rightarrow'])
-            ylabel('elevation (m) \rightarrow')
-            set(ax,'layer','top')
-            if ~isempty(stn)
-                set(get(ax,'title'),'string',stn)
+            
+            if length(Parent)==1
+                relaxpos = [ ...
+                    0         0         0.4318    1.0000
+                    0.5682    0         0.4318    1.0000];
+                Parent = getlinkedparents(Parent,relaxpos);
             end
 
-            ax=subplot(1,2,2);
-            qp_defaultaxessettings(ax)
-            hold on
-            if isfield(data,'YComp')
-                hNew(2)=plot(squeeze(data.YComp),squeeze(data.Z));
+            if isfield(data,'ZUnits') && ~isempty(data.ZUnits)
+                ZUnits = data.ZUnits;
             else
-                hNew(2)=plot(squeeze(data.ZComp),squeeze(data.Z));
+                ZUnits = '';
             end
-            xlabel([PName ' comp.2 \rightarrow'])
-            ylabel('elevation (m) \rightarrow')
-            set(get(ax,'title'),'string',TStr)
-            set(ax,'layer','top')
+
+            Qc1 = [Quant ' comp.1'];
+            Qc2 = [Quant ' comp.2'];
+            ax=Parent(1);
+            hNew(1)=line(squeeze(data.XComp),squeeze(data.Z),'parent',ax);
+            setaxesprops(ax,'Val-Z',{Qc1 'elevation'},{Units ZUnits});
+            if ~isempty(stn)
+                qp_title(ax,stn,'quantity',Qc1,'unit',Units,'time',TStr)
+            end
+
+            ax=Parent(2);
+            if isfield(data,'YComp')
+                hNew(2)=line(squeeze(data.YComp),squeeze(data.Z),'parent',ax);
+            else
+                hNew(2)=line(squeeze(data.ZComp),squeeze(data.Z),'parent',ax);
+            end
+            setaxesprops(ax,'Val-Z',{Qc2 'elevation'},{Units ZUnits});
+            qp_title(ax,TStr,'quantity',Qc2,'unit',Units,'time',TStr)
+
             set(hNew,Ops.LineParams{:});
 
         else
@@ -953,4 +967,20 @@ switch NVal
             case {'labels'}
                 hNew=gentextfld(hNew,Ops,Parent,data.Val,data.X,data.Y);
         end
+end
+
+function Parent = getlinkedparents(Parent,relaxpos)
+if isappdata(Parent,'linkedaxes')
+    Parent = getappdata(Parent,'linkedaxes');
+else
+    fg = get(Parent,'parent');
+    ps = get(Parent,'position');
+    pu = get(Parent,'units');
+    tg = get(Parent,'tag');
+    delete(Parent);
+    Parent = qp_createaxes(fg,'relative',ps,pu,relaxpos);
+    for i = 1:length(Parent)
+        set(Parent(i),'tag',sprintf('%s [%i]',tg,i))
+        setappdata(Parent(i),'linkedaxes',Parent)
+    end
 end

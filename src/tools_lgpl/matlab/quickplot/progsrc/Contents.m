@@ -97,6 +97,7 @@
 %   floodmask           - Find connected points in an array.
 %   qp_unitconversion   - Convert unit strings.
 %   ustrcmpi            - Find a unique string.
+%   vardiff             - Determines the differences between two variables.
 %   wildstrmatch        - Find matching strings using wildcards.
 
 %   @(#)Deltares, Delft3D-MATLAB interface, Version <VERSION>, <CREATIONDATE>

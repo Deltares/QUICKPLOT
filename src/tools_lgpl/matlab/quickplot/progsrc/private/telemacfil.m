@@ -111,7 +111,7 @@ end
 sz=getsize(FI,Props);
 for m_ = 1:5
     if DimFlag(m_)
-        if m_==T_ & isempty(idx{m_})
+        if m_==T_ && isempty(idx{m_})
             idx{m_}=sz(m_);
         end
         if isequal(idx{m_},0)
@@ -161,6 +161,10 @@ if XYRead
         Ans.XYZ=Ans.XYZ(:,idx{M_},:,:);
     end
     Ans.TRI=TRI;
+    
+    Ans.XUnits='m';
+    Ans.YUnits='m';
+    Ans.ZUnits='m';
 end
 
 if DimFlag(K_)
@@ -187,24 +191,6 @@ switch Props.NVal
         end
 end
 
-%
-% <---------- for the time being squeeze out time and layers
-%
-% flds={'Val','XComp','YComp','ZComp'};
-% for i = 1:length(flds)
-%    fld = flds{i};
-%    if isfield(Ans,fld)
-%       value = getfield(Ans,fld);
-%       szval = [size(value) 1];
-%       value = reshape(value,szval(2:3));
-%       Ans = setfield(Ans,fld,value);
-%    end
-% end
-%
-%szXYZ = size(Ans.XYZ);
-%Ans.XYZ = reshape(Ans.XYZ,szXYZ([2 4]));
-%Ans.Z = Ans.XYZ(:,:,:,3);
-
 % read time ...
 T=readtim(FI,Props,idx{T_});
 Ans.Time=T;
@@ -214,7 +200,7 @@ varargout={Ans FI};
 
 
 % -----------------------------------------------------------------------------
-function Out=infile(FI,domain);
+function Out=infile(FI,domain)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 %======================== SPECIFIC CODE =======================================
@@ -243,13 +229,13 @@ iu = strmatch('VELOCITY U',VNames);
 iv = strmatch('VELOCITY V',VNames);
 iw = strmatch('VELOCITY W',VNames);
 nm='VELOCITY';
-if isempty(iu) & isempty(iv)
+if isempty(iu) && isempty(iv)
     iu = strmatch('VITESSE U',VNames);
     iv = strmatch('VITESSE V',VNames);
     iw = strmatch('VITESSE W',VNames);
     nm='VITESSE';
 end
-if ~isempty(iu) & ~isempty(iv)
+if ~isempty(iu) && ~isempty(iv)
     DataProps(end+1,:)={nm     ...
         lower(FI.Var(iu).Unit)   [T 0 6 0 0]  0          2     ''        ''    ''       1     1         iu        iv     []};
     if ~isempty(iw)

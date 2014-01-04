@@ -192,17 +192,45 @@ while i<length(figlist)
             hvis=get(figlist(i),'handlevisibility');
             set(figlist(i),'handlevisibility','on');
             % figure(figlist(i));
-            FigStr=sprintf('-f%20.16f',figlist(i));
+            if isnumeric(figlist(i))
+                FigStr=sprintf('-f%20.16f',figlist(i));
+            else
+                FigStr=figlist(i);
+            end
 
             if LocSettings.PrtID==0
                 Printer='cancel';
             else
                 Printer=PL{LocSettings.PrtID,2};
-                switch LocSettings.Method
+                Method = LocSettings.Method;
+                %
+                tmp = figure('visible','off');
+                delete(tmp)
+                HG2 = ~isnumeric(tmp);
+                %
+                switch PL{LocSettings.PrtID,1}
+                    case -1 % painters/zbuffer irrelevant
+                        Method=1;
+                    case 0 % cannot be combined with painters, e.g. bitmap
+                        if Method==1 || Method==2
+                            Method = 2;
+                            if HG2 % HG2 mode does not support ZBuffer printing
+                                Method = 3;
+                            end
+                        end
+                    otherwise
+                        if Method==2 && HG2 % HG2 mode does not support ZBuffer printing
+                            Method = 3;
+                        end
+                end
+                %
+                switch Method
                     case 1 % Painters
                         PrtMth={'-painters'};
                     case 2 % Zbuffer
                         PrtMth={'-zbuffer',sprintf('-r%i',LocSettings.DPI)};
+                    case 3 % OpenGL
+                        PrtMth={'-opengl',sprintf('-r%i',LocSettings.DPI)};
                 end
             end
             switch Printer
@@ -411,7 +439,7 @@ ResWidth=50;
 
 TextShift = [0 XX.Txt.Height-XX.But.Height 0 0];
 Fig_Width=TextLabel+PrintLabel+3*XX.Margin;
-Fig_Height=6*XX.Margin+7*XX.But.Height+XX.Txt.Height+ ...
+Fig_Height=6*XX.Margin+8*XX.But.Height+XX.Txt.Height+ ...
     (XX.Margin+FigListHeight)*Reselect + ...
     (XX.Margin+XX.But.Height)*double(CanApplyAll);
 
@@ -482,14 +510,14 @@ rect(1) = XX.Margin;
 rect(2) = rect(2)+rect(4)+XX.Margin;
 rect(3) = ZBufWidth;
 rect(4) = XX.But.Height;
-ZBuf=uicontrol('style','radiobutton', ...
+OpenGL=uicontrol('style','radiobutton', ...
     'position',rect, ...
     'parent',fig, ...
-    'string','ZBuffer', ...
-    'value',Method==2, ...
+    'string','OpenGL', ...
+    'value',Method==3, ...
     'backgroundcolor',XX.Clr.LightGray, ...
     'enable','on', ...
-    'callback','md_print Zbuffer');
+    'callback','md_print OpenGL');
 
 rect(1) = rect(1)+rect(3)+XX.Margin;
 rect(3) = ResWidth;
@@ -501,7 +529,7 @@ Resol=uicontrol('style','edit', ...
     'backgroundcolor',XX.Clr.LightGray, ...
     'enable','off', ...
     'callback','md_print DPI');
-if Method==2
+if Method==2 || Method==3
     set(Resol,'enable','on','backgroundcolor',XX.Clr.White)
 end
 
@@ -516,6 +544,19 @@ uicontrol('style','text', ...
     'backgroundcolor',XX.Clr.LightGray, ...
     'enable','on');
 rect(4) = XX.But.Height;
+
+rect(1) = XX.Margin;
+rect(2) = rect(2)+rect(4);
+rect(3) = Fig_Width-2*XX.Margin;
+rect(4) = XX.But.Height;
+ZBuf=uicontrol('style','radiobutton', ...
+    'position',rect, ...
+    'parent',fig, ...
+    'value',Method==2, ...
+    'string','ZBuffer', ...
+    'backgroundcolor',XX.Clr.LightGray, ...
+    'enable','on', ...
+    'callback','md_print Zbuffer');
 
 rect(1) = XX.Margin;
 rect(2) = rect(2)+rect(4);
@@ -622,21 +663,7 @@ if strcmp(PL{PrtID,2},'Windows printer')
 else
     set(Opt,'enable','off');
 end
-switch PL{PrtID,1}
-    case -1 % painters/zbuffer irrelevant
-        set(Painter,'value',1,'enable','off');
-        set(ZBuf,'value',0,'enable','off');
-        set(Resol,'backgroundcolor',XX.Clr.LightGray,'enable','off');
-        Method=1;
-    case 0 % cannot be combined with painters, e.g. bitmap
-        set(Painter,'value',0,'enable','off');
-        set(ZBuf,'value',1,'enable','on');
-        set(Resol,'backgroundcolor',XX.Clr.White,'string',num2str(DPI),'enable','on');
-        Method=2;
-    otherwise
-        set(Painter,'enable','on');
-        set(ZBuf,'enable','on');
-end
+Method = update_renderer(PL{PrtID,1},Painter,ZBuf,OpenGL,Resol,Method,DPI);
 
 gui_quit=0;               % Becomes one if the interface has to quit.
 stack=[];                 % Contains the stack of commands; read from 'userdata' field of the figure
@@ -681,7 +708,7 @@ while ~gui_quit
     while ~isempty(stack)
         cmd=stack{1};
         stack=stack(2:size(stack,1),:);
-        switch cmd,
+        switch cmd
             case 'cancel'
                 Cancel=1;
                 gui_quit=1;
@@ -702,21 +729,7 @@ while ~gui_quit
                 else
                     set(Opt,'enable','off');
                 end
-                switch PL{PrtID,1}
-                    case -1 % painters/zbuffer irrelevant
-                        set(Painter,'value',1,'enable','off');
-                        set(ZBuf,'value',0,'enable','off');
-                        set(Resol,'backgroundcolor',XX.Clr.LightGray,'enable','off');
-                        Method=1;
-                    case 0 % cannot be combined with painters, e.g. bitmap
-                        set(Painter,'value',0,'enable','off');
-                        set(ZBuf,'value',1,'enable','on');
-                        set(Resol,'backgroundcolor',XX.Clr.White,'string',num2str(DPI),'enable','on');
-                        Method=2;
-                    otherwise
-                        set(Painter,'enable','on');
-                        set(ZBuf,'enable','on');
-                end
+                Method = update_renderer(PL{PrtID,1},Painter,ZBuf,OpenGL,Resol,Method,DPI);
                 switch PL{PrtID,4}
                     case 0 % NEVER
                         set(Color,'enable','off','value',0);
@@ -733,11 +746,13 @@ while ~gui_quit
                 print -dsetup
                 % bring md_print dialog back to front ...
                 figure(fig)
+
+            case 'Painters'
+                Method = update_renderer(PL{PrtID,1},Painter,ZBuf,OpenGL,Resol,1,DPI);
             case 'Zbuffer'
-                set(Painter,'value',0);
-                set(ZBuf,'value',1);
-                set(Resol,'backgroundcolor',XX.Clr.White,'string',num2str(DPI),'enable','on');
-                Method=2;
+                Method = update_renderer(PL{PrtID,1},Painter,ZBuf,OpenGL,Resol,2,DPI);
+            case 'OpenGL'
+                Method = update_renderer(PL{PrtID,1},Painter,ZBuf,OpenGL,Resol,3,DPI);
             case 'DPI'
                 X=eval(get(Resol,'string'),'NaN');
                 if isnumeric(X) && isequal(size(X),[1 1]) && (round(X)==X)
@@ -750,11 +765,6 @@ while ~gui_quit
                     end
                 end
                 set(Resol,'string',num2str(DPI));
-            case 'Painters'
-                set(Painter,'value',1);
-                set(ZBuf,'value',0);
-                set(Resol,'backgroundcolor',XX.Clr.LightGray,'enable','off');
-                Method=1;
 
             case 'Color'
                 Clr=get(Color,'value');
@@ -819,3 +829,50 @@ catch ex
     rethrow(ex);
 end
 fclose(fh);
+
+function Method = update_renderer(Type,Painter,ZBuf,OpenGL,Resol,Method,DPI)
+XX=xx_constants;
+switch Type
+    case -1 % painters/zbuffer irrelevant
+        set(Painter,'value',1,'enable','off')
+        set(ZBuf   ,'value',0,'enable','off')
+        set(OpenGL ,'value',0,'enable','off')
+        Method=1;
+    case 0 % cannot be combined with painters, e.g. bitmap
+        set(Painter,'value',0,'enable','off')
+        set(ZBuf   ,'value',0,'enable','on')
+        set(OpenGL ,'value',0,'enable','on')
+        if Method==1 || Method==2
+            Method = 2;
+            if ~isnumeric(ZBuf) % HG2 mode does not support ZBuffer printing
+                Method = 3;
+                set(ZBuf,'enable','off')
+                set(OpenGL,'value',1)
+            else
+                set(ZBuf,'value',1)
+            end
+        end
+    otherwise
+        set(Painter,'value',0,'enable','on')
+        set(ZBuf   ,'value',0,'enable','on')
+        set(OpenGL ,'value',0,'enable','on')
+        if ~isnumeric(ZBuf) % HG2 mode does not support ZBuffer printing
+            set(ZBuf,'enable','off')
+            if Method==2
+                Method = 3;
+            end
+        end
+        switch Method
+            case 1
+                set(Painter,'value',1)
+            case 2
+                set(ZBuf   ,'value',1)
+            case 3
+                set(OpenGL ,'value',1)
+        end
+end
+if Method==1
+    set(Resol  ,'backgroundcolor',XX.Clr.LightGray,'enable','off')
+else
+    set(Resol,'backgroundcolor',XX.Clr.White,'string',num2str(DPI),'enable','on')
+end

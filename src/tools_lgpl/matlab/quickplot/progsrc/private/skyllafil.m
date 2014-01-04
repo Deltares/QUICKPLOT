@@ -75,14 +75,14 @@ else
 end
 
 cmd=lower(cmd);
-switch cmd,
-    case 'size',
+switch cmd
+    case 'size'
         varargout={getsize(FI,Props)};
-        return;
-    case 'times',
+        return
+    case 'times'
         varargout={readtim(FI,Props,varargin{:})};
         return
-    case 'stations',
+    case 'stations'
         varargout={readsts(FI,Props,0)};
         return
     case 'subfields'
@@ -116,7 +116,7 @@ end
 allidx=zeros(size(sz));
 for i=[M_ N_ K_]
     if DimFlag(i)
-        if isequal(idx{i},0) | isequal(idx{i},1:sz(i))
+        if isequal(idx{i},0) || isequal(idx{i},1:sz(i))
             idx{i}=1:sz(i);
             allidx(i)=1;
         elseif ~isequal(idx{i},idx{i}(1):idx{i}(end))
@@ -143,7 +143,7 @@ y=[];
 z=[];
 if XYRead
     %======================== SPECIFIC CODE =======================================
-    if DimFlag(M_) & DimFlag(K_)
+    if DimFlag(M_) && DimFlag(K_)
         [x,Chk]=vs_let(FI,'GEOMETRY','COOR_Xc','quiet');
         [y,Chk]=vs_let(FI,'GEOMETRY','COOR_Yc','quiet');
         x=x(idx{[M_ K_]});
@@ -166,7 +166,7 @@ elidx(~DimFlag(2:end))=[];
 if DimFlag(ST_)
     [val1,Chk]=vs_let(FI,Props.Group1,{elidx{2} idx{T_}},Props.Val1,'quiet');
     val1=val1';
-elseif isequal(size(elidx{1}),[1 1]) & isequal(size(elidx{2}),[1 1])
+elseif isequal(size(elidx{1}),[1 1]) && isequal(size(elidx{2}),[1 1])
     [val1,Chk]=vs_let(FI,Props.Group1,{elidx{:} idx{T_}},Props.Val1,'quiet');
     val1=reshape(val1,size(val1,3),1,1);
 else
@@ -183,7 +183,7 @@ else
     if DimFlag(ST_)
         [val2,Chk]=vs_let(FI,Props.Group1,{elidx{2} idx{T_}},Props.Val1,'quiet');
         val2=val2';
-    elseif isequal(size(elidx{1}),[1 1]) & isequal(size(elidx{2}),[1 1])
+    elseif isequal(size(elidx{1}),[1 1]) && isequal(size(elidx{2}),[1 1])
         [val2,Chk]=vs_let(FI,Props.Group2,{elidx{:} idx{T_}},Props.Val2,'quiet');
         val2=reshape(val2,size(val2,3),1,1);
     else
@@ -203,8 +203,8 @@ end
 
 %======================== SPECIFIC CODE =======================================
 % filter only vector quantities based on fraction ...
-if XYRead & ~isempty(val2) & ~DimFlag(ST_)
-    if isequal(size(elidx{1}),[1 1]) & isequal(size(elidx{2}),[1 1])
+if XYRead && ~isempty(val2) && ~DimFlag(ST_)
+    if isequal(size(elidx{1}),[1 1]) && isequal(size(elidx{2}),[1 1])
         [act,Chk]=vs_let(FI,'F_SURFACE',{elidx{:} idx{T_}},'Fij','quiet');
         act=reshape(act,size(act,3),1,1);
     else
@@ -263,7 +263,7 @@ end
 %========================= GENERAL CODE =======================================
 
 % reshape if a single timestep is selected ...
-if DimFlag(T_) & isequal(size(idx{T_}),[1 1])
+if DimFlag(T_) && isequal(size(idx{T_}),[1 1])
     sz=size(val1); sz=[sz(2:end) 1];
     if isempty(val2)
         val1=reshape(val1,sz);
@@ -277,6 +277,10 @@ end
 if XYRead
     Ans.X=x;
     Ans.Z=y;
+    I = vs_disp(FI,'GEOMETRY','COOR_Xc');
+    Ans.XUnits = I.ElmUnits(2:end-1);
+    I = vs_disp(FI,'GEOMETRY','COOR_Yc');
+    Ans.ZUnits = I.ElmUnits(2:end-1);
 end
 if isempty(val2)
     Ans.Val=val1;
@@ -291,7 +295,7 @@ varargout={Ans FI};
 
 
 % -----------------------------------------------------------------------------
-function Out=infile(FI,domain);
+function Out=infile(FI,domain)
 
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'                       'Units' 'DimFlag'   'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc' 'Group1'    'Val1'       'Group2'    'Val2'       'SubFld'};

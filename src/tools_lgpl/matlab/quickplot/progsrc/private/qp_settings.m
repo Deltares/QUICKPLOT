@@ -62,7 +62,7 @@ if nargout==1
         cmd='get';
     end
     valo=inifile(cmd,Settings,grp,param,{});
-    if iscell(valo)
+    if iscell(valo) && (nargin==1 || ~iscell(val))
         if nargin==1
             val={};
         end
@@ -84,6 +84,9 @@ if 0%isunix
 else
    Set.UIActiveColor      = [1 1 1];
    Set.UIInActiveColor    = get(0,'factoryuicontrolbackgroundcolor');
+   if isequal(Set.UIInActiveColor,[0.94 0.94 0.94]) % HG2 in R2013b shows white for exactly this color in listboxes
+       Set.UIInActiveColor    = [0.93 0.93 0.93];
+   end
    Set.UIForeGroundColor  = get(0,'factoryuicontrolforegroundcolor');
 end
 Set.UIButtonMargin     = 0; %5;

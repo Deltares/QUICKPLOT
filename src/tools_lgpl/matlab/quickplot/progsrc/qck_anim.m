@@ -609,8 +609,8 @@ eval(scriptname,'')
 
 
 function [ANISteps,output,Cancel,background,animloop,maxfps,scriptname]=local_ui(MinT,MaxT)
-Inactive=get(0,'defaultuicontrolbackgroundcolor');
-Active=[1 1 1];
+Inactive = qp_settings('UIInActiveColor');
+Active   = qp_settings('UIActiveColor');
 
 outputtypes={'no output','tif files','jpg files','png files','bmp files','print/export'};
 NoBackRend=1;

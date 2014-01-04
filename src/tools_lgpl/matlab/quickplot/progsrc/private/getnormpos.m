@@ -45,8 +45,6 @@ ginput(1);
 Point1 = get(tmpax,'currentpoint');
 Point1 = Point1(1,1:2);
 %
-Pointer = get(fig,'pointer');
-set(fig,'pointer','fullcrosshair')
 units = get(fig,'units');
 set(fig,'units','pixels')
 rbbox([get(fig,'currentpoint') 0 0],get(fig,'currentpoint'));
@@ -56,7 +54,6 @@ Point2 = Point2(1,1:2);
 delete(tmpax)
 set(fig, ...
     'units',units, ...
-    'pointer',Pointer, ...
     'handlevisibility',hvis)
 %
 LowerLeft=min(Point1,Point2);

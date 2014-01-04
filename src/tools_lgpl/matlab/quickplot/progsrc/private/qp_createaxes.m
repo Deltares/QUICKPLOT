@@ -1,4 +1,4 @@
-function ax = qp_createaxes(fig)
+function [ax,createops] = qp_createaxes(fig,cmd,varargin)
 %QP_CREATEAXES Create an axes for plotting.
 
 %----- LGPL --------------------------------------------------------------------
@@ -32,27 +32,27 @@ function ax = qp_createaxes(fig)
 %   $Id$
 
 ax=[];
+axname = 'New Plot';
+createops = {};
 
-% which kind of axes should be created?
-labels={'One Plot', ...
-    'User Selected Subplot', ...
-    'User Positioned Subplot'};
-if d3d_qp('iswl')
-    labels=cat(2,labels, ...
-        {'Deltares Logo'});
-end
-[axtype,axname]=ui_typeandname(labels);
+switch cmd
+    case 'relative'
+        pos = varargin{1};
+        unt = varargin{2};
+        rel = varargin{3};
+        nax = size(rel,1);
+        for i = size(rel):-1:1
+            subpos = [pos(1:2)+pos(3:4).*rel(i,1:2) pos(3:4).*rel(i,3:4)];
+            ax(i)=axes('parent',fig, ...
+                'units',unt, ...
+                'position',subpos);
+        end
 
-if isempty(axtype) % cancel pressed?
-    return
-end
-
-switch axtype
-    case 'One Plot'
+    case 'oneplot'
         ax=Local_subplot(fig,1,1,1);
         set(ax,'tag',axname)
 
-    case 'User Selected Subplot'
+    case 'matrix'
         labels={'Number of Plots per Column','2'; ...
             'Number of Plots per Row','2'; ...
             'Plot Number(s)','1'};
@@ -79,6 +79,7 @@ switch axtype
                     axname_i=sprintf([axname ' (%d,%d,%d)'],NR,NC,NP(i));
                     set(ax(i),'tag',axname_i);
                 end
+                createops = {NR,NC,NP};
             else
                 Str=lasterr;
                 if isempty(Str)
@@ -88,20 +89,14 @@ switch axtype
             end
         end
 
-    case {'User Positioned Subplot','Deltares Logo'}
+    case {'specloc','Deltares Logo'}
         Pos=getnormpos(fig);
         ax=axes('parent',fig,'units','normalized','position',Pos);
-        switch axtype
-            case 'User Positioned Subplot'
-            case 'Deltares Logo'
-                xx_logo('deltares',ax);
-                axname=axtype;
-                setappdata(ax,'AxesType','<special>')
-        end
-        set(ax,'tag',axname);
+        set(ax,'tag',axname)
+        createops = {Pos,'normalized'};
 
     otherwise
-        Str=sprintf('Requested axes type not yet implemented.');
+        Str=sprintf('Requested axes type "%s" not yet implemented.',cmd);
         ui_message('warning',Str);
         return
 end
