@@ -28,8 +28,8 @@ function qp_figaspect(fig)
 %
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: $
-%   $Id: $
+%   $HeadURL$
+%   $Id$
 
 fu = get(fig,'units');
 pu = get(fig,'paperunits');

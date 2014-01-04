@@ -28,8 +28,8 @@ function qp_title(hAx,Str,varargin)
 %
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: $
-%   $Id: $
+%   $HeadURL$
+%   $Id$
 
 hTl = get(hAx,'title');
 if iscell(Str)

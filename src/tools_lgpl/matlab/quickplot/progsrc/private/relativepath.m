@@ -43,8 +43,8 @@ function relfile = relativepath(file,reffile)
 %
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: https://svn.oss.deltares.nl/repos/delft3d/trunk/src/tools_lgpl/matlab/quickplot/progsrc/private/gridfil.m $
-%   $Id: gridfil.m 2860 2013-08-21 14:08:17Z jagers $
+%   $HeadURL$
+%   $Id$
 
 [~,f,e] = fileparts(file);
 if any(strcmp([f e],{'.','..'}))

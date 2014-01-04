@@ -36,8 +36,8 @@ function d = qp_strrep(c,key,val)
 %                                                                               
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: https://svn.oss.deltares.nl/repos/delft3d/trunk/src/tools_lgpl/matlab/quickplot/progsrc/private/qp_createaxes.m $
-%   $Id: qp_createaxes.m 3266 2013-12-30 23:01:48Z jagers $
+%   $HeadURL$
+%   $Id$
 
 lkey = lower(key);
 lenkey = length(key);

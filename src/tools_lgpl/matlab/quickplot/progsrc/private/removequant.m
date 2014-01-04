@@ -33,8 +33,8 @@ function Out = removequant(Out,List)
 %
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: https://svn.oss.deltares.nl/repos/delft3d/trunk/src/tools_lgpl/matlab/quickplot/progsrc/private/d3d_trihfil.m $
-%   $Id: d3d_trihfil.m 1147 2011-12-31 23:43:35Z jagers $
+%   $HeadURL$
+%   $Id$
 
 Names = {Out.Name};
 if iscellstr(List)

@@ -35,8 +35,8 @@ function file = absfullfile(varargin)
 %                                                                               
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: https://svn.oss.deltares.nl/repos/delft3d/trunk/src/tools_lgpl/matlab/quickplot/progsrc/private/qp_fmem.m $
-%   $Id: qp_fmem.m 2860 2013-08-21 14:08:17Z jagers $
+%   $HeadURL$
+%   $Id$
 
 file = varargin{1};
 if isequal(file(1),'/') || isequal(file(1),'\')

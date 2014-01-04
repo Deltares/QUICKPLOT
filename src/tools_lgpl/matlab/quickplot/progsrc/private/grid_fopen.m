@@ -28,8 +28,8 @@ function [DataFI,FileName,Tp,Otherargs] = grid_fopen(cmd,varargin)
 %                                                                               
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: https://svn.oss.deltares.nl/repos/delft3d/trunk/src/tools_lgpl/matlab/quickplot/progsrc/private/qp_fmem.m $
-%   $Id: qp_fmem.m 3262 2013-12-26 15:06:31Z jagers $
+%   $HeadURL$
+%   $Id$
 
 DataFI   = [];
 FileName = '';

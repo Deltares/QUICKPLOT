@@ -33,8 +33,8 @@ function val = qp_option(FI,field,setval)
 %                                                                               
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: https://svn.oss.deltares.nl/repos/delft3d/trunk/src/tools_lgpl/matlab/quickplot/progsrc/private/valuemap.m $
-%   $Id: valuemap.m 2498 2013-05-16 12:38:27Z jagers $
+%   $HeadURL$
+%   $Id$
 
 if nargin>2
     val = FI;

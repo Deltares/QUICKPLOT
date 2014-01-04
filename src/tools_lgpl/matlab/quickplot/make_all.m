@@ -6,7 +6,7 @@ function make_all
 %     * ECOPLOT
 %   all with exactly the same version number.
 
-%   $Id:$
+%   $Id$
 
 curdir = pwd;
 sourcedir=[curdir,filesep,'progsrc'];

@@ -28,8 +28,8 @@ function out = legendbox(cmd,varargin)
 %                                                                               
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: $
-%   $Id: $
+%   $HeadURL$
+%   $Id$
 
 switch lower(cmd)
     case {'init','initialize'}
