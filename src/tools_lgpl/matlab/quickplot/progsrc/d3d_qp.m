@@ -2755,7 +2755,7 @@ try
                 set(PM.FigBorder,'enable','on')
             end
             %
-            d3d_qp refreshaxprop
+            d3d_qp refreshfigs
             %
             if logfile
                 writelog(logfile,logtype,cmd,bd);
@@ -2868,7 +2868,7 @@ try
                 end
             end
             
-        case {'axescolour','xcolour','ycolour'}
+        case {'axescolour','xcolour','ycolour','zcolour'}
             ax = qpsa;
             if isempty(cmdargs)
                 if strcmp(get(gcbo,'style'),'checkbox') && ~get(gcbo,'value')
@@ -2916,25 +2916,34 @@ try
             else
                 xlm=cmdargs{1};
                 ylm=cmdargs{2};
-                if ischar(xlm)
+                if ischar(xlm) && ~isequal(xlm,'auto')
                     xlm = str2vec(xlm);
                 end
-                if ischar(ylm)
+                if ischar(ylm) && ~isequal(ylm,'auto')
                     ylm = str2vec(ylm);
                 end
             end
-            if isequal(size(xlm),[1 2]) && isequal(size(ylm),[1 2])
-                if any(xlm<0) && strcmp(get(ax,'xscale'),'log')
-                    set(ax,'xscale','linear')
+            if (isequal(size(xlm),[1 2]) || strcmp(xlm,'auto')) && (isequal(size(ylm),[1 2]) || strcmp(ylm,'auto'))
+                if ischar(xlm)
+                    set(ax,'xlimmode','auto')
+                else
+                    if any(xlm<0) && strcmp(get(ax,'xscale'),'log')
+                        set(ax,'xscale','linear')
+                    end
+                    set(ax,'xlim',xlm)
                 end
-                if any(ylm<0) && strcmp(get(ax,'yscale'),'log')
-                    set(ax,'yscale','linear')
+                if ischar(ylm)
+                    set(ax,'ylimmode','auto')
+                else
+                    if any(ylm<0) && strcmp(get(ax,'yscale'),'log')
+                        set(ax,'yscale','linear')
+                    end
+                    set(ax,'ylim',ylm)
                 end
-                set(ax,'xlim',xlm,'ylim',ylm)
                 setaxesprops(ax)
                 d3d_qp refreshaxprop
                 if logfile
-                    writelog(logfile,logtype,cmd,xlim,ylim);
+                    writelog(logfile,logtype,cmd,xlm,ylm);
                 end
             end
             
@@ -3135,7 +3144,9 @@ try
             end
             set(XLblAuto,'value',auto)
             if auto
-                rmappdata(ax,xlbl)
+                if isappdata(ax,xlbl)
+                    rmappdata(ax,xlbl)
+                end
             else
                 setappdata(ax,xlbl,lbl)
             end

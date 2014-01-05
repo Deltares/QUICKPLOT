@@ -53,47 +53,62 @@ switch cmd
         set(ax,'tag',axname)
 
     case 'matrix'
-        labels={'Number of Plots per Column','2'; ...
-            'Number of Plots per Row','2'; ...
-            'Plot Number(s)','1'};
-        inp=stdinputdlg(labels(:,1),'Please Specify',1,labels(:,2));
-        if ~isempty(inp)
-            lasterr='';
-            Correct=1;
-            try
-                NR=str2vec(inp{1},'%d');
-                NC=str2vec(inp{2},'%d');
-                NP=str2vec(inp{3},'%d');
-            catch
-                NR=1;
-                NC=1;
-                NP=1;
-                Correct=0;
-            end
-            Correct = Correct & isnumeric(NR) & isequal(size(NR),[1 1]) & ~isnan(NR) & ~isinf(NR) & (NR>0) & (NR==round(NR));
-            Correct = Correct & isnumeric(NC) & isequal(size(NC),[1 1]) & ~isnan(NC) & ~isinf(NC) & (NC>0) & (NC==round(NC));
-            Correct = Correct & isnumeric(NP) & isequal(size(NP,1),1) & ~any(isnan(NP(:))) & ~any(isinf(NP(:))) & all(NP(:)>0) & all(NP(:)==round(NP(:)));
-            if Correct
-                for i=length(NP(:)):-1:1;
-                    ax(i)=Local_subplot(fig,NR,NC,NP(i));
-                    axname_i=sprintf([axname ' (%d,%d,%d)'],NR,NC,NP(i));
-                    set(ax(i),'tag',axname_i);
+        Correct=1;
+        if nargin>2
+            NR = varargin{1};
+            NC = varargin{2};
+            NP = varargin{3};
+            inp='nonempty';
+        else
+            labels={'Number of Plots per Column','2'; ...
+                'Number of Plots per Row','2'; ...
+                'Plot Number(s)','1'};
+            inp=stdinputdlg(labels(:,1),'Please Specify',1,labels(:,2));
+            if ~isempty(inp)
+                lasterr='';
+                try
+                    NR=str2vec(inp{1},'%d');
+                    NC=str2vec(inp{2},'%d');
+                    NP=str2vec(inp{3},'%d');
+                catch
+                    NR=1;
+                    NC=1;
+                    NP=1;
+                    Correct=0;
                 end
-                createops = {NR,NC,NP};
-            else
-                Str=lasterr;
-                if isempty(Str)
-                    Str='Invalid numbers specified.';
-                end
-                ui_message('error',Str);
             end
+        end
+        Correct = Correct & isnumeric(NR) & isequal(size(NR),[1 1]) & ~isnan(NR) & ~isinf(NR) & (NR>0) & (NR==round(NR));
+        Correct = Correct & isnumeric(NC) & isequal(size(NC),[1 1]) & ~isnan(NC) & ~isinf(NC) & (NC>0) & (NC==round(NC));
+        Correct = Correct & isnumeric(NP) & isequal(size(NP,1),1) & ~any(isnan(NP(:))) & ~any(isinf(NP(:))) & all(NP(:)>0) & all(NP(:)==round(NP(:)));
+        if Correct
+            for i=length(NP(:)):-1:1;
+                ax(i)=Local_subplot(fig,NR,NC,NP(i));
+                axname_i=sprintf([axname ' (%d,%d,%d)'],NR,NC,NP(i));
+                set(ax(i),'tag',axname_i);
+            end
+            createops = {NR,NC,NP};
+        elseif ~isempty(inp)
+            Str=lasterr;
+            if isempty(Str)
+                Str='Invalid numbers specified.';
+            end
+            ui_message('error',Str);
         end
 
     case {'specloc','Deltares Logo'}
-        Pos=getnormpos(fig);
-        ax=axes('parent',fig,'units','normalized','position',Pos);
+        unit='normalized';
+        if nargin>2
+            Pos=varargin{1};
+            if nargin>3
+                unit=varargin{2};
+            end
+        else
+            Pos=getnormpos(fig);
+        end
+        ax=axes('parent',fig,'units',unit,'position',Pos);
         set(ax,'tag',axname)
-        createops = {Pos,'normalized'};
+        createops = {Pos,unit};
 
     otherwise
         Str=sprintf('Requested axes type "%s" not yet implemented.',cmd);

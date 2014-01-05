@@ -615,7 +615,7 @@ if qp_settings('shipma_figc')
     end
     d3d_qp('axesgrid',1,1)
     d3d_qp('axesboxed',1)
-    newylabel(qpsa,'swept path',0)
+    d3d_qp('ylabel','swept path (%unit%)')
     %--
     qpsa('lower plot')
     if d3d_qp('selectfield','water depth')
@@ -690,7 +690,7 @@ if qp_settings('shipma_figd')
     end
     d3d_qp('axesgrid',1,1)
     d3d_qp('axesboxed',1)
-    newylabel(qpsa,'longitudinal forces',1)
+    d3d_qp('ylabel','longitudinal forces (%unit%) \rightarrow')
     %--
     qpsa('middle plot')
     if qp_settings('shipma_figd_wind') && d3d_qp('selectfield','transverse wind force')
@@ -711,7 +711,7 @@ if qp_settings('shipma_figd')
     end
     d3d_qp('axesgrid',1,1)
     d3d_qp('axesboxed',1)
-    newylabel(qpsa,'transverse forces',1)
+    d3d_qp('ylabel','transverse forces (%unit%) \rightarrow')
     %--
     qpsa('lower plot')
     if qp_settings('shipma_figd_wind') && d3d_qp('selectfield','wind moment on ship')
@@ -732,7 +732,7 @@ if qp_settings('shipma_figd')
     end
     d3d_qp('axesgrid',1,1)
     d3d_qp('axesboxed',1)
-    newylabel(qpsa,'moment',1)
+    d3d_qp('ylabel','moment (%unit%) \rightarrow')
 end
 %--------
 if qp_settings('shipma_fige')
@@ -764,7 +764,7 @@ if qp_settings('shipma_fige')
     end
     d3d_qp('axesgrid',1,1)
     d3d_qp('axesboxed',1)
-    newylabel(qpsa,'longitudinal force',1)
+    d3d_qp('ylabel','longitudinal force (%unit%) \rightarrow')
     %--
     qpsa('middle plot')
     if qp_settings('shipma_fige_tugs') && d3d_qp('selectfield','transverse total tug force')
@@ -777,7 +777,7 @@ if qp_settings('shipma_fige')
     end
     d3d_qp('axesgrid',1,1)
     d3d_qp('axesboxed',1)
-    newylabel(qpsa,'transverse force',1)
+    d3d_qp('ylabel','transverse force (%unit%) \rightarrow')
     %--
     qpsa('lower plot')
     if qp_settings('shipma_fige_tugs') && d3d_qp('selectfield','total tug moment')
@@ -790,25 +790,12 @@ if qp_settings('shipma_fige')
     end
     d3d_qp('axesgrid',1,1)
     d3d_qp('axesboxed',1)
-    newylabel(qpsa,'moment',1)
+    d3d_qp('ylabel','moment (%unit%) \rightarrow')
 end
 %--------
 d3d_qp('selectfield','default figures')
 inSelfPlot=[];
 % -----------------------------------------------------------------------------
-
-function newylabel(ax,val,arrow)
-hy=get(ax,'ylabel');
-yu=getappdata(ax,'yunit');
-if ~isempty(yu)
-    yu = [' (' yu ')'];
-end
-if arrow
-    arrowstr = ' \rightarrow';
-else
-    arrowstr = '';
-end
-set(hy,'string',[val yu arrowstr])
 
 
 % -----------------------------------------------------------------------------

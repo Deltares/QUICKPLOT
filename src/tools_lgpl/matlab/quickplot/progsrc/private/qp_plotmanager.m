@@ -198,7 +198,7 @@ switch cmd
             if ~ishandle(Fig)
                 d3d_qp refreshfigs
             else
-                [h,createops]=qp_createaxes(Fig,cmd(9:end));
+                [h,createops]=qp_createaxes(Fig,cmd(9:end),cmdargs{:});
                 if ~isempty(h)
                     set(UD.PlotMngr.AxList,'value',1,'string',listnames(h),'userdata',h);
                     d3d_qp refreshaxes
@@ -834,6 +834,9 @@ switch cmd
                 end
             end
             delete(Ax)
+            if logfile
+                writelog(logfile,logtype,cmd);
+            end
         end
         d3d_qp refreshaxes
         d3d_qp refreshfigprop

@@ -123,6 +123,7 @@
 %   pathdistance        - Computes the distance along a path.
 %   printdims           - Display dimension information.
 %   qck_anim            - Helper function for QuickPlot Animations.
+%   qp_session          - Save QuickPlot figures to and rebuild them from an ASCII file.
 %   qp_colorbar         - Display color bar (color scale).
 %   qp_getdata          - General interface for various data files
 %   qp_gridview         - Helper routine for Grid View interface.

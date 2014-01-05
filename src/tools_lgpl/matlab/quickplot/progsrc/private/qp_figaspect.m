@@ -1,4 +1,4 @@
-function qp_figaspect(fig)
+function qp_figaspect(fig,wh_pix)
 %QP_FIGASPECT Reshapes figure to match paper size.
 
 %----- LGPL --------------------------------------------------------------------
@@ -32,28 +32,39 @@ function qp_figaspect(fig)
 %   $Id$
 
 fu = get(fig,'units');
-pu = get(fig,'paperunits');
-set(fig,'units',pu)
-pos = get(fig,'position');
-sz  = get(fig,'papersize');
-npos(3:4) = sz*sqrt(prod(pos(3:4))/prod(sz));
-npos(1:2) = pos(1:2)+(pos(3:4)-npos(3:4))/2;
-set(fig,'position',npos)
-
 set(fig,'units','pixels')
-pos = get(fig,'outerposition');
-pxmon = qp_getscreen(fig);
-if any(pos(3:4)>pxmon(3:4))
-    % figure too big, so make it fit
-    ipos      = get(fig,'position');
-    bnd       = pos-ipos;
-    mxsz      = pxmon(3:4)-bnd(3:4);
-    ipos(3:4) = round(min(mxsz./ipos(3:4))*ipos(3:4));
-    pos       = ipos+bnd;
+
+opos = get(fig,'outerposition');
+ipos = get(fig,'position');
+bnd  = opos-ipos;
+
+% new inner size
+if nargin>1
+    npos(3:4) = wh_pix;
+else
+    sz = get(fig,'papersize');
+    npos(3:4) = sz*sqrt(prod(ipos(3:4))/prod(sz));
 end
-% the figure fits (now), so now make sure it's on screen
-pos(1:2) = max(pos(1:2),pxmon(1:2));
-pos(1:2) = min(pos(1:2)+pos(3:4),pxmon(1:2)+pxmon(3:4)) - pos(3:4);
-set(fig,'outerposition',pos)
+
+%fit to screen
+pxmon = qp_getscreen(fig);
+if any(npos(3:4)+bnd(3:4)>pxmon(3:4))
+    % figure too big, so make it fit
+    mxsz      = pxmon(3:4)-bnd(3:4);
+    npos(3:4) = round(min(mxsz./npos(3:4))*npos(3:4));
+else
+    npos      = round(npos);
+end
+
+% new inner offset
+npos(1:2) = ipos(1:2)+(ipos(3:4)-npos(3:4))/2;
+
+% new outer position
+opos       = npos+bnd;
+
+% the figure fits (now), but the offset may still put it partly off the screen
+opos(1:2) = max(opos(1:2),pxmon(1:2));
+opos(1:2) = min(opos(1:2)+opos(3:4),pxmon(1:2)+pxmon(3:4)) - opos(3:4);
+set(fig,'outerposition',opos)
 
 set(fig,'units',fu)
