@@ -718,8 +718,6 @@ try
          PS.Stations=locs;
          PS.Ops=qp_state_startup;
          PS.Ops.axestype='LimitingFactorsAxes';
-         PS.Ops.spatial=0;
-         PS.Ops.spatialh=0;
          PS.Ops.colourbar='none';
          PS.Ops.colour='b';
          [hNew,Error,Info]=qp_plot(PS);
@@ -750,8 +748,6 @@ try
          PS.Stations=locs;
          PS.Ops=qp_state_startup;
          PS.Ops.axestype='Time-<blocking>';
-         PS.Ops.spatial=0;
-         PS.Ops.spatialh=0;
          PS.Ops.colourbar='none';
          PS.Ops.colour='none';
          [hNew,Error,Info]=qp_plot(PS);
@@ -824,8 +820,6 @@ try
             PS.Stations=locs;
             PS.Ops=qp_state_startup;
             PS.Ops.axestype='Time-Val';
-            PS.Ops.spatial=0;
-            PS.Ops.spatialh=0;
             PS.Ops.colourbar='none';
             PS.Ops.colour=Clrs(iclr,:);
             PS.Ops.clippingvalues=realset('-999');
@@ -867,8 +861,6 @@ try
             PS.Stations='';
             PS.Ops=qp_state_startup;
             PS.Ops.axestype='X-Y';
-            PS.Ops.spatial=2;
-            PS.Ops.spatialh=2;
             if PS.Props.NVal == 0
                PS.Ops.colourbar='none';
             else
@@ -905,8 +897,6 @@ try
                PS.Stations='';
                PS.Ops=qp_state_startup;
                PS.Ops.axestype='X-Y';
-               PS.Ops.spatial=2;
-               PS.Ops.spatialh=2;
                PS.Ops.presentationtype='markers';
                PS.Ops.marker='o';
                PS.Ops.markerfillcolour='flat';

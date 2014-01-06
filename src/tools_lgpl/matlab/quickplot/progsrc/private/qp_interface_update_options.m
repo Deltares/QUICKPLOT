@@ -461,9 +461,6 @@ if strfind(axestype,'Z')
 else
     SpatialV=0;
 end
-Ops.spatial=Spatial;
-Ops.spatialh=SpatialH;
-Ops.spatialv=SpatialV;
 
 if strcmp(axestype,'X-Y-Z') % cannot plot 3D volumes
     %won't plot
@@ -538,11 +535,11 @@ if nval==2 || nval==3
             if MNK>0
                 if DimFlag(K_) && DimFlag(M_) && DimFlag(N_)
                     compList={'vector','vector (split x,y)','vector (split m,n)','patch centred vector','magnitude','magnitude in plane','angle','x component','y component','z component','m component','n component'};
-                    if Ops.spatialh ~=2
+                    if SpatialH ~=2
                         ii=strmatch('magnitude in plane',compList,'exact');
                         compList(ii)=[];
                     end
-                    if Ops.spatial==2 && Ops.spatialh==1
+                    if Spatial==2 && SpatialH==1
                         compList{end+1}='normal component';
                     end
                 else
@@ -573,14 +570,14 @@ if nval==2 || nval==3
         end
     end
 
-    if Ops.spatialv
+    if SpatialV
         ii=strmatch('vector (split',compList);
         compList(ii)=[];
-    elseif Ops.spatial==1
+    elseif Spatial==1
         ii=strmatch('vector',compList);
         compList(ii)=[];
     end
-    if nval==2 && Ops.spatialv && Ops.spatial>=2 && ~strcmp(nvalstr,'xz') % don't plot vectors without vertical component in 2DV and 3D
+    if nval==2 && SpatialV && Spatial>=2 && ~strcmp(nvalstr,'xz') % don't plot vectors without vertical component in 2DV and 3D
         ii=strmatch('vector',compList);
         compList(ii)=[];
     end
@@ -672,7 +669,7 @@ if (nval==1 && data2d && ~strcmp(geometry,'SEG')) || nval==1.9 || strcmp(nvalstr
             switch dic
                 case 0
                     if triangles
-                        if Ops.spatialv
+                        if SpatialV
                             PrsTps={'continuous shades';'markers';'values'};
                         else
                             PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
@@ -1301,7 +1298,7 @@ if (nval==1 || isfield(Ops,'vectorcolour') || isfield(Ops,'colourdams')) && (lin
     Ops.clippingvalues=get(findobj(OH,'tag','clippingvals=?'),'userdata');
 end
 
-if (Ops.spatialh==2)
+if (SpatialH==2)
     set(findobj(OH,'tag','clippingvals'),'enable','on')
     set(findobj(OH,'tag','xclipping'),'enable','on')
     set(findobj(OH,'tag','xclipping=?'),'enable','on','backgroundcolor',Active)
@@ -1314,7 +1311,7 @@ end
 %---- Export option
 
 ExpTypes={};
-if (Ops.spatial<=1) && nval>0
+if (Spatial<=1) && nval>0
     ExpTypes{end+1}='csv file (time series)';
     ExpTypes{end+1}='Tekal file (time series)';
 end

@@ -385,7 +385,7 @@ if isfield(data,'XComp')
         if ~isempty(Ops.vectorcolour)
             PName=[PName ', ' Ops.vectorcolour];
             Units = data(1).Units;
-        elseif Ops.spatial>1
+        elseif any(strcmp(Ops.basicaxestype,{'X-Y','Lon-Lat'}))
             Units='';
         end
     else
