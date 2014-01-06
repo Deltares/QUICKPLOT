@@ -106,6 +106,19 @@ if State.version<1.3
     State=setopt(State,'vectorstyle','rooted arrow');
     State.version=1.3;
 end
+%
+% default settings
+%
+State=setopt(State,'presentationtype','');
+State=setopt(State,'units','');
+State=setopt(State,'thinningmode','none');
+%State=setopt(State,'thresholds','none');
+%State=setopt(State,'thresholddistribution','linear');
+%State=setopt(State,'horizontalalignment','centre');
+%State=setopt(State,'verticalalignment','middle');
+%State=setopt(State,'fontsize',6);
+State=setopt(State,'textboxfacecolour','none');
+
 
 
 function State=setopt(State,Field,Val)

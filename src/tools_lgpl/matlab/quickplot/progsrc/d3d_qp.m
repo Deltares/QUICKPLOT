@@ -1489,7 +1489,7 @@ try
             if Succes
                 Info=File(NrInList);
                 [DomainNr,Props,subf,selected,stats,Ops]=qp_interface_update_options(mfig,UD);
-                if strcmp(Ops.presentationtype,'failed')
+                if isempty(Ops)strcmp(Ops.presentationtype,'failed')
                     cmd='error';
                 end
             else
@@ -1594,7 +1594,7 @@ try
                         DS.SubField=subf;
                         DS.Selected=selected;
                         DS.Ops=Ops;
-                        FileName=qp_export(Ops.exporttype,FileName,DS);
+                        FileName=qp_export(getappdata(findobj(mfig,'tag','exportdata'),'exporttype'),FileName,DS);
                         set(mfig,'pointer','arrow')
                     catch Ex
                         FileName='';
@@ -1646,7 +1646,7 @@ try
                     % animate time dimension when appropriate ...
                     %
                     T=1;
-                    Animate=Ops.animate;
+                    Animate = getappdata(findobj(mfig,'tag','quickview'),'animate');
                     if Animate && Props.DimFlag(T_)
                         if selected{T_}==0
                             maxt=get(findobj(mfig,'tag','max_t'),'userdata');

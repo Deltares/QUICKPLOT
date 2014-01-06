@@ -51,53 +51,56 @@ axi = 0;
 S = [];
 while ~isempty(Str)
     args = parseargs(Str);
-    switch args{1}
-        case 'Figure'
+    key  = lower(args{1});
+    switch key
+        case 'figure'
             fgi = length(S)+1;
             axi = 0;
-            S(fgi).Name = args{2};
-            S(fgi).PaperType = 'a4';
-            S(fgi).PaperOrientation = 'portrait';
-            S(fgi).PaperSize = [];
-            S(fgi).PaperUnits = 'centimeters';
-            S(fgi).WindowSize = [];
-            S(fgi).Color = [];
-            S(fgi).Frame.Type = 'none';
-            S(fgi).Axes = [];
-        case 'FrameStyle'
-            S(fgi).Frame.Type = args{2};
-        case 'Axes'
-            axi = length(S(fgi).Axes)+1;
-            S(fgi).Axes(axi).Name = args{2};
-            S(fgi).Axes(axi).Position = [];
-            S(fgi).Axes(axi).Color = get(0,'factoryuicontrolbackgroundcolor')*255;
-            S(fgi).Axes(axi).Box = 'off';
-            S(fgi).Axes(axi).Title = '<automatic>';
+            S(fgi).name = args{2};
+            S(fgi).papertype = 'a4';
+            S(fgi).paperorientation = 'portrait';
+            S(fgi).papersize = [];
+            S(fgi).paperunits = 'centimeters';
+            S(fgi).windowsize = [];
+            S(fgi).colour = get(0,'factoryuicontrolbackgroundcolor')*255;
+            S(fgi).frame.style = 'none';
+            S(fgi).axes = [];
+        case 'framestyle'
+            S(fgi).frame.style = args{2};
+        case 'axes'
+            axi = length(S(fgi).axes)+1;
+            S(fgi).axes(axi).name = args{2};
+            S(fgi).axes(axi).position = [];
+            S(fgi).axes(axi).colour = [255 255 255];
+            S(fgi).axes(axi).box = 'off';
+            S(fgi).axes(axi).title = '<automatic>';
             for x = 'xyz'
-                X = upper(x);
-                S(fgi).Axes(axi).([X 'Label']) = '<automatic>';
-                S(fgi).Axes(axi).([X 'Color']) = [0 0 0];
-                S(fgi).Axes(axi).([X 'Grid'])  = 'off';
-                if X=='X'
-                    S(fgi).Axes(axi).([X 'Loc']) = 'bottom';
-                elseif X=='Y'
-                    S(fgi).Axes(axi).([X 'Loc']) = 'left';
+                S(fgi).axes(axi).([x 'label']) = '<automatic>';
+                S(fgi).axes(axi).([x 'colour']) = [0 0 0];
+                S(fgi).axes(axi).([x 'grid'])  = 'off';
+                if x=='x'
+                    S(fgi).axes(axi).([x 'loc']) = 'bottom';
+                elseif x=='y'
+                    S(fgi).axes(axi).([x 'loc']) = 'left';
                 end
-                S(fgi).Axes(axi).([X 'Scale']) = 'linear';
-                S(fgi).Axes(axi).([X 'Lim']) = 'auto';
+                S(fgi).axes(axi).([x 'scale']) = 'linear';
+                S(fgi).axes(axi).([x 'lim']) = 'auto';
             end
-        case 'EndAxes'
+        case 'endaxes'
             axi = 0;
-        case 'EndFigure'
+        case 'endfigure'
             fgi = 0;
         otherwise
             if fgi>0
+                if length(key)>5 && strcmp(key(end-4:end),'color')
+                    key = [key(1:end-5) 'colour'];
+                end
                 if axi>0
-                    S(fgi).Axes(axi).(args{1}) = args{2};
-                elseif strncmp(args{1},'FrameText',9)
-                    S(fgi).Frame.(args{1}) = args{2};
+                    S(fgi).axes(axi).(key) = args{2};
+                elseif strncmp(key,'frametext',9)
+                    S(fgi).frame.(key) = args{2};
                 else
-                    S(fgi).(args{1}) = args{2};
+                    S(fgi).(key) = args{2};
                 end
             end
     end
@@ -140,56 +143,57 @@ end
 function local_save(S,filename)
 fid = fopen(filename,'w');
 for fgi = 1:length(S)
-    fprintf(fid,'Figure             ''%s''\n',S(fgi).Name);
-    fprintf(fid,'  PaperType        ''%s''\n',S(fgi).PaperType);
-    fprintf(fid,'  PaperOrientation ''%s''\n',S(fgi).PaperOrientation);
-    if strcmp(S(fgi).PaperType,'<custom>')
-        fprintf(fid,'  PaperSize        [%g %g]\n',S(fgi).PaperSize);
-        fprintf(fid,'  PaperUnits       ''%s''\n',S(fgi).PaperUnits);
+    fprintf(fid,'Figure             ''%s''\n',S(fgi).name);
+    fprintf(fid,'  PaperType        ''%s''\n',S(fgi).papertype);
+    fprintf(fid,'  PaperOrientation ''%s''\n',S(fgi).paperorientation);
+    if strcmp(S(fgi).papertype,'<custom>')
+        fprintf(fid,'  PaperSize        [%g %g]\n',S(fgi).papersize);
+        fprintf(fid,'  PaperUnits       ''%s''\n',S(fgi).paperunits);
     end
-    if ~isequal(S(fgi).Color,get(0,'factoryuicontrolbackgroundcolor')*255)
-        fprintf(fid,'  Color            [%i %i %i]\n',S(fgi).Color);
+    if ~isequal(S(fgi).colour,get(0,'factoryuicontrolbackgroundcolor')*255)
+        fprintf(fid,'  Colour           [%i %i %i]\n',S(fgi).colour);
     end
-    fprintf(fid,'  WindowSize       [%i %i]\n',S(fgi).WindowSize);
-    fprintf(fid,'  FrameStyle       ''%s''\n',S(fgi).Frame.Type);
+    fprintf(fid,'  WindowSize       [%i %i]\n',S(fgi).windowsize);
+    fprintf(fid,'  FrameStyle       ''%s''\n',S(fgi).frame.style);
     ibt = 1;
-    fld = 'FrameText1';
-    while isfield(S(fgi).Frame,fld)
-        fprintf(fid,'  FrameText%-4i    ''%s''\n',ibt,S(fgi).Frame.(fld));
+    fld = 'frametext1';
+    while isfield(S(fgi).frame,fld)
+        fprintf(fid,'  FrameText%-4i    ''%s''\n',ibt,S(fgi).frame.(fld));
         ibt = ibt+1;
-        fld = sprintf('FrameText%i',ibt);
+        fld = sprintf('frametext%i',ibt);
     end
     %
-    for axi = 1:length(S(fgi).Axes)
-        fprintf(fid,'\n  Axes        ''%s''\n',S(fgi).Axes(axi).Name);
-        fprintf(fid,'    Position  [%g %g %g %g]\n',S(fgi).Axes(axi).Position);
-        if ~strcmp(S(fgi).Axes(axi).Title,'<automatic>')
-            fprintf(fid,'    Title     ''%s''\n',S(fgi).Axes(axi).Title);
+    for axi = 1:length(S(fgi).axes)
+        fprintf(fid,'\n  Axes        ''%s''\n',S(fgi).axes(axi).name);
+        fprintf(fid,'    Position  [%g %g %g %g]\n',S(fgi).axes(axi).position);
+        if ~strcmp(S(fgi).axes(axi).title,'<automatic>')
+            fprintf(fid,'    Title     ''%s''\n',S(fgi).axes(axi).title);
         end
-        if ischar(S(fgi).Axes(axi).Color)
-            fprintf(fid,'    Color     ''none''\n');
-        elseif ~isequal(S(fgi).Axes(axi).Color,[255 255 255])
-            fprintf(fid,'    Color     [%i %i %i]\n',S(fgi).Axes(axi).Color);
+        if ischar(S(fgi).axes(axi).colour)
+            fprintf(fid,'    Colour    ''none''\n');
+        elseif ~isequal(S(fgi).axes(axi).colour,[255 255 255])
+            fprintf(fid,'    Colour    [%i %i %i]\n',S(fgi).axes(axi).colour);
         end
-        fprintf(fid,'    Box       ''%s''\n',S(fgi).Axes(axi).Box);
-        for X = 'XY'
-            if ~strcmp(S(fgi).Axes(axi).([X 'Label']),'<automatic>')
-                fprintf(fid,'    %sLabel    ''%s''\n',X,S(fgi).Axes(axi).([X 'Label']));
+        fprintf(fid,'    Box       ''%s''\n',S(fgi).axes(axi).box);
+        for x = 'xy'
+            X = upper(x);
+            if ~strcmp(S(fgi).axes(axi).([x 'label']),'<automatic>')
+                fprintf(fid,'    %sLabel    ''%s''\n',X,S(fgi).axes(axi).([x 'label']));
             end
-            if ~strcmp(S(fgi).Axes(axi).([X 'Grid']),'off')
-                fprintf(fid,'    %sGrid     ''%s''\n',X,S(fgi).Axes(axi).([X 'Grid']));
+            if ~strcmp(S(fgi).axes(axi).([x 'grid']),'off')
+                fprintf(fid,'    %sGrid     ''%s''\n',X,S(fgi).axes(axi).([x 'grid']));
             end
             if X<'Z'
-                fprintf(fid,'    %sLoc      ''%s''\n',X,S(fgi).Axes(axi).([X 'Loc']));
+                fprintf(fid,'    %sLoc      ''%s''\n',X,S(fgi).axes(axi).([x 'loc']));
             end
-            if ~strcmp(S(fgi).Axes(axi).([X 'Scale']),'linear')
-                fprintf(fid,'    %sScale    ''%s''\n',X,S(fgi).Axes(axi).([X 'Scale']));
+            if ~strcmp(S(fgi).axes(axi).([x 'scale']),'linear')
+                fprintf(fid,'    %sScale    ''%s''\n',X,S(fgi).axes(axi).([x 'scale']));
             end
-            if ~ischar(S(fgi).Axes(axi).([X 'Lim'])) % i.e. not "auto"
-                fprintf(fid,'    %sLim      [%g %g]\n',X,S(fgi).Axes(axi).([X 'Lim']));
+            if ~ischar(S(fgi).axes(axi).([x 'lim'])) % i.e. not "auto"
+                fprintf(fid,'    %sLim      [%g %g]\n',X,S(fgi).axes(axi).([x 'lim']));
             end
-            if ~isequal(S(fgi).Axes(axi).([X 'Color']),[0 0 0])
-                fprintf(fid,'    %sColor    [%i %i %i]\n',X,S(fgi).Axes(axi).([X 'Color']));
+            if ~isequal(S(fgi).axes(axi).([x 'colour']),[0 0 0])
+                fprintf(fid,'    %sColour   [%i %i %i]\n',X,S(fgi).axes(axi).([x 'colour']));
             end
         end
         fprintf(fid,'  EndAxes\n');
@@ -200,26 +204,26 @@ fclose(fid);
 
 function H = local_rebuild(S)
 for fgi = length(S):-1:1
-    d3d_qp('newfigure','free format figure',S(fgi).Name)
+    d3d_qp('newfigure','free format figure',S(fgi).name)
     H(fgi) = qpsf;
-    if ~isempty(S(fgi).WindowSize)
-        qp_figaspect(H(fgi),S(fgi).WindowSize)
+    if ~isempty(S(fgi).windowsize)
+        qp_figaspect(H(fgi),S(fgi).windowsize)
     end
-    d3d_qp('figurecolour',S(fgi).Color/255)
-    if strcmp(S(fgi).PaperType,'<custom>')
-        d3d_qp('figurepapertype','<custom>',S(fgi).PaperSize,S(fgi).PaperUnits)
+    d3d_qp('figurecolour',S(fgi).colour/255)
+    if strcmp(S(fgi).papertype,'<custom>')
+        d3d_qp('figurepapertype','<custom>',S(fgi).papersize,S(fgi).paperunits)
     else
-        d3d_qp('figurepapertype',S(fgi).PaperType,S(fgi).PaperOrientation)
+        d3d_qp('figurepapertype',S(fgi).papertype,S(fgi).paperorientation)
     end
-    d3d_qp('figureborderstyle',S(fgi).Frame.Type)
-    if ~strcmp(S(fgi).Frame.Type,'none')
+    d3d_qp('figureborderstyle',S(fgi).frame.style)
+    if ~strcmp(S(fgi).frame.style,'none')
         ibt = 1;
-        fld = 'FrameText1';
+        fld = 'frametext1';
         BTx = {};
-        while isfield(S(fgi).Frame,fld)
-            BTx{ibt} = S(fgi).Frame.(fld);
+        while isfield(S(fgi).frame,fld)
+            BTx{ibt} = S(fgi).frame.(fld);
             ibt = ibt+1;
-            fld = sprintf('FrameText%i',ibt);
+            fld = sprintf('frametext%i',ibt);
         end
         if ~isempty(BTx)
             d3d_qp('figureborder',BTx{:})
@@ -227,21 +231,20 @@ for fgi = length(S):-1:1
         d3d_qp('deleteaxes') % delete default axes created by figure border
     end
     %
-    for axi = 1:length(S(fgi).Axes)
-        d3d_qp('newaxes_specloc',S(fgi).Axes(axi).Position,'normalized')
-        d3d_qp('axesname',S(fgi).Axes(axi).Name)
-        d3d_qp('axescolour',S(fgi).Axes(axi).Color/255)
-        d3d_qp('axesboxed',strcmp(S(fgi).Axes(axi).Box,'on'))
-        d3d_qp('axesgrid',strcmp(S(fgi).Axes(axi).XGrid,'on'),strcmp(S(fgi).Axes(axi).YGrid,'on'))
-        d3d_qp('axesloc',S(fgi).Axes(axi).XLoc,S(fgi).Axes(axi).YLoc)
-        d3d_qp('axeslimits',S(fgi).Axes(axi).XLim,S(fgi).Axes(axi).YLim)
-        d3d_qp('axesscale',S(fgi).Axes(axi).XScale,S(fgi).Axes(axi).YScale)
+    for axi = 1:length(S(fgi).axes)
+        d3d_qp('newaxes_specloc',S(fgi).axes(axi).position,'normalized')
+        d3d_qp('axesname',S(fgi).axes(axi).name)
+        d3d_qp('axescolour',S(fgi).axes(axi).colour/255)
+        d3d_qp('axesboxed',strcmp(S(fgi).axes(axi).box,'on'))
+        d3d_qp('axesgrid',strcmp(S(fgi).axes(axi).xgrid,'on'),strcmp(S(fgi).axes(axi).ygrid,'on'))
+        d3d_qp('axesloc',S(fgi).axes(axi).xloc,S(fgi).axes(axi).yloc)
+        d3d_qp('axeslimits',S(fgi).axes(axi).xlim,S(fgi).axes(axi).ylim)
+        d3d_qp('axesscale',S(fgi).axes(axi).xscale,S(fgi).axes(axi).yscale)
         %
-        d3d_qp('title',S(fgi).Axes(axi).Title)
+        d3d_qp('title',S(fgi).axes(axi).title)
         for x = 'xyz'
-            X = upper(x);
-            d3d_qp([x 'label'],S(fgi).Axes(axi).([X 'Label']))
-            d3d_qp([x 'colour'],S(fgi).Axes(axi).([X 'Color'])/255)
+            d3d_qp([x 'label'],S(fgi).axes(axi).([x 'label']))
+            d3d_qp([x 'colour'],S(fgi).axes(axi).([x 'colour'])/255)
         end
     end
 end
@@ -250,14 +253,14 @@ function S = local_extract(H)
 for fgi = length(H):-1:1
     HInfo = get(H(fgi));
     
-    S(fgi).Name  = HInfo.Name;
-    S(fgi).PaperType = HInfo.PaperType;
-    S(fgi).PaperOrientation = HInfo.PaperOrientation;
-    S(fgi).PaperSize = HInfo.PaperSize;
-    S(fgi).PaperUnits = HInfo.PaperUnits;
-    S(fgi).WindowSize = HInfo.Position(3:4); % Units = pixels
-    S(fgi).Color = round(HInfo.Color*255);
-    S(fgi).Frame.Type = 'none';
+    S(fgi).name        = HInfo.Name;
+    S(fgi).papertype   = HInfo.PaperType;
+    S(fgi).paperorientation = HInfo.PaperOrientation;
+    S(fgi).papersize   = HInfo.PaperSize;
+    S(fgi).paperunits  = HInfo.PaperUnits;
+    S(fgi).windowsize  = HInfo.Position(3:4); % Units = pixels
+    S(fgi).colour      = round(HInfo.Color*255);
+    S(fgi).frame.style = 'none';
     
     axi = 0;
     for i = 1:length(HInfo.Children)
@@ -266,46 +269,46 @@ for fgi = length(H):-1:1
         if strcmp(AInfo.Type,'axes') && strcmp(AInfo.Tag,'border')
             % use A.UserData;
             AInfo = md_paper(A,'getprops');
-            S(fgi).Frame.Type = AInfo.Name;
+            S(fgi).frame.style = AInfo.Name;
             ibt = 1;
             btxt = 'BorderText1';
-            ftxt = 'FrameText1';
+            ftxt = 'frametext1';
             while isfield(AInfo,btxt)
-                S(fgi).Frame.(ftxt) = AInfo.(btxt);
+                S(fgi).frame.(ftxt) = AInfo.(btxt);
                 ibt  = ibt+1;
                 btxt = sprintf('BorderText%i',ibt);
-                ftxt = sprintf('FrameText%i',ibt);
+                ftxt = sprintf('frametext%i',ibt);
             end
         elseif strcmp(AInfo.Type,'axes')
             % normal axes
             axi = axi+1;
-            S(fgi).Axes(axi).Name = AInfo.Tag;
-            S(fgi).Axes(axi).Position = AInfo.Position;
-            S(fgi).Axes(axi).Color = round(AInfo.Color*255);
-            S(fgi).Axes(axi).Box = AInfo.Box;
+            S(fgi).axes(axi).name      = AInfo.Tag;
+            S(fgi).axes(axi).position  = AInfo.Position;
+            S(fgi).axes(axi).colour    = round(AInfo.Color*255);
+            S(fgi).axes(axi).box       = AInfo.Box;
             %
             if isappdata(A,'title')
-                S(fgi).Axes(axi).Title = getappdata(A,'title');
+                S(fgi).axes(axi).title = getappdata(A,'title');
             else
-                S(fgi).Axes(axi).Title = '<automatic>';
+                S(fgi).axes(axi).title = '<automatic>';
             end
             for x = 'xyz'
                 X = upper(x);
                 if isappdata(A,[x 'label'])
-                    S(fgi).Axes(axi).([X 'Label']) = getappdata(A,[x 'label']);
+                    S(fgi).axes(axi).([x 'label']) = getappdata(A,[x 'label']);
                 else
-                    S(fgi).Axes(axi).([X 'Label']) = '<automatic>';
+                    S(fgi).axes(axi).([x 'label']) = '<automatic>';
                 end
-                S(fgi).Axes(axi).([X 'Color']) = round(AInfo.([X 'Color'])*255);
-                S(fgi).Axes(axi).([X 'Grid']) = AInfo.([X 'Grid']);
+                S(fgi).axes(axi).([x 'colour']) = round(AInfo.([X 'Color'])*255);
+                S(fgi).axes(axi).([x 'grid']) = AInfo.([X 'Grid']);
                 if X < 'Z'
-                    S(fgi).Axes(axi).([X 'Loc']) = AInfo.([X 'AxisLocation']);
+                    S(fgi).axes(axi).([x 'loc']) = AInfo.([X 'AxisLocation']);
                 end
-                S(fgi).Axes(axi).([X 'Scale']) = AInfo.([X 'Scale']);
+                S(fgi).axes(axi).([x 'scale']) = AInfo.([X 'Scale']);
                 if strcmp(AInfo.([X 'LimMode']),'manual')
-                    S(fgi).Axes(axi).([X 'Lim']) = AInfo.([X 'Lim']);
+                    S(fgi).axes(axi).([x 'lim']) = AInfo.([X 'Lim']);
                 else
-                    S(fgi).Axes(axi).([X 'Lim']) = 'auto';
+                    S(fgi).axes(axi).([x 'lim']) = 'auto';
                 end
             end
         end

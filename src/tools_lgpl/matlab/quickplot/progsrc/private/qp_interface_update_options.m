@@ -44,7 +44,7 @@ if isempty(Props)
     subf = [];
     selected = [];
     stats =[];
-    Ops.presentationtype = 'failed';
+    Ops = [];
     return
 end
 Props=Props(fld);
@@ -185,16 +185,14 @@ for m = 6:length(DimFlag)
     end
 end
 set(setdiff(UD.Options.Handles,gcbo),'enable','off','backgroundcolor',Inactive)
-Ops.thinningmode='none';
-Ops.thinningfactors=[1 1 1];
-Ops.thinningdistance=50;
-Ops.vectorscalingmode='';
-Ops.vectorscale=1;
-Ops.thresholds='none';
+ask_for_thinningmode = 0;
+ask_for_thresholds   = 0;
+ask_for_numformat    = 0;
+ask_for_textprops    = 0;
 Ops.vectorcolour='';
 Ops.presentationtype='';
 Ops.vectorcomponent='';
-Ops.angleconvention='';
+ask_for_angleconvention = 0;
 Ops.MNK=0;
 
 Handle_Domain=findobj(mfig,'tag','selectdomain');
@@ -203,7 +201,7 @@ DomainNr=get(Handle_Domain,'value');
 for i=5:-1:1
     multiple(i) = (length(selected{i})>1) | isequal(selected{i},0);
 end
-Ops.animate = multiple(T_);
+animate = multiple(T_);
 
 MNK=0;
 if isfield(Props,'MNK')
@@ -216,7 +214,6 @@ end
 OH = UD.Options.Handles;
 %
 vectors=0;
-plotstexts=0;
 usesmarker=0;
 forcemarker=0;
 forcemarkercolor=0;
@@ -427,8 +424,8 @@ elseif strfind(axestype,'Val')
     MultipleColors=0;
     lineproperties=1;
     if  strcmp(axestype,'Time-Val') && ~multiple(T_)
-        plotstexts=1;
-        Ops.numformat='%g';
+        ask_for_textprops=1;
+        ask_for_numformat=1;
     end
 elseif strcmp(axestype,'X-Y') || strcmp(axestype,'X-Z')
     data2d=1;
@@ -436,18 +433,18 @@ elseif strcmp(axestype,'X-Time') || strcmp(axestype,'Time-X') || strcmp(axestype
     data2d=1;
 elseif strcmp(axestype,'Text') || (strcmp(axestype,'Time-Val') && ~multiple(T_))
     MultipleColors=0;
-    plotstexts=1;
-    Ops.numformat='%g';
+    ask_for_textprops=1;
+    ask_for_numformat=1;
 end
 if nval<1
     lineproperties=1;
 end
 if ~isempty(strfind(axestype,'Time'))
-    Ops.animate = 0;
+    animate = 0;
 elseif ~multiple(M_) && ~multiple (N_) && ~multiple(K_) && nval==0
-    Ops.animate = 0;
+    animate = 0;
 elseif strcmp(axestype,'Distance-Val')
-    Ops.animate = 0;
+    animate = 0;
 end
 
 coords={'path distance','reverse path distance','x coordinate','y coordinate'};
@@ -621,7 +618,7 @@ if nval==2 || nval==3
         case 'angle'
             vectors=0;
             Units = 'radians';
-            Ops.angleconvention='?';
+            ask_for_angleconvention=1;
         case {'magnitude in plane','m component','n component','normal component'}
             vectors=0;
             Ops.MNK=1;
@@ -631,7 +628,7 @@ if nval==2 || nval==3
             nval=0.9;
         otherwise
             ui_message('error','Unexpected plot type encountered: %s\nin main module.',Ops.vectorcomponent)
-            Ops.presentationtype='failed';
+            Ops = [];
             return
     end
 end
@@ -744,15 +741,15 @@ if (nval==1 && data2d && ~strcmp(geometry,'SEG')) || nval==1.9 || strcmp(nvalstr
             MultipleColors=0;
             SingleColor=1;
             %
-            plotstexts=1;
+            ask_for_textprops=1;
             %
-            Ops.numformat='%g';
-            Ops.thinningmode='?';
+            ask_for_numformat=1;
+            ask_for_thinningmode=1;
             if strcmp(geometry,'POLYG')
                 geometry='PNT';
             end
         case {'contour lines','coloured contour lines','contour patches','contour patches with lines'}
-            Ops.thresholds='get_from_user';
+            ask_for_thresholds = 1;
             switch Ops.presentationtype
                 case 'contour lines'
                     MultipleColors=0;
@@ -775,7 +772,7 @@ if (nval==1 && data2d && ~strcmp(geometry,'SEG')) || nval==1.9 || strcmp(nvalstr
                 otherwise
                     markerflatfill=1;
                     %
-                    Ops.thinningmode='?';
+                    ask_for_thinningmode=1;
             end
             if strcmp(geometry,'POLYG')
                 geometry='PNT';
@@ -786,13 +783,13 @@ if (nval==1 && data2d && ~strcmp(geometry,'SEG')) || nval==1.9 || strcmp(nvalstr
                 MultipleColors=0;
             end
         case 'labels'
-            plotstexts=1;
+            ask_for_textprops=1;
             SingleColor=1;
         case 'polylines'
             markerflatfill=nval>0;
             edgeflatcolour=nval>0;
         case 'grid with numbers'
-            plotstexts=1;
+            ask_for_textprops=1;
         case 'edge'
             thindams=1;
             lineproperties=1;
@@ -844,7 +841,7 @@ if vectors %&& ~isempty(strmatch(axestype,{'X-Y','X-Y-Z','X-Y-Val','X-Z'},'exact
         end
         if strcmp(Ops.vectorcolour,'angle')
             Units = 'radians';
-            Ops.angleconvention='?';
+            ask_for_angleconvention=1;
         end
     else
         Ops.vectorcolour='';
@@ -853,7 +850,7 @@ if vectors %&& ~isempty(strmatch(axestype,{'X-Y','X-Y-Z','X-Y-Val','X-Z'},'exact
     end
     %
     if ~strcmp(Ops.vectorcomponent,'edge')
-        Ops.thinningmode='?';
+        ask_for_thinningmode=1;
     end
 end
 
@@ -914,7 +911,7 @@ else
     Ops.units='';
 end
 
-if strcmp(Ops.angleconvention,'?')
+if ask_for_angleconvention
     pd=findobj(OH,'tag','angleconvention=?');
     conventions=get(pd,'string');
     i=get(pd,'value');
@@ -994,17 +991,14 @@ if extend2edge
     end
 end
 
-if isfield(Ops,'numformat')
+if ask_for_numformat
     set(findobj(OH,'tag','numformat'),'enable','on');
     numform=findobj(OH,'tag','numformat=?');
     Ops.numformat=get(numform,'string');
     set(numform,'enable','on','backgroundcolor',Active);
 end
 
-Ops.horizontalalignment='centre';
-Ops.verticalalignment='middle';
-Ops.fontsize=6;
-if plotstexts
+if ask_for_textprops
     set(findobj(OH,'tag','fontsize'),'enable','on');
     hFontsize=findobj(OH,'tag','fontsize=?');
     Ops.fontsize=get(hFontsize,'userdata');
@@ -1025,7 +1019,7 @@ if plotstexts
     set(hVerAlign,'enable','on','backgroundcolor',Active);
 end
 
-if strcmp(Ops.thinningmode,'?')
+if ask_for_thinningmode
     set(findobj(OH,'tag','thinfld'),'enable','on');
     thinfld=findobj(OH,'tag','thinfld=?');
     set(thinfld,'enable','on','backgroundcolor',Active)
@@ -1087,8 +1081,7 @@ if isfield(Props,'ClosedPoly')
     end
 end
 
-Ops.textboxfacecolour='none';
-if plotstexts
+if ask_for_textprops
     if matlabversionnumber>=6.05
         hTextbox=findobj(OH,'tag','textbox=?');
         set(hTextbox,'enable','on');
@@ -1192,16 +1185,20 @@ switch Ops.presentationtype
             cclass=findobj(OH,'tag','colclassify');
             set(cclass,'enable','on')
             if get(cclass,'value')
-                Ops.thresholds='get_from_user';
+                ask_for_thresholds = 1;
             end
         end
 end
 
-Ops.thresholddistribution='linear';
-if ~strcmp(Ops.thresholds,'none')
+if ask_for_thresholds
     set(findobj(OH,'tag','thresholds'),'enable','on')
     set(findobj(OH,'tag','thresholds=?'),'enable','on','backgroundcolor',Active)
     Ops.thresholds=get(findobj(OH,'tag','thresholds=?'),'userdata');
+    %
+    % if the thresholds have not explicitly been specified
+    % (only the number of thresholds is given, or even that is left to default)
+    % then ask for distribution of thresholds
+    %
     if isempty(Ops.thresholds) || ...
             (isequal(size(Ops.thresholds),[1 1]) && isnumeric(Ops.thresholds) && isequal(Ops.thresholds,round(Ops.thresholds)) && Ops.thresholds>0)
         thrd=findobj(OH,'tag','threshdistr=?');
@@ -1221,11 +1218,11 @@ if MultipleColors
     set(climmode,'enable','on','backgroundcolor',Active)
     clmodes=get(climmode,'string');
     CLimMode=clmodes{get(climmode,'value')};
-    switch CLimMode,
+    switch CLimMode
         case 'automatic'
             Ops.colourlimits=[];
             Ops.symmetriccolourlimits=0;
-            if strcmp(Ops.thresholddistribution,'linear')
+            if ~isfield(Ops,'thresholddistribution') || strcmp(Ops.thresholddistribution,'linear')
                 climsymm=findobj(OH,'tag','climsymm');
                 set(climsymm,'enable','on')
                 Ops.symmetriccolourlimits=get(climsymm,'value');
@@ -1399,8 +1396,9 @@ if ~isempty(ExpTypes)
             Ops.expformat=get(expf,'string');
     end
     %
-    set(findobj(OH,'tag','exportdata'),'enable','on');
-    Ops.exporttype=ExpTypes{et};
+    ed=findobj(OH,'tag','exportdata');
+    set(ed,'enable','on');
+    setappdata(ed,'exporttype',ExpTypes{et})
 end
 %
 OH=-1;
@@ -1410,13 +1408,14 @@ OH=-1;
 %---- Set quick view or quick animate
 %
 
-if Ops.animate
+if animate
     viewstr='Quick Animate';
 else
     viewstr='Quick View';
 end
 qv=findobj(mfig,'tag','quickview');
-set(qv,'string',viewstr);
+set(qv,'string',viewstr)
+setappdata(qv,'animate',animate)
 if nval==-1
     set(qv,'enable','on')
     set(findobj(mfig,'tag','loaddata'),'enable','off')
@@ -1428,7 +1427,7 @@ end
 
 %---- Ops Version
 
-Ops.version=1.2;
+Ops.version=1.4;
 UD.State=Ops;
 
 %---- Show/hide options

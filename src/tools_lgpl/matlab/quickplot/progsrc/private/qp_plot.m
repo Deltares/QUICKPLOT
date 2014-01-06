@@ -1076,7 +1076,7 @@ if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
                     set(h,'PlotBoxAspectRatio',[1 cbratio 1])
             end
         end
-        if ~strcmp(Ops.thresholds,'none')
+        if ~strcmp(Ops.Thresholds,'none')
             if LocLabelClass
                 classbar(h,1:length(Thresholds),'labelcolor','label',Thresholds,'plotall','climmode','new')
             else

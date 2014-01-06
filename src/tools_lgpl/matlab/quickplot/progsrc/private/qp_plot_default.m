@@ -860,7 +860,7 @@ switch NVal
                 end
 
                 if ~isempty(Ops.vectorcolour)
-                    if ~strcmp(Ops.thresholds,'none')
+                    if ~strcmp(Ops.Thresholds,'none')
                         vc = zeros(size(data.Val));
                         for i=1:length(Thresholds)
                             vc(data.Val>=Thresholds(i))=i;
