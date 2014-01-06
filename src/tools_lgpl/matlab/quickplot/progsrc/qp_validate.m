@@ -77,7 +77,7 @@ end
 % Allow for a large number of messages
 %
 ui_message('max',10000)
-set(findall(0,'tag','UI_MESSAGE window'),'position',[10 40 pHpb(3) ssz(4)-pHpb(4)-120])
+set(findall(0,'tag','UI_MESSAGE window'),'position',[ssz(1)+10 ssz(2)+40 pHpb(3) ssz(4)-pHpb(4)-120])
 DefFigProp.defaultfigure = qp_settings('defaultfigure',-999);
 qp_settings('defaultfigure','')
 DefFigProp.defaultfigurecolor = qp_settings('defaultfigurecolor',-999);

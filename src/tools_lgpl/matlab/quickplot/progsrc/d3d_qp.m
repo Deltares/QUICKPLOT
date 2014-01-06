@@ -1613,6 +1613,7 @@ try
                     try
                         selected(~Props.DimFlag)=[];
                         set(mfig,'pointer','watch')
+                        Ops=qp_state_version(Ops);
                         if Ops.MNK
                             Props.MNK=1.5;
                         end

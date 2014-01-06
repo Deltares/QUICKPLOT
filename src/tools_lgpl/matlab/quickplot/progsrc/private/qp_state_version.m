@@ -118,7 +118,17 @@ State=setopt(State,'thinningmode','none');
 %State=setopt(State,'verticalalignment','middle');
 %State=setopt(State,'fontsize',6);
 State=setopt(State,'textboxfacecolour','none');
-
+State=setopt(State,'colourlimits',[]);
+State=setopt(State,'symmetriccolourlimits',0);
+%State=setopt(State,'colourbar','none');
+State=setopt(State,'colourmap',[]);
+State=setopt(State,'vectorcolour','');
+State=setopt(State,'colourdams',0);
+%State=setopt(State,'vectorcomponent','');
+State=setopt(State,'facecolour','none');
+State=setopt(State,'colour',[1 0 0]);
+%State=setopt(State,'verticalscalingmode','unrestricted');
+%State=setopt(State,'clippingvalues',[]);
 
 
 function State=setopt(State,Field,Val)

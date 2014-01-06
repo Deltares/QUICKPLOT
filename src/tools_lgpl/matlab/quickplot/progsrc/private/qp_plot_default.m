@@ -386,6 +386,10 @@ switch NVal
                     for i=1:size(bs,1)
                         if x(bs(i,1))==x(bs(i,2)) && ...
                                 y(bs(i,1))==y(bs(i,2))
+                            % this patch should not influence color scaling.
+                            % however, the default "1" cdata will do so
+                            % we cannot set the cdata to [] immediately
+                            % so, we change it after having set all color options
                             hNew(i)=patch(x(bs(i,1):bs(i,2)), ...
                                 y(bs(i,1):bs(i,2)), ...
                                 1, ...
@@ -396,6 +400,7 @@ switch NVal
                                 'marker',Ops.marker, ...
                                 'markeredgecolor',Ops.markercolour, ...
                                 'markerfacecolor',Ops.markerfillcolour, ...
+                                'cdata',[], ...
                                 'parent',Parent);
                         else
                             hNew(i)=line(x(bs(i,1):bs(i,2)), ...
@@ -508,13 +513,6 @@ switch NVal
                 v = squeeze(data.Val);
                 set(Parent,'NextPlot','add');
                 switch Ops.presentationtype
-                    %case {'patches','patches with lines'}
-                    %    if isfield(Props,'ThreeD')
-                    %        hNew=genfaces(hNew,Ops,Parent,data.Val,data.X,data.Y,data.Z);
-                    %    else
-                    %        hNew=genfaces(hNew,Ops,Parent,data.Val,s,data.Z);
-                    %    end
-                        
                     case 'values'
                         I=~isnan(data.Val);
                         hNew=gentextfld(hNew,Ops,Parent,v,c1,c2);

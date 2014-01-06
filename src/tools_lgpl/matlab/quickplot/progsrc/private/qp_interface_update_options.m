@@ -189,9 +189,6 @@ ask_for_thinningmode = 0;
 ask_for_thresholds   = 0;
 ask_for_numformat    = 0;
 ask_for_textprops    = 0;
-Ops.vectorcolour='';
-Ops.presentationtype='';
-Ops.vectorcomponent='';
 ask_for_angleconvention = 0;
 Ops.MNK=0;
 
@@ -635,7 +632,7 @@ end
 if (nval==2 || nval==3) && ~vectors
     nval=1;
 end
-if isequal(Ops.vectorcomponent,'vector')
+if isfield(Ops,'vectorcomponent') && strcmp(Ops.vectorcomponent,'vector')
     if ~isequal(geometry,'TRI')
         geometry='sSEG';
         Props.Geom='sSEG';
@@ -839,12 +836,11 @@ if vectors %&& ~isempty(strmatch(axestype,{'X-Y','X-Y-Z','X-Y-Val','X-Z'},'exact
                 end
                 Ops.vectorcolour=vecCLR{colveci};
         end
-        if strcmp(Ops.vectorcolour,'angle')
+        if isfield(Ops,'vectorcolour') && strcmp(Ops.vectorcolour,'angle')
             Units = 'radians';
             ask_for_angleconvention=1;
         end
     else
-        Ops.vectorcolour='';
         MultipleColors=0;
         SingleColor=1;
     end
@@ -921,18 +917,20 @@ if ask_for_angleconvention
     set(pd,'enable','on','backgroundcolor',Active)
 end
 
-Ops.colourdams=0;
 if thindams
     if nval==0.9
-        Ops.colourdams=1;
+        cl=1;
     else
         coldams=findobj(OH,'tag','colourdams');
         set(coldams,'enable','on')
-        Ops.colourdams=get(coldams,'value');
+        cl=get(coldams,'value');
     end
-    MultipleColors=Ops.colourdams;
-    SingleColor=~MultipleColors;
-    edgeflatcolour=MultipleColors;
+    if cl
+       Ops.colourdams = 1;
+       MultipleColors = 1;
+       SingleColor    = 0;
+       edgeflatcolour = 1;
+    end
 end
 
 if vectors && ~isempty(strmatch(axestype,{'X-Y','X-Y-Z','X-Y-Val','X-Z'},'exact'))
@@ -958,7 +956,6 @@ if vectors && ~isempty(strmatch(axestype,{'X-Y','X-Y-Z','X-Y-Val','X-Z'},'exact'
     end
 end
 
-Ops.verticalscalingmode='unrestricted';
 if vectors && ~isempty(strmatch(axestype,{'X-Z' 'X-Y-Z'},'exact'))
     set(findobj(OH,'tag','vertscalem'),'enable','on')
     vsm=findobj(OH,'tag','vertscalem=?');
@@ -1049,7 +1046,6 @@ if ask_for_thinningmode
     end
 end
 
-Ops.colour=[1 0 0];
 if SingleColor
     set(findobj(OH,'tag','colour'),'enable','on')
     clrh=findobj(OH,'tag','colour=?');
@@ -1058,7 +1054,6 @@ if SingleColor
     Ops.colour=clr;
 end
 
-Ops.facecolour='none';
 if isfield(Props,'ClosedPoly')
     if isequal(Props.ClosedPoly,1) && ~strcmp(geometry,'PNT')
         fpoly=findobj(OH,'tag','fillpolygons');
@@ -1096,7 +1091,7 @@ end
 if ismember(geometry,{'PNT'}) && ~multiple(T_) && nval>=0 && nval<4
     Ops.linestyle='none';
     Ops.linewidth=0.5;
-    if ~strcmp(Ops.presentationtype,'values')
+    if ~isfield(Ops,'presentationtype') || ~strcmp(Ops.presentationtype,'values')
         usesmarker = 1;
         forcemarker = 1;
     end
@@ -1179,15 +1174,17 @@ if usesmarker
     end
 end
 
-switch Ops.presentationtype
-    case {'vector','patches','patches with lines','markers'};
-        if MultipleColors
-            cclass=findobj(OH,'tag','colclassify');
-            set(cclass,'enable','on')
-            if get(cclass,'value')
-                ask_for_thresholds = 1;
+if isfield(Ops,'presentationtype')
+    switch Ops.presentationtype
+        case {'vector','patches','patches with lines','markers'};
+            if MultipleColors
+                cclass=findobj(OH,'tag','colclassify');
+                set(cclass,'enable','on')
+                if get(cclass,'value')
+                    ask_for_thresholds = 1;
+                end
             end
-        end
+    end
 end
 
 if ask_for_thresholds
@@ -1208,10 +1205,6 @@ if ask_for_thresholds
     end
 end
 
-Ops.colourlimits=[];
-Ops.symmetriccolourlimits=0;
-Ops.colourbar='none';
-Ops.colourmap=[];
 if MultipleColors
     set(findobj(OH,'tag','climmode'),'enable','on')
     climmode=findobj(OH,'tag','climmode=?');
@@ -1302,8 +1295,7 @@ Ops.axestype=axestype;
 %---- clipping values
 %
 
-Ops.clippingvalues=[];
-if (nval==1 || ~isempty(Ops.vectorcolour) || Ops.colourdams) && (lineproperties || data2d)
+if (nval==1 || isfield(Ops,'vectorcolour') || isfield(Ops,'colourdams')) && (lineproperties || data2d)
     set(findobj(OH,'tag','clippingvals'),'enable','on')
     set(findobj(OH,'tag','clippingvals=?'),'enable','on','backgroundcolor',Active)
     Ops.clippingvalues=get(findobj(OH,'tag','clippingvals=?'),'userdata');
@@ -1352,7 +1344,7 @@ if (allm && alln) && ~multiple(K_) && ~multiple(T_)
     end
 end
 if (multiple(M_) && (multiple(N_) || triangles)) && ~multiple(K_) && ~multiple(T_)
-    if ~isequal(Ops.presentationtype,'continuous shades')
+    if ~isfield(Ops,'presentationtype') || ~isequal(Ops.presentationtype,'continuous shades')
         ExpTypes{end+1}='ARCview shape';
     end
 elseif strcmp(geometry,'POLYL') || strcmp(geometry,'POLYG')

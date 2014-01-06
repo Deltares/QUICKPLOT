@@ -49,6 +49,8 @@ Domain=DataState.Domain;
 Subfield=DataState.SubField;
 Selected=DataState.Selected;
 Ops=DataState.Ops;
+Ops=qp_state_version(Ops);
+
 componentstrings = {'x','y','z'};
 if Ops.MNK
     componentstrings = {'m','n','z'};
