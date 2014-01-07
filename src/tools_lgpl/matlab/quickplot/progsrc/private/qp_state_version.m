@@ -129,6 +129,7 @@ State=setopt(State,'facecolour','none');
 State=setopt(State,'colour',[1 0 0]);
 %State=setopt(State,'verticalscalingmode','unrestricted');
 %State=setopt(State,'clippingvalues',[]);
+State=setopt(State,'extend2edge',0);
 
 
 function State=setopt(State,Field,Val)

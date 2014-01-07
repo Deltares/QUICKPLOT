@@ -867,12 +867,11 @@ if ~isempty(Units)
         set(dunit,'backgroundcolor',Inactive)
         set(dunit,'enable','inactive')
         set(dunit,'string',user_units)
-        actualunits=user_units;
     elseif system==length(systems)
         % Hide
         user_units='**Hide**';
         Units='**Hide**';
-        actualunits='**Hide**';
+        Ops.units='**Hide**';
     elseif system==length(systems)-1
         % Other (user specified)
         dunit=findobj(OH,'tag','dataunits=!');
@@ -886,7 +885,7 @@ if ~isempty(Units)
             Units=user_units;
         end
         set(dunit,'string',user_units)
-        actualunits=user_units;
+        Ops.units=user_units;
     else
         % Specified format: SI, CGS, etc.
         qp_settings('UnitSystem',systems{system})
@@ -896,12 +895,8 @@ if ~isempty(Units)
             'backgroundcolor',Inactive)
         [conversion,SIunit]=qp_unitconversion(Units,user_units);
         set(dunit,'string',SIunit)
-        actualunits=SIunit;
+        Ops.units=SIunit;
     end
-    Ops.units=user_units;
-else
-    actualunits='';
-    Ops.units='';
 end
 
 if ask_for_angleconvention
@@ -973,16 +968,19 @@ if extend2edge
     h = findobj(OH,'tag','extend2edge');
     if multiple(M_)+multiple(N_)+multiple(K_)==2
         set(h,'enable','on')
-        Ops.extend2edge = get(h,'value');
+        extend2edge = get(h,'value');
     else
         %set(h,'enable','inactive','value',1)
         switch axestype
             case {'X-Time','Time-X','Time-Z'}
-                Ops.extend2edge = 0;
+                extend2edge = 0;
             otherwise
-                Ops.extend2edge = 1;
+                extend2edge = 1;
         end
     end
+end
+if extend2edge
+    Ops.extend2edge = 1;
 end
 
 if ask_for_numformat
@@ -1278,13 +1276,6 @@ if ~isempty(strfind(axestype,'Val'))
             axestype=strrep(axestype,'Val','Z');
         end
     end
-end
-Ops.basicaxestype=axestype;
-
-if levelvar
-    axestype=strrep(axestype,'Z',['Z [',actualunits,']']);
-elseif ~isempty(strfind(axestype,'Val'))
-    axestype=strrep(axestype,'Val',['Val [',actualunits,']']);
 end
 Ops.axestype=axestype;
 

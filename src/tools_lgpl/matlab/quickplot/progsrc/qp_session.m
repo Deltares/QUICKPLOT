@@ -48,6 +48,8 @@ fid = fopen(filename,'r');
 Str = getline(fid);
 fgi = 0;
 axi = 0;
+itm = 0;
+opt = '';
 S = [];
 while ~isempty(Str)
     args = parseargs(Str);
@@ -86,6 +88,18 @@ while ~isempty(Str)
                 S(fgi).axes(axi).([x 'scale']) = 'linear';
                 S(fgi).axes(axi).([x 'lim']) = 'auto';
             end
+            S(fgi).axes(axi).items = [];
+        case 'item'
+            itm = length(S(fgi).axes(axi).items)+1;
+            S(fgi).axes(axi).items(itm).name = args{2};
+            S(fgi).axes(axi).items(itm).filename = '';
+            S(fgi).axes(axi).items(itm).options  = [];
+        case 'options'
+            opt = 'item';
+        case 'endoptions'
+            opt = '';
+        case 'enditem'
+            itm = 0;
         case 'endaxes'
             axi = 0;
         case 'endfigure'
@@ -95,12 +109,21 @@ while ~isempty(Str)
                 if length(key)>5 && strcmp(key(end-4:end),'color')
                     key = [key(1:end-5) 'colour'];
                 end
-                if axi>0
-                    S(fgi).axes(axi).(key) = args{2};
-                elseif strncmp(key,'frametext',9)
-                    S(fgi).frame.(key) = args{2};
+                if length(args)>2
+                    val = args(2:end);
                 else
-                    S(fgi).(key) = args{2};
+                    val = args{2};
+                end
+                if strcmp(opt,'item')
+                    S(fgi).axes(axi).items(itm).options.(key) = val;
+                elseif itm>0
+                    S(fgi).axes(axi).items(itm).(key) = val;
+                elseif axi>0
+                    S(fgi).axes(axi).(key) = val;
+                elseif strncmp(key,'frametext',9)
+                    S(fgi).frame.(key) = val;
+                else
+                    S(fgi).(key) = val;
                 end
             end
     end
@@ -128,8 +151,13 @@ while 1
         Str = Str(i2(1)+1:end);
     elseif Key(1)==''''
         i1 = strfind(Str,'''');
-        Key = Str(i1(1)+1:i1(end)-1);
-        Str = '';
+        j  = 2;
+        while j<length(i1)-1 && i1(j)+1==i1(j+1)
+            j = j+2;
+        end
+        Key = Str(i1(1)+1:i1(j)-1);
+        Key = strrep(Key,'''''','''');
+        Str = Str(i1(j)+1:end);
     elseif i>0
         Key = str2double(Key);
         Str = Rem;
@@ -142,6 +170,7 @@ end
 
 function local_save(S,filename)
 fid = fopen(filename,'w');
+fprintf(fid,'Delft3D-QUICKPLOT 1.0 ''session file''\n');
 for fgi = 1:length(S)
     fprintf(fid,'Figure             ''%s''\n',S(fgi).name);
     fprintf(fid,'  PaperType        ''%s''\n',S(fgi).papertype);
@@ -195,6 +224,30 @@ for fgi = 1:length(S)
             if ~isequal(S(fgi).axes(axi).([x 'colour']),[0 0 0])
                 fprintf(fid,'    %sColour   [%i %i %i]\n',X,S(fgi).axes(axi).([x 'colour']));
             end
+        end
+        %
+        for itm = 1:length(S(fgi).axes(axi).items)
+           fprintf(fid,'\n    Item        ''%s''\n',S(fgi).axes(axi).items(itm).name);
+           fprintf(fid,'      FileName  ''%s''\n',S(fgi).axes(axi).items(itm).filename);
+           if ~isempty(S(fgi).axes(axi).items(itm).options)
+              fprintf(fid,'      Options\n');
+              flds = fieldnames(S(fgi).axes(axi).items(itm).options);
+              for ifld = 1:length(flds)
+                  if strcmp(flds{ifld},'version')
+                      continue
+                  end
+                  val = S(fgi).axes(axi).items(itm).options.(flds{ifld});
+                  if ischar(val)
+                      fprintf(fid,'        %-20s ''%s''\n',flds{ifld},val);
+                  elseif isnumeric(val) && isequal(size(val),[1 1])
+                      fprintf(fid,'        %-20s %g\n',flds{ifld},val);
+                  elseif isnumeric(val) && size(val,1)==1
+                      fprintf(fid,'        %-20s %s\n',flds{ifld},vec2str(val));
+                  end
+              end
+              fprintf(fid,'      EndOptions\n');
+           end
+           fprintf(fid,'    EndItem\n');
         end
         fprintf(fid,'  EndAxes\n');
     end
@@ -310,6 +363,20 @@ for fgi = length(H):-1:1
                 else
                     S(fgi).axes(axi).([x 'lim']) = 'auto';
                 end
+            end
+            %
+            c = get(A,'children');
+            u = get(c,'userdata');
+            if iscell(u)
+                u = u(~cellfun('isempty',u));
+            else
+                u = {u};
+            end
+            for itm = length(u):-1:1
+                IInfo = u{itm};
+                S(fgi).axes(axi).items(itm).name     = IInfo.PlotState.Props.Name;
+                S(fgi).axes(axi).items(itm).filename = IInfo.PlotState.FI.Name;
+                S(fgi).axes(axi).items(itm).options  = IInfo.PlotState.Ops;
             end
         end
     end

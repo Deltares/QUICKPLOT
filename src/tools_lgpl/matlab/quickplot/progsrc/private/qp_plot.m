@@ -171,15 +171,27 @@ Units='';
 if ~isempty(data)
     Units=data(1).Units;
 end
-if isequal(Ops.units,'**Hide**')
-    Units='';
-elseif ~isempty(Ops.units) && ~isempty(Units)
-    dataX=qp_unitconversion(Units,Ops.units,data);
-    if ~ischar(dataX)
-        data=dataX;
-        dataX=[];
-        Units=data(1).Units;
+%
+if isfield(Ops,'units')
+    if isequal(Ops.units,'**Hide**')
+        Units='';
+    elseif ~isempty(Ops.units) && ~isempty(Units)
+        dataX=qp_unitconversion(Units,Ops.units,data);
+        if ~ischar(dataX)
+            data=dataX;
+            dataX=[];
+            Units=data(1).Units;
+        end
     end
+end
+
+Ops.basicaxestype = Ops.axestype;
+if ~isempty(strfind(Props.Name,'level')) && ...
+        (~ischar(qp_unitconversion(Units,'m')) || ...
+        ~ischar(qp_unitconversion(Units,'')))
+    Ops.axestype = strrep(Ops.axestype,'Z',['Z [',Units,']']);
+elseif ~isempty(strfind(Ops.axestype,'Val'))
+    Ops.axestype = strrep(Ops.axestype,'Val',['Val [',Units,']']);
 end
 
 FirstFrame=isempty(hOldVec);
