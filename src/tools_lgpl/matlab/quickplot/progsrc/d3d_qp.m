@@ -1585,9 +1585,6 @@ try
                             FileName=cmdargs{1};
                         end
                         set(mfig,'pointer','watch')
-                        if isfield(Ops,'MNK') && Ops.MNK
-                            Props.MNK=1.5;
-                        end
                         DS.FI=Info;
                         DS.Domain=DomainNr;
                         DS.Props=Props;
@@ -1611,12 +1608,13 @@ try
                     end
                     lasterr('');
                     try
+                        Ops=qp_state_version(Ops);
+                        if isfield(Props,'MNK') && Props.MNK
+                            Props.MNK = xyz_or_mnk(Ops,selected,Props.MNK);
+                        end
+                        %
                         selected(~Props.DimFlag)=[];
                         set(mfig,'pointer','watch')
-                        Ops=qp_state_version(Ops);
-                        if Ops.MNK
-                            Props.MNK=1.5;
-                        end
                         switch Ops.presentationtype
                             case {'patches','patches with lines','polygons'}
                                 [Chk,data,Info]=qp_getdata(Info,DomainNr,Props,'gridcelldata',subf{:},selected{:});

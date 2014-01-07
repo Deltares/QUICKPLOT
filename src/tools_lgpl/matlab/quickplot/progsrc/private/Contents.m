@@ -258,6 +258,7 @@
 %   writelog                    - Write QuickPlot logfile or MATLAB script.
 %   xx_constants                - Define several constants.
 %   xx_logo                     - Plot a logo in an existing coordinate system.
+%   xyz_or_mnk                  - Determine MNK flag for vector components to retrieve.
 %
 %----- LGPL --------------------------------------------------------------------
 %                                                                               

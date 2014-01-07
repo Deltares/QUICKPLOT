@@ -131,13 +131,15 @@ if Level<0
 end
 Thresholds=[]; % Thresholds is predefined to make sure that Thresholds always exists when its value is checked at the end of this routine
 
+for i=5:-1:1
+    multiple(i) = (length(Selected{i})>1) | isequal(Selected{i},0);
+end
+
 SubSelected=Selected;
 SubSelected(~DimFlag)=[];
 FT=FileInfo.FileType;
-if isfield(Ops,'presentationtype') && isequal(Ops.presentationtype,'vector (split m,n)')
-    Props.MNK=-1;
-elseif isfield(Ops,'MNK') && Ops.MNK
-    Props.MNK=1.5;
+if isfield(Props,'MNK') && Props.MNK
+    Props.MNK = xyz_or_mnk(Ops,Selected,Props.MNK);
 end
 
 DataInCell=0;
@@ -178,10 +180,6 @@ elseif ~isempty(Ops.units) && ~isempty(Units)
         dataX=[];
         Units=data(1).Units;
     end
-end
-
-for i=5:-1:1
-    multiple(i) = (length(Selected{i})>1) | isequal(Selected{i},0);
 end
 
 FirstFrame=isempty(hOldVec);

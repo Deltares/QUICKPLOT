@@ -165,7 +165,7 @@ for d=1:length(data)
         case 'k component'
             data(d).Val=data(d).ZComp; %KComp
         case 'normal component' % only for a vertical slice
-            if  size(data(d).Val,1)>1
+            if  size(data(d).XComp,1)>1
                 data(d).Val=data(d).YComp; %NComp
             else
                 data(d).Val=data(d).XComp; %MComp

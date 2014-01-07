@@ -39,12 +39,12 @@ datafields=findobj(mfig,'tag','selectfield');
 %
 fld=get(datafields,'value');
 Props=get(datafields,'userdata');
+Ops=[];
 if isempty(Props)
     DomainNr = [];
     subf = [];
     selected = [];
     stats =[];
-    Ops = [];
     return
 end
 Props=Props(fld);
@@ -190,7 +190,6 @@ ask_for_thresholds   = 0;
 ask_for_numformat    = 0;
 ask_for_textprops    = 0;
 ask_for_angleconvention = 0;
-Ops.MNK=0;
 
 Handle_Domain=findobj(mfig,'tag','selectdomain');
 DomainNr=get(Handle_Domain,'value');
@@ -200,7 +199,8 @@ for i=5:-1:1
 end
 animate = multiple(T_);
 
-MNK=0;
+MNK =0;
+MNK_=0;
 if isfield(Props,'MNK')
     MNK=Props.MNK;
 end
@@ -605,7 +605,7 @@ if nval==2 || nval==3
         case {'vector','patch centred vector','vector (split x,y)','vector (split m,n)'}
             Ops.presentationtype=Ops.vectorcomponent;
             if (multiple(M_) + multiple(N_) == 1) && (multiple(K_) == 1) && MNK
-                Ops.MNK=1;
+                MNK_=1;
             end
         case {'magnitude','x component','y component','z component'}
             vectors=0;
@@ -615,7 +615,7 @@ if nval==2 || nval==3
             ask_for_angleconvention=1;
         case {'magnitude in plane','m component','n component','normal component'}
             vectors=0;
-            Ops.MNK=1;
+            MNK_=1;
         case 'edge'
             Ops.presentationtype=Ops.vectorcomponent;
             vectors=0;
@@ -807,7 +807,7 @@ if vectors %&& ~isempty(strmatch(axestype,{'X-Y','X-Y-Z','X-Y-Val','X-Z'},'exact
                 colvecm=findobj(OH,'tag','vectorcolour=?');
                 pvecCLR=get(colvecm,'string');
                 colveci=get(colvecm,'value');
-                if Ops.MNK
+                if MNK_
                     vecCLR={'magnitude in plane','m component','n component','normal component','edge'};
                     vecCLRi=ismember(vecCLR,compList);
                     vecCLR(~vecCLRi)=[];

@@ -52,9 +52,11 @@ Ops=DataState.Ops;
 Ops=qp_state_version(Ops);
 
 componentstrings = {'x','y','z'};
-if Ops.MNK
-    componentstrings = {'m','n','z'};
-    Props.MNK=1.5;
+if isfield(Props,'MNK') && Props.MNK
+    Props.MNK = xyz_or_mnk(Ops,Selected,Props.MNK);
+    if Props.MNK>1
+        componentstrings = {'m','n','z'};
+    end
 end
 
 sign=1;
