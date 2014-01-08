@@ -91,9 +91,16 @@ while ~isempty(Str)
             S(fgi).axes(axi).items = [];
         case 'item'
             itm = length(S(fgi).axes(axi).items)+1;
-            S(fgi).axes(axi).items(itm).name = args{2};
-            S(fgi).axes(axi).items(itm).filename = '';
-            S(fgi).axes(axi).items(itm).options  = [];
+            S(fgi).axes(axi).items(itm).name       = args{2};
+            S(fgi).axes(axi).items(itm).filename   = '';
+            S(fgi).axes(axi).items(itm).domain     = '';
+            S(fgi).axes(axi).items(itm).subfield   = '';
+            S(fgi).axes(axi).items(itm).dimensions = [];
+            S(fgi).axes(axi).items(itm).options    = [];
+        case 'dimensions'
+            opt = 'dimensions';
+        case 'enddimensions'
+            opt = '';
         case 'options'
             opt = 'item';
         case 'endoptions'
@@ -114,7 +121,9 @@ while ~isempty(Str)
                 else
                     val = args{2};
                 end
-                if strcmp(opt,'item')
+                if strcmp(opt,'dimensions')
+                    S(fgi).axes(axi).items(itm).dimensions.(key) = val;
+                elseif strcmp(opt,'item')
                     S(fgi).axes(axi).items(itm).options.(key) = val;
                 elseif itm>0
                     S(fgi).axes(axi).items(itm).(key) = val;
@@ -229,23 +238,41 @@ for fgi = 1:length(S)
         for itm = 1:length(S(fgi).axes(axi).items)
            fprintf(fid,'\n    Item        ''%s''\n',S(fgi).axes(axi).items(itm).name);
            fprintf(fid,'      FileName  ''%s''\n',S(fgi).axes(axi).items(itm).filename);
+           if ~isempty(S(fgi).axes(axi).items(itm).domain)
+               fprintf(fid,'      Domain    ''%s''\n',S(fgi).axes(axi).items(itm).domain);
+           end
+           if ~isempty(S(fgi).axes(axi).items(itm).subfield)
+               fprintf(fid,'      SubField  ''%s''\n',S(fgi).axes(axi).items(itm).subfield);
+           end
+           if ~isempty(S(fgi).axes(axi).items(itm).dimensions)
+               fprintf(fid,'      Dimensions\n');
+               flds = fieldnames(S(fgi).axes(axi).items(itm).dimensions);
+               for ifld = 1:length(flds)
+                   val = S(fgi).axes(axi).items(itm).dimensions.(flds{ifld});
+                   if ischar(val)
+                       fprintf(fid,'        %-24s ''%s''\n',flds{ifld},val);
+                   elseif isnumeric(val) && isequal(size(val),[1 1])
+                       fprintf(fid,'        %-24s %g\n',flds{ifld},val);
+                   elseif isnumeric(val) && size(val,1)==1
+                       fprintf(fid,'        %-24s %s\n',flds{ifld},vec2str(val));
+                   end
+               end
+               fprintf(fid,'      EndDimensions\n');
+           end
            if ~isempty(S(fgi).axes(axi).items(itm).options)
-              fprintf(fid,'      Options\n');
-              flds = fieldnames(S(fgi).axes(axi).items(itm).options);
-              for ifld = 1:length(flds)
-                  if strcmp(flds{ifld},'version')
-                      continue
-                  end
-                  val = S(fgi).axes(axi).items(itm).options.(flds{ifld});
-                  if ischar(val)
-                      fprintf(fid,'        %-20s ''%s''\n',flds{ifld},val);
-                  elseif isnumeric(val) && isequal(size(val),[1 1])
-                      fprintf(fid,'        %-20s %g\n',flds{ifld},val);
-                  elseif isnumeric(val) && size(val,1)==1
-                      fprintf(fid,'        %-20s %s\n',flds{ifld},vec2str(val));
-                  end
-              end
-              fprintf(fid,'      EndOptions\n');
+               fprintf(fid,'      Options\n');
+               flds = fieldnames(S(fgi).axes(axi).items(itm).options);
+               for ifld = 1:length(flds)
+                   val = S(fgi).axes(axi).items(itm).options.(flds{ifld});
+                   if ischar(val)
+                       fprintf(fid,'        %-24s ''%s''\n',flds{ifld},val);
+                   elseif isnumeric(val) && isequal(size(val),[1 1])
+                       fprintf(fid,'        %-24s %g\n',flds{ifld},val);
+                   elseif isnumeric(val) && size(val,1)==1
+                       fprintf(fid,'        %-24s %s\n',flds{ifld},vec2str(val));
+                   end
+               end
+               fprintf(fid,'      EndOptions\n');
            end
            fprintf(fid,'    EndItem\n');
         end
@@ -366,9 +393,16 @@ for fgi = length(H):-1:1
             end
             %
             c = get(A,'children');
+            t = get(c,'tag');
+            ok = strncmp(t,'QPPlotTag',9);
+            c = c(ok);
             u = get(c,'userdata');
             if iscell(u)
-                u = u(~cellfun('isempty',u));
+                ok = ~cellfun('isempty',u);
+                %c = c(ok);
+                u = u(ok);
+            elseif isempty(u)
+                u = {};
             else
                 u = {u};
             end
@@ -376,7 +410,42 @@ for fgi = length(H):-1:1
                 IInfo = u{itm};
                 S(fgi).axes(axi).items(itm).name     = IInfo.PlotState.Props.Name;
                 S(fgi).axes(axi).items(itm).filename = IInfo.PlotState.FI.Name;
-                S(fgi).axes(axi).items(itm).options  = IInfo.PlotState.Ops;
+                %
+                dom = qpread(IInfo.PlotState.FI,'domains');
+                if isempty(dom)
+                    dom = '';
+                else
+                    dom = dom{IInfo.PlotState.Domain};
+                end
+                S(fgi).axes(axi).items(itm).domain   = dom;
+                %
+                sub = qpread(IInfo.PlotState.FI,IInfo.PlotState.Props,'subfields');
+                if isempty(sub)
+                    sub = '';
+                else
+                    sub = sub{IInfo.PlotState.SubField{1}};
+                end
+                S(fgi).axes(axi).items(itm).subfield = sub;
+                %
+                S(fgi).axes(axi).items(itm).dimensions = [];
+                dim0 = {'time' 'station' 'm' 'n' 'k'};
+                if length(IInfo.PlotState.Props.DimFlag)>5
+                    dims = [dim0 IInfo.PlotState.Props.DimName];
+                else
+                    dims = dim0;
+                end
+                for dim = 1:length(IInfo.PlotState.Props.DimFlag)
+                    if IInfo.PlotState.Props.DimFlag(dim)~=0
+                        val = IInfo.PlotState.Selected{dim};
+                        if isequal(val,0)
+                            val = 'all';
+                        end
+                        S(fgi).axes(axi).items(itm).dimensions.(dims{dim}) = val;
+                    end
+                end
+                Ops = IInfo.PlotState.Ops;
+                Ops = rmfield(Ops,'version');
+                S(fgi).axes(axi).items(itm).options  = Ops;
             end
         end
     end
