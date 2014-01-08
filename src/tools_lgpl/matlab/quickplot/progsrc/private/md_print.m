@@ -71,12 +71,13 @@ if isempty(PL)
         0  'PNG file'                    all        2     0
         0  'JPG file'                    all        2     0
         1  'EMF file'                    win        2     0
-        -1  'MATLAB fig file'            all        2     0
+        -1 'MATLAB fig file'             all        2     0
         0  'Bitmap to clipboard'         win        2     0
         1  'Metafile to clipboard'       win        2     0
         1  'Windows printer'             W          2     0
         1  'default Windows printer'     WD         2     0
-        1  'other Windows printer'       WD         2     0};
+        1  'other Windows printer'       WD         2     0
+        -1 'QUICKPLOT session file'      all        2     1};
     if isdeployed
         if ispc
             code = WD;
@@ -333,6 +334,20 @@ while i<length(figlist)
                             ui_message('error','error encountered creating %s:%s',fn,lasterr);
                         end
                     end
+                case 'QUICKPLOT session file'
+                    if nargin<3
+                        [fn,pn]=uiputfile('default.ses','Specify file name');
+                        fn=[pn,fn];
+                    end
+                    if ischar(fn)
+                        try
+                            SES = qp_session('extract',figlist);
+                            qp_session('save',SES,fn)
+                        catch
+                            ui_message('error','error encountered creating %s:%s',fn,lasterr);
+                        end
+                    end
+                    i = length(figlist); % all done
                 otherwise
                     try
                         ccd=cd;
@@ -380,7 +395,7 @@ while i<length(figlist)
                 end
             end
             set(figlist(i),'handlevisibility',hvis);
-            if ~LocSettings.AllFigures,
+            if ~LocSettings.AllFigures
                 LocSettings.PrtID=-1;
             end
         end
