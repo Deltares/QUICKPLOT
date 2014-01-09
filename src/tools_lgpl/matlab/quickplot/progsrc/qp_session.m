@@ -509,7 +509,7 @@ for fgi = length(S):-1:1
                         case 'vert'
                             d3d_qp('colourbar',1)
                             d3d_qp('colbarhorz',0)
-                        case 'horz'
+                        case 'horiz'
                             d3d_qp('colourbar',1)
                             d3d_qp('colbarhorz',1)
                     end
