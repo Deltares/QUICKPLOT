@@ -34,7 +34,7 @@ function outdata=d3d_qp(cmd,varargin)
 %   $HeadURL$
 %   $Id$
 
-%VERSION = 2.16
+%VERSION = 2.20
 qpversionbase = 'v<VERSION>';
 qpcreationdate = '<CREATIONDATE>';
 %
@@ -71,7 +71,7 @@ if (nargout~=0)
         return
     elseif isstandalone % allow standalone auto start ...
         outdata=[];
-    elseif none(strcmp(cmd,{'loaddata','selectedfigure','selectedaxes','selecteditem','selectfield','qpmanual','matlabmanual'}))
+    elseif none(strcmp(cmd,{'loaddata','selectedfigure','selectedaxes','selecteditem','selectfield','selectedfield','qpmanual','matlabmanual'}))
         error('Too many output arguments.');
     end
 end
@@ -1030,6 +1030,12 @@ try
             d3d_qp updatefieldprop
             set(mfig,'pointer','arrow')
             
+        case 'selectedfield'
+            sf   = findobj(mfig,'tag','selectfield');
+            ifld = get(sf,'value');
+            ud   = get(sf,'userdata');
+            outdata = ud(ifld);
+            
         case {'selectfield','selectsubfield'}
             sf=findobj(mfig,'tag',cmd);
             flds=get(sf,'string');
@@ -1785,55 +1791,57 @@ try
                 cmd='component';
             end
             modelist=findobj(UOH,'tag',[cmd '=?']);
-            modes=get(modelist,'string');
-            trigger={};
-            if ~isempty(cmdargs)
-                i=ustrcmpi(cmdargs{1},modes);
-                if i<0
-                    if strcmp(cmd,'exporttype') && strcmp(cmdargs{1},'mat file')
-                        %
-                        % convert 'mat file' export type to 'mat file (v6)' for
-                        % consistency
-                        %
-                        i=ustrcmpi('mat file (v6)',modes);
-                        if i<0
-                            error('Invalid %s: %s',cmd,cmdargs{1})
+            if strcmp(get(modelist,'enable'),'on')
+                modes=get(modelist,'string');
+                trigger={};
+                if ~isempty(cmdargs)
+                    i=ustrcmpi(cmdargs{1},modes);
+                    if i<0
+                        if strcmp(cmd,'exporttype') && strcmp(cmdargs{1},'mat file')
+                            %
+                            % convert 'mat file' export type to 'mat file (v6)' for
+                            % consistency
+                            %
+                            i=ustrcmpi('mat file (v6)',modes);
+                            if i<0
+                                error('Invalid %s: %s',cmd,cmdargs{1})
+                            else
+                                set(modelist,'value',i);
+                            end
+                        elseif strcmp(cmd,'dataunits')
+                            %
+                            % if it is not a mode string, it must be interpreted as a unit
+                            % string. Make sure that dataunits=? is set to 'Other'
+                            %
+                            set(modelist,'value',find(strcmp('Other',modes)))
+                            modelist=findobj(UOH,'tag',[cmd '=!']);
+                            set(modelist,'string',cmdargs{1})
                         else
-                            set(modelist,'value',i);
+                            error('Invalid %s: %s',cmd,cmdargs{1})
                         end
-                    elseif strcmp(cmd,'dataunits')
-                        %
-                        % if it is not a mode string, it must be interpreted as a unit
-                        % string. Make sure that dataunits=? is set to 'Other'
-                        %
-                        set(modelist,'value',find(strcmp('Other',modes)))
-                        modelist=findobj(UOH,'tag',[cmd '=!']);
-                        set(modelist,'string',cmdargs{1})
                     else
-                        error('Invalid %s: %s',cmd,cmdargs{1})
+                        set(modelist,'value',i);
+                        if strcmp(modes{i},'angle')
+                            % old option 'angle (radians)' or 'angle (degrees)'
+                            ob = strfind(cmdargs{1},'(');
+                            cb = strfind(cmdargs{1},')');
+                            trigger = {'dataunits',cmdargs{1}(ob+1:cb-1)};
+                        end
                     end
-                else
-                    set(modelist,'value',i);
-                    if strcmp(modes{i},'angle')
-                        % old option 'angle (radians)' or 'angle (degrees)'
-                        ob = strfind(cmdargs{1},'(');
-                        cb = strfind(cmdargs{1},')');
-                        trigger = {'dataunits',cmdargs{1}(ob+1:cb-1)};
+                elseif strcmp(cmd,'dataunits')
+                    modelist=gcbo; % either dataunits=? or dataunits=!
+                end
+                d3d_qp updateoptions
+                if logfile
+                    if strcmp(get(modelist,'tag'),'dataunits=!')
+                        writelog(logfile,logtype,cmd,get(modelist,'string'));
+                    else
+                        writelog(logfile,logtype,cmd,modes{get(modelist,'value')});
                     end
                 end
-            elseif strcmp(cmd,'dataunits')
-                modelist=gcbo; % either dataunits=? or dataunits=!
-            end
-            d3d_qp updateoptions
-            if logfile
-                if strcmp(get(modelist,'tag'),'dataunits=!')
-                    writelog(logfile,logtype,cmd,get(modelist,'string'));
-                else
-                    writelog(logfile,logtype,cmd,modes{get(modelist,'value')});
+                if ~isempty(trigger)
+                    d3d_qp(trigger{:});
                 end
-            end
-            if ~isempty(trigger)
-                d3d_qp(trigger{:});
             end
             
         case {'colour','facecolour','markercolour','markerfillcolour','textboxfacecolour', ...

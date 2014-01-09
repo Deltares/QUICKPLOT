@@ -1093,9 +1093,15 @@ else
             end
             %
             [T,Chk]=vs_let(FI,grp,{t},'ITHISC','quiet');
+            if Chk==0
+                error(T)
+            end
             T=d0+T*Dt*Tunit/(24*3600);
         case 'morphologic time'
             [T,Chk]=vs_let(FI,'his-infsed-serie',{t},'MORFT','quiet');
+            if Chk==0
+                error(T)
+            end
             T=d0+T;
     end
 end

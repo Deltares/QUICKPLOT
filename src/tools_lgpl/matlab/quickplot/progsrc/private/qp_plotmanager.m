@@ -216,23 +216,36 @@ switch cmd
             [p,f,extension] = fileparts(cmdargs{1});
             f = [f,extension];
         else
-            pf = fullfile(figuredir,'*.fig');
-            [f,p]=uigetfile(pf,'Open figure ...');
+            curdir = pwd;
+            cd(figuredir)
+            filter = {'*.fig' 'MATLAB Figure File'
+                '*.ses' 'QUICKPLOT Session File'};
+            try
+                [f,p]=uigetfile(filter,'Open figure ...');
+            catch
+            end
+            cd(curdir)
         end
         if ischar(f)
             figuredir=p;
             qp_settings('figuredir',figuredir)
             %
             pf = fullfile(p,f);
-            h=hgload(pf);
-            set(h,'menubar','none','closerequestfcn','d3d_qp closefigure')
-            qp_figurebars(h)
-            %set(cbar,'deletefcn','qp_colorbar delete')
-            hName = listnames(h,'showtype','no','showhandle','no','showtag','no');
-            set(UD.PlotMngr.FigList,'value',1,'string',hName,'userdata',h);
-            d3d_qp refreshfigs
-            if logfile
-                writelog(logfile,logtype,cmd,pf);
+            [p,f,extension] = fileparts(pf);
+            switch extension
+                case '.mat'
+                    h=hgload(pf);
+                    set(h,'menubar','none','closerequestfcn','d3d_qp closefigure')
+                    qp_figurebars(h)
+                    %set(cbar,'deletefcn','qp_colorbar delete')
+                    hName = listnames(h,'showtype','no','showhandle','no','showtag','no');
+                    set(UD.PlotMngr.FigList,'value',1,'string',hName,'userdata',h);
+                    d3d_qp refreshfigs
+                    if logfile
+                        writelog(logfile,logtype,cmd,pf);
+                    end
+                case '.ses'
+                    qp_session('rebuild',pf);
             end
         end
         
