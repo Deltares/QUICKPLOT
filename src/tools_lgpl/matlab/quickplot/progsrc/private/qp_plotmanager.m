@@ -219,7 +219,7 @@ switch cmd
             curdir = pwd;
             cd(figuredir)
             filter = {'*.fig' 'MATLAB Figure File'
-                '*.ses' 'QUICKPLOT Session File'};
+                '*.qpses' 'QUICKPLOT Session File'};
             try
                 [f,p]=uigetfile(filter,'Open figure ...');
             catch
@@ -233,7 +233,9 @@ switch cmd
             pf = fullfile(p,f);
             [p,f,extension] = fileparts(pf);
             switch extension
-                case '.mat'
+                case '.qpses'
+                    qp_session('rebuild',pf);
+                case '.fig'
                     h=hgload(pf);
                     set(h,'menubar','none','closerequestfcn','d3d_qp closefigure')
                     qp_figurebars(h)
@@ -244,8 +246,6 @@ switch cmd
                     if logfile
                         writelog(logfile,logtype,cmd,pf);
                     end
-                case '.ses'
-                    qp_session('rebuild',pf);
             end
         end
         

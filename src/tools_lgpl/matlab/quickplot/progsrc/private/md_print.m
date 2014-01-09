@@ -336,7 +336,7 @@ while i<length(figlist)
                     end
                 case 'QUICKPLOT session file'
                     if nargin<3
-                        [fn,pn]=uiputfile('default.ses','Specify file name');
+                        [fn,pn]=uiputfile('default.qpses','Specify file name');
                         fn=[pn,fn];
                     end
                     if ischar(fn)
