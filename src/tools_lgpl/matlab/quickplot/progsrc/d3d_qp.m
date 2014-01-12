@@ -139,7 +139,7 @@ switch cmd
             'selectaxes', 'selectitem','refreshfigprop', ...
             'refreshaxprop','moveitemup','moveitemdown', ...
             'updatearrows', 'newaxes_oneplot', 'newaxes_matrix', ...
-            'newaxes_specloc'}
+            'newaxes_specloc', 'secondy', 'secondy_left', 'secondy_right'}
         qp_plotmanager(cmd,UD,logfile,logtype,cmdargs);
         
     case {'selectedfigure', 'selectedaxes', 'selecteditem'}
@@ -2893,9 +2893,18 @@ switch cmd
             if strcmp(get(gcbo,'style'),'checkbox') && ~get(gcbo,'value')
                 clr='none';
             else
-                clr=get(ax,'color');
-                if ischar(clr) % none
-                    clr=get(get(ax,'parent'),'color');
+                switch cmd
+                    case 'axescolour'
+                        clr=get(ax,'color');
+                        if ischar(clr) % none
+                            clr=get(get(ax,'parent'),'color');
+                        end
+                    case 'xcolour'
+                        clr=get(ax,'xcolor');
+                    case 'ycolour'
+                        clr=get(ax,'ycolor');
+                    case 'zcolour'
+                        clr=get(ax,'zcolor');
                 end
                 clr=uisetcolor(clr,sprintf('Specify the %s colour ...',cmd(1:end-6)));
             end
@@ -2909,7 +2918,7 @@ switch cmd
             switch cmd
                 case 'axescolour'
                     set(ax,'color',clr)
-                case {'xcolour','ycolour'}
+                case {'xcolour','ycolour','zcolour'}
                     set(ax,[cmd(1) 'color'],clr)
             end
             d3d_qp refreshaxprop
@@ -2922,8 +2931,19 @@ switch cmd
         ax = qpsa;
         xdr = {'xdir','normal'};
         ydr = {'ydir','normal'};
+        zdr = {};
+        zlm = [];
+        PM = UD.PlotMngr;
+        if strcmp(get(PM.ZLimitMin,'enable'),'on')
+            zdr = {'zdir','normal'};
+            zlm(1,1) = str2double(get(PM.ZLimitMin,'string'));
+            zlm(1,2) = str2double(get(PM.ZLimitMax,'string'));
+            if zlm(1)>zlm(2)
+                zlm = fliplr(zlm);
+                zdr{2} = 'reverse';
+            end
+        end
         if isempty(cmdargs)
-            PM = UD.PlotMngr;
             xlm(1,1) = str2double(get(PM.XLimitMin,'string'));
             xlm(1,2) = str2double(get(PM.XLimitMax,'string'));
             if xlm(1)>xlm(2)
@@ -2961,8 +2981,24 @@ switch cmd
                 ylm = fliplr(ylm);
                 ydr{2} = 'reverse';
             end
+            if length(cmdargs)>2
+                zlm=cmdargs{3};
+                if ischar(zlm)
+                    if isequal(zlm,'auto-reverse')
+                        zlm    = 'auto';
+                        zdr{2} = 'reverse';
+                    elseif ~isequal(zlm,'auto')
+                        zlm = str2vec(zlm);
+                    end
+                elseif zlm(1)>zlm(2)
+                    zlm = fliplr(zlm);
+                    zdr{2} = 'reverse';
+                end
+            end
         end
-        if (isequal(size(xlm),[1 2]) || strcmp(xlm,'auto')) && (isequal(size(ylm),[1 2]) || strcmp(ylm,'auto'))
+        if (isequal(size(xlm),[1 2]) || strcmp(xlm,'auto')) && ...
+                (isequal(size(ylm),[1 2]) || strcmp(ylm,'auto')) && ...
+                (isequal(size(zlm),[1 2]) || strcmp(zlm,'auto') || isempty(zlm))
             if ischar(xlm)
                 set(ax,'xlimmode','auto',xdr{:})
             else
@@ -2978,6 +3014,16 @@ switch cmd
                     set(ax,'yscale','linear')
                 end
                 set(ax,'ylim',ylm,ydr{:})
+            end
+            if ~isempty(zlm)
+                if ischar(zlm)
+                    set(ax,'zlimmode','auto',zdr{:})
+                else
+                    if any(zlm<0) && strcmp(get(ax,'zscale'),'log')
+                        set(ax,'zscale','linear')
+                    end
+                    set(ax,'zlim',zlm,zdr{:})
+                end
             end
             setaxesprops(ax)
             d3d_qp refreshaxprop
@@ -2996,27 +3042,50 @@ switch cmd
                         ylm = 'auto-reverse';
                     end
                 end
-                writelog(logfile,logtype,cmd,xlm,ylm);
+                if ~isempty(zlm)
+                    if strcmp(zdr{2},'reverse')
+                        if isnumeric(zlm)
+                            zlm = fliplr(zlm);
+                        else
+                            zlm = 'auto-reverse';
+                        end
+                    end
+                    zlm = {zlm};
+                else
+                    zlm = {};
+                end
+                writelog(logfile,logtype,cmd,xlm,ylm,zlm{:});
             end
         end
         
     case 'axesgrid'
         ax = qpsa;
-        if isempty(cmdargs)
-            PM = UD.PlotMngr;
-            xgrid = get(PM.XGrid,'value');
-            ygrid = get(PM.YGrid,'value');
-        else
+        PM = UD.PlotMngr;
+        xgrid = get(PM.XGrid,'value');
+        ygrid = get(PM.YGrid,'value');
+        zgrid = get(PM.ZGrid,'value');
+        if ~isempty(cmdargs)
             xgrid = cmdargs{1};
             ygrid = cmdargs{2};
+            if length(cmdargs)>2
+                zgrid = cmdargs{3};
+            end
         end
-        if isequal(size(xgrid),[1 1]) && isequal(size(ygrid),[1 1])
+        if isequal(size(xgrid),[1 1]) && isequal(size(ygrid),[1 1]) && isequal(size(zgrid),[1 1])
             xgr = valuemap(xgrid,[1 0],{'on' 'off'});
             ygr = valuemap(ygrid,[1 0],{'on' 'off'});
-            set(ax,'xgrid',xgr,'ygrid',ygr);
+            zgr = valuemap(zgrid,[1 0],{'on' 'off'});
+            set(ax,'xgrid',xgr,'ygrid',ygr,'zgrid',zgr);
+            if strcmp(get(PM.ZGrid,'enable'),'off')
+                zgr = [];
+            end
             d3d_qp refreshaxprop
             if logfile
-                writelog(logfile,logtype,cmd,xgrid,ygrid);
+                if isempty(zgr)
+                    writelog(logfile,logtype,cmd,xgrid,ygrid);
+                else
+                    writelog(logfile,logtype,cmd,xgrid,ygrid,zgrid);
+                end
             end
         end
         

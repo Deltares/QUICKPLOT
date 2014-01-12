@@ -106,6 +106,7 @@ switch cmd
         shiftcontrol(PM.AxName,aligntop+3*stretch5)
         shiftcontrol(PM.AxTypeTxt,aligntop+3*shift5)
         shiftcontrol(PM.AxType,aligntop+3*shift5+2*stretch5)
+        shiftcontrol(PM.SecondY,aligntop+alignright)
         %
         shiftcontrol(PM.AxTitleTxt,aligntop)
         shiftcontrol(PM.AxTitleAuto,aligntop)
@@ -856,6 +857,7 @@ switch cmd
                     delete(hAnIt)
                 end
             end
+            delete(getappdata(Ax,'linkedaxes'))
             delete(Ax)
             if logfile
                 writelog(logfile,logtype,cmd);
@@ -1372,10 +1374,107 @@ switch cmd
             set(PM.FigBorder,'enable','off')
         end
 
+    case {'secondy','secondy_left','secondy_right'}
+        ax = qpsa;
+        linkedax = getappdata(ax,'linkedaxestype');
+        if isempty(linkedax)
+            set(ax,'xlimmode','manual')
+            set(ax,'position',get(ax,'position'))
+            na = axes('parent',get(ax,'parent'), ...
+                'units',get(ax,'units'), ...
+                'position',get(ax,'position'));
+            if strcmp(get(ax,'dataaspectratiomode'),'manual')
+                set(na,'dataaspectratio',get(ax,'dataaspectratio'))
+            end
+            if strcmp(get(ax,'plotboxaspectratiomode'),'manual')
+                set(na,'plotboxaspectratio',get(ax,'plotboxaspectratio'))
+            end
+            set(na,'color','none', ...
+                'xtick',[], ...
+                'xcolor',get(ax,'xcolor'), ...
+                'xdir',get(ax,'xdir'), ...
+                'xscale',get(ax,'xscale'), ...
+                'xlim',get(ax,'xlim'), ...
+                'linewidth',get(ax,'linewidth'), ...
+                'ycolor',get(ax,'ycolor'), ...
+                'yaxislocation','right')
+            if strcmp(get(ax,'yaxislocation'),'right')
+                set(ax,'yaxislocation','left')
+                %
+                set(na,'ydir',get(ax,'ydir'), ...
+                    'yscale',get(ax,'yscale'))
+                ylm = get(ax,'ylimmode');
+                if strcmp(ylm,'manual')
+                    set(na,'ylim',get(ax,'ylim'))
+                    set(ax,'ylimmode','auto')
+                end
+                ylabel(na,get(get(ax,'ylabel'),'string'))
+                ylabel(ax,'')
+                yappdata = {'yquantity','yunit','ylabelauto'};
+                for i = 1:length(yappdata)
+                    yad = yappdata{i};
+                    if isappdata(ax,yad)
+                        setappdata(na,yad,getappdata(ax,yad))
+                        rmappdata(ax,yad)
+                    end
+                end
+                %
+                c = get(ax,'children');
+                set(c,'parent',na)
+            end
+            setappdata(ax,'linkedaxestype','SecondY')
+            setappdata(ax,'linkedaxes',na)
+            setappdata(na,'linkedaxestype','SecondY')
+            setappdata(na,'linkedaxes',ax)
+            setappdata(na,'NonDataObject',1)
+            d3d_qp refreshaxprop
+        elseif strcmp(linkedax,'SecondY')
+            switch cmd
+                case 'secondy'
+                    pos=get(gcbf,'position');
+                    set(UD.PlotMngr.SecondYMenu,'position',get(0,'pointerlocation')-pos(1:2),'visible','on')
+                case 'secondy_left'
+                    na = getappdata(ax,'linkedaxes');
+                    set(ax,'yaxislocation','right')
+                    %
+                    set(ax,'ydir',get(na,'ydir'), ...
+                        'yscale',get(na,'yscale'), ...
+                        'ycolor',get(na,'ycolor'))
+                    ylm = get(na,'ylimmode');
+                    if strcmp(ylm,'manual')
+                        set(ax,'ylim',get(na,'ylim'))
+                    end
+                    ylabel(ax,get(get(na,'ylabel'),'string'))
+                    yappdata = {'yquantity','yunit','ylabelauto'};
+                    for i = 1:length(yappdata)
+                        yad = yappdata{i};
+                        if isappdata(na,yad)
+                            setappdata(ax,yad,getappdata(na,yad))
+                        end
+                    end
+                    %
+                    delete(get(ax,'children'))
+                    c = get(na,'children');
+                    set(c,'parent',ax)
+                    %
+                    rmappdata(ax,'linkedaxestype')
+                    rmappdata(ax,'linkedaxes')
+                    delete(na)
+                    d3d_qp refreshaxprop
+                case 'secondy_right'
+                    na = getappdata(ax,'linkedaxes');
+                    rmappdata(ax,'linkedaxestype')
+                    rmappdata(ax,'linkedaxes')
+                    delete(na)
+                    d3d_qp refreshaxprop
+            end
+        end
+
     case 'refreshaxprop'
         ax = qpsa;
         PM = UD.PlotMngr;
         if length(ax)==1
+            secondy = strcmp(getappdata(ax,'linkedaxestype'),'SecondY');
             if strcmp(getappdata(ax,'BasicAxesType'),'Lon-Lat')
                 types = get(PM.GeoDataMenu,'children');
                 anyfound = 0;
@@ -1397,10 +1496,13 @@ switch cmd
                 set(PM.GeoData,'enable','off')
             end
             %
+            if 0 % ~isappdata(ax,'linkedaxestype') || secondy
+                set(PM.SecondY,'enable','on')
+            else
+                set(PM.SecondY,'enable','off')
+            end
             set([PM.AxNameTxt PM.AxTitleTxt PM.AxColorTxt PM.AxLineWTxt ...
-                PM.AxPosition ...
-                PM.XLimitTxt PM.XLabelTxt ...
-                PM.YLimitTxt PM.YLabelTxt],'enable','on')
+                PM.AxPosition],'enable','on')
             set(PM.AxName, ...
                 'enable','on', ...
                 'backgroundcolor',Active)
@@ -1450,21 +1552,6 @@ switch cmd
                 set(PM.AxColor,'backgroundcolor',clr,'string','', ...
                     'enable','on')
             end
-            xlim = get(ax,'xlim');
-            if strcmp(get(ax,'xdir'),'reverse')
-                xlim = fliplr(xlim);
-            end
-            ylim = get(ax,'ylim');
-            if strcmp(get(ax,'ydir'),'reverse')
-                ylim = fliplr(ylim);
-            end
-            set([PM.XLimitMin PM.XLimitMax PM.YLimitMin PM.YLimitMax], ...
-                'backgroundcolor',Active, ...
-                'enable','on')
-            set(PM.XLimitMin,'string',num2str(xlim(1)))
-            set(PM.XLimitMax,'string',num2str(xlim(2)))
-            set(PM.YLimitMin,'string',num2str(ylim(1)))
-            set(PM.YLimitMax,'string',num2str(ylim(2)))
             lbx  = valuemap(get(ax,'box'),{'on' 'off'},[1 0]);
             lw   = get(ax,'linewidth');
             posu = get(ax,'unit');
@@ -1475,22 +1562,73 @@ switch cmd
             pos = get(ax,'position');
             %
             XYZ = 'XYZ';
-            for d = 1:2
+            for d = 1:3
                 X = XYZ(d);
                 x = lower(X);
                 %
-                Xlim = get(ax,[x 'lim']);
-                Xgr  = valuemap(get(ax,[x 'grid']),{'on' 'off'},[1 0]);
-                Xsc  = valuemap(get(ax,[x 'scale']),{'linear','log'},[1 2]);
-                switch X
-                    case 'X'
-                        Xlc  = valuemap(get(ax,'xaxislocation'),{'top','bottom'},[1 2]);
-                    case 'Y'
-                        Xlc  = valuemap(get(ax,'yaxislocation'),{'left','right'},[1 2]);
-                    case 'Z'
+                axq = ax;
+                if X=='Z'
+                    vw = get(ax,'view');
+                    if secondy
+                        axq = getappdata(ax,'linkedaxes');
+                        x = 'y';
+                    elseif vw(2)==90
+                        set([PM.ZLimitTxt PM.ZLabelTxt PM.ZGrid PM.ZLabelAuto], ...
+                            'enable','off')
+                        set(PM.ZLimitTxt,'string','Z Limit')
+                        set(PM.ZLabelTxt,'string','Z Label')
+                        set([PM.ZLimitMin PM.ZLimitMax PM.ZLabel], ...
+                            'string','', ...
+                            'backgroundcolor',Inactive, ...
+                            'enable','off')
+                        set([PM.ZLoc PM.ZScale], ...
+                            'value',1, ...
+                            'backgroundcolor',Inactive, ...
+                            'enable','off')
+                        set(PM.ZColor, ...
+                            'backgroundcolor',Inactive, ...
+                            'enable','off')
+                        continue
+                    end
+                end
+                %
+                Xlim = get(axq,[x 'lim']);
+                %
+                if strcmp(get(axq,[x 'dir']),'reverse')
+                    Xlim = fliplr(Xlim);
+                end
+                set([PM.([X 'LimitTxt']) PM.([X 'LabelTxt'])], ...
+                    'enable','on')
+                if X=='Z' || X=='Y'
+                    if secondy
+                        if X=='Y'
+                            L = 'Y1';
+                        else
+                            L = 'Y2';
+                        end
+                    else
+                        L = X;
+                    end
+                    set(PM.([X 'LimitTxt']),'string',[L ' Limit'])
+                    set(PM.([X 'LabelTxt']),'string',[L ' Label'])
+                end
+                set([PM.([X 'LimitMin']) PM.([X 'LimitMax'])], ...
+                    'backgroundcolor',Active, ...
+                    'enable','on')
+                set(PM.([X 'LimitMin']),'string',num2str(Xlim(1)))
+                set(PM.([X 'LimitMax']),'string',num2str(Xlim(2)))
+                %
+                Xgr  = valuemap(get(axq,[x 'grid']),{'on' 'off'},[1 0]);
+                Xsc  = valuemap(get(axq,[x 'scale']),{'linear','log'},[1 2]);
+                switch x
+                    case 'x'
+                        Xlc  = valuemap(get(axq,'xaxislocation'),{'top','bottom'},[1 2]);
+                    case 'y'
+                        Xlc  = valuemap(get(axq,'yaxislocation'),{'left','right'},[1 2]);
+                    case 'z'
                         Xlc = [];
                 end
-                Xcl  = get(ax,[x 'color']);
+                Xcl  = get(axq,[x 'color']);
                 %
                 if all(Xlim>0)
                     set(PM.([X 'Scale']),'value',Xsc, ...
@@ -1503,22 +1641,36 @@ switch cmd
                 end
                 set(PM.([X 'Grid']),'value',Xgr, ...
                     'enable','on')
-                set(PM.([X 'Loc']),'value',Xlc, ...
-                    'backgroundcolor',Active, ...
-                    'enable','on')
+                if X=='Z' && secondy
+                    set(PM.([X 'Loc']),'value',2, ...
+                        'backgroundcolor',Inactive, ...
+                        'enable','off')
+                elseif isempty(Xlc)
+                    set(PM.([X 'Loc']),'value',1, ...
+                        'backgroundcolor',Inactive, ...
+                        'enable','off')
+                elseif X=='Y' && secondy
+                    set(PM.([X 'Loc']),'value',Xlc, ...
+                        'backgroundcolor',Inactive, ...
+                        'enable','off')
+                else
+                    set(PM.([X 'Loc']),'value',Xlc, ...
+                        'backgroundcolor',Active, ...
+                        'enable','on')
+                end
                 set(PM.([X 'Color']),'backgroundcolor',Xcl, ...
                     'enable','on')
-                if isappdata(ax,[x 'label'])
+                if isappdata(axq,[x 'label'])
                     set(PM.([X 'LabelAuto']),'value',0, ...
                         'enable','on')
-                    str=getappdata(ax,[x 'label']);
+                    str=getappdata(axq,[x 'label']);
                     set(PM.([X 'Label']),'string',str, ...
                         'backgroundcolor',Active, ...
                         'enable','on')
                 else
                     set(PM.([X 'LabelAuto']),'value',1, ...
                         'enable','on')
-                    str=get(get(ax,[x 'label']),'string');
+                    str=get(get(axq,[x 'label']),'string');
                     if iscell(str)
                         str = strjoin(str(:)','\\n{}');
                     end
@@ -1556,13 +1708,13 @@ switch cmd
                 'enable','on')
         else
             set([PM.AxTitleTxt PM.AxTitleAuto ...
-                PM.AxNameTxt PM.AxTypeTxt ...
+                PM.AxNameTxt PM.AxTypeTxt PM.SecondY ...
                 PM.AxColorTxt PM.AxLineWTxt PM.AxPosition ...
                 PM.XLimitTxt PM.XLabelTxt PM.XLabelAuto ...
                 PM.YLimitTxt PM.YLabelTxt PM.YLabelAuto ...
                 PM.ZLimitTxt PM.ZLabelTxt PM.ZLabelAuto],'enable','off')
             set([PM.AxName PM.HasAxColor PM.AxColor ...
-                PM.AxPosUnit PM.XColor PM.YColor], ...
+                PM.AxPosUnit PM.XColor PM.YColor PM.ZColor], ...
                 'backgroundcolor',Inactive, ...
                 'enable','off')
             set(PM.AxType, ...
