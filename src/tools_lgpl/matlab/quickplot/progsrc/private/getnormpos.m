@@ -41,7 +41,11 @@ tmpax=axes('parent',fig,'visible','off','units','normalized','position',[0 0 1 1
 hvis=get(fig,'handlevisibility');
 set(fig,'handlevisibility','on')
 figure(fig);
-ginput(1);
+[xd,yd,b] = ginput(1);
+if isequal(b,27) %ESC pressed
+    NormPos = [];
+    return
+end
 Point1 = get(tmpax,'currentpoint');
 Point1 = Point1(1,1:2);
 %

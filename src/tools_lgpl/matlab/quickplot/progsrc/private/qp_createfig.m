@@ -1,4 +1,4 @@
-function [fig,figoptions,createops]=qp_createfig(figtype,figname,varargin)
+function [fig,figoptions,createops]=qp_createfig(figtype,figname)
 %QP_CREATEFIG Create a figure for plotting.
 %   set default values
 
@@ -72,7 +72,7 @@ xtraprops={};
 if ~isempty(figname)
     xtraprops={'integerhandle','off', ...
         'numbertitle','off', ...
-        'name',['QuickPlot: ' figname]};
+        'name',figname};
 end
 %
 fig = [];
@@ -136,34 +136,34 @@ end
 switch(figtype)
     case '1 plot - portrait'
         figoptions.Editable=0;
-        standardfig(1,1,{'plot area'},'a4p',varargin{:});
+        standardfig(1,1,{'plot area'},'a4p');
     case '1 plot - landscape'
         figoptions.Editable=0;
-        standardfig(1,1,{'plot area'},'a4l',varargin{:});
+        standardfig(1,1,{'plot area'},'a4l');
     case '2 plots, vertical - portrait'
         figoptions.Editable=0;
-        standardfig(2,1,{'upper plot','lower plot'},'a4p',varargin{:});
+        standardfig(2,1,{'upper plot','lower plot'},'a4p');
     case '2 plots, horizontal - portrait'
         figoptions.Editable=0;
-        standardfig(1,2,{'left plot','right plot'},'a4p',varargin{:});
+        standardfig(1,2,{'left plot','right plot'},'a4p');
     case '2 plots, vertical - landscape'
         figoptions.Editable=0;
-        standardfig(2,1,{'upper plot','lower plot'},'a4l',varargin{:});
+        standardfig(2,1,{'upper plot','lower plot'},'a4l');
     case '2 plots, horizontal - landscape'
         figoptions.Editable=0;
-        standardfig(1,2,{'left plot','right plot'},'a4l',varargin{:});
+        standardfig(1,2,{'left plot','right plot'},'a4l');
     case '3 plots, vertical - portrait'
         figoptions.Editable=0;
-        standardfig(3,1,{'upper plot','middle plot','lower plot'},'a4p',varargin{:});
+        standardfig(3,1,{'upper plot','middle plot','lower plot'},'a4p');
     case '3 plots, horizontal - landscape'
         figoptions.Editable=0;
-        standardfig(1,3,{'left plot','center plot','right plot'},'a4l',varargin{:});
+        standardfig(1,3,{'left plot','center plot','right plot'},'a4l');
     case '4 plots, 2x2 - portrait'
         figoptions.Editable=0;
-        standardfig(2,2,{'upper left plot','upper right plot','lower left plot','lower right plot'},'a4p',varargin{:});
+        standardfig(2,2,{'upper left plot','upper right plot','lower left plot','lower right plot'},'a4p');
     case '4 plots, 2x2 - landscape'
         figoptions.Editable=0;
-        standardfig(2,2,{'upper left plot','upper right plot','lower left plot','lower right plot'},'a4l',varargin{:});
+        standardfig(2,2,{'upper left plot','upper right plot','lower left plot','lower right plot'},'a4l');
     case 'free format figure'
         set(fig, ...
             'papertype','a4', ...
@@ -187,7 +187,7 @@ end
 set(fig,'userdata',figoptions,'visible','on');
 
 
-function standardfig(m,n,tags,orient,varargin)
+function standardfig(m,n,tags,orient)
 %set(gcf,'color',[1 1 1]);
 for i=m*n:-1:1
     ax=subplot(m,n,i);
@@ -197,7 +197,7 @@ for i=m*n:-1:1
     end
     set(ax,'tag',tags{i},'drawmode','fast');
 end
-md_paper('no edit',orient,'7box',varargin{:});
+md_paper('no edit',orient,'7box');
 
 function val = getpixels(h,quant)
 u = get(h,'units');

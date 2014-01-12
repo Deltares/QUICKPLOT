@@ -44,28 +44,28 @@ while ~isempty(rmndr)
                 rmndr=rmndr(idx(1)+1:end);
                 quotes=find(rmndr=='''');
                 i=1; endquote=[];
-                while i<=length(quotes) & isempty(endquote)
-                    if i==length(quotes) | quotes(i+1)~=quotes(i)+1
+                while i<=length(quotes) && isempty(endquote)
+                    if i==length(quotes) || quotes(i+1)~=quotes(i)+1
                         endquote=quotes(i);
                     else
                         i=i+2;
                     end
                 end
                 if isempty(endquote)
-                    error('Invalid command argument encountered: ''%s',rmndr)
+                    error('Invalid command argument: unterminated string ''%s',rmndr)
                 else
                     cmdargs{end+1}=rmndr(1:endquote-1);
                     rmndr=rmndr(endquote+1:end);
                 end
             case '['
                 rmndr=rmndr(idx(1)+1:end);
-                [X,count,err,n]=sscanf(rmndr,'%[0-9+ .Ee:-]');
-                if n>length(rmndr) | rmndr(n)~=']'
-                    error('Invalid command argument encountered: [%s',rmndr)
+                n = strfind(rmndr,']');
+                if isempty(n)
+                    error('Invalid command argument: unterminated array [%s',rmndr)
                 end
-                cmdargs{end+1}=X;
+                cmdargs{end+1}=str2vec(rmndr(1:n(1)-1),'%f');
 
-                rmndr=rmndr(n+1:end);
+                rmndr=rmndr(n(1)+1:end);
             case {'1','2','3','4','5','6','7','8','9','0','.','-','+'}
                 [X,count,err,n]=sscanf(rmndr,'%f',1);
                 if count==1

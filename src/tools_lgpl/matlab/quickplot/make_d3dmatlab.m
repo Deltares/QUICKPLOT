@@ -75,8 +75,7 @@ if nargin<2
     T=now;
 end
 disp(['Delft3D-MATLAB interface version: ' qpversion]);
-T=datevec(T);
-TStr=[datestr(datenum(T(1),T(2),T(3),T(4),T(5),T(6)),3) sprintf(' %2.2i %i %2.2i:%2.2i:%2.2i',T([3 1 4 5 6]))];
+TStr=datestr(T);
 disp(['Current date and time           : ' TStr]);
 
 disp(['Creating ',tdir,' directory ...']);

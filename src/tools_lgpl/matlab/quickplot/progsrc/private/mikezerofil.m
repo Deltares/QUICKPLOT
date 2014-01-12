@@ -420,6 +420,10 @@ end
 % -----------------------------------------------------------------------------
 function OK=optfig(h0)
 Inactive=get(0,'defaultuicontrolbackground');
+FigPos=get(h0,'position');
+FigPos(3:4) = getappdata(h0,'DefaultFileOptionsSize');
+set(h0,'position',FigPos)
+
 h1 = uicontrol('Parent',h0, ...
     'BackgroundColor',Inactive, ...
     'Callback','d3d_qp fileoptions selgrid', ...

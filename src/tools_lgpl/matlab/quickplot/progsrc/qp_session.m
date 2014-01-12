@@ -34,16 +34,16 @@ function S = qp_session(cmd,H,varargin)
 
 switch cmd
     case 'read'
-        S = local_read(H);
+        S = local_read(H,varargin{:});
     case 'extract'
-        S = local_extract(H);
+        S = local_extract(H,varargin{:});
     case 'rebuild'
-        S = local_rebuild(H);
+        S = local_rebuild(H,varargin{:});
     case 'save'
         local_save(H,varargin{:})
 end
 
-function S = local_read(filename)
+function S = local_read(filename,PAR)
 fid = fopen(filename,'r');
 Str = getline(fid);
 fgi = 0;
@@ -52,6 +52,9 @@ itm = 0;
 opt = '';
 S = [];
 while ~isempty(Str)
+    if nargin>1
+        Str = qp_strrep(Str,PAR);
+    end
     args = parseargs(Str);
     key  = lower(args{1});
     switch key
@@ -75,6 +78,7 @@ while ~isempty(Str)
             S(fgi).axes(axi).position = [];
             S(fgi).axes(axi).colour = [255 255 255];
             S(fgi).axes(axi).box = 'off';
+            S(fgi).axes(axi).linewidth = 0.5;
             S(fgi).axes(axi).title = '<automatic>';
             for x = 'xyz'
                 S(fgi).axes(axi).([x 'label']) = '<automatic>';
@@ -213,6 +217,7 @@ for fgi = 1:length(S)
             fprintf(fid,'    Colour    [%i %i %i]\n',S(fgi).axes(axi).colour);
         end
         fprintf(fid,'    Box       ''%s''\n',S(fgi).axes(axi).box);
+        fprintf(fid,'    LineWidth %g\n',S(fgi).axes(axi).linewidth);
         for x = 'xy'
             X = upper(x);
             if ~strcmp(S(fgi).axes(axi).([x 'label']),'<automatic>')
@@ -282,9 +287,13 @@ for fgi = 1:length(S)
 end
 fclose(fid);
 
-function H = local_rebuild(S)
+function H = local_rebuild(S,PAR)
 if ischar(S)
-    S = qp_session('read',S);
+    if nargin>1
+        S = qp_session('read',S,PAR);
+    else
+        S = qp_session('read',S);
+    end
 end
 opened_files = {};
 for fgi = length(S):-1:1
@@ -318,8 +327,13 @@ for fgi = length(S):-1:1
     for axi = length(S(fgi).axes):-1:1
         d3d_qp('newaxes_specloc',S(fgi).axes(axi).position,'normalized')
         d3d_qp('axesname',S(fgi).axes(axi).name)
-        d3d_qp('axescolour',S(fgi).axes(axi).colour/255)
+        if ischar(S(fgi).axes(axi).colour)
+            d3d_qp('axescolour',S(fgi).axes(axi).colour)
+        else
+            d3d_qp('axescolour',S(fgi).axes(axi).colour/255)
+        end
         d3d_qp('axesboxed',strcmp(S(fgi).axes(axi).box,'on'))
+        d3d_qp('axeslinewidth',S(fgi).axes(axi).linewidth)
         d3d_qp('axesgrid',strcmp(S(fgi).axes(axi).xgrid,'on'),strcmp(S(fgi).axes(axi).ygrid,'on'))
         d3d_qp('axesloc',S(fgi).axes(axi).xloc,S(fgi).axes(axi).yloc)
         d3d_qp('axeslimits',S(fgi).axes(axi).xlim,S(fgi).axes(axi).ylim)
@@ -571,6 +585,7 @@ for fgi = length(H):-1:1
     end
     
     axi = 0;
+    S(fgi).axes = [];
     for i = 1:length(HInfo.Children)
         A = HInfo.Children(i);
         AInfo = get(A);
@@ -598,8 +613,13 @@ for fgi = length(H):-1:1
                 S(fgi).axes(axi).position = getappdata(A,'origPos_before_Colorbar');
                 rmappdata(A,'origPos_before_Colorbar')
             end
-            S(fgi).axes(axi).colour    = round(AInfo.Color*255);
+            if ischar(AInfo.Color)
+                S(fgi).axes(axi).colour = AInfo.Color;
+            else
+                S(fgi).axes(axi).colour = round(AInfo.Color*255);
+            end
             S(fgi).axes(axi).box       = AInfo.Box;
+            S(fgi).axes(axi).linewidth = AInfo.LineWidth;
             %
             if isappdata(A,'title')
                 S(fgi).axes(axi).title = getappdata(A,'title');
@@ -620,9 +640,17 @@ for fgi = length(H):-1:1
                 end
                 S(fgi).axes(axi).([x 'scale']) = AInfo.([X 'Scale']);
                 if strcmp(AInfo.([X 'LimMode']),'manual')
-                    S(fgi).axes(axi).([x 'lim']) = AInfo.([X 'Lim']);
+                    xlm = AInfo.([X 'Lim']);
+                    if strcmp(AInfo.([X 'Dir']),'reverse')
+                        xlm = fliplr(xlm);
+                    end
+                    S(fgi).axes(axi).([x 'lim']) = xlm;
                 else
-                    S(fgi).axes(axi).([x 'lim']) = 'auto';
+                    if strcmp(AInfo.([X 'Dir']),'reverse')
+                        S(fgi).axes(axi).([x 'lim']) = 'auto-reverse';
+                    else
+                        S(fgi).axes(axi).([x 'lim']) = 'auto';
+                    end
                 end
             end
             %
@@ -640,6 +668,7 @@ for fgi = length(H):-1:1
             else
                 u = {u};
             end
+            S(fgi).axes(axi).items = [];
             for itm = length(u):-1:1
                 IInfo = u{itm};
                 S(fgi).axes(axi).items(itm).name     = IInfo.PlotState.Props.Name;

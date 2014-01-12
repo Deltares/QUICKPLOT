@@ -166,7 +166,7 @@ else
     end
 end
 
-PName=Props.Name;
+Quant=Props.Name;
 Units='';
 if ~isempty(data)
     Units=data(1).Units;
@@ -393,13 +393,13 @@ if isfield(data,'XComp')
     elseif ~isempty(strfind(Ops.vectorcomponent,'vector'))
         % no text added for vector and patch centred vector
         if ~isempty(Ops.vectorcolour)
-            PName=[PName ', ' Ops.vectorcolour];
+            Quant=[Quant ', ' Ops.vectorcolour];
             Units = data(1).Units;
         elseif any(strcmp(Ops.basicaxestype,{'X-Y','Lon-Lat'}))
             Units='';
         end
     else
-        PName=[PName ', ' Ops.vectorcomponent];
+        Quant=[Quant ', ' Ops.vectorcomponent];
         Units = data(1).Units;
     end
     if scalar
@@ -667,13 +667,13 @@ stn=strrep(stn,'_','\_');
 if ~isempty(SubField)
     [Chk,subfs]=qp_getdata(FileInfo,Domain,Props,'subfields',SubField{1});
     if Chk && ~isempty(subfs)
-        PName=cat(2,PName,': ',subfs{1});
+        Quant=cat(2,Quant,': ',subfs{1});
     end
 end
-PName=strrep(PName,'\','\\');
-PName=strrep(PName,'{','\{');
-PName=strrep(PName,'}','\}');
-PName=strrep(PName,'_','\_');
+Quant=strrep(Quant,'\','\\');
+Quant=strrep(Quant,'{','\{');
+Quant=strrep(Quant,'}','\}');
+Quant=strrep(Quant,'_','\_');
 
 TStr='';
 if isfield(data,'Time') && length(data(1).Time)==1
@@ -915,7 +915,7 @@ else
     Param.NVal=NVal;
     Param.multiple=multiple;
     Param.FirstFrame=FirstFrame;
-    Param.PName=PName;
+    Param.Quant=Quant;
     Param.Units=Units;
     Param.TStr=TStr;
     Param.Selected=Selected;
@@ -983,7 +983,7 @@ if isfield(Ops,'basicaxestype') && ~isempty(Ops.basicaxestype) && length(Parent)
                     end
                 end
             case 'Val'
-                dimension{d} = PName;
+                dimension{d} = Quant;
                 unit{d} = Units;
             case 'Y'
                 dimension{d} = 'y coordinate';%'distance';
@@ -1075,6 +1075,17 @@ if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
     nonAx=Chld(~isAx);
     Ax   =Chld(isAx);
     h=qp_colorbar(Ops.colourbar,'peer',Parent);
+    if ~isempty(Units)
+        PName = sprintf('%s (%s)',Quant,Units);
+    else
+        PName = Quant;
+    end
+    switch Ops.colourbar
+        case 'vert'
+            title(h,PName)
+        case 'horiz'
+            xlabel(h,PName)
+    end
     if ~isempty(h)
         set(pfig,'children',[nonAx;h;Ax(ishandle(Ax) & (Ax~=h))])
         cbratio = qp_settings('colorbar_ratio');

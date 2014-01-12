@@ -36,7 +36,12 @@ function handleOut=qpsa(handleIn)
 %   $Id$
 
 if nargin>0
-    d3d_qp('selectfigure',handleIn);
+    % if this is an axes handle, automatically switch to the right figure.
+    % Otherwise, assume it concerns the selection of an axes in the
+    % current figure.
+    if ~ischar(handleIn)
+        d3d_qp('selectfigure',handleIn);
+    end
     d3d_qp('selectaxes',handleIn);
 end
 if nargout>0

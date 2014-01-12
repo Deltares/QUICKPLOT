@@ -114,7 +114,9 @@ switch cmd
         shiftcontrol(PM.AxColorTxt,aligntop)
         shiftcontrol(PM.HasAxColor,aligntop)
         shiftcontrol(PM.AxColor,aligntop+stretch5)
-        shiftcontrol(PM.AxBox,aligntop+shift5+stretch5)
+        shiftcontrol(PM.AxLineWTxt,aligntop+shift5+stretch5)
+        shiftcontrol(PM.AxLineWidth,aligntop+2*shift5+stretch5)
+        shiftcontrol(PM.AxBox,aligntop+3*shift5+stretch5)
         %
         shiftcontrol(PM.AxPosition,aligntop)
         shiftcontrol(PM.AxXLowerLeft,aligntop+stretch5)
@@ -164,7 +166,7 @@ switch cmd
         setappdata(fig,'FigureSize',NewSize);
         
     case 'newfigure'
-        [h,figops,createops]=qp_createfig(cmdargs{:});
+        [h,figops,createops]=qp_createfig(cmdargs{1:min(2,length(cmdargs))});
         if ~isempty(h)
             UDplot=get(h,'userdata');
             UDplot.ProgID='QuickPlot';
@@ -175,6 +177,9 @@ switch cmd
             end
             if logfile
                 writelog(logfile,logtype,cmd,createops{:});
+            end
+            if length(cmdargs)>2
+                d3d_qp('figureborder',cmdargs{3}{:});
             end
         end
         
@@ -211,10 +216,15 @@ switch cmd
         end
                 
     case 'openfigure'
+        PAR.X=[];
+        PAR = rmfield(PAR,'X');
         figuredir=qp_settings('figuredir');
         if ~isempty(cmdargs)
             [p,f,extension] = fileparts(cmdargs{1});
             f = [f,extension];
+            if length(cmdargs)>1
+                PAR = cmdargs{2};
+            end
         else
             curdir = pwd;
             cd(figuredir)
@@ -234,7 +244,7 @@ switch cmd
             [p,f,extension] = fileparts(pf);
             switch extension
                 case '.qpses'
-                    qp_session('rebuild',pf);
+                    qp_session('rebuild',pf,PAR);
                 case '.fig'
                     h=hgload(pf);
                     set(h,'menubar','none','closerequestfcn','d3d_qp closefigure')
@@ -1040,7 +1050,42 @@ switch cmd
     case 'selectfigure'
         if ~isempty(cmdargs)
             h = cmdargs{1};
-            if any(ishandle(h))
+            if ischar(h)
+                %
+                FigureHandles=get(UD.PlotMngr.FigList,'userdata');
+                Names = get(FigureHandles,'name');
+                iFg = ustrcmpi(h,Names);
+                if iFg<0
+                    %
+                    % If name not found in list of figures, try once
+                    % refreshing the list of figures.
+                    %
+                    d3d_qp refreshfigs
+                    FigureHandles=get(UD.PlotMngr.FigList,'userdata');
+                    Names = get(FigureHandles,'name');
+                    [iFg,iAll] = ustrcmpi(h,Names);
+                    if iFg<0 
+                        if ~isempty(iAll) && length(cmdargs)>1
+                            ii = cmdargs{2};
+                            if ii>=1 && ii<=length(iAll)
+                                iFg = iAll(ii);
+                            else
+                                error('Invalid sequence number %g during selection of figure "%s"',ii,h)
+                            end
+                        else
+                            ui_message('warning','Multiple figures match specified name "%s"; selecting first match.',h)
+                        end
+                    end
+                end
+                %
+                % If still not found, continue without selecting the requested
+                % axes.
+                %
+                if iFg>0
+                    set(UD.PlotMngr.FigList,'value',iFg)
+                end
+                %
+            elseif any(ishandle(h))
                 %
                 h(~ishandle(h))=[];
                 for i = length(h):-1:1
@@ -1074,13 +1119,30 @@ switch cmd
                         set(UD.PlotMngr.FigList,'value',iFg)
                     end
                 end
-                %
             end
+        else
+            FigureHandles = get(UD.PlotMngr.FigList,'userdata');
+            iFg = get(UD.PlotMngr.FigList,'value');
         end
         d3d_qp refreshaxes
         d3d_qp update_addtoplot
         d3d_qp refreshfigprop
-        
+        if logfile && iFg>0
+            names = get(FigureHandles,'name');
+            nr   = {};
+            if iscell(names)
+                name  = names{iFg};
+                same = strcmp(name,names);
+                if sum(same)>1
+                    same(iFg+1:end) = 0;
+                    nr = {sum(same)};
+                end
+            else
+                name = names;
+            end
+            writelog(logfile,logtype,cmd,name,nr{:});
+        end
+
     case 'selectedaxes'
         AxesHandles=get(UD.PlotMngr.AxList,'userdata');
         if get(UD.PlotMngr.AxAll,'value') || get(UD.PlotMngr.FigAll,'value')
@@ -1111,7 +1173,19 @@ switch cmd
                     d3d_qp refreshfigprop
                     AxesHandles=get(UD.PlotMngr.AxList,'userdata');
                     Tags = get(AxesHandles,'tag');
-                    iAx = ustrcmpi(h,Tags);
+                    [iAx,iAll] = ustrcmpi(h,Tags);
+                    if iAx<0 
+                        if ~isempty(iAll) && length(cmdargs)>1
+                            ii = cmdargs{2};
+                            if ii>=1 && ii<=length(iAll)
+                                iAx = iAll(ii);
+                            else
+                                error('Invalid sequence number %g during selection of axes "%s"',ii,h)
+                            end
+                        else
+                            ui_message('warning','Multiple axes match specified name "%s"; selecting first match.',h)
+                        end
+                    end
                 end
                 %
                 % If still not found, continue without selecting the requested
@@ -1150,10 +1224,28 @@ switch cmd
                 end
                 %
             end
+        else
+            AxesHandles=get(UD.PlotMngr.AxList,'userdata');
+            iAx = get(UD.PlotMngr.AxList,'value');
         end
         d3d_qp refreshaxes
         d3d_qp update_addtoplot
         d3d_qp refreshaxprop
+        if logfile && iAx>0
+            tags = get(AxesHandles,'tag');
+            nr   = {};
+            if iscell(tags)
+                tag  = tags{iAx};
+                same = strcmp(tag,tags);
+                if sum(same)>1
+                    same(iAx+1:end) = 0;
+                    nr = {sum(same)};
+                end
+            else
+                tag = tags;
+            end
+            writelog(logfile,logtype,cmd,tag,nr{:});
+        end
         
     case 'selecteditem'
         ItemNames=get(UD.PlotMngr.ItList,'string');
@@ -1305,7 +1397,8 @@ switch cmd
                 set(PM.GeoData,'enable','off')
             end
             %
-            set([PM.AxNameTxt PM.AxTitleTxt PM.AxColorTxt PM.AxPosition ...
+            set([PM.AxNameTxt PM.AxTitleTxt PM.AxColorTxt PM.AxLineWTxt ...
+                PM.AxPosition ...
                 PM.XLimitTxt PM.XLabelTxt ...
                 PM.YLimitTxt PM.YLabelTxt],'enable','on')
             set(PM.AxName, ...
@@ -1358,7 +1451,13 @@ switch cmd
                     'enable','on')
             end
             xlim = get(ax,'xlim');
+            if strcmp(get(ax,'xdir'),'reverse')
+                xlim = fliplr(xlim);
+            end
             ylim = get(ax,'ylim');
+            if strcmp(get(ax,'ydir'),'reverse')
+                ylim = fliplr(ylim);
+            end
             set([PM.XLimitMin PM.XLimitMax PM.YLimitMin PM.YLimitMax], ...
                 'backgroundcolor',Active, ...
                 'enable','on')
@@ -1367,6 +1466,7 @@ switch cmd
             set(PM.YLimitMin,'string',num2str(ylim(1)))
             set(PM.YLimitMax,'string',num2str(ylim(2)))
             lbx  = valuemap(get(ax,'box'),{'on' 'off'},[1 0]);
+            lw   = get(ax,'linewidth');
             posu = get(ax,'unit');
             if ismember(posu,{'points','pixels','characters'})
                 set(ax,'unit','centimeters')
@@ -1429,6 +1529,9 @@ switch cmd
             end
             set(PM.AxBox,'value',lbx, ...
                 'enable','on')
+            set(PM.AxLineWidth,'string',num2str(lw), ...
+                'backgroundcolor',Active, ...
+                'enable','on')
             %
             posu  = valuemap(posu, ...
                 {'centimeters','inches','normalized'}, ...
@@ -1454,7 +1557,7 @@ switch cmd
         else
             set([PM.AxTitleTxt PM.AxTitleAuto ...
                 PM.AxNameTxt PM.AxTypeTxt ...
-                PM.AxColorTxt PM.AxPosition ...
+                PM.AxColorTxt PM.AxLineWTxt PM.AxPosition ...
                 PM.XLimitTxt PM.XLabelTxt PM.XLabelAuto ...
                 PM.YLimitTxt PM.YLabelTxt PM.YLabelAuto ...
                 PM.ZLimitTxt PM.ZLabelTxt PM.ZLabelAuto],'enable','off')
@@ -1468,6 +1571,7 @@ switch cmd
                 'value',1, ...
                 'string',{' '})
             set([PM.AxXLowerLeft PM.AxYLowerLeft PM.AxWidth PM.AxHeight ...
+                PM.AxLineWidth ...
                 PM.XLimitMin PM.XLimitMax PM.XLabel ...
                 PM.YLimitMin PM.YLimitMax PM.YLabel ...
                 PM.ZLimitMin PM.ZLimitMax PM.ZLabel], ...

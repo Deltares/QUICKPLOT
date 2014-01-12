@@ -140,11 +140,12 @@ elseif isequal(firstchar,'PK')
     % deleted by the cleanup function created above.
     %
     unzip(FileName,unzipDir)
-    FileName = [unzipDir filesep f e];
-    if ~exist(FileName,'file')
-        FileName = [unzipDir filesep 'scenario.xml'];
+    FileNameZip = [unzipDir filesep f e];
+    if ~exist(FileNameZip,'file')
+        FileNameZip = [unzipDir filesep 'scenario.xml'];
     end
-    FI = LocalShipmaOpen(FileName);
+    FI = LocalShipmaOpen(FileNameZip);
+    FI.FileName = FileName;
     FI.CleanUp = CleanUp;
     return
 else

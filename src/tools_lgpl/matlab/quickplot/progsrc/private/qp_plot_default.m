@@ -34,7 +34,7 @@ function [hNew,Thresholds,Param,Parent]=qp_plot_default(hNew,Parent,Param,data,O
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 FirstFrame=Param.FirstFrame;
-Quant=Param.PName;
+Quant=Param.Quant;
 Units=Param.Units;
 if ~isempty(Units)
     PName=sprintf('%s (%s)',Quant,Units);
@@ -240,7 +240,9 @@ switch NVal
                         otherwise
                             hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'TRI',data.TRI,data.XYZ,data.Val,Ops);
                     end
-                    qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                    if strcmp(Ops.colourbar,'none')
+                        qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                    end
                 else
                     data = qp_dimsqueeze(data,Ops.axestype,multiple,DimFlag,Props);
                     if isfield(data,'Z') && 0
@@ -265,7 +267,9 @@ switch NVal
                         tit{1}=[tit{1} ' at ' tit{2}];
                         tit(2)=[];
                     end
-                    qp_title(Parent,tit,'quantity',Quant,'unit',Units)
+                    if strcmp(Ops.colourbar,'none')
+                        qp_title(Parent,tit,'quantity',Quant,'unit',Units)
+                    end
                 end
                 
             case {'X-Val','X-Z'}

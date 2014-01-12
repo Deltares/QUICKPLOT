@@ -47,7 +47,10 @@ function [Settings,fn]=md_print(varargin)
 %   $Id$
 
 %  Painters   'Printer Name'         Platforms    COLOR    MultiPage
-%  COLOR=0 Never, COLOR=1 User Specified, COLOR=2 Always
+%  COLOR=0 Never
+%  COLOR=1 User Specified
+%  COLOR=2 Always
+%  COLOR=3 Always - White Background & Black Axes inactive
 
 % Called by print -dsetup:
 %#function orient
@@ -63,21 +66,21 @@ if isempty(PL)
     win = W+WD;
     unx = U+UD;
     %
-    PL={1  'PDF file'                    all        1     1
-        1  'PS file'                     all        1     0
-        1  'EPS file'                    all        1     0
-        0  'TIF file'                    all        2     0
-        0  'BMP file'                    all        2     0
-        0  'PNG file'                    all        2     0
-        0  'JPG file'                    all        2     0
-        1  'EMF file'                    win        2     0
-        -1 'MATLAB fig file'             all        2     0
-        0  'Bitmap to clipboard'         win        2     0
-        1  'Metafile to clipboard'       win        2     0
-        1  'Windows printer'             W          2     0
-        1  'default Windows printer'     WD         2     0
-        1  'other Windows printer'       WD         2     0
-        -1 'QUICKPLOT session file'      all        2     1};
+    PL={1  'PDF file'                    all        1     1  1
+        1  'PS file'                     all        1     0  0
+        1  'EPS file'                    all        1     0  0
+        0  'TIF file'                    all        2     0  0
+        0  'BMP file'                    all        2     0  0
+        0  'PNG file'                    all        2     0  0
+        0  'JPG file'                    all        2     0  0
+        1  'EMF file'                    win        2     0  0
+        -1 'MATLAB fig file'             all        3     0  0
+        0  'Bitmap to clipboard'         win        2     0  0
+        1  'Metafile to clipboard'       win        2     0  0
+        1  'Windows printer'             W          2     0  0
+        1  'default Windows printer'     WD         2     0  0
+        1  'other Windows printer'       WD         2     0  0
+        -1 'QUICKPLOT session file'      all        3     1  0};
     if isdeployed
         if ispc
             code = WD;
@@ -303,11 +306,16 @@ while i<length(figlist)
                         try
                             print(fn,FigStr,dvr,PrtMth{:});
                             if strcmp(Printer,'PDF file')
-                                figname = getappdata(figlist(i),'md_print_name');
-                                if isempty(figname)
-                                    figname = sprintf('page %i',pagenr);
+                                switch LocSettings.PageLabels
+                                    case 1
+                                        % no page label
+                                    case 2
+                                        figname = sprintf('page %i',pagenr);
+                                        add_bookmark(fn,figname,pagenr>1)                                        
+                                    case 3
+                                        figname = listnames(figlist(i),'showtype',0,'showhandle',0,'showtag',0);
+                                        add_bookmark(fn,figname{1},pagenr>1)
                                 end
-                                add_bookmark(fn, figname,pagenr==1)
                                 if ~MoreToCome
                                     ps2pdf('psfile',fn,'pdffile',pdfname,'gspapersize','a4','deletepsfile',1)
                                     fn = pdfname;
@@ -403,7 +411,7 @@ while i<length(figlist)
 end
 
 function [Settings,FigID]=Local_ui(PL,CanApplyAll,Settings,SelectFrom,FigID)
-persistent PrtID Method DPI ApplyAll Clr InvertHardcopy
+persistent PrtID Method DPI ApplyAll Clr InvertHardcopy PageLabels
 if isempty(PrtID)
     PrtID=1;
     Method=2;
@@ -411,6 +419,7 @@ if isempty(PrtID)
     ApplyAll=0;
     InvertHardcopy=1;
     Clr=1;
+    PageLabels=1;
 end
 if nargin>2 && isstruct(Settings)
     if isfield(Settings,'PrtID')
@@ -434,6 +443,9 @@ if nargin>2 && isstruct(Settings)
     if isfield(Settings,'Clr')
         Clr=Settings.Clr;
     end
+    if isfield(Settings,'PageLabels')
+        PageLabels=Settings.PageLabels;
+    end
 end
 
 Reselect = 0;
@@ -454,7 +466,7 @@ ResWidth=50;
 
 TextShift = [0 XX.Txt.Height-XX.But.Height 0 0];
 Fig_Width=TextLabel+PrintLabel+3*XX.Margin;
-Fig_Height=6*XX.Margin+8*XX.But.Height+XX.Txt.Height+ ...
+Fig_Height=6*XX.Margin+9*XX.But.Height+XX.Txt.Height+ ...
     (XX.Margin+FigListHeight)*Reselect + ...
     (XX.Margin+XX.But.Height)*double(CanApplyAll);
 
@@ -497,7 +509,38 @@ if CanApplyAll
         'callback','md_print ApplyAll');
 end
 
+if PL{PrtID,6}
+    enab = 'on';
+    clr  = XX.Clr.White;
+else
+    enab = 'off';
+    clr  = XX.Clr.LightGray;
+end
+rect(1) = XX.Margin;
 rect(2) = rect(2)+rect(4)+XX.Margin;
+rect(3) = 1.2*TextLabel;
+rect(4) = XX.Txt.Height-2;
+PLabelTxt=uicontrol('style','text', ...
+    'position',rect, ...
+    'parent',fig, ...
+    'string','Page Labels', ...
+    'horizontalalignment','left', ...
+    'backgroundcolor',XX.Clr.LightGray, ...
+    'enable',enab);
+rect(1) = rect(1)+rect(3)+XX.Margin;
+rect(3) = Fig_Width-rect(1)-XX.Margin;
+rect(4) = XX.But.Height;
+PLabels=uicontrol('style','popupmenu', ...
+    'position',rect, ...
+    'parent',fig, ...
+    'value',PageLabels, ...
+    'string',{'No Labels','Page Numbers','Figure Names'}, ...
+    'backgroundcolor',clr, ...
+    'enable',enab, ...
+    'callback','md_print PageLabels');
+
+rect(1) = XX.Margin;
+rect(2) = rect(2)+rect(4);
 rect(3) = Fig_Width-2*XX.Margin;
 rect(4) = XX.But.Height;
 InvHard=uicontrol('style','checkbox', ...
@@ -671,14 +714,7 @@ if Reselect
 end
 
 set(fig,'visible','on','color',XX.Clr.LightGray);
-set(fig,'userdata',{});
-
-if strcmp(PL{PrtID,2},'Windows printer')
-    set(Opt,'enable','on');
-else
-    set(Opt,'enable','off');
-end
-Method = update_renderer(PL{PrtID,1},Painter,ZBuf,OpenGL,Resol,Method,DPI);
+set(fig,'userdata',{'Printer'});
 
 gui_quit=0;               % Becomes one if the interface has to quit.
 stack=[];                 % Contains the stack of commands; read from 'userdata' field of the figure
@@ -748,14 +784,31 @@ while ~gui_quit
                 switch PL{PrtID,4}
                     case 0 % NEVER
                         set(Color,'enable','off','value',0);
+                        set(InvHard,'enable','on','value',InvertHardcopy==1);
                         Clr=0;
                     case 1 % USER SPECIFIED (DEFAULT ON)
                         set(Color,'enable','on','value',1);
+                        set(InvHard,'enable','on','value',InvertHardcopy==1);
                         Clr=1;
-                    case 2 % ALLWAYS
+                    case 2 % ALWAYS
                         set(Color,'enable','off','value',1);
+                        set(InvHard,'enable','on','value',InvertHardcopy==1);
+                        Clr=1;
+                    case 3 % ALWAYS - No White Background & Black Axes
+                        set(Color,'enable','off','value',1);
+                        set(InvHard,'enable','off','value',0);
                         Clr=1;
                 end
+                switch PL{PrtID,6}
+                    case 0 % 
+                        set(PLabelTxt,'enable','off')
+                        set(PLabels,'enable','off','backgroundcolor',XX.Clr.LightGray)
+                    case 1 % 
+                        set(PLabelTxt,'enable','on')
+                        set(PLabels,'enable','on','backgroundcolor',XX.Clr.White)
+                end
+            case 'PageLabels'
+                PageLabels = get(PLabels,'value');
             case 'Options'
                 % call windows printer setup dialog ...
                 print -dsetup
@@ -800,12 +853,13 @@ Settings.DPI=DPI;
 Settings.AllFigures=ApplyAll;
 Settings.Color=Clr;
 Settings.InvertHardcopy=InvertHardcopy;
+Settings.PageLabels=PageLabels;
 
 if Cancel
     Settings.PrtID=0;
 end
 
-function add_bookmark(fname, bookmark_text, append)
+function add_bookmark(fname,bookmark_text,append)
 % Adds a bookmark to the temporary EPS file after %%EndPageSetup
 % Derived from BSD licensed export_fig by Oliver Woodford from MATLAB Central
 % Based on original idea by Petr Nechaev
@@ -823,7 +877,7 @@ catch ex
 end
 fclose(fh);
 
-if nargin<3 || ~append
+if nargin<3 || append
     % Include standard pdfmark prolog to maximize compatibility
     fstrm = strrep(fstrm, '%%BeginProlog', sprintf('%%%%BeginProlog\n/pdfmark where {pop} {userdict /pdfmark /cleartomark load put} ifelse'));
 end

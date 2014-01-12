@@ -34,7 +34,7 @@ function [hNew,Thresholds,Param]=qp_plot_pnt(hNew,Parent,Param,data,Ops,Props)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 FirstFrame=Param.FirstFrame;
-Quant=Param.PName;
+Quant=Param.Quant;
 Units=Param.Units;
 if ~isempty(Units)
     PName=sprintf('%s (%s)',Quant,Units);

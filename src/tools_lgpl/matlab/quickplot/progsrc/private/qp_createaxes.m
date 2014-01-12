@@ -106,9 +106,11 @@ switch cmd
         else
             Pos=getnormpos(fig);
         end
-        ax=axes('parent',fig,'units',unit,'position',Pos);
-        set(ax,'tag',axname)
-        createops = {Pos,unit};
+        if ~isempty(Pos)
+            ax=axes('parent',fig,'units',unit,'position',Pos);
+            set(ax,'tag',axname)
+            createops = {Pos,unit};
+        end
 
     otherwise
         Str=sprintf('Requested axes type "%s" not yet implemented.',cmd);

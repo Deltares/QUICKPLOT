@@ -411,11 +411,10 @@ persistent inSelfPlot
 if isequal(inSelfPlot,1)
     return
 end
-inSelfPlot = 1; %#ok<NASGU>
+inSelfPlot = 1;
 
 prj = Props.Project;
 cse = Props.Case;
-cartoyellow = [254 197 68]/255;
 
 if isempty(FI.Project(prj).Cases.Data(cse).TimeSeries)
     shipma = '';
@@ -425,12 +424,46 @@ else
     version = strtok(rem);
     shipma = [shipma ' ' version];
 end
-texts_template = get_shipma_bordertexts;
-texts_template = qp_strrep(texts_template,'%organization%',protectstring(qp_settings('organizationname')));
-texts_template = qp_strrep(texts_template,'%project%',protectstring(FI.Project(prj).Name));
-texts_template = qp_strrep(texts_template,'%case%',protectstring(FI.Project(prj).Cases.Names{cse}));
-texts_template = qp_strrep(texts_template,'%ship%',protectstring(FI.Project(prj).Cases.Data(cse).shipId));
-texts_template = qp_strrep(texts_template,'%shipma%',shipma);
+PAR.organization = protectstring(qp_settings('organizationname'));
+PAR.filename     = protectstring(FI.FileName);
+PAR.project      = protectstring(FI.Project(prj).Name);
+PAR.case         = protectstring(FI.Project(prj).Cases.Names{cse});
+PAR.ship         = protectstring(FI.Project(prj).Cases.Data(cse).shipId);
+PAR.wind         = protectstring(FI.Project(prj).Cases.Data(cse).windId);
+PAR.waves        = protectstring(FI.Project(prj).Cases.Data(cse).wavesId);
+PAR.current      = protectstring(FI.Project(prj).Cases.Data(cse).currentId);
+PAR.swell        = protectstring(FI.Project(prj).Cases.Data(cse).swellId);
+PAR.scenery      = protectstring(FI.Project(prj).Cases.Data(cse).sceneryId);
+PAR.shipma       = shipma;
+%
+PAR.filename_raw = FI.FileName;
+PAR.case_raw     = [PAR.project '/' PAR.case];
+
+macro    = qp_settings(['shipma_macro_for_' FI.Project(prj).Name],'');
+if isempty(macro)
+    selfplot_builtin(PAR)
+else
+    [p,f,e]=fileparts(macro);
+    switch e
+        case '.qpses'
+            d3d_qp('openfigure',macro,PAR)
+        otherwise
+            d3d_qp('run',macro,'-par',PAR)
+    end
+end
+%--------
+d3d_qp('selectfile',PAR.filename_raw)
+d3d_qp('selectdomain',PAR.case_raw)
+d3d_qp('selectfield','default figures')
+
+inSelfPlot=[];
+% -----------------------------------------------------------------------------
+
+
+% -----------------------------------------------------------------------------
+function selfplot_builtin(PAR)
+cartoyellow = [254 197 68]/255;
+texts_template = qp_strrep(get_shipma_bordertexts,PAR);
 %
 if d3d_qp('selectfield','desired ship track')
     a=d3d_qp('loaddata'); % get ship track for auto zoom limits
@@ -487,7 +520,6 @@ for c = {'a' 'a1' 'a2'}
         texts = qp_strrep(texts_template,'%caption%',caption);
         texts = qp_strrep(texts,'%fignr%',fignr);
         d3d_qp('newfigure','1 plot - portrait',['SHIPMA Fig ' upper(c{1})],texts)
-        setappdata(qpsf,'md_print_name',fignr)
         switch c{1}
             case {'a','a1'}
                 if qp_settings('shipma_figa_depth') && d3d_qp('selectfield','depth')
@@ -563,12 +595,11 @@ for c = {'a' 'a1' 'a2'}
 end
 %--------
 if qp_settings('shipma_figb')
-    caption = 'Propeller speed, ship speed and ruddle angle plots';
+    caption = 'Propeller speed, ship speed and rudder angle plots';
     fignr = 'Fig. B';
     texts = qp_strrep(texts_template,'%caption%',caption);
     texts = qp_strrep(texts,'%fignr%',fignr);
     d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig B',texts)
-    setappdata(qpsf,'md_print_name',fignr)
     %--
     qpsa('upper plot')
     d3d_qp('allt',1)
@@ -601,9 +632,9 @@ if qp_settings('shipma_figc')
     texts = qp_strrep(texts_template,'%caption%',caption);
     texts = qp_strrep(texts,'%fignr%',fignr);
     d3d_qp('newfigure','2 plots, vertical - portrait','SHIPMA Fig C',texts)
-    setappdata(qpsf,'md_print_name',fignr)
     %--
-    set(qpsa('upper plot'),'ydir','reverse')
+    d3d_qp('selectaxes','upper plot')
+    set(qpsa,'ydir','reverse')
     if d3d_qp('selectfield','swept path port side')
         d3d_qp('axestype','Distance-Val')
         d3d_qp('linestyle','-')
@@ -617,7 +648,7 @@ if qp_settings('shipma_figc')
     d3d_qp('axesboxed',1)
     d3d_qp('ylabel','swept path (%unit%)')
     %--
-    qpsa('lower plot')
+    d3d_qp('selectaxes','lower plot')
     if d3d_qp('selectfield','water depth')
         d3d_qp('linestyle','-')
         d3d_qp('addtoplot')
@@ -668,9 +699,8 @@ if qp_settings('shipma_figd')
     texts = qp_strrep(texts_template,'%caption%',caption);
     texts = qp_strrep(texts,'%fignr%',fignr);
     d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig D',texts)
-    setappdata(qpsf,'md_print_name',fignr)
     %--
-    qpsa('upper plot')
+    d3d_qp('selectaxes','upper plot')
     if qp_settings('shipma_figd_wind') && d3d_qp('selectfield','longitudinal wind force')
         d3d_qp('axestype','Distance-Val')
         d3d_qp('linestyle',lines{1})
@@ -692,7 +722,7 @@ if qp_settings('shipma_figd')
     d3d_qp('axesboxed',1)
     d3d_qp('ylabel','longitudinal forces (%unit%) \rightarrow')
     %--
-    qpsa('middle plot')
+    d3d_qp('selectaxes','middle plot')
     if qp_settings('shipma_figd_wind') && d3d_qp('selectfield','transverse wind force')
         d3d_qp('linestyle',lines{1})
         d3d_qp('addtoplot')
@@ -713,7 +743,7 @@ if qp_settings('shipma_figd')
     d3d_qp('axesboxed',1)
     d3d_qp('ylabel','transverse forces (%unit%) \rightarrow')
     %--
-    qpsa('lower plot')
+    d3d_qp('selectaxes','lower plot')
     if qp_settings('shipma_figd_wind') && d3d_qp('selectfield','wind moment on ship')
         d3d_qp('linestyle',lines{1})
         d3d_qp('addtoplot')
@@ -754,9 +784,8 @@ if qp_settings('shipma_fige')
     texts = qp_strrep(texts_template,'%caption%',caption);
     texts = qp_strrep(texts,'%fignr%',fignr);
     d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig E',texts)
-    setappdata(qpsf,'md_print_name',fignr)
     %--
-    qpsa('upper plot')
+    d3d_qp('selectaxes','upper plot')
     if qp_settings('shipma_fige_tugs') && d3d_qp('selectfield','longitudinal total tug force')
         d3d_qp('axestype','Distance-Val')
         d3d_qp('linestyle',lines{1})
@@ -766,7 +795,7 @@ if qp_settings('shipma_fige')
     d3d_qp('axesboxed',1)
     d3d_qp('ylabel','longitudinal force (%unit%) \rightarrow')
     %--
-    qpsa('middle plot')
+    d3d_qp('selectaxes','middle plot')
     if qp_settings('shipma_fige_tugs') && d3d_qp('selectfield','transverse total tug force')
         d3d_qp('linestyle',lines{1})
         d3d_qp('addtoplot')
@@ -779,7 +808,7 @@ if qp_settings('shipma_fige')
     d3d_qp('axesboxed',1)
     d3d_qp('ylabel','transverse force (%unit%) \rightarrow')
     %--
-    qpsa('lower plot')
+    d3d_qp('selectaxes','lower plot')
     if qp_settings('shipma_fige_tugs') && d3d_qp('selectfield','total tug moment')
         d3d_qp('linestyle',lines{1})
         d3d_qp('addtoplot')
@@ -792,9 +821,6 @@ if qp_settings('shipma_fige')
     d3d_qp('axesboxed',1)
     d3d_qp('ylabel','moment (%unit%) \rightarrow')
 end
-%--------
-d3d_qp('selectfield','default figures')
-inSelfPlot=[];
 % -----------------------------------------------------------------------------
 
 
@@ -1157,6 +1183,37 @@ switch cmd
         step=qp_settings('shipma_distance_along_desired_track');
         set(h,'value',1+step)
         %
+        h=findobj(mfig,'tag','defaultfigures');
+        %
+        Projects = FI.Project(1).Name;
+        macro    = qp_settings(['shipma_macro_for_' Projects],'');
+        if isempty(macro)
+            deffg = 1;
+        else
+            deffg = 2;
+        end
+        set(h,'value',deffg)
+        %
+        if deffg==1
+            builtin = {'on' 'off'};
+        else
+            builtin = {'off' 'on'};
+            set(findobj(mfig,'tag','macro_name'),'string',macro)
+            [p,f,e] = fileparts(macro);
+            switch e
+                case '.qpses'
+                    set(findobj(mfig,'tag','macro_txt'),'string','Session')
+                otherwise
+                    set(findobj(mfig,'tag','macro_txt'),'string','Macro')
+            end
+        end
+        a     = findall(mfig,'type','uicontrol');
+        atags = get(a,'tag');
+        b1    = a(strncmp('fig',atags,3) | strcmp('editborder',atags));
+        b2    = a(strncmp('macro',atags,5));
+        set(b1,'visible',builtin{1})
+        set(b2,'visible',builtin{2})
+        %
         zb = qp_settings('shipma_figa1_zoombox');
         for cellchari = {'a' 'a1' 'a2' 'b' 'c' 'd' 'e'}
             chari = cellchari{1};
@@ -1257,6 +1314,107 @@ switch cmd
             set(h,'value',i)
         end
 
+    case {'defaultfigures','selectmacro'}
+        h=findobj(mfig,'tag','defaultfigures');
+        %
+        Projects = {FI.Project.Name};
+        fp = qp_settings(['shipma_macro_for_' Projects{1}],'');
+        if isempty(varargin)
+            deffg = get(h,'value');
+            if deffg==2 && isempty(fp) || strcmp(cmd,'selectmacro')
+                curdir = pwd;
+                if isempty(fp)
+                    cd(fileparts(FI.FileName))
+                else
+                    cd(fileparts(fp))
+                end
+                filter = {'*.qplog;*.m' 'QUICKPLOT Macro File'
+                    '*.qpses' 'QUICKPLOT Session File'};
+                [f,p]=uigetfile(filter,'Select Macro/Session File ...');
+                cd(curdir)
+                if ischar(f)
+                    fp = [p f];
+                else % Escape / Cancel
+                    deffg = 0;
+                end
+            elseif deffg==2
+                deffg = 0;
+            elseif deffg==1 && isempty(fp)
+                deffg = 0;
+            end
+        else
+            fp = varargin{1};
+            if strcmp(fp,'built-in')
+                deffg = 1;
+            else
+                deffg = 2;
+            end
+        end
+        %
+        if deffg==2
+            if exist(fp,'file')==0
+                ui_message('error','Cannot find file "%s"',fp)
+                deffg = 0;
+            else
+                [p,f,e] = fileparts(fp);
+                switch e
+                    case {'.qpses','.qplog','.m'}
+                        % OK
+                    otherwise
+                        ui_message('error','File extension "%s" not supported',e(2:end))
+                        deffg = 0;
+                end
+            end
+        end
+        %
+        if deffg==0 % Cancel
+            fp = qp_settings(['shipma_macro_for_' Projects{1}],'');
+            if isempty(fp)
+                deffg = -1;
+            else
+                deffg = -2;
+            end
+        end
+        %
+        if abs(deffg)==1
+            fp = 'built-in';
+            builtin = {'on' 'off'};
+            %
+            if deffg==1
+                for i = 1:length(Projects)
+                    qp_settings(['shipma_macro_for_' Projects{i}],[])
+                end
+            end
+        elseif abs(deffg)==2
+            builtin = {'off' 'on'};
+            %
+            [p,f,e] = fileparts(fp);
+            switch e
+                case '.qpses'
+                    set(findobj(mfig,'tag','macro_txt'),'string','Session')
+                otherwise
+                    set(findobj(mfig,'tag','macro_txt'),'string','Macro')
+            end
+            %
+            if deffg==2
+                set(findobj(mfig,'tag','macro_name'),'string',fp)
+                for i = 1:length(Projects)
+                    qp_settings(['shipma_macro_for_' Projects{i}],fp)
+                end
+            end
+        end
+        %
+        set(h,'value',abs(deffg))
+        a     = findall(mfig,'type','uicontrol');
+        atags = get(a,'tag');
+        b1    = a(strncmp('fig',atags,3) | strcmp('editborder',atags));
+        b2    = a(strncmp('macro',atags,5));
+        set(b1,'visible',builtin{1})
+        set(b2,'visible',builtin{2})
+        if deffg>0
+            cmdargs={'defaultfigures',fp};
+        end
+
     case {'shipma_spacestep','shipma_timestep','shipma_figa_contourstep','shipma_figa_contourmax','shipma_figa2_contourstep','shipma_figa2_contourmax'}
         h = findobj(mfig,'tag',[cmd(8:end) 'val']);
         if isempty(varargin)
@@ -1290,9 +1448,9 @@ switch cmd
             % get zoombox from Fig A, A1 or A2
             fg = 'A1';
             Figs = findall(0,'type','figure');
-            FigsA = [findall(0,'type','figure','name','QuickPlot: SHIPMA Fig A');
-                findall(0,'type','figure','name','QuickPlot: SHIPMA Fig A1');
-                findall(0,'type','figure','name','QuickPlot: SHIPMA Fig A2')];
+            FigsA = [findall(0,'type','figure','name','SHIPMA Fig A');
+                findall(0,'type','figure','name','SHIPMA Fig A1');
+                findall(0,'type','figure','name','SHIPMA Fig A2')];
             isA = ismember(Figs,FigsA);
             if none(isA)
                 ui_message('error','No Fig A, A1 or A2 open to get zoombox coordinates from.')
@@ -1506,6 +1664,8 @@ Inactive=qp_settings('UIInActiveColor');
 Active=qp_settings('UIActiveColor');
 FigPos=get(h0,'position');
 FigPos(3) = 680;
+ssz=qp_getscreen(h0);
+FigPos(1) = min(FigPos(1),ssz(1)+ssz(3)-FigPos(3));
 set(h0,'position',FigPos)
 voffset=FigPos(4)-30;
 textwidth=340-80-30; %FigPos(3)-80-30
@@ -1541,7 +1701,7 @@ uicontrol('Parent',h0, ...
     'HorizontalAlignment','left', ...
     'BackgroundColor',Active, ...
     'Callback','d3d_qp fileoptions shipma_distance_along_desired_track', ...
-    'Position',[21+textwidth-50 voffset 80+50 20], ...
+    'Position',[21+textwidth-50 voffset 80+50 21], ...
     'Enable','on', ...
     'Tag','distance_along_desired_trackval');
 voffset=voffset-25;
@@ -1561,20 +1721,60 @@ uicontrol('Parent',h0, ...
     'Position',[21+textwidth voffset 80 20], ...
     'Enable','on', ...
     'Tag','timestepval');
-voffset=voffset-25;
+%
+voffset=voffset-30;
+uipanel('Parent',h0, ...
+    'BackgroundColor',Inactive, ...
+    'Units','pixels', ...
+    'Position',[11 36 FigPos(3)-20 voffset-20], ...
+    'BorderType','etchedin', ...
+    'Title','Default Figures                      ');
+uicontrol('Parent',h0, ...
+    'Style','popupmenu', ...
+    'BackgroundColor',Active, ...
+    'Horizontalalignment','left', ...
+    'Position',[111 voffset 80+50 21], ...
+    'String',{'Built-In Layout','User Macro/Session'}, ...
+    'Callback','d3d_qp fileoptions defaultfigures', ...
+    'Value',1, ...
+    'Enable','on', ...
+    'Tag','defaultfigures');
+%
+voffset=voffset-25-5;
 uicontrol('Parent',h0, ...
     'Style','text', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
-    'Position',[11 voffset textwidth-50 18], ...
-    'String','Default Figures:', ...
-    'Enable','on');
+    'Position',[21 voffset 40 18], ...
+    'String','Macro', ...
+    'Enable','on', ...
+    'Tag','macro_txt');
+uicontrol('Parent',h0, ...
+    'Style','edit', ...
+    'BackgroundColor',Inactive, ...
+    'Horizontalalignment','left', ...
+    'Position',[71 voffset FigPos(3)-120 20], ...
+    'String','<no file specified: using built-in layout>', ...
+    'Enable','inactive', ...
+    'Tag','macro_name');
+uicontrol('Parent',h0, ...
+    'Style','pushbutton', ...
+    'BackgroundColor',Inactive, ...
+    'Horizontalalignment','center', ...
+    'Position',[FigPos(3)-40 voffset 20 20], ...
+    'String','...', ...
+    'Callback','d3d_qp fileoptions selectmacro', ...
+    'Enable','on', ...
+    'Tag','macro_select');
+voffset=voffset+25;
+%
+voffset=voffset-25;
 uicontrol('Parent',h0, ...
     'Style','pushbutton', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
-    'Position',[21+textwidth-50 voffset 80+50 20], ...
-    'String','Edit Border Text', ...
+    'Position',[21 voffset 80+50 20], ...
+    'String','Edit Border Texts', ...
     'Callback','d3d_qp fileoptions editborder', ...
     'Enable','on', ...
     'Tag','editborder');
@@ -1788,13 +1988,13 @@ uicontrol('Parent',h0, ...
     'Position',[251 voffset 80 20], ...
     'Enable','on', ...
     'Tag','figa2_contourmaxval');
-voffset=FigPos(4)-130;
+voffset=voffset+8*25;
 hoffset=340;
 uicontrol('Parent',h0, ...
     'Style','checkbox', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
-    'Position',[hoffset+21 voffset textwidth+80 18], ...
+    'Position',[hoffset+21 voffset textwidth+60 18], ...
     'String','Fig B, ship & propeller speed and rudder angle plots', ...
     'Callback','d3d_qp fileoptions shipma_figb', ...
     'Enable','on', ...

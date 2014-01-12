@@ -39,6 +39,15 @@ function d = qp_strrep(c,key,val)
 %   $HeadURL$
 %   $Id$
 
+if isstruct(key)
+    flds = fieldnames(key);
+    for i = 1:length(flds)
+        fld = flds{i};
+        c = qp_strrep(c,['%' fld '%'],key.(fld));
+    end
+    d = c;
+    return
+end
 lkey = lower(key);
 lenkey = length(key);
 %
