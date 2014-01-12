@@ -1486,16 +1486,29 @@ switch cmd
             writelog(logfile,logtype,cmd,z);
         end
         
-    case {'defvariable','loaddata','quickview','updateoptions','exportdata','addtoplot'}
+    case {'defvariable','loaddata','quickview','updateoptions','exportdata','addtoplot','addtoplot_left','addtoplot_right'}
         Handle_SelectFile=findobj(mfig,'tag','selectfile');
         File=get(Handle_SelectFile,'userdata');
         NrInList=get(Handle_SelectFile,'value');
         Succes=~isempty(File);
         Info=[];
+        if strcmp(cmd,'addtoplot') && isempty(cmdargs)
+            Parent=UD.PlotMngr.CurrentAxes;
+            if ishandle(Parent)
+                lat = getappdata(Parent,'linkedaxestype');
+                if ~isempty(lat)
+                    if strcmp(lat,'SecondY')
+                        pos=get(gcbf,'position');
+                        set(UD.MainWin.Add2PlotMenu,'position',get(0,'pointerlocation')-pos(1:2),'visible','on')
+                        return
+                    end
+                end
+            end
+        end
         if Succes
             Info=File(NrInList);
             [DomainNr,Props,subf,selected,stats,Ops]=qp_interface_update_options(mfig,UD);
-            if isempty(Ops)strcmp(Ops.presentationtype,'failed')
+            if isempty(Ops)
                 cmd='error';
             end
         else
@@ -1642,9 +1655,16 @@ switch cmd
                     qp_message('Catch in d3d_qp\loaddata',Ex)
                 end
                 
-            case {'quickview','addtoplot'},
+            case {'quickview','addtoplot','addtoplot_left','addtoplot_right'}
+                if strcmp(cmd,'addtoplot_left')
+                    cmdargs = {'left'};
+                    cmd = 'addtoplot';
+                elseif strcmp(cmd,'addtoplot_right')
+                    cmdargs = {'right'};
+                    cmd = 'addtoplot';
+                end
                 if logfile
-                    writelog(logfile,logtype,cmd);
+                    writelog(logfile,logtype,cmd,cmdargs{:});
                 end
                 hNew=[];
                 %
@@ -1689,7 +1709,10 @@ switch cmd
                     end
                 else
                     Parent=UD.PlotMngr.CurrentAxes;
-                    if ishandle(Parent),
+                    if ~isempty(cmdargs) && strcmp(cmdargs{1},'right')
+                        Parent=getappdata(Parent,'linkedaxes');
+                    end
+                    if ishandle(Parent)
                         pfig=get(Parent,'parent');
                     else
                         pfig=[];
@@ -4250,6 +4273,12 @@ if ~isempty(ax)
                 setaxesprops(ax)
         end
     end
+end
+lat = getappdata(ax,'linkedaxestype');
+if strcmp(lat,'SecondY')
+    ax2 = getappdata(ax,'linkedaxes');
+    set(ax2,'xlim',get(ax,'xlim'))
+    setaxesprops(ax2)
 end
 
 function clr = str2color(str)

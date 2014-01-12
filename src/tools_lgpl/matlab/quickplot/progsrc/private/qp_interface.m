@@ -373,6 +373,10 @@ MW.DefVar   = LocButton(mfig,[91 voffset 70 20],'defvariable','Define Var.',0, .
     'Define a variable based on current settings');
 MW.Add2Plot = LocButton(mfig,[171 voffset 70 20],'addtoplot','Add to Plot',0, ...
     'Add plot to the active axes (see Plot Manager)');
+MW.Add2PlotMenu = uicontextmenu('parent',MW.Fig);
+qp_uimenu(MW.Add2PlotMenu, ...
+    {'addtoplot_left','Add to Left Y Axis',1,1,0
+    'addtoplot_right','Add to Right Y Axis',1,1,0});
 MW.QuickV   = LocButton(mfig,[251 voffset 80 20],'quickview','Quick View',0,'Plot selected data');
 UD.MainWin=MW;
 

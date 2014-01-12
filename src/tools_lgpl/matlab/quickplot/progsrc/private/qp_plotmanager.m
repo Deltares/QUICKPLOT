@@ -333,7 +333,6 @@ switch cmd
         set(UD.PlotMngr.ClsFig,'enable',figlistenable);
         d3d_qp refreshaxes
         d3d_qp refreshfigprop
-        d3d_qp update_addtoplot
         
     case 'refreshaxes'
         FigIDs=get(UD.PlotMngr.FigList,'userdata');
@@ -403,6 +402,7 @@ switch cmd
         end
         d3d_qp refreshitems
         d3d_qp refreshaxprop
+        d3d_qp update_addtoplot
         
     case 'allaxes'
         if ~isempty(cmdargs)
