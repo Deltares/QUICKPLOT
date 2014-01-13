@@ -173,14 +173,16 @@ x=[];
 y=[];
 z=[];
 Info=vs_disp(FI,'map-const','ZK');
-fixedlayers=0;
+zlayermodel=0;
 if isstruct(Info)
-    fixedlayers=Info.SizeDim>1;
+    zlayermodel=Info.SizeDim>1;
 end
 computeDZ=0;
 switch Props.Name
+    case {'relative hydrostatic pressure','relative total pressure','total pressure','hydrostatic pressure'}
+        computeDZ=1;
     case {'depth averaged velocity','staggered depth averaged velocities','d.a. velocity fluctuations','velocity in depth averaged flow direction','velocity normal to depth averaged flow direction','head','froude number'}
-        if fixedlayers, computeDZ=1; end
+        if zlayermodel, computeDZ=1; end
 end
 XYRead = XYRead & ~strcmp(Props.Loc,'NA');
 if XYRead
@@ -213,7 +215,7 @@ if XYRead
         x=repmat(x,[1 1 1 nk]);
         y=reshape(y,[1 size(y)]);
         y=repmat(y,[1 1 1 nk]);
-    elseif fixedlayers && (DimFlag(K_) || computeDZ)
+    elseif zlayermodel && (DimFlag(K_) || computeDZ)
         if isstruct(vs_disp(FI,'map-series','LAYER_INTERFACE'))
             z=vs_let(FI,'map-series',idx(T_),'LAYER_INTERFACE',[idx([M_ N_]) {0}],'quiet!');
             z(z==-999) = NaN;
@@ -297,7 +299,7 @@ if XYRead
         x=repmat(x,[1 1 1 length(idxK_)]);
         y=reshape(y,[1 size(y)]);
         y=repmat(y,[1 1 1 length(idxK_)]);
-    elseif DimFlag(K_)
+    elseif DimFlag(K_) || computeDZ
         dp=readdps(FI,idx);
         [h,Chk_h]=vs_let(FI,'map-series',idx(T_),'S1',idx([M_ N_]),'quiet');
         if Chk_h
@@ -323,6 +325,12 @@ if XYRead
                 cthk=cumsum(thk)-thk/2;
             end
         end
+        if computeDZ
+            dz=repmat(h,[1 1 1 length(thk)]);
+            for k = 1:length(thk)
+                dz(:,:,:,k) = dz(:,:,:,k)*thk(k);
+            end
+        end
         if DataInCell
             idxK_=[idx{K_} idx{K_}(end)+1];
         else
@@ -335,7 +343,7 @@ if XYRead
                 szh(3)=1;
             end
             z=zeros([szh length(cthk)]);
-            if size(dp,1)==1,
+            if size(dp,1)==1
                 for i=1:size(h,1)
                     for k=1:length(cthk)
                         z(i,:,:,k)=dp+(1-cthk(k))*h(i,:,:);
@@ -373,6 +381,9 @@ if DataRead
         ThinDam=2;
     end
     switch Props.Name
+        case {'relative hydrostatic pressure','relative total pressure','total pressure','hydrostatic pressure'}
+            selectK = elidx{4};
+            elidx{4}=0;
         case {'depth averaged velocity','staggered depth averaged velocities','d.a. velocity fluctuations'}
             Info=vs_disp(FI,Props.Group,Props.Val1);
             Flag3D=isequal(size(Info.SizeDim),[1 3]);
@@ -428,6 +439,11 @@ if DataRead
     end
     val3=[];
 
+    [gravity,Success]=vs_let(FI,'map-const','GRAVITY','quiet');
+    if ~Success
+        gravity = 9.81;
+    end
+
     if strmatch('total transport',Props.Name)
         val1r=vs_let(FI,Props.Group,idx(T_),'SBUU',elidx,'quiet!');
         val1=val1+val1r;
@@ -450,6 +466,34 @@ if DataRead
         end
     end
     switch Props.Name
+        case {'relative hydrostatic pressure','relative total pressure','total pressure','hydrostatic pressure'}
+            [rhoconst,Success]=vs_let(FI,'map-const','RHOCONST','quiet');
+            if ~Success
+                rhoconst = 1000;
+            end
+            %
+            if zlayermodel
+                val1 = dz.*val1*gravity;
+                val1 = flip(val1,4);
+                val1 = cumsum(val1,4) - val1/2;
+                val1 = flip(val1,4);
+            else
+                val1 = dz.*val1*gravity;
+                val1 = cumsum(val1,4) - val1/2;
+            end
+            val1 = val1(:,:,:,selectK);
+            %
+            if strcmp(Props.Name(1:8),'relative')
+                if size(z,4)==1
+                    val1 = val1 + gravity*rhoconst*z;
+                else
+                    val1 = val1 + gravity*rhoconst*(z(:,:,:,1:end-1)+z(:,:,:,2:end))/2;
+                end
+            end
+            if ~isempty(strfind(Props.Name,'total'))
+                val1 = val1 + val2(:,:,:,selectK);
+                val2 = [];
+            end
         case {'grid cell surface area'}
             xc=vs_get(FI,'map-const','XCOR',idx([M_ N_]),'quiet!');
             yc=vs_get(FI,'map-const','YCOR',idx([M_ N_]),'quiet!');
@@ -507,7 +551,7 @@ if DataRead
             [FI,val1] = eros_sed(FI,Props.Name,idx);
         case {'depth averaged velocity','staggered depth averaged velocities','d.a. velocity fluctuations','froude number','head'}
             if Flag3D
-                if fixedlayers
+                if zlayermodel
                     val1(val1==-999)=0;
                     val2(val2==-999)=0;
                     val1=val1.*dz;
@@ -563,7 +607,7 @@ if DataRead
             val2 = -val2;
     end
 
-    if fixedlayers
+    if zlayermodel
         val1(val1==-999)=NaN;
         val2(val2==-999)=NaN;
         val3(val3==-999)=NaN;
@@ -583,7 +627,7 @@ if DataRead
             val2=interp2cen(val2,'t');
         end
     elseif isequal(Props.Loc,'u') && isequal(Props.ReqLoc,'z')
-        if fixedlayers
+        if zlayermodel
             val1(val1==0)=NaN;
             val2(val2==0)=NaN;
         end
@@ -592,13 +636,13 @@ if DataRead
 
     switch Props.Name
         case 'froude number'
-            val1 = sqrt(val1.^2+val2.^2)./sqrt(9.81*val3);
+            val1 = sqrt(val1.^2+val2.^2)./sqrt(gravity*val3);
             val2 = [];
             val3 = [];
             Props.NVal = 1;
             Props.VecType = '';
         case 'head'
-            val1 = val3+(val1.^2+val2.^2)/(2*9.81);
+            val1 = val3+(val1.^2+val2.^2)/(2*gravity);
             val2 = [];
             val3 = [];
             Props.NVal = 1;
@@ -623,7 +667,7 @@ if DataRead
 
     switch Props.Name
         case {'velocity in depth averaged flow direction','velocity normal to depth averaged flow direction'}
-            if fixedlayers
+            if zlayermodel
                 sz=size(val1);
                 dav1=zeros(sz(1:3));
                 dav2=dav1;
@@ -957,7 +1001,11 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'acc. due to lateral momentum transp.'  'm/s^2' [1 0 1 1 1] 1      2    'u'       'u'   'z'       'c'     'map-series'     'MOM_VDUDY'       'MOM_UDVDX'       []       1
     '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
     'density'                          'kg/m^3' [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'RHO'     ''       []       0
+    'hydrostatic pressure'             'Pa'     [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'RHO'     ''       []       0
     'non-hydrostatic pressure'         'Pa'     [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'HYDPRES' ''       []       0
+    'total pressure'                   'Pa'     [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'RHO'     'HYDPRES' []      0
+    'relative hydrostatic pressure'    'Pa'     [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'RHO'     ''       []       0
+    'relative total pressure'          'Pa'     [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'RHO'     'HYDPRES' []      0
     '--constituents'                   ''       [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'R1'      ''       []       0
     '--constituents flux'              ''       [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'R1FLX_UU' 'R1FLX_VV' []    0
     '--constituents cumulative flux'   ''       [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'R1FLX_UUC' 'R1FLX_VVC' []  0
@@ -1077,7 +1125,11 @@ elseif outputLayers
         'staggered depth averaged velocities'
         'd.a. velocity fluctuations'
         'froude number'
-        'head'});
+        'head'
+        'hydrostatic pressure'
+        'total pressure'
+        'relative hydrostatic pressure'
+        'relative total pressure'});
     K_=5;
     for i=1:length(Out)
         if Out(i).DimFlag(K_) && any(strcmp(Out(i).Loc3D,{'i','c'}))
@@ -1132,6 +1184,11 @@ for i=size(Out,1):-1:1
         Out(i)=[];
     elseif strcmp(Out(i).Name,'froude number') || strcmp(Out(i).Name,'head')
         Info2=vs_disp(FI,Out(i).Group,'S1');
+        if ~isstruct(Info2)
+            Out(i)=[];
+        end
+    elseif strcmp(Out(i).Name,'total pressure') || strcmp(Out(i).Name,'relative total pressure')
+        Info2=vs_disp(FI,Out(i).Group,'HYDPRES');
         if ~isstruct(Info2)
             Out(i)=[];
         end
@@ -1360,6 +1417,7 @@ DataProps = {...
     'head'                                               'm'      'level'       'Time' 'Faces2D'  ''       ''       'map-series'       'U1'             'V1'
     %   '-------'                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
     'density'                                            'kg/m^3' 'float'       'Time' 'Voxels3D' ''       'F'      'map-series'       'RHO'            ''
+    'hydrostatic pressure'                               'Pa'     'float'       'Time' 'Voxels3D' ''       'F'      'map-series'       'RHO'            ''
     'non-hydrostatic pressure'                           'Pa'     'float'       'Time' 'Voxels3D' ''       'F'      'map-series'       'HYDPRES'        ''
     '--constituents'                                     ''       'float'       'Time' 'Voxels3D' ''       'F'      'map-series'       'R1'             ''
     '--constituents flux'                                ''       'vector(ij)'  'Time' 'VFaces3D' ''       'F'      'map-series'       'R1FLX_UU'       'R1FLX_VV'
@@ -1790,9 +1848,9 @@ function [Data,NewFI] = getdata(FI,Q,DimSelection)
 NewFI = FI;
 %
 Info=vs_disp(FI,'map-const','ZK');
-fixedlayers=0;
+zlayermodel=0;
 if isstruct(Info) && Info.SizeDim>1
-    fixedlayers = 1;
+    zlayermodel = 1;
 end
 %
 dNames = Q.Dimensions;
@@ -1852,7 +1910,7 @@ switch Q.Name
             zb = repmat(zb,[size(zw,1) 1 1 1]);
         end
         %
-        if fixedlayers
+        if zlayermodel
             [zk,Success] = vs_let(FI,'map-const','ZK','quiet');
             if ~Success, error(zk), end
             zk(1) = -inf;
@@ -1956,7 +2014,7 @@ switch Q.Name
             if ~Success, error(w), end
             Data = {u v w};
         else
-            if fixedlayers
+            if zlayermodel
                 [zw,Success] = vs_let(FI,Q.Group,gDims,'S1',eDims(1:2),'quiet');
                 if ~Success, error(zw), end
                 %
@@ -2063,7 +2121,7 @@ switch Q.Name
             'head'}
         u = Data{1};
         v = Data{2};
-        if fixedlayers
+        if zlayermodel
             eInfo = vs_disp(FI,Q.Group,Q.Val1);
             xDims = eDims(2:3);
             xDims{1} = [xDims{1} min(max(xDims{1})+1,eInfo.SizeDim(1))];
@@ -2133,7 +2191,10 @@ switch Q.Name
             end
         end
         %
-        gravity = 9.81;
+        [gravity,Success]=vs_let(FI,'map-const','GRAVITY','quiet');
+        if ~Success
+            gravity = 9.81;
+        end
         switch Q.Name
             case 'depth averaged velocity'
                 Data = {u2d v2d};
