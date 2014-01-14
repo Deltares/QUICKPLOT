@@ -152,7 +152,7 @@ for i=[ST_ M_ N_ K_]
         elseif ~isequal(idx{i},idx{i}(1):idx{i}(end)) && i~=ST_ && ~isequal(FI.FileType,'ESRI-Shape')
             error('Only scalars or ranges allowed for index %i',i);
         end
-        if DataInCell
+        if DataInCell && strcmp(FI.FileType,'tekal')
             if idx{i}(1)==1
                 if length(idx{i})==1
                     gidx{i} = [1 1];
