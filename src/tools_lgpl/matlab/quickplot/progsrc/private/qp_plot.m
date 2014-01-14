@@ -1082,7 +1082,7 @@ if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
     end
     switch Ops.colourbar
         case 'vert'
-            title(h,PName)
+            ylabel(h,PName)
         case 'horiz'
             xlabel(h,PName)
     end

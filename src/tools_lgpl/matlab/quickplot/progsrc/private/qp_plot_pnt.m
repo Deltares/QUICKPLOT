@@ -213,7 +213,11 @@ switch NVal
                     end
             end
             set(Parent,'layer','top')
-            qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
+            if strcmp(Ops.colourbar,'none')
+                qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
+            else
+                qp_title(Parent,{TStr},'quantity',Quant,'unit',Units,'time',TStr)
+            end
         end
     case {2,3}
         if multiple(M_) % network

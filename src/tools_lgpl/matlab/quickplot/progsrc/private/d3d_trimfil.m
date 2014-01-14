@@ -484,7 +484,7 @@ if DataRead
             val1 = val1(:,:,:,selectK);
             %
             if strcmp(Props.Name(1:8),'relative')
-                if size(z,4)==1
+                if size(z,4)==size(val1,4)
                     val1 = val1 + gravity*rhoconst*z;
                 else
                     val1 = val1 + gravity*rhoconst*(z(:,:,:,1:end-1)+z(:,:,:,2:end))/2;
@@ -1185,6 +1185,11 @@ for i=size(Out,1):-1:1
     elseif strcmp(Out(i).Name,'froude number') || strcmp(Out(i).Name,'head')
         Info2=vs_disp(FI,Out(i).Group,'S1');
         if ~isstruct(Info2)
+            Out(i)=[];
+        end
+    elseif strcmp(Out(i).Name,'hydrostatic pressure') || strcmp(Out(i).Name,'relative hydrostatic pressure')
+        Info2=vs_disp(FI,Out(i).Group,'RHO');
+        if Info2.SizeDim(3)==1 % not for 2D simulations
             Out(i)=[];
         end
     elseif strcmp(Out(i).Name,'total pressure') || strcmp(Out(i).Name,'relative total pressure')

@@ -690,7 +690,12 @@ if (nval==1 && data2d && ~strcmp(geometry,'SEG')) || nval==1.9 || strcmp(nvalstr
                                 PrsTps={'polygons';'markers';'values'};
                             end
                         otherwise
-                            PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
+                            switch axestype
+                                case {'X-Time','Time-X'}
+                                    PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
+                                otherwise
+                                    PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
+                            end
                     end
                 case 2
                     switch geometry

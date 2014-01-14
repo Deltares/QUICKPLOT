@@ -121,7 +121,11 @@ switch NVal
                         set(hNew,'xdata',data.X,'ydata',data.Y);
                     end
                 end
-                qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                if strcmp(Ops.colourbar,'none')
+                    qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                else
+                    qp_title(Parent,{TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                end
             case {'X-Val'}
                 if FirstFrame
                     hNew=line(data.X,zeros(size(data.X)), ...
@@ -242,6 +246,8 @@ switch NVal
                     end
                     if strcmp(Ops.colourbar,'none')
                         qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                    else
+                        qp_title(Parent,{TStr},'quantity',Quant,'unit',Units,'time',TStr)
                     end
                 else
                     data = qp_dimsqueeze(data,Ops.axestype,multiple,DimFlag,Props);
@@ -252,11 +258,17 @@ switch NVal
                     end
                     if isempty(Selected{K_})
                         str=PName;
+                        lyr={};
                     else
                         str=sprintf('%s in layer %i',PName,Selected{K_});
+                        lyr={sprintf('layer %i',Selected{K_})};
                     end
                     %
-                    tit = {str};
+                    if strcmp(Ops.colourbar,'none')
+                        tit = {str};
+                    else
+                        tit = lyr;
+                    end
                     if ~isempty(stn)
                         tit{end+1}=stn;
                     end
@@ -267,12 +279,10 @@ switch NVal
                         tit{1}=[tit{1} ' at ' tit{2}];
                         tit(2)=[];
                     end
-                    if strcmp(Ops.colourbar,'none')
-                        qp_title(Parent,tit,'quantity',Quant,'unit',Units)
-                    end
+                    qp_title(Parent,tit,'quantity',Quant,'unit',Units)
                 end
                 
-            case {'X-Val','X-Z'}
+            case {'X-Val','X-Z','X-Time','Time-X'}
                 if multiple(K_)
                     data = qp_dimsqueeze(data,Ops.axestype,multiple,DimFlag,Props);
                     Mask=repmat(min(data.Z,[],3)==max(data.Z,[],3),[1 1 size(data.Z,3)]);
@@ -354,7 +364,11 @@ switch NVal
                         set(Parent,'view',[0 90],'layer','top');
                         %set(get(Parent,'ylabel'),'string','elevation (m) \rightarrow')
                     end
-                    qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                    if strcmp(Ops.colourbar,'none')
+                        qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                    else
+                        qp_title(Parent,{TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                    end
                 else
                     %Ops.plotcoordinate='(x,y)';
                     switch Ops.plotcoordinate
@@ -444,7 +458,11 @@ switch NVal
                         if FirstFrame
                             set(Parent,'view',[0 90],'layer','top');
                         end
-                        qp_title(Parent,PName,'quantity',Quant,'unit',Units)
+                        if strcmp(Ops.colourbar,'none')
+                            qp_title(Parent,PName,'quantity',Quant,'unit',Units)
+                        else
+                            qp_title(Parent,'','quantity',Quant,'unit',Units)
+                        end
                     else
                         if strcmp(Ops.facecolour,'none')
                             if FirstFrame
@@ -820,10 +838,8 @@ switch NVal
                     end
                     if ~isempty(Ops.vectorcolour)
                         hNew=colquiver(hNew,data.Val);
-                    else
-                        
+                    else                        
                         set(hNew,'color',Ops.colour)
-                        
                     end
                     
                 else
@@ -831,7 +847,11 @@ switch NVal
                 end
                 set(gca,'layer','top')
                 %ylabel('elevation (m) \rightarrow')
-                qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                if strcmp(Ops.colourbar,'none')
+                    qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                else
+                    qp_title(Parent,{TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                end
                 
             case {'X-Y','Lon-Lat'}
                 data.XComp((data.XComp==0) & (data.YComp==0))=NaN;
@@ -886,10 +906,17 @@ switch NVal
                 end
                 if isempty(Selected{K_})
                     str=PName;
+                    lyr={};
                 else
-                    str=sprintf('%s in layer %i',PName,Selected{K_});
+                    lyr=sprintf('layer %i',Selected{K_});
+                    str=sprintf('%s in %s',PName,lyr);
+                    lyr={lyr};
                 end
-                qp_title(Parent,{str,TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                if strcmp(Ops.colourbar,'none')
+                    qp_title(Parent,{str,TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                else
+                    qp_title(Parent,[{TStr} lyr],'quantity',Quant,'unit',Units,'time',TStr)
+                end
                 
             case 'Val-Z'
                 

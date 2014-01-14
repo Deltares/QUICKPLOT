@@ -1275,6 +1275,7 @@ switch cmd
                     m=str2vec(mstr,'range',[1 maxm],'applylimit');
                 end
             else
+                mstr(mstr>maxm)=[];
                 m=mstr;
             end
         catch

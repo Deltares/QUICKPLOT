@@ -146,6 +146,10 @@ switch NVal
     case 4
         hNew=gentextfld(hNew,Ops,Parent,data.Val,data.XY(:,1),data.XY(:,2));
 end
-qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
+if strcmp(Ops.colourbar,'none')
+    qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
+else
+    qp_title(Parent,{TStr},'quantity',Quant,'unit',Units,'time',TStr)
+end
 
 

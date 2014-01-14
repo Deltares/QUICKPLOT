@@ -1185,8 +1185,12 @@ switch cmd
         %
         h=findobj(mfig,'tag','defaultfigures');
         %
-        Projects = FI.Project(1).Name;
-        macro    = qp_settings(['shipma_macro_for_' Projects],'');
+        if isempty(FI.Project)
+            macro = [];
+        else
+            Projects = FI.Project(1).Name;
+            macro    = qp_settings(['shipma_macro_for_' Projects],'');
+        end
         if isempty(macro)
             deffg = 1;
         else
