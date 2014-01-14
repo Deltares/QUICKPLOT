@@ -258,8 +258,10 @@ while 1
                             Str=deblank(line(Tkn(dim(1)):end));
                             if Str(1)=='''' && Str(end)==''''
                                 Str=Str(2:end-1);
+                                Str=strrep(Str,'''''','''');
                             elseif Str(1)=='"' && Str(end)=='"'
                                 Str=Str(2:end-1);
+                                Str=strrep(Str,'""','"');
                             end
                             Data{2}{i}=Str;
                         end
