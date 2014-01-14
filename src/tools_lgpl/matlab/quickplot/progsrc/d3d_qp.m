@@ -4251,9 +4251,8 @@ end
 function updateaxes(obj,evd)
 ax=get(obj,'currentaxes');
 if ~isempty(ax)
-    axestype=getappdata(ax,'AxesType');
-    if ischar(axestype)
-        basicaxestype=strtok(axestype);
+    basicaxestype=getappdata(ax,'BasicAxesType');
+    if ischar(basicaxestype)
         switch basicaxestype
             case {'LimitingFactorsAxes','LimitingFactorsAxes2'}
                 if isequal(basicaxestype,'LimitingFactorsAxes2')

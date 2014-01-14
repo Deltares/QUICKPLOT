@@ -144,14 +144,25 @@ end
 % select appropriate spatial indices ...
 
 %========================= GENERAL CODE =======================================
-allidx=zeros(size(sz));
+gidx = idx;
 for i=[ST_ M_ N_ K_]
     if DimFlag(i)
         if isequal(idx{i},0) || isequal(idx{i},1:sz(i))
             idx{i}=1:sz(i);
-            allidx(i)=1;
         elseif ~isequal(idx{i},idx{i}(1):idx{i}(end)) && i~=ST_ && ~isequal(FI.FileType,'ESRI-Shape')
             error('Only scalars or ranges allowed for index %i',i);
+        end
+        if DataInCell
+            if idx{i}(1)==1
+                if length(idx{i})==1
+                    gidx{i} = [1 1];
+                else
+                    gidx{i} = idx{i};
+                    idx{i} = idx{i}(2:end);
+                end
+            else
+                gidx{i} = [idx{i}(1)-1 idx{i}];
+            end
         end
     end
 end
@@ -304,8 +315,15 @@ if XYRead
         y=Data(idx{[M_ N_ K_]},2);
         z=Data(idx{[M_ N_ K_]},3);
     elseif DimFlag(M_) && DimFlag(N_)
-        x=Data(idx{[M_ N_]},1);
-        y=Data(idx{[M_ N_]},2);
+        if DataInCell
+            x=Data(gidx{[M_ N_]},3);
+            y=Data(gidx{[M_ N_]},4);
+            x(x==0 & y==0) = NaN;
+            y(isnan(x))    = NaN;
+        else
+            x=Data(idx{[M_ N_]},1);
+            y=Data(idx{[M_ N_]},2);
+        end
     elseif DimFlag(M_)
         if already_selected
             x=Data(:,1);
@@ -505,6 +523,7 @@ switch FI.FileType
                                         DP{11}={5,6};
                                     end
                                     DP{4}=[0 0 1 1 0];
+                                    DP{5}=1;
                                     Freq = strmatch('* Frequency [degrees/hour]   :',FI.Field(i).Comments);
                                     if ~isempty(strmatch('* column    7 : Maximum value',FI.Field(i).Comments))
                                         DP{1}=sprintf('%s, maximum',Quant);
