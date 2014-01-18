@@ -231,7 +231,12 @@ switch geometry
         axestype={''};
     case 'PNT'
         if multiple(ST_) || multiple(M_)
-            axestype={'X-Y'};
+            if length(coordinates)==1
+                axestype={'X-Val'};
+                lineproperties=1;
+            else
+                axestype={'X-Y'};
+            end
         elseif multiple(T_)
             if isequal(coordinates,'d')
                 axestype={'Time-Val','Distance-Val'};
@@ -245,7 +250,7 @@ switch geometry
                 axestype={'Time-Val','Distance-Val','Text'};
             elseif nval==0
                 axestype={'X-Y'};
-            elseif ~isempty(findstr(coordinates,'xy'))
+            elseif ~isempty(strfind(coordinates,'xy'))
                 if nval==4
                     axestype={'X-Y','Text'};
                 else
@@ -278,14 +283,22 @@ switch geometry
                 case {0,2,4}
                     axestype={'X-Y'};
                 case 1
-                    axestype={'X-Val'};
+                    if isequal(coordinates,'d')
+                        axestype={'Distance-Val'};
+                    else
+                        axestype={'X-Val'};
+                    end
             end
         else
             switch nval
                 case {0,2,4}
                     axestype={'X-Y'};
                 case 1
-                    axestype={'Time-Val','X-Val'};
+                    if isequal(coordinates,'d')
+                        axestype={'Time-Val','Distance-Val'};
+                    else
+                        axestype={'Time-Val','X-Val'};
+                    end
             end
         end
     case 'sSEG+'
@@ -1088,14 +1101,14 @@ if ask_for_textprops
     end
 end
 
-if ismember(geometry,{'PNT'}) && ~multiple(T_) && nval>=0 && nval<4
+if ismember(geometry,{'PNT'}) && ~multiple(T_) && nval>=0
     Ops.linestyle='none';
     Ops.linewidth=0.5;
     if ~isfield(Ops,'presentationtype') || ~strcmp(Ops.presentationtype,'values')
         usesmarker = 1;
         forcemarker = 1;
     end
-elseif lineproperties || nval==0 %|| nval==4
+elseif lineproperties || nval==0
     set(findobj(OH,'tag','linestyle'),'enable','on')
     lns=findobj(OH,'tag','linestyle=?');
     set(lns,'enable','on','backgroundcolor',Active)

@@ -106,10 +106,10 @@ switch NVal
         qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
     case 1
         axestype = strtok(Ops.axestype);
-        if strcmp(axestype,'Distance-Val') || strcmp(axestype,'Time-Val') || strcmp(axestype,'Time-Z')
+        if strcmp(axestype,'Distance-Val') || strcmp(axestype,'X-Val') || strcmp(axestype,'Time-Val') || strcmp(axestype,'Time-Z')
         %if multiple(T_)
             switch axestype
-                case 'Distance-Val'
+                case {'Distance-Val','X-Val'}
                     x = data.X;
                     xdate = 0;
                 otherwise

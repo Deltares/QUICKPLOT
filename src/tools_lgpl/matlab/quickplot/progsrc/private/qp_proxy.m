@@ -76,11 +76,17 @@ switch cmd
         if ~isempty(FI)
             save.(Key) = FI;
             %
+            % We may need to update the Proxy.Options field here. Usually
+            % this doesn't change, so therefore stop step is currently
+            % skipped.
+            %
             if isfield(Proxy.Data.Options,'AttribFiles')
                 for i = 1:length(Proxy.Data.Options.AttribFiles)
                     qp_proxy('reload',Proxy.Data.Options.AttribFiles(1))
                 end
             end
+        else
+            error('Unable to reload file.')
         end
         
     case 'clear'

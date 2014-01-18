@@ -121,11 +121,11 @@ if simplexyz
             xyz.FileName = filename;
             %
             fid=fopen(filename,'r');
-            str=fgetl(fid);
+            Line=fgetl(fid);
             xyz.Header = {};
-            while ~isempty(str) && str(1)=='%'
-                xyz.Header{end+1} = str;
-                str=fgetl(fid);
+            while ~isempty(Line) && Line(1)=='%'
+                xyz.Header{end+1} = Line;
+                Line=fgetl(fid);
             end
             fclose(fid);
             %
@@ -148,7 +148,7 @@ if simplexyz
                     if length(j1) == npar && length(j2) == npar
                         xyz.ParamUnits = repmat({''},1,npar);
                         for j = 1:npar
-                            xyz.ParamUnits{j} = xyz.Header{i}(j1(j)+1:j2(j)-1);
+                            xyz.ParamUnits{j} = deblank2(xyz.Header{i}(j1(j)+1:j2(j)-1));
                         end
                         par = textscan(xyz.Header{i-1}(2:end),'%s');
                         xyz.Params = par{1};
@@ -160,65 +160,49 @@ else % readtype always forced to 'struct'
     fid=fopen(filename,'r');
     try
         skiplines=0;
-        str=fgetl(fid);
-        while ischar(str) && ~isempty(str) && str(1)=='*'
+        Line=fgetl(fid);
+        xyz.Header={};
+        while ischar(Line) && ~isempty(Line) && (Line(1)=='*' || Line(1)=='#')
             skiplines=skiplines+1;
-            str=fgetl(fid);
+            xyz.Header{skiplines} = deblank2(Line(2:end));
+            Line=fgetl(fid);
         end
-        if ~ischar(str)
+        if ~ischar(Line)
             fclose(fid);
             error('%s does not contain samples.',filename);
         end
-        [X,n,er]=sscanf(str,'%g');
-        Params={};
-        while ~isempty(er)
-            [Param,n,er,ni]=sscanf(str,' "%[^"]%["]',2);
-            if isempty(er) && n==2
-                Params{end+1}=Param(1:end-1);
-            else
-                [Param,n,er]=sscanf(str,' %s',1);
-                if isempty(er) && n==1
-                    error('Reading line: %s\nIf this line contains a parameter name, then it should be enclosed by double quotes.',str);
-                    %Params{end+1}=Param; %<--- makes it impossible to distinguish
-                    %certain observation files from Tekal file format. For example:
-                    %B001
-                    %160 4 16 10
-                    %1.0 2.0 3.0 4.0
-                    % :   :   :   :
-                else
-                    break
-                end
+        %
+        Params = {};
+        firstitem = strtok(Line);
+        while firstitem(1)=='"'
+            try
+                X = textscan(Line,' "%[^"]"','returnonerror',0);
+                Params = [Params X{1}'];
+            catch
+                error('Reading line: %s\nAll parameter names should be enclosed by double quotes.',Line);
             end
-            str=deblank(str(ni:end));
-            if ~isempty(str)
-                er='scan remainder of line';
-            else
-                skiplines=skiplines+1;
-                str=fgetl(fid);
-                [X,n,er]=sscanf(str,'%g');
-            end
+            skiplines=skiplines+1;
+            Line=fgetl(fid);
+            firstitem = strtok(Line);
         end
-        [X,n,er]=sscanf(str,'%g');
-        if ~isempty(er)
-            error('Unable to data values on line: %s',str);
-        elseif n<3
+        %
+        X = textscan(Line,' %[^ ]','returnonerror',0);
+        n = length(X{1});
+        if n<3
             error('Not enough values for sample data (X,Y,Value1,...)')
         end
-        str=fgetl(fid);
-        [X,n2]=sscanf(str,'%g');
+        Line=fgetl(fid);
+        X  = textscan(Line,' %[^ ]','returnonerror',0);
+        n2 = length(X{1});
         if n2~=n && ~feof(fid)
             error('Number of values per line should be constant.')
         end
         if length(Params)<n
-            for i=(length(Params)+1):n
+            for i=n:-1:(length(Params)+1)
                 Params{i}=sprintf('Parameter %i',i);
             end
         elseif length(Params)>n
             Params=Params(1:n);
-        end
-        if n==0
-            fclose(fid);
-            error('Number of values cannot be zero.')
         end
         fclose(fid);
     catch
@@ -242,11 +226,17 @@ if isstruct(xyz)
     xyz.Time = [];
     for i = 1:length(xyz.Params)
         switch lower(xyz.Params{i})
-            case {'longitude','lon','x','xp','x-coordinate','x coordinate','x_coordinate','x_gpp'}
+            case {'longitude','lon','x','xp','x-coordinate','x coordinate','x_coordinate','x_gpp','distance'}
                 xyz.X = i;
             case {'latitude' ,'lat','y','yp','y-coordinate','y coordinate','y_coordinate','y_gpp'}
                 xyz.Y = i;
-            case {'time','datetime'}
+            case 'time'
+                if i>1 && strcmpi(xyz.Params{i-1},'date')
+                    xyz.Time = [i-1 i];
+                else
+                    xyz.Time = i;
+                end
+            case 'datetime'
                 xyz.Time = i;
         end
     end
@@ -257,36 +247,33 @@ if isstruct(xyz)
         end
     end
     %
-    if ~isempty(xyz.Time)
+    if isempty(xyz.Time)
+        xyz.nLoc  = size(xyz.XYZ,1);
+        xyz.Times = gettimestamp(xyz.Header);
+    else
         crds = [xyz.X xyz.Y];
         iTime = [];
+        %
+        % Usually times will be sorted in the data file. If this is not the
+        % case, we might want to sort them, but we haven't implemented that
+        % yet.
+        %
         if ~isempty(crds)
             sortloc = unique(xyz.XYZ(:,crds),'rows');
             nLoc = size(sortloc,1);
             nVal = size(xyz.XYZ,1);
             locations = xyz.XYZ(1:nLoc,crds); % alternatively use unique(...,'stable')
             if nVal/nLoc == floor(nVal/nLoc) && isequal(xyz.XYZ(:,crds),repmat(locations,[nVal/nLoc 1]))
-                Times = xyz.XYZ(1:nLoc:nVal,xyz.Time);
+                Times = gettimes(xyz.XYZ(1:nLoc:nVal,xyz.Time));
                 iTime = cumsum(repmat((1:nLoc)'==1,[nVal/nLoc 1]));
             end
         end
         if isempty(iTime)
-            [Times,idum,iTime] = unique(xyz.XYZ(:,xyz.Time));
+            [Times,idum,iTime] = unique(gettimes(xyz.XYZ(:,xyz.Time)),'stable');
             nLoc = hist(iTime,max(iTime));
         end
-        d = floor(Times);
-        s = round((Times - d)*1000000);
-        m = floor(d/100);
-        d = d - 100*m;
-        y = floor(m/100);
-        m = m - 100*y;
         %
-        mn = floor(s/100);
-        s  = s - mn*100;
-        h = floor(mn/100);
-        mn = mn - h*100;
-        %
-        xyz.Times = datenum(y,m,d,h,mn,s);
+        xyz.Times = Times;
         xyz.iTime = iTime;
         %
         if all(nLoc==nLoc(1))
@@ -294,8 +281,6 @@ if isstruct(xyz)
         else
             xyz.nLoc = nLoc;
         end
-    else
-        xyz.nLoc = size(xyz.XYZ,1);
     end
 end
 
@@ -327,3 +312,51 @@ else
     fprintf(fid,'%f %f %f\n',x);
 end
 fclose(fid);
+
+
+function Times = gettimes(Times)
+if size(Times,2)==2 % gpp => 20140118 105120
+    d = Times(:,1);
+    s = Times(:,2);
+else % swan => 20140118.105120
+    d = floor(Times);
+    s = round((Times - d)*1000000);
+end
+m = floor(d/100);
+d = d - 100*m;
+y = floor(m/100);
+m = m - 100*y;
+%
+mn = floor(s/100);
+s  = s - mn*100;
+h = floor(mn/100);
+mn = mn - h*100;
+%
+Times = datenum(y,m,d,h,mn,s);
+
+
+function Time=gettimestamp(Cmnt)
+Time=[];
+if ~isempty(Cmnt)
+    for i=1:length(Cmnt)
+        [Tk,Rm]=strtok(Cmnt{i});
+        if (length(Cmnt{i})>10) && strcmpi(Tk,'time')
+            [a,c,err,idx]=sscanf(Rm,'%*[ :=]%i %i',2);
+            if c==2
+                yr = floor(a(1)/10000);
+                mo = floor((a(1)-yr*10000)/100);
+                dy = a(1)-yr*10000-mo*100;
+                hr = floor(a(2)/10000);
+                mn = floor((a(2)-hr*10000)/100);
+                sc = a(2)-hr*10000-mn*100;
+                Time=datenum(yr,mo,dy,hr,mn,sc);
+            else
+                try
+                    [a,c,err,idx]=sscanf(Rm,'%*[ :=] %1c',1);
+                    Time=datenum(Rm(idx-1:end));
+                catch
+                end
+            end
+        end
+    end
+end

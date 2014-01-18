@@ -879,7 +879,9 @@ if isfield(Ops,'plotcoordinate') && ~isempty(Ops.plotcoordinate)
             end
         case 'y coordinate'
             diststr = 'y coordinate';
-            if isfield(data,'XUnits') && isequal(data(1).XUnits,'deg')
+            if ~isfield(data,'Y')
+                error('No Y data to plot against.')
+            elseif isfield(data,'XUnits') && isequal(data(1).XUnits,'deg')
                 diststr = 'latitude';
             end
     end

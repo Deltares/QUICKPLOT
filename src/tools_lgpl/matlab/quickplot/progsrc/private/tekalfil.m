@@ -176,6 +176,7 @@ y=[];
 z=[];
 val1=[];
 val2=[];
+OutTime=NaN;
 
 % read grid and data ...
 already_selected = 0;
@@ -221,6 +222,9 @@ switch FI.FileType
                 idx{ST_} = Props.Select{Props.SubFld};
             end
             Data=tekal('read',FI,blck);
+            if ~isempty(FI.Field(blck).Time)
+                OutTime = FI.Field(blck).Time;
+            end
         end
         if strcmp(Props.Geom,'POLYL')
             Data(Data(:,1)==999.999 & Data(:,2)==999.999,:)=NaN;
@@ -356,7 +360,6 @@ if ~isempty(z)
 end
 
 % return data ...
-T=NaN;
 if Ann
     if Props.DimFlag(ST_)
         val1=Data{2}(idx{ST_});
@@ -366,15 +369,15 @@ if Ann
 elseif Props.Time
     switch Props.Time
         case -1
-            T = readtim(FI,Props);
+            OutTime = readtim(FI,Props);
             val1 = Data(idx{T_},idx{ST_});
             val1(:,SToutofrange)=NaN;
         case 1
-            T=Data(idx{T_},1);
+            OutTime=Data(idx{T_},1);
             val1=Data(idx{T_},idx{ST_}+1);
             val1(:,SToutofrange)=NaN;
         case 2
-            T=tdelft3d(Data(idx{T_},1),Data(idx{T_},2));
+            OutTime=tdelft3d(Data(idx{T_},1),Data(idx{T_},2));
             val1=Data(idx{T_},idx{ST_}+2);
             val1(:,SToutofrange)=NaN;
     end
@@ -443,7 +446,7 @@ else
     Ans.XComp=val1;
     Ans.YComp=val2;
 end
-Ans.Time=T;
+Ans.Time=OutTime;
 
 varargout={Ans FI};
 % -----------------------------------------------------------------------------
@@ -600,6 +603,9 @@ switch FI.FileType
                                         DP{6} = -1;
                                     end
                                 else
+                                    if ~isempty(FI.Field(i).Time)
+                                        DP{4}(1) = 1;
+                                    end
                                     DP{1}=FI.Field(i).Name;
                                     if FI.Field(i).Size(2)==4 && ...
                                             strncmpi(FI.Field(i).ColLabels{3},'x component',11) && ...
@@ -762,6 +768,8 @@ switch FI.FileType
         if Props.DimFlag(T_)
             if Props.Time
                 sz(T_)=FI.Field(blck).Size(1);
+            else
+                sz(T_)=1;
             end
         end
         if Props.DimFlag(ST_)

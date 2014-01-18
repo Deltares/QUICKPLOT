@@ -134,10 +134,10 @@ while ~feof(fid)
             end
         else
             %
-            % --- begin of "obsolete code" ---
             % In recent versions of MATLAB, the sscanf command above
-            % will read Inf's and NaN's. The code below is for compatibility
-            % with MATLAB 5.3.
+            % will read Inf's and NaN's. The Inf and NaN checks below are
+            % included for backward compatibility.
+            %
             kyw=0;
             if length(str)>3
                 if strcmpi(str(1:4),'-inf')
@@ -152,6 +152,27 @@ while ~feof(fid)
                 elseif strcmpi(str(1:3),'nan')
                     kyw=3;
                     kywval=NaN;
+                end
+            end
+            if ~isempty(str)
+                switch str(1)
+                    case {'?','.'}
+                        kyw=1;
+                        kywval=NaN;
+                    case '/'
+                        [A,cnt,err,next] = sscanf(str,'/%d/%d',2);
+                        if cnt==2 && isempty(err) && length(values)==1 % only for first column
+                            values = values*10000 + A(1)*100 + A(2);
+                            kyw=next-1;
+                            kywval = [];
+                        end
+                    case ':'
+                        [A,cnt,err,next] = sscanf(str,':%d:%d',2);
+                        if cnt==2 && isempty(err) && length(values)==2 % only for first column
+                            values(2) = values(2)*10000 + A(1)*100 + A(2);
+                            kyw=next-1;
+                            kywval = [];
+                        end
                 end
             end
             if kyw>0

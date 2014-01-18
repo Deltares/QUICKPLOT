@@ -16,30 +16,30 @@ function varargout=samplesfil(FI,domain,field,cmd,varargin)
 %   The DataFld can only be either an element of the DataProps structure.
 
 %----- LGPL --------------------------------------------------------------------
-%                                                                               
-%   Copyright (C) 2011-2014 Stichting Deltares.                                     
-%                                                                               
-%   This library is free software; you can redistribute it and/or                
-%   modify it under the terms of the GNU Lesser General Public                   
-%   License as published by the Free Software Foundation version 2.1.                         
-%                                                                               
-%   This library is distributed in the hope that it will be useful,              
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of               
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU            
-%   Lesser General Public License for more details.                              
-%                                                                               
-%   You should have received a copy of the GNU Lesser General Public             
-%   License along with this library; if not, see <http://www.gnu.org/licenses/>. 
-%                                                                               
-%   contact: delft3d.support@deltares.nl                                         
-%   Stichting Deltares                                                           
-%   P.O. Box 177                                                                 
-%   2600 MH Delft, The Netherlands                                               
-%                                                                               
-%   All indications and logos of, and references to, "Delft3D" and "Deltares"    
-%   are registered trademarks of Stichting Deltares, and remain the property of  
-%   Stichting Deltares. All rights reserved.                                     
-%                                                                               
+%
+%   Copyright (C) 2011-2014 Stichting Deltares.
+%
+%   This library is free software; you can redistribute it and/or
+%   modify it under the terms of the GNU Lesser General Public
+%   License as published by the Free Software Foundation version 2.1.
+%
+%   This library is distributed in the hope that it will be useful,
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%   Lesser General Public License for more details.
+%
+%   You should have received a copy of the GNU Lesser General Public
+%   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+%
+%   contact: delft3d.support@deltares.nl
+%   Stichting Deltares
+%   P.O. Box 177
+%   2600 MH Delft, The Netherlands
+%
+%   All indications and logos of, and references to, "Delft3D" and "Deltares"
+%   are registered trademarks of Stichting Deltares, and remain the property of
+%   Stichting Deltares. All rights reserved.
+%
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
@@ -88,6 +88,12 @@ switch cmd
     case 'subfields'
         varargout={{}};
         return
+    case 'plot'
+        % integrated below
+        hParent = varargin{1};
+        Ops = varargin{2};
+        varargin = varargin(3:end);
+        XYRead = 1;
     otherwise
         [XYRead,DataRead,DataInCell]=gridcelldata(cmd);
 end
@@ -120,7 +126,7 @@ else
     idxM = idx{M_};
     szM = sz(M_);
 end
-if isempty(idx{T_})
+if isempty(FI.Time)
     if isequal(idxM,0)
         dim1 = ':';
     else
@@ -130,7 +136,7 @@ if isempty(idx{T_})
 else
     dim1 = ismember(FI.iTime,idx{T_});
     %
-    if ~isequal(idxM,0) % can only happen if number of locations if constant, i.e. FI.nLoc scalar
+    if ~isequal(idxM,0) % can only happen if number of locations is constant, i.e. FI.nLoc scalar
         z = zeros(szM,1);
         z(idxM) = 1;
         dim1 = dim1 & repmat(z,[sz(T_) 1]);
@@ -140,31 +146,88 @@ end
 
 % generate output ...
 if XYRead
-    xyz = FI.XYZ(dim1,[FI.X FI.Y]);
-    nPnt=size(xyz,1)/nTim;
-    nCrd=size(xyz,2);
-    Ans.XYZ=reshape(xyz,[nTim nPnt 1 nCrd]);
-    if strcmp(Props.Geom,'TRI')
-       if isfield(FI,'TRI')
-          Ans.TRI=FI.TRI;
-       elseif ~isempty(FI.X) && ~isempty(FI.Y)
-          try
-             [xy,I]=unique(xyz,'rows');
-             tri=delaunay(xy(:,1),xy(:,2));
-             Ans.TRI=I(tri);
-             if length(FI.nLoc)==1
-                 FI.TRI=Ans.TRI;
-             end
-          catch
-             Ans.TRI=zeros(0,3);
-          end
-       end
-    else
-       Ans.TRI=zeros(0,3);
+    switch Props.Coords
+        case {'x','d'}
+            Ans.X = FI.XYZ(dim1,FI.X)';
+        case 'y'
+            Ans.Y = FI.XYZ(dim1,FI.Y)';
+        case 'xy'
+            xyz = FI.XYZ(dim1,[FI.X FI.Y]);
+            nPnt=size(xyz,1)/nTim;
+            nCrd=size(xyz,2);
+            Ans.XYZ=reshape(xyz,[nTim nPnt 1 nCrd]);
+            if strcmp(Props.Geom,'TRI')
+                if isfield(FI,'TRI')
+                    Ans.TRI=FI.TRI;
+                elseif ~isempty(FI.X) && ~isempty(FI.Y)
+                    try
+                        [xy,I]=unique(xyz,'rows');
+                        tri=delaunay(xy(:,1),xy(:,2));
+                        Ans.TRI=I(tri);
+                        if length(FI.nLoc)==1
+                            FI.TRI=Ans.TRI;
+                        end
+                    catch
+                        Ans.TRI=zeros(0,3);
+                    end
+                end
+            else
+                Ans.TRI=zeros(0,3);
+            end
+    end
+    %
+    if ~isempty(FI.X) && isfield(FI,'ParamUnits')
+        HUnits = FI.ParamUnits{FI.X};
+        if ~isempty(HUnits)
+            if strcmp(HUnits,'degr')
+                HUnits = 'deg';
+            end
+            Ans.XUnits = HUnits;
+            if isfield(Ans,'TRI')
+                Ans.YUnits = HUnits;
+            end
+        end
     end
 end
 
+% read time ...
+T=readtim(FI,Props,idx{T_});
+
+% collect data ...
 switch Props.NVal
+    case -1
+        Min = FI.XYZ(dim1,Props.SubFld(1));
+        Max = FI.XYZ(dim1,Props.SubFld(3));
+        %
+        dx = (max(FI.Times)-min(FI.Times))/(length(FI.Times)-1);
+        x = repmat(T',[3 1]);
+        x(end,:) = NaN;
+        x = x(:);
+        %
+        y = [Min';repmat(Max',[2 1])];
+        y(end,:) = NaN;
+        y = y(:);
+        %
+        hNew = line(x,y, ...
+            'parent',hParent, ...
+            'color',Ops.colour, ...
+            'linestyle',Ops.linestyle, ...
+            'linewidth',Ops.linewidth, ...
+            'marker',Ops.marker, ...
+            'markeredgecolor',Ops.markercolour, ...
+            'markerfacecolor',Ops.markerfillcolour);
+        if Props.SubFld(2)>0
+            Mean = FI.XYZ(dim1,Props.SubFld(2));
+            hNew(2) = line(T,Mean, ...
+                'parent',hParent, ...
+                'color',Ops.colour, ...
+                'linewidth',Ops.linewidth, ...
+                'marker','o', ...
+                'markerfacecolor',Ops.colour, ...
+                'linestyle','none');
+        end
+        varargout = {hNew FI};
+        return
     case 0
     case 1
         if nLoc==0 % if variable number of locations, then nTim==1
@@ -173,12 +236,21 @@ switch Props.NVal
             Ans.Val=reshape(FI.XYZ(dim1,Props.SubFld),[nTim nLoc]);
         end
     otherwise
-        Ans.XComp=[];
-        Ans.YComp=[];
+        if nLoc==0 % if variable number of locations, then nTim==1
+            Ans.XComp=FI.XYZ(dim1,Props.SubFld(1))';
+            Ans.YComp=FI.XYZ(dim1,Props.SubFld(2))';
+        else
+            Ans.XComp=reshape(FI.XYZ(dim1,Props.SubFld(1)),[nTim nLoc]);
+            Ans.YComp=reshape(FI.XYZ(dim1,Props.SubFld(2)),[nTim nLoc]);
+        end
+        %
+        if strcmp(Props.VecType,'naut')
+            M = Ans.XComp;
+            A = 90-Ans.YComp;
+            Ans.XComp = M.*cosd(A);
+            Ans.YComp = M.*sind(A);
+        end
 end
-
-% read time ...
-T=readtim(FI,Props,idx{T_});
 Ans.Time=T;
 
 varargout={Ans FI};
@@ -190,15 +262,15 @@ function Out=infile(FI,domain)
 
 PropNames={'Name'                       'Units' 'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc' 'Geom' 'Coords' 'SubFld'};
 DataProps={'locations'                  ''       [0 0 1 0 0]  0          0     ''        ''    ''     'PNT'  'xy'      []
-  'triangulated locations'              ''       [0 0 1 0 0]  0          0     ''        ''    ''     'TRI'  'xy'      []
-  '-------'                             ''       [0 0 0 0 0]  0          0     ''        ''    ''     ''     ''        []
-  'sample data'                         ''       [0 0 1 0 0]  0          1     ''        ''    ''     'TRI'  'xy'      -999};
+    'triangulated locations'              ''       [0 0 1 0 0]  0          0     ''        ''    ''     'TRI'  'xy'      []
+    '-------'                             ''       [0 0 0 0 0]  0          0     ''        ''    ''     ''     ''        []
+    'sample data'                         ''       [0 0 1 0 0]  0          1     ''        ''    ''     'TRI'  'xy'      -999};
 
 Out=cell2struct(DataProps,PropNames,2);
 
 params = 1:size(FI.XYZ,2);
 params = setdiff(params,[FI.X FI.Y FI.Time]);
-if ~isempty(FI.Time)
+if ~isempty(FI.Times)
     if length(FI.nLoc)==1
         f3 = 1;
     else
@@ -223,30 +295,85 @@ if NPar>0
         end
     end
 else
-   Out=Out(1:2);
+    Out=Out(1:2);
 end
 
 % No triangulation possible if only one or two points, or only one
 % coordinate
 if (length(FI.nLoc)==1 && FI.nLoc<2) || isempty(FI.Y) || isempty(FI.X)
-   Out(2)=[];
-   for i=1:NPar
-      Out(i+2).Geom='PNT';
-      if isempty(FI.Y)
-          Out(i+2).Coords='x';
-      elseif isempty(FI.X)
-          Out(i+2).Coords='y';
-      end
-   end
+    Out(2)=[];
+    for i=1:NPar
+        if isempty(FI.X)
+            if isempty(FI.Y)
+                Out(i+2).Geom='PNT';
+                Out(i+2).Coords='';
+            else
+                Out(i+2).Geom='sSEG';
+                Out(i+2).Coords='y';
+            end
+        elseif isempty(FI.Y)
+            Out(i+2).Geom='sSEG';
+            if isfield(FI,'Params') && strcmpi(FI.Params{FI.X},'distance')
+                Out(i+2).Coords='d';
+            else
+                Out(i+2).Coords='x';
+            end
+        else
+            Out(i+2).Geom='PNT';
+        end
+    end
 end
 
-if isempty(FI.Y) || isempty(FI.X)
-    for i=1:NPar
-        Out(i+2).DimFlag(2) = 5;
-        Out(i+2).DimFlag(3) = 0;
+if isempty(FI.X) || isempty(FI.Y)
+    if (isempty(FI.X) && isempty(FI.Y) && FI.nLoc>1) || ...
+            (isfield(FI,'Table') && strcmp(FI.Table,'points'))
+        for i=1:NPar
+            Out(i+2).DimFlag(2) = 5;
+            Out(i+2).DimFlag(3) = 0;
+        end
     end
     %
-    Out(1:2) = [];
+    vars = {Out.Name};
+    Mean = find(strcmpi('mean',vars));
+    Minm = find(strcmpi('minimum',vars));
+    Maxm = find(strcmpi('maximum',vars));
+    if ~isempty(Minm) && ~isempty(Maxm) && Out(end).DimFlag(2)~=5
+        Out(1) = Out(Minm);
+        Out(1).Name = 'error bars';
+        Out(1).NVal = -1;
+        Out(1).SubFld = [Out(Minm).SubFld -999 Out(Maxm).SubFld];
+        if ~isempty(Mean)
+            Out(1).SubFld(2) = Out(Mean).SubFld;
+        end
+    else
+        Out(1:2) = [];
+    end
+else
+    vars = {Out.Name};
+    U = find(strcmpi('u',vars));
+    V = find(strcmpi('v',vars));
+    if ~isempty(U) && ~isempty(V)
+        Out(U).Name = 'VectorUV';
+        Out(U).NVal = 2;
+        Out(U).SubFld = [Out([U V]).SubFld];
+        Out(V) = [];
+    end
+    %
+    if NPar==2
+        if (strcmpi(vars{end-1},'parameter 3') && ...
+                strcmpi(vars{end},'parameter 4')) || ... % matlab routine starts numbering parameters in column 1
+                (strcmpi(vars{end-1},'parameter 1') && ...
+                strcmpi(vars{end},'parameter 2')) % gpp started numbering parameters in column 3
+            Out(end-1).Name = 'vector';
+            Out(end-1).NVal = 2;
+            Out(end-1).SubFld = [Out([end-1 end]).SubFld];
+            %Out(end).Name = 'vector-nautical';
+            %Out(end).NVal = 2;
+            %Out(end).VecType = 'naut';
+            %Out(end).SubFld = Out(end-1).SubFld;
+            Out(end) = [];
+        end
+    end
 end
 % -----------------------------------------------------------------------------
 
@@ -261,7 +388,7 @@ if Props.DimFlag(T_)
 end
 if Props.DimFlag(M_) && length(FI.nLoc)==1
     sz(M_) = FI.nLoc;
-elseif Props.DimFlag(ST_)
+elseif Props.DimFlag(ST_) && length(FI.nLoc)==1
     sz(ST_) = FI.nLoc;
 end
 % -----------------------------------------------------------------------------
@@ -271,7 +398,11 @@ end
 function T=readtim(FI,Props,t)
 %======================== SPECIFIC CODE =======================================
 if isempty(FI.Time)
-    T = 0;
+    if ~isempty(FI.Times)
+        T = FI.Times;
+    else
+        T = NaN;
+    end
 else
     T=FI.Times;
     if t~=0
@@ -302,7 +433,9 @@ for i=1:length(t)
         end
     end
     %
-    if ~isempty(FI.X) && isempty(FI.Y)
+    if isempty(FI.X) && isempty(FI.Y)
+        S{i} = sprintf('point %i',i);
+    elseif ~isempty(FI.X) && isempty(FI.Y)
         S{i} = sprintf('x = %g%s',FI.XYZ(t(i),FI.X),XUnit);
     elseif isempty(FI.X) && ~isempty(FI.Y)
         S{i} = sprintf('y = %g%s',FI.XYZ(t(i),FI.Y),YUnit);

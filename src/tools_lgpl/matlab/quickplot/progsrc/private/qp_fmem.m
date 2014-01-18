@@ -731,7 +731,7 @@ switch cmd
                            FI.plotonpoly=pfile;
                         end
                      end
-                     FI.Options=FI.can_be_ldb;
+                     FI.Options=1;FI.can_be_ldb;
                   end
                end
                trytp='shape';
@@ -939,7 +939,6 @@ switch cmd
                elseif isfield(XYZ,'FileType')
                    FI=XYZ;
                    Tp=FI.FileType;
-                   FI.Options=0;
                else
                    FI=[];
                end

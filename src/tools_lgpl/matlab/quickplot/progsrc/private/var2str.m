@@ -51,11 +51,22 @@ switch class(X)
                         if ndims(Y)==2 && size(Y,1)==1
                             YStr=['''' Y ''''];
                         end
-                    case 'double'
+                    case {'single','double','logical', ...
+                            'int8','int16','int32','int64', ...
+                            'uint8','uint16','uint32','uint64'}
                         if isempty(Y)
-                            YStr='[]';
+                            if strcmp(class(Y),'double')
+                                YStr='[]';
+                            end
                         elseif numel(Y)==1
                             YStr=num2str(Y);
+                            if strcmp(class(Y),'logical')
+                                if Y
+                                    YStr = '1 (true)';
+                                else
+                                    YStr = '0 (false)';
+                                end
+                            end
                         end
                     case 'cell'
                         if isempty(Y)

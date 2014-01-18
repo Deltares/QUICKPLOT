@@ -282,7 +282,7 @@ switch NVal
                     qp_title(Parent,tit,'quantity',Quant,'unit',Units)
                 end
                 
-            case {'X-Val','X-Z','X-Time','Time-X'}
+            case {'Distance-Val','X-Val','X-Z','X-Time','Time-X'}
                 if multiple(K_)
                     data = qp_dimsqueeze(data,Ops.axestype,multiple,DimFlag,Props);
                     Mask=repmat(min(data.Z,[],3)==max(data.Z,[],3),[1 1 size(data.Z,3)]);
@@ -621,7 +621,9 @@ switch NVal
                         hNew=gentext(hNew,Ops,Parent,['Val = ',strval,unit]);
                     end
                 end
-            otherwise
+            otherwise % Text
+                strval = sprintf(Ops.numformat,data.Val);
+                hNew=gentext(hNew,Ops,Parent,['Val=',strval]);
                 
         end
         

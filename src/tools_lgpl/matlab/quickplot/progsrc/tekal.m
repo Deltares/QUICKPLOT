@@ -234,6 +234,7 @@ while 1
                 dim=[nvalues dim];
             end
             FileInfo.Field(variable).ColLabels=getcollabels(dim(1),Cmnt);
+            FileInfo.Field(variable).Time=gettimestamp(Cmnt);
             FileInfo.Field(variable).Offset=ftell(fid);
 
             % create Data field but don't use it
@@ -262,6 +263,9 @@ while 1
                             elseif Str(1)=='"' && Str(end)=='"'
                                 Str=Str(2:end-1);
                                 Str=strrep(Str,'""','"');
+                            elseif Str(1)=='/' && Str(end)=='/'
+                                Str=Str(2:end-1);
+                                Str=strrep(Str,'//','/');
                             end
                             Data{2}{i}=Str;
                         end
@@ -438,8 +442,13 @@ else %if ~isnan(FileInfo.Field(var).Offset)
                 Str=deblank(line(Tkn(dim(1)):end));
                 if Str(1)=='''' && Str(end)==''''
                     Str=Str(2:end-1);
+                    Str=strrep(Str,'''''','''');
                 elseif Str(1)=='"' && Str(end)=='"'
                     Str=Str(2:end-1);
+                    Str=strrep(Str,'""','"');
+                elseif Str(1)=='/' && Str(end)=='/'
+                    Str=Str(2:end-1);
+                    Str=strrep(Str,'//','/');
                 end
                 Data{2}{i}=Str;
             end
@@ -596,6 +605,33 @@ if ~isempty(Cmnt)
             [a,c,err,idx]=sscanf(Rm,'%i%*[ :=]%c',2);
             if (c==2) && a(1)<=ncol && a(1)>0
                 ColLabels{a(1)}=deblank(Rm(idx-1:end));
+            end
+        end
+    end
+end
+
+
+function Time=gettimestamp(Cmnt)
+Time=[];
+if ~isempty(Cmnt)
+    for i=1:length(Cmnt)
+        [Tk,Rm]=strtok(Cmnt{i}(2:end));
+        if (length(Cmnt{i})>10) && strcmpi(Tk,'time')
+            [a,c,err,idx]=sscanf(Rm,'%*[ :=]%i %i',2);
+            if c==2
+                yr = floor(a(1)/10000);
+                mo = floor((a(1)-yr*10000)/100);
+                dy = a(1)-yr*10000-mo*100;
+                hr = floor(a(2)/10000);
+                mn = floor((a(2)-hr*10000)/100);
+                sc = a(2)-hr*10000-mn*100;
+                Time=datenum(yr,mo,dy,hr,mn,sc);
+            else
+                try
+                    [a,c,err,idx]=sscanf(Rm,'%*[ :=] %1c',1);
+                    Time=datenum(Rm(idx-1:end));
+                catch
+                end
             end
         end
     end

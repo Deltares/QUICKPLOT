@@ -130,6 +130,9 @@ State=setopt(State,'colour',[1 0 0]);
 %State=setopt(State,'verticalscalingmode','unrestricted');
 %State=setopt(State,'clippingvalues',[]);
 State=setopt(State,'extend2edge',0);
+if strcmp(State.axestype,'Distance-Val')
+    State=setopt(State,'plotcoordinate','path distance');
+end
 
 
 function State=setopt(State,Field,Val)
