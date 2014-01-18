@@ -229,6 +229,8 @@ switch FI.FileType
         if strcmp(Props.Geom,'POLYL')
             Data(Data(:,1)==999.999 & Data(:,2)==999.999,:)=NaN;
         end
+    case 'dxf'
+        Data=FI.Lines(1:2,:)';
     case 'BNA File'
         Data=bna('read',FI);
     case 'ArcInfoUngenerate'
@@ -646,7 +648,7 @@ switch FI.FileType
                 end
             end
         end
-    case {'BNA File','ArcInfoUngenerate'}
+    case {'BNA File','ArcInfoUngenerate','dxf'}
         DataProps={'line'                      'POLYL' 'xy' [0 0 1 0 0]  0          0       0       0       1          []      {}  };
     case 'ESRI-Shape'
         DataProps={'line'                      'POLYL' 'xy' [0 0 6 0 0]  0          0       0       0       1          []      {}  };
@@ -781,6 +783,8 @@ switch FI.FileType
         end
     case {'BNA File','ArcInfoUngenerate'}
         sz(M_)=FI.TotalNPnt;
+    case {'dxf'}
+        sz(M_)=size(FI.Lines,2);
     case {'ESRI-Shape'}
         if strcmp(Props.Geom,'PNT')
             sz(M_)=FI.NPnt;
