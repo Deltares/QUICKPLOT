@@ -368,6 +368,14 @@ if Ann
     else
         val1=Data{2}(idx{M_});
     end
+    for i = length(val1):-1:2
+        if x(i)==999.999 && y(i)==999.999
+            val1{i-1} = [val1{i-1} val1{i}];
+            val1{i} = '';
+            x(i) = NaN;
+            y(i) = NaN;
+        end
+    end
 elseif Props.Time
     switch Props.Time
         case -1

@@ -144,6 +144,8 @@ switch cmd
                     trytp='adcircmesh';
                 case {'.mesh'}
                     trytp='mikemesh';
+                case {'.shy'}
+                    trytp='SHYFEM mesh';
                 case {'gem'}
                     trytp='geomesh';
                 case {'.mat'}
@@ -640,6 +642,15 @@ switch cmd
                 case 'mikemesh'
                     try
                         FI=mikemesh('open',FileName);
+                    end
+                    if ~isempty(FI)
+                        FI.Options=0;
+                        Tp=FI.FileType;
+                    end
+                    trytp='SHYFEM mesh';
+                case 'SHYFEM mesh'
+                    try
+                        FI=shyfemmesh('open',FileName);
                     end
                     if ~isempty(FI)
                         FI.Options=0;

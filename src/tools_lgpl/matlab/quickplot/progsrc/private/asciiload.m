@@ -77,11 +77,28 @@ while ~feof(fid)
     i = i+1;
     if ll~=0 && tryquick
         loc = ftell(fid);
-        data = textscan(fid,repmat('%f ',1,ll),'CommentStyle',comment);
+        data = textscan(fid,repmat('%f ',1,ll), ...
+            'CommentStyle',comment);
         if ~feof(fid)
             % reading problem encountered, go slowly
             tryquick = 0;
         else
+            % if we encounter NaN in the results, verify whether there are
+            % really NaNs in the file or that there are format conflicts.
+            % Note: lines with N*LL numbers are not caught by this method.
+            verify = 0;
+            for cl = 1:length(data)
+                if any(isnan(data{cl}))
+                    verify = 1;
+                    break
+                end
+            end
+            if verify
+                fseek(fid,loc,-1);
+                data2 = textscan(fid,repmat('%f ',1,ll), ...
+                    'CommentStyle',comment, ...
+                    'EmptyValue',inf);
+            end
             % end of file reached, but is data consistent?
             ndata = length(data{end});
             for cl = 1:length(data)
@@ -90,6 +107,8 @@ while ~feof(fid)
                     data{cl} = data{cl}(1:ndata);
                     tryquick = 0;
                     break
+                elseif verify && any(isnan(data{cl}) & ~isnan(data2{cl}))
+                    tryquick = 0;
                 end
             end
         end

@@ -15,6 +15,7 @@
 %   delwaqt0                    - Parse Delwaq T0 string.
 %   dbase                       - Read data from a dBase file.
 %   delwaqtimfile               - Reads in a Delwaq .tim input file (Lex Yacc type).
+%   dxf                         - File operations for AutoCad DXF files
 %   fls                         - Read Delft-FLS and SOBEK2D incremental files.
 %   geomesh                     - Read a Geo mesh topology file.
 %   getlds                      - Get LDS information from SDS file.
@@ -37,6 +38,7 @@
 %   readswan                    - Read SWAN 1D and 2D spectral files.
 %   shapewrite                  - Write ESRI shape files.
 %   shipma                      - Read Shipma project (and embedded) files.
+%   shyfemmesh                  - Read a SHYFEM mesh topology file.
 %   sobek                       - Read and plot SOBEK topology.
 %   swan                        - Read/write SWAN files.
 %   tecplot                     - Read/write for Tecplot files.
@@ -222,6 +224,7 @@
 %   qp_state_version            - Check state.
 %   qp_strrep                   - Replace string with another (case insensitive).
 %   qp_time2str                 - Convert time double to cell of time strings.
+%   qp_title                    - Set automatic title and parameters.
 %   qp_toolbarpush              - Create a toolbar push button.
 %   qp_toolbartoggle            - Create a toolbar toggle button.
 %   qp_tooltip                  - Add a tooltip to gui or toolbar button.

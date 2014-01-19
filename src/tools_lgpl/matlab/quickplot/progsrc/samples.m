@@ -195,7 +195,7 @@ else % readtype always forced to 'struct'
         X  = textscan(Line,' %[^ ]','returnonerror',0);
         n2 = length(X{1});
         if n2~=n && ~feof(fid)
-            error('Number of values per line should be constant.')
+            error('Number of values per line should be consistent.')
         end
         if length(Params)<n
             for i=n:-1:(length(Params)+1)
