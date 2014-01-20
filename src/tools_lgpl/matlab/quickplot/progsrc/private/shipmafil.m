@@ -439,16 +439,16 @@ PAR.shipma       = shipma;
 PAR.filename_raw = FI.FileName;
 PAR.case_raw     = [PAR.project '/' PAR.case];
 
-macro    = qp_settings(['shipma_macro_for_' FI.Project(prj).Name],'');
-if isempty(macro)
+session    = qp_settings(['shipma_session_for_' FI.Project(prj).Name],'');
+if isempty(session)
     selfplot_builtin(PAR)
 else
-    [p,f,e]=fileparts(macro);
+    [p,f,e]=fileparts(session);
     switch e
         case '.qpses'
-            d3d_qp('openfigure',macro,PAR)
+            d3d_qp('openfigure',session,PAR)
         otherwise
-            d3d_qp('run',macro,'-par',PAR)
+            d3d_qp('run',session,'-par',PAR)
     end
 end
 %--------
@@ -1186,12 +1186,12 @@ switch cmd
         h=findobj(mfig,'tag','defaultfigures');
         %
         if isempty(FI.Project)
-            macro = [];
+            session = [];
         else
             Projects = FI.Project(1).Name;
-            macro    = qp_settings(['shipma_macro_for_' Projects],'');
+            session  = qp_settings(['shipma_session_for_' Projects],'');
         end
-        if isempty(macro)
+        if isempty(session)
             deffg = 1;
         else
             deffg = 2;
@@ -1202,19 +1202,19 @@ switch cmd
             builtin = {'on' 'off'};
         else
             builtin = {'off' 'on'};
-            set(findobj(mfig,'tag','macro_name'),'string',macro)
-            [p,f,e] = fileparts(macro);
+            set(findobj(mfig,'tag','session_name'),'string',session)
+            [p,f,e] = fileparts(session);
             switch e
                 case '.qpses'
-                    set(findobj(mfig,'tag','macro_txt'),'string','Session')
+                    set(findobj(mfig,'tag','session_txt'),'string','Session')
                 otherwise
-                    set(findobj(mfig,'tag','macro_txt'),'string','Macro')
+                    set(findobj(mfig,'tag','session_txt'),'string','Macro')
             end
         end
         a     = findall(mfig,'type','uicontrol');
         atags = get(a,'tag');
         b1    = a(strncmp('fig',atags,3) | strcmp('editborder',atags));
-        b2    = a(strncmp('macro',atags,5));
+        b2    = a(strncmp('session',atags,5));
         set(b1,'visible',builtin{1})
         set(b2,'visible',builtin{2})
         %
@@ -1318,23 +1318,23 @@ switch cmd
             set(h,'value',i)
         end
 
-    case {'defaultfigures','selectmacro'}
+    case {'defaultfigures','selectsession'}
         h=findobj(mfig,'tag','defaultfigures');
         %
         Projects = {FI.Project.Name};
-        fp = qp_settings(['shipma_macro_for_' Projects{1}],'');
+        fp = qp_settings(['shipma_session_for_' Projects{1}],'');
         if isempty(varargin)
             deffg = get(h,'value');
-            if deffg==2 && isempty(fp) || strcmp(cmd,'selectmacro')
+            if deffg==2 && isempty(fp) || strcmp(cmd,'selectsession')
                 curdir = pwd;
                 if isempty(fp)
                     cd(fileparts(FI.FileName))
                 else
                     cd(fileparts(fp))
                 end
-                filter = {'*.qplog;*.m' 'QUICKPLOT Macro File'
-                    '*.qpses' 'QUICKPLOT Session File'};
-                [f,p]=uigetfile(filter,'Select Macro/Session File ...');
+                filter = {'*.qpses' 'QUICKPLOT Session File'
+                    '*.qplog;*.m' 'QUICKPLOT Macro File'};
+                [f,p]=uigetfile(filter,'Select Session File ...');
                 cd(curdir)
                 if ischar(f)
                     fp = [p f];
@@ -1372,7 +1372,7 @@ switch cmd
         end
         %
         if deffg==0 % Cancel
-            fp = qp_settings(['shipma_macro_for_' Projects{1}],'');
+            fp = qp_settings(['shipma_session_for_' Projects{1}],'');
             if isempty(fp)
                 deffg = -1;
             else
@@ -1386,7 +1386,7 @@ switch cmd
             %
             if deffg==1
                 for i = 1:length(Projects)
-                    qp_settings(['shipma_macro_for_' Projects{i}],[])
+                    qp_settings(['shipma_session_for_' Projects{i}],[])
                 end
             end
         elseif abs(deffg)==2
@@ -1395,15 +1395,15 @@ switch cmd
             [p,f,e] = fileparts(fp);
             switch e
                 case '.qpses'
-                    set(findobj(mfig,'tag','macro_txt'),'string','Session')
+                    set(findobj(mfig,'tag','session_txt'),'string','Session')
                 otherwise
-                    set(findobj(mfig,'tag','macro_txt'),'string','Macro')
+                    set(findobj(mfig,'tag','session_txt'),'string','Macro')
             end
             %
             if deffg==2
-                set(findobj(mfig,'tag','macro_name'),'string',fp)
+                set(findobj(mfig,'tag','session_name'),'string',fp)
                 for i = 1:length(Projects)
-                    qp_settings(['shipma_macro_for_' Projects{i}],fp)
+                    qp_settings(['shipma_session_for_' Projects{i}],fp)
                 end
             end
         end
@@ -1412,7 +1412,7 @@ switch cmd
         a     = findall(mfig,'type','uicontrol');
         atags = get(a,'tag');
         b1    = a(strncmp('fig',atags,3) | strcmp('editborder',atags));
-        b2    = a(strncmp('macro',atags,5));
+        b2    = a(strncmp('session',atags,5));
         set(b1,'visible',builtin{1})
         set(b2,'visible',builtin{2})
         if deffg>0
@@ -1738,7 +1738,7 @@ uicontrol('Parent',h0, ...
     'BackgroundColor',Active, ...
     'Horizontalalignment','left', ...
     'Position',[111 voffset 80+50 21], ...
-    'String',{'Built-In Layout','User Macro/Session'}, ...
+    'String',{'Built-In Layout','User Session'}, ...
     'Callback','d3d_qp fileoptions defaultfigures', ...
     'Value',1, ...
     'Enable','on', ...
@@ -1750,9 +1750,9 @@ uicontrol('Parent',h0, ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','left', ...
     'Position',[21 voffset 40 18], ...
-    'String','Macro', ...
+    'String','Session', ...
     'Enable','on', ...
-    'Tag','macro_txt');
+    'Tag','session_txt');
 uicontrol('Parent',h0, ...
     'Style','edit', ...
     'BackgroundColor',Inactive, ...
@@ -1760,16 +1760,16 @@ uicontrol('Parent',h0, ...
     'Position',[71 voffset FigPos(3)-120 20], ...
     'String','<no file specified: using built-in layout>', ...
     'Enable','inactive', ...
-    'Tag','macro_name');
+    'Tag','session_name');
 uicontrol('Parent',h0, ...
     'Style','pushbutton', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','center', ...
     'Position',[FigPos(3)-40 voffset 20 20], ...
     'String','...', ...
-    'Callback','d3d_qp fileoptions selectmacro', ...
+    'Callback','d3d_qp fileoptions selectsession', ...
     'Enable','on', ...
-    'Tag','macro_select');
+    'Tag','session_select');
 voffset=voffset+25;
 %
 voffset=voffset-25;
