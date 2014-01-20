@@ -740,7 +740,13 @@ for clipi=1:3
                     val=getfield(data,{d},fldf);
                     data=setfield(data,{d},fldf,[]);
                     if isnumeric(clippingvals)
-                        val(logical(ismember(val,clippingvals)))=NaN;
+                        check = logical(ismember(val,clippingvals));
+                        if any(check(:))
+                            if ~isa(val,'double') && ~isa(val,'single')
+                                val = double(val);
+                            end
+                            val(check)=NaN;
+                        end
                     else
                         val=realset(clippingvals,val);
                     end

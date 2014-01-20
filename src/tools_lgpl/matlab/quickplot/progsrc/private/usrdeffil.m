@@ -217,7 +217,7 @@ if isequal(Props.FileInfo,'operator')
                 end
                 off=off+szit;
             end
-        case {'A+B','A-B','A*B','A/B','max(A,B)','min(A,B)','vector(A,B)','vec_M&D(A,B)','A under condition B'}
+        case {'A+B','A-B','A*B','A/B','max(A,B)','min(A,B)','vector(A,B)','vec_M&D(A,B)','A under condition B','f(A,B) = user defined'}
             sz1=getsize([],P);
             P2=Props.Props.Data{2};
             sz2=getsize([],P2);
@@ -331,7 +331,7 @@ if isequal(Props.FileInfo,'operator')
                     OpFun='max';
                 case 'min(A,B)'
                     OpFun='min';
-                case {'vector(A,B)','vec_M&D(A,B)','A under condition B'}
+                case {'vector(A,B)','vec_M&D(A,B)','A under condition B','f(A,B) = user defined'}
                     special=1;
             end
             if special
@@ -354,34 +354,35 @@ if isequal(Props.FileInfo,'operator')
                         else
                             Ans.Val(isnan(val))=NaN;
                         end
+                    case 'f(A,B) = user defined'
+                        fun = Props.Props.Data{3};
+                        F = {'XComp','YComp','ZComp','Val'};
+                        for i = 1:length(F)
+                            f = F{i};
+                            if isfield(Ans,f) && isfield(Ans2,f)
+                                Ans.(f)=usereval(fun,Ans.(f),Ans2.(f));
+                            elseif isfield(Ans,f) && isfield(Ans2,'Val')
+                                Ans.(f)=usereval(fun,Ans.(f),Ans2.Val);
+                            elseif isfield(Ans,'Val') && isfield(Ans2,f)
+                                Ans.(f)=usereval(fun,Ans.Val,Ans2.(f));
+                            end
+                        end
                 end
-            elseif vec1 & vec2
-                Ans.XComp=feval(OpFun,Ans.XComp,Ans2.XComp);
-                if isfield(Ans,'YComp');
-                    Ans.YComp=feval(OpFun,Ans.YComp,Ans2.YComp);
-                end
-                if isfield(Ans,'ZComp');
-                    Ans.ZComp=feval(OpFun,Ans.ZComp,Ans2.ZComp);
-                end
-            elseif vec1
-                Ans.XComp=feval(OpFun,Ans.XComp,Ans2.Val);
-                if isfield(Ans,'YComp');
-                    Ans.YComp=feval(OpFun,Ans.YComp,Ans2.Val);
-                end
-                if isfield(Ans,'ZComp');
-                    Ans.ZComp=feval(OpFun,Ans.ZComp,Ans2.Val);
-                end
-            elseif vec2
-                Ans.XComp=feval(OpFun,Ans.Val,Ans2.XComp);
-                if isfield(Ans2,'YComp');
-                    Ans.YComp=feval(OpFun,Ans.Val,Ans2.YComp);
-                end
-                if isfield(Ans2,'ZComp');
-                    Ans.ZComp=feval(OpFun,Ans.Val,Ans2.ZComp);
-                end
-                Ans=rmfield(Ans,'Val');
             else
-                Ans.Val=feval(OpFun,Ans.Val,Ans2.Val);
+                F = {'XComp','YComp','ZComp','Val'};
+                for i = 1:length(F)
+                    f = F{i};
+                    if isfield(Ans,f) && isfield(Ans2,f)
+                        Ans.(f)=feval(OpFun,Ans.(f),Ans2.(f));
+                    elseif isfield(Ans,f) && isfield(Ans2,'Val')
+                        Ans.(f)=feval(OpFun,Ans.(f),Ans2.Val);
+                    elseif isfield(Ans,'Val') && isfield(Ans2,f)
+                        Ans.(f)=feval(OpFun,Ans.Val,Ans2.(f));
+                    end
+                end
+                if isfield(Ans,'Val') && isfield(Ans,'XComp') % var1 is scalar, var2 is vector
+                    Ans=rmfield(Ans,'Val');
+                end
             end
         case {'+ constant','* constant','^ constant','max(A,constant)','min(A,constant)'}
             [Ans,FI]=getdata(P,cmd,sel);
@@ -452,21 +453,24 @@ if isequal(Props.FileInfo,'operator')
             end
             [Ans,FI]=getdata(P,cmd,sel);
             Props.Props.Data{1}=FI;
-            if isfield(Ans,'XComp');
-                Ans.XComp(Ans.XComp<=0)=NaN;
-                Ans.XComp=feval(fun,Ans.XComp);
+            F = {'XComp','YComp','ZComp','Val'};
+            for i = 1:length(F)
+                f = F{1};
+                if isfield(Ans,f);
+                    Ans.(f)(Ans.(f)<=0)=NaN;
+                    Ans.(f)=feval(fun,Ans.(f));
+                end
             end
-            if isfield(Ans,'YComp');
-                Ans.YComp(Ans.YComp<=0)=NaN;
-                Ans.YComp=feval(fun,Ans.YComp);
-            end
-            if isfield(Ans,'ZComp');
-                Ans.ZComp(Ans.ZComp<=0)=NaN;
-                Ans.ZComp=feval(fun,Ans.ZComp);
-            end
-            if isfield(Ans,'Val');
-                Ans.Val(Ans.Val<=0)=NaN;
-                Ans.Val=feval(fun,Ans.Val);
+        case {'f(A) = user defined'}
+            fun=Props.Props.Data{2};
+            [Ans,FI]=getdata(P,cmd,sel);
+            Props.Props.Data{1}=FI;
+            F = {'XComp','YComp','ZComp','Val'};
+            for i = 1:length(F)
+                f = F{i};
+                if isfield(Ans,f)
+                    Ans.(f)=usereval(fun,Ans.(f));
+                end
             end
         case {'max m','alg.mean m','min m','sum m', ...
                 'max n','alg.mean n','min n','sum n', ...
@@ -581,7 +585,7 @@ end
 NProps=Props;
 % -----------------------------------------------------------------------------
 
-function Ans=avgcoord(AnsIn,i);
+function Ans=avgcoord(AnsIn,i)
 Ans=AnsIn; AnsIn=[];
 if isfield(Ans,'X')
     Ix=~isnan(Ans.X);
@@ -798,7 +802,7 @@ end
 
 
 % -----------------------------------------------------------------------------
-function [NewFI,cmdargs]=options(FI,mfig,cmd,varargin);
+function [NewFI,cmdargs]=options(FI,mfig,cmd,varargin)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
 Inactive=get(0,'defaultuicontrolbackground');
@@ -870,7 +874,8 @@ switch cmd
                 case {1,2,3}
                     Ops={'A+B','A-B','A*B','A/B','max(A,B)','min(A,B)', ...
                         '+ constant','* constant','^ constant','max(A,constant)','min(A,constant)', ...
-                        '10log','abs','series: A,B','A under condition B'};
+                        '10log','abs','series: A,B','A under condition B', ...
+                        'f(A) = user defined','f(A,B) = user defined'};
                     if Vars(i).DimFlag(M_)
                         if NVal==1
                             Ops(end+(1:4))={'max m' 'alg.mean m' 'min m' 'sum m'};
@@ -935,6 +940,7 @@ switch cmd
             set(Handle_OpList,'value',k)
         end
 
+        Handle_UserOp=findobj(mfig,'tag','useroperator');
         Handle_VarList2=findobj(mfig,'tag','varlist2');
         Str2=get(Handle_VarList2,'string');
         j=get(Handle_VarList2,'value');
@@ -961,7 +967,7 @@ switch cmd
             SZi=SZ{i};
             jj=logical(ones(length(Vars),1));
             switch Ops{k}
-                case {'A+B','A-B','A*B','A/B','max(A,B)','min(A,B)','vector(A,B)','vec_M&D(A,B)','A under condition B'}
+                case {'A+B','A-B','A*B','A/B','max(A,B)','min(A,B)','vector(A,B)','vec_M&D(A,B)','A under condition B','f(A,B) = user defined'}
                     NValMismatchNotAllowed=ismember(Ops{k},{'vector(A,B)','vec_M&D(A,B)'});
                     NValBMustEqual1=ismember(Ops{k},{'A under condition B'});
                     for ii=1:length(Vars)
@@ -1004,6 +1010,16 @@ switch cmd
                             end
                         end
                     end
+                    if strcmp(Ops{k},'f(A,B) = user defined')
+                        set(Handle_UserOp,'enable','on','backgroundcolor',Active);
+                        if ~isempty(analyze_operator(get(Handle_UserOp,'string'),{'A','B'}))
+                            set(Handle_DefVar,'enable','off')
+                        else
+                            set(Handle_DefVar,'enable','on')
+                        end
+                    else
+                        set(Handle_UserOp,'enable','off','backgroundcolor',Inactive);
+                    end
                 case {'series: A,B'}
                     for ii=1:length(Vars)
                         if Vars(ii).Props.NVal~=NVali
@@ -1026,20 +1042,54 @@ switch cmd
                         jj=find(jj);
                         set(Handle_VarList2,'enable','on','value',j,'string',Str2,'backgroundcolor',Active,'userdata',jj);
                     end
+                    set(Handle_UserOp,'enable','off','backgroundcolor',Inactive);
                 case {'+ constant','* constant','^ constant','max(A,constant)','min(A,constant)'}
                     set(Handle_VarList2,'enable','off','value',1,'string',{' '},'backgroundcolor',Inactive,'userdata',[]);
                     set(Handle_ConstTxt,'enable','on');
                     set(Handle_Const,'enable','on','backgroundcolor',Active);
                     set(Handle_DefVar,'enable','on')
+                    set(Handle_UserOp,'enable','off','backgroundcolor',Inactive);
                 case {'magnitude','abs','10log','max m','alg.mean m','min m','sum m','max n','alg.mean n','min n','sum n','max k','alg.mean k','min k','sum k','flip m','flip n','flip k'}
                     set(Handle_VarList2,'enable','off','value',1,'string',{' '},'backgroundcolor',Inactive,'userdata',[]);
+                    set(Handle_UserOp,'enable','off','backgroundcolor',Inactive);
+                case {'f(A) = user defined'}
+                    set(Handle_VarList2,'enable','off','value',1,'string',{' '},'backgroundcolor',Inactive,'userdata',[]);
+                    set(Handle_UserOp,'enable','on','backgroundcolor',Active);
+                    if ~isempty(analyze_operator(get(Handle_UserOp,'string'),{'A'}))
+                        set(Handle_DefVar,'enable','off')
+                    else
+                        set(Handle_DefVar,'enable','on')
+                    end
                 otherwise
                     set(Handle_VarList2,'enable','off','value',1,'string',{' '},'backgroundcolor',Inactive,'userdata',[]);
                     set(Handle_DefVar,'enable','off')
+                    set(Handle_UserOp,'enable','off','backgroundcolor',Inactive);
             end
             cmdargs={cmd Ops{k}};
         end
 
+    case 'useroperator'
+        Handle_OpList=findobj(mfig,'tag','operatorlist');
+        Ops=get(Handle_OpList,'string');
+        k=get(Handle_OpList,'value');
+
+        Handle_DefVar=findobj(mfig,'tag','defvariable');
+        Handle_UserOp=findobj(mfig,'tag','useroperator');
+        oper = get(Handle_UserOp,'string');
+        switch Ops{k}
+            case 'f(A) = user defined'
+                vars = {'A'};
+            case 'f(A,B) = user defined'
+                vars = {'A','B'};
+        end
+        err = analyze_operator(oper,vars);
+        if ~isempty(err)
+            ui_message('error',err)
+            set(Handle_DefVar,'enable','off')
+        else
+            set(Handle_DefVar,'enable','on')
+        end
+        
     case 'selectvar2'
         Handle_VarList2=findobj(mfig,'tag','varlist2');
         Str2=get(Handle_VarList2,'string');
@@ -1125,6 +1175,7 @@ switch cmd
         Strs=get(Handle_VarList,'string');
         i=get(Handle_VarList,'value');
 
+        Handle_UserOp=findobj(mfig,'tag','useroperator');
         Handle_OpList=findobj(mfig,'tag','operatorlist');
         Ops=get(Handle_OpList,'string');
         k=get(Handle_OpList,'value');
@@ -1178,6 +1229,14 @@ switch cmd
                 Props.Oper=Ops{k};
                 Props.Data={Vars(i) Vars(ii)};
                 Props.DataInCell = Vars(i).DataInCell & Vars(ii).DataInCell;
+            case {'f(A,B) = user defined'}
+                ii=jj(j);
+                fcn = get(Handle_UserOp,'string');
+                VarName=sprintf('f(A,B) = %s where A = %s and B = %s',fcn,Vars(i).Name,Vars(ii).Name);
+                Props.NVal=max(Vars(i).Props.NVal,Vars(ii).Props.NVal);
+                Props.Oper=Ops{k};
+                Props.Data={Vars(i) Vars(ii) fcn};
+                Props.DataInCell = Vars(i).DataInCell & Vars(ii).DataInCell;
             case {'+ constant','* constant','^ constant'}
                 VarName=sprintf('(%s) %s %g',Vars(i).Name,Ops{k}(1),c);
                 Props.NVal=Vars(i).Props.NVal;
@@ -1195,6 +1254,13 @@ switch cmd
                 Props.NVal=Vars(i).Props.NVal;
                 Props.Oper=Ops{k};
                 Props.Data={Vars(i)};
+                Props.DataInCell = Vars(i).DataInCell;
+            case {'f(A) = user defined'}
+                fcn = get(Handle_UserOp,'string');
+                VarName=sprintf('f(A) = %s where A = %s',fcn,Vars(i).Name);
+                Props.NVal=Vars(i).Props.NVal;
+                Props.Oper=Ops{k};
+                Props.Data={Vars(i) fcn};
                 Props.DataInCell = Vars(i).DataInCell;
             case {'magnitude'}
                 VarName=sprintf('%s(%s)',Ops{k},Vars(i).Name);
@@ -1269,7 +1335,7 @@ end
 % -----------------------------------------------------------------------------
 
 % -----------------------------------------------------------------------------
-function OK=optfig(h0);
+function OK=optfig(h0)
 Inactive=get(0,'defaultuicontrolbackground');
 FigPos=get(h0,'position');
 FigPos(3:4) = getappdata(h0,'DefaultFileOptionsSize');
@@ -1306,6 +1372,17 @@ h1 = uicontrol('Parent',h0, ...
     'Style','popupmenu', ...
     'Tag','operatorlist', ...
     'Value',1);
+%
+voffset=voffset-25;
+h1 = uicontrol('Parent',h0, ...
+    'BackgroundColor',Inactive, ...
+    'Callback','d3d_qp fileoptions useroperator', ...
+    'Enable','off', ...
+    'Position',[11 voffset 320 20], ...
+    'String',' ', ...
+    'Horizontalalignment','left', ...
+    'Style','edit', ...
+    'Tag','useroperator');
 %
 voffset=voffset-25;
 h1 = uicontrol('Parent',h0, ...
@@ -1369,3 +1446,467 @@ h1 = uicontrol('Parent',h0, ...
 OK=1;
 % -----------------------------------------------------------------------------
 
+function [err,Op] = analyze_operator(oper,var)
+err = [];
+ikeystart = -1;
+i = 0;
+j = 0;
+Op = cell(1,length(oper));
+while i<length(oper)
+    i = i+1;
+    if any('()?:+-*/^,<>~='==oper(i)) || ...
+            (oper(i)=='.' && i<length(oper) && any('+-*/^'==oper(i+1)))
+        if ikeystart>0
+            j = j+1;
+            Op{j} = oper(ikeystart:i-1);
+        end
+        j = j+1;
+        if (oper(i)=='.') || ...
+            (oper(i)=='<' && i<length(oper) && oper(i+1)=='=') || ...
+            (oper(i)=='>' && i<length(oper) && oper(i+1)=='=') || ...
+            (oper(i)=='=' && i<length(oper) && oper(i+1)=='=') || ...
+            (oper(i)=='~' && i<length(oper) && oper(i+1)=='=')
+            Op{j} = oper(i:i+1);
+            i = i+1;
+        elseif oper(i)=='='
+            Op{j} = '==';
+            i = i+1;
+        else
+            Op{j} = oper(i);
+        end
+        ikeystart = -1;
+    elseif oper(i)==' '
+        if ikeystart>0
+            j = j+1;
+            Op{j} = oper(ikeystart:i-1);
+        end
+        ikeystart = -1;
+    elseif ikeystart<0
+        ikeystart = i;
+    end
+end
+if ikeystart>0
+    j = j+1;
+    Op{j} = oper(ikeystart:end);
+end
+Op(j+1:end)=[];
+%
+fcn = zeros(4,length(Op));
+i = 0;
+ifcn = 0;
+numbers = {'pi','NaN'};
+unaryop = {'+','-','~'};
+powerop = {'^','.^'};
+cpowerop = [{'('} powerop];
+operators = [unaryop {'*','/','.+','.-','.*','./','<','>','<=','>=','==','~='}];
+alloperators = [powerop {':','?','('} operators];
+[f0,f1,f2,f3] = supportedfunctions;
+while i<length(Op)
+    i = i+1;
+    if ~isnan(str2double(Op{i}))
+        if i>1
+            if ischar(Op{i-1}) && ismember(Op{i-1},alloperators)
+                % OK
+            elseif ifcn==0 || i>fcn(1,ifcn)+1
+                err = sprintf('Missing operator before: %s',Op{i});
+                return
+            end
+        end
+        Op{i} = str2double(Op{i});
+    else
+        switch Op{i}
+            case operators
+                if ~ismember(Op{i},unaryop)
+                    if i==1 || (ifcn>0 && i==max(fcn([1 3 4],ifcn))+1)
+                        err = sprintf('Missing expression before binary operator: %s',Op{i});
+                        return
+                    elseif i>1 && ischar(Op{i-1}) && ismember(Op{i-1},operators)
+                        err = sprintf('Invalid succession of binary operators: %s%s',Op{i-1},Op{i});
+                        return
+                    end
+                end
+            case powerop
+                i0 = i;
+                while i0<length(Op) && ismember(Op{i0+1},unaryop)
+                    i0 = i0+1;
+                end
+                if i0==length(Op)
+                    err = sprintf('Unexpected end of formula while processing: %s',Op{i});
+                    return
+                elseif strcmp(Op{i0+1},')')
+                    err = sprintf('Unexpected closing bracket found following: %s',Op{i});
+                    return
+                elseif strcmp(Op{i0+1},'(')
+                    ifcn = ifcn+1;
+                    fcn(1,ifcn) = i;
+                    fcn(2,ifcn) = 1;
+                    ifcn = ifcn+1;
+                    fcn(1,ifcn) = i0+1;
+                    fcn(2,ifcn) = 1;
+                    i = i0+1;
+                elseif ismember(Op{i0+1},[var numbers])
+                    Op{i-1}    = {Op{i} Op{i-1} Op(i+1:i0+1)};
+                    Op(i:i0+1) = [];
+                    i          = i-1;
+                elseif ~isnan(str2double(Op{i0+1}))
+                    Op{i0+1}   = str2double(Op{i0+1});
+                    Op{i-1}    = {Op{i} Op{i-1} Op(i+1:i0+1)};
+                    Op(i:i0+1) = [];
+                    i = i-1;
+                else
+                    % should be a function
+                    ifcn = ifcn+1;
+                    fcn(1,ifcn) = i;
+                    fcn(2,ifcn) = 1;
+                    i = i0;
+                end
+            case [var numbers]
+                % skip variables
+                if i>1
+                    if ischar(Op{i-1}) && ismember(Op{i-1},alloperators)
+                        % OK
+                    elseif ifcn==0 || i>fcn(1,ifcn)+1
+                        err = sprintf('Missing operator before: %s',Op{i});
+                        return
+                    end
+                end
+            case '?'
+                if i==1 || (ifcn>0 && i==max(fcn([1 3 4],ifcn))+1)
+                    err = 'Missing conditional expression for ternary operator: ?';
+                    return
+                elseif i<length(Op) && strcmp(Op{i+1},'(')
+                    ifcn = ifcn+1;
+                    fcn(1,ifcn) = i;
+                    fcn(2,ifcn) = 2;
+                    Op(i+1)=[];
+                else
+                    err = 'Missing opening bracket after ternary operator: ?';
+                    return
+                end
+            case '('
+                if i>1 && (~ischar(Op{i-1}) || ~ismember(Op{i-1},alloperators))
+                    err = 'Unexpected opening bracket found';
+                    return
+                end
+                ifcn = ifcn+1;
+                fcn(1,ifcn) = i;
+                fcn(2,ifcn) = 1;
+            case ')'
+                if ifcn==0
+                    err = 'Unexpected closing bracket found';
+                    return
+                else
+                    ifn = fcn(1,ifcn);
+                    iarg2 = fcn(3,ifcn);
+                    iarg3 = fcn(4,ifcn);
+                    switch fcn(2,ifcn)
+                        case 1
+                            if ifn+1>i-1
+                                if ismember(Op{ifn},cpowerop)
+                                    err = 'Empty expression between brackets';
+                                else
+                                    err = sprintf('Too few arguments specified for function: %s',Op{fcn(1,ifcn)});
+                                end
+                                return
+                            elseif ismember(Op{ifn},powerop)
+                                Op{ifn-1} = {Op{ifn} Op{ifn-1} Op(ifn+1:i-1)};
+                                Op(ifn:i) = [];
+                            else
+                                Op{ifn} = {Op{ifn} Op(ifn+1:i-1)};
+                                Op(ifn+1:i) = [];
+                            end
+                        case 2
+                            if strcmp(Op{ifn},'?')
+                                if iarg2==0
+                                    err = 'Missing colon associated to ternary operator: ?';
+                                    return
+                                elseif i==iarg2+1
+                                    err = 'Empty expression for false case of ternary operator: ?';
+                                    return
+                                end
+                                Op{ifn} = {Op{ifn} {} Op(ifn+1:iarg2-1) Op(iarg2+1:i-1)};
+                                Op(ifn+1:i) = [];
+                                if ifcn==1
+                                    Op{ifn}{2} = Op(1:ifn-1);
+                                    Op(1:ifn-1)= [];
+                                    ifn = 1;
+                                else
+                                    jj = max(fcn([1 3 4],ifcn-1))+1;
+                                    Op{ifn}{2} = Op(jj:ifn-1);
+                                    Op(jj:ifn-1)= [];
+                                    ifn = jj;
+                                end
+                            else
+                                if iarg2==0
+                                    err = sprintf('Too few arguments specified for function: %s',Op{fcn(1,ifcn)});
+                                    return
+                                elseif i==iarg2+1
+                                    err = sprintf('Empty second argument specified for function: %s',Op{fcn(1,ifcn)});
+                                    return
+                                end
+                                Op{ifn} = {Op{ifn} Op(ifn+1:iarg2-1) Op(iarg2+1:i-1)};
+                                Op(ifn+1:i) = [];
+                            end
+                        case 3
+                            if iarg3==0
+                                err = sprintf('Too few arguments specified for function: %s',Op{fcn(1,ifcn)});
+                                return
+                            elseif i==iarg3+1
+                                err = sprintf('Empty third argument specified for function: %s',Op{fcn(1,ifcn)});
+                                return
+                            end
+                            Op{ifn} = {Op{ifn} Op(ifn+1:iarg2-1) Op(iarg2+1:iarg3-1) Op(iarg3+1:i-1)};
+                            Op(ifn+1:i) = [];
+                    end
+                    i = ifn;
+                    fcn(:,ifcn) = 0;
+                    ifcn = ifcn - 1;
+                end
+                if ifcn>0 && ismember(Op{fcn(1,ifcn)},powerop)
+                    ifn = fcn(1,ifcn);
+                    Op{ifn-1} = {Op{ifn} Op{ifn-1} Op(ifn+1:i)};
+                    Op(ifn:i) = [];
+                    i = ifn;
+                    ifcn = ifcn - 1;
+                end
+            case ':'
+                if ifcn==0 || ~isequal(Op{fcn(1,ifcn)},'?')
+                    err = 'Colon only allowed in ternary operator: ?';
+                    return
+                elseif i==fcn(1,ifcn)+1
+                    err = 'Empty expression for true case of ternary operator: ?';
+                    return
+                elseif fcn(3,ifcn)~=0
+                    err = 'Only one colon allowed per ternary operator: ?';
+                    return
+                end
+                fcn(3,ifcn) = i;
+            case ','
+                if ifcn==0 || ismember(Op{fcn(1,ifcn)},cpowerop)
+                    err = 'Unexpected comma found';
+                    return
+                elseif strcmp(Op{fcn(1,ifcn)},'?')
+                    err = 'Use colon instead of comma to separate true and false cases of ternary operator: ?';
+                    return
+                elseif fcn(2,ifcn)>1 && fcn(3,ifcn)==0
+                    if i==ifcn+1
+                        err = sprintf('Empty first argument for function: %s',Op{fcn(1,ifcn)});
+                        return
+                    end
+                    fcn(3,ifcn) = i;
+                elseif fcn(2,ifcn)>2 && fcn(4,ifcn)==0
+                    if i==fcn(3,ifcn)+1
+                        err = sprintf('Empty second argument for function: %s',Op{fcn(1,ifcn)});
+                        return
+                    end
+                    fcn(4,ifcn) = i;
+                else
+                    err = sprintf('Too many arguments specified for function: %s',Op{fcn(1,ifcn)});
+                    return
+                end
+            otherwise
+                if i>1
+                    if ischar(Op{i-1}) && ismember(Op{i-1},alloperators)
+                        % OK
+                    elseif ifcn==0 || i>fcn(1,ifcn)+1
+                        err = sprintf('Missing operator before: %s',Op{i});
+                        return
+                    end
+                end
+                if i<length(Op) && strcmp(Op{i+1},'(')
+                    ifcn = ifcn+1;
+                    fcn(1,ifcn) = i;
+                    switch Op{i}
+                        case f0
+                            % no arguments
+                            % rand() = rand(max(size(A),size(B)))
+                            fcn(2,ifcn) = 0;
+                            if i+1<length(Op)
+                                if strcmp(Op{i+2},')')
+                                    Op{i} = {'rand'};
+                                    Op(i+1:i+2)=[];
+                                    fcn(:,ifcn) = 0;
+                                    ifcn = ifcn-1;
+                                else
+                                    err = 'Too many arguments specified for function: rand';
+                                    return
+                                end
+                            else
+                                err = 'Unexpected end of formula while processing function: rand';
+                                return
+                            end      
+                        case f1
+                            % single argument
+                            fcn(2,ifcn) = 1;
+                            Op(i+1)=[];
+                        case f2
+                            % two arguments
+                            % pow(X,Y) = power(X,Y)
+                            % fmod(X,Y) = X – fix(X/Y) * Y
+                            % hypot(X,Y) = sqrt(X.^2 + Y.^2)
+                            fcn(2,ifcn) = 2;
+                            Op(i+1)=[];
+                        case f3
+                            % conditional(C,X,Y) = C?(X:Y)
+                            %                    = if C, X, else, Y, end
+                            fcn(2,ifcn) = 3;
+                            Op(i+1)=[];
+                        otherwise
+                            err = sprintf('Unknown function: %s\n',Op{i});
+                            return
+                    end
+                elseif any('A':'Z'==Op{i}(1)) || any('a':'z'==Op{i}(1))
+                    err = sprintf('Missing function arguments or unknown variable: %s\n',Op{i});
+                    return
+                else
+                    err = sprintf('Unknown symbol or expression found: %s\n',Op{i});
+                    return
+                end
+        end
+    end
+end
+if isempty(Op)
+    err = 'No formula specified';
+    return
+elseif ischar(Op{end}) && ismember(Op{end},operators)
+    err = sprintf('Unexpected end of formula after operator: %s',Op{end});
+    return
+elseif ifcn>0
+    if ismember(Op{fcn(1,ifcn)},cpowerop)
+        err = 'Missing closing bracket';
+    elseif strcmp(Op{fcn(1,ifcn)},'?')
+        err = 'Missing closing bracket of ternary operator: ?';
+    else
+        err = sprintf('Unexpected end of formula while processing function: %s',Op{fcn(1,ifcn)});
+    end
+    return
+end
+%
+Op = parse(Op,[f0 f1 f2 f3],alloperators);
+
+function Op = parse(Op,ff,allops)
+if ischar(Op) || isnumeric(Op)
+    % Op = 'A','B'
+elseif length(Op)==1 && iscell(Op{1})
+    Op = parse(Op{1},ff,allops);
+elseif ischar(Op{1}) && (ismember(Op{1},ff) || ismember(Op{1},allops))
+    for i = 2:length(Op)
+        Op{i} = parse(Op{i},ff,allops);
+    end
+elseif length(Op)==1 && ischar(Op{1}) && (strcmp(Op{1},'A') || strcmp(Op{1},'B'))
+    Op = Op{1};
+else
+    i = 1;
+    while i < length(Op)-1
+        i = i+1;
+        if ischar(Op{i}) && ismember(Op{i},{'*','/','.*','./'})
+            Op{i-1}   = Op([i i-1 i+1]);
+            Op(i:i+1) = [];
+            i = i-1;
+        end
+    end
+    %
+    i = 1;
+    while i < length(Op)-1
+        i = i+1;
+        if ischar(Op{i}) && ismember(Op{i},{'+','-','.+','.-'})
+            Op{i-1}   = Op([i i-1 i+1]);
+            Op(i:i+1) = [];
+            i = i-1;
+        end
+    end
+    %
+    i = 1;
+    while i < length(Op)-1
+        i = i+1;
+        if ischar(Op{i}) && ismember(Op{i},{'>','<','>=','<=','==','=','~='})
+            Op{i-1}   = Op([i i-1 i+1]);
+            Op(i:i+1) = [];
+            i = i-1;
+        end
+    end
+    %
+    Op = parse(Op{1},ff,allops);
+end
+
+function [f0,f1,f2,f3] = supportedfunctions
+f0 = {'rand'};
+f1 = {'abs','acos','asin','atan','ceil','cos', ...
+    'cosh','exp','floor','log','log10', ...
+    'round','sin','sinh','sqrt','tan','tanh'};
+f2 = {'atan2','fmod','hypot','max','min','power'};
+f3 = {'conditional'};
+
+
+function val = usereval(fun,A,B)
+if nargin==2
+    args = {A};
+elseif nargin==3
+    args = {A,B};
+end
+if ischar(fun)
+    if isequal(fun,'A')
+        val = A;
+        return
+    elseif isequal(fun,'B')
+        val = B;
+        return
+    end
+    if nargin==2
+        [err,fun] = analyze_operator(fun,{'A'});
+    elseif nargin==3
+        [err,fun] = analyze_operator(fun,{'A','B'});
+    end
+    if ~isempty(err)
+        error(err)
+    end
+    if ischar(fun)
+        val = eval(fun);
+        return
+    end
+elseif isnumeric(fun)
+    val = fun;
+    return
+end
+if iscell(fun{1})
+    val = usereval(fun{1},args{:});
+else
+    argin = {};
+    for i = 2:length(fun)
+        argin{i-1} = usereval(fun{i},args{:});
+    end
+    switch fun{1}
+        case 'rand'
+            sz = size(args{1});
+            if length(args)>1
+                sz = max(sz,size(args{2}));
+            end
+            argin = {sz};
+        case {'^','.^','pow'}
+            fun{1} = 'power';
+        case {'+','.+'}
+            fun{1} = 'plus';
+        case {'-','.-'}
+            fun{1} = 'minus';
+        case {'*','.*'}
+            fun{1} = 'times';
+        case {'/','./'}
+            fun{1} = 'rdivide';
+        case '?'
+            fun{1} = 'conditional';
+        case '('
+            val = argin{1};
+            return
+    end
+    val = feval(fun{1},argin{:});
+end
+
+function val = fmod(A,B)
+val = A - fix(A/B)*B;
+
+function val = hypot(A,B)
+val = sqrt(A.^2+B.^2);
+
+function val = conditional(C,A,B)
+val       = A;
+val(C==0) = B(C==0);

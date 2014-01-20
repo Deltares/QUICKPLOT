@@ -62,7 +62,7 @@ filtertbl={...
     '*.hdr'                                                'BIL/HDR Files'                     'bil/hdr'
     '*.ldb;*.pol'                                          'Land Boundary and Polygon Files'   '>tekal'
     '*.tek;*.ann;*.ldb;*.pol;*.spl;*.tka;*.tkp;*.tkf'      'Tekal Data Files'                  'tekal'
-    '*.dxf'                                                'DXF Files'                         'dxf'
+    '*.dxf'                                                'AutoCAD DXF Files'                 'AutoCAD DXF'
     '*.shp'                                                'Shape Files'                       'shape'
     '*.gen'                                                'ArcInfo Ungenerate Files'          'ArcInfoUngenerate'
     '*.bna'                                                'BNA Files'                         'BNA File'

@@ -121,6 +121,9 @@ else
     %
     for d = 1:size(xv,2)
         coord = xv(:,d);
+        if ~isa(cv,'double')
+            cv = double(cv);
+        end
         cv(any(isnan(coord(fv)),2))=NaN;
     end
     %

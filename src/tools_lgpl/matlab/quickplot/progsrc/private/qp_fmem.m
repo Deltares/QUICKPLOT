@@ -165,7 +165,7 @@ switch cmd
                 case {'.tek','.ann','.ldb','.pol','.spl','.tka','.tkp','.tkf'}
                     trytp='tekal';
                 case {'.dxf'}
-                    trytp='dxf';
+                    trytp='AutoCAD DXF';
                 case {'.xyz'}
                     trytp='samples';
                 case {'.seq'}
@@ -747,8 +747,8 @@ switch cmd
                             FI.Options=FI.can_be_ldb;
                         end
                     end
-                    trytp='dxf';
-                case 'dxf'
+                    trytp='AutoCAD DXF';
+                case 'AutoCAD DXF'
                     try
                         Data=dxf('read',FileName);
                         tp = zeros(1,length(Data));
