@@ -357,206 +357,209 @@ for fgi = length(S):-1:1
             if ~isempty(S(fgi).axes(axi).items(itm).domain)
                 d3d_qp('selectdomain',S(fgi).axes(axi).items(itm).domain)
             end
-            d3d_qp('selectfield',S(fgi).axes(axi).items(itm).name);
-            if ~isempty(S(fgi).axes(axi).items(itm).subfield)
-                d3d_qp('selectsubfield',S(fgi).axes(axi).items(itm).subfield)
-            end
-            %
-            Props = d3d_qp('selectedfield');
-            %
-            if ~isempty(S(fgi).axes(axi).items(itm).dimensions)
-                dim0 = {'time' 'station' 'm' 'n' 'k'};
-                DIM0 = {'T' 'S' 'M' 'N' 'K'};
-                if length(Props.DimFlag)>5
-                    dims = [dim0 lower(Props.DimName)];
-                    DIMS = [DIM0 Props.DimName];
-                else
-                    dims = dim0;
-                    DIMS = DIM0;
+            if d3d_qp('selectfield',S(fgi).axes(axi).items(itm).name);
+                if ~isempty(S(fgi).axes(axi).items(itm).subfield)
+                    d3d_qp('selectsubfield',S(fgi).axes(axi).items(itm).subfield)
                 end
-                for dim = 1:length(dims)
-                    if Props.DimFlag(dim)~=0
-                        sel = S(fgi).axes(axi).items(itm).dimensions.(dims{dim});
-                        if isnumeric(sel)
-                            d3d_qp(['all' DIMS{dim}],0)
-                            d3d_qp(['edit' DIMS{dim}],sel)
-                        else
-                            d3d_qp(['all' DIMS{dim}],1)
+                %
+                Props = d3d_qp('selectedfield');
+                %
+                if ~isempty(S(fgi).axes(axi).items(itm).dimensions)
+                    dim0 = {'time' 'station' 'm' 'n' 'k'};
+                    DIM0 = {'T' 'S' 'M' 'N' 'K'};
+                    if length(Props.DimFlag)>5
+                        dims = [dim0 lower(Props.DimName)];
+                        DIMS = [DIM0 Props.DimName];
+                    else
+                        dims = dim0;
+                        DIMS = DIM0;
+                    end
+                    for dim = 1:length(dims)
+                        if Props.DimFlag(dim)~=0
+                            sel = S(fgi).axes(axi).items(itm).dimensions.(dims{dim});
+                            if isnumeric(sel)
+                                d3d_qp(['all' DIMS{dim}],0)
+                                d3d_qp(['edit' DIMS{dim}],sel)
+                            else
+                                d3d_qp(['all' DIMS{dim}],1)
+                            end
                         end
                     end
                 end
-            end
-            %
-            if ~isempty(S(fgi).axes(axi).items(itm).options)
-                Ops = S(fgi).axes(axi).items(itm).options;
-                if isfield(Ops,'axestype')
-                    d3d_qp('axestype',Ops.axestype)
-                end
-                if isfield(Ops,'vectorcomponent')
-                    d3d_qp('component',Ops.vectorcomponent)
-                end
-                if isfield(Ops,'presentationtype') && ...
-                        ~strcmp(Ops.presentationtype,{'polygons'}) && ...
-                        (~isfield(Ops,'vectorcomponent') || ~strcmp(Ops.presentationtype,Ops.vectorcomponent))
-                    d3d_qp('presenttype',Ops.presentationtype)
-                end
-                if isfield(Ops,'extend2edge')
-                    d3d_qp('extend2edge',Ops.extend2edge)
-                end
-                if isfield(Ops,'vectorcolour')
-                    d3d_qp('colourvectors',1)
-                    if ~strcmp(Ops.vectorcolour,'component')
-                        d3d_qp('vectorcolour',Ops.vectorcolour)
+                %
+                if ~isempty(S(fgi).axes(axi).items(itm).options)
+                    Ops = S(fgi).axes(axi).items(itm).options;
+                    if isfield(Ops,'axestype')
+                        d3d_qp('axestype',Ops.axestype)
                     end
-                elseif isfield(Ops,'vectorcomponent') && strncmp(Ops.vectorcomponent,'vector',6)
-                    d3d_qp('colourvectors',0)
-                end
-                if isfield(Ops,'units')
-                    d3d_qp('dataunits',Ops.units)
-                else
-                    d3d_qp('dataunits','As in file')
-                end
-                if isfield(Ops,'angleconvention')
-                    d3d_qp('angleconvention',Ops.angleconvention)
-                end
-                if isfield(Ops,'plotcoordinate')
-                    d3d_qp('plotcoordinate',Ops.plotcoordinate)
-                end
-                if isfield(Ops,'vectorstyle')
-                    d3d_qp('vectorstyle',Ops.vectorstyle)
-                end
-                if isfield(Ops,'vectorscalingmode')
-                    d3d_qp('vecscalem',Ops.vectorscalingmode)
-                end
-                if isfield(Ops,'vectorscale')
-                    d3d_qp('1vecunit',Ops.vectorscale)
-                end
-                if isfield(Ops,'verticalscalingmode')
-                    d3d_qp('vertscalem',Ops.verticalscalingmode)
-                end
-                if isfield(Ops,'verticalscalefactor')
-                    d3d_qp('vscale',Ops.verticalscalefactor)
-                end
-                if isfield(Ops,'numformat')
-                    d3d_qp('numformat',Ops.numformat)
-                end
-                if isfield(Ops,'fontsize')
-                    d3d_qp('fontsize',Ops.fontsize)
-                end
-                if isfield(Ops,'horizontalalignment')
-                    d3d_qp('horizontalalignment',Ops.horizontalalignment)
-                end
-                if isfield(Ops,'verticalalignment')
-                    d3d_qp('verticalalignment',Ops.verticalalignment)
-                end
-                if isfield(Ops,'colourdams')
-                    d3d_qp('colourdams',Ops.colourdams)
-                end
-                if isfield(Ops,'colour')
-                    d3d_qp('colour',Ops.colour)
-                end
-                if isfield(Ops,'facecolour')
-                    d3d_qp('fillpolygons',1)
-                    d3d_qp('facecolour',Ops.facecolour)
-                elseif isfield(Ops,'presentationtype') && strcmp(Ops.presentationtype,'polygons')
-                    d3d_qp('fillpolygons',0)
-                end
-                if isfield(Ops,'textboxfacecolour')
-                    d3d_qp('textbox',1)
-                    d3d_qp('textboxfacecolour',Ops.textboxfacecolour)
-                elseif isfield(Ops,'presentationtype') && strcmp(Ops.presentationtype,'values')
-                    d3d_qp('textbox',0)
-                end
-                if isfield(Ops,'linestyle')
-                    d3d_qp('linestyle',Ops.linestyle)
-                end
-                if isfield(Ops,'linewidth')
-                    d3d_qp('linewidth',Ops.linewidth)
-                end
-                if isfield(Ops,'marker')
-                    d3d_qp('marker',Ops.marker)
-                    if strcmp(Ops.markercolour,'auto')
-                        d3d_qp('usemarkercolour',0)
+                    if isfield(Ops,'vectorcomponent')
+                        d3d_qp('component',Ops.vectorcomponent)
+                    end
+                    if isfield(Ops,'presentationtype') && ...
+                            ~strcmp(Ops.presentationtype,{'polygons'}) && ...
+                            (~isfield(Ops,'vectorcomponent') || ~strcmp(Ops.presentationtype,Ops.vectorcomponent))
+                        d3d_qp('presenttype',Ops.presentationtype)
+                    end
+                    if isfield(Ops,'extend2edge')
+                        d3d_qp('extend2edge',Ops.extend2edge)
+                    end
+                    if isfield(Ops,'vectorcolour')
+                        d3d_qp('colourvectors',1)
+                        if ~strcmp(Ops.vectorcolour,'component')
+                            d3d_qp('vectorcolour',Ops.vectorcolour)
+                        end
+                    elseif isfield(Ops,'vectorcomponent') && strncmp(Ops.vectorcomponent,'vector',6)
+                        d3d_qp('colourvectors',0)
+                    end
+                    if isfield(Ops,'units')
+                        d3d_qp('dataunits',Ops.units)
                     else
-                        d3d_qp('usemarkercolour',1)
-                        d3d_qp('markercolour',Ops.markercolour)
+                        d3d_qp('dataunits','As in file')
                     end
-                    if strcmp(Ops.markerfillcolour,'none')
-                        d3d_qp('usemarkerfillcolour',0)
-                    else
-                        d3d_qp('usemarkerfillcolour',1)
-                        d3d_qp('makerfillcolour',Ops.markerfillcolour)
+                    if isfield(Ops,'angleconvention')
+                        d3d_qp('angleconvention',Ops.angleconvention)
                     end
-                end
-                if isfield(Ops,'presentationtype') && strcmp(Ops.presentationtype,'patches')
+                    if isfield(Ops,'plotcoordinate')
+                        d3d_qp('plotcoordinate',Ops.plotcoordinate)
+                    end
+                    if isfield(Ops,'vectorstyle')
+                        d3d_qp('vectorstyle',Ops.vectorstyle)
+                    end
+                    if isfield(Ops,'vectorscalingmode')
+                        d3d_qp('vecscalem',Ops.vectorscalingmode)
+                    end
+                    if isfield(Ops,'vectorscale')
+                        d3d_qp('1vecunit',Ops.vectorscale)
+                    end
+                    if isfield(Ops,'verticalscalingmode')
+                        d3d_qp('vertscalem',Ops.verticalscalingmode)
+                    end
+                    if isfield(Ops,'verticalscalefactor')
+                        d3d_qp('vscale',Ops.verticalscalefactor)
+                    end
+                    if isfield(Ops,'numformat')
+                        d3d_qp('numformat',Ops.numformat)
+                    end
+                    if isfield(Ops,'fontsize')
+                        d3d_qp('fontsize',Ops.fontsize)
+                    end
+                    if isfield(Ops,'horizontalalignment')
+                        d3d_qp('horizontalalignment',Ops.horizontalalignment)
+                    end
+                    if isfield(Ops,'verticalalignment')
+                        d3d_qp('verticalalignment',Ops.verticalalignment)
+                    end
+                    if isfield(Ops,'colourdams')
+                        d3d_qp('colourdams',Ops.colourdams)
+                    end
+                    if isfield(Ops,'colour')
+                        d3d_qp('colour',Ops.colour)
+                    end
+                    if isfield(Ops,'facecolour')
+                        d3d_qp('fillpolygons',1)
+                        d3d_qp('facecolour',Ops.facecolour)
+                    elseif isfield(Ops,'presentationtype') && strcmp(Ops.presentationtype,'polygons')
+                        d3d_qp('fillpolygons',0)
+                    end
+                    if isfield(Ops,'textboxfacecolour')
+                        d3d_qp('textbox',1)
+                        d3d_qp('textboxfacecolour',Ops.textboxfacecolour)
+                    elseif isfield(Ops,'presentationtype') && strcmp(Ops.presentationtype,'values')
+                        d3d_qp('textbox',0)
+                    end
+                    if isfield(Ops,'linestyle')
+                        d3d_qp('linestyle',Ops.linestyle)
+                    end
+                    if isfield(Ops,'linewidth')
+                        d3d_qp('linewidth',Ops.linewidth)
+                    end
+                    if isfield(Ops,'marker')
+                        d3d_qp('marker',Ops.marker)
+                        if strcmp(Ops.markercolour,'auto')
+                            d3d_qp('usemarkercolour',0)
+                        else
+                            d3d_qp('usemarkercolour',1)
+                            d3d_qp('markercolour',Ops.markercolour)
+                        end
+                        if strcmp(Ops.markerfillcolour,'none')
+                            d3d_qp('usemarkerfillcolour',0)
+                        else
+                            d3d_qp('usemarkerfillcolour',1)
+                            d3d_qp('makerfillcolour',Ops.markerfillcolour)
+                        end
+                    end
+                    if isfield(Ops,'presentationtype') && strcmp(Ops.presentationtype,'patches')
+                        if isfield(Ops,'thresholds')
+                            d3d_qp('colclassify',1)
+                        else
+                            d3d_qp('colclassify',0)
+                        end
+                    end
                     if isfield(Ops,'thresholds')
-                        d3d_qp('colclassify',1)
-                    else
-                        d3d_qp('colclassify',0)
+                        d3d_qp('thresholds',Ops.thresholds)
+                    end
+                    if isfield(Ops,'thresholddistribution')
+                        d3d_qp('threshdistr',Ops.thresholddistribution)
+                    end
+                    if isfield(Ops,'colourlimits')
+                        if isempty(Ops.colourlimits)
+                            d3d_qp('climmode','automatic')
+                        else
+                            d3d_qp('climmode','manual')
+                            d3d_qp('climmin',Ops.colourlimits(1))
+                            d3d_qp('climmax',Ops.colourlimits(2))
+                        end
+                    end
+                    if isfield(Ops,'symmetriccolourlimits')
+                        d3d_qp('climsymm',Ops.symmetriccolourlimits)
+                    end
+                    if isfield(Ops,'colourmap')
+                        d3d_qp('colourmap',Ops.colourmap)
+                    end
+                    if isfield(Ops,'colourbar')
+                        switch Ops.colourbar
+                            case 'none'
+                                d3d_qp('colourbar',0)
+                            case 'vert'
+                                d3d_qp('colourbar',1)
+                                d3d_qp('colbarhorz',0)
+                            case 'horiz'
+                                d3d_qp('colourbar',1)
+                                d3d_qp('colbarhorz',1)
+                        end
+                    end
+                    if isfield(Ops,'thinningmode')
+                        d3d_qp('thinfld',Ops.thinningmode)
+                    end
+                    if isfield(Ops,'thinningfactors')
+                        d3d_qp('thinfact',Ops.thinningfactors(1))
+                    end
+                    if isfield(Ops,'thinningdistance')
+                        d3d_qp('thindist',Ops.thinningdistance)
+                    end
+                    if isfield(Ops,'clippingvalues')
+                        if isnumeric(Ops.clippingvalues)
+                            Ops.clippingvalues = sprintf('%g',Ops.clippingvalues);
+                        end
+                        d3d_qp('clippingvals',Ops.clippingvalues)
+                    end
+                    if isfield(Ops,'xclipping')
+                        if isnumeric(Ops.xclipping)
+                            Ops.xclipping = sprintf('%g',Ops.xclipping);
+                        end
+                        d3d_qp('xclipping',Ops.xclipping)
+                    end
+                    if isfield(Ops,'yclipping')
+                        if isnumeric(Ops.yclipping)
+                            Ops.yclipping = sprintf('%g',Ops.yclipping);
+                        end
+                        d3d_qp('yclipping',Ops.yclipping)
                     end
                 end
-                if isfield(Ops,'thresholds')
-                    d3d_qp('thresholds',Ops.thresholds)
-                end
-                if isfield(Ops,'thresholddistribution')
-                    d3d_qp('threshdistr',Ops.thresholddistribution)
-                end
-                if isfield(Ops,'colourlimits')
-                    if isempty(Ops.colourlimits)
-                        d3d_qp('climmode','automatic')
-                    else
-                        d3d_qp('climmode','manual')
-                        d3d_qp('climmin',Ops.colourlimits(1))
-                        d3d_qp('climmax',Ops.colourlimits(2))
-                    end
-                end
-                if isfield(Ops,'symmetriccolourlimits')
-                    d3d_qp('climsymm',Ops.symmetriccolourlimits)
-                end
-                if isfield(Ops,'colourmap')
-                    d3d_qp('colourmap',Ops.colourmap)
-                end
-                if isfield(Ops,'colourbar')
-                    switch Ops.colourbar
-                        case 'none'
-                            d3d_qp('colourbar',0)
-                        case 'vert'
-                            d3d_qp('colourbar',1)
-                            d3d_qp('colbarhorz',0)
-                        case 'horiz'
-                            d3d_qp('colourbar',1)
-                            d3d_qp('colbarhorz',1)
-                    end
-                end
-                if isfield(Ops,'thinningmode')
-                    d3d_qp('thinfld',Ops.thinningmode)
-                end
-                if isfield(Ops,'thinningfactors')
-                    d3d_qp('thinfact',Ops.thinningfactors(1))
-                end
-                if isfield(Ops,'thinningdistance')
-                    d3d_qp('thindist',Ops.thinningdistance)
-                end
-                if isfield(Ops,'clippingvalues')
-                    if isnumeric(Ops.clippingvalues)
-                        Ops.clippingvalues = sprintf('%g',Ops.clippingvalues);
-                    end
-                    d3d_qp('clippingvals',Ops.clippingvalues)
-                end
-                if isfield(Ops,'xclipping')
-                    if isnumeric(Ops.xclipping)
-                        Ops.xclipping = sprintf('%g',Ops.xclipping);
-                    end
-                    d3d_qp('xclipping',Ops.xclipping)
-                end
-                if isfield(Ops,'yclipping')
-                    if isnumeric(Ops.yclipping)
-                        Ops.yclipping = sprintf('%g',Ops.yclipping);
-                    end
-                    d3d_qp('yclipping',Ops.yclipping)
-                end
+                d3d_qp('addtoplot')
+            else
+                ui_message('error','Skipping dataset "%s"; field not found.',S(fgi).axes(axi).items(itm).name)
             end
-            d3d_qp('addtoplot')
         end
     end
 end
