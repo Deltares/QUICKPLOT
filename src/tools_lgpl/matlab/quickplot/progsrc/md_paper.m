@@ -1,4 +1,4 @@
-function hBorder=md_paper(cmd,varargin)
+function Out = md_paper(cmd,varargin)
 %MD_PAPER Add border to plot.
 %   MD_PAPER(FIG,PAPERTYPE,BORDERTYPE) sets the paper type for the
 %   figure FIG and adds an empty border to it. Right click on the border to
@@ -264,7 +264,7 @@ switch lcmd
         end
         
     case {'bordertypes','borderstyles'}
-        hBorder = {'none','1box','2box','7box','<custom>'};
+        Out = {'none','1box','2box','7box','<custom>'};
         
     case {'getprops','setprops'}
         if isempty(fg)
@@ -315,7 +315,7 @@ switch lcmd
             end
             set(hBorder,'userdata',iBrdr)
         else
-            hBorder = iBrdr;
+            Out = iBrdr;
         end
         
     otherwise
@@ -328,7 +328,7 @@ switch lcmd
                 fg = gcf;
             end
             set(fg,'PaperType','a4','PaperOrientation',Orientation);
-            hTempBorder=SimpleBorder(fg,INP{:});
+            hBorder=SimpleBorder(fg,INP{:});
         else
             % MD_PAPER(H,ORIENT,STRING1,STRING2,...)
             % MD_PAPER(H,TYPEORIENT) - no border, just page shape
@@ -363,13 +363,13 @@ switch lcmd
                         error('Unrecognized paper type/orientation');
                 end
             end
-            [hTempBorder,fg]=Local_createborder(fg,NoEdit,fgOptions,BFormat,INP{:});
+            [hBorder,fg]=Local_createborder(fg,NoEdit,fgOptions,BFormat,INP{:});
         end
         if ~isempty(Orientation)
             AdjustFigPos(fg)
         end
         if nargout>0
-            hBorder=hTempBorder;
+            Out = hBorder;
         end
 end
 
