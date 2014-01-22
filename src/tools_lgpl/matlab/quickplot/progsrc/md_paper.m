@@ -52,7 +52,7 @@ function hBorder=md_paper(cmd,varargin)
 %                   alternatively one may specify fields 'BorderText1',
 %                   'BorderText2', etc.
 %
-%   hBorder = MD_PAPER('no edit',...) right click editing disabled. Use 
+%   hBorder = MD_PAPER('no edit',...) right click editing disabled. Use
 %   MD_PAPER('edit',hBorder) to edit the texts via a dialog.
 %
 %   BSTRUCT = MD_PAPER(FIG,'getprops') returns the BSTRUCT of the border of
@@ -85,30 +85,30 @@ function hBorder=md_paper(cmd,varargin)
 %   the texts.
 
 %----- LGPL --------------------------------------------------------------------
-%                                                                               
-%   Copyright (C) 2011-2014 Stichting Deltares.                                     
-%                                                                               
-%   This library is free software; you can redistribute it and/or                
-%   modify it under the terms of the GNU Lesser General Public                   
-%   License as published by the Free Software Foundation version 2.1.                         
-%                                                                               
-%   This library is distributed in the hope that it will be useful,              
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of               
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU            
-%   Lesser General Public License for more details.                              
-%                                                                               
-%   You should have received a copy of the GNU Lesser General Public             
-%   License along with this library; if not, see <http://www.gnu.org/licenses/>. 
-%                                                                               
-%   contact: delft3d.support@deltares.nl                                         
-%   Stichting Deltares                                                           
-%   P.O. Box 177                                                                 
-%   2600 MH Delft, The Netherlands                                               
-%                                                                               
-%   All indications and logos of, and references to, "Delft3D" and "Deltares"    
-%   are registered trademarks of Stichting Deltares, and remain the property of  
-%   Stichting Deltares. All rights reserved.                                     
-%                                                                               
+%
+%   Copyright (C) 2011-2014 Stichting Deltares.
+%
+%   This library is free software; you can redistribute it and/or
+%   modify it under the terms of the GNU Lesser General Public
+%   License as published by the Free Software Foundation version 2.1.
+%
+%   This library is distributed in the hope that it will be useful,
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%   Lesser General Public License for more details.
+%
+%   You should have received a copy of the GNU Lesser General Public
+%   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+%
+%   contact: delft3d.support@deltares.nl
+%   Stichting Deltares
+%   P.O. Box 177
+%   2600 MH Delft, The Netherlands
+%
+%   All indications and logos of, and references to, "Delft3D" and "Deltares"
+%   are registered trademarks of Stichting Deltares, and remain the property of
+%   Stichting Deltares. All rights reserved.
+%
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
@@ -149,20 +149,20 @@ switch lcmd
             delete(gcbf);
             return
         end
-        hpts=findobj(gcba,'type','text');
-        i = 0;
-        while 1
-            i = i+1;
-            hplottext=findobj(hpts,'flat','tag',sprintf('plottext%i',i));
-            if isempty(hplottext)
-                break
-            end
+        BFormat = get(gcba,'userdata');
+        ExpandP = getappdata(gcba,'ExpandPAR');
+        for i = 1:max(BFormat.Box(:))
             hedittext=findobj(Fig,'tag',sprintf('Text%i',i));
-            str=get(hedittext,'string');
+            hplottext=findobj(gcba,'tag',sprintf('plottext%i',i));
+            str = get(hedittext,'string');
+            BFormat.(sprintf('BorderText%i',i)) = serialize(str);
             if isempty(str)
-                str={' '};
+                str = {' '};
             end
-            set(hplottext,'string',str);
+            if ~isempty(ExpandP)
+                str = qp_strrep(str,ExpandP);
+            end
+            set(hplottext,'string',str)
         end
         leftpage=findobj(Fig,'tag','LeftPage');
         switch get(get(gcba,'parent'),'paperorientation')
@@ -179,6 +179,7 @@ switch lcmd
                     set(gcba,'ydir','normal');
                 end
         end
+        set(gcba,'userdata',BFormat)
         if strcmp(lcmd,'done')
             delete(gcbf);
         end
@@ -208,7 +209,7 @@ switch lcmd
         if strcmpi(lcmd,'editmodal')
             set(Fig,'windowstyle','modal')
         end
-
+        
         fig=get(gcba,'parent');
         if isnumeric(fig)
             HandleStr=[' ' num2str(fig)];
@@ -226,17 +227,11 @@ switch lcmd
             end
         end
         set(Fig,'name',[get(Fig,'name') ' for ' StringStr]);
-
-        hpts=findobj(gcba,'type','text');
-        i=0;
-        while 1
-            i = i+1;
-            hplottext=findobj(hpts,'flat','tag',sprintf('plottext%i',i));
-            if isempty(hplottext)
-                break
-            end
+        
+        BFormat = get(gcba,'userdata');
+        for i = 1:max(BFormat.Box(:))
             hedittext=findobj(Fig,'tag',sprintf('Text%i',i));
-            set(hedittext,'string',get(hplottext,'string'));
+            set(hedittext,'string',deserialize(BFormat.(sprintf('BorderText%i',i))))
         end
         set(Fig,'userdata',gcba);
         leftpage=findobj(Fig,'tag','LeftPage');
@@ -267,11 +262,11 @@ switch lcmd
             remapaxes(fg,MPE,[0 0 1 1])
             rmappdata(fg,'MaximumPlotExtent');
         end
-
+        
     case {'bordertypes','borderstyles'}
         hBorder = {'none','1box','2box','7box','<custom>'};
         
-    case 'getprops'
+    case {'getprops','setprops'}
         if isempty(fg)
             fg = gcf;
         end
@@ -283,33 +278,46 @@ switch lcmd
         end
         if length(hBorder)>1
             error('Function doesn''t support multiple borders.')
+        elseif isempty(hBorder)
+            return
         end
         iBrdr = get(hBorder,'userdata');
-        i = 0;
-        while 1
-            i = i+1;
-            hplottext = findall(hBorder,'tag',sprintf('plottext%i',i));
-            if isempty(hplottext)
-                break
-            end
-            str = get(hplottext,'string');
-            if ischar(str) && size(str,1)>1
-                str = cellstr(str);
-            end
-            if iscell(str)
-                if isempty(str)
-                    str = '';
-                else
-                    str = str';
-                    str(2,:)={'\n{}'};
-                    str(2,end)={''};
-                    str = strcat(str{:});
+        ExpandP = getappdata(hBorder,'ExpandPAR');
+        if strcmp(lcmd,'setprops')
+            i = 0;
+            while 1
+                i = i+1;
+                hplottext = findall(hBorder,'tag',sprintf('plottext%i',i));
+                if isempty(hplottext) || ...
+                        i>length(INP) || (~ischar(INP{i}) && ~iscellstr(INP{i}))
+                    break
                 end
+                str  = INP{i};
+                if iscell(str)
+                    celstr = str;
+                    if isempty(str)
+                        str = '';
+                    else
+                        str = str(:)';
+                        str(2,:)={'\n{}'};
+                        str(2,end)={''};
+                        str = strcat(str{:});
+                    end
+                else
+                    celstr = strrep(str,'\n{}',char(13));
+                    celstr = splitcellstr(celstr,char(13));
+                end
+                if ~isempty(ExpandP)
+                    celstr = qp_strrep(celstr,ExpandP);
+                end
+                iBrdr.(sprintf('BorderText%i',i)) = str;
+                set(hplottext,'string',celstr);
             end
-            iBrdr.(sprintf('BorderText%i',i)) = str;
+            set(hBorder,'userdata',iBrdr)
+        else
+            hBorder = iBrdr;
         end
-        hBorder = iBrdr;
-
+        
     otherwise
         
         Orientation=lcmd;
@@ -368,7 +376,7 @@ end
 
 function organization=getorg
 try
-    organization = qp_settings('organizationname'); 
+    organization = qp_settings('organizationname');
 catch
     organization = 'Deltares';
 end
@@ -634,10 +642,12 @@ for i=1:length(PlotText)
     if ischar(PlotText{i})
         PlotText{i}=PlotText(i);
     end
+    BFormat.(sprintf('BorderText%i',i)) = '';
 end
 %
 [ax,allchld,xmax,ymax,hBorder]=CreateBorderAxes(fg);
 set(hBorder,'userdata',BFormat)
+setappdata(hBorder,'ExpandPAR',qp_strrep)
 %
 Box=fliplr(Box');
 switch get(fg,'PaperOrientation')
@@ -680,7 +690,7 @@ switch get(fg,'PaperOrientation')
             if b>0
                 T=text((HTabs(m1)+HTabs(m2+1))/2, ...
                     (VTabs(n1)+VTabs(n2+1))/2, ...
-                    PlotText{b}, ...
+                    '', ...
                     'parent',hBorder, ...
                     'horizontalalignment','center', ...
                     'verticalalignment','middle', ...
@@ -742,13 +752,15 @@ switch get(fg,'PaperOrientation')
             if b~=0
                 line([VTabs(n1) VTabs(n1)   VTabs(n2+1) VTabs(n2+1) VTabs(n1)], ...
                     ymax-[HTabs(m1) HTabs(m2+1) HTabs(m2+1) HTabs(m1)   HTabs(m1)], ...
-                    'parent',hBorder,'color',Color,'linewidth',LineWidth, ...
+                    'parent',hBorder, ...
+                    'color',Color, ...
+                    'linewidth',LineWidth, ...
                     'buttondownfcn',BDFunction);
             end
             if b>0
                 T=text((VTabs(n1)+VTabs(n2+1))/2, ...
                     ymax-(HTabs(m1)+HTabs(m2+1))/2, ...
-                    PlotText{b}, ...
+                    '', ...
                     'parent',hBorder, ...
                     'horizontalalignment','center', ...
                     'verticalalignment','middle', ...
@@ -794,6 +806,7 @@ if all(plotbox>0)
 end
 set(fg,'CurrentAxes',ax);
 set(fg,'children',[allchld;hBorder]);
+md_paper('setprops',PlotText{:})
 
 
 function remapaxes(fg,from,to)
@@ -904,15 +917,21 @@ if isempty(BFormat) % backward compatibility and update
     BFormat.VRange= 2.7;
     BFormat.Box= [1 2 3; 1 4 4; 7 5 6];
     BFormat.Bold= [0 0 0 0 0 0 1];
+    for i = 1:7
+        hplottext=findobj(hBorder,'tag',sprintf('plottext%i',i));
+        str = get(hplottext,'string');
+        BFormat.(sprintf('BorderText%i',i)) = serialize(str);
+    end
     set(hBorder,'userdata',BFormat)
 end
-HRng=460-15-5*length(BFormat.HTabs);
-HTabs=cumsum([0 BFormat.HTabs]);
-N=size(BFormat.Box,1);
+Width = 560;
+HRng  = Width-15-5*length(BFormat.HTabs);
+HTabs = cumsum([0 BFormat.HTabs]);
+N     = size(BFormat.Box,1);
 
 maxdim=qp_getscreen(fg);
 rps = get(fg,'position');
-pos = [max(rps(1:2),maxdim(1:2)+[80 115]) 460 40+25*N];
+pos = [max(rps(1:2),maxdim(1:2)+[80 115]) Width 40+25*N];
 h0 = figure('Units','pixels', ...
     'Color',get(0,'defaultuicontrolbackgroundcolor'), ...
     'HandleVisibility','off', ...
@@ -960,7 +979,7 @@ uicontrol('Parent',h0, ...
     'ListboxTop',0, ...
     'FontUnits','pixels', ...
     'FontSize',12, ...
-    'Position',[285 10+25*N 80 20], ...
+    'Position',[Width-175 10+25*N 80 20], ...
     'String','apply', ...
     'Callback','md_paper apply', ...
     'Visible',vs, ...
@@ -971,7 +990,7 @@ uicontrol('Parent',h0, ...
     'ListboxTop',0, ...
     'FontUnits','pixels', ...
     'FontSize',12, ...
-    'Position',[370 10+25*N 80 20], ...
+    'Position',[Width-90 10+25*N 80 20], ...
     'String','done', ...
     'Callback','md_paper done', ...
     'Tag','Done');
@@ -980,3 +999,20 @@ set(h0,'Visible','on')
 if nargout>0
     fig = h0;
 end
+
+
+function str = serialize(str)
+if iscell(str)
+    if isempty(str)
+        str = '';
+    else
+        str = str';
+        str(2,:)={'\n{}'};
+        str(2,end)={''};
+        str = strcat(str{:});
+    end
+end
+
+function str = deserialize(str)
+str = strrep(str,'\n{}',char(13));
+str = splitcellstr(str,char(13));

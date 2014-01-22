@@ -2801,31 +2801,15 @@ switch cmd
         
     case 'figureborder'
         fig = qpsf;
-        hBrdr = findall(fig,'type','axes','tag','border');
+        hBorder = findall(fig,'type','axes','tag','border');
         %
         if ~isempty(cmdargs)
-            i = 1;
-            while 1
-                hTxt = findall(hBrdr,'type','text','tag',sprintf('plottext%i',i));
-                if isempty(hTxt) || i>length(cmdargs) || ...
-                        (~ischar(cmdargs{i}) && ~iscellstr(cmdargs{i}))
-                    break
-                end
-                if iscellstr(cmdargs{i})
-                    str = cmdargs{i};
-                else
-                    str = qp_strrep(cmdargs{i});
-                    str = strrep(str,'\n{}',char(13));
-                    str = splitcellstr(str,char(13));
-                end
-                set(hTxt,'string',str);
-                i = i+1;
-            end
+            md_paper(hBorder,'setprops',cmdargs{:})
         else
-            md_paper('editmodal',hBrdr)
+            md_paper('editmodal',hBorder)
         end
         %
-        bProp = md_paper(hBrdr,'getprops');
+        bProp = md_paper(hBorder,'getprops');
         %
         i = 1;
         str = {};

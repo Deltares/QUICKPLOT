@@ -436,8 +436,8 @@ PAR.swell        = protectstring(FI.Project(prj).Cases.Data(cse).swellId);
 PAR.scenery      = protectstring(FI.Project(prj).Cases.Data(cse).sceneryId);
 PAR.shipma       = shipma;
 %
-PAR.filename1    = FI.FileName;
-PAR.domain1      = [PAR.project '/' PAR.case];
+PARFIL.filename1    = FI.FileName;
+PARFIL.domain1      = [PAR.project '/' PAR.case];
 
 session    = qp_settings(['shipma_session_for_' FI.Project(prj).Name],'');
 qp_strrep(PAR)
@@ -447,15 +447,15 @@ else
     [p,f,e]=fileparts(session);
     switch e
         case '.qpses'
-            d3d_qp('openfigure',session,PAR)
+            d3d_qp('openfigure',session,PARFIL)
         otherwise
-            d3d_qp('run',session,'-par',PAR)
+            d3d_qp('run',session,'-par',PARFIL)
     end
 end
 qp_strrep([])
 %--------
-d3d_qp('selectfile',PAR.filename1)
-d3d_qp('selectdomain',PAR.domain1)
+d3d_qp('selectfile',PARFIL.filename1)
+d3d_qp('selectdomain',PARFIL.domain1)
 d3d_qp('selectfield','default figures')
 
 inSelfPlot=[];
@@ -465,6 +465,7 @@ inSelfPlot=[];
 % -----------------------------------------------------------------------------
 function selfplot_builtin
 cartoyellow = [254 197 68]/255;
+texts_template = get_shipma_bordertexts;
 %
 if d3d_qp('selectfield','desired ship track')
     a=d3d_qp('loaddata'); % get ship track for auto zoom limits
@@ -605,6 +606,7 @@ if qp_settings('shipma_figb')
     d3d_qp('allt',1)
     if d3d_qp('selectfield','propeller speed')
         d3d_qp('axestype','Distance-Val')
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('linestyle','-')
         d3d_qp('addtoplot')
     end
@@ -613,6 +615,7 @@ if qp_settings('shipma_figb')
     %--
     qpsa('middle plot')
     if d3d_qp('selectfield','ship speed')
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     d3d_qp('axesgrid',1,1)
@@ -620,6 +623,7 @@ if qp_settings('shipma_figb')
     %--
     qpsa('lower plot')
     if d3d_qp('selectfield','rudder angle')
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     d3d_qp('axesgrid',1,1)
@@ -638,10 +642,12 @@ if qp_settings('shipma_figc')
     if d3d_qp('selectfield','swept path port side')
         d3d_qp('axestype','Distance-Val')
         d3d_qp('linestyle','-')
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     if d3d_qp('selectfield','swept path starboard side')
         d3d_qp('linestyle','--')
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     d3d_qp('axesgrid',1,1)
@@ -651,6 +657,7 @@ if qp_settings('shipma_figc')
     d3d_qp('selectaxes','lower plot')
     if d3d_qp('selectfield','water depth')
         d3d_qp('linestyle','-')
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     d3d_qp('axesgrid',1,1)
@@ -704,18 +711,22 @@ if qp_settings('shipma_figd')
     if qp_settings('shipma_figd_wind') && d3d_qp('selectfield','longitudinal wind force')
         d3d_qp('axestype','Distance-Val')
         d3d_qp('linestyle',lines{1})
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     if qp_settings('shipma_figd_waves') && d3d_qp('selectfield','longitudinal wave force')
         d3d_qp('linestyle',lines{2})
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     if qp_settings('shipma_figd_swell') && d3d_qp('selectfield','longitudinal swell force')
         d3d_qp('linestyle',lines{3})
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     if qp_settings('shipma_figd_banksuction') && d3d_qp('selectfield','longitudinal bank suction force')
         d3d_qp('linestyle',lines{4})
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     d3d_qp('axesgrid',1,1)
@@ -725,18 +736,22 @@ if qp_settings('shipma_figd')
     d3d_qp('selectaxes','middle plot')
     if qp_settings('shipma_figd_wind') && d3d_qp('selectfield','transverse wind force')
         d3d_qp('linestyle',lines{1})
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     if qp_settings('shipma_figd_waves') && d3d_qp('selectfield','transverse wave force')
         d3d_qp('linestyle',lines{2})
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     if qp_settings('shipma_figd_swell') && d3d_qp('selectfield','transverse swell force')
         d3d_qp('linestyle',lines{3})
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     if qp_settings('shipma_figd_banksuction') && d3d_qp('selectfield','transverse bank suction force')
         d3d_qp('linestyle',lines{4})
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     d3d_qp('axesgrid',1,1)
@@ -746,18 +761,22 @@ if qp_settings('shipma_figd')
     d3d_qp('selectaxes','lower plot')
     if qp_settings('shipma_figd_wind') && d3d_qp('selectfield','wind moment on ship')
         d3d_qp('linestyle',lines{1})
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     if qp_settings('shipma_figd_waves') && d3d_qp('selectfield','wave moment')
         d3d_qp('linestyle',lines{2})
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     if qp_settings('shipma_figd_swell') && d3d_qp('selectfield','swell moment')
         d3d_qp('linestyle',lines{3})
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     if qp_settings('shipma_figd_banksuction') && d3d_qp('selectfield','moment due to bank suction')
         d3d_qp('linestyle',lines{4})
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     d3d_qp('axesgrid',1,1)
@@ -789,6 +808,7 @@ if qp_settings('shipma_fige')
     if qp_settings('shipma_fige_tugs') && d3d_qp('selectfield','longitudinal total tug force')
         d3d_qp('axestype','Distance-Val')
         d3d_qp('linestyle',lines{1})
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     d3d_qp('axesgrid',1,1)
@@ -798,10 +818,12 @@ if qp_settings('shipma_fige')
     d3d_qp('selectaxes','middle plot')
     if qp_settings('shipma_fige_tugs') && d3d_qp('selectfield','transverse total tug force')
         d3d_qp('linestyle',lines{1})
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     if qp_settings('shipma_fige_thrusters') && d3d_qp('selectfield','transverse thruster force')
         d3d_qp('linestyle',lines{2})
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     d3d_qp('axesgrid',1,1)
@@ -811,10 +833,12 @@ if qp_settings('shipma_fige')
     d3d_qp('selectaxes','lower plot')
     if qp_settings('shipma_fige_tugs') && d3d_qp('selectfield','total tug moment')
         d3d_qp('linestyle',lines{1})
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     if qp_settings('shipma_fige_thrusters') && d3d_qp('selectfield','moment due to thrusters')
         d3d_qp('linestyle',lines{2})
+        d3d_qp('colour',[ 0 0 0 ])
         d3d_qp('addtoplot')
     end
     d3d_qp('axesgrid',1,1)
@@ -1624,19 +1648,9 @@ switch cmd
             'name','SHIPMA');
         hBorder=md_paper(fg,'no edit','7box',get_shipma_bordertexts);
         md_paper('editmodal',hBorder)
+        bProp = md_paper(hBorder,'getprops');
         for i=1:7
-            h = findall(hBorder,'tag',sprintf('plottext%i',i));
-            str = get(h,'string');
-            if ischar(str) && size(str,1)>1
-                str = cellstr(str);
-            end
-            if iscell(str)
-                str = str';
-                str(2,:)={'\n{}'};
-                str(2,end)={''};
-                str = strcat(str{:});
-            end
-            d3d_qp('fileoptions',sprintf('shipma_bordertext%i_string',i),str)
+            d3d_qp('fileoptions',sprintf('shipma_bordertext%i_string',i),bProp.(sprintf('BorderText%i',i)))
         end
         delete(fg)
     case {'shipma_bordertext1_string', 'shipma_bordertext2_string', ...

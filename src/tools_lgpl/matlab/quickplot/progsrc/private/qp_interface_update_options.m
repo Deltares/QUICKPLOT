@@ -446,7 +446,7 @@ elseif strcmp(axestype,'Text') || (strcmp(axestype,'Time-Val') && ~multiple(T_))
     ask_for_textprops=1;
     ask_for_numformat=1;
 end
-if nval<1
+if nval==-1 && nval==0 % even better: only for nval==0, and upon request for nval==-1
     lineproperties=1;
 end
 if ~isempty(strfind(axestype,'Time'))

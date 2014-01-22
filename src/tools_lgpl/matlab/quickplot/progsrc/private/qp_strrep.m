@@ -47,7 +47,10 @@ function d = qp_strrep(c,key,val)
 
 persistent PAR
 
-if nargin==1
+if nargin==0
+    d = PAR;
+    return
+elseif nargin==1
     if nargout==0 && ~ischar(c)
         PAR = c;
         return
