@@ -436,12 +436,13 @@ PAR.swell        = protectstring(FI.Project(prj).Cases.Data(cse).swellId);
 PAR.scenery      = protectstring(FI.Project(prj).Cases.Data(cse).sceneryId);
 PAR.shipma       = shipma;
 %
-PAR.filename_raw = FI.FileName;
-PAR.case_raw     = [PAR.project '/' PAR.case];
+PAR.filename1    = FI.FileName;
+PAR.domain1      = [PAR.project '/' PAR.case];
 
 session    = qp_settings(['shipma_session_for_' FI.Project(prj).Name],'');
+qp_strrep(PAR)
 if isempty(session)
-    selfplot_builtin(PAR)
+    selfplot_builtin
 else
     [p,f,e]=fileparts(session);
     switch e
@@ -451,9 +452,10 @@ else
             d3d_qp('run',session,'-par',PAR)
     end
 end
+qp_strrep([])
 %--------
-d3d_qp('selectfile',PAR.filename_raw)
-d3d_qp('selectdomain',PAR.case_raw)
+d3d_qp('selectfile',PAR.filename1)
+d3d_qp('selectdomain',PAR.domain1)
 d3d_qp('selectfield','default figures')
 
 inSelfPlot=[];
@@ -461,9 +463,8 @@ inSelfPlot=[];
 
 
 % -----------------------------------------------------------------------------
-function selfplot_builtin(PAR)
+function selfplot_builtin
 cartoyellow = [254 197 68]/255;
-texts_template = qp_strrep(get_shipma_bordertexts,PAR);
 %
 if d3d_qp('selectfield','desired ship track')
     a=d3d_qp('loaddata'); % get ship track for auto zoom limits
@@ -475,7 +476,6 @@ if d3d_qp('selectfield','desired ship track')
     yrange = mean(yrange)+[-1 1]*max(diff(xrange)*fac,diff(yrange))/2;
     xrange = mean(xrange)+[-1 1]*diff(yrange)/fac/2;
 else
-    a=[];
     xrange = [];
 end
 %
@@ -1619,9 +1619,10 @@ switch cmd
     case 'editborder'
         fg=figure('visible','off', ...
             'integerhandle','off', ...
+            'position',get(mfig,'position'), ...
             'numbertitle','off', ...
             'name','SHIPMA');
-        hBorder=md_paper(fg,'no edit','a4p','7box',get_shipma_bordertexts);
+        hBorder=md_paper(fg,'no edit','7box',get_shipma_bordertexts);
         md_paper('editmodal',hBorder)
         for i=1:7
             h = findall(hBorder,'tag',sprintf('plottext%i',i));

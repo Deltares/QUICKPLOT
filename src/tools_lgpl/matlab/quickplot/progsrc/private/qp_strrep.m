@@ -4,6 +4,12 @@ function d = qp_strrep(c,key,val)
 %    (case insensitive) occurrences of the string OLDSUBSTR within string
 %    ORIGSTR with the string NEWSUBSTR.
 %
+%    MODIFIEDSTR = QP_STRREP(ORIGSTR,KEYSTRUCT,C) replaces all (case
+%    insensitive) occurrences of the fieldnames FN of KEYSTRUCT, enclosed by
+%    the character C, within string ORIGSTR with their value KEYSTR.(FN).
+%
+%    MODIFIEDSTR = QP_STRREP(ORIGSTR,KEYSTRUCT) uses default character C = '%'.
+%
 %    See also STRREP, REGEXP, REGEXPREP.
 
 %    Can most likely be replaced by REGEXPREP ignorecase call, but not sure
@@ -39,11 +45,26 @@ function d = qp_strrep(c,key,val)
 %   $HeadURL$
 %   $Id$
 
+persistent PAR
+
+if nargin==1
+    if nargout==0 && ~ischar(c)
+        PAR = c;
+        return
+    elseif ~isempty(PAR)
+        key = PAR;
+    end
+end
 if isstruct(key)
     flds = fieldnames(key);
+    if nargin==3
+        ch = val;
+    else
+        ch = '%';
+    end
     for i = 1:length(flds)
         fld = flds{i};
-        c = qp_strrep(c,['%' fld '%'],key.(fld));
+        c = qp_strrep(c,[ch fld ch],key.(fld));
     end
     d = c;
     return
@@ -52,8 +73,11 @@ lkey = lower(key);
 lenkey = length(key);
 %
 waschar = ischar(c);
-if ischar(c)
+wascstr = iscellstr(c);
+if waschar
     c = {{c}};
+elseif wascstr
+    c = {c};
 end
 d = cell(size(c));
 if iscell(val)
@@ -86,4 +110,6 @@ end
 %
 if waschar
     d = d{1}{1};
+elseif wascstr
+    d = d{1};
 end

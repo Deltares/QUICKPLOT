@@ -350,7 +350,9 @@ while i<length(figlist)
                     if ischar(fn)
                         try
                             SES = qp_session('extract',figlist);
-                            qp_session('save',SES,fn)
+                            SER = qp_session('serialize',SES);
+                            %SER = qp_session('make_expandables',SER,{'filename','domain'});
+                            qp_session('save',SER,fn)
                         catch
                             ui_message('error','error encountered creating %s:%s',fn,lasterr);
                         end
@@ -479,16 +481,17 @@ rect = [left bottom Fig_Width Fig_Height];
 
 fig=qp_uifigure('Print/Export','','md_print',rect);
 set(fig,'closerequestfcn','closereq')
+GUI.Figure = fig;
 
 rect = [XX.Margin XX.Margin (Fig_Width-3*XX.Margin)/2 XX.But.Height];
-uicontrol('style','pushbutton', ...
+GUI.Cancel = uicontrol('style','pushbutton', ...
     'position',rect, ...
     'string','Cancel', ...
     'parent',fig, ...
     'callback','md_print cancel');
 
 rect(1) = (Fig_Width+XX.Margin)/2;
-OK=uicontrol('style','pushbutton', ...
+GUI.OK=uicontrol('style','pushbutton', ...
     'position',rect, ...
     'string','OK', ...
     'parent',fig, ...
@@ -499,7 +502,7 @@ if CanApplyAll
     rect(2) = rect(2)+rect(4)+XX.Margin;
     rect(3) = Fig_Width-2*XX.Margin;
     rect(4) = XX.But.Height;
-    AllFig=uicontrol('style','checkbox', ...
+    GUI.AllFig=uicontrol('style','checkbox', ...
         'position',rect, ...
         'parent',fig, ...
         'value',ApplyAll, ...
@@ -520,7 +523,7 @@ rect(1) = XX.Margin;
 rect(2) = rect(2)+rect(4)+XX.Margin;
 rect(3) = 1.2*TextLabel;
 rect(4) = XX.Txt.Height-2;
-PLabelTxt=uicontrol('style','text', ...
+GUI.PLabelTxt=uicontrol('style','text', ...
     'position',rect, ...
     'parent',fig, ...
     'string','Page Labels', ...
@@ -530,7 +533,7 @@ PLabelTxt=uicontrol('style','text', ...
 rect(1) = rect(1)+rect(3)+XX.Margin;
 rect(3) = Fig_Width-rect(1)-XX.Margin;
 rect(4) = XX.But.Height;
-PLabels=uicontrol('style','popupmenu', ...
+GUI.PLabels=uicontrol('style','popupmenu', ...
     'position',rect, ...
     'parent',fig, ...
     'value',PageLabels, ...
@@ -543,7 +546,7 @@ rect(1) = XX.Margin;
 rect(2) = rect(2)+rect(4);
 rect(3) = Fig_Width-2*XX.Margin;
 rect(4) = XX.But.Height;
-InvHard=uicontrol('style','checkbox', ...
+GUI.InvHard=uicontrol('style','checkbox', ...
     'position',rect, ...
     'parent',fig, ...
     'value',InvertHardcopy==1, ...
@@ -555,7 +558,7 @@ InvHard=uicontrol('style','checkbox', ...
 rect(2) = rect(2)+rect(4);
 rect(3) = Fig_Width-2*XX.Margin;
 rect(4) = XX.But.Height;
-Color=uicontrol('style','checkbox', ...
+GUI.Color=uicontrol('style','checkbox', ...
     'position',rect, ...
     'parent',fig, ...
     'string','Print as Colour', ...
@@ -568,7 +571,7 @@ rect(1) = XX.Margin;
 rect(2) = rect(2)+rect(4)+XX.Margin;
 rect(3) = ZBufWidth;
 rect(4) = XX.But.Height;
-OpenGL=uicontrol('style','radiobutton', ...
+GUI.OpenGL=uicontrol('style','radiobutton', ...
     'position',rect, ...
     'parent',fig, ...
     'string','OpenGL', ...
@@ -579,7 +582,7 @@ OpenGL=uicontrol('style','radiobutton', ...
 
 rect(1) = rect(1)+rect(3)+XX.Margin;
 rect(3) = ResWidth;
-Resol=uicontrol('style','edit', ...
+GUI.Resol=uicontrol('style','edit', ...
     'position',rect, ...
     'parent',fig, ...
     'string',num2str(DPI), ...
@@ -587,27 +590,29 @@ Resol=uicontrol('style','edit', ...
     'backgroundcolor',XX.Clr.LightGray, ...
     'enable','off', ...
     'callback','md_print DPI');
-if Method==2 || Method==3
-    set(Resol,'enable','on','backgroundcolor',XX.Clr.White)
-end
 
 rect(1) = rect(1)+rect(3)+XX.Margin;
 rect(3) = Fig_Width-(4*XX.Margin+ZBufWidth+ResWidth);
 rect(4) = XX.Txt.Height;
-uicontrol('style','text', ...
+GUI.ResolTxt = uicontrol('style','text', ...
     'position',rect+TextShift, ...
     'parent',fig, ...
     'string','DPI', ...
     'horizontalalignment','left', ...
     'backgroundcolor',XX.Clr.LightGray, ...
-    'enable','on');
+    'enable','off');
+if Method==2 || Method==3
+    set(GUI.Resol   ,'enable','on','backgroundcolor',XX.Clr.White)
+    set(GUI.ResolTxt,'enable','on')
+end
+
 rect(4) = XX.But.Height;
 
 rect(1) = XX.Margin;
 rect(2) = rect(2)+rect(4);
 rect(3) = Fig_Width-2*XX.Margin;
 rect(4) = XX.But.Height;
-ZBuf=uicontrol('style','radiobutton', ...
+GUI.ZBuf=uicontrol('style','radiobutton', ...
     'position',rect, ...
     'parent',fig, ...
     'value',Method==2, ...
@@ -620,7 +625,7 @@ rect(1) = XX.Margin;
 rect(2) = rect(2)+rect(4);
 rect(3) = Fig_Width-2*XX.Margin;
 rect(4) = XX.But.Height;
-Painter=uicontrol('style','radiobutton', ...
+GUI.Painter=uicontrol('style','radiobutton', ...
     'position',rect, ...
     'parent',fig, ...
     'value',Method==1, ...
@@ -633,7 +638,7 @@ rect(1) = XX.Margin;
 rect(2) = rect(2)+rect(4);
 rect(3) = (Fig_Width-3*XX.Margin)/2;
 rect(4) = XX.Txt.Height;
-uicontrol('style','text', ...
+GUI.PrintMeth = uicontrol('style','text', ...
     'position',rect+TextShift, ...
     'parent',fig, ...
     'string','Printing Method', ...
@@ -645,7 +650,7 @@ rect(1) = 2*XX.Margin+TextLabel;
 rect(2) = rect(2)+rect(4)+XX.Margin;
 rect(3) = PrintLabel/2;
 rect(4) = XX.But.Height;
-Opt=uicontrol('style','pushbutton', ...
+GUI.Opt=uicontrol('style','pushbutton', ...
     'position',rect, ...
     'parent',fig, ...
     'string','Options...', ...
@@ -658,7 +663,7 @@ rect(1) = XX.Margin;
 rect(2) = rect(2)+rect(4)+XX.Margin;
 rect(3) = TextLabel;
 rect(4) = XX.Txt.Height;
-uicontrol('style','text', ...
+GUI.PrinterTxt = uicontrol('style','text', ...
     'position',rect+TextShift, ...
     'parent',fig, ...
     'string','Printer', ...
@@ -669,7 +674,7 @@ uicontrol('style','text', ...
 rect(1) = 2*XX.Margin+TextLabel;
 rect(3) = PrintLabel;
 rect(4) = XX.But.Height;
-Printer=uicontrol('style','popupmenu', ...
+GUI.Printer=uicontrol('style','popupmenu', ...
     'position',rect, ...
     'parent',fig, ...
     'string',PL(:,2), ...
@@ -689,7 +694,7 @@ if Reselect
     [AllFigNames,Order] = sort(AllFigNames);
     AllFigID = AllFigID(Order);
     FigIndex = find(ismember(AllFigID,FigID));
-    FigLst=uicontrol('style','listbox', ...
+    GUI.FigLst=uicontrol('style','listbox', ...
         'position',rect, ...
         'parent',fig, ...
         'string',AllFigNames, ...
@@ -704,7 +709,7 @@ if Reselect
     rect(2) = rect(2)+rect(4)-XX.Txt.Height;
     rect(3) = TextLabel;
     rect(4) = XX.Txt.Height;
-    uicontrol('style','text', ...
+    GUI.FigTxt = uicontrol('style','text', ...
         'position',rect+TextShift, ...
         'parent',fig, ...
         'string','Figure(s)', ...
@@ -766,49 +771,49 @@ while ~gui_quit
             case 'OK'
                 gui_quit=1;
             case 'Figure'
-                FigIndex=get(FigLst,'value');
+                FigIndex=get(GUI.FigLst,'value');
                 FigID=AllFigID(FigIndex);
                 if isempty(FigID)
-                    set(OK,'enable','off')
+                    set(GUI.OK,'enable','off')
                 else
-                    set(OK,'enable','on')
+                    set(GUI.OK,'enable','on')
                 end
             case 'Printer'
-                PrtID=get(Printer,'value');
+                PrtID=get(GUI.Printer,'value');
                 if strcmp(PL{PrtID,2},'Windows printer')
-                    set(Opt,'enable','on');
+                    set(GUI.Opt,'enable','on');
                 else
-                    set(Opt,'enable','off');
+                    set(GUI.Opt,'enable','off');
                 end
-                Method = update_renderer(PL{PrtID,1},Painter,ZBuf,OpenGL,Resol,Method,DPI);
+                Method = update_renderer(PL{PrtID,1},GUI,Method,DPI);
                 switch PL{PrtID,4}
                     case 0 % NEVER
-                        set(Color,'enable','off','value',0);
-                        set(InvHard,'enable','on','value',InvertHardcopy==1);
+                        set(GUI.Color,'enable','off','value',0);
+                        set(GUI.InvHard,'enable','on','value',InvertHardcopy==1);
                         Clr=0;
                     case 1 % USER SPECIFIED (DEFAULT ON)
-                        set(Color,'enable','on','value',1);
-                        set(InvHard,'enable','on','value',InvertHardcopy==1);
+                        set(GUI.Color,'enable','on','value',1);
+                        set(GUI.InvHard,'enable','on','value',InvertHardcopy==1);
                         Clr=1;
                     case 2 % ALWAYS
-                        set(Color,'enable','off','value',1);
-                        set(InvHard,'enable','on','value',InvertHardcopy==1);
+                        set(GUI.Color,'enable','off','value',1);
+                        set(GUI.InvHard,'enable','on','value',InvertHardcopy==1);
                         Clr=1;
                     case 3 % ALWAYS - No White Background & Black Axes
-                        set(Color,'enable','off','value',1);
-                        set(InvHard,'enable','off','value',0);
+                        set(GUI.Color,'enable','off','value',1);
+                        set(GUI.InvHard,'enable','off','value',0);
                         Clr=1;
                 end
                 switch PL{PrtID,6}
                     case 0 % 
-                        set(PLabelTxt,'enable','off')
-                        set(PLabels,'enable','off','backgroundcolor',XX.Clr.LightGray)
+                        set(GUI.PLabelTxt,'enable','off')
+                        set(GUI.PLabels,'enable','off','backgroundcolor',XX.Clr.LightGray)
                     case 1 % 
-                        set(PLabelTxt,'enable','on')
-                        set(PLabels,'enable','on','backgroundcolor',XX.Clr.White)
+                        set(GUI.PLabelTxt,'enable','on')
+                        set(GUI.PLabels,'enable','on','backgroundcolor',XX.Clr.White)
                 end
             case 'PageLabels'
-                PageLabels = get(PLabels,'value');
+                PageLabels = get(GUI.PLabels,'value');
             case 'Options'
                 % call windows printer setup dialog ...
                 print -dsetup
@@ -816,11 +821,11 @@ while ~gui_quit
                 figure(fig)
 
             case 'Painters'
-                Method = update_renderer(PL{PrtID,1},Painter,ZBuf,OpenGL,Resol,1,DPI);
+                Method = update_renderer(PL{PrtID,1},GUI,1,DPI);
             case 'Zbuffer'
-                Method = update_renderer(PL{PrtID,1},Painter,ZBuf,OpenGL,Resol,2,DPI);
+                Method = update_renderer(PL{PrtID,1},GUI,2,DPI);
             case 'OpenGL'
-                Method = update_renderer(PL{PrtID,1},Painter,ZBuf,OpenGL,Resol,3,DPI);
+                Method = update_renderer(PL{PrtID,1},GUI,3,DPI);
             case 'DPI'
                 X=eval(get(Resol,'string'),'NaN');
                 if isnumeric(X) && isequal(size(X),[1 1]) && (round(X)==X)
@@ -835,11 +840,11 @@ while ~gui_quit
                 set(Resol,'string',num2str(DPI));
 
             case 'Color'
-                Clr=get(Color,'value');
+                Clr=get(GUI.Color,'value');
             case 'InvertHardcopy'
-                InvertHardcopy=get(InvHard,'value');
+                InvertHardcopy=get(GUI.InvHard,'value');
             case 'ApplyAll'
-                ApplyAll=get(AllFig,'value');
+                ApplyAll=get(GUI.AllFig,'value');
         end
     end
 end
@@ -899,49 +904,54 @@ catch ex
 end
 fclose(fh);
 
-function Method = update_renderer(Type,Painter,ZBuf,OpenGL,Resol,Method,DPI)
+function Method = update_renderer(Type,GUI,Method,DPI)
 XX=xx_constants;
 switch Type
     case -1 % painters/zbuffer irrelevant
-        set(Painter,'value',1,'enable','off')
-        set(ZBuf   ,'value',0,'enable','off')
-        set(OpenGL ,'value',0,'enable','off')
+        set(GUI.Painter  ,'value',1,'enable','off')
+        set(GUI.ZBuf     ,'value',0,'enable','off')
+        set(GUI.OpenGL   ,'value',0,'enable','off')
+        set(GUI.PrintMeth,'enable','off')
         Method=1;
     case 0 % cannot be combined with painters, e.g. bitmap
-        set(Painter,'value',0,'enable','off')
-        set(ZBuf   ,'value',0,'enable','on')
-        set(OpenGL ,'value',0,'enable','on')
+        set(GUI.Painter  ,'value',0,'enable','off')
+        set(GUI.ZBuf     ,'value',0,'enable','on')
+        set(GUI.OpenGL   ,'value',0,'enable','on')
+        set(GUI.PrintMeth,'enable','on')
         if Method==1 || Method==2
             Method = 2;
-            if ~isnumeric(ZBuf) % HG2 mode does not support ZBuffer printing
+            if ~isnumeric(GUI.ZBuf) % HG2 mode does not support ZBuffer printing
                 Method = 3;
-                set(ZBuf,'enable','off')
-                set(OpenGL,'value',1)
+                set(GUI.ZBuf,'enable','off')
+                set(GUI.OpenGL,'value',1)
             else
-                set(ZBuf,'value',1)
+                set(GUI.ZBuf,'value',1)
             end
         end
     otherwise
-        set(Painter,'value',0,'enable','on')
-        set(ZBuf   ,'value',0,'enable','on')
-        set(OpenGL ,'value',0,'enable','on')
-        if ~isnumeric(ZBuf) % HG2 mode does not support ZBuffer printing
-            set(ZBuf,'enable','off')
+        set(GUI.Painter,'value',0,'enable','on')
+        set(GUI.ZBuf   ,'value',0,'enable','on')
+        set(GUI.OpenGL ,'value',0,'enable','on')
+        set(GUI.PrintMeth,'enable','on')
+        if ~isnumeric(GUI.ZBuf) % HG2 mode does not support ZBuffer printing
+            set(GUI.ZBuf,'enable','off')
             if Method==2
                 Method = 3;
             end
         end
         switch Method
             case 1
-                set(Painter,'value',1)
+                set(GUI.Painter,'value',1)
             case 2
-                set(ZBuf   ,'value',1)
+                set(GUI.ZBuf   ,'value',1)
             case 3
-                set(OpenGL ,'value',1)
+                set(GUI.OpenGL ,'value',1)
         end
 end
 if Method==1
-    set(Resol  ,'backgroundcolor',XX.Clr.LightGray,'enable','off')
+    set(GUI.Resol,'backgroundcolor',XX.Clr.LightGray,'enable','off')
+    set(GUI.ResolTxt,'enable','off')
 else
-    set(Resol,'backgroundcolor',XX.Clr.White,'string',num2str(DPI),'enable','on')
+    set(GUI.Resol,'backgroundcolor',XX.Clr.White,'string',num2str(DPI),'enable','on')
+    set(GUI.ResolTxt,'enable','on')
 end

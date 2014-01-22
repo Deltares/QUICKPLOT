@@ -1,4 +1,4 @@
-function S = qp_session(cmd,H,varargin)
+function S = qp_session(cmd,varargin)
 %QP_SESSION Save QuickPlot figures to and rebuild them from an ASCII file.
 %   QP_SESSION is still incomplete, not documented and subject to change.
 
@@ -33,15 +33,104 @@ function S = qp_session(cmd,H,varargin)
 %   $Id$ 
 
 switch cmd
+    case 'expandables'
+        S = local_identify_expandables(varargin{:});
     case 'read'
-        S = local_read(H,varargin{:});
-    case 'extract'
-        S = local_extract(H,varargin{:});
+        S = local_read(varargin{:});
     case 'rebuild'
-        S = local_rebuild(H,varargin{:});
+        S = local_rebuild(varargin{:});
+        %
+    case 'extract'
+        S = local_extract(varargin{:});
+    case 'serialize'
+        S = local_serialize(varargin{:});
+    case 'make_expandables'
+        S = local_make_expandables(varargin{:});
     case 'save'
-        local_save(H,varargin{:})
+        local_save(varargin{:})
 end
+
+function S = local_make_expandables(S,explist)
+values = repmat({{}},size(explist));
+for i = 1:length(S)
+    [key,rem] = strtok(S{i});
+    key = lower(key);
+    [chk,j] = ismember(key,explist);
+    if chk
+        args = parseargs(S{i});
+        val = args{2};
+        [chk,k] = ismember(val,values{j});
+        if ~chk
+            k = length(values{j})+1;
+            values{j}{k} = val;
+        end
+        exp = sprintf('$%s%i$',key,k);
+        S{i} = qp_strrep(S{i},val,exp);
+    end       
+end
+%
+nval = cellfun('length',values);
+if sum(nval)>0
+    S    = [S(1);cell(sum(nval)+3,1);S(2:end)];
+    S{2} = '';
+    S{3} = 'Expand';
+    maxL = 0;
+    Line = 4;
+    for j = 1:length(explist)
+        for k = 1:length(values{j})
+            S{Line} = sprintf('%s%i',explist{j},k);
+            maxL    = max(maxL,length(S{Line}));
+            Line    = Line+1;
+        end
+    end
+    Fmt = ['  %-' num2str(maxL) 's ''%s'''];
+    Line = 4;
+    for j = 1:length(explist)
+        for k = 1:length(values{j})
+            S{Line} = sprintf(Fmt,S{Line},values{j}{k});
+            Line    = Line+1;
+        end
+    end
+    S{Line} = 'EndExpand';
+end
+
+function X = local_identify_expandables(filename)
+XX = cell(100,2);
+X = {};
+j = 0;
+fid = fopen(filename,'r');
+Str = getline(fid);
+Expand = 0;
+while ~isempty(Str)
+    if strcmpi(deblank2(Str),'Expand')
+        Expand = 1;
+    elseif strcmpi(deblank2(Str),'EndExpand')
+        Expand = 0;
+    elseif Expand
+        args = parseargs(Str);
+    else
+        ch = strfind(Str,'$');
+        i = 1;
+        while i<length(ch)
+            substr = Str(ch(i)+1:ch(i+1)-1);
+            if isvarname(substr)
+                substr = lower(substr);
+                if ~ismember(substr,X)
+                    if j==length(XX)
+                        XX{2*j} = [];
+                    end
+                    j = j+1;
+                    XX{j} = substr;
+                    X = XX(1:j);
+                end
+            end
+            i = i+1;
+        end
+    end
+    Str = getline(fid);
+end
+fclose(fid);
+X = sort(X);
 
 function S = local_read(filename,PAR)
 fid = fopen(filename,'r');
@@ -53,7 +142,7 @@ opt = '';
 S = [];
 while ~isempty(Str)
     if nargin>1
-        Str = qp_strrep(Str,PAR);
+        Str = qp_strrep(Str,PAR,'$');
     end
     args = parseargs(Str);
     key  = lower(args{1});
@@ -182,110 +271,132 @@ while 1
 end
 
 function local_save(S,filename)
+if isstruct(S)
+    S = local_serialize(S);
+end
 fid = fopen(filename,'w');
-fprintf(fid,'Delft3D-QUICKPLOT 1.0 ''session file''\n');
+fprintf(fid,'%s\n',S{:});
+fclose(fid);
+
+function C = addline(C,varargin)
+if isempty(C)
+    C = cell(100,1);
+    C{1} = 1;
+end
+i = C{1}+1;
+if i>length(C)
+    C{2*i} = [];
+end
+C{i} = sprintf(varargin{:});
+C{1} = i;
+
+function C = local_serialize(S)
+C = addline({},'Delft3D-QUICKPLOT ''session file'' 1.0');
 for fgi = 1:length(S)
-    fprintf(fid,'Figure             ''%s''\n',S(fgi).name);
-    fprintf(fid,'  PaperType        ''%s''\n',S(fgi).papertype);
-    fprintf(fid,'  PaperOrientation ''%s''\n',S(fgi).paperorientation);
+    C = addline(C,'');
+    C = addline(C,'Figure             ''%s''',S(fgi).name);
+    C = addline(C,'  PaperType        ''%s''',S(fgi).papertype);
+    C = addline(C,'  PaperOrientation ''%s''',S(fgi).paperorientation);
     if strcmp(S(fgi).papertype,'<custom>')
-        fprintf(fid,'  PaperSize        [%g %g]\n',S(fgi).papersize);
-        fprintf(fid,'  PaperUnits       ''%s''\n',S(fgi).paperunits);
+        C = addline(C,'  PaperSize        [%g %g]',S(fgi).papersize);
+        C = addline(C,'  PaperUnits       ''%s''',S(fgi).paperunits);
     end
     if ~isequal(S(fgi).colour,get(0,'factoryuicontrolbackgroundcolor')*255)
-        fprintf(fid,'  Colour           [%i %i %i]\n',S(fgi).colour);
+        C = addline(C,'  Colour           [%i %i %i]',S(fgi).colour);
     end
-    fprintf(fid,'  WindowSize       [%i %i]\n',S(fgi).windowsize);
-    fprintf(fid,'  FrameStyle       ''%s''\n',S(fgi).frame.style);
+    C = addline(C,'  WindowSize       [%i %i]',S(fgi).windowsize);
+    C = addline(C,'  FrameStyle       ''%s''',S(fgi).frame.style);
     ibt = 1;
     fld = 'frametext1';
     while isfield(S(fgi).frame,fld)
-        fprintf(fid,'  FrameText%-4i    ''%s''\n',ibt,S(fgi).frame.(fld));
+        C = addline(C,'  FrameText%-4i    ''%s''',ibt,S(fgi).frame.(fld));
         ibt = ibt+1;
         fld = sprintf('frametext%i',ibt);
     end
     %
     for axi = 1:length(S(fgi).axes)
-        fprintf(fid,'\n  Axes        ''%s''\n',S(fgi).axes(axi).name);
-        fprintf(fid,'    Position  [%g %g %g %g]\n',S(fgi).axes(axi).position);
+        C = addline(C,'');
+        C = addline(C,'  Axes        ''%s''',S(fgi).axes(axi).name);
+        C = addline(C,'    Position  [%g %g %g %g]',S(fgi).axes(axi).position);
         if ~strcmp(S(fgi).axes(axi).title,'<automatic>')
-            fprintf(fid,'    Title     ''%s''\n',S(fgi).axes(axi).title);
+            C = addline(C,'    Title     ''%s''',S(fgi).axes(axi).title);
         end
         if ischar(S(fgi).axes(axi).colour)
-            fprintf(fid,'    Colour    ''none''\n');
+            C = addline(C,'    Colour    ''none''');
         elseif ~isequal(S(fgi).axes(axi).colour,[255 255 255])
-            fprintf(fid,'    Colour    [%i %i %i]\n',S(fgi).axes(axi).colour);
+            C = addline(C,'    Colour    [%i %i %i]',S(fgi).axes(axi).colour);
         end
-        fprintf(fid,'    Box       ''%s''\n',S(fgi).axes(axi).box);
-        fprintf(fid,'    LineWidth %g\n',S(fgi).axes(axi).linewidth);
+        C = addline(C,'    Box       ''%s''',S(fgi).axes(axi).box);
+        C = addline(C,'    LineWidth %g',S(fgi).axes(axi).linewidth);
         for x = 'xy'
             X = upper(x);
             if ~strcmp(S(fgi).axes(axi).([x 'label']),'<automatic>')
-                fprintf(fid,'    %sLabel    ''%s''\n',X,S(fgi).axes(axi).([x 'label']));
+                C = addline(C,'    %sLabel    ''%s''',X,S(fgi).axes(axi).([x 'label']));
             end
             if ~strcmp(S(fgi).axes(axi).([x 'grid']),'off')
-                fprintf(fid,'    %sGrid     ''%s''\n',X,S(fgi).axes(axi).([x 'grid']));
+                C = addline(C,'    %sGrid     ''%s''',X,S(fgi).axes(axi).([x 'grid']));
             end
             if X<'Z'
-                fprintf(fid,'    %sLoc      ''%s''\n',X,S(fgi).axes(axi).([x 'loc']));
+                C = addline(C,'    %sLoc      ''%s''',X,S(fgi).axes(axi).([x 'loc']));
             end
             if ~strcmp(S(fgi).axes(axi).([x 'scale']),'linear')
-                fprintf(fid,'    %sScale    ''%s''\n',X,S(fgi).axes(axi).([x 'scale']));
+                C = addline(C,'    %sScale    ''%s''',X,S(fgi).axes(axi).([x 'scale']));
             end
             if ~ischar(S(fgi).axes(axi).([x 'lim'])) % i.e. not "auto"
-                fprintf(fid,'    %sLim      [%g %g]\n',X,S(fgi).axes(axi).([x 'lim']));
+                C = addline(C,'    %sLim      [%g %g]',X,S(fgi).axes(axi).([x 'lim']));
             end
             if ~isequal(S(fgi).axes(axi).([x 'colour']),[0 0 0])
-                fprintf(fid,'    %sColour   [%i %i %i]\n',X,S(fgi).axes(axi).([x 'colour']));
+                C = addline(C,'    %sColour   [%i %i %i]',X,S(fgi).axes(axi).([x 'colour']));
             end
         end
         %
         for itm = 1:length(S(fgi).axes(axi).items)
-           fprintf(fid,'\n    Item        ''%s''\n',S(fgi).axes(axi).items(itm).name);
-           fprintf(fid,'      FileName  ''%s''\n',S(fgi).axes(axi).items(itm).filename);
+            C = addline(C,'');
+           C = addline(C,'    Item        ''%s''',S(fgi).axes(axi).items(itm).name);
+           C = addline(C,'      FileName  ''%s''',S(fgi).axes(axi).items(itm).filename);
            if ~isempty(S(fgi).axes(axi).items(itm).domain)
-               fprintf(fid,'      Domain    ''%s''\n',S(fgi).axes(axi).items(itm).domain);
+               C = addline(C,'      Domain    ''%s''',S(fgi).axes(axi).items(itm).domain);
            end
            if ~isempty(S(fgi).axes(axi).items(itm).subfield)
-               fprintf(fid,'      SubField  ''%s''\n',S(fgi).axes(axi).items(itm).subfield);
+               C = addline(C,'      SubField  ''%s''',S(fgi).axes(axi).items(itm).subfield);
            end
            if ~isempty(S(fgi).axes(axi).items(itm).dimensions)
-               fprintf(fid,'      Dimensions\n');
+               C = addline(C,'      Dimensions');
                flds = fieldnames(S(fgi).axes(axi).items(itm).dimensions);
                for ifld = 1:length(flds)
                    val = S(fgi).axes(axi).items(itm).dimensions.(flds{ifld});
                    if ischar(val)
-                       fprintf(fid,'        %-24s ''%s''\n',flds{ifld},val);
+                       C = addline(C,'        %-24s ''%s''',flds{ifld},val);
                    elseif isnumeric(val) && isequal(size(val),[1 1])
-                       fprintf(fid,'        %-24s %g\n',flds{ifld},val);
+                       C = addline(C,'        %-24s %g',flds{ifld},val);
                    elseif isnumeric(val) && size(val,1)==1
-                       fprintf(fid,'        %-24s %s\n',flds{ifld},vec2str(val));
+                       C = addline(C,'        %-24s %s',flds{ifld},vec2str(val));
                    end
                end
-               fprintf(fid,'      EndDimensions\n');
+               C = addline(C,'      EndDimensions');
            end
            if ~isempty(S(fgi).axes(axi).items(itm).options)
-               fprintf(fid,'      Options\n');
+               C = addline(C,'      Options');
                flds = fieldnames(S(fgi).axes(axi).items(itm).options);
                for ifld = 1:length(flds)
                    val = S(fgi).axes(axi).items(itm).options.(flds{ifld});
                    if ischar(val)
-                       fprintf(fid,'        %-24s ''%s''\n',flds{ifld},val);
+                       C = addline(C,'        %-24s ''%s''',flds{ifld},val);
                    elseif isnumeric(val) && isequal(size(val),[1 1])
-                       fprintf(fid,'        %-24s %g\n',flds{ifld},val);
+                       C = addline(C,'        %-24s %g',flds{ifld},val);
                    elseif isnumeric(val) && size(val,1)==1
-                       fprintf(fid,'        %-24s %s\n',flds{ifld},vec2str(val));
+                       C = addline(C,'        %-24s %s',flds{ifld},vec2str(val));
                    end
                end
-               fprintf(fid,'      EndOptions\n');
+               C = addline(C,'      EndOptions');
            end
-           fprintf(fid,'    EndItem\n');
+           C = addline(C,'    EndItem');
         end
-        fprintf(fid,'  EndAxes\n');
+        C = addline(C,'  EndAxes');
     end
-    fprintf(fid,'EndFigure\n\n');
+    C = addline(C,'EndFigure');
 end
-fclose(fid);
+C = C(2:C{1});
 
 function H = local_rebuild(S,PAR)
 if ischar(S)

@@ -2814,7 +2814,8 @@ switch cmd
                 if iscellstr(cmdargs{i})
                     str = cmdargs{i};
                 else
-                    str = strrep(cmdargs{i},'\n{}',char(13));
+                    str = qp_strrep(cmdargs{i});
+                    str = strrep(str,'\n{}',char(13));
                     str = splitcellstr(str,char(13));
                 end
                 set(hTxt,'string',str);
@@ -3891,7 +3892,7 @@ switch cmd
             end
             cmdargs={};
             if ischar(cmdstr) && ~isempty(cmdstr)
-                cmdstr = qp_strrep(cmdstr,PAR);
+                cmdstr = qp_strrep(cmdstr,PAR,'$');
                 if strcmpi(runningtype,'m') || cmdstr(1)=='>'
                     if cmdstr(1)=='>'
                         cmdstr = cmdstr(2:end);

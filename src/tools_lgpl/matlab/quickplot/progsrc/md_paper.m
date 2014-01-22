@@ -911,7 +911,8 @@ HTabs=cumsum([0 BFormat.HTabs]);
 N=size(BFormat.Box,1);
 
 maxdim=qp_getscreen(fg);
-pos = [maxdim(1:2)+[80 115] 460 40+25*N];
+rps = get(fg,'position');
+pos = [max(rps(1:2),maxdim(1:2)+[80 115]) 460 40+25*N];
 h0 = figure('Units','pixels', ...
     'Color',get(0,'defaultuicontrolbackgroundcolor'), ...
     'HandleVisibility','off', ...
