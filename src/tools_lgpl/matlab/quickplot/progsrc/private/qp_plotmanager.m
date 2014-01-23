@@ -228,7 +228,9 @@ switch cmd
             end
         else
             curdir = pwd;
-            cd(figuredir)
+            if exist(figuredir,'dir')
+                cd(figuredir)
+            end
             filter = {'*.fig' 'MATLAB Figure File'
                 '*.qpses' 'QUICKPLOT Session File'};
             try

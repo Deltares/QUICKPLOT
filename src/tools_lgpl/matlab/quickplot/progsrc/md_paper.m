@@ -279,6 +279,7 @@ switch lcmd
         if length(hBorder)>1
             error('Function doesn''t support multiple borders.')
         elseif isempty(hBorder)
+            Out = [];
             return
         end
         iBrdr = get(hBorder,'userdata');

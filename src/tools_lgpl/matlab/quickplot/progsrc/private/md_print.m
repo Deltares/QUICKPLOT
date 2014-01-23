@@ -351,7 +351,7 @@ while i<length(figlist)
                         try
                             SES = qp_session('extract',figlist);
                             SER = qp_session('serialize',SES);
-                            %SER = qp_session('make_expandables',SER,{'filename','domain'});
+                            SER = qp_session('make_expandables',SER,{'filename','domain'});
                             qp_session('save',SER,fn)
                         catch
                             ui_message('error','error encountered creating %s:%s',fn,lasterr);

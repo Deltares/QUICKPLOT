@@ -133,20 +133,31 @@ fclose(fid);
 X = sort(X);
 
 function S = local_read(filename,PAR)
+if nargin==1
+    PAR      = [];
+    parnames = {};
+else
+    parnames = fieldnames(PAR);
+end
 fid = fopen(filename,'r');
 Str = getline(fid);
+expand = 0;
 fgi = 0;
 axi = 0;
 itm = 0;
 opt = '';
 S = [];
 while ~isempty(Str)
-    if nargin>1
+    if ~isempty(PAR)
         Str = qp_strrep(Str,PAR,'$');
     end
     args = parseargs(Str);
     key  = lower(args{1});
     switch key
+        case 'expand'
+            expand = 1;
+        case 'endexpand'
+            expand = 0;
         case 'figure'
             fgi = length(S)+1;
             axi = 0;
@@ -205,7 +216,11 @@ while ~isempty(Str)
         case 'endfigure'
             fgi = 0;
         otherwise
-            if fgi>0
+            if expand
+                if ~ismember(key,parnames)
+                    PAR.(key) = args{2};
+                end
+            elseif fgi>0
                 if length(key)>5 && strcmp(key(end-4:end),'color')
                     key = [key(1:end-5) 'colour'];
                 end
