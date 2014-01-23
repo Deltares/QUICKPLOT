@@ -50,7 +50,7 @@ function varargout=shipmafil(FI,domain,field,cmd,varargin)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 if nargin<2
-    error('Not enough input arguments');
+    error('Not enough input arguments')
 elseif nargin==2
     varargout={infile(FI,domain)};
     return
@@ -66,6 +66,8 @@ elseif ischar(field)
             varargout={locations(FI)};
         case 'quantities'
             varargout={quantities(FI)};
+        case 'getparams'
+            varargout={getparams(FI,domain)};
         case 'data'
             [varargout{1:2}]=getdata(FI,cmd,varargin{:});
     end
@@ -402,6 +404,40 @@ varargout={Ans FI};
 
 
 % -----------------------------------------------------------------------------
+function PAR = getparams(FI,varargin)
+if nargin==2
+    domain = varargin{1};
+    prj    = FI.Case.Project(domain);
+    cse    = FI.Case.Case(domain);
+elseif nargin==3
+    prj    = varargin{1};
+    cse    = varargin{2};
+end
+%
+PAR.organization = protectstring(qp_settings('organizationname'));
+PAR.filename     = protectstring(FI.FileName);
+PAR.project      = protectstring(FI.Project(prj).Name);
+PAR.case         = protectstring(FI.Project(prj).Cases.Names{cse});
+PAR.ship         = protectstring(FI.Project(prj).Cases.Data(cse).shipId);
+PAR.wind         = protectstring(FI.Project(prj).Cases.Data(cse).windId);
+PAR.waves        = protectstring(FI.Project(prj).Cases.Data(cse).wavesId);
+PAR.current      = protectstring(FI.Project(prj).Cases.Data(cse).currentId);
+PAR.swell        = protectstring(FI.Project(prj).Cases.Data(cse).swellId);
+PAR.scenery      = protectstring(FI.Project(prj).Cases.Data(cse).sceneryId);
+%
+if isempty(FI.Project(prj).Cases.Data(cse).TimeSeries)
+    shipma = '';
+else
+    headerLine = FI.Project(prj).Cases.Data(cse).TimeSeries.Header(1,:);
+    [shipma,rem] = strtok(headerLine);
+    version = strtok(rem);
+    shipma = [shipma ' ' version];
+end
+PAR.shipma       = shipma;
+% -----------------------------------------------------------------------------
+
+
+% -----------------------------------------------------------------------------
 function selfplot(FI,Props)
 persistent inSelfPlot
 %
@@ -415,32 +451,12 @@ inSelfPlot = 1;
 
 prj = Props.Project;
 cse = Props.Case;
-
-if isempty(FI.Project(prj).Cases.Data(cse).TimeSeries)
-    shipma = '';
-else
-    headerLine = FI.Project(prj).Cases.Data(cse).TimeSeries.Header(1,:);
-    [shipma,rem] = strtok(headerLine);
-    version = strtok(rem);
-    shipma = [shipma ' ' version];
-end
-PAR.organization = protectstring(qp_settings('organizationname'));
-PAR.filename     = protectstring(FI.FileName);
-PAR.project      = protectstring(FI.Project(prj).Name);
-PAR.case         = protectstring(FI.Project(prj).Cases.Names{cse});
-PAR.ship         = protectstring(FI.Project(prj).Cases.Data(cse).shipId);
-PAR.wind         = protectstring(FI.Project(prj).Cases.Data(cse).windId);
-PAR.waves        = protectstring(FI.Project(prj).Cases.Data(cse).wavesId);
-PAR.current      = protectstring(FI.Project(prj).Cases.Data(cse).currentId);
-PAR.swell        = protectstring(FI.Project(prj).Cases.Data(cse).swellId);
-PAR.scenery      = protectstring(FI.Project(prj).Cases.Data(cse).sceneryId);
-PAR.shipma       = shipma;
+PAR = getparams(FI,prj,cse);
 %
 PARFIL.filename1    = FI.FileName;
 PARFIL.domain1      = [PAR.project '/' PAR.case];
 
 session    = qp_settings(['shipma_session_for_' FI.Project(prj).Name],'');
-qp_strrep(PAR)
 if isempty(session)
     selfplot_builtin
 else
@@ -452,7 +468,6 @@ else
             d3d_qp('run',session,'-par',PARFIL)
     end
 end
-qp_strrep([])
 %--------
 d3d_qp('selectfile',PARFIL.filename1)
 d3d_qp('selectdomain',PARFIL.domain1)
@@ -520,7 +535,9 @@ for c = {'a' 'a1' 'a2'}
         end
         texts = qp_strrep(texts_template,'%caption%',caption);
         texts = qp_strrep(texts,'%fignr%',fignr);
-        d3d_qp('newfigure','1 plot - portrait',['SHIPMA Fig ' upper(c{1})],texts)
+        d3d_qp('newfigure','1 plot - portrait',['SHIPMA Fig ' upper(c{1})])
+        d3d_qp('setasparametersource')
+        d3d_qp('figureborder',texts{:})
         switch c{1}
             case {'a','a1'}
                 if qp_settings('shipma_figa_depth') && d3d_qp('selectfield','depth')
@@ -600,7 +617,9 @@ if qp_settings('shipma_figb')
     fignr = 'Fig. B';
     texts = qp_strrep(texts_template,'%caption%',caption);
     texts = qp_strrep(texts,'%fignr%',fignr);
-    d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig B',texts)
+    d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig B')
+    d3d_qp('setasparametersource')
+    d3d_qp('figureborder',texts{:})
     %--
     qpsa('upper plot')
     d3d_qp('allt',1)
@@ -635,7 +654,9 @@ if qp_settings('shipma_figc')
     fignr = 'Fig. C';
     texts = qp_strrep(texts_template,'%caption%',caption);
     texts = qp_strrep(texts,'%fignr%',fignr);
-    d3d_qp('newfigure','2 plots, vertical - portrait','SHIPMA Fig C',texts)
+    d3d_qp('newfigure','2 plots, vertical - portrait','SHIPMA Fig C')
+    d3d_qp('setasparametersource')
+    d3d_qp('figureborder',texts{:})
     %--
     d3d_qp('selectaxes','upper plot')
     set(qpsa,'ydir','reverse')
@@ -705,7 +726,9 @@ if qp_settings('shipma_figd')
     fignr = 'Fig. D';
     texts = qp_strrep(texts_template,'%caption%',caption);
     texts = qp_strrep(texts,'%fignr%',fignr);
-    d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig D',texts)
+    d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig D')
+    d3d_qp('setasparametersource')
+    d3d_qp('figureborder',texts{:})
     %--
     d3d_qp('selectaxes','upper plot')
     if qp_settings('shipma_figd_wind') && d3d_qp('selectfield','longitudinal wind force')
@@ -802,7 +825,9 @@ if qp_settings('shipma_fige')
     fignr = 'Fig. E';
     texts = qp_strrep(texts_template,'%caption%',caption);
     texts = qp_strrep(texts,'%fignr%',fignr);
-    d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig E',texts)
+    d3d_qp('newfigure','3 plots, vertical - portrait','SHIPMA Fig E')
+    d3d_qp('setasparametersource')
+    d3d_qp('figureborder',texts{:})
     %--
     d3d_qp('selectaxes','upper plot')
     if qp_settings('shipma_fige_tugs') && d3d_qp('selectfield','longitudinal total tug force')

@@ -67,6 +67,8 @@ elseif ischar(field)
             varargout={locations(FI)};
         case 'quantities'
             varargout={quantities(FI)};
+        case 'getparams'
+            varargout={[]};
         case 'data'
             [varargout{1:2}]=getdata(FI,cmd,varargin{:});
     end

@@ -1030,6 +1030,33 @@ switch cmd
         d3d_qp updatefieldprop
         set(mfig,'pointer','arrow')
         
+    case 'setasparametersource'
+        Handle_SelectFile=findobj(mfig,'tag','selectfile');
+        File = get(Handle_SelectFile,'userdata');
+        Fig  = qpsf;
+        if ~isempty(File) && ~isempty(Fig)
+            NrInList = get(Handle_SelectFile,'value');
+            Info     = File(NrInList);
+            Handle_Domain   = findobj(mfig,'tag','selectdomain');
+            DomainNr        = get(Handle_Domain,'value');
+            [Chk,PAR]       = qp_getdata(Info,DomainNr,'getparams');
+            %
+            Expand.FileName = Info.Name;
+            if ~isempty(Info.Otherargs)
+                Expand.FileName = [{Info.Name} Info.Otherargs];
+            end
+            Expand.Domain   = [];
+            if strcmp(get(Handle_Domain,'enable'),'on')
+                Domains       = get(Handle_Domain,'string');
+                Expand.Domain = Domains{DomainNr};
+            end
+            Expand.PAR      = PAR;
+            setappdata(Fig,'ExpandPAR',Expand)
+            if logfile
+                writelog(logfile,logtype,cmd);
+            end
+        end
+       
     case 'selectedfield'
         sf   = findobj(mfig,'tag','selectfield');
         ifld = get(sf,'value');

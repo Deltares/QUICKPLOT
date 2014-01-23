@@ -14,6 +14,7 @@ function [varargout]=qp_getdata(varargin)
 %   [Success,DataProps ]            = QP_GETDATA(FI,Domain,DimMask)
 %   [Success,DataFields,Dims ,NVal] = QP_GETDATA(FI,Domain)
 %   [Success,DataFields,Dims ,NVal] = QP_GETDATA(FI,Domain,DimMask)
+%   [Success,Parameters]            = QP_GETDATA(FI,Domain,'getparams')
 %   [Success,Size      ]            = QP_GETDATA(FI,Domain,DataFld,'size')
 %   [Success,DimLabels ]            = QP_GETDATA(FI,Domain,DataFld,'dimlabels')
 %   [Success,Times     ]            = QP_GETDATA(FI,Domain,DataFld,'times')
@@ -146,6 +147,7 @@ try
             % [Success,Quantities]            = QP_GETDATA(FI,'quantities')
             % [Success,DataProps ]            = QP_GETDATA(FI,Domain)
             % [Success,DataProps ]            = QP_GETDATA(FI,Domain,DimMask)
+            % [Success,Parameters]            = QP_GETDATA(FI,Domain,'getparams')
             % [Success,Size      ]            = QP_GETDATA(FI,Domain,DataFld,'size')
             % [Success,DimLabels ]            = QP_GETDATA(FI,Domain,DataFld,'dimlabels')
             % [Success,Times     ]            = QP_GETDATA(FI,Domain,DataFld,'times')
@@ -195,6 +197,7 @@ try
                     %
                     % [Success,DataProps ]            = QP_GETDATA(FI,Domain)
                     % [Success,DataProps ]            = QP_GETDATA(FI,Domain,DimMask)
+                    % [Success,Parameters]            = QP_GETDATA(FI,Domain,'getparams')
                     % [Success,Size      ]            = QP_GETDATA(FI,Domain,DataFld,'size')
                     % [Success,DimLabels ]            = QP_GETDATA(FI,Domain,DataFld,'dimlabels')
                     % [Success,Times     ]            = QP_GETDATA(FI,Domain,DataFld,'times')
@@ -208,12 +211,15 @@ try
                     %
                     if length(X)>2
                         calltype=X{3};
+                    elseif length(X)==2 && ischar(X{2})
+                        calltype=X{2};
                     else
                         calltype='getprops2';
                     end
                 else
                     %
                     % [Success,DataProps ]            = QP_GETDATA(FI,DimMask)
+                    % [Success,Parameters]            = QP_GETDATA(FI,'getparams')
                     % [Success,Size      ]            = QP_GETDATA(FI,DataFld,'size')
                     % [Success,DimLabels ]            = QP_GETDATA(FI,DataFld,'dimlabels')
                     % [Success,Times     ]            = QP_GETDATA(FI,DataFld,'times')
@@ -231,6 +237,8 @@ try
                         else
                             calltype=X{2};
                         end
+                    elseif length(X)==1 && ischar(X{1})
+                        calltype=X{1};
                     else
                         calltype='getprops2';
                     end

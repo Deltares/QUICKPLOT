@@ -30,7 +30,7 @@ function S = qp_session(cmd,varargin)
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
-%   $Id$ 
+%   $Id$
 
 switch cmd
     case 'expandables'
@@ -58,15 +58,17 @@ for i = 1:length(S)
     [chk,j] = ismember(key,explist);
     if chk
         args = parseargs(S{i});
-        val = args{2};
-        [chk,k] = ismember(val,values{j});
-        if ~chk
-            k = length(values{j})+1;
-            values{j}{k} = val;
+        for p = 2:length(args)
+            val = args{p};
+            [chk,k] = ismember(val,values{j});
+            if ~chk
+                k = length(values{j})+1;
+                values{j}{k} = val;
+            end
+            exp = sprintf('$%s%i$',key,k);
+            S{i} = qp_strrep(S{i},val,exp);
         end
-        exp = sprintf('$%s%i$',key,k);
-        S{i} = qp_strrep(S{i},val,exp);
-    end       
+    end
 end
 %
 nval = cellfun('length',values);
@@ -168,6 +170,7 @@ while ~isempty(Str)
             S(fgi).paperunits = 'centimeters';
             S(fgi).windowsize = [];
             S(fgi).colour = get(0,'factoryuicontrolbackgroundcolor')*255;
+            S(fgi).expandpar = [];
             S(fgi).frame.style = 'none';
             S(fgi).axes = [];
         case 'framestyle'
@@ -209,6 +212,10 @@ while ~isempty(Str)
             opt = 'item';
         case 'endoptions'
             opt = '';
+        case 'parametersource'
+            opt = 'parsource';
+        case 'endparametersource'
+            opt = '';
         case 'enditem'
             itm = 0;
         case 'endaxes'
@@ -229,7 +236,9 @@ while ~isempty(Str)
                 else
                     val = args{2};
                 end
-                if strcmp(opt,'dimensions')
+                if strcmp(opt,'parsource')
+                    S(fgi).expandpar.(key) = val;
+                elseif strcmp(opt,'dimensions')
                     S(fgi).axes(axi).items(itm).dimensions.(key) = val;
                 elseif strcmp(opt,'item')
                     S(fgi).axes(axi).items(itm).options.(key) = val;
@@ -320,6 +329,19 @@ for fgi = 1:length(S)
         C = addline(C,'  Colour           [%i %i %i]',S(fgi).colour);
     end
     C = addline(C,'  WindowSize       [%i %i]',S(fgi).windowsize);
+    if ~isempty(S(fgi).expandpar)
+        C = addline(C,'  ParameterSource');
+        if iscell(S(fgi).expandpar.filename)
+            N = length(S(fgi).expandpar.filename);
+            C = addline(C,['    FileName ',repmat(' ''%s''',1,N)],S(fgi).expandpar.filename{:});
+        else
+            C = addline(C,'    FileName  ''%s''',S(fgi).expandpar.filename);
+        end
+        if ~isempty(S(fgi).expandpar.domain)
+            C = addline(C,'    Domain    ''%s''',S(fgi).expandpar.domain);
+        end
+        C = addline(C,'  EndParameterSource');
+    end
     C = addline(C,'  FrameStyle       ''%s''',S(fgi).frame.style);
     ibt = 1;
     fld = 'frametext1';
@@ -367,45 +389,50 @@ for fgi = 1:length(S)
         %
         for itm = 1:length(S(fgi).axes(axi).items)
             C = addline(C,'');
-           C = addline(C,'    Item        ''%s''',S(fgi).axes(axi).items(itm).name);
-           C = addline(C,'      FileName  ''%s''',S(fgi).axes(axi).items(itm).filename);
-           if ~isempty(S(fgi).axes(axi).items(itm).domain)
-               C = addline(C,'      Domain    ''%s''',S(fgi).axes(axi).items(itm).domain);
-           end
-           if ~isempty(S(fgi).axes(axi).items(itm).subfield)
-               C = addline(C,'      SubField  ''%s''',S(fgi).axes(axi).items(itm).subfield);
-           end
-           if ~isempty(S(fgi).axes(axi).items(itm).dimensions)
-               C = addline(C,'      Dimensions');
-               flds = fieldnames(S(fgi).axes(axi).items(itm).dimensions);
-               for ifld = 1:length(flds)
-                   val = S(fgi).axes(axi).items(itm).dimensions.(flds{ifld});
-                   if ischar(val)
-                       C = addline(C,'        %-24s ''%s''',flds{ifld},val);
-                   elseif isnumeric(val) && isequal(size(val),[1 1])
-                       C = addline(C,'        %-24s %g',flds{ifld},val);
-                   elseif isnumeric(val) && size(val,1)==1
-                       C = addline(C,'        %-24s %s',flds{ifld},vec2str(val));
-                   end
-               end
-               C = addline(C,'      EndDimensions');
-           end
-           if ~isempty(S(fgi).axes(axi).items(itm).options)
-               C = addline(C,'      Options');
-               flds = fieldnames(S(fgi).axes(axi).items(itm).options);
-               for ifld = 1:length(flds)
-                   val = S(fgi).axes(axi).items(itm).options.(flds{ifld});
-                   if ischar(val)
-                       C = addline(C,'        %-24s ''%s''',flds{ifld},val);
-                   elseif isnumeric(val) && isequal(size(val),[1 1])
-                       C = addline(C,'        %-24s %g',flds{ifld},val);
-                   elseif isnumeric(val) && size(val,1)==1
-                       C = addline(C,'        %-24s %s',flds{ifld},vec2str(val));
-                   end
-               end
-               C = addline(C,'      EndOptions');
-           end
-           C = addline(C,'    EndItem');
+            C = addline(C,'    Item        ''%s''',S(fgi).axes(axi).items(itm).name);
+            if iscell(S(fgi).axes(axi).items(itm).filename)
+                N = length(S(fgi).axes(axi).items(itm).filename);
+                C = addline(C,['      FileName ',repmat(' ''%s''',1,N)],S(fgi).axes(axi).items(itm).filename{:});
+            else
+                C = addline(C,'      FileName  ''%s''',S(fgi).axes(axi).items(itm).filename);
+            end
+            if ~isempty(S(fgi).axes(axi).items(itm).domain)
+                C = addline(C,'      Domain    ''%s''',S(fgi).axes(axi).items(itm).domain);
+            end
+            if ~isempty(S(fgi).axes(axi).items(itm).subfield)
+                C = addline(C,'      SubField  ''%s''',S(fgi).axes(axi).items(itm).subfield);
+            end
+            if ~isempty(S(fgi).axes(axi).items(itm).dimensions)
+                C = addline(C,'      Dimensions');
+                flds = fieldnames(S(fgi).axes(axi).items(itm).dimensions);
+                for ifld = 1:length(flds)
+                    val = S(fgi).axes(axi).items(itm).dimensions.(flds{ifld});
+                    if ischar(val)
+                        C = addline(C,'        %-24s ''%s''',flds{ifld},val);
+                    elseif isnumeric(val) && isequal(size(val),[1 1])
+                        C = addline(C,'        %-24s %g',flds{ifld},val);
+                    elseif isnumeric(val) && size(val,1)==1
+                        C = addline(C,'        %-24s %s',flds{ifld},vec2str(val));
+                    end
+                end
+                C = addline(C,'      EndDimensions');
+            end
+            if ~isempty(S(fgi).axes(axi).items(itm).options)
+                C = addline(C,'      Options');
+                flds = fieldnames(S(fgi).axes(axi).items(itm).options);
+                for ifld = 1:length(flds)
+                    val = S(fgi).axes(axi).items(itm).options.(flds{ifld});
+                    if ischar(val)
+                        C = addline(C,'        %-24s ''%s''',flds{ifld},val);
+                    elseif isnumeric(val) && isequal(size(val),[1 1])
+                        C = addline(C,'        %-24s %g',flds{ifld},val);
+                    elseif isnumeric(val) && size(val,1)==1
+                        C = addline(C,'        %-24s %s',flds{ifld},vec2str(val));
+                    end
+                end
+                C = addline(C,'      EndOptions');
+            end
+            C = addline(C,'    EndItem');
         end
         C = addline(C,'  EndAxes');
     end
@@ -432,6 +459,12 @@ for fgi = length(S):-1:1
         d3d_qp('figurepapertype',S(fgi).papertype,S(fgi).paperorientation)
     end
     d3d_qp('figureborderstyle',S(fgi).frame.style)
+    %
+    if ~isempty(S(fgi).expandpar)
+        opened_files = file_and_domain(opened_files,S(fgi).expandpar);
+        %
+        d3d_qp('setasparametersource')
+    end
     if ~strcmp(S(fgi).frame.style,'none')
         ibt = 1;
         fld = 'frametext1';
@@ -472,17 +505,8 @@ for fgi = length(S):-1:1
         end
         %
         for itm = length(S(fgi).axes(axi).items):-1:1
-            fn = S(fgi).axes(axi).items(itm).filename;
-            if any(strcmp(fn,opened_files))
-                d3d_qp('selectfile',fn)
-            else
-                d3d_qp('openfile',fn)
-                opened_files{end+1} = fn;
-            end
+            opened_files = file_and_domain(opened_files,S(fgi).axes(axi).items(itm));
             %
-            if ~isempty(S(fgi).axes(axi).items(itm).domain)
-                d3d_qp('selectdomain',S(fgi).axes(axi).items(itm).domain)
-            end
             if d3d_qp('selectfield',S(fgi).axes(axi).items(itm).name);
                 if ~isempty(S(fgi).axes(axi).items(itm).subfield)
                     d3d_qp('selectsubfield',S(fgi).axes(axi).items(itm).subfield)
@@ -690,6 +714,30 @@ for fgi = length(S):-1:1
     end
 end
 
+
+function opened_files = file_and_domain(opened_files,item)
+fn = item.filename;
+if iscell(fn)
+    if any(ismember(fn,opened_files))
+        d3d_qp('selectfile',fn{:})
+    else
+        d3d_qp('openfile',fn{:})
+        opened_files{end+1} = fn;
+    end
+else
+    if any(ismember(fn,opened_files))
+        d3d_qp('selectfile',fn)
+    else
+        d3d_qp('openfile',fn)
+        opened_files{end+1} = fn;
+    end
+end
+%
+if isfield(item,'domain') && ~isempty(item.domain)
+    d3d_qp('selectdomain',item.domain)
+end
+
+
 function S = local_extract(H)
 for fgi = length(H):-1:1
     HInfo = get(H(fgi));
@@ -701,6 +749,12 @@ for fgi = length(H):-1:1
     S(fgi).paperunits  = HInfo.PaperUnits;
     S(fgi).windowsize  = HInfo.Position(3:4); % Units = pixels
     S(fgi).colour      = round(HInfo.Color*255);
+    S(fgi).expandpar   = [];
+    ExpandP = getappdata(H(fgi),'ExpandPAR');
+    if ~isempty(ExpandP)
+        S(fgi).expandpar.filename = ExpandP.FileName;
+        S(fgi).expandpar.domain   = ExpandP.Domain;
+    end
     S(fgi).frame.style = 'none';
     
     for i = 1:length(HInfo.Children)
@@ -801,7 +855,11 @@ for fgi = length(H):-1:1
             for itm = length(u):-1:1
                 IInfo = u{itm};
                 S(fgi).axes(axi).items(itm).name     = IInfo.PlotState.Props.Name;
-                S(fgi).axes(axi).items(itm).filename = IInfo.PlotState.FI.Name;
+                if ~isempty(IInfo.PlotState.FI.Otherargs)
+                    S(fgi).axes(axi).items(itm).filename = [{IInfo.PlotState.FI.Name} IInfo.PlotState.FI.Otherargs];
+                else
+                    S(fgi).axes(axi).items(itm).filename = IInfo.PlotState.FI.Name;
+                end
                 %
                 dom = qpread(IInfo.PlotState.FI,'domains');
                 if isempty(dom)
@@ -854,6 +912,22 @@ for fgi = length(H):-1:1
                 Ops = rmfield(Ops,'version');
                 S(fgi).axes(axi).items(itm).options  = Ops;
             end
+        end
+    end
+end
+
+function [liA,locB] = ismember(A,B)
+if ischar(A)
+    A = {A};
+end
+liA  = logical(zeros(size(A)));
+locB = zeros(size(A));
+for j = 1:numel(A)
+    for i = 1:numel(B)
+        if isequal(A{j},B{i});
+            liA(j)  = true;
+            locB(j) = i;
+            break
         end
     end
 end

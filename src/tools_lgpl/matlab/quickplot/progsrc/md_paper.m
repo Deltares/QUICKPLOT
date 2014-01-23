@@ -150,7 +150,7 @@ switch lcmd
             return
         end
         BFormat = get(gcba,'userdata');
-        ExpandP = getappdata(gcba,'ExpandPAR');
+        ExpandP = getappdata(get(gcba,'parent'),'ExpandPAR');
         for i = 1:max(BFormat.Box(:))
             hedittext=findobj(Fig,'tag',sprintf('Text%i',i));
             hplottext=findobj(gcba,'tag',sprintf('plottext%i',i));
@@ -160,7 +160,7 @@ switch lcmd
                 str = {' '};
             end
             if ~isempty(ExpandP)
-                str = qp_strrep(str,ExpandP);
+                str = qp_strrep(str,ExpandP.PAR);
             end
             set(hplottext,'string',str)
         end
@@ -283,7 +283,7 @@ switch lcmd
             return
         end
         iBrdr = get(hBorder,'userdata');
-        ExpandP = getappdata(hBorder,'ExpandPAR');
+        ExpandP = getappdata(get(hBorder,'parent'),'ExpandPAR');
         if strcmp(lcmd,'setprops')
             i = 0;
             while 1
@@ -309,7 +309,7 @@ switch lcmd
                     celstr = splitcellstr(celstr,char(13));
                 end
                 if ~isempty(ExpandP)
-                    celstr = qp_strrep(celstr,ExpandP);
+                    celstr = qp_strrep(celstr,ExpandP.PAR);
                 end
                 iBrdr.(sprintf('BorderText%i',i)) = str;
                 set(hplottext,'string',celstr);
@@ -648,7 +648,6 @@ end
 %
 [ax,allchld,xmax,ymax,hBorder]=CreateBorderAxes(fg);
 set(hBorder,'userdata',BFormat)
-setappdata(hBorder,'ExpandPAR',qp_strrep)
 %
 Box=fliplr(Box');
 switch get(fg,'PaperOrientation')

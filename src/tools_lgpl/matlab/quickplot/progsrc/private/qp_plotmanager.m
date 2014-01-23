@@ -231,8 +231,9 @@ switch cmd
             if exist(figuredir,'dir')
                 cd(figuredir)
             end
-            filter = {'*.fig' 'MATLAB Figure File'
-                '*.qpses' 'QUICKPLOT Session File'};
+            filter = {'*.fig;*.qpses' 'All Supported Files'
+                '*.fig' 'MATLAB Figure Files'
+                '*.qpses' 'QUICKPLOT Session Files'};
             try
                 [f,p]=uigetfile(filter,'Open figure ...');
             catch
