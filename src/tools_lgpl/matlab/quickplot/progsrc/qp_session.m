@@ -148,6 +148,7 @@ fgi = 0;
 axi = 0;
 itm = 0;
 opt = '';
+Line = 1;
 S = [];
 while ~isempty(Str)
     if ~isempty(PAR)
@@ -155,6 +156,20 @@ while ~isempty(Str)
     end
     args = parseargs(Str);
     key  = lower(args{1});
+    if Line==1
+        if ~strcmp(key,'delft3d-quickplot') ...
+                || length(args)<3 ...
+                || ~ischar(args{2}) ...
+                || ~strcmp(args{2},'session file') ...
+                || ~isnumeric(args{3})
+            fclose(fid);
+            error('First line of session file should read:\nDelft3D-QUICKPLOT ''session file'' <versionnumber>\nHowever, first line of %s reads:\n%s',filename,Str)
+        elseif args{3}>1
+            fclose(fid);
+            error('Version %g of session file not supported.',args{3})
+        end
+        Line=2;
+    end
     switch key
         case 'expand'
             expand = 1;
