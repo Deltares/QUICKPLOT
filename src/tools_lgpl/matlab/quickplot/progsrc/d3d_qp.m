@@ -1597,6 +1597,21 @@ switch cmd
                         i=length(File(NrInList).Data)+1;
                     end
                     File(NrInList).Data(i).Name=VarName;
+                    if isfield(Props,'Units')
+                        File(NrInList).Data(i).Units=Props.Units;
+                    else
+                        File(NrInList).Data(i).Units='';
+                    end
+                    if isfield(Props,'Geom')
+                        File(NrInList).Data(i).Geom=Props.Geom;
+                    else
+                        File(NrInList).Data(i).Geom='';
+                    end
+                    if isfield(Props,'Coords')
+                        File(NrInList).Data(i).Coords=Props.Coords;
+                    else
+                        File(NrInList).Data(i).Coords='';
+                    end
                     File(NrInList).Data(i).FileInfo=Info;
                     File(NrInList).Data(i).Domain=DomainNr;
                     File(NrInList).Data(i).Props=Props;
@@ -1606,6 +1621,11 @@ switch cmd
                     File(NrInList).Data(i).DataInCell=0;
                     if isfield(Props,'DataInCell')
                         File(NrInList).Data(i).DataInCell=Props.DataInCell;
+                    end
+                    if isfield(Props,'ClosedPoly')
+                        File(NrInList).Data(i).ClosedPoly=Props.ClosedPoly;
+                    else
+                        File(NrInList).Data(i).ClosedPoly=0;
                     end
                     File(NrInList).Data(i).Tri=0;
                     if isfield(Props,'Geom') && isequal(Props.Geom,'TRI')

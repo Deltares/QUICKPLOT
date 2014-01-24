@@ -122,7 +122,7 @@ varargout={Ans FI};
 
 
 % -----------------------------------------------------------------------------
-function Domains=domains(FI);
+function Domains=domains(FI)
 [success,D1] = qp_getdata(FI(1),'domains');
 [success,D2] = qp_getdata(FI(2),'domains');
 if ~isempty(D1) || ~isempty(D2)
@@ -143,7 +143,7 @@ if ~success
     error(lasterr)
 end
 %
-Out = cell2struct(cell(9,length(Q1)),{'Name','Units','DimFlag','DataInCell','NVal','Q1','Q2','Size','SubFld'});
+Out = cell2struct(cell(12,length(Q1)),{'Name','Units','Geom','Coords','DimFlag','DataInCell','NVal','Q1','Q2','Size','SubFld','ClosedPoly'});
 q2 = {Q2.Name};
 j = 0;
 for i=1:length(Q1)
@@ -151,6 +151,8 @@ for i=1:length(Q1)
         j=j+1;
         Out(j).Name = Q1(i).Name;
         Out(j).Units = '';
+        Out(j).Geom = '';
+        Out(j).Coords = '';
         Out(j).DimFlag = [0 0 0 0 0];
         Out(j).DataInCell = 0;
         Out(j).NVal = 0;
@@ -158,6 +160,7 @@ for i=1:length(Q1)
         Out(j).Q2 = [];
         Out(j).Size = [];
         Out(j).SubFld = {};
+        Out(j).ClosedPoly = 0;
         continue
     end
     if Q1(i).NVal<0
@@ -215,6 +218,16 @@ for i=1:length(Q1)
     %
     NewFld.Name = Q1(i).Name;
     NewFld.Units = Q1(i).Units;
+    if isfield(Q1,'Geom')
+        NewFld.Geom = Q1(i).Geom;
+    else
+        NewFld.Geom = '';
+    end
+    if isfield(Q1,'Coords')
+        NewFld.Coords = Q1(i).Coords;
+    else
+        NewFld.Coords = '';
+    end
     if ~isequal(NewFld.Units,Q2(i2).Units)
         % might be able to relax this to compatible units later.
         continue
@@ -233,6 +246,11 @@ for i=1:length(Q1)
     NewFld.Q2 = Q2(i2);
     NewFld.Size = sz;
     NewFld.SubFld = sf;
+    if isfield(Q1,'ClosedPoly')
+        NewFld.ClosedPoly = Q1(i).ClosedPoly;
+    else
+        NewFld.ClosedPoly = 0;
+    end
     %
     j = j+1;
     Out(j) = NewFld;

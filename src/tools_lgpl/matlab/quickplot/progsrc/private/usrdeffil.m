@@ -128,28 +128,32 @@ varargout={Ans FI};
 
 
 % -----------------------------------------------------------------------------
-function Out=infile(FI,domain);
+function Out=infile(FI,domain)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
-PropNames={'Name'                       'DimFlag' 'DataInCell' 'NVal' 'Fld' 'Tri'};
-DataProps={''                            [0 0 1 1 0]  0          0     0    0};
+PropNames={'Name' 'Units' 'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVal' 'Fld' 'Tri' 'ClosedPoly'};
+DataProps={''     ''      ''     ''       [0 0 1 1 0]  0          0      0     0     0};
 DataProps(1,:)=[];
 
 for i=1:length(FI)
     DataProps{i,1}=FI(i).Name;
-    DataProps{i,2}=FI(i).DimFlag;
+    DataProps{i,2}=FI(i).Units;
+    DataProps{i,3}=FI(i).Geom;
+    DataProps{i,4}=FI(i).Coords;
+    DataProps{i,5}=FI(i).DimFlag;
     if isfield(FI(i).Props,'DataInCell')
-        DataProps{i,3}=FI(i).Props.DataInCell;
-    else
-        DataProps{i,3}=0;
-    end
-    DataProps{i,4}=FI(i).Props.NVal;
-    DataProps{i,5}=i;
-    if isfield(FI(i),'Tri') & ~isempty(FI(i).Tri)
-        DataProps{i,6}=FI(i).Tri;
+        DataProps{i,6}=FI(i).Props.DataInCell;
     else
         DataProps{i,6}=0;
     end
+    DataProps{i,7}=FI(i).Props.NVal;
+    DataProps{i,8}=i;
+    if isfield(FI(i),'Tri') && ~isempty(FI(i).Tri)
+        DataProps{i,9}=FI(i).Tri;
+    else
+        DataProps{i,9}=0;
+    end
+    DataProps{i,10}=FI(i).ClosedPoly;
 end
 Out=cell2struct(DataProps,PropNames,2);
 
@@ -160,7 +164,7 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
 TDep=0;
 kIndex=3;
-if isfield(Props,'Tri') & Props.Tri
+if isfield(Props,'Tri') && Props.Tri
     TDep=1;
     kIndex=2;
 elseif Props.DimFlag(T_)
@@ -654,7 +658,7 @@ if isequal(Props.FileInfo,'operator')
             sz=zeros(1,5);
             for i=1:length(Props.Props.Data)
                 P=Props.Props.Data{i};
-                if isstruct(P) & isfield(P,'FileInfo')
+                if isstruct(P) && isfield(P,'FileInfo')
                     sz=max(sz,getsize([],P));
                 end
             end
@@ -669,7 +673,7 @@ else
     end
     [Chk,sz]=qp_getdata(Props.FileInfo,DomainNr,Props.Props,'size');
     for i=1:5
-        if ~isempty(Props.Selected{i}) & ~isequal(Props.Selected{i},0)
+        if ~isempty(Props.Selected{i}) && ~isequal(Props.Selected{i},0)
             sz(i)=length(Props.Selected{i});
         end
     end
@@ -709,7 +713,7 @@ if isequal(Props.FileInfo,'operator')
             j=0;
             for i=1:length(Props.Props.Data)
                 P=Props.Props.Data{i};
-                if isstruct(P) & isfield(P,'FileInfo')
+                if isstruct(P) && isfield(P,'FileInfo')
                     szi=getsize([],P);
                     if szi(T_)>nt
                         nt=szi(T_);
@@ -726,7 +730,7 @@ if isequal(Props.FileInfo,'operator')
     end
 else
     selt=Props.Selected{T_};
-    if ~isempty(selt) & ~isequal(selt,0)
+    if ~isempty(selt) && ~isequal(selt,0)
         if length(selt)==1
             t=selt;
         elseif isequal(t,0)
@@ -779,7 +783,7 @@ if isequal(Props.FileInfo,'operator')
     end
 else
     sels=Props.Selected{ST_};
-    if ~isempty(sels) & ~isequal(sels,0)
+    if ~isempty(sels) && ~isequal(sels,0)
         if length(sels)==1
             s=sels;
         elseif isequal(s,0)
@@ -957,7 +961,7 @@ switch cmd
         Handle_Cond=findobj(mfig,'tag','condition=?');
         set(Handle_Cond,'enable','off','backgroundcolor',Inactive)
 
-        if isempty(Str) | isequal(Ops{k},' ')
+        if isempty(Str) || isequal(Ops{k},' ')
             set(Handle_VarList2,'enable','off','value',1,'string',{' '},'backgroundcolor',Inactive,'userdata',[]);
             set(Handle_DefVar,'enable','off')
         else
@@ -973,16 +977,16 @@ switch cmd
                     NValMismatchNotAllowed=ismember(Ops{k},{'vector(A,B)','vec_M&D(A,B)'});
                     NValBMustEqual1=ismember(Ops{k},{'A under condition B'});
                     for ii=1:length(Vars)
-                        if (NValBMustEqual1 & Vars(ii).Props.NVal~=1)
+                        if (NValBMustEqual1 && Vars(ii).Props.NVal~=1)
                             jj(ii)=0;
-                        elseif (Vars(ii).Props.NVal~=NVali) & (NValMismatchNotAllowed | ...
-                                ~((Vars(ii).Props.NVal==1) | (NVali==1 & Vars(ii).Props.NVal>0)))
+                        elseif (Vars(ii).Props.NVal~=NVali) && (NValMismatchNotAllowed || ...
+                                ~((Vars(ii).Props.NVal==1) || (NVali==1 && Vars(ii).Props.NVal>0)))
                             jj(ii)=0;
-                        elseif ~isequal(SZ{ii}(T_),SZi(T_)) & ~isequal(SZ{ii}(T_),1) & FI(ii).DimFlag(T_) & ~isequal(1,SZi(T_)) & FI(i).DimFlag(T_)
+                        elseif ~isequal(SZ{ii}(T_),SZi(T_)) && ~isequal(SZ{ii}(T_),1) && FI(ii).DimFlag(T_) && ~isequal(1,SZi(T_)) && FI(i).DimFlag(T_)
                             jj(ii)=0;
                         elseif any(SZ{ii}([M_ N_ K_])~=SZi([M_ N_ K_]) & SZ{ii}([M_ N_ K_])~=0 & SZ{ii}([M_ N_ K_])~=1 & SZi([M_ N_ K_])~=0 & SZi([M_ N_ K_])~=1)
                             jj(ii)=0;
-                        elseif any(SZ{ii}([M_ N_ K_])~=SZi([M_ N_ K_]) & SZ{ii}([M_ N_ K_])~=1 & SZi([M_ N_ K_])==1) & ...
+                        elseif any(SZ{ii}([M_ N_ K_])~=SZi([M_ N_ K_]) & SZ{ii}([M_ N_ K_])~=1 & SZi([M_ N_ K_])==1) && ...
                                 any(SZ{ii}([M_ N_ K_])~=SZi([M_ N_ K_]) & SZ{ii}([M_ N_ K_])==1 & SZi([M_ N_ K_])~=1)
                             jj(ii)=0;
                         end
@@ -1194,11 +1198,18 @@ switch cmd
         Handle_Cond=findobj(mfig,'tag','condition=?');
         cond=get(Handle_Cond,'userdata');
 
-        Props.Tri=Vars(i).Tri;
+        Props.Units      = '';
+        Props.Geom       = Vars(i).Geom;
+        Props.Coords     = Vars(i).Coords;
+        Props.Tri        = Vars(i).Tri;
+        Props.ClosedPoly = Vars(i).ClosedPoly;
         switch Ops{k}
             case {'series: A,B'}
                 ii=jj(j);
                 VarName=sprintf('%s,%s',Vars(i).Name,Vars(ii).Name);
+                if isequal(Vars(i).Units,Vars(ii).Units)
+                    Props.Units = Vars(i).Units;
+                end
                 Props.NVal=Vars(i).Props.NVal;
                 Props.Oper=Ops{k};
                 Props.Data={Vars(i) Vars(ii)};
@@ -1206,6 +1217,9 @@ switch cmd
             case {'vector(A,B)'}
                 ii=jj(j);
                 VarName=sprintf('vector(%s,%s)',Vars(i).Name,Vars(ii).Name);
+                if isequal(Vars(i).Units,Vars(ii).Units)
+                    Props.Units = Vars(i).Units;
+                end
                 Props.NVal=2;
                 Props.Oper=Ops{k};
                 Props.Data={Vars(i) Vars(ii)};
@@ -1219,6 +1233,12 @@ switch cmd
                 Props.DataInCell = Vars(i).DataInCell & Vars(ii).DataInCell;
             case {'A+B','A-B','A*B','A/B'}
                 ii=jj(j);
+                switch Ops{k}
+                    case {'A+B','A-B'}
+                        if isequal(Vars(i).Units,Vars(ii).Units)
+                            Props.Units = Vars(i).Units;
+                        end
+                end
                 VarName=sprintf('(%s) %s (%s)',Vars(i).Name,Ops{k}(2),Vars(ii).Name);
                 Props.NVal=max(Vars(i).Props.NVal,Vars(ii).Props.NVal);
                 Props.Oper=Ops{k};
@@ -1226,6 +1246,9 @@ switch cmd
                 Props.DataInCell = Vars(i).DataInCell & Vars(ii).DataInCell;
             case {'max(A,B)','min(A,B)'}
                 ii=jj(j);
+                if isequal(Vars(i).Units,Vars(ii).Units)
+                    Props.Units = Vars(i).Units;
+                end
                 VarName=sprintf('%s(%s,%s)',Ops{k}(1:3),Vars(i).Name,Vars(ii).Name);
                 Props.NVal=max(Vars(i).Props.NVal,Vars(ii).Props.NVal);
                 Props.Oper=Ops{k};
@@ -1241,18 +1264,28 @@ switch cmd
                 Props.DataInCell = Vars(i).DataInCell & Vars(ii).DataInCell;
             case {'+ constant','* constant','^ constant'}
                 VarName=sprintf('(%s) %s %g',Vars(i).Name,Ops{k}(1),c);
+                switch Ops{k}
+                    case '+ constant'
+                        Props.Units = Vars(i).Units;
+                end
                 Props.NVal=Vars(i).Props.NVal;
                 Props.Oper=Ops{k};
                 Props.Data={Vars(i) c};
                 Props.DataInCell = Vars(i).DataInCell;
             case {'max(A,constant)','min(A,constant)'}
                 VarName=sprintf('%s(%s,%g)',Ops{k}(1:3),Vars(i).Name,c);
+                Props.Units = Vars(i).Units;
                 Props.NVal=Vars(i).Props.NVal;
                 Props.Oper=Ops{k};
                 Props.Data={Vars(i) c};
                 Props.DataInCell = Vars(i).DataInCell;
             case {'10log','abs','max m','alg.mean m','min m','max n','alg.mean n','min n','max k','alg.mean k','min k','sum k','sum m','sum n','flip m','flip n','flip k'}
                 VarName=sprintf('%s(%s)',Ops{k},Vars(i).Name);
+                switch Ops{k}
+                    case '10log'
+                    otherwise
+                        Props.Units = Vars(i).Units;
+                end
                 Props.NVal=Vars(i).Props.NVal;
                 Props.Oper=Ops{k};
                 Props.Data={Vars(i)};
@@ -1266,6 +1299,7 @@ switch cmd
                 Props.DataInCell = Vars(i).DataInCell;
             case {'magnitude'}
                 VarName=sprintf('%s(%s)',Ops{k},Vars(i).Name);
+                Props.Units = Vars(i).Units;
                 Props.NVal=1;
                 Props.Oper=Ops{k};
                 Props.Data={Vars(i)};
@@ -1273,6 +1307,7 @@ switch cmd
             case {'A under condition B'}
                 ii=jj(j);
                 VarName=sprintf('%s if %s in {%s}',Vars(i).Name,Vars(ii).Name,realset(cond));
+                Props.Units = Vars(i).Units;
                 Props.NVal=Vars(i).Props.NVal;
                 Props.Oper=Ops{k};
                 Props.Data={Vars(i) Vars(ii) cond};
@@ -1303,23 +1338,27 @@ switch cmd
         end
         if accept
             ii=length(Vars)+1;
-            Vars(ii).Name=VarName;
-            Vars(ii).FileInfo='operator';
-            Props.Name=VarName;
-            Vars(ii).Props=Props;
-            Vars(ii).Selected=[];
-            Vars(ii).DataInCell=Props.DataInCell;
-            Vars(ii).DimFlag=[0 0 0 0 0];
+            Vars(ii).Name       = VarName;
+            Vars(ii).Units      = Props.Units;
+            Vars(ii).Geom       = Props.Geom;
+            Vars(ii).Coords     = Props.Coords;
+            Vars(ii).FileInfo   = 'operator';
+            Props.Name = VarName;
+            Vars(ii).Props      = Props;
+            Vars(ii).Selected   = [];
+            Vars(ii).DataInCell = Props.DataInCell;
+            Vars(ii).DimFlag    = [0 0 0 0 0];
             for d = 1:5
                 dflag = 0;
                 for k = 1:length(Props.Data)
-                    if dflag == 0 & ~isnumeric(Props.Data{k}) & isfield(Props.Data{k},'DimFlag')
+                    if dflag == 0 && ~isnumeric(Props.Data{k}) && isfield(Props.Data{k},'DimFlag')
                         dflag = Props.Data{k}.DimFlag(d);
                     end
                 end
                 Vars(ii).DimFlag(d) = dflag;
             end
-            Vars(ii).Tri=Props.Tri;
+            Vars(ii).ClosedPoly = Props.ClosedPoly;
+            Vars(ii).Tri        = Props.Tri;
             set(Handle_VarList,'userdata',Vars);
             Str={};
             for i=1:length(Vars)
