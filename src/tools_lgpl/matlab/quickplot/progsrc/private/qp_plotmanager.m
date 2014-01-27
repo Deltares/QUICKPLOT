@@ -1766,3 +1766,9 @@ if isempty(v)
 elseif ~iscell(v)
     v = {v};
 end
+
+function S = strjoin(C,sym)
+C = C(:)';
+C(2,:) = {sym};
+C{2,end} = '';
+S = strcat(C{:});
