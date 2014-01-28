@@ -476,9 +476,9 @@ if DataRead
             %
             if zlayermodel
                 val1 = dz.*val1*gravity;
-                val1 = flip(val1,4);
+                val1 = val1(:,:,:,end:-1:1);
                 val1 = cumsum(val1,4) - val1/2;
-                val1 = flip(val1,4);
+                val1 = val1(:,:,:,end:-1:1);
             else
                 val1 = dz.*val1*gravity;
                 val1 = cumsum(val1,4) - val1/2;
