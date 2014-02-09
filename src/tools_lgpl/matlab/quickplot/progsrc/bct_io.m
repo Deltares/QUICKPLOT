@@ -250,7 +250,7 @@ fid=fopen(filename,'w');
 % When the file is written using a fixed line/record length this is
 % shown in the first line
 %fprintf(fid,'# %i\n',linelength);
-unknown_parameters = 0;
+parameter_mismatch = 0;
 for i = 1:length(Info.Table)
     if isfield(Info.Table,'Name') && ~isempty(Info.Table(i).Name)
         fprintf(fid,'table-name          ''%s''\n',Info.Table(i).Name);
@@ -267,17 +267,21 @@ for i = 1:length(Info.Table)
     fprintf(fid,'interpolation       ''%s''\n',Info.Table(i).Interpolation);
 
     nval = size(Info.Table(i).Data,2);
+    if ~parameter_mismatch && length(Info.Table(i).Parameter)>nval
+        warning('bct_io:too_many_parameters', ...
+            'More parameters defined than columns in the data set. Verify the correctness of the file written!')
+        parameter_mismatch = 1;
+    elseif ~parameter_mismatch && length(Info.Table(i).Parameter)<nval
+        warning('bct_io:too_few_parameters', ...
+            'More columns in the data set than parameters defined. Verify the correctness of the file written!')
+        parameter_mismatch = 1;
+    end
     for j=1:nval
         if j <= length(Info.Table(i).Parameter)
             fprintf(fid,'parameter           ''%s'' unit ''%s''\n', ...
                 Info.Table(i).Parameter(j).Name, ...
                 Info.Table(i).Parameter(j).Unit);
         else
-            if ~unknown_parameters
-                warning('bct_io:too_many_parameter', ...
-                    'More columns in data set than parameters defined. Verify the correctness of the file written!')
-                unknown_parameters = 1;
-            end
             fprintf(fid,'parameter           ''unknown'' unit ''unknown''\n');
         end
     end
