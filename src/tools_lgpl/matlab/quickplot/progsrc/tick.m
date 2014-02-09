@@ -1,17 +1,21 @@
 function tick(varargin)
 %TICK Create ticks and ticklabels.
-%   TICK(AXES,AXIS,TICKS,FORMAT,SCALING)
-%   changes the tickmarks of the specified axis (a string
-%   containing the characters x, y and z) of the specified
-%   axes object (default the current axes). The new tickmarks
-%   will be at the specified TICKS locations (default the
-%   current tickmark locations) and the tickmarklocations are
-%   formatted according the FORMAT string (required argument)
-%   after multiplication by the SCALING factor.
+%   TICK(AXES,AXIS,TICKS,FORMAT,SCALING) changes the tickmarks of the
+%   specified axis (a string containing the characters x, y and z) of the
+%   specified axes object (defaults to the current axes if not specified).
+%   The new tickmarks will be at the specified TICKS locations (defaults to
+%   the current tickmark locations if 'current' is specified, or if
+%   argument is not specified) and the tickmarklabels are formatted
+%   according the FORMAT string (required argument) after multiplication by
+%   the SCALING factor (defaults to 1 if not specified).
 %
-%   The FORMAT string can be any valid FPRINTF expression
-%   containing a "%-field" for the tickmark value. Other
-%   options for the FORMAT string are:
+%   Use TICKS = 'autoticks' to automatically determine the tick locations
+%   rather than using the current locations (TICKS = 'current') or 
+%   specificied locations (TICKS = a vector).
+%
+%   The FORMAT string can be any valid FPRINTF expression containing one
+%   "%-field" for the tickmark value. Other options for the FORMAT string
+%   are:
 %
 %     * 'none' : no tickmarks (ignoring TICKS), no labels
 %
@@ -179,6 +183,12 @@ if (NArgs>=i)
         tckmode='spec';
         tck=INP{i};
         i=i+1;
+    elseif strcmp(INP{i},'current')
+        %tckmode='auto'
+        i=i+1;
+    elseif strcmp(INP{i},'autoticks')
+        tckmode='autoticks';
+        i=i+1;
     end
 end
 
@@ -201,7 +211,7 @@ else
 end
 
 scaling=1;
-if (NArgs>=i)
+if NArgs>=i
     if isnumeric(INP{i}) && isequal(size(INP{i}),[1 1])
         scaling=INP{i};
         i=i+1;
@@ -220,9 +230,9 @@ elseif (NArgs>i)
 end
 
 for i=1:length(ax)
-    if strcmp(tckmode,'auto')
+    if strcmp(tckmode,'auto') || strcmp(tckmode,'autoticks')
         if datefrmt
-            if strcmp(get(handle,[ax(i) 'tickmode']),'auto')
+            if strcmp(get(handle,[ax(i) 'tickmode']),'auto') || strcmp(tckmode,'autoticks')
                 if strcmp(frmt,'autodate')
                     [tck,frmt]=Local_datetick(handle,ax(i));
                 else
@@ -232,6 +242,9 @@ for i=1:length(ax)
                 tck=get(handle,[ax(i) 'tick']);
             end
         else
+            if strcmp(tckmode,'autoticks')
+                set(handle,[ax(i) 'tickmode'],'auto')
+            end
             tck=get(handle,[ax(i) 'tick']);
         end
     end
@@ -296,7 +309,6 @@ end
 
 function Strs = Local_datestr(ticks,frmt,Language)
 ticks=ticks(:);
-
 
 perc=strfind(frmt,'%');
 i=1;
@@ -530,7 +542,6 @@ end
 
 function [ticks,format]=Local_datetick(handle,ax)
 %Similar to DATETICK with the addition of the handle argument
-
 limmanual = strcmp(get(handle,[ax 'limmode']),'manual');
 if limmanual
     lim = get(handle,[ax 'lim']);
@@ -538,7 +549,7 @@ else
     lim = limits(handle,ax);
 end
 [ticks,format] = bestscale(lim);
-if ~limmanual && ~isempty(ticks)
+if ~limmanual && length(ticks)>1
     set(handle,[ax 'lim'],[min(lim(1),min(ticks)) max(lim(2),max(ticks))]);
 end
 
@@ -548,6 +559,11 @@ function [ticks,format] = bestscale(lim)
 ntickpref=5;
 
 dlim=lim(2)-lim(1);
+if dlim==0
+    ticks = lim(1);
+    format = 'date: %D %3O %Y %H:%2.2m:%02.0s';
+    return
+end
 dt=[365  91   30   14  7  2  1 1/2 1/4 1/8 1/12 1/24 1/48  1/72  1/96  1/144 1/288 1/720 1/1440 1/2880 1/4320 1/5760 1/8640 1/17280 1/43200 1/86400];
 %   yr  qrtr mnth 2wk wk 2dy dy 12h 6h  3h   2h   1h  30min 20min 15min 10min 5min  2min   1min    30s    20s   15s     10s     5s      2s      1s
 ntick=dlim./dt;

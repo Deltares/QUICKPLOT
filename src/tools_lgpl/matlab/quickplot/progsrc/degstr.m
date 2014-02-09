@@ -72,6 +72,10 @@ function str = degstr(degfloat,format,varargin)
 %   $HeadURL$
 %   $Id$
 
+degminsec = true;
+tocell    = {};
+DecSep    = '.';
+Language  = 'English';
 if nargin<2
     shortformat = 'deg';
 else
@@ -81,8 +85,51 @@ else
         shortformat = format(1:3);
     end
 end
+shortformat = lower(shortformat);
+%
+i = 1;
+while i<= length(varargin)
+    if ischar(varargin{i})
+        switch lower(varargin{i})
+            case 'cell'
+                tocell = {'cell'};
+            case {'dm','dms','degmin','degminsec'}
+                degminsec = true;
+            case {'dd','decdeg'}
+                degminsec = false;
+            case 'decsep'
+                DecSep = varargin{i+1};
+                i = i+1;
+            case 'language'
+                Language = varargin{i+1};
+                i = i+1;
+        end
+    end
+    i = i+1;
+end
 %
 anyzero = any(abs(degfloat(:))<0.5/3600);
+%
+switch lower(Language)
+    case 'english'
+        WESN = {'West'  'East'  'South' 'North'};
+    case 'dutch'
+        WESN = {'West'  'Oost'  'Zuid'  'Noord'};
+    case 'german'
+        WESN = {'West'  'Ost'   'Süd'   'Nord'};
+    case 'french'
+        WESN = {'Ouest' 'Est'   'Sud'   'Nord'};
+    case 'italian'
+        WESN = {'Ovest' 'Est'   'Sud'   'Nord'};
+    case 'spanish'
+        WESN = {'Oeste' 'Este'  'Sur'   'Norte'};
+    otherwise
+        error('Unsupported language: %s',Language)
+end
+west  = WESN{1}(1);
+east  = WESN{2}(1);
+south = WESN{3}(1);
+north = WESN{4}(1));
 %
 switch shortformat
     case 'lonlat'
@@ -101,17 +148,19 @@ switch shortformat
         degfloat(:,1,:) = clipperiodic(degfloat(:,1,:),360);
         s = sign(degfloat);
         s(:,2,:)=s(:,2,:)+3;
-        dir = 'W ES N';
+        dir = [west ' ' east south ' ' north];
         dir = dir(s+2);
         degfloat = abs(degfloat);
-        deg = floor(degfloat);
-        degfloat = (degfloat-deg)*60;
+        if degminsec
+            deg = floor(degfloat);
+            degfloat = (degfloat-deg)*60;
+        end
     case {'lon','lat'}
         degfloat = degfloat(:)';
         switch shortformat
             case 'lon'
                 degfloat = clipperiodic(degfloat,360);
-                dir = 'W E ';
+                dir = [west ' ' east ' '];
             case 'lat'
                 iter=1;
                 while 1
@@ -121,13 +170,15 @@ switch shortformat
                     end
                     degfloat(I) = (180-abs(degfloat(I))).*sign(degfloat(I));
                 end
-                dir = 'S N ';
+                dir = [south ' ' north ' '];
         end
         s = sign(degfloat);
         dir = dir(s+2);
         degfloat = abs(degfloat);
-        deg = floor(degfloat);
-        degfloat = (degfloat-deg)*60;
+        if degminsec
+            deg = floor(degfloat);
+            degfloat = (degfloat-deg)*60;
+        end
     case 'deg'
         %dummy dir
         degfloat = clipperiodic(degfloat,360);
@@ -136,35 +187,42 @@ switch shortformat
         dir = zeros(sz);
         %
         degfloat = degfloat(:)';
-        deg = fix(degfloat);
-        degfloat = abs((degfloat-deg)*60);
+        if degminsec
+            deg = fix(degfloat);
+            degfloat = abs((degfloat-deg)*60);
+        end
     otherwise
         error('Unknown format: %s',format)
 end
 %
-min = floor(degfloat);
-degfloat = (degfloat-min)*60;
-sec = round(degfloat);
-i = sec==60;
-if any(i(:))
-    sec(i) = 0;
-    min(i) = min(i)+1;
-    i = min==60;
-    min(i) = 0;
-    deg(i) = deg(i)+sign(deg(i)+0.01);
-end
-%
-if all(sec(:)==0)
-    if all(min(:)==0)
-        xformat = ['%i' char(176) ' %c'];
-        data = cat(1,deg,dir);
+if degminsec
+    min = floor(degfloat);
+    degfloat = (degfloat-min)*60;
+    sec = round(degfloat);
+    i = sec==60;
+    if any(i(:))
+        sec(i) = 0;
+        min(i) = min(i)+1;
+        i = min==60;
+        min(i) = 0;
+        deg(i) = deg(i)+sign(deg(i)+0.01);
+    end
+    %
+    if all(sec(:)==0)
+        if all(min(:)==0)
+            xformat = ['%i' char(176) ' %c'];
+            data = cat(1,deg,dir);
+        else
+            xformat = ['%i' char(176) '%2.2i'' %c'];
+            data = cat(1,deg,min,dir);
+        end
     else
-        xformat = ['%i' char(176) '%2.2i'' %c'];
-        data = cat(1,deg,min,dir);
+        xformat = ['%i' char(176) '%2.2i''%2.2i'''' %c'];
+        data = cat(1,deg,min,sec,dir);
     end
 else
-    xformat = ['%i' char(176) '%2.2i''%2.2i'''' %c'];
-    data = cat(1,deg,min,sec,dir);
+    xformat = ['%g' char(176) ' %c'];
+    data = cat(1,degfloat,double(dir));
 end
 %
 switch shortformat
@@ -181,7 +239,10 @@ switch shortformat
     case 'deg'
         str = sprintf([xformat(1:end-3) 'x'],data);
 end
-str = multiline(str(1:end-1),'x',varargin{:});
+if ~degminsec && ~strcmp(DecSep,'.')
+    str = strrep(str,'.',DecSep);
+end
+str = multiline(str(1:end-1),'x',tocell{:});
 
 %--------------------------------------------------------------------------
 function value = clipperiodic(value,period)

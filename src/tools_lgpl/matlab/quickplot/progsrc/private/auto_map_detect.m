@@ -35,16 +35,21 @@ if nargin<6
     SkipElem={};
 end
 %
-if size(DataProps,2)==10
-    % new
+if size(DataProps,2)==16
+    % d3d_trimfil "infile"
+    propversion = 2;
+    igrp = 12;
+    ielm = 13:14;
+elseif size(DataProps,2)==10
+    % d3d_trimfil "quantities"
+    propversion = 1;
     igrp = 8;
     ielm = 9:10;
-    oldprops = 0;
 else
-    % old
+    % other cases
+    propversion = 0;
     igrp = 10;
     ielm = 11:12;
-    oldprops = 1;
 end
 %
 % Don't want to sort the Grps and therefore I don't use setdiff here ...
@@ -66,7 +71,7 @@ for i=1:length(Grps)
         ELMSinGRP = DataProps(Grpi,ielm);
         Elmi=strmatch(Elms{j},ELMSinGRP(:),'exact');
         Info=vs_disp(FI,Grps{i},Elms{j});
-        if (isempty(Elmi) | isempty(Grpi)) & isstruct(Info) & all(InfoG.SizeDim>0)
+        if (isempty(Elmi) || isempty(Grpi)) && isstruct(Info) && all(InfoG.SizeDim>0)
             sz=Info.SizeDim; sz(6)=1;
             if isequal(sz([1 2]),nm)
                 if isempty(Info.ElmDescription)
@@ -76,9 +81,9 @@ for i=1:length(Grps)
                 end
                 if k==1
                     if Info.NDim==2
-                        [DataProps,fld] = addprop(DataProps,fld,oldprops,ediscr,'',Grps{i},Elms{j},[]);
+                        [DataProps,fld] = addprop(DataProps,fld,propversion,ediscr,'',Grps{i},Elms{j},[]);
                     elseif Info.NDim>=3
-                        [DataProps,fld] = addpropmulti(DataProps,fld,oldprops,ediscr,'',Grps{i},Elms{j},sz(3:Info.NDim));
+                        [DataProps,fld] = addpropmulti(DataProps,fld,propversion,ediscr,'',Grps{i},Elms{j},sz(3:Info.NDim));
                     end
                 else
                     if sz(3)==k
@@ -90,25 +95,25 @@ for i=1:length(Grps)
                     end
                     if isempty(loc3d)
                         if sz(3)==0
-                            [DataProps,fld] = addprop(DataProps,fld,oldprops,ediscr,'',Grps{i},Elms{j},[]);
+                            [DataProps,fld] = addprop(DataProps,fld,propversion,ediscr,'',Grps{i},Elms{j},[]);
                         elseif Info.NDim>=3
-                            [DataProps,fld] = addpropmulti(DataProps,fld,oldprops,ediscr,'',Grps{i},Elms{j},sz(3:Info.NDim));
+                            [DataProps,fld] = addpropmulti(DataProps,fld,propversion,ediscr,'',Grps{i},Elms{j},sz(3:Info.NDim));
                         end
                     else
                         if Info.NDim==3
-                            [DataProps,fld] = addprop(DataProps,fld,oldprops,ediscr,loc3d,Grps{i},Elms{j},[]);
+                            [DataProps,fld] = addprop(DataProps,fld,propversion,ediscr,loc3d,Grps{i},Elms{j},[]);
                         elseif Info.NDim>=4
-                            [DataProps,fld] = addpropmulti(DataProps,fld,oldprops,ediscr,loc3d,Grps{i},Elms{j},sz(4:Info.NDim));
+                            [DataProps,fld] = addpropmulti(DataProps,fld,propversion,ediscr,loc3d,Grps{i},Elms{j},sz(4:Info.NDim));
                         end
                     end
                 end
             end
         end
     end
-    [DataProps,fld] = addsep(DataProps,fld,oldprops);
+    [DataProps,fld] = addsep(DataProps,fld,propversion);
 end
 
-function [DataProps,fld] = addpropmulti(DataProps,fld,oldprops,ediscr,loc3d,Grp,Elm,sz)
+function [DataProps,fld] = addpropmulti(DataProps,fld,propversion,ediscr,loc3d,Grp,Elm,sz)
 nel = prod(sz);
 ndim = length(sz);
 for e=1:nel
@@ -119,38 +124,49 @@ for e=1:nel
     else
         Str=ediscr;
     end
-    [DataProps,fld] = addprop(DataProps,fld,oldprops,Str,loc3d,Grp,Elm,x);
+    [DataProps,fld] = addprop(DataProps,fld,propversion,Str,loc3d,Grp,Elm,x);
 end
 
-function [DataProps,fld] = addprop(DataProps,fld,oldprops,ediscr,loc3d,Grp,Elm,subf)
+function [DataProps,fld] = addprop(DataProps,fld,propversion,ediscr,loc3d,Grp,Elm,subf)
 fld = fld+1;
-if oldprops
-    if isempty(loc3d)
-        dimflag = [1 0 1 1 0];
-    else
-        dimflag = [1 0 1 1 1];
-    end
-    DataProps(fld,:) = {ediscr '' dimflag 1 1 '' 'z' 'z' loc3d Grp Elm '' subf 0};
-else
-    subf = sprintf('%i',subf);
-    switch loc3d
-        case 'c'
-            Stagger = 'Voxels3D';
-            VCoord = 'F';
-        case 'i'
-            Stagger = 'HFaces3D';
-            VCoord = 'F';
-        otherwise
-            Stagger = 'Faces2D';
-            VCoord = '';
-    end
-    DataProps(fld,:) = {ediscr '' 'float' 'Time' Stagger subf VCoord Grp Elm ''};
+switch propversion
+    case {0,2}
+        % infile
+        if isempty(loc3d)
+            dimflag = [1 0 1 1 0];
+        else
+            dimflag = [1 0 1 1 1];
+        end
+        if propversion==0
+            DataProps(fld,:) = {ediscr '' dimflag 1 1 '' 'z' 'z' loc3d Grp Elm '' subf 0};
+        else
+            DataProps(fld,:) = {ediscr '' dimflag 1 1 'sQUAD' 'xy'     '' 'z' 'z' loc3d Grp Elm '' subf 0};
+        end
+    case 1
+        % quantities
+        subf = sprintf('%i',subf);
+        switch loc3d
+            case 'c'
+                Stagger = 'Voxels3D';
+                VCoord = 'F';
+            case 'i'
+                Stagger = 'HFaces3D';
+                VCoord = 'F';
+            otherwise
+                Stagger = 'Faces2D';
+                VCoord = '';
+        end
+        DataProps(fld,:) = {ediscr '' 'float' 'Time' Stagger subf VCoord Grp Elm ''};
 end
 
-function [DataProps,fld] = addsep(DataProps,fld,oldprops)
-if oldprops
-    fld = fld+1;
-    DataProps(fld,:)={'-------'                       ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''           ''        ''       []       0};
-else
-%    DataProps(fld,:) = {'-------' '' 'float' '' 'Faces2D' '' '' '' '' ''};
+function [DataProps,fld] = addsep(DataProps,fld,propversion)
+switch propversion
+    case 0
+        fld = fld+1;
+        DataProps(fld,:)={'-------'                       ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''           ''        ''       []       0};
+    case 2
+        fld = fld+1;
+        DataProps(fld,:)={'-------'                       ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''           ''        ''       []       0};
+    otherwise
+        % no separators
 end

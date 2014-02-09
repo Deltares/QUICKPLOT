@@ -59,13 +59,13 @@ if isfield(Props,'Geom') && ~isempty(Props.Geom)
     geometry=Props.Geom;
     coordinates=Props.Coords;
 elseif nval<0
-    if DimFlag(M_) && DimFlag(N_)
-        geometry='sQUAD';
-        coordinates='xy';
-    else
+    %if DimFlag(M_) && DimFlag(N_)
+    %    geometry='sQUAD';
+    %    coordinates='xy';
+    %else
         geometry='SELFPLOT';
         coordinates='';
-    end
+    %end
 else
     if DimFlag(M_) && DimFlag(N_)
         geometry='sQUAD';
@@ -243,7 +243,7 @@ switch geometry
             elseif nval==0
                 axestype={'X-Y'};
             else
-                axestype={'Time-Val'};
+                axestype={'Time-Val','X-Y'};
             end
         else
             if isequal(coordinates,'d')
@@ -256,8 +256,10 @@ switch geometry
                 else
                     axestype={'X-Y','Time-Val','Text'};
                 end
-            else
+            elseif DimFlag(T_)
                 axestype={'Time-Val','Text'};
+            else
+                axestype={'Text'};
             end
         end
     case 'PNT+'
@@ -314,6 +316,9 @@ switch geometry
     case {'POLYL','POLYG'}
         axestype={'X-Y'};
         lineproperties=1;
+        if strcmp(geometry,'POLYG') && ~isfield(Props,'ClosedPoly')
+            Props.ClosedPoly = 2;
+        end
     case {'sQUAD','sQUAD+'}
         if multiple(K_)
             if multiple(M_) && multiple(N_) && ~vslice
@@ -451,7 +456,7 @@ if nval==-1 || (nval>=0 && nval<1)
 end
 if ~isempty(strfind(axestype,'Time'))
     animate = 0;
-elseif ~multiple(M_) && ~multiple (N_) && ~multiple(K_) && nval==0
+elseif ~multiple(M_) && ~multiple (N_) && ~multiple(K_) && strcmp(axestype,'X-Y')
     animate = 0;
 elseif strcmp(axestype,'Distance-Val')
     animate = 0;
@@ -687,7 +692,7 @@ if (nval==1 && data2d && ~strcmp(geometry,'SEG')) || nval==1.9 || strcmp(nvalstr
                         else
                             PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                         end
-                    elseif isequal(geometry,'PNT')
+                    elseif isequal(geometry,'PNT') || isequal(geometry,'PNT+')
                         PrsTps={'markers';'values'};
                     elseif isequal(geometry,'POLYL')
                         PrsTps={'polylines'};
@@ -1320,51 +1325,52 @@ end
 %---- Export option
 
 ExpTypes={};
-if (Spatial<=1) && nval>0
-    ExpTypes{end+1}='csv file (time series)';
-    ExpTypes{end+1}='Tekal file (time series)';
-end
-if (allm && alln) && ~multiple(K_) && ~multiple(T_)
-    ExpTypes{end+1}='grid file';
-    ExpTypes{end+1}='grid file (old format)';
-end
-if (((allm || ~multiple(M_)) && ~multiple(N_)) || ...
-        ((alln || ~multiple(N_)) && ~multiple(M_))) && ...
-        ~multiple(K_) && ~multiple(T_) && nval==0
-    ExpTypes{end+1}='spline';
-end
-if (allm && alln) && ~multiple(K_) && ~multiple(T_)
-    if nval>0
-        ExpTypes{end+1}='QuickIn file';
-    end
-    if nval==1
-        ExpTypes{end+1}='-QuickIn file';
-    end
-    if nval==1
-        ExpTypes{end+1}='Delft3D-MOR field file';
-        ExpTypes{end+1}='-Delft3D-MOR field file';
-    end
-    if nval==1
-        ExpTypes{end+1}='SIMONA box file';
-        ExpTypes{end+1}='-SIMONA box file';
-    end
-end
-if (multiple(M_) && (multiple(N_) || triangles)) && ~multiple(K_) && ~multiple(T_)
-    if ~isfield(Ops,'presentationtype') || ~isequal(Ops.presentationtype,'continuous shades')
-        ExpTypes{end+1}='ARCview shape';
-    end
-elseif strcmp(geometry,'POLYL') || strcmp(geometry,'POLYG')
-    ExpTypes{end+1}='ARCview shape';
-    ExpTypes{end+1}='landboundary file';
-end
-if ((length(selected{T_})<11 && ~allt) || (maxt<11 && allt)) && nval>0 && (multiple(M_) || multiple(N_) || multiple(K_))
-    ExpTypes{end+1}='Tekal file';
-    ExpTypes{end+1}='Tecplot file';
-end
-if (multiple(M_) || multiple(N_) || multiple(K_)) && ~multiple(T_) && nval>0
-    ExpTypes{end+1}='sample file';
-end
 if nval>=0
+    if (Spatial<=1) && nval>0
+        ExpTypes{end+1}='csv file (time series)';
+        ExpTypes{end+1}='Tekal file (time series)';
+    end
+    if (allm && alln) && ~multiple(K_) && ~multiple(T_)
+        ExpTypes{end+1}='grid file';
+        ExpTypes{end+1}='grid file (old format)';
+    end
+    if (((allm || ~multiple(M_)) && ~multiple(N_)) || ...
+            ((alln || ~multiple(N_)) && ~multiple(M_))) && ...
+            ~multiple(K_) && ~multiple(T_) && nval==0
+        ExpTypes{end+1}='spline';
+    end
+    if (allm && alln) && ~multiple(K_) && ~multiple(T_)
+        if nval>0
+            ExpTypes{end+1}='QuickIn file';
+        end
+        if nval==1
+            ExpTypes{end+1}='-QuickIn file';
+        end
+        if nval==1
+            ExpTypes{end+1}='Delft3D-MOR field file';
+            ExpTypes{end+1}='-Delft3D-MOR field file';
+        end
+        if nval==1
+            ExpTypes{end+1}='SIMONA box file';
+            ExpTypes{end+1}='-SIMONA box file';
+        end
+    end
+    if (multiple(M_) && (multiple(N_) || triangles)) && ~multiple(K_) && ~multiple(T_)
+        if ~isfield(Ops,'presentationtype') || ~isequal(Ops.presentationtype,'continuous shades')
+            ExpTypes{end+1}='ARCview shape';
+        end
+    elseif strcmp(geometry,'POLYL') || strcmp(geometry,'POLYG')
+        ExpTypes{end+1}='ARCview shape';
+        ExpTypes{end+1}='landboundary file';
+    end
+    if ((length(selected{T_})<11 && ~allt) || (maxt<11 && allt)) && nval>0 && (multiple(M_) || multiple(N_) || multiple(K_))
+        ExpTypes{end+1}='Tekal file';
+        ExpTypes{end+1}='Tecplot file';
+    end
+    if (multiple(M_) || multiple(N_) || multiple(K_)) && ~multiple(T_) && nval>0
+        ExpTypes{end+1}='sample file';
+    end
+    %
     Mver = matlabversionnumber;
     ExpTypes{end+1}='mat file (v6)';
     if Mver>=7

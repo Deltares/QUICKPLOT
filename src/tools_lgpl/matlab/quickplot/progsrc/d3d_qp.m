@@ -1688,15 +1688,18 @@ switch cmd
                         otherwise
                             [Chk,data,Info]=qp_getdata(Info,DomainNr,Props,'griddata',subf{:},selected{:});
                     end
-                    % update FileInfo ...
-                    File(NrInList)=Info;
-                    set(Handle_SelectFile,'userdata',File);
-                    % reset pointer and return data ...
+                    % reset pointer ...
                     set(mfig,'pointer','arrow')
-                    if nargout>0
-                        outdata=data;
-                    else
-                        assignin('base','data',data)
+                    if Chk
+                        % update FileInfo ...
+                        File(NrInList)=Info;
+                        set(Handle_SelectFile,'userdata',File);
+                        % return data ...
+                        if nargout>0
+                            outdata=data;
+                        else
+                            assignin('base','data',data)
+                        end
                     end
                 catch Ex
                     set(mfig,'pointer','arrow')

@@ -367,10 +367,9 @@ if XYRead
     end
 
     %========================= GENERAL CODE ===============================
+    % grid interpolation ...
+    [x,y]=gridinterp(DataInCell,DimFlag(K_),Props.ReqLoc,x,y);
 end
-
-% grid interpolation ...
-[x,y]=gridinterp(DataInCell,DimFlag(K_),Props.ReqLoc,x,y);
 
 % load data ...
 if DataRead
@@ -632,6 +631,18 @@ if DataRead
         if zlayermodel
             val1(val1==0)=NaN;
             val2(val2==0)=NaN;
+        end
+        if 0 && isstruct(vs_disp(FI,'map-series','KFU'))
+            kfu=vs_let(FI,Props.Group,idx(T_),'KFU',elidx,'quiet!');
+            kfv=vs_let(FI,Props.Group,idx(T_),'KFV',elidx,'quiet!');
+            szv1 = size(val1);
+            szv1(end+1) = 1;
+            val1 = reshape(val1,[prod(szv1(1:3)) szv1(4:end)]);
+            val2 = reshape(val2,[prod(szv1(1:3)) szv1(4:end)]);
+            val1(kfu==0,:) = NaN;
+            val2(kfv==0,:) = NaN;
+            val1 = reshape(val1,szv1);
+            val2 = reshape(val2,szv1);
         end
         [val1,val2]=uv2cen(val1,val2);
     end

@@ -86,33 +86,57 @@ else
         unit{nAxes} = [];
     end
     for i = 1:nAxes
+        if isempty(getappdata(hAx,[X(i) 'range']))
+            setappdata(hAx,[X(i) 'range'],'auto')
+        end
         switch Axes{i}
             case 'Time'
                 % Time axis
+                if isempty(getappdata(hAx,[X(i) 'tickmode']))
+                    setappdata(hAx,[X(i) 'tickmode'],'autodate')
+                end
                 setlabel(hAx,X(i),'time',unit{i})
             case 'Lon'
                 % Longitude axis
+                if isempty(getappdata(hAx,[X(i) 'tickmode']))
+                    setappdata(hAx,[X(i) 'tickmode'],'longitude')
+                end
                 setlabel(hAx,X(i),'longitude','deg')
             case 'Lat'
                 % Latitude axis
+                if isempty(getappdata(hAx,[X(i) 'tickmode']))
+                    setappdata(hAx,[X(i) 'tickmode'],'latitude')
+                end
                 setlabel(hAx,X(i),'latitude','deg')
             case 'Z'
                 % Elevation axis
+                if isempty(getappdata(hAx,[X(i) 'tickmode']))
+                    setappdata(hAx,[X(i) 'tickmode'],'auto')
+                end
                 setlabel(hAx,X(i),dimension{i},unit{i})
             case {'X','Y'}
                 % Horizontal coordinate axis
+                if isempty(getappdata(hAx,[X(i) 'tickmode']))
+                    setappdata(hAx,[X(i) 'tickmode'],'auto')
+                end
                 if isempty(dimension{i})
                     dimension{i} = sprintf('%s coordinate',lower(Axes{i}));
                 end
                 setlabel(hAx,X(i),dimension{i},unit{i})
             case {'Distance'}
                 % Distance axis
+                if isempty(getappdata(hAx,[X(i) 'tickmode']))
+                    setappdata(hAx,[X(i) 'tickmode'],'auto')
+                end
                 if isempty(dimension{i})
                     dimension{i} = 'distance';
                 end
                 setlabel(hAx,X(i),dimension{i},unit{i})
             otherwise
                 % Variable axis
+                if isempty(getappdata(hAx,[X(i) 'tickmode']))
+                    setappdata(hAx,[X(i) 'tickmode'],'auto')
+                end
                 setlabel(hAx,X(i),dimension{i},unit{i})
         end
     end
@@ -219,11 +243,9 @@ units = {'mm' 'm' 'km'};
 if ~isempty(quantity)
     switch quantity
         case {'longitude','latitude'}
-            set(hAx,[dir 'ticklabelmode'],'auto',[dir 'tickmode'],'auto');
-            tick(hAx,dir,quantity);
+            tick(hAx,dir,'autoticks',quantity);
         case {'time'}
-            set(hAx,[dir 'ticklabelmode'],'auto',[dir 'tickmode'],'auto');
-            tick(hAx,dir,'autodate');
+            tick(hAx,dir,'autoticks','autodate');
         case {'distance','x coordinate','y coordinate'}
             if ismember(unit,units)
                 distanceticks(hAx,dir)

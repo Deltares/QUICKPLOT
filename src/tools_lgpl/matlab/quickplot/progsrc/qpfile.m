@@ -34,7 +34,7 @@ function Out = qpfile(DataRes)
 %   $HeadURL$
 %   $Id$
 
-if isempty(gcbf) | ~strcmp(get(gcbf,'tag'),'Delft3D-QUICKPLOT')
+if isempty(gcbf) || ~strcmp(get(gcbf,'tag'),'Delft3D-QUICKPLOT')
     mfig = findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
 else
     mfig = gcbf;
@@ -51,25 +51,33 @@ if nargin>0
     else
         i = length(File)+1;
     end
-    if isa(DataRes,'qp_data_resource')
+    if ischar(DataRes) && strcmp(DataRes,'unwrapped')
+        if isempty(File)
+            Out = -1;
+        else
+            Out = File(NrInList);
+            Out = qp_unwrapfi(Out);
+        end
+        return
+    elseif isa(DataRes,'qp_data_resource')
         File(i).QPF = 1;
         File(i).Name = DataRes.Key.Name;
         File(i).Data = DataRes;
         File(i).FileType = 'QP Data Resource Object';
         File(i).Options = 0;
         File(i).Otherargs = {};
-    elseif isfield(DataRes,'QPF') & ...
-            isfield(DataRes,'Name') & ...
-            isfield(DataRes,'Data') & ...
-            isfield(DataRes,'FileType') & ...
-            isfield(DataRes,'Options') & ...
+    elseif isfield(DataRes,'QPF') && ...
+            isfield(DataRes,'Name') && ...
+            isfield(DataRes,'Data') && ...
+            isfield(DataRes,'FileType') && ...
+            isfield(DataRes,'Options') && ...
             isfield(DataRes,'Otherargs')
         try
             File(i) = DataRes;
         catch
             error('Please specify Data Resource Object or QPFOPEN file structure.')
         end
-    elseif isfield(DataRes,'FileName') & ...
+    elseif isfield(DataRes,'FileName') && ...
             isfield(DataRes,'FileType')
         try
             dummy = qp_getdata(DataRes,'domains');

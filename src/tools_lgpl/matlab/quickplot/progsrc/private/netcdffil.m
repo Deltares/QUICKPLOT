@@ -528,6 +528,11 @@ if ~isempty(Info.Z) && Props.hasCoords
         end
         Z = expand_hdim(Z,szData,hdim);
     end
+    %
+    j = strmatch('units',Attribs,'exact');
+    if ~isempty(j)
+        Ans.ZUnits = CoordInfo.Attribute(j).Value;
+    end
     %--------------------------------------------------------------------
     %
     if removeTime
@@ -544,10 +549,14 @@ if ~isempty(Info.Z) && Props.hasCoords
     szZ = size(Z);
     szX = ones(size(szZ));
     szX(1:ndims(Ans.X)) = size(Ans.X);
-    rep = szZ./szX;
-    Ans.X = repmat(Ans.X,rep);
-    Ans.Y = repmat(Ans.Y,rep);
-    %
+    if all(szZ>=szX)
+        rep = szZ./szX;
+        Ans.X = repmat(Ans.X,rep);
+        Ans.Y = repmat(Ans.Y,rep);
+    elseif all(szX>=szZ)
+        rep = szX./szZ;
+        Ans.Z = repmat(Ans.Z,rep);
+    end
 end
 %
 if ~Props.hasCoords

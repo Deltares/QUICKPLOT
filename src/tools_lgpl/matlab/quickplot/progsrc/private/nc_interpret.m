@@ -393,7 +393,7 @@ for ivar = 1:nvars
         cvDims = nc.Dataset(icvar).Dimension;
         if nc.Dataset(icvar).Nctype==2
             % in case of a character array, leave out the last dimension
-            % (sring length)
+            % (string length)
             nmDims = setdiff(cvDims(1:end-1),vDims);
         else
             nmDims = setdiff(cvDims,vDims);
@@ -452,6 +452,7 @@ for ivar = 1:nvars
             Info.Z = Info.Z(1);
         end
         ZDims = nc.Dataset(Info.Z).Dimid;
+        ZDims = setdiff(ZDims,Info.TSMNK);
         if length(ZDims)>1
             % Z coordinate is multidimensional variable; try to determine
             % z dimension by excluding any assigned dimension ...
@@ -467,8 +468,6 @@ for ivar = 1:nvars
         end
         if length(ZDims)==1
            Info.TSMNK(5) = ZDims;
-        else
-            ui_message('error','Unable to uniquely identify z coordinate.')
         end
     end
     if ~isempty(Info.Station)
