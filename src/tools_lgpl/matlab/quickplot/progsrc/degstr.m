@@ -129,7 +129,7 @@ end
 west  = WESN{1}(1);
 east  = WESN{2}(1);
 south = WESN{3}(1);
-north = WESN{4}(1));
+north = WESN{4}(1);
 %
 switch shortformat
     case 'lonlat'
