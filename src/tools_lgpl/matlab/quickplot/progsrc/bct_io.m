@@ -250,7 +250,7 @@ fid=fopen(filename,'w');
 % When the file is written using a fixed line/record length this is
 % shown in the first line
 %fprintf(fid,'# %i\n',linelength);
-
+unknown_parameters = 0;
 for i = 1:length(Info.Table)
     if isfield(Info.Table,'Name') && ~isempty(Info.Table(i).Name)
         fprintf(fid,'table-name          ''%s''\n',Info.Table(i).Name);
@@ -266,11 +266,20 @@ for i = 1:length(Info.Table)
     fprintf(fid,'time-unit           ''%s''\n',Info.Table(i).TimeUnit);
     fprintf(fid,'interpolation       ''%s''\n',Info.Table(i).Interpolation);
 
-    nval = length(Info.Table(i).Parameter);
+    nval = size(Info.Table(i).Data,2);
     for j=1:nval
-        fprintf(fid,'parameter           ''%s'' unit ''%s''\n', ...
-            Info.Table(i).Parameter(j).Name, ...
-            Info.Table(i).Parameter(j).Unit);
+        if j <= length(Info.Table(i).Parameter)
+            fprintf(fid,'parameter           ''%s'' unit ''%s''\n', ...
+                Info.Table(i).Parameter(j).Name, ...
+                Info.Table(i).Parameter(j).Unit);
+        else
+            if ~unknown_parameters
+                warning('bct_io:too_many_parameter', ...
+                    'More columns in data set than parameters defined. Verify the correctness of the file written!')
+                unknown_parameters = 1;
+            end
+            fprintf(fid,'parameter           ''unknown'' unit ''unknown''\n');
+        end
     end
 
     fprintf(fid,'records-in-table     %i\n',size(Info.Table(i).Data,1));
