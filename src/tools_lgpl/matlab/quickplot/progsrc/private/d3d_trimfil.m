@@ -946,6 +946,7 @@ if domain>1
     Out=[];
     return
 end
+FI = guarantee_options(FI);
 %======================== SPECIFIC CODE ===================================
 PropNames={'Name'                   'Units'   'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc'  'Loc3D' 'Group'          'Val1'    'Val2'  'SubFld' 'MNK' };
 DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'XCOR'    ''       []       0
@@ -1386,6 +1387,7 @@ end
 
 % -------------------------------------------------------------------------
 function Quantities = quantities(FI)
+FI = guarantee_options(FI);
 PropNames = {'Name'                                      'Unit'   'ValType'     'Time' 'Stagger'  'SubFld' 'VCoord' 'Group'            'Val1'           'Val2'  };
 DataProps = {...
     'x coordinate'                                       'm'      'float'       ''     'Nodes2D'  ''       ''       'map-const'        'XCOR'           ''
@@ -2312,6 +2314,7 @@ end
 % -------------------------------------------------------------------------
 function T=readtim(FI,Props,t)
 %======================== SPECIFIC CODE ===================================
+FI = guarantee_options(FI);
 Dt=vs_get(FI,'map-const','DT','quiet!');
 Tunit=vs_get(FI,'map-const','TUNIT','quiet!');
 Date=vs_get(FI,'map-const','ITDATE','quiet!');
@@ -2461,7 +2464,7 @@ end
 % -------------------------------------------------------------------------
 function dp=readdps(FI,idx,DP0)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
-
+FI = guarantee_options(FI);
 if nargin==2, DP0=0; end
 Info=vs_disp(FI,'map-sed-series','DPS');
 Info2=vs_disp(FI,'map-sed-series','DPSED');
@@ -2555,6 +2558,7 @@ end
 function [NewFI,cmdargs]=options(FI,mfig,cmd,varargin)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE ===================================
+FI = guarantee_options(FI);
 Inactive=get(0,'defaultuicontrolbackground');
 Active=[1 1 1];
 NewFI=FI;
@@ -2951,3 +2955,17 @@ switch typ
         sediments = setdiff(sediments,constituents);
 end
 % -------------------------------------------------------------------------
+
+
+function FI = guarantee_options(FI)
+defopt = {'morfac' 1
+    'morstt' 0
+    'dps' ''
+    'displaytime' 'hydrodynamic time'};
+for i = 1:size(defopt,1)
+    opt = defopt{i,1};
+    val = defopt{i,2};
+    if isequal(qp_option(FI,opt),[])
+        FI = qp_option(FI,opt,val);
+    end
+end

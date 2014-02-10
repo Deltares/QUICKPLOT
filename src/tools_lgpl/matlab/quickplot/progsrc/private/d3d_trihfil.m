@@ -1079,6 +1079,7 @@ end
 % -----------------------------------------------------------------------------
 function T=readtim(FI,Props,t)
 %======================== SPECIFIC CODE =======================================
+FI = guarantee_options(FI);
 [Dt,Chk]=vs_get(FI,'his-const','DT','quiet');
 [Tunit,Chk]=vs_get(FI,'his-const','TUNIT','quiet');
 [Date,Chk]=vs_get(FI,'his-const','ITDATE','quiet');
@@ -1204,6 +1205,7 @@ end
 function [NewFI,cmdargs]=options(FI,mfig,cmd,varargin)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
+FI = guarantee_options(FI);
 Inactive=get(0,'defaultuicontrolbackground');
 Active=[1 1 1];
 NewFI=FI;
@@ -1316,3 +1318,13 @@ switch typ
         sediments = setdiff(sediments,constituents);
 end
 % -----------------------------------------------------------------------------
+
+function FI = guarantee_options(FI)
+defopt = {'displaytime' 'hydrodynamic time'};
+for i = 1:size(defopt,1)
+    opt = defopt{i,1};
+    val = defopt{i,2};
+    if isequal(qp_option(FI,opt),[])
+        FI = qp_option(FI,opt,val);
+    end
+end
