@@ -186,13 +186,13 @@ else % readtype always forced to 'struct'
             firstitem = strtok(Line);
         end
         %
-        X = textscan(Line,' %[^ ]','returnonerror',0);
+        X = textscan(Line,' %[^ \t]','returnonerror',0);
         n = length(X{1});
         if n<3
             error('Not enough values for sample data (X,Y,Value1,...)')
         end
         Line=fgetl(fid);
-        X  = textscan(Line,' %[^ ]','returnonerror',0);
+        X  = textscan(Line,' %[^ \t]','returnonerror',0);
         n2 = length(X{1});
         if n2~=n && ~feof(fid)
             error('Number of values per line should be consistent.')

@@ -451,10 +451,11 @@ inSelfPlot = 1;
 
 prj = Props.Project;
 cse = Props.Case;
-PAR = getparams(FI,prj,cse);
+%
+% These parameters need to be unprotected
 %
 PARFIL.filename1    = FI.FileName;
-PARFIL.domain1      = [PAR.project '/' PAR.case];
+PARFIL.domain1      = [FI.Project(prj).Name '/' FI.Project(prj).Cases.Names{cse}];
 
 session    = qp_settings(['shipma_session_for_' FI.Project(prj).Name],'');
 if isempty(session)
