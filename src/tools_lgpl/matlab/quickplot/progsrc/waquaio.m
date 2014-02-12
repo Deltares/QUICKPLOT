@@ -742,7 +742,7 @@ switch field
     otherwise
         if length(field)>8 && strcmp(field(1:8),'stsubst:')
             Subs=lower(waquaio(sds,exper,'substances'));
-            sbs=field(9:end);
+            sbs=deblank2(field(9:end));
             for i_sub = 1: length(Subs)
                 Subs{i_sub} = deblank2(Subs{i_sub});
             end
