@@ -125,16 +125,22 @@ end
 INP=varargin(2:end);
 i=1;
 while i<=length(INP)
-    switch lower(INP{i})
-        case 'autocorrect'
-            TryToCorrect=1;
-        case 'loaddata'
-            LoadData=1;
-        case 'sorted'
-            Sorted=1;
-        case 'nskipdatalines'
-            nSkipDataLines=INP{i+1};
-            i=i+1;
+    if ~ischar(INP{i})
+        error('Invalid argument - Expecting a string, but reading: %s',var2str(INP{i}))
+    else
+        switch lower(INP{i})
+            case 'autocorrect'
+                TryToCorrect=1;
+            case 'loaddata'
+                LoadData=1;
+            case 'sorted'
+                Sorted=1;
+            case 'nskipdatalines'
+                nSkipDataLines=INP{i+1};
+                i=i+1;
+            otherwise
+                error('Unknown option: %s',INP{i})
+        end
     end
     i=i+1;
 end

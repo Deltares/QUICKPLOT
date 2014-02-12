@@ -2556,14 +2556,16 @@ switch cmd
         zoomupdate=0;
         switch Tp
             case {'Tekal','BNA File','ArcInfoUngenerate','ESRI-Shape'}
-                if strcmp(Tp,'Tekal') && ~isfield(FI,'combinelines')
+                qnt = qpread(FI);
+                if ~ismember('line',{qnt.Name})
                     ui_message('error','This Tekal file is not supported as supplier of landboundary data.')
+                else
+                    LDB=qpread(FI,'line','griddata');
+                    delete(findall(GVAxes,'tag','landboundary'))
+                    ldbcol=qp_settings('gridviewlandboundarycolor')/255;
+                    line(LDB.X,LDB.Y,'color',ldbcol,'parent',GVAxes,'hittest','off','tag','landboundary','clipping','off')
+                    zoomupdate=1;
                 end
-                LDB=qpread(FI,'line','griddata');
-                delete(findall(GVAxes,'tag','landboundary'))
-                ldbcol=qp_settings('gridviewlandboundarycolor')/255;
-                line(LDB.X,LDB.Y,'color',ldbcol,'parent',GVAxes,'hittest','off','tag','landboundary','clipping','off')
-                zoomupdate=1;
             case ''
                 delete(findall(GVAxes,'tag','landboundary'))
                 zoomupdate=1;

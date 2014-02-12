@@ -2942,7 +2942,7 @@ constituents = lower(cellstr(names));
 Info = vs_disp(FI,'map-const','NAMSED');
 if isstruct(Info)
     names = vs_get(FI,'map-const','NAMSED','quiet!');
-    sediments = cellstr(names);
+    sediments = lower(cellstr(names));
 else
     sediments = constituents(strncmpi('sediment',constituents,8));
 end
