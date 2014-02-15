@@ -34,3 +34,5 @@ function A=protectstring(A)
 A = strrep(A,'\','\\');
 A = strrep(A,'_','\_');
 A = strrep(A,'^','\^');
+A = strrep(A,'{','\{');
+A = strrep(A,'}','\}');

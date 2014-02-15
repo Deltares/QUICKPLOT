@@ -670,10 +670,6 @@ if ~isempty(SubField)
         Quant=cat(2,Quant,': ',subfs{1});
     end
 end
-Quant=strrep(Quant,'\','\\');
-Quant=strrep(Quant,'{','\{');
-Quant=strrep(Quant,'}','\}');
-Quant=strrep(Quant,'_','\_');
 
 TStr='';
 if isfield(data,'Time') && length(data(1).Time)==1
@@ -903,6 +899,7 @@ end
 %==========================================================================
 % Begin of actual plotting
 %==========================================================================
+Quant = protectstring(Quant);
 if NVal==-2
     [Chk,hNewVec,FileInfo]=qp_getdata(FileInfo,Domain,Props,'plot',Parent,Ops,SubField{:},SubSelected{:});
     return
@@ -1024,14 +1021,14 @@ if isfield(Ops,'basicaxestype') && ~isempty(Ops.basicaxestype) && length(Parent)
                 dimension{d} = diststr;%'distance';
                 if isfield(Ops,'plotcoordinate') && strcmp(Ops.plotcoordinate,'y coordinate')
                     if isfield(Props,'NName') && ~isempty(Props.NName)
-                        dimension{d} = Props.NName;
+                        dimension{d} = protectstring(Props.NName);
                     end
                     if isfield(data,'YUnits') && ~isempty(data(1).YUnits)
                         unit{d} = data(1).YUnits;
                     end
                 else
                     if isfield(Props,'MName') && ~isempty(Props.MName)
-                        dimension{d} = Props.MName;
+                        dimension{d} = protectstring(Props.MName);
                     end
                     if isfield(data,'XUnits') && ~isempty(data(1).XUnits)
                         unit{d} = data(1).XUnits;

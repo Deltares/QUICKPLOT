@@ -486,18 +486,18 @@ if strcmp(axestype,'X-Y-Z') % cannot plot 3D volumes
 end
 
 if strfind(axestype,'Y')
-    if isfield(Props,'MName') && ~isempty(Props.MName)
-        axestype = strrep(axestype,'X',Props.MName);
-    end
-    if isfield(Props,'NName') && ~isempty(Props.NName)
-        axestype = strrep(axestype,'Y',Props.NName);
-    end
+    %if isfield(Props,'MName') && ~isempty(Props.MName)
+    %    axestype = strrep(axestype,'X',Props.MName);
+    %end
+    %if isfield(Props,'NName') && ~isempty(Props.NName)
+    %    axestype = strrep(axestype,'Y',Props.NName);
+    %end
 else
     if isfield(Props,'MName') && ~isempty(Props.MName) && multiple(M_)
-        axestype = strrep(axestype,'X',Props.MName);
+    %    axestype = strrep(axestype,'X',Props.MName);
         coords={'x coordinate'};
     elseif isfield(Props,'NName') && ~isempty(Props.NName)
-        axestype = strrep(axestype,'X',Props.NName);
+    %    axestype = strrep(axestype,'X',Props.NName);
         coords={'y coordinate'};
     end
 end
