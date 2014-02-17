@@ -194,6 +194,16 @@ while ~feof(fid)
     [NrSize,k]=fread(fid,2,'int32','b');
     if k==0
         break
+    elseif NrSize(1)~=NShapes+1
+        if NShapes==0
+            fclose(fid);
+            error('Invalid first record number: expecting 1, reading %i',NrSize(1))
+        elseif Index && NShapes>=size(S.Idx,2)
+            break
+        else
+            ui_message('warning','Invalid record number read: expecting %i, reading %i',NShapes+1,NrSize(1))
+            break
+        end
     end
     ShapeTp=fread(fid,1,'int32');
     NShapes=NShapes+1;
@@ -215,7 +225,7 @@ while ~feof(fid)
             NPnt=fread(fid,1,'int32');
             TNPrt=TNPrt+NPrt;
             TNPnt=TNPnt+NPnt;
-            fread(fid,[1 NPrt],'int32');
+            fread(fid,[1 NPrt],'int32'); % 0-based offset of first node of part
             fread(fid,[2 NPnt],'float64');
         case 8 % multipoint
             % box, N, {x,y}
@@ -233,7 +243,7 @@ while ~feof(fid)
             NPnt=fread(fid,1,'int32');
             TNPrt=TNPrt+NPrt;
             TNPnt=TNPnt+NPnt;
-            fread(fid,[1 NPrt],'int32');
+            fread(fid,[1 NPrt],'int32'); % 0-based offset of first node of part
             fread(fid,[2 NPnt],'float64');
             fread(fid,2,'float64');
             fread(fid,[1 NPnt],'float64');
@@ -259,7 +269,7 @@ while ~feof(fid)
             NPnt=fread(fid,1,'int32');
             TNPrt=TNPrt+NPrt;
             TNPnt=TNPnt+NPnt;
-            fread(fid,[1 NPrt],'int32');
+            fread(fid,[1 NPrt],'int32'); % 0-based offset of first node of part
             fread(fid,[2 NPnt],'float64');
             fread(fid,2,'float64');
             fread(fid,[1 NPnt],'float64');
@@ -301,7 +311,7 @@ if ~exist([S.FileBase '.dbf'])
 else
     S.dBase=dbase('open',[S.FileBase '.dbf']);
     if S.dBase.NRec~=S.NShapes
-        error('Number of records in dBase file does not match number of shapes.')
+        error('Number of records in dBase file (%i) does not match number of shapes (%i).',S.dBase.NRec,S.NShapes)
     end
 end
 
@@ -555,7 +565,7 @@ switch datatype
                     fread(fid,NrSize(2)-2,'int16');
             end
         end
-        if TNPnt<size(Out,1)
+        if TNPnt>0 && TNPnt<size(Out,1)
             Out(TNPnt:end,:)=[];
             Obj(TNPnt:end,:)=[];
         end
