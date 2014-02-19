@@ -285,7 +285,11 @@ switch cmd
             if ~isstandalone
                 cmdx = qp_settings('autoruncmd',{});
                 for i = 1:length(cmdx)
-                    eval(cmdx{i});
+                    try
+                        eval(cmdx{i});
+                    catch
+                        warning('Error caught while running: %s',cmdx{i})
+                    end
                 end
             end
             %
@@ -1707,73 +1711,79 @@ switch cmd
                 end
                 
             case {'quickview','addtoplot','addtoplot_left','addtoplot_right'}
-                if strcmp(cmd,'addtoplot_left')
-                    cmdargs = {'left'};
-                    cmd = 'addtoplot';
-                elseif strcmp(cmd,'addtoplot_right')
-                    cmdargs = {'right'};
-                    cmd = 'addtoplot';
-                end
-                if logfile
-                    writelog(logfile,logtype,cmd,cmdargs{:});
-                end
-                hNew=[];
-                %
-                % animate time dimension when appropriate ...
-                %
-                T=1;
-                Animate = getappdata(findobj(mfig,'tag','quickview'),'animate');
-                if Animate && Props.DimFlag(T_)
-                    if selected{T_}==0
-                        maxt=get(findobj(mfig,'tag','max_t'),'userdata');
-                        T=1:maxt;
-                    else
-                        T=selected{T_};
-                    end
-                    selected{T_}=T(1);
-                end
-                
-                if Props.NVal==-2
-                    % selfplotfig will create its own figure
-                    Parent=0;
-                    pfig=[];
-                elseif strcmp(cmd,'quickview')
-                    pfig=qp_createfig('quick','');
-                    ax=findall(pfig,'type','axes');
-                    for i=length(ax):-1:1
-                        if strcmp(get(ax(i),'tag'),'scribeOverlay')
-                            ax(i)=[];
-                        elseif isappdata(ax(i),'NonDataObject')
-                            ax(i)=[];
-                        elseif isappdata(ax(i),'AxesType')
-                            ax(i)=[];
-                        end
-                    end
-                    if isempty(ax)
-                        %Parent=qp_createaxes(pfig,'oneplot');
-                        Parent=axes('layer','top','color',qp_settings('defaultaxescolor')/255);
-                        if qp_settings('boundingbox')
-                            set(Parent,'box','on');
-                        end
-                    else
-                        Parent=ax(1);
-                    end
+                set(mfig,'pointer','watch')
+                % minimal addpath d:\src\trunk_os\src\tools_lgpl\matlab\quickplot\progsrc\drawnow needed for updating pointer
+                if matlabversionnumber>=7.06 % 'update' option available as of 2008a
+                    drawnow('update')
                 else
-                    Parent=UD.PlotMngr.CurrentAxes;
-                    if ~isempty(cmdargs) && strcmp(cmdargs{1},'right')
-                        Parent=getappdata(Parent,'linkedaxes');
-                    end
-                    if ishandle(Parent)
-                        pfig=get(Parent,'parent');
-                    else
-                        pfig=[];
-                        Parent=[];
-                    end
+                    drawnow
                 end
-                
-                if ishandle(Parent)
-                    set(mfig,'pointer','watch')
-                    try
+                try
+                    if strcmp(cmd,'addtoplot_left')
+                        cmdargs = {'left'};
+                        cmd = 'addtoplot';
+                    elseif strcmp(cmd,'addtoplot_right')
+                        cmdargs = {'right'};
+                        cmd = 'addtoplot';
+                    end
+                    if logfile
+                        writelog(logfile,logtype,cmd,cmdargs{:});
+                    end
+                    hNew=[];
+                    %
+                    % animate time dimension when appropriate ...
+                    %
+                    T=1;
+                    Animate = getappdata(findobj(mfig,'tag','quickview'),'animate');
+                    if Animate && Props.DimFlag(T_)
+                        if selected{T_}==0
+                            maxt=get(findobj(mfig,'tag','max_t'),'userdata');
+                            T=1:maxt;
+                        else
+                            T=selected{T_};
+                        end
+                        selected{T_}=T(1);
+                    end
+                    
+                    if Props.NVal==-2
+                        % selfplotfig will create its own figure
+                        Parent=0;
+                        pfig=[];
+                    elseif strcmp(cmd,'quickview')
+                        pfig=qp_createfig('quick','');
+                        ax=findall(pfig,'type','axes');
+                        for i=length(ax):-1:1
+                            if strcmp(get(ax(i),'tag'),'scribeOverlay')
+                                ax(i)=[];
+                            elseif isappdata(ax(i),'NonDataObject')
+                                ax(i)=[];
+                            elseif isappdata(ax(i),'AxesType')
+                                ax(i)=[];
+                            end
+                        end
+                        if isempty(ax)
+                            %Parent=qp_createaxes(pfig,'oneplot');
+                            Parent=axes('layer','top','color',qp_settings('defaultaxescolor')/255);
+                            if qp_settings('boundingbox')
+                                set(Parent,'box','on');
+                            end
+                        else
+                            Parent=ax(1);
+                        end
+                    else
+                        Parent=UD.PlotMngr.CurrentAxes;
+                        if ~isempty(cmdargs) && strcmp(cmdargs{1},'right')
+                            Parent=getappdata(Parent,'linkedaxes');
+                        end
+                        if ishandle(Parent)
+                            pfig=get(Parent,'parent');
+                        else
+                            pfig=[];
+                            Parent=[];
+                        end
+                    end
+                    
+                    if ishandle(Parent)
                         PS.FI=Info;
                         
                         PS.Domain=DomainNr;
@@ -1785,22 +1795,22 @@ switch cmd
                         PS.Stations=stats;
                         PS.Ops=Ops;
                         [hNew,Error,Info]=qp_plot(PS);
-                    catch Ex
-                        qp_message('Catch in d3d_qp\quickview',Ex)
                     end
-                    set(mfig,'pointer','arrow')
+                    
+                    if ~isempty(pfig)
+                        set(UD.PlotMngr.FigList,'value',1,'string',listnames(pfig,'showType','no','showHandle','no','showTag','no'),'userdata',pfig);
+                        set(UD.PlotMngr.ItList,'value',[]) % clear item selection such that new item will be selected
+                        d3d_qp refreshfigs
+                    end
+                    qp_updatescroller(hNew,pfig)
+                    
+                    if Animate
+                        qck_anim('start',pfig,T);
+                    end
+                catch Ex
+                    qp_message('Catch in d3d_qp\quickview',Ex)
                 end
-                
-                if ~isempty(pfig)
-                    set(UD.PlotMngr.FigList,'value',1,'string',listnames(pfig,'showType','no','showHandle','no','showTag','no'),'userdata',pfig);
-                    set(UD.PlotMngr.ItList,'value',[]) % clear item selection such that new item will be selected
-                    d3d_qp refreshfigs
-                end
-                qp_updatescroller(hNew,pfig)
-                
-                if Animate
-                    qck_anim('start',pfig,T);
-                end
+                set(mfig,'pointer','arrow')
         end
         d3d_qp update_addtoplot
         

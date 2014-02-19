@@ -152,7 +152,7 @@ if isempty(fig) || ~ishandle(fig)
 
    fig=qp_uifigure('Message Window','','UI_MESSAGE window',rect);
    set(fig,'closerequestfcn','ui_message close','resize','on','resizefcn','ui_message resize')
-   if ~isstandalone && matlabversionnumber >= 7
+   if ~isstandalone && matlabversionnumber >= 7 && usejava('jvm')
        set(fig,'DockControls','on')
    end
 

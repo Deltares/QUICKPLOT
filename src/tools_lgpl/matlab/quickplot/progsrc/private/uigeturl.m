@@ -36,14 +36,26 @@ sz  = [500 470];
 pos = floor([pos(1:2)+pos(3:4)/2-sz/2 sz]);
 
 Fig = qp_uifigure('Select URL to open ...','','SelectURL',pos);
+setappdata(Fig,'MinimumFigureSize',[170 130])
+set(Fig,'resize','on','resizefcn',@resize)
+uicontrol('Parent',Fig, ...
+    'Callback','', ...
+    'Style','edit', ...
+    'Backgroundcolor',[1 1 1], ...
+    'Enable','on', ...
+    'Horizontalalignment','left', ...
+    'Position',[11 441 pos(3)-80 20], ...
+    'tooltip', 'URL of THREDDS catalogue', ...
+    'tag','Catalogue', ...
+    'String','http://opendap.deltares.nl/thredds/catalog.xml');
 uicontrol('Parent',Fig, ...
     'Callback',@populate_list, ...
     'Style','pushbutton', ...
     'Enable','on', ...
     'Horizontalalignment','left', ...
-    'Position',[11 441 pos(3)-20 20], ...
+    'Position',[pos(3)-60 441 50 20], ...
     'tag','Populate', ...
-    'String','Browse list of THREDDS catalogs');
+    'String','Browse');
 uicontrol('Parent',Fig, ...
     'KeypressFcn',@browse_list, ...
     'Callback',@browse_list, ...
@@ -62,6 +74,7 @@ hURL = uicontrol('Parent',Fig, ...
     'Enable','on', ...
     'Horizontalalignment','left', ...
     'Position',[11 41 pos(3)-20 20], ...
+    'tooltip', 'URL of data set', ...
     'tag','URL', ...
     'String','http://');
 uicontrol('Parent',Fig, ...
@@ -89,8 +102,14 @@ end
 
 
 function populate_list(h,arg2)
-server = 'http://opendap.deltares.nl/thredds/catalog.xml';
-set(get(h,'Parent'),'pointer','watch')
+fig = get(h,'Parent');
+server = get(findobj(fig,'tag','Catalogue'),'string');
+[p,f,e]=fileparts(server);
+if strcmp(e,'.html')
+    e = '.xml';
+    server = [p '/' f e];
+end
+set(fig,'pointer','watch')
 drawnow
 flds = read_server(server,'','');
 set(get(h,'Parent'),'pointer','arrow')
@@ -121,8 +140,9 @@ elseif open
         if strcmp(UD{j,2}{1},'urlpath')
             file = UD{j,2}{2};
             server = UD{j,4};
+            odap = UD{j,5};
             i = strfind(server,'/');
-            file = [server(1:i(3)) 'thredds/dodsC/' file];
+            file = [server(1:i(3)-1) odap file];
             file = strrep(file,' ','%20');
             hFig = get(h,'Parent');
             hURL = findall(hFig,'tag','URL');
@@ -139,8 +159,8 @@ elseif open
         set(get(h,'Parent'),'pointer','watch')
         drawnow
         flds = read_server(server,space,UD{j,4});
-        if size(flds,1)==1 && strcmp(UD{j,1},flds{1,1}(3:end))
-            flds = expand_dataset(flds{2},space,flds{4});
+        while size(flds,1)==1 && strcmp(UD{j,1},flds{1,1}(3:end))
+            flds = expand_dataset(flds{2},space,flds{4},flds{5});
         end
         set(get(h,'Parent'),'pointer','arrow')
         if isempty(flds)
@@ -151,7 +171,7 @@ elseif open
     else
         % expand dataset
         elm = UD{j,2};
-        flds = expand_dataset(elm,space,UD{j,4});
+        flds = expand_dataset(elm,space,UD{j,4},UD{j,5});
         UD{j,2} = {'opened' j+1:j+size(flds,1) elm};
         UD = cat(1,UD(1:j,:),flds,UD(j+1:end,:));
     end
@@ -190,23 +210,45 @@ catch
     return
 end
 catalog = getChildren(X);
-if ~strcmp(catalog.getNodeName,'catalog')
+if length(catalog)~=1 || ~strcmp(catalog.getNodeName,'catalog')
     ui_message('error','Unable to locate <catalog> field:\n%s',server)
     return
 end
 elm = getChildren(catalog);
-flds = expand_dataset(elm,space,server);
+flds = expand_dataset(elm,space,server,'/thredds/dodsC/');
 
 
-function flds = expand_dataset(elm,space,server)
+function str = getopendap(elm)
+str = '';
+for i = 1:length(elm)
+    if strcmp(elm(i).getNodeName,'service')
+        stype = char(elm(i).getAttribute('serviceType'));
+        switch stype
+            case 'Compound'
+                elmC = getChildren(elm(i));
+                str = getopendap(elmC);
+            case 'OPENDAP'
+                str = char(elm(i).getAttribute('base'));
+        end
+    end
+end
+
+
+function flds = expand_dataset(elm,space,server,odap)
+if ischar(elm)
+    flds = read_server(elm,space,server);
+    return
+end
 nrec = 0;
 for i = 1:length(elm)
     switch char(elm(i).getNodeName)
+        case 'service'
+            odap = getopendap(elm(i));
         case {'dataset','catalogRef'}
             nrec = nrec+1;
     end
 end
-flds = cell(nrec,4);
+flds = cell(nrec,5);
 nrec = 0;
 for i = 1:length(elm)
     switch char(elm(i).getNodeName)
@@ -222,12 +264,14 @@ for i = 1:length(elm)
             end
             flds{nrec,3} = space;
             flds{nrec,4} = server;
+            flds{nrec,5} = odap;
         case 'catalogRef'
             nrec = nrec+1;
             flds{nrec,1} = [space '+ ' char(elm(i).getAttribute('xlink:title'))];
             flds{nrec,2} = char(elm(i).getAttribute('xlink:href'));
             flds{nrec,3} = space;
             flds{nrec,4} = server;
+            flds{nrec,5} = odap;
         otherwise % #text
     end
 end
@@ -241,3 +285,51 @@ for i = 2:nChild
     c{i} = c{i-1}.getNextSibling;
 end
 Children = [c{:}];
+
+
+function resize(fig,arg2)
+NewPos = get(fig,'position');
+NewSize=NewPos(3:4);
+%
+PrevSize = getappdata(fig,'FigureSize');
+if isempty(PrevSize)
+    setappdata(fig,'FigureSize',NewSize)
+    return
+end
+%
+MinSize = getappdata(fig,'MinimumFigureSize');
+if isempty(MinSize)
+    MinSize = PrevSize;
+    setappdata(fig,'MinimumFigureSize',MinSize)
+end
+%
+if any(NewSize<MinSize)
+    NewSize=max(NewSize,MinSize);
+    NewPos(2)=NewPos(2)+NewPos(4)-NewSize(2);
+    NewPos(3:4)=NewSize;
+    set(fig,'position',NewPos)
+end
+%
+% Store the new figure size for usage during next resize command
+%
+setappdata(fig,'FigureSize',NewSize);
+%
+% Define some shift operators
+%
+aligntop   = [0 NewSize(2)-PrevSize(2) 0 0];
+alignright = [NewSize(1)-PrevSize(1) 0 0 0];
+stretchhor = [0 0 NewSize(1)-PrevSize(1) 0];
+stretchver = [0 0 0 NewSize(2)-PrevSize(2)];
+stretch2   = stretchhor/2;
+shift2     = alignright/2;
+stretch5   = stretchhor/5;
+shift5     = alignright/5;
+%
+% Shift the buttons
+%
+shiftcontrol(findobj(fig,'tag','Catalogue'),aligntop+stretchhor)
+shiftcontrol(findobj(fig,'tag','Populate'),aligntop+alignright)
+shiftcontrol(findobj(fig,'tag','List'),stretchver+stretchhor)
+shiftcontrol(findobj(fig,'tag','URL'),stretchhor)
+shiftcontrol(findobj(fig,'tag','Cancel'),alignright)
+shiftcontrol(findobj(fig,'tag','Open'),alignright)

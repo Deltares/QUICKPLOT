@@ -315,7 +315,8 @@ for ivar = 1:nvars
             if length(refdate)>=6
                 refdate = datenum(refdate(1:6));
                 % optional time zone shift not yet taken into account
-            elseif length(refdate)==3
+            elseif length(refdate)>=3
+                refdate(6) = 0;
                 refdate = datenum(refdate);
             else
                 refdate = [];
