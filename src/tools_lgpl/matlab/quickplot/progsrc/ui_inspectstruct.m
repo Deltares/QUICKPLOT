@@ -141,8 +141,8 @@ if ~ischar(cmd)
         'horizontalalignment','left', ...
         'parent',fig, ...
         'fontname','Courier', ...
-        'keypressfcn','ui_inspectstruct key', ...
-        'callback','ui_inspectstruct button');
+        'keypressfcn',@browse_tree, ...
+        'callback',@browse_tree);
     
     %
     % Create fields area
@@ -215,30 +215,6 @@ switch cmd
         SliderInfo(1)=IndexVal;
         set(H.ISld,'value',IndexVal,'userdata',SliderInfo);
         update(UD.Struct,H)
-    case 'key'
-        key = abs(get(fig,'CurrentCharacter'));
-        i=get(H.Subs,'value');
-        Str=get(H.Subs,'string');
-        switch strtok(Str{i})
-            case {'-','*'}
-                if key==28
-                    openaction(UD.Struct,H)
-                    update(UD.Struct,H)
-                end
-            otherwise
-                if key==29
-                    openaction(UD.Struct,H)
-                    update(UD.Struct,H)
-                end
-        end
-    case 'button'
-        switch get(fig,'selectiontype')
-            case 'open'
-                openaction(UD.Struct,H)
-                update(UD.Struct,H)
-            otherwise % e.g. 'normal'
-                update(UD.Struct,H)
-        end
     case 'resize'
         pos=get(fig,'position');
         Fig_Width=pos(3);
@@ -283,22 +259,6 @@ end
 UD.Index=Index;
 set(fig,'userdata',UD);
 
-
-function openaction(Struct,H)
-i=get(H.Subs,'value');
-Str=get(H.Subs,'string');
-Rec=get(H.Subs,'userdata');
-i=min(i,length(Str));
-switch strtok(Str{i})
-    case '+'
-        %expand(Struct,H)
-        [Str,Rec]=expand(Struct,Str,Rec,i,1);
-    case {'-','*'}
-        %collapse(Struct,H)
-        [Str,Rec]=collapse(Str,Rec,i);
-    otherwise
-end
-set(H.Subs,'string',Str,'userdata',Rec);
 
 function [Str,Rec,nadded]=expand(Struct,Str,Rec,i,IndexVal)
 if isempty(Rec{i,1})
@@ -526,3 +486,61 @@ else
     end
     set(H.Fields,'string',Str2,'enable','on','backgroundcolor',XX.Active,'value',curline);
 end
+
+
+function browse_tree(h,event)
+if isempty(event)
+    % mouse
+    key = get(get(h,'Parent'),'selectiontype');
+else
+    key = event.Key;
+end
+UD=get(get(h,'parent'),'userdata');
+H=UD.H;
+j=get(h,'value');
+Str=get(h,'string');
+Rec=get(h,'userdata');
+j=min(j,length(Str));
+open = 0;
+close = 0;
+scroll = 0;
+switch strtok(Str{j})
+    case '+'
+        open   = strcmp(key,'open') | strcmp(key,'rightarrow');
+    case '-'
+        scroll = strcmp(get(H.ISld,'enable'),'on')& (strcmp(key,'leftarrow') | strcmp(key,'rightarrow'));
+        close  = strcmp(key,'open') | strcmp(key,'leftarrow');
+    otherwise
+        %scroll = strcmp(key,'leftarrow') | strcmp(key,'rightarrow');
+end
+if scroll
+    % scroll
+    if strcmp(get(H.ISld,'enable'),'on')
+        SliderInfo=get(H.ISld,'userdata');
+        IndexVal = SliderInfo(1);
+        IndexMax = SliderInfo(2);
+        if IndexVal==1 && strcmp(key,'leftarrow')
+            % close
+            [Str,Rec]=collapse(Str,Rec,j);
+            set(H.Subs,'string',Str,'userdata',Rec);
+        elseif strcmp(key,'leftarrow')
+            IndexVal = IndexVal-1;
+            SliderInfo(1)=IndexVal;
+            set(H.ISld,'value',IndexVal,'userdata',SliderInfo);
+        else %if strcmp(key,'rightarrow')
+            IndexVal = min(IndexVal+1,IndexMax);
+            SliderInfo(1)=IndexVal;
+            set(H.ISld,'value',IndexVal,'userdata',SliderInfo);
+        end
+    end
+elseif close
+    % close
+    [Str,Rec]=collapse(Str,Rec,j);
+    set(H.Subs,'string',Str,'userdata',Rec);
+elseif open
+    % open
+    [Str,Rec]=expand(UD.Struct,Str,Rec,j,1);
+    set(H.Subs,'string',Str,'userdata',Rec);
+end
+update(UD.Struct,H)
+
