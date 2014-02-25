@@ -343,7 +343,7 @@ try
                 for b = StatBlocks
                     if b>0
                         str=fread(fid,20*b,'20*uchar',4);
-                        if any(str<32) % most certainly this is a DelwaqMAP file ...
+                        if any(str<32 & str~=9) % most certainly this is a DelwaqMAP file ...
                             S.FileType='DelwaqMAP';
                             break
                         end
