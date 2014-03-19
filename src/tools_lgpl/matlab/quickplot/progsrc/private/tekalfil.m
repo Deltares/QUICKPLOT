@@ -322,6 +322,8 @@ if XYRead
         x=Data(idx{[M_ N_ K_]},1);
         y=Data(idx{[M_ N_ K_]},2);
         z=Data(idx{[M_ N_ K_]},3);
+    elseif DimFlag(K_)
+        z=Data(idx{K_},1);
     elseif DimFlag(M_) && DimFlag(N_)
         if DataInCell
             x=Data(gidx{[M_ N_]},3);
@@ -395,6 +397,9 @@ elseif Props.Time
     end
 elseif DimFlag(M_) && DimFlag(N_) && DimFlag(K_)
     val1=Data(idx{[M_ N_ K_]},idx{ST_}+3);
+elseif DimFlag(K_)
+    val1=Data(idx{K_},idx{ST_}+1);
+    val1(val1==-999)=NaN;
 elseif DimFlag(M_) && DimFlag(N_)
     if Props.NVal==2 && isempty(idx{ST_})
         idx{ST_}=[1 2];
@@ -458,7 +463,11 @@ else
     Ans.XComp=val1;
     Ans.YComp=val2;
 end
-Ans.Time=OutTime;
+if isnan(OutTime)
+    Ans.Time=[];
+else
+    Ans.Time=OutTime;
+end
 
 varargout={Ans FI};
 % -----------------------------------------------------------------------------
@@ -498,6 +507,9 @@ switch FI.FileType
                                         Col1='date and time';
                                     end
                                 end
+                                if strncmpi(Col1,'z coord',7) || strncmpi(Col1,'z-coord',7)
+                                    Col1 = 'z-coordinate';
+                                end
                                 switch Col1
                                     case {'date and time'}
                                         DP={'field X'    'PNT'  ''  [1 5 0 0 0]  0          1       i       2       0          []      {}  };
@@ -505,6 +517,10 @@ switch FI.FileType
                                         DataProps(end+1,:)=DP;
                                     case {'time in seconds'}
                                         DP={'field X'    'PNT'  ''  [3 5 0 0 0]  0          1       i       1       0          []      {}  };
+                                        DP{1}=sprintf('%s',FI.Field(i).Name);
+                                        DataProps(end+1,:)=DP;
+                                    case {'z-coordinate'}
+                                        DP={'field X'    'PNT+' 'z'  [0 5 0 0 1]  0          1       i       0       0          []      {}  };
                                         DP{1}=sprintf('%s',FI.Field(i).Name);
                                         DataProps(end+1,:)=DP;
                                     otherwise
@@ -767,7 +783,9 @@ switch FI.FileType
                 sz(N_)=1;
             end
         else
-            if Props.DimFlag(M_) && Props.DimFlag(N_)
+            if Props.DimFlag(K_)
+                sz(K_)=FI.Field(blck).Size(1);
+            elseif Props.DimFlag(M_) && Props.DimFlag(N_)
                 sz(M_)=FI.Field(blck).Size(3);
                 sz(N_)=FI.Field(blck).Size(4);
                 if Props.DimFlag(K_)
