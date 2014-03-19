@@ -739,7 +739,7 @@ if ~isempty(Attribs)
                             {strcat('-',Str) 'sQUAD' 'xy'   [0 0 1 1 0]  1          1     ''        'd'   'd'      ''      i     -j   };
                         L=[L l];
                     end
-                    if isfield(Attrib,'DLocation') && isequal(Attrib.DLocation,'water level')
+                    if isequal(qp_option(Attribs(i),'DLocation'),'cell centres')
                         DataProps(L,8:9)={'z'};
                     end
                 end
@@ -761,7 +761,7 @@ if ~isempty(Attribs)
                 l=l+1;
                 Str=sprintf('water level from %s',AttribName);
                 DataProps(l,:)={Str       'sQUAD' 'xy'   [0 0 1 1 0]  1          1     ''        'z'   'z'      ''      i      1   };
-                [NLyr,NSubs,NTurb,NRem]=DetectFld(Attrib);
+                [NLyr,NSubs,NTurb,NRem]=DetectFld(Attribs(i));
                 l=l+1;
                 if NLyr==1
                     Str=sprintf('velocity from %s',AttribName);
@@ -1123,9 +1123,9 @@ switch cmd
         end
         [f,p]=uiputfile(RstName,'Save as ...');
         if ischar(f)
-            NLyr = Attrib.NLyr;
-            NSubs = Attrib.NSubs;
-            NTurb = Attrib.NTurb;
+            NLyr  = qp_option(Attrib(NrInList),'NLyr');
+            NSubs = qp_option(Attrib(NrInList),'NSubs');
+            NTurb = qp_option(Attrib(NrInList),'NTurb');
             %
             h_nelyr = findobj(mfig,'tag','nelyr');
             NELyr = get(h_nelyr,'userdata');
@@ -1267,9 +1267,8 @@ switch cmd
             set(findobj(mfig,'tag','dpsopt'),'enable','off','backgroundcolor',Inactive)
             set(findobj(mfig,'tag','dpsopt'),'enable','off')
         else
-            if isfield(Attrib,'DLocation') && ~isempty(Attrib.DLocation)
-                DLoc=Attrib.DLocation;
-            else
+            DLoc = qp_option(Attribs(NrInList),'DLocation');
+            if isempty(DLoc)
                 DLoc='grid points';
             end
             hDLoc=findobj(mfig,'tag','dlocation');
@@ -1293,9 +1292,8 @@ switch cmd
                 set(findobj(mfig,'tag','dpsopt'),'enable','off','backgroundcolor',Inactive)
                 set(findobj(mfig,'tag','dpsopttxt'),'enable','off')
             else
-                if isfield(Attrib,'Dpsopt') && ~isempty(Attrib.Dpsopt)
-                    Dpsopt=Attrib.Dpsopt;
-                else
+                Dpsopt = qp_option(Attribs(NrInList),'Dpsopt');
+                if isempty(Dpsopt)
                     Dpsopt='max';
                 end
                 hDpsopt=findobj(mfig,'tag','dpsopt');
@@ -1310,9 +1308,8 @@ switch cmd
             set(findobj(mfig,'tag','dataordertxt'),'enable','off')
         else
             hDOrd=findobj(mfig,'tag','dataorder');
-            if isfield(Attrib,'DOrder') && ~isempty(Attrib.DOrder)
-                DOrd=Attrib.DOrder;
-            else
+            DOrd = qp_option(Attribs(NrInList),'DOrder');
+            if isempty(DOrd)
                 DOrd=2; % (d(m,n) m=1:M) n=1:N
             end
             set(hDOrd,'enable','on','backgroundcolor',Active,'value',DOrd)
@@ -1361,13 +1358,13 @@ switch cmd
                     case 'nsubs'
                         N_LowerLim=0;
                         N_0=0;
-                        NLyr=Attrib.NLyr;
+                        NLyr=qp_option(Attribs(NrInList),'NLyr');
                         N_UpperLim=floor((length(Attrib.Data)-NLyr*2-1)/NLyr);
                     case 'nturb'
                         N_LowerLim=0;
                         N_0=0;
-                        NLyr=Attrib.NLyr;
-                        NSubs=Attrib.NSubs;
+                        NLyr=qp_option(Attribs(NrInList),'NLyr');
+                        NSubs=qp_option(Attribs(NrInList),'NSubs');
                         N_UpperLim=floor((length(Attrib.Data)-NLyr*(2+NSubs)-1)/(NLyr+1));
                     otherwise
                         N_LowerLim=0;
@@ -1380,11 +1377,9 @@ switch cmd
                 N_LowerLim=N_0;
                 N_UpperLim=1e6;
         end
-        if isfield(Attrib,Field)
-            N_1 = getfield(Attrib,Field);
-            if ~isempty(N_1)
-                N_0=N_1;
-            end
+        N_1 = qp_option(Attribs(NrInList),Field);
+        if ~isempty(N_1)
+            N_0=N_1;
         end
         Handle_N_=findobj(mfig,'tag',cmd);
         if nargin>3
@@ -1409,20 +1404,20 @@ switch cmd
             end
         end
         set(Handle_N_,'string',sprintf('%i',N_))
-        Attrib=setfield(Attrib,Field,N_);
+        Attribs(NrInList) = qp_option(Attribs(NrInList),Field,N_);
         %
         switch cmd
             case 'nlyr'
-                Attrib.NSubs=-1;
-                Attrib.NTurb=-1;
-                [k,NSubs,NTurb,NRem]=DetectFld(Attrib);
-                Attrib.NSubs=NSubs;
-                Attrib.NTurb=NTurb;
+                Attribs(NrInList) = qp_option(Attribs(NrInList),'NSubs',-1);
+                Attribs(NrInList) = qp_option(Attribs(NrInList),'NTurb',-1);
+                [k,NSubs,NTurb,NRem]=DetectFld(Attribs(NrInList));
+                Attribs(NrInList) = qp_option(Attribs(NrInList),'NSubs',NSubs);
+                Attribs(NrInList) = qp_option(Attribs(NrInList),'NTurb',NTurb);
                 %
                 set(findobj(mfig,'tag','nelyr'),'enable','on','backgroundcolor',Active,'string',sprintf('%i',k),'userdata',k)
                 set(findobj(mfig,'tag','nsubs'),'enable','on','backgroundcolor',Active,'string',sprintf('%i',NSubs))
                 set(findobj(mfig,'tag','nsubstxt'),'enable','on')
-                if Attrib.NLyr>1
+                if qp_option(Attribs(NrInList),'NLyr')>1
                     set(findobj(mfig,'tag','nturb'),'enable','on','backgroundcolor',Active,'string',sprintf('%i',NTurb))
                     set(findobj(mfig,'tag','nturbtxt'),'enable','on')
                 else
@@ -1432,17 +1427,17 @@ switch cmd
                 set(findobj(mfig,'tag','nfld'),'enable','inactive','backgroundcolor',Inactive,'string',sprintf('%i',NRem))
                 set(findobj(mfig,'tag','nfldtxt'),'enable','on')
             case 'nsubs'
-                Attrib.NTurb=-1;
-                [k,NSubs,NTurb,NRem]=DetectFld(Attrib);
-                Attrib.NTurb=NTurb;
-                if Attrib.NLyr>1
+                Attribs(NrInList) = qp_option(Attribs(NrInList),'NTurb',-1);
+                [k,NSubs,NTurb,NRem]=DetectFld(Attribs(NrInList));
+                Attribs(NrInList) = qp_option(Attribs(NrInList),'NTurb',NTurb);
+                if qp_option(Attribs(NrInList),'NLyr')>1
                     set(findobj(mfig,'tag','nturb'),'enable','on','backgroundcolor',Active,'string',sprintf('%i',NTurb))
                     set(findobj(mfig,'tag','nturbtxt'),'enable','on')
                 end
                 set(findobj(mfig,'tag','nfld'),'enable','inactive','backgroundcolor',Inactive,'string',sprintf('%i',NRem))
                 set(findobj(mfig,'tag','nfldtxt'),'enable','on')
             case 'nturb'
-                [k,NSubs,NTurb,NRem]=DetectFld(Attrib);
+                [k,NSubs,NTurb,NRem]=DetectFld(Attribs(NrInList));
                 set(findobj(mfig,'tag','nfld'),'enable','inactive','backgroundcolor',Inactive,'string',sprintf('%i',NRem))
                 set(findobj(mfig,'tag','nfldtxt'),'enable','on')
         end
@@ -1459,9 +1454,8 @@ switch cmd
             Lbl='Dpsopt';
             Default='max';
         end
-        if isfield(Attrib,Lbl) && ~isempty(getfield(Attrib,Lbl))
-            Val0=getfield(Attrib,Lbl);
-        else
+        Val0 = qp_option(Attribs(NrInList),Lbl);
+        if isempty(Val0)
             Val0=Default;
         end
         Handle_Val=findobj(mfig,'tag',cmd);
@@ -1479,7 +1473,7 @@ switch cmd
             ValNr=strmatch(Val0,ValStr);
         end
         set(Handle_Val,'value',ValNr)
-        Attrib=setfield(Attrib,Lbl,Val);
+        Attribs(NrInList) = qp_option(Attribs(NrInList),Lbl,Val);
         NewFI = qp_option(NewFI,'AttribFiles',Attribs);
         NewFI=options(NewFI,mfig,'selectfile');
         cmdargs={cmd Val};
@@ -1489,9 +1483,8 @@ switch cmd
         NrInList=get(Handle_SelectFile,'value');
         Handle_DOrd=findobj(mfig,'tag','dataorder');
         DOrdStr=get(Handle_DOrd,'string');
-        if isfield(Attrib,'DOrder') && ~isempty(Attrib.DOrder)
-            DOrd0=Attrib.DOrder;
-        else
+        DOrd0 = qp_option(Attribs(NrInList),'DOrder');
+        if isempty(DOrd0)
             DOrd0=2; % (d(m,n) m=1:M) n=1:N
         end
         if nargin>3
@@ -1513,7 +1506,7 @@ switch cmd
             DOrd=DOrd0;
         end
         set(Handle_DOrd,'value',DOrdNr)
-        Attrib.DOrder=DOrd;
+        Attribs(NrInList) = qp_option(Attribs(NrInList),'DOrder',DOrd);
         NewFI = qp_option(NewFI,'AttribFiles',Attribs);
         cmdargs={cmd DOrdStr{DOrdNr}};
         
@@ -1741,19 +1734,23 @@ OK=1;
 
 
 function [k,NSubs,NTurb,NRem]=DetectFld(Rst)
-N=length(Rst.Data);
+ActualRst = qp_unwrapfi(Rst);
+N=length(ActualRst.Data);
 %
-if isfield(Rst,'NLyr') && ~isempty(Rst.NLyr)
+NLyr = qp_option(Rst,'NLyr');
+if ~isempty(NLyr)
     maxk=floor((N-1)/2);
-    k=max(min(Rst.NLyr,maxk),1);
+    k=max(min(NLyr,maxk),1);
 else
     k=1;
 end
 %
-NSubs=-1;
 maxsubs=floor((N-1-k*2)/k);
-if isfield(Rst,'NSubs') && ~isempty(Rst.NSubs)
-    NSubs=min(Rst.NSubs,maxsubs);
+NSubs = qp_option(Rst,'NSubs');
+if ~isempty(NSubs)
+    NSubs=min(NSubs,maxsubs);
+else
+    NSubs=-1;
 end
 %
 if NSubs<0 % Number of substances not specified
@@ -1776,10 +1773,12 @@ else % Number of substances specified
     if k==1
         NTurb=0;
     else
-        NTurb=-1;
         maxturb=floor((N-1-k*(2+NSubs))/(k+1));
-        if isfield(Rst,'NTurb') && ~isempty(Rst.NTurb)
-            NTurb=min(Rst.NTurb,maxturb);
+        NTurb = qp_option(Rst,'NTurb');
+        if ~isempty(NTurb)
+            NTurb=min(NTurb,maxturb);
+        else
+            NTurb=-1;
         end
     end
     %

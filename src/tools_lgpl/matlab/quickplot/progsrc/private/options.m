@@ -1,4 +1,4 @@
-function [NewFI,cmdargs]=options(FI,mfig,cmd,varargin);
+function [NewFI,cmdargs]=options(FI,mfig,cmd,varargin)
 %OPTIONS Default implementation for options.
 
 %----- LGPL --------------------------------------------------------------------

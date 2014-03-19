@@ -36,7 +36,14 @@ function val = qp_option(FI,field,setval)
 %   $HeadURL$
 %   $Id$
 
-if nargin>2
+if isfield(FI,'QPF') && FI.QPF==2
+    if nargin>2
+        val = FI;
+        val.Data = qp_option(val.Data,field,setval);
+    else
+        val = qp_option(FI.Data,field);
+    end
+elseif nargin>2
     val = FI;
     val.QP_Options.(field) = setval;
 else
