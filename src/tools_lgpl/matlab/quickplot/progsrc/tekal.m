@@ -178,7 +178,6 @@ while 1
 
     % remove empty spaces
     line=deblank(line);
-    space = ['%*[ ,' char(9),']'];
     % is comment or empty line
     if isempty(line)
     elseif line(1)=='*' % comment
@@ -257,33 +256,14 @@ while 1
                 if ~isempty(Err) && dim(1)==N+1 % annotation mode
                     FileInfo.Field(variable).DataTp='annotation';
                     if LoadData
-                        Data=[];
-                        for i=1:dim(2)
-                            line=fgetl(fid);
-                            Tkn=find(diff([0 ~ismember(line,[' ,' char(9)])])==1);
-                            Data{1}(:,i)=sscanf(line,['%f' space],dim(1)-1);
-                            Str=deblank(line(Tkn(dim(1)):end));
-                            if Str(1)=='''' && Str(end)==''''
-                                Str=Str(2:end-1);
-                                Str=strrep(Str,'''''','''');
-                            elseif Str(1)=='"' && Str(end)=='"'
-                                Str=Str(2:end-1);
-                                Str=strrep(Str,'""','"');
-                            elseif Str(1)=='/' && Str(end)=='/'
-                                Str=Str(2:end-1);
-                                Str=strrep(Str,'//','/');
-                            end
-                            Data{2}{i}=Str;
-                        end
-                        Data{1}=Data{1}';
-                        Data{2}=Data{2}';
+                        Data = read_annotation(fid,dim);
                         FileInfo.Field(variable).Data=Data;
                     else
                         for i=1:dim(2)
                             fgetl(fid);
                         end
                     end
-                else % all numerics; use %f a bit faster than the scan-string above
+                else % all numerics
                     % check number of values per line,
                     if (length(FileInfo.Field(variable).Size)>1) && (N<dim(1))
                         Msg=sprintf('Actual number of values per line %i does not match indicated number\nof values per line %i.',N,dim(1));
@@ -295,56 +275,9 @@ while 1
                         dim(1)=N;
                         FileInfo.Field(variable).Size(2)=N;
                     end
-                    [Data,Nr]=fscanf(fid,['%f%*[ ,' char(9) char(13) char(10) ']'],dim);
-                    if Nr<prod(dim) && isfinite(dim(2)) % number read less than number expected (no auto-detect)
-                        %
-                        fseek(fid,FileInfo.Field(variable).Offset,-1);
-                        [Data,Nr]=fscanf(fid,['%*[^',char(10),']%c'],dim(2));
-                        %
-                        if Nr<dim(2)-1
-                            Msg=sprintf('End of file reached while processing data field %i.\nData is probably damaged.',variable);
-                            if ~TryToCorrect
-                                fclose(fid);
-                                error(Msg)
-                            end
-                            fprintf(1,'ERROR: %s\n',Msg);
-                            ErrorFound=1;
-                            break
-                        else
-                            EndData = ftell(fid);
-                            NBytes = EndData-FileInfo.Field(variable).Offset;
-                            fseek(fid,FileInfo.Field(variable).Offset,-1);
-                            Chars = fread(fid,[1 NBytes],'char=>char');
-                            Chars(Chars==char(13))=[];
-                            Chars = [' ' strrep(Chars,char(10),[' ',char(10)])];
-                            n = ['%*[^' char(13) char(10) ']'];
-                            p = ['%*[ ,' char(9) char(13) char(10) ']'];
-                            [Data,Nr,Er,Nxt]=sscanf(Chars,[repmat([p '%f'],1,dim(1)) n],dim);
-                            if Nr<prod(dim)
-                                irow = floor(Nr/dim(1))+1;
-                                if irow==1
-                                    rowStr = sscanf(Chars(2:end),n([1 3:end]),1);
-                                else
-                                    rowFirst=fliplr(sscanf(Chars(Nxt-1:-1:1),n([1 3:end]),1));
-                                    rowStr = [rowFirst sscanf(Chars(Nxt:end),n([1 3:end]),1)];
-                                end
-                                Msg=sprintf(['Field %i labelled ''%s''\n' ...
-                                    'Unable to interpret data on row %i: ''%s''\n' ...
-                                    'Data field %i is probably damaged.'], ...
-                                    variable, ...
-                                    FileInfo.Field(variable).Name, ...
-                                    floor(Nr/dim(1))+1, ...
-                                    sscanf(Chars(Nxt:end),n([1 3:end]),1), ...
-                                    variable);
-                                if ~TryToCorrect
-                                    fclose(fid);
-                                    error(Msg)
-                                end
-                                fprintf(1,'ERROR: %s\nTrying to continue ...\n',Msg);
-                                ErrorFound=1;
-                                break
-                            end
-                        end
+                    [Data,ErrorFound] = read_numeric(fid,dim,TryToCorrect,variable);
+                    if ErrorFound
+                        break
                     end
                     if ~isfinite(dim(2));
                         dim(2)=floor(Nr/dim(1));
@@ -360,13 +293,8 @@ while 1
                         % replace 999999 by Not-a-Numbers
                         Data(Data(:)==999999)=NaN;
                         
-                        % transpose data if it has two dimensions
-                        if length(dim)>1
-                            Data=Data';
-                        end
-                        
                         % reshape to match Size
-                        if length(FileInfo.Field(variable).Size)>2,
+                        if length(FileInfo.Field(variable).Size)>2
                             Data=reshape(Data,[FileInfo.Field(variable).Size(3:end) FileInfo.Field(variable).Size(2)]);
                         end
                         FileInfo.Field(variable).Data=Data;
@@ -378,9 +306,9 @@ while 1
             end
         else
             if ~TryToCorrect
-               if ~ischar(line) % EOF
-                  line = '';
-               end
+                if ~ischar(line) % EOF
+                    line = '';
+                end
                 fclose(fid);
                 error('Cannot determine field size from "%s"',line)
             end
@@ -441,53 +369,15 @@ else %if ~isnan(FileInfo.Field(var).Offset)
     end
     switch FileInfo.Field(var).DataTp
         case 'annotation'
-            for i=1:dim(2)
-                line=fgetl(fid);
-                Tkn=find(diff([0 ~ismember(line,[' ,' char(9)])])==1);
-                Data{1}(:,i)=sscanf(line,'%f%*[ ,]',dim(1)-1);
-                Str=deblank(line(Tkn(dim(1)):end));
-                if Str(1)=='''' && Str(end)==''''
-                    Str=Str(2:end-1);
-                    Str=strrep(Str,'''''','''');
-                elseif Str(1)=='"' && Str(end)=='"'
-                    Str=Str(2:end-1);
-                    Str=strrep(Str,'""','"');
-                elseif Str(1)=='/' && Str(end)=='/'
-                    Str=Str(2:end-1);
-                    Str=strrep(Str,'//','/');
-                end
-                Data{2}{i}=Str;
-            end
-            Data{1}=Data{1}';
-            Data{2}=Data{2}';
+            Data = read_annotation(fid,dim);
             fclose(fid);
         otherwise %'numeric' % all numerics; use fscanf
             %Data=fscanf(fid,'%f',dim);
-            [Data,Nr]=fscanf(fid,['%f%*[ ,' char(9) char(13) char(10) ']'],dim);
-            if Nr~=prod(dim)
-                %
-                % Maybe there is some text after the last column.
-                % Reread the data by means of a different format
-                % string. This format string requires a space or
-                % line break before the first number, so seek to
-                % one character before the start of the line (i.e.
-                % include (part of) the EOL character).
-                %
-                fseek(fid,FileInfo.Field(var).Offset-1,-1);
-                %
-                n = ['%*[^' char(13) char(10) ']'];
-                p = ['%*[ ,' char(9) char(13) char(10) ']'];
-                [Data,Nr]=fscanf(fid,[repmat([p '%f'],1,dim(1)) n],dim);
-            end
+            Data = read_numeric(fid,dim,0,var);
             fclose(fid);
 
             % replace 999999 by Not-a-Numbers
             Data(Data(:)==999999)=NaN;
-
-            % transpose data if it has two dimensions
-            if length(dim)>1
-                Data=Data';
-            end
 
             % reshape to match Size
             if length(FileInfo.Field(var).Size)>2
@@ -495,6 +385,107 @@ else %if ~isnan(FileInfo.Field(var).Offset)
             end
     end
 end
+
+
+function S = space
+S = ['%*[ ,' char(9),']'];
+
+
+function Data = read_annotation(fid,dim)
+Data={};
+for i=1:dim(2)
+    line=fgetl(fid);
+    Tkn=find(diff([0 ~ismember(line,[' ,' char(9)])])==1);
+    Data{1}(:,i)=sscanf(line,['%f' space],dim(1)-1);
+    Str=deblank(line(Tkn(dim(1)):end));
+    if Str(1)=='''' && Str(end)==''''
+        Str=Str(2:end-1);
+        Str=strrep(Str,'''''','''');
+    elseif Str(1)=='"' && Str(end)=='"'
+        Str=Str(2:end-1);
+        Str=strrep(Str,'""','"');
+    elseif Str(1)=='/' && Str(end)=='/'
+        Str=Str(2:end-1);
+        Str=strrep(Str,'//','/');
+    end
+    Data{2}{i}=Str;
+end
+Data{1}=Data{1}';
+Data{2}=Data{2}';
+
+
+function [Data,ErrorFound] = read_numeric(fid,dim,TryToCorrect,variable)
+offset     = ftell(fid);
+ErrorFound = 0;
+try
+    if ~isfinite(dim(2))
+        d2 = textscan(fid,[repmat('%f ',1,dim(1)) '%*s']); % read until problem occurs (hopefully the name of the next block or eof)
+    else
+        d2 = textscan(fid,[repmat('%f ',1,dim(1)) '%*s'],dim(2));
+    end
+    Data = cat(2,d2{:});
+    textscan_failed = 0;
+catch
+    textscan_failed = 1;
+end
+if textscan_failed
+    fseek(fid,offset,-1);
+    [Data,Nr]=fscanf(fid,['%f%*[ ,' char(9) char(13) char(10) ']'],dim);
+    if Nr<prod(dim) && isfinite(dim(2)) % number read less than number expected (no auto-detect)
+        %
+        fseek(fid,offset,-1);
+        [Data,Nr]=fscanf(fid,['%*[^',char(10),']%c'],dim(2));
+        %
+        if Nr<dim(2)-1
+            Msg=sprintf('End of file reached while processing data field %i.\nData is probably damaged.',variable);
+            if ~TryToCorrect
+                fclose(fid);
+                error(Msg)
+            end
+            fprintf(1,'ERROR: %s\n',Msg);
+            ErrorFound=1;
+        else
+            EndData = ftell(fid);
+            NBytes = EndData-offset;
+            fseek(fid,offset,-1);
+            Chars = fread(fid,[1 NBytes],'char=>char');
+            Chars(Chars==char(13))=[];
+            Chars = [' ' strrep(Chars,char(10),[' ',char(10)])];
+            n = ['%*[^' char(13) char(10) ']'];
+            p = ['%*[ ,' char(9) char(13) char(10) ']'];
+            [Data,Nr,Er,Nxt]=sscanf(Chars,[repmat([p '%f'],1,dim(1)) n],dim);
+            if Nr<prod(dim)
+                irow = floor(Nr/dim(1))+1;
+                if irow==1
+                    rowStr = sscanf(Chars(2:end),n([1 3:end]),1);
+                else
+                    rowFirst=fliplr(sscanf(Chars(Nxt-1:-1:1),n([1 3:end]),1));
+                    rowStr = [rowFirst sscanf(Chars(Nxt:end),n([1 3:end]),1)];
+                end
+                Msg=sprintf(['Field %i labelled ''%s''\n' ...
+                    'Unable to interpret data on row %i: ''%s''\n' ...
+                    'Data field %i is probably damaged.'], ...
+                    variable, ...
+                    FileInfo.Field(variable).Name, ...
+                    floor(Nr/dim(1))+1, ...
+                    sscanf(Chars(Nxt:end),n([1 3:end]),1), ...
+                    variable);
+                if ~TryToCorrect
+                    fclose(fid);
+                    error(Msg)
+                end
+                fprintf(1,'ERROR: %s\nTrying to continue ...\n',Msg);
+                ErrorFound=1;
+            end
+        end
+    end
+    
+    % transpose data if it has two dimensions
+    if length(dim)>1
+        Data=Data';
+    end
+end
+
 
 function NewFileInfo=Local_write_file(filename,FileInfo,varargin)
 fid=fopen(filename,'w');

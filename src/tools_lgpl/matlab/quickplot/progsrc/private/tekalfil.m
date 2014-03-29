@@ -455,6 +455,40 @@ if XYRead
     if ~isempty(z)
         Ans.Z=z;
     end
+    if strcmp(FI.FileType,'tekal')
+        unit = '';
+        for blck = [blck 1]
+            Cmnt = FI.Field(blck).Comments;
+            for i=1:length(Cmnt)
+                [Tk,Rm]=strtok(Cmnt{i}(2:end));
+                if strcmpi(Tk,'coordinate')
+                    [Tk,Rm]=strtok(Rm);
+                    if strcmpi(Tk,'system')
+                        [a,c,err,idx]=sscanf(Rm,'%*[ :=]%c',1);
+                        cs = deblank(Rm(idx-1:end));
+                        if strcmpi(cs,'spherical')
+                            unit = 'deg';
+                            break
+                        elseif strcmpi(cs,'cartesian')
+                            unit = 'm';
+                            break
+                        end
+                    end
+                end
+            end
+            if ~isempty(unit)
+                break
+            end
+        end
+        if ~isempty(unit)
+            if isfield(Ans,'X')
+                Ans.XUnits = unit;
+            end
+            if isfield(Ans,'Y')
+                Ans.YUnits = unit;
+            end
+        end
+    end
 end
 if Props.NVal==0
 elseif isempty(val2)
