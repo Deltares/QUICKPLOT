@@ -827,7 +827,7 @@ while ~gui_quit
             case 'OpenGL'
                 Method = update_renderer(PL{PrtID,1},GUI,3,DPI);
             case 'DPI'
-                X=eval(get(Resol,'string'),'NaN');
+                X=eval(get(GUI.Resol,'string'),'NaN');
                 if isnumeric(X) && isequal(size(X),[1 1]) && (round(X)==X)
                     if X<50
                         DPI=50;
@@ -837,7 +837,7 @@ while ~gui_quit
                         DPI=X;
                     end
                 end
-                set(Resol,'string',num2str(DPI));
+                set(GUI.Resol,'string',num2str(DPI));
 
             case 'Color'
                 Clr=get(GUI.Color,'value');
