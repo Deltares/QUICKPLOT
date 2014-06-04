@@ -195,7 +195,7 @@ XYRead = XYRead & ~strcmp(Props.Loc,'NA') & ~strcmp(Props.Group,'his-dad-series'
 %
 computeDZ=0;
 switch Props.Name
-    case {'depth averaged velocity','depth averaged discharge'}
+    case {'depth averaged velocity','depth averaged discharge','froude number','head'}
         if fixedlayers
             computeDZ=1;
         end
@@ -303,6 +303,11 @@ if DataRead
             elidx{K_-1}=0;
             DimFlag(K_)=1;
             kidx=sum(DimFlag~=0);
+        case {'froude number','head'}
+            elidx{K_-1}=0;
+            DimFlag(K_)=1;
+            kidx=sum(DimFlag~=0);
+            Props.NVal=2;
         case {'location tidal turbines'}
             PropC = Props;
             Props.Group = 'his-const';
@@ -446,7 +451,7 @@ if DataRead
                 val2=[];
             end
             val1=sum(val1,3); % sum over fractions
-        case {'depth averaged velocity','depth averaged discharge'}
+        case {'depth averaged velocity','depth averaged discharge','froude number','head'}
             if fixedlayers
                 sz=size(val1);
                 h=zeros(sz(1:2));
@@ -468,6 +473,26 @@ if DataRead
                 val2=sum(val2,3);
             end
             DimFlag(K_)=0;
+            switch Props.Name
+                case 'head'
+                    val3=vs_let(FI,'his-series',idx(T_),'ZWL',idx(ST_),'quiet!');
+                case 'froude number'
+                    val3=vs_let(FI,'his-series',idx(T_),'ZWL',idx(ST_),'quiet!');
+                    dp=readdps(FI,idx);
+                    if size(dp,1)==1,
+                        for i=1:size(val3,1)
+                            val3(i,:,:)=val3(i,:,:)-dp;
+                        end
+                    else
+                        val3=val3-dp;
+                    end
+                    val3(val3==0)=inf;
+            end
+            %
+            [gravity,Success]=vs_let(FI,'his-const','GRAVITY','quiet');
+            if ~Success
+                gravity = 9.81;
+            end
         case {'cumulative dredged material'}
             val1=sum(val1,2);
         otherwise
@@ -492,6 +517,21 @@ if DataRead
         end
     end
     
+    switch Props.Name
+        case 'froude number'
+            val1 = sqrt(val1.^2+val2.^2)./sqrt(gravity*val3);
+            val2 = [];
+            val3 = [];
+            Props.NVal = 1;
+            Props.VecType = '';
+        case 'head'
+            val1 = val3+(val1.^2+val2.^2)/(2*gravity);
+            val2 = [];
+            val3 = [];
+            Props.NVal = 1;
+            Props.VecType = '';
+    end
+
     if DataInCell && isequal(Props.ReqLoc,'d')
         Props.ReqLoc='z';
     end
@@ -627,6 +667,8 @@ DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     '' 
     'vertical velocity'         'm/s'    [1 5 0 0 1]  0         1     ''       'w'   'w'       'c'     'his-series'     'ZCURW'     ''        []       0
     'depth averaged discharge'  'm^3/s'  [1 5 0 0 0]  0         2     'u'      'z'   'z'       'c'     'his-series'     'ZQXK'     'ZQYK'     []       1
     'discharge'                 'm^3/s'  [1 5 0 0 1]  0         2     'u'      'z'   'z'       'c'     'his-series'     'ZQXK'     'ZQYK'     []       1
+    'froude number'             '-'      [1 5 0 0 0]  0         1     'u'      'z'   'z'       ''      'his-series'     'ZCURU'    'ZCURV'    []       0
+    'head'                      'm'      [1 5 0 0 0]  0         1     'u'      'z'   'z'       ''      'his-series'     'ZCURU'    'ZCURV'    []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'wind speed'                'm/s'    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZWNDSPD'  ''         []       0
     'wind direction'            'deg'    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZWNDDIR'  ''         []       0
@@ -828,6 +870,11 @@ for i=size(Out,1):-1:1
         %  ---> if isequal(Info.SizeDim,1) this might be due to the fact
         %       that there is just one station or because the data has not
         %       been written
+    elseif strcmp(Out(i).Name,'froude number') || strcmp(Out(i).Name,'head')
+        Info2=vs_disp(FI,Out(i).Group,'ZWL');
+        if ~isstruct(Info2)
+            Out(i)=[];
+        end
     else
         switch Out(i).Val1
             case {'FLTR','CTR'}
