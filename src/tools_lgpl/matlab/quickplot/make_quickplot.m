@@ -67,14 +67,22 @@ if ~exist('progsrc','dir')
 end
 sourcedir=[pwd,filesep,'progsrc'];
 disp('Copying files ...')
-if ~exist([pwd,filesep,'quickplot'])
-    [success,message] = mkdir('quickplot');
+switch computer
+    case 'PCWIN'
+        qpdir = 'quickplot32';
+    case 'PCWIN64'
+        qpdir = 'quickplot64';
+    otherwise
+        qpdir = 'quickplot';
+end
+if ~exist([pwd,filesep,qpdir])
+    [success,message] = mkdir(qpdir);
     if ~success,
         err=message;
         return
     end
 end
-cd('quickplot');
+cd(qpdir);
 diary make_quickplot_diary
 if isunix
     unix('cp -rf ../progsrc/* .');
