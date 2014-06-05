@@ -35,7 +35,7 @@ function dio_delete(dsh)
 %                                                                               
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: https://repos.deltares.nl/repos/ds/trunk/src/tools/matlab/delftio/progsrc/dio_delete.m $
-%   $Id: dio_delete.m 34005 2014-05-18 13:10:30Z jagers $
+%   $HeadURL$
+%   $Id$
 
 dio_core('delete',dsh);

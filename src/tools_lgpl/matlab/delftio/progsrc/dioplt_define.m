@@ -83,8 +83,8 @@ function PLT = dioplt_define(Name,Par,Loc,TypeStr)
 %                                                                               
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: https://repos.deltares.nl/repos/ds/trunk/src/tools/matlab/delftio/progsrc/dioplt_define.m $
-%   $Id: dioplt_define.m 34005 2014-05-18 13:10:30Z jagers $
+%   $HeadURL$
+%   $Id$
 
 % The following quantities have been defined in dio-plt-rw.f90
 DioMaxParLen = 80;

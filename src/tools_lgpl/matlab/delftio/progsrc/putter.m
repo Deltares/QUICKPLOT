@@ -32,8 +32,8 @@ function putter
 %                                                                               
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: https://repos.deltares.nl/repos/ds/trunk/src/tools/matlab/delftio/progsrc/putter.m $
-%   $Id: putter.m 34005 2014-05-18 13:10:30Z jagers $
+%   $HeadURL$
+%   $Id$
 
 % initialize constants known to both putter and getter
 NUM_DATA=20;

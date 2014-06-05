@@ -32,8 +32,8 @@ function out = dio_getname(dsh)
 %                                                                               
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: https://repos.deltares.nl/repos/ds/trunk/src/tools/matlab/delftio/progsrc/dio_getname.m $
-%   $Id: dio_getname.m 34005 2014-05-18 13:10:30Z jagers $
+%   $HeadURL$
+%   $Id$
 
 Name = dio_core('getname',dsh);
 if nargout==0

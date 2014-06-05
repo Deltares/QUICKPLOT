@@ -35,8 +35,8 @@ function dio_endread(dsh,diopart)
 %                                                                               
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: https://repos.deltares.nl/repos/ds/trunk/src/tools/matlab/delftio/progsrc/dio_endread.m $
-%   $Id: dio_endread.m 34005 2014-05-18 13:10:30Z jagers $
+%   $HeadURL$
+%   $Id$
 
 if nargin==1
     diopart = 'data';

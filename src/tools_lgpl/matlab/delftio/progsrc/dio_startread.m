@@ -35,8 +35,8 @@ function flag = dio_startread(dsh,diopart)
 %                                                                               
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: https://repos.deltares.nl/repos/ds/trunk/src/tools/matlab/delftio/progsrc/dio_startread.m $
-%   $Id: dio_startread.m 34005 2014-05-18 13:10:30Z jagers $
+%   $HeadURL$
+%   $Id$
 
 if nargin==1
     diopart = 'data';

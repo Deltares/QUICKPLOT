@@ -38,8 +38,8 @@ function dioplt_write(PLT,Data)
 %                                                                               
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: https://repos.deltares.nl/repos/ds/trunk/src/tools/matlab/delftio/progsrc/dioplt_write.m $
-%   $Id: dioplt_write.m 34005 2014-05-18 13:10:30Z jagers $
+%   $HeadURL$
+%   $Id$
 
 dsh = PLT.dsh;
 NPar = length(PLT.Par);
