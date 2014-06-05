@@ -35,8 +35,8 @@ function rtc_communicator(varargin)
 %                                                                               
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $HeadURL: https://repos.deltares.nl/repos/ds/trunk/src/tools/matlab/rtc/progsrc/rtc_communicator.m $
-%   $Id: rtc_communicator.m 34314 2014-06-04 20:27:38Z jagers $
+%   $HeadURL$
+%   $Id$
 
 % Move input arguments to fields in structure.
 RTC_COMM_.errorfile = RTC_COMM_errorfile;
