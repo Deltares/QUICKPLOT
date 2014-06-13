@@ -79,11 +79,18 @@ for i=1:length(Grps)
                 else
                     ediscr=Info.ElmDescription;
                 end
+                eunit=deblank2(Info.ElmUnits);
+                if ~isempty(eunit) && eunit(1)=='[' && eunit(end)==']'
+                    eunit = deblank2(eunit(2:end-1));
+                end
+                if strcmp(eunit,'-')
+                    eunit='';
+                end
                 if k==1
                     if Info.NDim==2
-                        [DataProps,fld] = addprop(DataProps,fld,propversion,ediscr,'',Grps{i},Elms{j},[]);
+                        [DataProps,fld] = addprop(DataProps,fld,propversion,ediscr,eunit,'',Grps{i},Elms{j},[]);
                     elseif Info.NDim>=3
-                        [DataProps,fld] = addpropmulti(DataProps,fld,propversion,ediscr,'',Grps{i},Elms{j},sz(3:Info.NDim));
+                        [DataProps,fld] = addpropmulti(DataProps,fld,propversion,ediscr,eunit,'',Grps{i},Elms{j},sz(3:Info.NDim));
                     end
                 else
                     if sz(3)==k
@@ -95,15 +102,15 @@ for i=1:length(Grps)
                     end
                     if isempty(loc3d)
                         if sz(3)==0
-                            [DataProps,fld] = addprop(DataProps,fld,propversion,ediscr,'',Grps{i},Elms{j},[]);
+                            [DataProps,fld] = addprop(DataProps,fld,propversion,ediscr,eunit,'',Grps{i},Elms{j},[]);
                         elseif Info.NDim>=3
-                            [DataProps,fld] = addpropmulti(DataProps,fld,propversion,ediscr,'',Grps{i},Elms{j},sz(3:Info.NDim));
+                            [DataProps,fld] = addpropmulti(DataProps,fld,propversion,ediscr,eunit,'',Grps{i},Elms{j},sz(3:Info.NDim));
                         end
                     else
                         if Info.NDim==3
-                            [DataProps,fld] = addprop(DataProps,fld,propversion,ediscr,loc3d,Grps{i},Elms{j},[]);
+                            [DataProps,fld] = addprop(DataProps,fld,propversion,ediscr,eunit,loc3d,Grps{i},Elms{j},[]);
                         elseif Info.NDim>=4
-                            [DataProps,fld] = addpropmulti(DataProps,fld,propversion,ediscr,loc3d,Grps{i},Elms{j},sz(4:Info.NDim));
+                            [DataProps,fld] = addpropmulti(DataProps,fld,propversion,ediscr,eunit,loc3d,Grps{i},Elms{j},sz(4:Info.NDim));
                         end
                     end
                 end
@@ -113,7 +120,7 @@ for i=1:length(Grps)
     [DataProps,fld] = addsep(DataProps,fld,propversion);
 end
 
-function [DataProps,fld] = addpropmulti(DataProps,fld,propversion,ediscr,loc3d,Grp,Elm,sz)
+function [DataProps,fld] = addpropmulti(DataProps,fld,propversion,ediscr,eunit,loc3d,Grp,Elm,sz)
 nel = prod(sz);
 ndim = length(sz);
 for e=1:nel
@@ -124,10 +131,10 @@ for e=1:nel
     else
         Str=ediscr;
     end
-    [DataProps,fld] = addprop(DataProps,fld,propversion,Str,loc3d,Grp,Elm,x);
+    [DataProps,fld] = addprop(DataProps,fld,propversion,Str,eunit,loc3d,Grp,Elm,x);
 end
 
-function [DataProps,fld] = addprop(DataProps,fld,propversion,ediscr,loc3d,Grp,Elm,subf)
+function [DataProps,fld] = addprop(DataProps,fld,propversion,ediscr,eunit,loc3d,Grp,Elm,subf)
 fld = fld+1;
 switch propversion
     case {0,2}
@@ -138,9 +145,9 @@ switch propversion
             dimflag = [1 0 1 1 1];
         end
         if propversion==0
-            DataProps(fld,:) = {ediscr '' dimflag 1 1 '' 'z' 'z' loc3d Grp Elm '' subf 0};
+            DataProps(fld,:) = {ediscr eunit dimflag 1 1 '' 'z' 'z' loc3d Grp Elm '' subf 0};
         else
-            DataProps(fld,:) = {ediscr '' dimflag 1 1 'sQUAD' 'xy'     '' 'z' 'z' loc3d Grp Elm '' subf 0};
+            DataProps(fld,:) = {ediscr eunit dimflag 1 1 'sQUAD' 'xy'     '' 'z' 'z' loc3d Grp Elm '' subf 0};
         end
     case 1
         % quantities
@@ -156,7 +163,7 @@ switch propversion
                 Stagger = 'Faces2D';
                 VCoord = '';
         end
-        DataProps(fld,:) = {ediscr '' 'float' 'Time' Stagger subf VCoord Grp Elm ''};
+        DataProps(fld,:) = {ediscr eunit 'float' 'Time' Stagger subf VCoord Grp Elm ''};
 end
 
 function [DataProps,fld] = addsep(DataProps,fld,propversion)

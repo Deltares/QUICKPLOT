@@ -966,6 +966,8 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'cloud coverage'                   '%'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'CLOUDS'  ''       []       0
     'relative air humidity'            '%'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'AIRHUM'  ''       []       0
     'wind speed'                       'm/s'    [1 0 1 1 0]  1         2    'x'       'z'   'z'       ''      'map-series'     'WINDU'   'WINDV'  []       0
+    'precipitation rate'               'mm/h'   [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'PRECIP'  ''       []       0
+    'evaporation rate'                 'mm/h'   [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'EVAP'    ''       []       0
     '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
     'wave height'                        'm'    [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-trit-series' 'WAVE_HEIGHT' ''  []       0
     'significant wave height'            'm'    [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-rol-series'  'HS'     ''       []       0
@@ -1406,6 +1408,8 @@ DataProps = {...
     'cloud coverage'                                     '%'      'float'       'Time' 'Faces2D'  ''       ''       'map-series'       'CLOUDS'         ''
     'relative air humidity'                              '%'      'float'       'Time' 'Faces2D'  ''       ''       'map-series'       'AIRHUM'         ''
     'wind speed'                                         'm/s'    'vector(xy)'  'Time' 'Faces2D'  ''       ''       'map-series'       'WINDU'          'WINDV'
+    'precipitation rate'                                 'mm/h'   'float'       'Time' 'Faces2D'  ''       ''       'map-series'       'PRECIP'         ''
+    'evaporation rate'                                   'mm/h'   'float'       'Time' 'Faces2D'  ''       ''       'map-series'       'EVAP'           ''
     %   '-------'                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
     'wave height'                                        'm'      'float'       'Time' 'Faces2D'  ''       ''       'map-trit-series'  'WAVE_HEIGHT'    ''
     'significant wave height'                            'm'      'float'       'Time' 'Faces2D'  ''       ''       'map-rol-series'   'HS'             ''
