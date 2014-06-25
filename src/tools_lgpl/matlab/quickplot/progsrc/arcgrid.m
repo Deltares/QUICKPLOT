@@ -82,9 +82,6 @@ switch cmd
         else
             Out=DX;
         end
-        Out.x = Out.XCorner+(0.5:Out.NCols-0.5)*Out.CellSize(1);
-        Out.y = Out.YCorner+(Out.NRows+1)*Out.CellSize(2)-(0.5:Out.NRows-0.5)*Out.CellSize(2);
-
     case 'resample'
         Out=Local_resample_file(varargin{:});
     case 'write'
@@ -176,7 +173,7 @@ while ischar(Line) && ~isempty(Line)
                 break
             end
     end
-    Structure.DataStart=ftell(fid)
+    Structure.DataStart=ftell(fid);
     Line=fgetl(fid);
 end
 if isequal(Structure.XCorner,'centre')
