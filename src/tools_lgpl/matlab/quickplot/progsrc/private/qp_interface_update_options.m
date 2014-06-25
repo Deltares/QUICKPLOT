@@ -392,6 +392,9 @@ switch geometry
     case 'GEN3D'
     case 'GEN-3D'
 end
+if isequal(axestype,{'noplot'})
+    MultipleColors = 0;
+end    
 
 h_axtype=findobj(OH,'tag','axestype=?');
 if length(axestype)>1
@@ -530,7 +533,7 @@ elseif SpatialH==1
     end
 end
 
-if ~isempty(axestype)
+if ~strcmp(axestype,'noplot')
     SingleColor=~MultipleColors;
 elseif nval==-1
     MultipleColors=0;

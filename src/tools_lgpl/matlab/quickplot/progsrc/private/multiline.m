@@ -54,7 +54,10 @@ cArray=char(10);
 cellOutput=0;
 if nargin>1
     Inp=varargin;
-    if isequal('cell',lower(Inp{end}))
+    if isequal('cellrow',lower(Inp{end}))
+        cellOutput=2;
+        Inp(end)=[];
+    elseif isequal('cell',lower(Inp{end}))
         cellOutput=1;
         Inp(end)=[];
     end
@@ -66,7 +69,7 @@ if nargin>1
         cArray=strrep(cArray,'\n',char(10));
     end
 end
-if nargin<1 | ~ischar(Sin)
+if nargin<1 || ~ischar(Sin)
     error('Invalid input argument.')
 elseif isempty(Sin)
     if cellOutput
@@ -77,7 +80,7 @@ elseif isempty(Sin)
     if nargout>1
         Ssep='';
     end
-elseif ndims(Sin)~=2 | min(size(Sin))~=1
+elseif ndims(Sin)~=2 || min(size(Sin))~=1
     error('Invalid input argument.')
 else
     LineFeed=find(ismember(Sin,cArray));
@@ -87,7 +90,11 @@ else
     Start=[1 LineFeed+1];
     End=[LineFeed-1 length(Sin)];
     if cellOutput
-        Sout=cell(length(Start),1);
+        if cellOutput==2
+            Sout=cell(1,length(Start));
+        else
+            Sout=cell(length(Start),1);
+        end
         for k=1:length(Start)
             Sout{k}=deblank(Sin(Start(k):End(k)));
         end
