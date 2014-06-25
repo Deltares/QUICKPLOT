@@ -220,7 +220,7 @@ lineproperties=0;
 data2d=0;
 
 thindams = nval>0 & nval<1;
-MultipleColors = nval>=1 & nval<4;
+MultipleColors = (nval>=1 & nval<4) | nval==6;
 %--------------------------------------------------------------------------
 %
 %---- axes type
@@ -251,7 +251,7 @@ switch geometry
             elseif nval==0
                 axestype={'X-Y'};
             elseif ~isempty(strfind(coordinates,'xy'))
-                if nval==4
+                if nval==4 || nval==6
                     axestype={'X-Y','Text'};
                 else
                     axestype={'X-Y','Time-Val','Text'};
@@ -282,7 +282,7 @@ switch geometry
     case 'sSEG'
         if multiple(M_) || multiple(N_)
             switch nval
-                case {0,2,4}
+                case {0,2,4,6}
                     axestype={'X-Y'};
                 case 1
                     if isequal(coordinates,'d')
@@ -293,7 +293,7 @@ switch geometry
             end
         else
             switch nval
-                case {0,2,4}
+                case {0,2,4,6}
                     axestype={'X-Y'};
                 case 1
                     if isequal(coordinates,'d')
@@ -333,7 +333,7 @@ switch geometry
         else
             if nval==0
                 axestype={'X-Y'};
-            elseif nval==4
+            elseif nval==4 || nval==6
                 if ~multiple(T_) && ~multiple(M_) && ~multiple(N_)
                     axestype={'X-Y','Text'};
                 else
@@ -659,7 +659,7 @@ end
 %---- presentation type
 %
 extend2edge = 0;
-if (nval==1 && data2d && ~strcmp(geometry,'SEG')) || nval==1.9 || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') || strcmp(geometry,'POLYG') % || (nval==0 & ~DimFlag(ST_))
+if ((nval==1 || nval==6) && data2d && ~strcmp(geometry,'SEG')) || nval==1.9 || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') || strcmp(geometry,'POLYG') % || (nval==0 & ~DimFlag(ST_))
     switch nvalstr
         case 1.9
             PrsTps={'vector','edge'};
@@ -679,7 +679,9 @@ if (nval==1 && data2d && ~strcmp(geometry,'SEG')) || nval==1.9 || strcmp(nvalstr
                 PrsTps={'grid','grid with numbers'};
           end
         otherwise
-            if isfield(Props,'DataInCell')
+            if nval==6
+                dic=2;
+            elseif isfield(Props,'DataInCell')
                 dic=Props.DataInCell;
             else
                 dic=0;
@@ -1195,7 +1197,7 @@ end
 if isfield(Ops,'presentationtype')
     switch Ops.presentationtype
         case {'vector','patches','patches with lines','markers'};
-            if MultipleColors
+            if MultipleColors && Props.NVal~=6
                 cclass=findobj(OH,'tag','colclassify');
                 set(cclass,'enable','on')
                 if get(cclass,'value')
@@ -1224,44 +1226,46 @@ if ask_for_thresholds
 end
 
 if MultipleColors
-    set(findobj(OH,'tag','climmode'),'enable','on')
-    climmode=findobj(OH,'tag','climmode=?');
-    set(climmode,'enable','on','backgroundcolor',Active)
-    clmodes=get(climmode,'string');
-    CLimMode=clmodes{get(climmode,'value')};
-    switch CLimMode
-        case 'automatic'
-            Ops.colourlimits=[];
-            Ops.symmetriccolourlimits=0;
-            if ~isfield(Ops,'thresholddistribution') || strcmp(Ops.thresholddistribution,'linear')
-                climsymm=findobj(OH,'tag','climsymm');
-                set(climsymm,'enable','on')
-                Ops.symmetriccolourlimits=get(climsymm,'value');
-            end
-        case 'manual'
-            set(findobj(OH,'tag','climmax'),'enable','on')
-            set(findobj(OH,'tag','climmax=?'),'enable','on','backgroundcolor',Active)
-            set(findobj(OH,'tag','climmin'),'enable','on')
-            set(findobj(OH,'tag','climmin=?'),'enable','on','backgroundcolor',Active)
-            Min=get(findobj(OH,'tag','climmin=?'),'userdata');
-            Max=get(findobj(OH,'tag','climmax=?'),'userdata');
-            if Min>Max
-                set(findobj(OH,'tag','climmin=?'),'userdata',Max,'string',sprintf('%g',Max));
-                set(findobj(OH,'tag','climmax=?'),'userdata',Min,'string',sprintf('%g',Min));
-                Ops.colourlimits=[Max Min];
-            elseif Min==Max
-                if Min==0
-                    Max=1;
-                elseif Min<0
-                    Max=Min*(1-1e-6);
-                else
-                    Max=Max*(1+1e-6);
+    if Props.NVal~=6
+        set(findobj(OH,'tag','climmode'),'enable','on')
+        climmode=findobj(OH,'tag','climmode=?');
+        set(climmode,'enable','on','backgroundcolor',Active)
+        clmodes=get(climmode,'string');
+        CLimMode=clmodes{get(climmode,'value')};
+        switch CLimMode
+            case 'automatic'
+                Ops.colourlimits=[];
+                Ops.symmetriccolourlimits=0;
+                if ~isfield(Ops,'thresholddistribution') || strcmp(Ops.thresholddistribution,'linear')
+                    climsymm=findobj(OH,'tag','climsymm');
+                    set(climsymm,'enable','on')
+                    Ops.symmetriccolourlimits=get(climsymm,'value');
                 end
-                set(findobj(OH,'tag','climmax=?'),'userdata',Max,'string',sprintf('%g',Max));
-                Ops.colourlimits=[Min Max];
-            else
-                Ops.colourlimits=[Min Max];
-            end
+            case 'manual'
+                set(findobj(OH,'tag','climmax'),'enable','on')
+                set(findobj(OH,'tag','climmax=?'),'enable','on','backgroundcolor',Active)
+                set(findobj(OH,'tag','climmin'),'enable','on')
+                set(findobj(OH,'tag','climmin=?'),'enable','on','backgroundcolor',Active)
+                Min=get(findobj(OH,'tag','climmin=?'),'userdata');
+                Max=get(findobj(OH,'tag','climmax=?'),'userdata');
+                if Min>Max
+                    set(findobj(OH,'tag','climmin=?'),'userdata',Max,'string',sprintf('%g',Max));
+                    set(findobj(OH,'tag','climmax=?'),'userdata',Min,'string',sprintf('%g',Min));
+                    Ops.colourlimits=[Max Min];
+                elseif Min==Max
+                    if Min==0
+                        Max=1;
+                    elseif Min<0
+                        Max=Min*(1-1e-6);
+                    else
+                        Max=Max*(1+1e-6);
+                    end
+                    set(findobj(OH,'tag','climmax=?'),'userdata',Max,'string',sprintf('%g',Max));
+                    Ops.colourlimits=[Min Max];
+                else
+                    Ops.colourlimits=[Min Max];
+                end
+        end
     end
     set(findobj(OH,'tag','colourmap'),'enable','on')
     set(findobj(OH,'tag','colourmapbutton'),'enable','on')

@@ -617,7 +617,9 @@ if isfield(Ops,'presentationtype') && strcmp(Ops.presentationtype,'coloured cont
     LocStartClass=1;
 end
 
-if isfield(Ops,'thresholds') && ~strcmp(Ops.thresholds,'none')
+if Props.NVal==6
+    Ops.Thresholds = 0.5:1:length(data(1).Classes);
+elseif isfield(Ops,'thresholds') && ~strcmp(Ops.thresholds,'none')
     miv = inf;
     mv  = -inf;
     for d = 1:length(data)
@@ -1103,7 +1105,9 @@ if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
             end
         end
         if ~strcmp(Ops.Thresholds,'none')
-            if LocLabelClass
+            if Props.NVal==6
+                classbar(h,1:length(Thresholds),'labelcolor','label',Thresholds,data(1).Classes,'plotall','climmode','new')
+            elseif LocLabelClass
                 classbar(h,1:length(Thresholds),'labelcolor','label',Thresholds,'plotall','climmode','new')
             else
                 classbar(h,1:length(Thresholds),'label',Thresholds,'plotall','climmode','new')

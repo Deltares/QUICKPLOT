@@ -413,6 +413,8 @@ if DataRead
             end
         case {'cum. erosion/sedimentation','initial bed level','bed level in water level points','cumulative mass error'}
             DepthInZeta=DataInCell | strcmp(Props.ReqLoc,'z');
+        case {'Shepard deposit classification','USDA deposit classification'}
+            elidx{end+1}=0;
     end
     if isequal(subforig,'s') || isequal(subforig,'sb')
         if isequal(Props.SubFld,length(subf)) && length(subf)>1
@@ -445,20 +447,31 @@ if DataRead
         gravity = 9.81;
     end
 
-    if strmatch('total transport',Props.Name)
-        val1r=vs_let(FI,Props.Group,idx(T_),'SBUU',elidx,'quiet!');
-        val1=val1+val1r;
-        clear val1r
-        val2r=vs_let(FI,Props.Group,idx(T_),'SBVV',elidx,'quiet!');
-        val2=val2+val2r;
-        clear val2r
-    elseif strmatch('mean total transport',Props.Name)
-        val1r=vs_let(FI,Props.Group,idx(T_),'SBUUA',elidx,'quiet!');
-        val1=val1+val1r;
-        clear val1r
-        val2r=vs_let(FI,Props.Group,idx(T_),'SBVVA',elidx,'quiet!');
-        val2=val2+val2r;
-        clear val2r
+    switch Props.Name
+        case 'total transport'
+            val1r=vs_let(FI,Props.Group,idx(T_),'SBUU',elidx,'quiet!');
+            val1=val1+val1r;
+            clear val1r
+            val2r=vs_let(FI,Props.Group,idx(T_),'SBVV',elidx,'quiet!');
+            val2=val2+val2r;
+            clear val2r
+        case 'mean total transport'
+            val1r=vs_let(FI,Props.Group,idx(T_),'SBUUA',elidx,'quiet!');
+            val1=val1+val1r;
+            clear val1r
+            val2r=vs_let(FI,Props.Group,idx(T_),'SBVVA',elidx,'quiet!');
+            val2=val2+val2r;
+            clear val2r
+        case {'Shepard deposit classification','USDA deposit classification'}
+            Props.SubFld='sb1';
+            subf=lower(getsubfields(FI,Props));
+            isand = wildstrmatch('*sand*',subf);
+            isilt = wildstrmatch('*silt*',subf);
+            iclay = wildstrmatch('*clay*',subf);
+            sand = sum(val1(:,:,:,:,isand),5);
+            silt = sum(val1(:,:,:,:,isilt),5);
+            clay = sum(val1(:,:,:,:,iclay),5);
+            [val1,Ans.Classes] = classify_Sediment(sand,silt,clay,strtok(Props.Name));
     end
     if isequal(subforig,'s') || isequal(subforig,'sb')
         if length(Props.SubFld)>1
@@ -1089,6 +1102,8 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'mud fraction in top layer'        '-'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'MUDFRAC' ''       []       0
     'sediment fraction'                '-'      [1 0 1 1 1]  1         1    ''        'z'   'z'       'b'     'map-sed-series' 'LYRFRAC' ''       'sb1'    0
     'cumulative mass error'            'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'LYRFRAC' ''       []       0
+    'Shepard deposit classification'   ''       [1 0 1 1 1]  1         6    ''        'z'   'z'       'b'     'map-sed-series' 'LYRFRAC' ''       []       0
+    'USDA deposit classification'      ''       [1 0 1 1 1]  1         6    ''        'z'   'z'       'b'     'map-sed-series' 'LYRFRAC' ''       []       0
     'bed porosity'                     '-'      [1 0 1 1 1]  1         1    ''        'z'   'z'       'b'     'map-sed-series' 'EPSPOR'  ''       []       0
     'maximum historical load'          'kg/m^2' [1 0 1 1 1]  1         1    ''        'z'   'z'       'b'     'map-sed-series' 'PRELOAD' ''       []       0
     'arithmetic mean sediment diameter' 'm'     [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'DM'      ''       []       0
@@ -1238,6 +1253,16 @@ for i=size(Out,1):-1:1
         elseif isequal(qp_option(FI,'dps'),'dp')
             Out(i).Loc='z';
             Out(i).ReqLoc='z';
+        end
+    elseif strcmp(Out(i).Name,'Shepard deposit classification') || strcmp(Out(i).Name,'USDA deposit classification')
+        Props = Out(i);
+        Props.SubFld='sb1';
+        subf=lower(getsubfields(FI,Props));
+        isand = wildstrmatch('*sand*',subf);
+        isilt = wildstrmatch('*silt*',subf);
+        iclay = wildstrmatch('*clay*',subf);
+        if ~all(isand|isilt|iclay)
+            Out(i)=[];
         end
     end
 end
@@ -2972,4 +2997,127 @@ for i = 1:size(defopt,1)
     if isequal(qp_option(FI,opt),[])
         FI = qp_option(FI,opt,val);
     end
+end
+% -------------------------------------------------------------------------
+
+function [class,classes] = classify_Sediment(sand,silt,clay,method)
+% classify_Sediment determines the sediment type according to the USDA
+% classification in 12 major classes or Shepard's classification in 10 
+% classes(see below)
+%
+%   Input: sand/silt/clay fraction (not %), each a matrix with the same
+%   dimensions
+%
+%   Output: class       
+%
+%   Example: 
+%     class = classify_Sediment(0.6,0.3,0.1,'Shepard'); %determines the class for a
+%     sediment sample with 60% sand, 30% silt and 10% clay, returning '3'
+%     (=SANDY LOAM)
+%
+% USDA classification in 12 major classes:
+% SAND = 1: 
+% LOAMY SAND = 2: 
+% SANDY LOAM = 3:
+% LOAM = 4:
+% SILT LOAM = 5:
+% SILT = 6:
+% SANDY CLAY LOAM = 7:
+% CLAY LOAM = 8:
+% SILTY CLAY LOAM = 9:
+% SANDY CLAY = 10:
+% SILTY CLAY = 11:
+% CLAY = 12:
+% See also: http://soils.usda.gov/technical/aids/investigations/texture/
+% See also: http://www.nrcs.usda.gov/wps/portal/nrcs/detail/soils/survey/?cid=nrcs142p2_054167
+
+% Shepard's classification: 
+% SAND = 1
+% SILTY SAND = 2
+% CLAYEY SAND = 3
+% SILT = 4
+% SANDY SILT = 5
+% CLAYEY SILT = 6
+% CLAY = 7
+% SANDY CLAY = 8
+% SILTY CLAY = 9
+% SAND-SILT-CLAY = 10
+% See also: http://pubs.usgs.gov/of/2004/1003/htmldocs/figures/shepfig.htm
+
+class = nan(size(sand));
+
+if strcmp(method,'USDA')
+    classes = {'sand','loamy sand','sandy loam','loam','silt loam','silt','sandy clay loam','clay loam','silty clay loadm','sandy clay','silty clay','clay'};
+    % SAND = 1: 
+    ind = sand>=.85 & (silt + clay*1.5)<0.15;
+    class(ind)=1;
+    % LOAMY SAND = 2: 
+    ind = sand>=.7 & sand<=.9 & (silt + clay*1.5)>=0.15 & (silt + clay*2)<=0.3;
+    class(ind)=2;
+    % SANDY LOAM = 3:
+    ind  = clay<=.2 & ((silt + clay*2)>0.3) & sand>=.52;
+    class(ind)=3;
+    ind = clay<.07 & silt<.5 & sand>.43 & sand<.53;
+    class(ind)=3;
+    % LOAM = 4:
+    ind = clay>=.07 & clay<=.27 & silt>=.28 & silt<.5 & sand<.52;
+    class(ind)=4;
+    % SILT LOAM = 5:
+    ind = silt>=.5 & clay>=.12 & clay<=.27;
+    class(ind)=5;
+    ind = silt>=.5 & silt<.8 & clay<=.12;
+    class(ind)=5;
+    % SILT = 6:
+    ind = silt>=.8 & clay<.12;
+    class(ind)=6;
+    % SANDY CLAY LOAM = 7:
+    ind  = clay>.2 & clay<.35 & silt<.28 & sand>=.45;
+    class(ind)=7;
+    % CLAY LOAM = 8:
+    ind  = clay>.27 & clay<.4 & sand>.2 & sand<.45;
+    class(ind)=8;
+    % SILTY CLAY LOAM = 9:
+    ind  = clay>.27 & clay<.4 & sand<=.2;
+    class(ind)=9;
+    % SANDY CLAY = 10:
+    ind  = clay>=.35 & sand>=.45;
+    class(ind)=10;
+    % SILTY CLAY = 11:
+    ind  = clay>=.4 & silt>=.4;
+    class(ind)=11;
+    % CLAY = 12:
+    ind  = clay>=.4 & sand<.45 & silt<.4;
+    class(ind)=12;
+elseif strcmp(method,'Shepard')
+    classes = {'sand','silty sand','clayey sand','silt','sandy silt','clayey silt','clay','sandy clay','silty clay','sand-silt-clay'};
+    % SAND = 1
+    ind = sand>=.75;
+    class(ind)=1;
+    % SILTY SAND = 2
+    ind = sand>=silt & sand<.75 & clay<=silt;
+    class(ind)=2;
+    % CLAYEY SAND = 3
+    ind = sand>=clay & sand<.75 & clay>silt;
+    class(ind)=3;
+    % SILT = 4
+    ind = silt>=.75;
+    class(ind)=4;
+    % SANDY SILT = 5
+    ind = silt>sand & silt<.75 & clay<=sand;
+    class(ind)=5;
+    % CLAYEY SILT = 6
+    ind = silt>=clay & silt<.75 & clay>sand;
+    class(ind)=6;
+    % CLAY = 7
+    ind = clay>=.75;
+    class(ind)=7;
+    % SANDY CLAY = 8
+    ind = clay>sand & clay<.75 & sand>=silt;
+    class(ind)=8;
+    % SILTY CLAY = 9
+    ind = clay>silt & clay<.75 & sand<silt;
+    class(ind)=9;
+    % SAND-SILT-CLAY = 10
+    ind = sand>.2 & silt >.2 & clay>.2;
+    class(ind)=10;    
 end

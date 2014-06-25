@@ -229,7 +229,7 @@ switch NVal
                 hNew=gentext(hNew,Ops,Parent,'Plot not defined');
         end
         
-    case {1,5}
+    case {1,5,6}
         switch axestype
             case {'X-Y','Lon-Lat'}
                 if isfield(data,'TRI')

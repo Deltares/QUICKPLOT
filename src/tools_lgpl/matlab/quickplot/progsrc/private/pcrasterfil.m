@@ -76,20 +76,20 @@ else
 end
 
 cmd=lower(cmd);
-switch cmd,
-    case 'size',
+switch cmd
+    case 'size'
         varargout={getsize(FI,Props)};
         return;
-    case 'times',
+    case 'times'
         varargout={readtim(FI,Props,varargin{:})};
         return
-    case 'stations',
+    case 'stations'
         varargout={{}};
         return
     case 'subfields'
         varargout={{}};
         return
-    case 'plot',
+    case 'plot'
         PlotIt=1;
         Parent=varargin{1};
         Ops=varargin{2};
@@ -186,15 +186,23 @@ end
 val1=val1(idx{[M_ N_]});
 val2=[];
 
-switch Props.Name
-    case 'negated data'
+if isnumeric(Props.Val1)
+    if Props.Val1==-1
         val1=-val1;
+    else
+        mask = val1==Props.Val1;
+        val1(mask) = 1;
+        val1(~mask) = NaN;
+    end
 end
 
 % read time ...
 %T=readtim(FI,Props,idx{T_});
 
 % generate output ...
+if Props.NVal==6
+    Ans.Classes = FI.Table(:,2);
+end
 if XYRead
     Ans.X=x;
     Ans.Y=y;
@@ -217,7 +225,7 @@ varargout={Ans FI};
 
 
 % -----------------------------------------------------------------------------
-function Out=infile(FI,domain);
+function Out=infile(FI,domain)
 %
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'                         'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc' 'Loc3D' 'Group'          'Val1'          'Val2'};
@@ -231,7 +239,17 @@ else
         datatitle=datatitle(dt+1:end);
     end
     DataProps={datatitle                     [5 0 1 1 0]  1         1     ''        'z'   'z'      'c'     ''               ''              ''
-        ['negated ',datatitle]        [5 0 1 1 0]  1         1     ''        'z'   'z'      'c'     ''               ''              ''    };
+        ['negated ',datatitle]        [5 0 1 1 0]  1         1     ''        'z'   'z'      'c'     ''               -1              ''    };
+    if strcmp(FI.PCRType,'nominal')
+        for i = size(FI.Table,1):-1:1
+            DataProps(2+i,:) = DataProps(1,:);
+            DataProps{2+i,1} = FI.Table{i,2};
+            DataProps{2+i,end-1} = FI.Table{i,1};
+            DataProps{2+i,4} = 5;
+        end
+        DataProps(2,1:4) = {'-------' [0 0 0 0 0] 0 0};
+        DataProps(1,4) = {6};
+    end
 end
 Out=cell2struct(DataProps,PropNames,2);
 %======================== SPECIFIC CODE REMOVE ================================
