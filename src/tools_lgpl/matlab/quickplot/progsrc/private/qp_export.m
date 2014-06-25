@@ -91,7 +91,8 @@ switch expType
     case 'landboundary file'
         ext='ldb';
     case 'tecplot file'
-        ext='plt';
+        ext={'*.plt' 'Binary Tecplot File'
+            '*.dat' 'ASCII Tecplot File'};
     case 'arcview shape'
         % assumptions: 2D, one timestep
         ext='shp';
@@ -144,7 +145,11 @@ end
 if isempty(filename)
     BaseName = Props.Name;
     BaseName = str2file(BaseName);
-    [f,p] = uiputfile([savedir BaseName '.' ext], 'Save As');
+    if iscell(ext)
+        [f,p] = uiputfile(ext, 'Save As', [savedir BaseName]);
+    else
+        [f,p] = uiputfile([savedir BaseName '.' ext], 'Save As');
+    end
     if ~ischar(f)
         return
     end
