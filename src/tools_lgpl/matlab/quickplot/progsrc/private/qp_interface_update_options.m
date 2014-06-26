@@ -229,6 +229,19 @@ axestype={'noplot'};
 switch geometry
     case 'SELFPLOT'
         axestype={''};
+    case {'UGRID-NODE','UGRID-EDGE','UGRID-FACE'}
+        if multiple(M_) && multiple(K_)
+            % noplot
+        elseif multiple(M_)
+            axestype={'X-Y'};
+        elseif multiple(K_)
+            axestype={'Val-Z'};
+        elseif multiple(T_)
+            axestype={'Time-Val','X-Y'};
+        else
+            axestype={'Time-Val','X-Y','Text'};
+        end
+    case 'UGRID-VOLUME'
     case 'PNT'
         if multiple(ST_) || multiple(M_)
             if length(coordinates)==1

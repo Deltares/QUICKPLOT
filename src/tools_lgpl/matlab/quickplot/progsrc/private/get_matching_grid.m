@@ -138,7 +138,7 @@ while 1
                        if strcmp(G.Dataset(i).Attribute(j).Name,'delwaq_role') && ...
                                 strcmp(G.Dataset(i).Attribute(j).Value,'segment_aggregation_table')
                             table = nc_varget(G.Filename,G.Dataset(i).Name);
-                            if max(table)==MapSeg
+                            if max(table(:))==MapSeg
                                AggrTable(i) = true;
                             end
                             break
@@ -149,7 +149,12 @@ while 1
                if any(AggrTable)
                    iAggr = find(AggrTable);
                    iAggr = iAggr(1);
-                   GridSeg = MapSeg;
+                   table = nc_varget(G.Filename,G.Dataset(iAggr).Name);
+                   if numel(table)==length(table)
+                       GridSeg = MapSeg;
+                   else
+                       GridSeg = min(max(table,[],2)); % should be recoded, because it could be any dimension
+                   end
                    CouldReadGridData = 1;
                    xbounds = G.Dataset(iAggr).XBounds;
                    ybounds = G.Dataset(iAggr).YBounds;
@@ -159,7 +164,7 @@ while 1
                    G.AggregationDims = [G.Dataset(x).Dimension setdiff(G.Dataset(iAggr).Dimension,G.Dataset(x).Dimension)];
 %                   [G.Index, errmsg] = qp_netcdf_get(G,G.Aggregation,G.AggregationDims);
 %                   G.Index(isnan(G.Index))=0;
-                   G.MNK=[GridSeg 1 1];
+                   G.MNK=[GridSeg 1 MapSeg/GridSeg];
                    G.Index=(1:GridSeg)';
                else
                    C = cell(0,4);
@@ -184,7 +189,7 @@ while 1
                        end
                        %
                        if ~matching
-                           error('Unable to identify coordinate bounds variables for %i segments.',segdim)
+                           error('Unable to identify coordinate bounds variables for %i segments.',MapSeg)
                        else
                            segdim = C{matching,3};
                            GridSeg = C{matching,4};

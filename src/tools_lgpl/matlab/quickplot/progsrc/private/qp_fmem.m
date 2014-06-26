@@ -118,356 +118,336 @@ switch cmd
         end
         %autodetect intelligence ...
         FI=[];
-        try1=1;
-        trytp='nefis';
+        try_next='nefis';
         [pn,fn,en]=fileparts(FileName);
         
         if DoDS
-            trytp='NetCDF';
+            try_next='NetCDF';
         elseif strmatch('sds-',lower(fn))
-            trytp='waquasds';
+            try_next='waquasds';
         elseif strmatch('morf',lower(fn))
-            trytp='morf';
+            try_next='morf';
         elseif strmatch('bagdpt',lower(fn))
-            trytp='bagdpt';
+            try_next='bagdpt';
         elseif strcmp('gcmplt',lower(fn)) || strcmp('gcmtsr',lower(fn))
-            trytp='ecomsed-binary';
+            try_next='ecomsed-binary';
         elseif strcmp('network.ntw',lower([fn en])) || strcmp('deptop.1',lower([fn en]))
-            trytp='sobek1d';
+            try_next='sobek1d';
         else
             switch lower(en)
                 case {'.grd','.rgf'}
-                    trytp='wlgrid';
+                    try_next='wlgrid';
                 case {'.n','.e','.node','.ele'}
-                    trytp='nodelemesh';
+                    try_next='nodelemesh';
                 case {'.14','.gr3'}
-                    trytp='adcircmesh';
+                    try_next='adcircmesh';
                 case {'.mesh'}
-                    trytp='mikemesh';
+                    try_next='mikemesh';
                 case {'.shy'}
-                    trytp='SHYFEM mesh';
+                    try_next='SHYFEM mesh';
                 case {'gem'}
-                    trytp='geomesh';
+                    try_next='geomesh';
                 case {'.mat'}
-                    trytp='matlab';
+                    try_next='matlab';
                 case {'.map'}
-                    trytp='pcraster';
+                    try_next='pcraster';
                 case {'.his','.plo','.psf','.bal'}
-                    trytp='delwaqbin';
+                    try_next='delwaqbin';
                 case {'.arc','.amc','.amd','.amh','.amp','.amt','.amu','.amv'}
-                    trytp='arcgrid';
+                    try_next='arcgrid';
                 case {'.spw','.wnd'}
-                    trytp='asciiwind';
+                    try_next='asciiwind';
                 case {'.inc','.crs','.bin'}
-                    trytp='fls';
+                    try_next='fls';
                 case {'.grib','.grib1','.grib2'}
-                    trytp='grib';
+                    try_next='grib';
                 case {'.tek','.ann','.ldb','.pol','.spl','.tka','.tkp','.tkf'}
-                    trytp='tekal';
+                    try_next='tekal';
                 case {'.dxf'}
-                    trytp='AutoCAD DXF';
+                    try_next='AutoCAD DXF';
                 case {'.xyz'}
-                    trytp='samples';
+                    try_next='samples';
                 case {'.seq'}
-                    trytp='aukepc';
+                    try_next='aukepc';
                 case {'.bct'}
-                    trytp='bct';
+                    try_next='bct';
                 case {'.dmp'}
-                    trytp='CFX dmp';
+                    try_next='CFX dmp';
                 case {'.pst','.stu'}
-                    trytp='JSPost';
+                    try_next='JSPost';
                 case {'.jpg','.jpeg','.bmp','.tif','.tiff','.png','.pcx','.xwd'}
-                    trytp='bitmap';
+                    try_next='bitmap';
                 case {'.slf','.out','.res'}
-                    trytp='telemac';
+                    try_next='telemac';
                 case '.bna'
-                    trytp='BNA File';
+                    try_next='BNA File';
                 case '.gen'
-                    trytp='ArcInfoUngenerate';
+                    try_next='ArcInfoUngenerate';
                 case '.nc'
-                    trytp='NetCDF';
+                    try_next='NetCDF';
                 case {'.fun','.daf'}
-                    trytp='unibest';
+                    try_next='unibest';
                 case {'.shx','.shp'}
-                    trytp='shape';
+                    try_next='shape';
                 case {'.sma'}
-                    trytp='shipma';
+                    try_next='shipma';
                 case {'.sp1','.sp2'}
-                    trytp='SWAN spectral';
+                    try_next='SWAN spectral';
                 case {'.mdm'}
-                    trytp='morf';
+                    try_next='morf';
                 case {'.tim'}
-                    trytp='DelwaqTimFile';
+                    try_next='DelwaqTimFile';
                 case {'.bil','.hdr'}
-                    trytp='bil/hdr';
+                    try_next='bil/hdr';
                 case {'.noos'}
-                    trytp='NOOS time series';
+                    try_next='NOOS time series';
             end
         end
         FileName = absfullfile(FileName);
         
+        %collect the IDs of all file types for the following switch block
+        if ~DoDS
+            types_to_check = qp_filefilters('all');
+            types_to_check = types_to_check(:,3);
+            for i = 1:length(types_to_check)
+                if types_to_check{i}(1)=='>'
+                    types_to_check{i} = types_to_check{i}(2:end);
+                end
+            end
+            types_to_check = setdiff(types_to_check,try_next);
+        else
+            types_to_check = {};
+        end
+
         %try opening the file ...
         userasked=0;
         usertrytp='';
         while isempty(FI)
             %ui_message('','Trying %s ...\n',trytp);
             %pause
-            lasttp=trytp;
-            switch trytp
-                case 'nefis'
-                    try1=0;
-                    try
+            try
+                switch try_next
+                    case 'nefis'
                         FI=vs_use(FileName,'quiet');
-                    end
-                    if ~isempty(FI)
-                        switch lower(FI.SubType)
-                            case {'delft3d-waq-map','delft3d-par-map'}
-                                delwaq_results = cat(2,'DEL',upper(FI.SubType(9:11)),'_RESULTS');
-                                if isstruct(vs_disp(FI,delwaq_results,[]))
-                                    NfsSeg=vs_disp(FI,delwaq_results,'SUBST_001');
-                                else
-                                    NfsSeg=vs_disp(FI,lower(delwaq_results),lower('SUBST_001'));
-                                end
-                                NfsSeg=NfsSeg.SizeDim;
-                                filterspec='';
-                                maybeusegrid=1;
-                                if FileFromCall
-                                    if nargin>2
-                                        filterspec=varargin{2}; % no absfullfile here since filterspec may be concat of multiple file names using ;
+                        if ~isempty(FI)
+                            switch lower(FI.SubType)
+                                case {'delft3d-waq-map','delft3d-par-map'}
+                                    delwaq_results = cat(2,'DEL',upper(FI.SubType(9:11)),'_RESULTS');
+                                    if isstruct(vs_disp(FI,delwaq_results,[]))
+                                        NfsSeg=vs_disp(FI,delwaq_results,'SUBST_001');
                                     else
-                                        maybeusegrid=0;
-                                        G=[];
+                                        NfsSeg=vs_disp(FI,lower(delwaq_results),lower('SUBST_001'));
                                     end
-                                end
-                                if maybeusegrid
-                                    [G,GridFileName]=get_matching_grid(NfsSeg,pn,filterspec);
-                                end
-                                if ~isstruct(G) % cancel for grid -> use indices
-                                    Statw=ceil(log10(NfsSeg+1));
-                                    FI.SegmentName=num2cell(reshape(sprintf(strcat('%-',num2str(Statw),'i'),1:NfsSeg),Statw,NfsSeg)',2);
-                                    FI.SubType=[FI.SubType(1:end-3) 'his'];
-                                else
-                                    Otherargs{1}=GridFileName;
-                                    F.Nfs=FI;
-                                    F.FileType=FI.FileType;
-                                    F.SubType=FI.SubType;
-                                    F.Grid=G;
-                                    FI=F;
-                                end
-                            case {'delft3d-trim'}
-                                FI.QP_Options.morfac      = 1;
-                                FI.QP_Options.morstt      = 0;
-                                FI.QP_Options.dps         = '';
-                                FI.QP_Options.displaytime = 'hydrodynamic time';
-                            case {'delft3d-trih'}
-                                FI.QP_Options.displaytime = 'hydrodynamic time';
+                                    NfsSeg=NfsSeg.SizeDim;
+                                    filterspec='';
+                                    maybeusegrid=1;
+                                    if FileFromCall
+                                        if nargin>2
+                                            filterspec=varargin{2}; % no absfullfile here since filterspec may be concat of multiple file names using ;
+                                        else
+                                            maybeusegrid=0;
+                                            G=[];
+                                        end
+                                    end
+                                    if maybeusegrid
+                                        [G,GridFileName]=get_matching_grid(NfsSeg,pn,filterspec);
+                                    end
+                                    if ~isstruct(G) % cancel for grid -> use indices
+                                        Statw=ceil(log10(NfsSeg+1));
+                                        FI.SegmentName=num2cell(reshape(sprintf(strcat('%-',num2str(Statw),'i'),1:NfsSeg),Statw,NfsSeg)',2);
+                                        FI.SubType=[FI.SubType(1:end-3) 'his'];
+                                    else
+                                        Otherargs{1}=GridFileName;
+                                        F.Nfs=FI;
+                                        F.FileType=FI.FileType;
+                                        F.SubType=FI.SubType;
+                                        F.Grid=G;
+                                        FI=F;
+                                    end
+                                case {'delft3d-trim'}
+                                    FI.QP_Options.morfac      = 1;
+                                    FI.QP_Options.morstt      = 0;
+                                    FI.QP_Options.dps         = '';
+                                    FI.QP_Options.displaytime = 'hydrodynamic time';
+                                case {'delft3d-trih'}
+                                    FI.QP_Options.displaytime = 'hydrodynamic time';
+                            end
+                            if isfield(FI,'SubType')
+                                Tp=FI.SubType;
+                            else
+                                Tp=vs_type(FI);
+                            end
                         end
+                        
                         if isfield(FI,'SubType')
-                            Tp=FI.SubType;
-                        else
-                            Tp=vs_type(FI);
+                            switch lower(FI.SubType)
+                                case {'delft3d-trim','delft3d-com','delft3d-trih','delft3d-waq-map','delft3d-par-map'}
+                                    FI.Options=1;
+                            end
                         end
-                    end
-                    
-                    if isfield(FI,'SubType')
-                        switch lower(FI.SubType)
-                            case {'delft3d-trim','delft3d-com','delft3d-trih','delft3d-waq-map','delft3d-par-map'}
-                                FI.Options=1;
-                        end
-                    end
-                    trytp='matlab';
-                case 'matlab'
-                    try
+                    case 'matlab'
                         if isstandalone
                             FI=load(FileName);
                         else
                             FI=load('-mat',FileName);
                         end
-                    end
-                    if isstruct(FI)
-                        f=fieldnames(FI);
-                        if length(f)==1 && strcmp(lower(f{1}),'data')
-                            FI=getfield(FI,f{1});
-                            FI.FileName=FileName;
-                            Tp=trytp;
+                        if isstruct(FI)
+                            f=fieldnames(FI);
+                            if length(f)==1 && strcmp(lower(f{1}),'data')
+                                FI=getfield(FI,f{1});
+                                FI.FileName=FileName;
+                                Tp=try_next;
+                            else
+                                FI=[];
+                            end
                         else
                             FI=[];
                         end
-                    else
-                        FI=[];
-                    end
-                    trytp='ecomsed-binary';
-                case 'ecomsed-binary'
-                    try
+                    case 'ecomsed-binary'
                         FI=ecomsed('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        if ~isfield(FI,'Check')
-                            FI=[];
-                        elseif strcmp(FI.Check,'NotOK')
-                            FI=[];
-                        else
-                            Tp=FI.FileType;
-                            if strcmp(FI.SubType,'GCMPLT')
-                                NSeg = [FI.IM FI.JM];
-                                filterspec='corners*';
-                                askforgrid=1;
-                                if FileFromCall
-                                    if nargin>2
-                                        filterspec=varargin{2}; % no absfullfile here since filterspec may be concat of multiple file names using ;
-                                    else
-                                        askforgrid=0;
-                                        G=[];
+                        if ~isempty(FI)
+                            if ~isfield(FI,'Check')
+                                FI=[];
+                            elseif strcmp(FI.Check,'NotOK')
+                                FI=[];
+                            else
+                                Tp=FI.FileType;
+                                if strcmp(FI.SubType,'GCMPLT')
+                                    NSeg = [FI.IM FI.JM];
+                                    filterspec='corners*';
+                                    askforgrid=1;
+                                    if FileFromCall
+                                        if nargin>2
+                                            filterspec=varargin{2}; % no absfullfile here since filterspec may be concat of multiple file names using ;
+                                        else
+                                            askforgrid=0;
+                                            G=[];
+                                        end
                                     end
+                                    if askforgrid
+                                        [G,GridFileName]=get_matching_grid(NSeg,pn,filterspec);
+                                    end
+                                    if isstruct(G) % cancel for grid -> use indices
+                                        Otherargs{1}=GridFileName;
+                                        FI.Grid=G;
+                                    else
+                                        error('Grid required for processing ECOMSED-GCMPLT file.')
+                                    end
+                                elseif strcmp(FI.SubType,'MODEL_GRID')
+                                    Tp = 'wlgrid';
+                                    ui_message('error', ...
+                                        {'An attempt was made to reconstruct the grid coordinates', ...
+                                        'from the distances in the MODEL_GRID file. Significant', ...
+                                        'errors may arise.'})
                                 end
-                                if askforgrid
-                                    [G,GridFileName]=get_matching_grid(NSeg,pn,filterspec);
-                                end
-                                if isstruct(G) % cancel for grid -> use indices
-                                    Otherargs{1}=GridFileName;
-                                    FI.Grid=G;
-                                else
-                                    error('Grid required for processing ECOMSED-GCMPLT file.')
-                                end
-                            elseif strcmp(FI.SubType,'MODEL_GRID')
-                                Tp = 'wlgrid';
-                                ui_message('error', ...
-                                    {'An attempt was made to reconstruct the grid coordinates', ...
-                                    'from the distances in the MODEL_GRID file. Significant', ...
-                                    'errors may arise.'})
                             end
                         end
-                    end
-                    trytp='NetCDF';
-                case 'NetCDF'
-                    try
+                    case 'NetCDF'
                         FI = nc_info(FileName);
                         FI = nc_interpret(FI);
                         %nc_dump(FileName)
                         FI.FileName = FileName;
-                        Tp = trytp;
-                    catch
-                        FI = [];
-                    end
-                    if DoDS && isempty(FI)
-                        trytp='';
-                        try1=0;
-                    else
-                        trytp='sobek1d';
-                    end
-                case 'sobek1d'
-                    try
+                        Tp = try_next;
+                    case 'sobek1d'
                         FI=sobek('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        if ~isfield(FI,'Check')
-                            FI=[];
-                        elseif strcmp(FI.Check,'NotOK')
-                            FI=[];
-                        else
-                            Tp=FI.FileType;
-                        end
-                        FI.Data={};
-                        p=fileparts(FileName);
-                        files=dir(p);
-                        fl={'flowmap.his','minmax.his','gsedmap.his','kafhmap.his', ...
-                            'kafpmap.his','kafrmap.his','kaphmap.his','kappmap.his', ...
-                            'saltmap.his','sedtmap.his','morpmap.his','sobekwq.map', ...
-                            'calcpnt.his','reachseg.his','reachvol.his'};
-                        %'calcdim.his','delwaq.his','delwaq.map','flowanal.his', ...
-                        %'nodesvol.his','nodes_cr.his','qlat.his','qwb.his', ...
-                        %'reachdim.his','reachflw.his','reachvol.his','reach_cr.his', ...
-                        %'struc.his','strucdim.his','wqbou20.his'};
-                        for i=1:length(files)
-                            if ~isempty(strmatch(lower(files(i).name),fl,'exact'))
-                                try
-                                    FIH=delwaq('open',fullfile(p,files(i).name));
-                                catch
-                                    FIH=[];
-                                end
-                                if ~isempty(FIH)
-                                    FI.Data{end+1}=FIH;
-                                end
+                        if ~isempty(FI)
+                            if ~isfield(FI,'Check')
+                                FI=[];
+                            elseif strcmp(FI.Check,'NotOK')
+                                FI=[];
+                            else
+                                Tp=FI.FileType;
                             end
-                        end
-                    end
-                    trytp='pcraster';
-                case 'pcraster'
-                    try
-                        FI=pcraster('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        if ~isfield(FI,'Check')
-                            FI=[];
-                        elseif strcmp(FI.Check,'NotOK')
-                            FI=[];
-                        else
-                            Tp=FI.FileType;
-                        end
-                    end
-                    trytp='delwaqbin';
-                case 'delwaqbin'
-                    try
-                        FI=delwaq('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        Tp=FI.FileType;
-                        switch lower(Tp)
-                            case 'delwaqmap'
-                                filterspec='';
-                                maybeusegrid=1;
-                                if FileFromCall
-                                    if nargin>2
-                                        filterspec=varargin{2}; % no absfullfile here since filterspec may be concat of multiple file names using ;
-                                    else
-                                        maybeusegrid=0;
-                                        G=[];
+                            FI.Data={};
+                            p=fileparts(FileName);
+                            files=dir(p);
+                            fl={'flowmap.his','minmax.his','gsedmap.his','kafhmap.his', ...
+                                'kafpmap.his','kafrmap.his','kaphmap.his','kappmap.his', ...
+                                'saltmap.his','sedtmap.his','morpmap.his','sobekwq.map', ...
+                                'calcpnt.his','reachseg.his','reachvol.his'};
+                            %'calcdim.his','delwaq.his','delwaq.map','flowanal.his', ...
+                            %'nodesvol.his','nodes_cr.his','qlat.his','qwb.his', ...
+                            %'reachdim.his','reachflw.his','reachvol.his','reach_cr.his', ...
+                            %'struc.his','strucdim.his','wqbou20.his'};
+                            for i=1:length(files)
+                                if ~isempty(strmatch(lower(files(i).name),fl,'exact'))
+                                    try
+                                        FIH=delwaq('open',fullfile(p,files(i).name));
+                                    catch
+                                        FIH=[];
+                                    end
+                                    if ~isempty(FIH)
+                                        FI.Data{end+1}=FIH;
                                     end
                                 end
-                                if maybeusegrid
-                                    [G,GridFileName]=get_matching_grid(FI.NumSegm,pn,filterspec);
-                                end
-                                if ~isstruct(G) % cancel for grid -> use indices
-                                    Statw=ceil(log10(FI.NumSegm+1));
-                                    FI.SegmentName=num2cell(reshape(sprintf(strcat('%-',num2str(Statw),'i'),1:FI.NumSegm),Statw,FI.NumSegm)',2);
-                                    FI.FileType='DelwaqHIS';
-                                else
-                                    Otherargs{1}=GridFileName;
-                                    F.DwqBin=FI;
-                                    F.FileType=FI.FileType;
-                                    F.Grid=G;
-                                    FI=F;
-                                end
-                        end
-                        FI.balancefile=0;
-                        if strcmp(FI.FileType,'DelwaqHIS')
-                            [pn,fn,fne]=fileparts(FI.FileName);
-                            if isequal(lower(fne),'.bal')
-                                FI.balancefile=1;
-                            elseif length(FI.FileName)>7 && ...
-                                    isequal(lower(FI.FileName(end-6:end)),'bal.his')
-                                FI.balancefile=1;
                             end
                         end
-                        FI.Options=1;
-                    end
-                    trytp='fls';
-                case 'fls'
-                    try
-                        FI=fls('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        if ~isfield(FI,'Check')
-                            FI=[];
-                        elseif strcmp(FI.Check,'NotOK')
-                            FI=[];
-                        else
-                            Tp=FI.FileType;
+                    case 'pcraster'
+                        FI=pcraster('open',FileName);
+                        if ~isempty(FI)
+                            if ~isfield(FI,'Check')
+                                FI=[];
+                            elseif strcmp(FI.Check,'NotOK')
+                                FI=[];
+                            else
+                                Tp=FI.FileType;
+                            end
                         end
-                    end
-                    trytp='grib';
-                case 'grib'
-                    try
+                    case 'delwaqbin'
+                        FI=delwaq('open',FileName);
+                        if ~isempty(FI)
+                            Tp=FI.FileType;
+                            switch lower(Tp)
+                                case 'delwaqmap'
+                                    filterspec='';
+                                    maybeusegrid=1;
+                                    if FileFromCall
+                                        if nargin>2
+                                            filterspec=varargin{2}; % no absfullfile here since filterspec may be concat of multiple file names using ;
+                                        else
+                                            maybeusegrid=0;
+                                            G=[];
+                                        end
+                                    end
+                                    if maybeusegrid
+                                        [G,GridFileName]=get_matching_grid(FI.NumSegm,pn,filterspec);
+                                    end
+                                    if ~isstruct(G) % cancel for grid -> use indices
+                                        Statw=ceil(log10(FI.NumSegm+1));
+                                        FI.SegmentName=num2cell(reshape(sprintf(strcat('%-',num2str(Statw),'i'),1:FI.NumSegm),Statw,FI.NumSegm)',2);
+                                        FI.FileType='DelwaqHIS';
+                                    else
+                                        Otherargs{1}=GridFileName;
+                                        F.DwqBin=FI;
+                                        F.FileType=FI.FileType;
+                                        F.Grid=G;
+                                        FI=F;
+                                    end
+                            end
+                            FI.balancefile=0;
+                            if strcmp(FI.FileType,'DelwaqHIS')
+                                [pn,fn,fne]=fileparts(FI.FileName);
+                                if isequal(lower(fne),'.bal')
+                                    FI.balancefile=1;
+                                elseif length(FI.FileName)>7 && ...
+                                        isequal(lower(FI.FileName(end-6:end)),'bal.his')
+                                    FI.balancefile=1;
+                                end
+                            end
+                            FI.Options=1;
+                        end
+                    case 'fls'
+                        FI=fls('open',FileName);
+                        if ~isempty(FI)
+                            if ~isfield(FI,'Check')
+                                FI=[];
+                            elseif strcmp(FI.Check,'NotOK')
+                                FI=[];
+                            else
+                                Tp=FI.FileType;
+                            end
+                        end
+                    case 'grib'
                         FI=grib('open',FileName);
                         if ~isfield(FI,'OK')
                             FI=[];
@@ -476,32 +456,26 @@ switch cmd
                             FI = [];
                             error(err)
                         end
-                    end
-                    if ~isempty(FI)
-                        Tp=FI.FileType;
-                        for b = 1:length(FI.Block)
-                            if FI.Block(b).Edition>1
-                                ui_message('warning','Skipping GRIB edition %i block',FI.Block(b).Edition)
+                        if ~isempty(FI)
+                            Tp=FI.FileType;
+                            for b = 1:length(FI.Block)
+                                if FI.Block(b).Edition>1
+                                    ui_message('warning','Skipping GRIB edition %i block',FI.Block(b).Edition)
+                                end
                             end
                         end
-                    end
-                    trytp='arcgrid';
-                case 'arcgrid'
-                    try
+                    case 'arcgrid'
                         FI=arcgrid('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        if ~isfield(FI,'Check')
-                            FI=[];
-                        elseif strcmp(FI.Check,'NotOK')
-                            FI=[];
-                        else
-                            Tp=FI.FileType;
+                        if ~isempty(FI)
+                            if ~isfield(FI,'Check')
+                                FI=[];
+                            elseif strcmp(FI.Check,'NotOK')
+                                FI=[];
+                            else
+                                Tp=FI.FileType;
+                            end
                         end
-                    end
-                    trytp='asciiwind';
-                case 'asciiwind'
-                    try
+                    case 'asciiwind'
                         FI=asciiwind('open',FileName);
                         if ~isfield(FI,'Check')
                             FI=[];
@@ -571,185 +545,153 @@ switch cmd
                                 end
                             end
                         end
-                    catch
-                        FI=[];
-                    end
-                    trytp='waquasds';
-                case 'waquasds'
-                    try
+                    case 'waquasds'
                         FI=waqua('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        if ~isfield(FI,'Check')
-                            FI=[];
-                        elseif strcmp(FI.Check,'NotOK')
-                            FI=[];
-                        else
-                            Tp=FI.FileType;
+                        if ~isempty(FI)
+                            if ~isfield(FI,'Check')
+                                FI=[];
+                            elseif strcmp(FI.Check,'NotOK')
+                                FI=[];
+                            else
+                                Tp=FI.FileType;
+                            end
                         end
-                    end
-                    trytp='mike0';
-                case 'mike0'
-                    try
+                    case 'mike0'
                         FI=mike('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        if ~isfield(FI,'Check')
-                            FI=[];
-                        elseif strcmp(FI.Check,'NotOK')
-                            FI=[];
-                        else
+                        if ~isempty(FI)
+                            if ~isfield(FI,'Check')
+                                FI=[];
+                            elseif strcmp(FI.Check,'NotOK')
+                                FI=[];
+                            else
+                                Tp=FI.FileType;
+                            end
+                            FI.Options=1;
+                        end
+                    case 'wlgrid'
+                        FI=wlgrid('open',FileName);
+                        if ~isempty(FI)
+                            if isequal(FI.Type,'RGF')
+                                Tmp=repmat(NaN,size(FI.X)+1);
+                                Tmp(1:end-1,1:end-1)=FI.X;
+                                FI.X=Tmp;
+                                Tmp(1:end-1,1:end-1)=FI.Y;
+                                FI.Y=Tmp;
+                            end
+                            FI.FileType='wlgrid';
+                            FI.Options=1;
                             Tp=FI.FileType;
                         end
-                        FI.Options=1;
-                    end
-                    trytp='wlgrid';
-                case 'wlgrid'
-                    try
-                        FI=wlgrid('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        if isequal(FI.Type,'RGF')
-                            Tmp=repmat(NaN,size(FI.X)+1);
-                            Tmp(1:end-1,1:end-1)=FI.X;
-                            FI.X=Tmp;
-                            Tmp(1:end-1,1:end-1)=FI.Y;
-                            FI.Y=Tmp;
-                        end
-                        FI.FileType='wlgrid';
-                        FI.Options=1;
-                        Tp=FI.FileType;
-                    end
-                    trytp='nodelemesh';
-                case 'nodelemesh'
-                    try
+                    case 'nodelemesh'
                         FI=nodelemesh('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        FI.Options=0;
-                        Tp=FI.FileType;
-                    end
-                    trytp='adcircmesh';
-                case 'adcircmesh'
-                    try
+                        if ~isempty(FI)
+                            FI.Options=0;
+                            Tp=FI.FileType;
+                        end
+                    case 'adcircmesh'
                         FI=adcircmesh('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        FI.Options=0;
-                        Tp=FI.FileType;
-                    end
-                    trytp='mikemesh';
-                case 'mikemesh'
-                    try
+                        if ~isempty(FI)
+                            FI.Options=0;
+                            Tp=FI.FileType;
+                        end
+                    case 'mikemesh'
                         FI=mikemesh('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        FI.Options=0;
-                        Tp=FI.FileType;
-                    end
-                    trytp='SHYFEM mesh';
-                case 'SHYFEM mesh'
-                    try
+                        if ~isempty(FI)
+                            FI.Options=0;
+                            Tp=FI.FileType;
+                        end
+                    case 'SHYFEM mesh'
                         FI=shyfemmesh('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        FI.Options=0;
-                        Tp=FI.FileType;
-                    end
-                    trytp='geomesh';
-                case 'geomesh'
-                    try
+                        if ~isempty(FI)
+                            FI.Options=0;
+                            Tp=FI.FileType;
+                        end
+                    case 'geomesh'
                         FI=geomesh('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        FI.Options=0;
-                        FI.DomainName = 'Layer';
-                        Tp=FI.FileType;
-                    end
-                    trytp='tekal';
-                case 'tekal'
-                    try
+                        if ~isempty(FI)
+                            FI.Options=0;
+                            FI.DomainName = 'Layer';
+                            Tp=FI.FileType;
+                        end
+                    case 'tekal'
                         FI=tekal('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        if ~isfield(FI,'Check')
-                            FI=[];
-                        elseif strcmp(FI.Check,'NotOK')
-                            FI=[];
-                        elseif isempty(FI.Field) % only accept non-empty files
-                            FI=[];
-                        else
-                            Tp='Tekal';
-                            [pn,fn,ex]=fileparts(FI.FileName);
-                            FI.can_be_ldb=1;
-                            FI.combinelines=0;
-                            for i=1:length(FI.Field)
-                                if length(FI.Field(i).Size)~=2
-                                    FI.can_be_ldb=0;
-                                elseif FI.Field(i).Size(2)~=2
-                                    FI.can_be_ldb=0;
-                                elseif ~strcmp(FI.Field(i).DataTp,'numeric')
-                                    FI.can_be_ldb=0;
-                                end
-                                if ~FI.can_be_ldb
-                                    break
-                                end
-                            end
-                            can_be_kub=0;
-                            switch lower(ex)
-                                case {'.ldb','.pol'}
-                                    if FI.can_be_ldb
-                                        FI.combinelines=1;
+                        if ~isempty(FI)
+                            if ~isfield(FI,'Check')
+                                FI=[];
+                            elseif strcmp(FI.Check,'NotOK')
+                                FI=[];
+                            elseif isempty(FI.Field) % only accept non-empty files
+                                FI=[];
+                            else
+                                Tp='Tekal';
+                                [pn,fn,ex]=fileparts(FI.FileName);
+                                FI.can_be_ldb=1;
+                                FI.combinelines=0;
+                                for i=1:length(FI.Field)
+                                    if length(FI.Field(i).Size)~=2
+                                        FI.can_be_ldb=0;
+                                    elseif FI.Field(i).Size(2)~=2
+                                        FI.can_be_ldb=0;
+                                    elseif ~strcmp(FI.Field(i).DataTp,'numeric')
+                                        FI.can_be_ldb=0;
                                     end
-                                case '.kub'
-                                    can_be_kub=1;
-                                    if length(FI.Field)>1
-                                        can_be_kub=0;
-                                    elseif length(FI.Field(1).Size)~=2
-                                        can_be_kub=0;
-                                    elseif ~strcmp(FI.Field(1).DataTp,'numeric')
-                                        can_be_kub=0;
-                                    end
-                            end
-                            if can_be_kub
-                                ppn = '';
-                                if nargin>2
-                                    pfn=absfullfile(varargin{2});
-                                else
-                                    pfn='';
-                                end
-                                while 1
-                                    if ~exist([ppn pfn])
-                                        cp=pwd;
-                                        cd(pn);
-                                        [pfn,ppn]=uigetfile('*.ldb;*.pol','Select matching polygon file ...');
-                                        cd(cp);
-                                    end
-                                    if ~ischar(pfn)
+                                    if ~FI.can_be_ldb
                                         break
                                     end
-                                    try
-                                        pfile = tekal('open',[ppn pfn]);
-                                        if length(pfile.Field)~=FI.Field(1).Size(1)
-                                            ui_message('error','Number of values in KUBINT file (%i) does not\nmatch the number of polygons (%i)',FI.Field(1).Size(1),length(pfile.Field))
-                                            ppn='';
-                                            pfn='';
-                                        else
-                                            Otherargs{1} = [ppn pfn];
+                                end
+                                can_be_kub=0;
+                                switch lower(ex)
+                                    case {'.ldb','.pol'}
+                                        if FI.can_be_ldb
+                                            FI.combinelines=1;
+                                        end
+                                    case '.kub'
+                                        can_be_kub=1;
+                                        if length(FI.Field)>1
+                                            can_be_kub=0;
+                                        elseif length(FI.Field(1).Size)~=2
+                                            can_be_kub=0;
+                                        elseif ~strcmp(FI.Field(1).DataTp,'numeric')
+                                            can_be_kub=0;
+                                        end
+                                end
+                                if can_be_kub
+                                    ppn = '';
+                                    if nargin>2
+                                        pfn=absfullfile(varargin{2});
+                                    else
+                                        pfn='';
+                                    end
+                                    while 1
+                                        if ~exist([ppn pfn])
+                                            cp=pwd;
+                                            cd(pn);
+                                            [pfn,ppn]=uigetfile('*.ldb;*.pol','Select matching polygon file ...');
+                                            cd(cp);
+                                        end
+                                        if ~ischar(pfn)
                                             break
                                         end
+                                        try
+                                            pfile = tekal('open',[ppn pfn]);
+                                            if length(pfile.Field)~=FI.Field(1).Size(1)
+                                                ui_message('error','Number of values in KUBINT file (%i) does not\nmatch the number of polygons (%i)',FI.Field(1).Size(1),length(pfile.Field))
+                                                ppn='';
+                                                pfn='';
+                                            else
+                                                Otherargs{1} = [ppn pfn];
+                                                break
+                                            end
+                                        end
+                                    end
+                                    if ischar(pfn)
+                                        FI.plotonpoly=pfile;
                                     end
                                 end
-                                if ischar(pfn)
-                                    FI.plotonpoly=pfile;
-                                end
+                                FI.Options=FI.can_be_ldb;
                             end
-                            FI.Options=FI.can_be_ldb;
                         end
-                    end
-                    trytp='AutoCAD DXF';
-                case 'AutoCAD DXF'
-                    try
+                    case 'AutoCAD DXF'
                         Data=dxf('read',FileName);
                         tp = zeros(1,length(Data));
                         for i = 1:length(Data)
@@ -767,340 +709,282 @@ switch cmd
                             end
                         end
                         if ~isempty(Data)
-                            FI.FileType = trytp;
+                            FI.FileType = try_next;
                             FI.FileName = FileName;
                             FI.Points = cat(2,Data{tp==1});
                             L = Data(tp==2);
                             L(2,:) = {[NaN;NaN;NaN]};
                             FI.Lines  = cat(2,L{:});
                             FI.Patch  = Data(tp==3);
-                            Tp=trytp;
+                            Tp=try_next;
                         end
-                    catch
-                        FI=[];
-                    end
-                    trytp='shape';
-                case 'shape'
-                    try
+                    case 'shape'
                         FI=shape('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        Tp=FI.FileType;
-                    end
-                    trytp='SWAN spectral';
-                case 'SWAN spectral'
-                    try
-                        FI=readswan(FileName);
-                    end
-                    if ~isempty(FI)
-                        if ~isfield(FI,'Check')
-                            FI=[];
-                        elseif strcmp(FI.Check,'NotOK')
-                            FI=[];
-                        else
+                        if ~isempty(FI)
                             Tp=FI.FileType;
                         end
-                    end
-                    trytp='DelwaqTimFile';
-                case 'DelwaqTimFile'
-                    try
+                    case 'SWAN spectral'
+                        FI=readswan(FileName);
+                        if ~isempty(FI)
+                            if ~isfield(FI,'Check')
+                                FI=[];
+                            elseif strcmp(FI.Check,'NotOK')
+                                FI=[];
+                            else
+                                Tp=FI.FileType;
+                            end
+                        end
+                    case 'DelwaqTimFile'
                         FI=delwaqtimfile(FileName);
-                    end
-                    if ~isempty(FI)
-                        Tp=FI.FileType;
-                    end
-                    trytp='morf';
-                case 'morf'
-                    try
+                        if ~isempty(FI)
+                            Tp=FI.FileType;
+                        end
+                    case 'morf'
                         FI=morf('read',FileName);
-                    end
-                    if ~isempty(FI)
-                        Tp='MorfTree';
-                    end
-                    trytp='aukepc';
-                case 'aukepc'
-                    try
+                        if ~isempty(FI)
+                            Tp='MorfTree';
+                        end
+                    case 'aukepc'
                         FI=aukepc('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        Tp='AukePC';
-                    end
-                    trytp='bct';
-                case 'bct'
-                    try
+                        if ~isempty(FI)
+                            Tp='AukePC';
+                        end
+                    case 'bct'
                         FI=bct_io('read',FileName);
-                    end
-                    if ~isempty(FI)
-                        if ~isfield(FI,'Check') || strcmp(FI.Check,'NotOK')
-                            FI=[];
-                        else
-                            Tp='Bct';
+                        if ~isempty(FI)
+                            if ~isfield(FI,'Check') || strcmp(FI.Check,'NotOK')
+                                FI=[];
+                            else
+                                Tp='Bct';
+                            end
                         end
-                    end
-                    trytp='CFX dmp';
-                case 'CFX dmp'
-                    try
+                    case 'CFX dmp'
                         FI=cfx('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        Tp=trytp;
-                        Tmp=FI;
-                        FI=[];
-                        FI.Encaps=Tmp;
-                        try
-                            B1=cfx1block(Tmp);
-                        catch
-                            B1=[];
+                        if ~isempty(FI)
+                            Tp=try_next;
+                            Tmp=FI;
+                            FI=[];
+                            FI.Encaps=Tmp;
+                            try
+                                B1=cfx1block(Tmp);
+                            catch
+                                B1=[];
+                            end
+                            FI.B1=B1;
                         end
-                        FI.B1=B1;
-                    end
-                    trytp='JSPost';
-                case 'JSPost'
-                    try
+                    case 'JSPost'
                         FI=jspost('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        if ~isfield(FI,'Check')
-                            FI=[];
-                        elseif strcmp(FI.Check,'NotOK')
-                            FI=[];
-                        else
-                            Tp=trytp;
+                        if ~isempty(FI)
+                            if ~isfield(FI,'Check')
+                                FI=[];
+                            elseif strcmp(FI.Check,'NotOK')
+                                FI=[];
+                            else
+                                Tp=try_next;
+                            end
                         end
-                    end
-                    trytp='bagdpt';
-                case 'bagdpt'
-                    try
+                    case 'bagdpt'
                         FI=bagdpt('read',FileName);
-                    end
-                    if ~isempty(FI)
-                        if ~isfield(FI,'Check')
-                            FI=[];
-                        elseif strcmp(FI.Check,'NotOK')
-                            FI=[];
-                        else
-                            Tp=trytp;
+                        if ~isempty(FI)
+                            if ~isfield(FI,'Check')
+                                FI=[];
+                            elseif strcmp(FI.Check,'NotOK')
+                                FI=[];
+                            else
+                                Tp=try_next;
+                            end
                         end
-                    end
-                    trytp='bitmap';
-                case 'bitmap'
-                    try
+                    case 'bitmap'
                         FI=imfinfo(FileName);
-                    end
-                    if ~isempty(FI) && isstruct(FI)
-                        FI_temp.FileInfo=FI;
-                        FI=FI_temp;
-                        FI_temp=[];
-                        %
-                        % is it a series of bitmaps?
-                        %
-                        i=find(ismember(FileName,'1234567890'));
-                        slash=max(find(FileName==filesep));
-                        if ~isempty(i) && slash<max(i)
-                            lasti = max(i);
-                            firsti = lasti;
-                            while ismember(firsti-1,i)
-                                firsti = firsti-1;
-                            end
-                            FN_len = length(FileName);
-                            files=dir([FileName(1:firsti-1) '*' FileName(lasti+1:end)]);
-                            files={files.name};
-                            times=repmat(NaN,1,length(files));
-                            for i=1:length(files)
-                                time=str2num(files{i}(firsti-slash:end-FN_len+lasti));
-                                if ~isempty(time)
-                                    times(i)=time;
+                        if ~isempty(FI) && isstruct(FI)
+                            FI_temp.FileInfo=FI;
+                            FI=FI_temp;
+                            FI_temp=[];
+                            %
+                            % is it a series of bitmaps?
+                            %
+                            i=find(ismember(FileName,'1234567890'));
+                            slash=max(find(FileName==filesep));
+                            if ~isempty(i) && slash<max(i)
+                                lasti = max(i);
+                                firsti = lasti;
+                                while ismember(firsti-1,i)
+                                    firsti = firsti-1;
+                                end
+                                FN_len = length(FileName);
+                                files=dir([FileName(1:firsti-1) '*' FileName(lasti+1:end)]);
+                                files={files.name};
+                                times=repmat(NaN,1,length(files));
+                                for i=1:length(files)
+                                    time=str2num(files{i}(firsti-slash:end-FN_len+lasti));
+                                    if ~isempty(time)
+                                        times(i)=time;
+                                    end
+                                end
+                                times=sort(times(~isnan(times)));
+                                if length(times)>1
+                                    format='%i';
+                                    %
+                                    FN_len = cellfun('length',files);
+                                    if length(unique(FN_len))==1
+                                        i=num2str(lasti-firsti+1);
+                                        format=['%0' num2str(i) 'i'];
+                                    end
+                                    %
+                                    FI.FileInfo.times=times;
+                                    FI.FileInfo.format=format;
+                                    FI.FileInfo.prefix=FileName(1:firsti-1);
+                                    FI.FileInfo.postfix=FileName(lasti+1:end);
                                 end
                             end
-                            times=sort(times(~isnan(times)));
-                            if length(times)>1
-                                format='%i';
-                                %
-                                FN_len = cellfun('length',files);
-                                if length(unique(FN_len))==1
-                                    i=num2str(lasti-firsti+1);
-                                    format=['%0' num2str(i) 'i'];
-                                end
-                                %
-                                FI.FileInfo.times=times;
-                                FI.FileInfo.format=format;
-                                FI.FileInfo.prefix=FileName(1:firsti-1);
-                                FI.FileInfo.postfix=FileName(lasti+1:end);
+                            %
+                            FI.FileType=try_next;
+                            FI.FileName=FileName;
+                            FI.Options=1;
+                            FI.Loc=[0 0 FI.FileInfo.Width FI.FileInfo.Height];
+                            [ImP,ImF,ImE]=fileparts(FI.FileName);
+                            switch lower(ImE)
+                                case {'.tif','.jpg','.png','.bmp'}
+                                    ImE=ImE([1 2 4]);
+                                    if ImE(3)==lower(ImE(3))
+                                        ImE = [ImE 'w'];
+                                    else
+                                        ImE = [ImE 'W'];
+                                    end
                             end
+                            fid = fopen(fullfile(ImP,[ImF ImE]),'r');
+                            if fid>0
+                                Coords = fscanf(fid,'%f',6);
+                                fclose(fid);
+                                if length(Coords)==6
+                                    FI.Loc = [Coords(5)-Coords(1)/2 Coords(6)-Coords(4)/2+Coords(4)*FI.FileInfo.Height Coords(1)*FI.FileInfo.Width -Coords(4)*FI.FileInfo.Height];
+                                    if Coords(2)~=0 || Coords(3)~=0
+                                        ui_message('warning',{'Bitmap distortion not yet supported.','Distortion factors reset to 0.'})
+                                    end
+                                end
+                            end
+                            Tp=try_next;
                         end
-                        %
-                        FI.FileType=trytp;
-                        FI.FileName=FileName;
-                        FI.Options=1;
-                        FI.Loc=[0 0 FI.FileInfo.Width FI.FileInfo.Height];
-                        [ImP,ImF,ImE]=fileparts(FI.FileName);
-                        switch lower(ImE)
-                            case {'.tif','.jpg','.png','.bmp'}
-                                ImE=ImE([1 2 4]);
-                                if ImE(3)==lower(ImE(3))
-                                    ImE = [ImE 'w'];
-                                else
-                                    ImE = [ImE 'W'];
-                                end
-                        end
-                        fid = fopen(fullfile(ImP,[ImF ImE]),'r');
-                        if fid>0
-                            Coords = fscanf(fid,'%f',6);
-                            fclose(fid);
-                            if length(Coords)==6
-                                FI.Loc = [Coords(5)-Coords(1)/2 Coords(6)-Coords(4)/2+Coords(4)*FI.FileInfo.Height Coords(1)*FI.FileInfo.Width -Coords(4)*FI.FileInfo.Height];
-                                if Coords(2)~=0 || Coords(3)~=0
-                                    ui_message('warning',{'Bitmap distortion not yet supported.','Distortion factors reset to 0.'})
-                                end
-                            end
-                        end
-                        Tp=trytp;
-                    else
-                        FI=[];
-                    end
-                    trytp='telemac';
-                case 'telemac'
-                    try
+                    case 'telemac'
                         FI=telemac('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        if ~isfield(FI,'Check')
-                            FI=[];
-                        elseif strcmp(FI.Check,'NotOK')
-                            FI=[];
-                        else
-                            Tp=trytp;
+                        if ~isempty(FI)
+                            if ~isfield(FI,'Check')
+                                FI=[];
+                            elseif strcmp(FI.Check,'NotOK')
+                                FI=[];
+                            else
+                                Tp=try_next;
+                            end
                         end
-                    end
-                    trytp='samples';
-                case 'samples'
-                    try
+                    case 'samples'
                         XYZ=samples('read',FileName,'struct');
-                    catch
-                        XYZ=[];
-                    end
-                    if isempty(XYZ)
-                        FI=[];
-                    elseif isfield(XYZ,'FileType')
-                        FI=XYZ;
-                        Tp=FI.FileType;
-                    else
-                        FI=[];
-                    end
-                    trytp='BNA File';
-                case 'BNA File'
-                    try
+                        if isempty(XYZ)
+                            FI=[];
+                        elseif isfield(XYZ,'FileType')
+                            FI=XYZ;
+                            Tp=FI.FileType;
+                        else
+                            FI=[];
+                        end
+                    case 'BNA File'
                         FI=bna('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        if ~isfield(FI,'Check')
-                            FI=[];
-                        elseif strcmp(FI.Check,'NotOK')
-                            FI=[];
-                        else
-                            Tp=trytp;
+                        if ~isempty(FI)
+                            if ~isfield(FI,'Check')
+                                FI=[];
+                            elseif strcmp(FI.Check,'NotOK')
+                                FI=[];
+                            else
+                                Tp=try_next;
+                            end
                         end
-                    end
-                    trytp='ArcInfoUngenerate';
-                case 'ArcInfoUngenerate'
-                    try
+                    case 'ArcInfoUngenerate'
                         FI=ai_ungen('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        if ~isfield(FI,'Check')
-                            FI=[];
-                        elseif strcmp(FI.Check,'NotOK')
-                            FI=[];
-                        else
-                            Tp=trytp;
+                        if ~isempty(FI)
+                            if ~isfield(FI,'Check')
+                                FI=[];
+                            elseif strcmp(FI.Check,'NotOK')
+                                FI=[];
+                            else
+                                Tp=try_next;
+                            end
                         end
-                    end
-                    trytp='bil/hdr';
-                case 'bil/hdr'
-                    try
+                    case 'bil/hdr'
                         FI=bil('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        if ~isfield(FI,'Check')
-                            FI=[];
-                        elseif strcmp(FI.Check,'NotOK')
-                            FI=[];
-                        else
-                            Tp=trytp;
+                        if ~isempty(FI)
+                            if ~isfield(FI,'Check')
+                                FI=[];
+                            elseif strcmp(FI.Check,'NotOK')
+                                FI=[];
+                            else
+                                Tp=try_next;
+                            end
                         end
-                    end
-                    trytp='NOOS time series';
-                case 'NOOS time series'
-                    try
+                    case 'NOOS time series'
                         FI=noosfile('open',FileName);
-                        Tp=trytp;
-                    end
-                    trytp='shipma';
-                case 'shipma'
-                    try
+                        Tp=try_next;
+                    case 'shipma'
                         FI=shipma('open',FileName);
-                        Tp=trytp;
+                        Tp=try_next;
                         FI.DomainName = 'Proj/Case';
                         FI.Options=1;
-                    end
-                    trytp='unibest';
-                case 'unibest'
-                    try
+                    case 'unibest'
                         FI=unibest('open',FileName);
-                    end
-                    if ~isempty(FI)
-                        if ~isfield(FI,'Check')
-                            FI=[];
-                        elseif strcmp(FI.Check,'NotOK')
-                            FI=[];
-                        else
-                            Tp=trytp;
+                        if ~isempty(FI)
+                            if ~isfield(FI,'Check')
+                                FI=[];
+                            elseif strcmp(FI.Check,'NotOK')
+                                FI=[];
+                            else
+                                Tp=try_next;
+                            end
                         end
-                    end
-                    
-                    trytp='';
-                otherwise
-                    errstr = sprintf('Please check program code:\ntrytp case ''%s'' not found!',trytp);
-                    ui_message('error',errstr)
-                    return
-            end
-            
-            if userasked
-                % I had already tried everything, so it should fail again.
-                % Therefore, the following isempty statement is actually
-                % superfluous.
-                if isempty(FI)
-                    ui_message('error','Error while opening\n%s\nas %s:\n%s',FileName,usertrytp,lasterr)
+                    otherwise
+                        errstr = sprintf('Please check program code:\nNo code found for opening file of type ''%s''!',try_next);
+                        ui_message('error',errstr)
+                        return
                 end
-                break
-            elseif ~try1 && isempty(trytp)
-                if isempty(filtertbl)
-                    if DoDS
-                        Message=sprintf('Error while opening\n%s\nUnable to make connection.',FileName);
-                    else
-                        Message=sprintf('Error while opening\n%s\nFile format not supported.',FileName);
-                    end
-                    ui_message('error',Message)
-                    break
+                lasttp = try_next;
+            catch err
+                FI=[];
+            end
+            if isempty(FI)
+                % opening of file was not successful
+                if ~isempty(types_to_check)
+                    % other file type to check
+                    try_next = types_to_check{1};
+                    types_to_check = types_to_check(2:end);
                 else
-                    filtertbl = qp_filefilters('all');
-                    [trytp,try_i]=ui_type(filtertbl(:,2),'windowtitle','Specify file format');
+                    % I have tried all file types
+                    if userasked
+                        % and I have asked the user
+                        qp_error(sprintf('Error while opening\n%s\nas %s:',FileName,usertrytp),err)
+                        break
+                    else
+                        if isempty(filtertbl)
+                            if DoDS
+                                Message=sprintf('Error while opening\n%s\nUnable to make connection.',FileName);
+                            else
+                                Message=sprintf('Error while opening\n%s\nFile format not supported.',FileName);
+                            end
+                            ui_message('error',Message)
+                            break
+                        else
+                            filtertbl = qp_filefilters('all');
+                            [usertrytp,try_i]=ui_type(filtertbl(:,2),'windowtitle','Specify file format');
+                        end
+                        if isempty(usertrytp)
+                            break
+                        end
+                        try_next=filtertbl{try_i,3};
+                        if try_next(1)=='>'
+                            try_next=try_next(2:end);
+                        end
+                        userasked=1;
+                        err=[];
+                        err.message='No specific error message generated';
+                        err.stack=[];
+                    end
                 end
-                if isempty(trytp)
-                    break
-                end
-                usertrytp=trytp;
-                trytp=filtertbl{try_i,3};
-                if trytp(1)=='>'
-                    trytp=trytp(2:end);
-                end
-                userasked=1;
-                lasterr('');
-            end
-            
-            if try1
-                trytp='nefis';
-                try1=0;
             end
         end
 end

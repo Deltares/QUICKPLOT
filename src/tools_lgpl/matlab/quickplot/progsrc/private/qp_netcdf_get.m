@@ -53,6 +53,17 @@ if isempty(Info)
     error('Variable ''%s'' not found in file.',Info.Name)
 end
 %
+if nargin<4
+    if nargin<3
+        RequestDims = Info.Dimension;
+    end
+    RequestedSubset = cell(1,length(RequestDims));
+    for i = 1:length(RequestDims)
+        idim = strmatch(RequestDims{i},Info.Dimension,'exact');
+        RequestedSubset{i} = 1:Info.Size(idim);
+    end
+end
+%
 rank=Info.Rank;
 N=length(RequestDims);
 permuted=zeros(1,N);

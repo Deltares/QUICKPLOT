@@ -83,8 +83,19 @@ for i=1:length(Grps)
                 if ~isempty(eunit) && eunit(1)=='[' && eunit(end)==']'
                     eunit = deblank2(eunit(2:end-1));
                 end
-                if strcmp(eunit,'-')
-                    eunit='';
+                switch eunit
+                    case '-'
+                        eunit='';
+                    case 'M'
+                        eunit='m';
+                    case 'M/S'
+                        eunit='m/s';
+                    case 'M2/S'
+                        eunit='m^2/s';
+                    case 'MM/H'
+                        eunit='mm/h';
+                    case 'DEG'
+                        eunit='deg';
                 end
                 if k==1
                     if Info.NDim==2

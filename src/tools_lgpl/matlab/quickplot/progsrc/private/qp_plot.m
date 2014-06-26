@@ -958,6 +958,8 @@ else
                 [hNew{d},Thresholds,Param]=qp_plot_pnt(plotargs{:});
             case {'POLYL','POLYG'}
                 [hNew{d},Thresholds,Param]=qp_plot_polyl(plotargs{:});
+            case {'UGRID-NODE'}
+                [hNew{d},Thresholds,Param]=qp_plot_ugrid(plotargs{:});
             otherwise
                 [hNew{d},Thresholds,Param,Parent]=qp_plot_default(plotargs{:});
                 PlotState.Parent=Parent;

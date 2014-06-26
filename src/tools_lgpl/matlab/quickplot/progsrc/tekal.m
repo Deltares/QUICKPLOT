@@ -280,7 +280,7 @@ while 1
                         break
                     end
                     if ~isfinite(dim(2));
-                        dim(2)=floor(Nr/dim(1));
+                        dim(2)=floor(numel(Data)/dim(1));
                         FileInfo.Field(variable).Size(1)=dim(2);
                         if length(FileInfo.Field(variable).Size)>2
                             i = find(~isfinite(FileInfo.Field(variable).Size));

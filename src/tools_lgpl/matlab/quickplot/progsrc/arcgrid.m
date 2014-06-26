@@ -137,7 +137,7 @@ Structure.XCorner=0;
 Structure.YCorner=0;
 Structure.NCols=0;
 Structure.NRows=0;
-Structure.CellSize=0;
+Structure.CellSize=[0 0];
 Structure.NoData=NaN;
 Structure.DataStart=0;
 %

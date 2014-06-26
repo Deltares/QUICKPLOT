@@ -188,7 +188,11 @@ val2=[];
 
 if isnumeric(Props.Val1)
     if Props.Val1==-1
-        val1=-val1;
+        if strcmp(FI.PCRType,'boolean')
+            val1=~val1;
+        else
+            val1=-val1;
+        end
     else
         mask = val1==Props.Val1;
         val1(mask) = 1;
@@ -239,16 +243,19 @@ else
         datatitle=datatitle(dt+1:end);
     end
     DataProps={datatitle                     [5 0 1 1 0]  1         1     ''        'z'   'z'      'c'     ''               ''              ''
-        ['negated ',datatitle]        [5 0 1 1 0]  1         1     ''        'z'   'z'      'c'     ''               -1              ''    };
-    if strcmp(FI.PCRType,'nominal')
-        for i = size(FI.Table,1):-1:1
-            DataProps(2+i,:) = DataProps(1,:);
-            DataProps{2+i,1} = FI.Table{i,2};
-            DataProps{2+i,end-1} = FI.Table{i,1};
-            DataProps{2+i,4} = 5;
-        end
-        DataProps(2,1:4) = {'-------' [0 0 0 0 0] 0 0};
-        DataProps(1,4) = {6};
+        ['negative ',datatitle]              [5 0 1 1 0]  1         1     ''        'z'   'z'      'c'     ''               -1              ''    };
+    switch FI.PCRType
+        case 'boolean'
+            DataProps{2,1} = ['negated ',datatitle];
+        case 'nominal'
+            for i = size(FI.Table,1):-1:1
+                DataProps(2+i,:) = DataProps(1,:);
+                DataProps{2+i,1} = FI.Table{i,2};
+                DataProps{2+i,end-1} = FI.Table{i,1};
+                DataProps{2+i,4} = 5;
+            end
+            DataProps(2,1:4) = {'-------' [0 0 0 0 0] 0 0};
+            DataProps(1,4) = {6};
     end
 end
 Out=cell2struct(DataProps,PropNames,2);

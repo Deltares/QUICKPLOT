@@ -44,7 +44,7 @@ try
         d3d_qp_core(cmd,varargin{:});
     end
 catch Ex
-    qp_message(sprintf('Catch in d3d_qp\\%s:',cmd),Ex)
+    qp_error(sprintf('Catch in d3d_qp\\%s:',cmd),Ex)
 end
 
 function outdata=d3d_qp_core(cmd,varargin)
@@ -1667,7 +1667,7 @@ switch cmd
                 catch Ex
                     FileName='';
                     set(mfig,'pointer','arrow')
-                    qp_message('Catch in d3d_qp\exportdata',Ex)
+                    qp_error('Catch in d3d_qp\exportdata',Ex)
                 end
                 if ~isempty(FileName) && logfile
                     writelog(logfile,logtype,cmd,FileName);
@@ -1707,7 +1707,7 @@ switch cmd
                     end
                 catch Ex
                     set(mfig,'pointer','arrow')
-                    qp_message('Catch in d3d_qp\loaddata',Ex)
+                    qp_error('Catch in d3d_qp\loaddata',Ex)
                 end
                 
             case {'quickview','addtoplot','addtoplot_left','addtoplot_right'}
@@ -1808,7 +1808,7 @@ switch cmd
                         qck_anim('start',pfig,T);
                     end
                 catch Ex
-                    qp_message('Catch in d3d_qp\quickview',Ex)
+                    qp_error('Catch in d3d_qp\quickview',Ex)
                 end
                 set(mfig,'pointer','arrow')
         end
@@ -2067,7 +2067,7 @@ switch cmd
                 Str=realset(c);
             end
         catch Ex
-            qp_message(['Catch in d3d_qp\' cmd],Ex)
+            qp_error(['Catch in d3d_qp\' cmd],Ex)
             c=get(cv,'userdata');
             if isstruct(c)
                 Str=realset(c);
@@ -2435,7 +2435,7 @@ switch cmd
                         ui_message('warning',var2str(ans))
                     end
                 catch Ex
-                    qp_message(evalcmd,Ex)
+                    qp_error(evalcmd,Ex)
                     evalerr=1;
                 end
                 %
@@ -2705,7 +2705,7 @@ switch cmd
                 try
                     logfile=fopen([pn fn],'w');
                 catch Ex
-                    qp_message('Catch in d3d_qp\logfile',Ex)
+                    qp_error('Catch in d3d_qp\logfile',Ex)
                 end
                 set(findobj(mfig,'tag','stoprecord'),'enable','on')
                 set(UD.MainWin.StartRec,'enable','off')
@@ -3946,7 +3946,7 @@ switch cmd
                     try
                         eval(cmdstr)
                     catch Ex
-                        qp_message(sprintf('Error evaluating line %i:\n%s',inLine,cmdstr),Ex)
+                        qp_error(sprintf('Error evaluating line %i:\n%s',inLine,cmdstr),Ex)
                         stop = qp_settings('stopruniferror');
                     end
                 else
@@ -3957,7 +3957,7 @@ switch cmd
                         try
                             d3d_qp_core(cmd,cmdargs{:});
                         catch Ex
-                            qp_message(sprintf('Error executing command "%s" in line %i',cmd,inLine),Ex)
+                            qp_error(sprintf('Error executing command "%s" in line %i',cmd,inLine),Ex)
                             stop = qp_settings('stopruniferror');
                         end
                     end
@@ -4349,7 +4349,3 @@ switch str
     otherwise
         clr=str2vec(str,'%f');
 end
-
-function qp_message(msg,Ex)
-stacklist = stack2str(Ex.stack);
-ui_message('error',{msg,Ex.message,stacklist{:}})

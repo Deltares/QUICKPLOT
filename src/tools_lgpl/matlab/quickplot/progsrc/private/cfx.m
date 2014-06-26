@@ -120,7 +120,7 @@ switch cmd
             case 'fo'
                 Structure=Local_interpret_fo_file(INP{:});
             otherwise
-                Structure=[];
+                error('Unknown CFX file extension "%s".',ext)
         end
         varargout{1}=Structure;
         if nargout>0

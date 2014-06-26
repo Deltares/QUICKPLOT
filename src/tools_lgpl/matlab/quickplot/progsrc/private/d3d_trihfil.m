@@ -229,16 +229,7 @@ if XYRead
     end
     
     if DimFlag(K_) || computeDZ
-        if isstruct(vs_disp(FI,'his-sed-series','ZDPS'))
-            [dp,Chk]=vs_let(FI,'his-sed-series',{idx{T_}},'ZDPS',idx(ST_),'quiet');
-        elseif isstruct(vs_disp(FI,'his-series','DPS'))
-            [dp,Chk]=vs_let(FI,'his-series',{idx{T_}},'DPS',idx(ST_),'quiet');
-        else
-            [dp,Chk]=vs_let(FI,'his-const','DPS',idx(ST_),'quiet');
-            dp=repmat(dp,length(idx{T_}),1);
-        end
-        dp(dp==-999) = NaN; % filter missing values for moving observation points
-        dp = -dp;
+        zb = readzb(FI,idx);
         %
         if fixedlayers
             [h,Chk]=vs_let(FI,'his-const','ZK','quiet');
@@ -252,8 +243,8 @@ if XYRead
             for i=1:nk
                 z(:,:,i)=min(z(:,:,i),s);
             end
-            dp=repmat(reshape(dp,[nt ns]),[1 1 nk]);
-            z = max(z,dp);
+            zb=repmat(reshape(zb,[nt ns]),[1 1 nk]);
+            z = max(z,zb);
             if computeDZ
                 dz=diff(z,1,3);
             end
@@ -268,7 +259,7 @@ if XYRead
             end
         else
             [h,Chk]=vs_let(FI,'his-series',{idx{T_}},'ZWL',idx(ST_),'quiet');
-            h=h-dp;
+            h=h-zb;
             [thk,Chk]=vs_let(FI,'his-const','THICK','quiet');
             switch Props.Loc3D
                 case 'i'
@@ -279,7 +270,7 @@ if XYRead
             cthk=cthk(idx{K_});
             z=zeros([size(h) length(cthk)]);
             for k=1:length(cthk)
-                z(:,:,k)=dp+(1-cthk(k))*h;
+                z(:,:,k)=zb+(1-cthk(k))*h;
             end
             x=repmat(x,[1 1 length(cthk)]);
             y=repmat(y,[1 1 length(cthk)]);
@@ -415,20 +406,13 @@ if DataRead
             Props = PropC;
             idx{T_} = idxT;
         case 'water depth'
-            if isstruct(vs_disp(FI,'his-sed-series','ZDPS'))
-                [dp,Chk]=vs_let(FI,'his-sed-series',{idx{T_}},'ZDPS',elidx,'quiet');
-            elseif isstruct(vs_disp(FI,'his-series','DPS'))
-                [dp,Chk]=vs_let(FI,'his-series',{idx{T_}},'DPS',elidx,'quiet');
-            else
-                [dp,Chk]=vs_let(FI,'his-const','DPS',elidx,'quiet');
-            end
-            dp(dp==-999) = NaN; % filter missing values for moving observation points
-            if size(dp,1)==1
+            zb = readzb(FI,idx);
+            if size(zb,1)==1
                 for i=1:size(val1,1)
-                    val1(i,:,:)=val1(i,:,:)+dp;
+                    val1(i,:,:)=val1(i,:,:)-zb;
                 end
             else
-                val1=val1+dp;
+                val1=val1-zb;
             end
         case {'bed level'}
             val1(val1==-999)=NaN; % filter missing values for moving observation points
@@ -465,7 +449,7 @@ if DataRead
                 val2=sum(val2,3); val2=val2./h;
             else
                 [thk,Chk]=vs_let(FI,'his-const','THICK','quiet');
-                for k=1:length(thk)
+                for k=length(thk):-1:1
                     val1(:,:,k)=val1(:,:,k)*thk(k);
                     val2(:,:,k)=val2(:,:,k)*thk(k);
                 end
@@ -478,13 +462,13 @@ if DataRead
                     val3=vs_let(FI,'his-series',idx(T_),'ZWL',idx(ST_),'quiet!');
                 case 'froude number'
                     val3=vs_let(FI,'his-series',idx(T_),'ZWL',idx(ST_),'quiet!');
-                    dp=readdps(FI,idx);
-                    if size(dp,1)==1,
+                    zb = readzb(FI,idx);
+                    if size(zb,1)==1,
                         for i=1:size(val3,1)
-                            val3(i,:,:)=val3(i,:,:)-dp;
+                            val3(i,:,:)=val3(i,:,:)-zb;
                         end
                     else
-                        val3=val3-dp;
+                        val3=val3-zb;
                     end
                     val3(val3==0)=inf;
             end
@@ -1233,18 +1217,19 @@ end
 % -----------------------------------------------------------------------------
 
 % -----------------------------------------------------------------------------
-function dp=readdps(FI,idx)
+function zb = readzb(FI,idx)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
-Info=vs_disp(FI,'his-sed-series','ZDPS');
-if isstruct(Info),
+if isstruct(vs_disp(FI,'his-sed-series','ZDPS'))
     [dp,Chk]=vs_let(FI,'his-sed-series',idx(T_),'ZDPS',idx(ST_),'quiet');
-    dp=-dp;
+elseif isstruct(vs_disp(FI,'his-series','DPS'))
+    [dp,Chk]=vs_let(FI,'his-series',idx(T_),'DPS',idx(ST_),'quiet');
 else
-    [dp,Chk]=vs_get(FI,'map-const','DPS',idx(ST_),'quiet');
-    dp(dp==-999)=NaN;
-    dp=reshape(dp,[1 size(dp)]);
+    [dp,Chk]=vs_let(FI,'his-const','DPS',idx(ST_),'quiet');
+    dp=repmat(dp,length(idx{T_}),1);
 end
+dp(dp==-999) = NaN; % filter missing values for moving observation points
+zb = -dp;
 % -----------------------------------------------------------------------------
 
 

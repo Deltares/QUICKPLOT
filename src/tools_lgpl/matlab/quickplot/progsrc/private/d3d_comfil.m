@@ -809,6 +809,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0     '' 
     'salinity'                  'ppt'    [1 0 1 1 1]  1         1     ''       'z'   'z'       'c'     'DWQTIM'         'RSAL'    ''       []       0
     'temperature'               '°C'     [1 0 1 1 1]  1         1     ''       'z'   'z'       'c'     'DWQTIM'         'RTEM'    ''       []       0
     'vertical eddy diffusivity' 'm^2/s'  [1 0 1 1 1]  1         1     ''       'z'   'z'       'c'     'DWQTIM'         'DICWW'   ''       []       0
+    'horizontal diffusivity'    'm^2/s'  [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'DWQTIM'         'DICUV'   ''       []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''        ''       []       0
     'initial bedload transport' 'm^3/m'  [1 0 1 1 0]  1         2     'u'      'z'   'z'       ''      'TRANSTIM'       'TTXI'    'TTYI'   []       1
     'avg bedload transport'     'm^3/sm' [1 0 1 1 0]  1         2     'u'      'z'   'z'       ''      'TRANSTIM'       'TTXA'    'TTYA'   []       1
