@@ -182,6 +182,25 @@ end
 if isequal(Structure.YCorner,'centre')
     Structure.YCorner=YCentre-Structure.CellSize(2)/2;
 end
+
+% tested using example on http://en.wikipedia.org/wiki/Esri_grid
+% ncols         4
+% nrows         6
+% xllcorner     0.0
+% yllcorner     0.0
+% cellsize      50.0
+% NODATA_value  -9999
+% -9999 -9999 5 2
+% -9999 20 100 36
+% 3 8 35 10
+% 32 42 50 6
+% 88 75 27 9
+% 13 5 1 -9999
+%x=[ 25    75   125   175];
+%y=[ 25    75   125   175   225   275];
+Structure.x = Structure.XCorner+(0.5:Structure.NCols-0.5)*Structure.CellSize(1);
+Structure.y = Structure.YCorner-(0.5:Structure.NRows-0.5)*Structure.CellSize(2)+(Structure.NRows)*Structure.CellSize(2);
+
 %
 % End of normal reading of header. Now, let's check whether we have opened
 % a wind or pressure file of Delft3D which may include multiple data fields
