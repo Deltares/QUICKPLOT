@@ -583,7 +583,7 @@ for f=1:ntim
                             shapewrite(filename,'point',xy,cv{:})
                         end
                     end
-                case {'vector','contour lines','coloured contour lines','contour patches','contour patches with lines','thin dams'}
+                case {'vector','vector (split x,y)','vector (split m,n)','contour lines','coloured contour lines','contour patches','contour patches with lines','thin dams'}
                     TempFg=figure('visible','off');
                     TempAx=axes('parent',TempFg);
                     if isequal(Ops.presentationtype,'contour lines')
@@ -797,43 +797,76 @@ for f=1:ntim
                             end
                             %
                             shapewrite(filename,xy,cLabels,cv)
-                        case 'vector'
-                            x1=get(hNew(2),'xdata');
-                            y1=get(hNew(2),'ydata');
-                            x2=get(hNew(3),'xdata');
-                            y2=get(hNew(3),'ydata');
-                            switch get(hNew(2),'type')
-                               case 'line'
-                                  x1=x1';
-                                  x2=x2';
-                                  y1=y1';
-                                  y2=y2';
-                                  values={};
-                               case 'patch'
-                                  x1=x1(:,1);
-                                  x2=x2(:,1);
-                                  y1=y1(:,1);
-                                  y2=y2(:,1);
-                                  v1=get(hNew(2),'cdata');
-                                  v2=get(hNew(3),'cdata');
-                                  cv=[v1(1:4:end,1);v2(1:3:end,1)];
-                                  UD=get(hNew(3),'userdata');
-                                  values={{UD.PlotState.Ops.vectorcolour} cv};
+                        case {'vector','vector (split x,y)','vector (split m,n)'}
+                            hascolor = strcmp(get(hNew(end),'type'),'patch');
+                            if hascolor
+                                vIndex = find(strcmp('patch',get(hNew,'type')))';
+                            else
+                                vIndex = 1:length(hNew);
+                                vIndex(1:3:end) = [];
                             end
-                            xy=[x1 y1; x2 y2];
+                            %
+                            N1=0;
+                            for v = vIndex
+                                if hascolor
+                                    N1 = N1 + size(get(hNew(v),'xdata'),1);
+                                else
+                                    N1 = N1 + length(get(hNew(v),'xdata'));
+                                end
+                            end
+                            %
+                            xy=zeros(N1,2);
+                            if hascolor
+                                cv = zeros(N1,1);
+                            end
+                            N1=0;
+                            for v = vIndex
+                                x01 = get(hNew(v),'xdata');
+                                y01 = get(hNew(v),'ydata');
+                                if hascolor
+                                    n1 = size(x01,1);
+                                    xy(N1+(1:n1),1)=x01(:,1);
+                                    xy(N1+(1:n1),2)=y01(:,1);
+                                    %
+                                    v1=get(hNew(v),'cdata');
+                                    cv(N1+(1:n1),1)=v1(:,1);
+                                else
+                                    n1 = length(x01);
+                                    xy(N1+(1:n1),1)=x01;
+                                    xy(N1+(1:n1),2)=y01;
+                                end
+                                N1 = N1+n1;
+                            end
                             seps=[0;find(isnan(xy(:,1)))];
                             %
                             n = seps(2:end)-seps(1:end-1)-1;
                             xy_cell=cell(sum(n>1),1);
+                            if hascolor
+                                cvr=zeros(sum(n>1),1);
+                            end
                             for i=1:length(n)
                                 if n(i)>1
                                     xy_cell{i}=xy(seps(i)+(1:n(i)),:);
+                                    if hascolor
+                                        cvr(i)=cv(seps(i)+1);
+                                    end
                                 end
                             end
                             %
+                            iEmpty = cellfun('isempty',xy_cell);
+                            xy_cell(iEmpty)=[];
+                            cvr(iEmpty)=[];
+                            if hascolor
+                                UD=get(hNew(end),'userdata');
+                                values={{UD.PlotState.Ops.vectorcolour} cvr};
+                            else
+                                values={};
+                            end
                             shapewrite(filename,'polyline',xy_cell,values{:});
                     end
                     delete(TempFg);
+                otherwise
+                    error('Unknown presentationtype "%s" during export of ArcView Shape',Ops.presentationtype)
             end
         case 'sample file'
             x=0; y=0; z=0; sz=[];
