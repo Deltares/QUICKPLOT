@@ -201,6 +201,8 @@ switch cmd
                     try_next='bil/hdr';
                 case {'.noos'}
                     try_next='NOOS time series';
+                case {'.wml'}
+                    try_next='WaterML2';
             end
         end
         FileName = absfullfile(FileName);
@@ -303,6 +305,9 @@ switch cmd
                         else
                             FI=[];
                         end
+                    case 'WaterML2'
+                        FI=waterml2('open',FileName);
+                        Tp=FI.FileType;
                     case 'ecomsed-binary'
                         FI=ecomsed('open',FileName);
                         if ~isempty(FI)

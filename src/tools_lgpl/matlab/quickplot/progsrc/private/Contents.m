@@ -45,6 +45,7 @@
 %   telemac                     - Read Telemac selafin files.
 %   trtarea                     - Read Delft3D trachytope/WAQUA ecotope area files.
 %   unibest                     - Read Unibest files.
+%   waterml2                    - Read WaterML 2.0 files.
 %
 % Special graphics routines
 %   balanceplot                 - Create a balance plot.
