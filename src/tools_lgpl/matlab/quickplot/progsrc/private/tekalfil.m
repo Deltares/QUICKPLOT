@@ -747,7 +747,7 @@ switch FI.FileType
         end
     case {'WaterML2'}
         PropNames{end+1} = 'Units';
-        DP = {'field X'                       'PNT'     '' [1 3 0 0 0]  0          1     NaN       1       0          []      {}  ''};
+        DP = {'field X'                       'PNT'     '' [1 5 0 0 0]  0          1     NaN       1       0          []      {}  ''};
         if isempty(FI.TimeSeries)
             DataProps = DP;
             DataProps(1,:) = [];

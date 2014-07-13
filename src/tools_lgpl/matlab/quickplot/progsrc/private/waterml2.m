@@ -129,7 +129,7 @@ function S = getChar(Elm)
 if isempty(Elm)
     S = '';
 else
-    S = Elm.getTextContent;
+    S = char(Elm.getTextContent);
 end
 
 function TS = getTimeSeries(Doc,NameSpaces,Locations)
@@ -175,7 +175,13 @@ for i = 1:nTS
                 elseif TS.LocationName{i}(1)=='#' && ~isempty(Locations)
                     idxLoc = strcmp(TS.LocationName{i}(2:end),Locations.Id);
                     if sum(idxLoc)==1
-                        TS.LocationName{i} = TS.LocationName{i}(2:end);
+                        if ~isempty(Locations.Name{idxLoc})
+                            TS.LocationName{i} = Locations.Name{idxLoc};
+                        elseif ~isempty(Locations.Descr{idxLoc})
+                            TS.LocationName{i} = Locations.Descr{idxLoc};
+                        else
+                            TS.LocationName{i} = TS.LocationName{i}(2:end);
+                        end
                         TS.LocationCoord(i,:) = Locations.Coord(idxLoc,:);
                     end
                 end
