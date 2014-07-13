@@ -59,7 +59,7 @@ try
 catch
     FI.Location = [];
 end
-FI.TimeSeries = getTimeSeries(Doc,NameSpaces);
+FI.TimeSeries = getTimeSeries(Doc,NameSpaces,FI.Location);
 
 function wml2 = wml2
 wml2 = 'http://www.opengis.net/waterml/2.0';
@@ -72,6 +72,9 @@ om = 'http://www.opengis.net/om/2.0';
 
 function xlink = xlink
 xlink = 'http://www.w3.org/1999/xlink';
+
+function sa = sa
+sa = 'http://www.opengis.net/sampling/2.0';
 
 function sams = sams
 sams = 'http://www.opengis.net/samplingSpatial/2.0';
@@ -103,15 +106,33 @@ end
 function L = getLocations(Doc,NameSpaces)
 L.XML = getRecursiveNamedChildNS(Doc,NameSpaces,wml2,'samplingFeatureMember',wml2,'MonitoringPoint');
 nL = length(L.XML);
+L.Id = cell(nL,1);
 L.Name = cell(nL,1);
+L.Descr = cell(nL,1);
 L.Coord = zeros(nL,2);
 for i = 1:nL
-    L.Name{i} = getAttributeNS(L.XML(i),NameSpaces,gml,'id');
-    Coord = getRecursiveNamedChildNS(L.XML(i),NameSpaces,sams,'shape',gml,'Point',gml,'pos');
-    L.Coord(i,1:2) = sscanf(char(Coord.getTextContent),'%f',[1 2]);
+    [L.Id{i},L.Name{i},L.Descr{i},L.Coord(i,1:2)] = getMonitoringPoint(L.XML(i),NameSpaces);
 end
 
-function TS = getTimeSeries(Doc,NameSpaces)
+function [Id,Name,Description,Coord] = getMonitoringPoint(MP,NameSpaces)
+Id= getAttributeNS(MP,NameSpaces,gml,'id');
+Name = getChar(getRecursiveNamedChildNS(MP,NameSpaces,gml,'name'));
+Description = getChar(getRecursiveNamedChildNS(MP,NameSpaces,gml,'description'));
+if isempty(Name)
+    SF = getRecursiveNamedChildNS(MP,NameSpaces,sa,'sampledFeature');
+    [Name,err] = getAttributeNS(SF,NameSpaces,xlink,'title');
+end
+Coord = getRecursiveNamedChildNS(MP,NameSpaces,sams,'shape',gml,'Point',gml,'pos');
+Coord = sscanf(char(Coord.getTextContent),'%f',[1 2]);
+
+function S = getChar(Elm)
+if isempty(Elm)
+    S = '';
+else
+    S = Elm.getTextContent;
+end
+
+function TS = getTimeSeries(Doc,NameSpaces,Locations)
 TS.XML = getRecursiveNamedChildNS(Doc,NameSpaces,wml2,'observationMember');
 nTS = length(TS.XML);
 if nTS==0
@@ -121,7 +142,8 @@ end
 TS.Name = cell(nTS,1);
 TS.QuantityName = cell(nTS,1);
 TS.QuantityUnit = cell(nTS,1);
-TS.Location = cell(nTS,1);
+TS.LocationName = cell(nTS,1);
+TS.LocationCoord = NaN(nTS,2);
 TS.Series = cell(nTS,1);
 for i = 1:nTS
     TSeries  = getRecursiveNamedChildNS(TS.XML(i),NameSpaces,om,'OM_Observation');
@@ -133,15 +155,34 @@ for i = 1:nTS
     %
     L = getRecursiveNamedChildNS(TSeries,NameSpaces,om,'featureOfInterest');
     if length(L)==1
-        [TS.Location{i},err] = getAttributeNS(L,NameSpaces,xlink,'title');
-        if err
-            [TS.Location{i},err] = getAttributeNS(L,NameSpaces,xlink,'href');
+        MP = getRecursiveNamedChildNS(L,NameSpaces,wml2,'MonitoringPoint');
+        if ~isempty(MP)
+            [Id,Name,Description,Coord] = getMonitoringPoint(MP,NameSpaces);
+            if ~isempty(Name)
+                TS.LocationName{i} = Name;
+            elseif ~isempty(Description)
+                TS.LocationName{i} = Description;
+            end
+            TS.LocationCoord(i,:) = Coord;
         end
-        if err
-            TS.Location{i} = '';
+        %
+        if isempty(TS.LocationName{i})
+            [TS.LocationName{i},err] = getAttributeNS(L,NameSpaces,xlink,'title');
+            if err
+                [TS.LocationName{i},err] = getAttributeNS(L,NameSpaces,xlink,'href');
+                if err || isempty(TS.LocationName{i})
+                    TS.LocationName{i} = '';
+                elseif TS.LocationName{i}(1)=='#' && ~isempty(Locations)
+                    idxLoc = strcmp(TS.LocationName{i}(2:end),Locations.Id);
+                    if sum(idxLoc)==1
+                        TS.LocationName{i} = TS.LocationName{i}(2:end);
+                        TS.LocationCoord(i,:) = Locations.Coord(idxLoc,:);
+                    end
+                end
+            end
         end
     else
-        TS.Location{i} = '';
+        TS.LocationName{i} = '';
     end
     %
     D = getRecursiveNamedChildNS(TSeries,NameSpaces,om,'result',wml2,'MeasurementTimeseries');
@@ -283,10 +324,14 @@ end
 
 function Items = getNamedChildrenNS(Parent,NameSpaces,namespace,element)
 AllItems = getChildren(Parent);
-for i = length(AllItems):-1:1
-    matching(i) = checkNameNS(NameSpaces,AllItems(i),namespace,element);
+if isempty(AllItems)
+    Items = [];
+else
+    for i = length(AllItems):-1:1
+        matching(i) = checkNameNS(NameSpaces,AllItems(i),namespace,element);
+    end
+    Items = AllItems(matching);
 end
-Items = AllItems(matching);
 
 function Item = getRecursiveNamedChildNS(Parent,NameSpaces,varargin)
 Item = Parent;

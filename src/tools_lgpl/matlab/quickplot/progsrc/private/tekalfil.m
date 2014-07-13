@@ -961,7 +961,7 @@ switch FI.FileType
             end
         end
     case {'WaterML2'}
-        S=FI.TimeSeries.Location(Props.Block);
+        S=FI.TimeSeries.LocationName(Props.Block);
     case 'NOOS'
         S={FI.Series(Props.Block).location};
 end
