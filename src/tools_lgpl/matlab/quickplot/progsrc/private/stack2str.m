@@ -1,4 +1,4 @@
-function str = stack2str(stack)
+function str = stack2str(stack,basefunction)
 %STACK2STR Convert exception stack into cell string.
 %
 %   CELLSTR = STACK2STR(STACK)
@@ -37,6 +37,14 @@ function str = stack2str(stack)
 %   $Id$
 
 stacklen = length(stack);
+if nargin==2
+    for i = 1:stacklen
+        if strcmp(stack(i).name,basefunction)
+            stacklen = i;
+            break
+        end
+    end
+end
 str = repmat({''},stacklen,1);
 mpath = multiline(matlabpath,pathsep,'cell');
 for i = 1:stacklen

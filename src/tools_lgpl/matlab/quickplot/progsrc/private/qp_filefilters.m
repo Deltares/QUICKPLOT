@@ -78,6 +78,7 @@ filtertbl={...
     '*.sma'                                                'Shipma Project Files'              'shipma'
     '*.dmp'                                                'CFX4 Dump Files'                   'CFX dmp'
     '*.noos'                                               'NOOS and MATROOS Files'            'NOOS time series'
+    '*.wml'                                                'WaterML Files'                     'WaterML2'
     };
 
 if nargin<1

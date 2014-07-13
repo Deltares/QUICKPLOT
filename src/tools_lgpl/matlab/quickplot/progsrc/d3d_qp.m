@@ -44,7 +44,7 @@ try
         d3d_qp_core(cmd,varargin{:});
     end
 catch Ex
-    qp_error(sprintf('Catch in d3d_qp\\%s:',cmd),Ex)
+    qp_error(sprintf('Catch in d3d_qp\\%s:',cmd),Ex,'d3d_qp_core')
 end
 
 function outdata=d3d_qp_core(cmd,varargin)

@@ -1,4 +1,4 @@
-function qp_error(msg,Ex)
+function qp_error(msg,Ex,varargin)
 %QP_ERROR QUICKPLOT error handler
 %   QP_ERROR(CodeMessage,Exception) prints the CodeMessage followed by the
 %   message and stack of the Exception to the ui_message dialog as an "error".
@@ -35,5 +35,5 @@ function qp_error(msg,Ex)
 %   $HeadURL$
 %   $Id$
 
-stacklist = stack2str(Ex.stack);
+stacklist = stack2str(Ex.stack,varargin{:});
 ui_message('error',{msg,Ex.message,stacklist{:}})

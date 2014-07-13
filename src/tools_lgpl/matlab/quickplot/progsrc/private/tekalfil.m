@@ -299,6 +299,8 @@ switch FI.FileType
                 Data(ito,1+j)=FI.Table(i).Data(ifrom,c+1);
             end
         end
+    case {'WaterML2'}
+        Data = FI.TimeSeries.Series{Props.Block};
     case {'NOOS'}
         Data = FI.Series(Props.Block).val';
 end
@@ -733,18 +735,34 @@ switch FI.FileType
             end
         end
     case {'DelwaqTimFile','LexYacc_TimeTable'}
+        DP = {'field X'                       'PNT'   'xy' [1 3 0 0 0]  0          1     NaN       1       0          []      {}  };
         Qnts={};
         for i=1:length(FI.Table)
             Qnts=union(Qnts,{FI.Table(i).Parameter(2:end).Name});
         end
+        DataProps = repmat(DP,length(Qnts),1);
         for i=1:length(Qnts)
-            DP={'field X'                       'PNT'   'xy' [1 3 0 0 0]  0          1       i       1       0          []      {}  };
-            DP{1} = Qnts{i};
-            DataProps(end+1,:)=DP;
+            DataProps{i,1} = Qnts{i};
+            DataProps{i,7} = i;
         end
-        DataProps(1,:)=[];
+    case {'WaterML2'}
+        PropNames{end+1} = 'Units';
+        DP = {'field X'                       'PNT'     '' [1 3 0 0 0]  0          1     NaN       1       0          []      {}  ''};
+        if isempty(FI.TimeSeries)
+            DataProps = DP;
+            DataProps(1,:) = [];
+        else
+            Qnts = FI.TimeSeries.QuantityName;
+            units = FI.TimeSeries.QuantityUnit;
+            DataProps = repmat(DP,length(Qnts),1);
+            for i=1:length(Qnts)
+                DataProps{i,1} = Qnts{i};
+                DataProps{i,7} = i;
+                DataProps{i,end} = units{i};
+            end
+        end
     case {'NOOS'}
-        DP = {'field X'                         'PNT'   'xy' [1 5 0 0 0]  0          1       -1      -1      0          []      {}  };
+        DP = {'field X'                       'PNT'   'xy' [1 5 0 0 0]  0          1       -1      -1      0          []      {}  };
         nseries = length(FI.Series);
         DataProps = repmat(DP,nseries,1);
         for i=1:nseries
@@ -754,7 +772,7 @@ switch FI.FileType
 end
 
 %======================== SPECIFIC CODE DIMENSIONS ============================
-Out=cell2struct(DataProps,PropNames,2);
+    Out=cell2struct(DataProps,PropNames,2);
 % -----------------------------------------------------------------------------
 
 
@@ -863,6 +881,9 @@ switch FI.FileType
         end
         sz(T_)=length(T);
         sz(ST_)=St;
+    case {'WaterML2'}
+        sz(T_)=size(FI.TimeSeries.Series{Props.Block},1);
+        sz(ST_)=1;
     case {'NOOS'}
         sz(T_)  = length(FI.Series(Props.Block).times);
         sz(ST_) = 1;
@@ -898,6 +919,8 @@ if Props.Time
                     T = union(T,T0);
                 end
             end
+        case {'WaterML2'}
+            T = FI.TimeSeries.Series{Props.Block}(:,1);
         case {'NOOS'}
             T = FI.Series(Props.Block).times;
     end
@@ -937,6 +960,8 @@ switch FI.FileType
                 S{end+1}=FI.Table(i).Location;
             end
         end
+    case {'WaterML2'}
+        S=FI.TimeSeries.Location(Props.Block);
     case 'NOOS'
         S={FI.Series(Props.Block).location};
 end
