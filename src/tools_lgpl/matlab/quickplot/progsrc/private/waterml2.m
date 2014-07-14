@@ -136,8 +136,7 @@ function TS = getTimeSeries(Doc,NameSpaces,Locations)
 TS.XML = getRecursiveNamedChildNS(Doc,NameSpaces,wml2,'observationMember');
 nTS = length(TS.XML);
 if nTS==0
-    TS = [];
-    return
+    error('At least one observationMember element required in WaterML2 file.')
 end
 TS.Name = cell(nTS,1);
 TS.QuantityName = cell(nTS,1);
