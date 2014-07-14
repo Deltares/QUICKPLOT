@@ -175,15 +175,22 @@ function OK=Local_rstwrite(filename,varargin),
 %
 
 OK=0;
-if nargin<4,
+if nargin<4 && ~isstruct(varargin{1}),
    error('Not enough input arguments.');
 end;
 if ischar(varargin{1}),
    PC=varargin{1};
    Data=varargin(2:end);
-else,
+elseif ~isstruct(varargin{1}),
    PC=computer;
    Data=varargin;
+else
+    %% TK allow for a structure to be written, structure is identical to the one retrieved when reading with 'all'
+    PC=computer;
+    for i_field = 1:length(varargin{1})
+        Data{i_field} = varargin{1}(i_field).Data;
+    end
+    
 end;
 sz1 = cellfun('size',Data,1);
 sz2 = cellfun('size',Data,2);
