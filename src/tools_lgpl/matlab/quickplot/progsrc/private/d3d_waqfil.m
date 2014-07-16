@@ -417,7 +417,7 @@ switch subtype
                 if isempty(wlflag)
                     szz=[size(z) 1];
                     wl=repmat(0,szz([1 2 3]));
-                    wl(isnan(z(:,:,:,1)))=NaN;
+                    wl(all(isnan(z(:,:,:,:)),4))=NaN;
                 end
                 if DataInCell
                     for i=1:size(z,1)

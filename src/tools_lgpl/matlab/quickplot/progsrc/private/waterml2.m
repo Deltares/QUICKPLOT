@@ -44,6 +44,14 @@ end
 function FI = LocalWaterML2Open(FileName)
 FI.FileName = FileName;
 FI.FileType = 'WaterML2';
+% First check whether this is an XML file to prevent the error message:
+% [Fatal Error] FileName:1:1: Content is not allowed in prolog.
+fid = fopen(FileName,'r');
+firstchar = fread(fid,[1 2],'*char');
+fclose(fid);
+if ~isequal(firstchar,'<?')
+    error('WaterML2 file should start with <?xml')
+end
 FI.XML = xmlread(FileName);
 %
 Doc        = FI.XML.getFirstChild;
