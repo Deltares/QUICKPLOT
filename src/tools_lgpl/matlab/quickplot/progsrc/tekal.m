@@ -514,7 +514,7 @@ if isstruct(FileInfo)
     end
     %
     if Sorted
-        [dumNames,Idx] = sort({FileInfo.Field.Names});
+        [dumNames,Idx] = sort({FileInfo.Field.Name});
         FileInfo.Field = FileInfo.Field(Idx);
     end
     %
