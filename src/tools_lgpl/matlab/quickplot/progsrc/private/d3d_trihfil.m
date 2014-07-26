@@ -657,6 +657,8 @@ DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     '' 
     'wind speed'                'm/s'    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZWNDSPD'  ''         []       0
     'wind direction'            'deg'    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZWNDDIR'  ''         []       0
     'air pressure'              'Pa'     [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'PATM'     ''         []       0
+    'precipitation rate'        'mm/h'   [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZPRECP'   ''         []       0
+    'evaporation rate'          'mm/h'   [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZEVAP'    ''         []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'density'                   'kg/m^3' [1 5 0 0 1]  0         1     ''       'z'   'z'       'c'     'his-series'     'ZRHO'     ''         []       0
     'non-hydrostatic pressure'  ''       [1 5 0 0 1]  0         1     ''       'z'   'z'       'c'     'his-series'     'HYDPRES'  ''         []       0
@@ -946,6 +948,18 @@ else
                 end
             end
             Out=insstruct(Out,i,Ins);
+        end
+    end
+end
+hisversionstr = vs_get(FI,'his-version','FILE-VERSION','quiet!');
+hisversion = str2num(strrep(hisversionstr,'.',' '))*[1;0.01;.0001];
+if hisversion<3.5211
+    for i=1:length(Out)
+        switch Out(i).Name
+            case 'precipitation rate'
+                Out(i).Units = 'm/s';
+            case 'evaporation rate'
+                Out(i).Units = 'kg/m^2/s';
         end
     end
 end
