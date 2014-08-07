@@ -31,6 +31,22 @@ function varargout=wlgrid(cmd,varargin)
 %   enclosure array (in this order), file name, file format, coordinate
 %   system strings 'Cartesian' and 'Spherical' (non-abbreviated).
 %
+%   Delft3D requires a grid with counter-clockwise orientation, i.e. when
+%   looking in the direction of increasing first index, the second index
+%   should be increasing towards the left.
+%
+%          ^ second index
+%          |
+%          |
+%          --------------> first index
+%
+%   If the write call detects that you're writing a grid with clockwise
+%   orientation, then it will give a warning. The easiest way to correct
+%   it, is to transpose the X and Y matrices, i.e. write X.' and Y.'
+%   If you explicitly specify the Enclosure array, that array needs to be
+%   adjusted accordingly: flipud(fliplr(original enclosure)) if there are
+%   no holes in the domain.
+%
 %   See also ENCLOSURE, WLDEP.
 
 %----- LGPL --------------------------------------------------------------------
@@ -358,30 +374,7 @@ notdef=(GRID.X==GRID.MissingValue) & (GRID.Y==GRID.MissingValue);
 GRID.X(notdef)=NaN;
 GRID.Y(notdef)=NaN;
 GRID.Type = gridtype;
-GRID.Orient = 'undefined';
-
-isdef = ~notdef;
-dobreak = false;
-for n = 1:size(GRID.Y,2)-1
-    for m = 1:size(GRID.X,1)-1
-        if isdef(m,n) && isdef(m,n+1) && isdef(m+1,n) && isdef(m+1,n+1)
-            M = sub2ind(size(GRID.X),[m m+1 m+1 m],[n n n+1 n+1]);
-            switch clockwise(GRID.X(M),GRID.Y(M))
-                case 1
-                    GRID.Orient = 'clockwise';
-                    dobreak = true;
-                    break
-                case -1
-                    GRID.Orient = 'anticlockwise';
-                    dobreak = true;
-                    break
-            end
-        end
-    end
-    if dobreak
-        break
-    end
-end
+GRID.Orient = getorientation(GRID,~notdef);
 
 % Grid enclosure file
 fid=fopen([basename '.enc']);
@@ -400,6 +393,28 @@ else
     %warning('Grid enclosure not found.');
     [M,N]=size(GRID.X);
     GRID.Enclosure=[1 1; M+1 1; M+1 N+1; 1 N+1; 1 1];
+end
+
+
+function O = getorientation(GRID,isdef)
+if nargin==1
+    isdef = ~isnan(GRID.X) & ~isnan(GRID.Y);
+end
+O = 'undefined';
+for n = 1:size(GRID.Y,2)-1
+    for m = 1:size(GRID.X,1)-1
+        if isdef(m,n) && isdef(m,n+1) && isdef(m+1,n) && isdef(m+1,n+1)
+            M = sub2ind(size(GRID.X),[m m+1 m+1 m],[n n n+1 n+1]);
+            switch clockwise(GRID.X(M),GRID.Y(M))
+                case 1
+                    O = 'clockwise';
+                    return
+                case -1
+                    O = 'anticlockwise';
+                    return
+            end
+        end
+    end
 end
 
 
@@ -562,6 +577,10 @@ if ~isempty(Grd.Enclosure),
     end
     fprintf(fid,'%5i%5i\n',Grd.Enclosure');
     fclose(fid);
+end
+
+if ~strcmp(getorientation(Grd),'anticlockwise')
+    warning('WLGRID:Orientation','Delft3D requires an anticlockwise grid; the grid that you''re writing does not comply to this requirement. See the help of this function for more information.')
 end
 
 % write
