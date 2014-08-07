@@ -1069,6 +1069,30 @@ switch cmd
             set(Handle_CloseFile,'enable','on');
             NewFI=options(NewFI,mfig,'selectfile');
         end
+        if isfield(NewFI,'Orient') && strcmp(NewFI.Orient,'clockwise')
+            Handle_SaveCCW=findobj(mfig,'tag','saveccwgrid');
+            set(Handle_SaveCCW,'enable','on')
+        end
+        
+    case 'saveccwgrid'
+        [f,p]=uiputfile(NewFI.FileName,'Save as ...');
+        if ischar(f)
+            CCWFI = NewFI;
+            CCWFI.X = CCWFI.X.';
+            CCWFI.Y = CCWFI.Y.';
+            if isfield(CCWFI,'Enclosure')
+               %what if the enclosure does not match the full grid?
+               %would this work?
+               %CCWFI.Enclosure = flipud(CCWFI.Enclosure(:,[2 1]));
+               %or would this give problems with holes?
+               %ignore this issue for the time being.
+               CCWFI.Enclosure = rmfield(CCWFI,'Enclosure');
+               opt = {'AutoEnclosure'};
+            else
+               opt = {};
+            end
+            wlgrid('write',CCWFI,'filename',[p f],opt{:})
+        end
         
     case 'openfile'
         Handle_SelectFile=findobj(mfig,'tag','selectfile');
@@ -1728,6 +1752,15 @@ uicontrol('Parent',h0, ...
     'Position',[181 voffset 150 20], ...
     'String','Save ASCII Format', ...
     'Tag','rstascii')
+%
+voffset=voffset-25;
+uicontrol('Parent',h0, ...
+    'BackgroundColor',Inactive, ...
+    'Callback','d3d_qp fileoptions saveccwgrid', ...
+    'Enable','off', ...
+    'Position',[181 voffset 150 20], ...
+    'String','Save CCW Grid', ...
+    'Tag','saveccwgrid')
 %
 OK=1;
 % -----------------------------------------------------------------------------

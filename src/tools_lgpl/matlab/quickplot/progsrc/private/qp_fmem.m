@@ -583,6 +583,12 @@ switch cmd
                                 Tmp(1:end-1,1:end-1)=FI.Y;
                                 FI.Y=Tmp;
                             end
+                            if isfield(FI,'Orient') && strcmp(FI.Orient,'clockwise')
+                                ui_message('warning',{FI.FileName, ...
+                                    'The orientation of this grid is "clockwise".', ...
+                                    'Delft3D requires a counter-clockwise (CCW) grid.', ...
+                                    'Save CCW grid using the File Dependent Options dialog.'})
+                            end
                             FI.FileType='wlgrid';
                             FI.Options=1;
                             Tp=FI.FileType;

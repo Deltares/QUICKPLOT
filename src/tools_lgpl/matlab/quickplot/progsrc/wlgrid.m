@@ -358,6 +358,30 @@ notdef=(GRID.X==GRID.MissingValue) & (GRID.Y==GRID.MissingValue);
 GRID.X(notdef)=NaN;
 GRID.Y(notdef)=NaN;
 GRID.Type = gridtype;
+GRID.Orient = 'undefined';
+
+isdef = ~notdef;
+dobreak = false;
+for n = 1:size(GRID.Y,2)-1
+    for m = 1:size(GRID.X,1)-1
+        if isdef(m,n) && isdef(m,n+1) && isdef(m+1,n) && isdef(m+1,n+1)
+            M = sub2ind(size(GRID.X),[m m+1 m+1 m],[n n n+1 n+1]);
+            switch clockwise(GRID.X(M),GRID.Y(M))
+                case 1
+                    GRID.Orient = 'clockwise';
+                    dobreak = true;
+                    break
+                case -1
+                    GRID.Orient = 'anticlockwise';
+                    dobreak = true;
+                    break
+            end
+        end
+    end
+    if dobreak
+        break
+    end
+end
 
 % Grid enclosure file
 fid=fopen([basename '.enc']);
