@@ -849,8 +849,8 @@ for i=size(Out,1):-1:1
     Info=vs_disp(FI,Out(i).Group,Out(i).Val1);
     if ~isempty(strmatch('---',Out(i).Name))
     elseif ~isstruct(Info) && ...
-            ~strcmp(Out(i).Name,'cumulative discharge') && ...
-            ~strcmp(Out(i).Name,'instantaneous discharge')
+            ~strcmp(Out(i).Name,'cumulative discharge') && ... % exception because of culverts
+            ~strcmp(Out(i).Name,'instantaneous discharge')     % exception because of culverts
         % remove references to non-stored data fields
         Out(i)=[];
         %  ---> if isequal(Info.SizeDim,1) this might be due to the fact
@@ -867,7 +867,7 @@ for i=size(Out,1):-1:1
                 % cross-section or discharges
                 if NTr+NDis==0
                     Out(i)=[];
-                elseif NTr>1 && isequal(Info.SizeDim,1)
+                elseif NTr>1 && (~isstruct(Info) || isequal(Info.SizeDim,1))
                     Out(i)=[];
                 end
             case {'ATR','DTR','SBTR','SSTR','SBTRC','SSTRC'}
