@@ -2357,6 +2357,15 @@ switch cmd
         currentstatus=get(UD.PlotMngr.Fig,'visible');
         if strcmp(cmd,'hideplotmngr')
             currentstatus='on';
+        else
+            try
+                jFrame = get(handle(UD.PlotMngr.Fig),'JavaFrame');
+                if jFrame.isMinimized
+                    jFrame.setMinimized(0)
+                    return
+                end
+            catch
+            end
         end
         switch currentstatus
             case 'on'
@@ -2375,6 +2384,15 @@ switch cmd
         currentstatus=get(UD.ComLine.Fig,'visible');
         if strcmp(cmd,'hidecomline'),
             currentstatus='on';
+        else
+            try
+                jFrame = get(handle(UD.ComLine.Fig),'JavaFrame');
+                if jFrame.isMinimized
+                    jFrame.setMinimized(0)
+                    return
+                end
+            catch
+            end
         end
         switch currentstatus
             case 'on'
