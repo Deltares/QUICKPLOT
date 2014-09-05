@@ -569,6 +569,7 @@ if DataRead
                 if zlayermodel
                     val1(val1==-999)=0;
                     val2(val2==-999)=0;
+                    dz(isnan(dz))=0;
                     val1=val1.*dz;
                     val2=val2.*dz;
                     h=sum(dz,4);
