@@ -296,7 +296,7 @@ end
 %
 if isfield(MDF,'dep')
     filename = [caseid '.dep'];
-    wldep('write',fullfile(path,filename),MDF.dep);
+    wldep('write',fullfile(path,filename),'',MDF.dep);
     MDF.mdf = inifile('set',MDF.mdf,'','Fildep',['#' filename '#']);
 end
 %
@@ -322,6 +322,12 @@ if isfield(MDF,'bct')
     filename = [caseid '.bct'];
     bct_io('write',fullfile(path,filename),MDF.bct);
     MDF.mdf = inifile('set',MDF.mdf,'','FilbcT',['#' filename '#']);
+end
+%
+if isfield(MDF,'bch')
+    filename = [caseid '.bch'];
+    bch_io('write',fullfile(path,filename),MDF.bch);
+    MDF.mdf = inifile('set',MDF.mdf,'','FilbcH',['#' filename '#']);
 end
 %
 if isfield(MDF,'bcc')
@@ -441,6 +447,13 @@ if ~isempty(bndname)
         warning('Support for Filana not yet implemented.')
     end
     %
+    bchname = inifile('get',MDF.mdf,'','FilbcH','');
+    bchname = rmhash(bchname);
+    if ~isempty(bchname)
+        bchname = relpath(mdfpath,bchname);
+        MDF.bch = bch_io('read',bchname);
+    end
+    %
     bccname = inifile('get',MDF.mdf,'','FilbcC','');
     bccname = rmhash(bccname);
     if ~isempty(bccname)
@@ -492,3 +505,83 @@ else
     pf = fullfile(path,file);
 end
 
+
+function varargout = bch_io(cmd,varargin)
+switch lower(cmd)
+    case 'read'
+        O = readbch(varargin{:});
+        if nargout>0
+            varargout{1} = O;
+        end
+    case 'write'
+        writebch(varargin{:})
+    otherwise
+        error('Unknown command: %s',cmd)
+end
+
+function writebch(filename,S)
+fid = fopen(filename,'wt');
+Format = [repmat(' %15.7e',1,length(S.Freq)) '\n'];
+fprintf(fid,Format,S.Freq);
+fprintf(fid,'\n');
+fprintf(fid,Format,S.Amplitudes');
+fprintf(fid,'\n');
+Format = [repmat(' ',1,16) repmat(' %15.7e',1,length(S.Freq)-1) '\n'];
+fprintf(fid,Format,S.Phases(:,2:end)');
+fclose(fid);
+
+
+function S = readbch(filename)
+S.FileName = filename;
+S.FileType = 'Delft3D-FLOW BCH-file';
+fid = fopen(filename,'r');
+%
+Line = fgetl(fid);
+[S.Freq,nFreq,err] = sscanf(Line,'%f');
+if ~isempty(err)
+    fclose(fid);
+    error('Only values expected in first line of BCH file: "%s"',Line)
+end
+%
+Line = fgetl(fid);
+if ~isempty(Line)
+    fclose(fid);
+    error('Unexpected data on second line of BCH file: "%s". This line should be empty.',Line)
+end
+%
+Line = fgetl(fid);
+lNr = 3;
+Data = zeros(0,nFreq);
+while ~isempty(Line)
+    [DataRow,nVal2,err] = sscanf(Line,'%f');
+    if ~isempty(err) || nVal2~=nFreq
+        fclose(fid);
+        error('%i values expected in line %i "%s"',nFreq,lNr,Line)
+    end
+    Data(end+1,:) = DataRow;
+    Line = fgetl(fid);
+    lNr = lNr+1;
+end
+nLines = size(Data,1);
+S.Amplitudes = Data;
+%
+Data(:) = NaN;
+Line = fgetl(fid);
+lNr = lNr+1;
+for i = 1:nLines
+    [DataRow,nVal2,err] = sscanf(Line,'%f');
+    if ~isempty(err) || nVal2~=nFreq-1
+        fclose(fid);
+        error('%i values expected in line %i "%s"',nFreq-1,lNr,Line)
+    end
+    Data(i,2:end) = DataRow;
+    Line = fgetl(fid);
+    lNr = lNr+1;
+end
+S.Phases = Data;
+%
+if ~feof(fid) || (ischar(Line) && ~isempty(Line))
+    fclose(fid);
+    error('More data lines in file than expected.')
+end
+fclose(fid);

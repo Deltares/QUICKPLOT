@@ -1167,6 +1167,15 @@ if usesmarker
         set(mrk,'value',imrk);
     end
     Ops.marker=mrkrs{get(mrk,'value')};
+    %
+    Ops.markersize=6;
+    if ~strcmp(Ops.marker,'none') && ~strcmp(Ops.marker,'.')
+        set(findobj(OH,'tag','markersize'),'enable','on')
+        mrk=findobj(OH,'tag','markersize=?');
+        set(mrk,'enable','on','backgroundcolor',Active)
+        Ops.markersize=get(mrk,'userdata');
+    end
+    %
     Ops.markercolour='auto';
     if markerflatfill
         Ops.markerfillcolour='flat';

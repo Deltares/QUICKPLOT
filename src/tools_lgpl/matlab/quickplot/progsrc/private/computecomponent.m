@@ -58,6 +58,9 @@ else
                 Mg = sqrt(dX.^2+dY.^2);
                 data(dU).X=(data(dU).X(:,1:end-1)+data(dU).X(:,2:end))/2;
                 data(dU).Y=(data(dU).Y(:,1:end-1)+data(dU).Y(:,2:end))/2;
+                if isfield(data,'Z')
+                    data(dU).Z=(data(dU).Z(:,1:end-1)+data(dU).Z(:,2:end))/2;
+                end
                 data(dU).YComp=-data(dU).XComp(:,2:end).*dX./Mg;
                 data(dU).XComp=data(dU).XComp(:,2:end).*dY./Mg;
                 %
@@ -66,6 +69,9 @@ else
                 Mg = sqrt(dX.^2+dY.^2);
                 data(dV).X=(data(dV).X(1:end-1,:)+data(dV).X(2:end,:))/2;
                 data(dV).Y=(data(dV).Y(1:end-1,:)+data(dV).Y(2:end,:))/2;
+                if isfield(data,'Z')
+                    data(dV).Z=(data(dV).Z(1:end-1,:)+data(dV).Z(2:end,:))/2;
+                end
                 data(dV).XComp=-data(dV).YComp(2:end,:).*dY./Mg;
                 data(dV).YComp=data(dV).YComp(2:end,:).*dX./Mg;
             end

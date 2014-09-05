@@ -83,7 +83,11 @@ if nargin<1
    [source,p] = uigetfile({'trim-*.dat','Delft3D-FLOW map file'},'Select existing Delft3D-FLOW map file');
    source = fullfile(p,source);
 end
-S=vs_use(source,'quiet');
+if ischar(source)
+    S=vs_use(source,'quiet');
+else
+    S=source;
+end
 
 if nargin<2
    [target,p] = uiputfile([p 'trim-*.dat'],'Specify name for processed Delft3D-FLOW map file');
@@ -175,10 +179,13 @@ T=vs_copy(S,T,'*',[],cpgrps{:},'quiet');
 %
 % compute averages
 %
+hPB = progressbar(0,'title','Writing ...');
 for g=1:length(grps)
    elms=vs_disp(S,grps{g});
    for e=1:length(elms)
       Info=vs_disp(S,grps{g},elms{e});
+      progressbar(g/length(grps),hPB,'title',[grps{g} '/' elms{e}])
+      drawnow
       %
       % Only floating point data sets can be averaged
       %
@@ -188,7 +195,7 @@ for g=1:length(grps)
             % The fastest way is to process all time steps at once, but
             % this may cause an out-of-memory error.
             %
-            Data = vs_let(S,grps{g},{times},elms{e});
+            Data = vs_let(S,grps{g},{times},elms{e},'quiet');
             Data = feval(average,Data); % average in first (=time) direction
          catch
             [LASTMSG, LASTID] = lasterr;
@@ -200,7 +207,7 @@ for g=1:length(grps)
                   %
                   Data = [];
                   for t = times
-                     DataT = vs_let(S,grps{g},{t},elms{e});
+                     DataT = vs_let(S,grps{g},{t},elms{e},'quiet');
                      if isempty(Data)
                         Data = DataT;
                      else
@@ -223,10 +230,11 @@ for g=1:length(grps)
                   rethrow(lasterror)
             end
          end
-         T = vs_put(T,grps{g},elms{e},Data);
+         T = vs_put(T,grps{g},elms{e},Data,'quiet');
       end
    end
 end
+delete(hPB)
 
 if isstandalone
    fprintf('\nProcessing completed successfully.\n');

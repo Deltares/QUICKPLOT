@@ -2173,30 +2173,15 @@ switch cmd
                 update_option_positions(UD,pos(4)-30+1)
         end
         
-    case {'climmin','climmax','1vecunit','vscale','thinfact','thindist','fontsize','linewidth'}
-        switch cmd,
-            case 'climmin'
+    case {'climmin','climmax','1vecunit','vscale','thinfact','thindist','fontsize','markersize','linewidth'}
+        switch cmd
+            case {'climmin','climmax'}
                 pos=0;
-                int=0;
-            case 'climmax'
-                pos=0;
-                int=0;
-            case '1vecunit'
-                pos=1;
-                int=0;
-            case 'vscale'
-                pos=1;
                 int=0;
             case 'thinfact'
                 pos=1;
                 int=1;
-            case 'thindist'
-                pos=1;
-                int=0;
-            case 'fontsize'
-                pos=1;
-                int=0;
-            case 'linewidth'
+            case {'1vecunit','vscale','thindist','fontsize','markersize','linewidth'}
                 pos=1;
                 int=0;
         end

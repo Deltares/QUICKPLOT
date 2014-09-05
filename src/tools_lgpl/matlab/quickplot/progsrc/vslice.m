@@ -98,8 +98,8 @@ switch v_slice
          for i=1:length(Flds)
             fld = Flds{i};
             if isfield(data,fld)
-               Tmp = getfield(data,fld);
-               data = setfield(data,fld,Tmp(:,pnts,:));
+               Tmp = data.(fld);
+               data.(fld) = Tmp(:,pnts,:);
             end
          end
       else
@@ -113,17 +113,17 @@ switch v_slice
          for i=1:length(Flds)
             fld = Flds{i};
             if isfield(data,fld)
-               Tmp = getfield(data,fld);
+               Tmp = data.(fld);
                szTmp = size(Tmp);
                if isequal(szTmp(1:2),szX)
                   Tmp = reshape(Tmp,[nX 1 szTmp(3:end)]);
-                  data = setfield(data,fld,Tmp(ind,:,:));
+                  data.(fld) = Tmp(ind,:,:);
                elseif isequal(szTmp(1:2),szX1)
                   if isempty(ind1)
                      ind1 = sub2ind(szX1,sliceMN(:,1),sliceMN(:,2));
                   end
                   Tmp = reshape(Tmp,[nX1 1 szTmp(3:end)]);
-                  data = setfield(data,fld,Tmp(ind1,:,:));
+                  data.(fld) = Tmp(ind1,:,:);
                end
             end
          end
@@ -148,12 +148,13 @@ switch v_slice
          fld = Flds{i};
          if isfield(data,fld)
             if isequal(fld,'X')
-               data = setfield(data,fld,Slice.x);
+               data.(fld) = Slice.x;
+               data.dX_tangential = Slice.dxt;
             elseif isequal(fld,'Y')
-               data = setfield(data,fld,Slice.y);
+               data.(fld) = Slice.y;
+               data.dY_tangential = Slice.dyt;
             else
-               Tmp = getfield(data,fld);
-               data = setfield(data,fld,arbcross(Slice,Tmp));
+               data.(fld) = arbcross(Slice,data.(fld));
             end
          end
       end

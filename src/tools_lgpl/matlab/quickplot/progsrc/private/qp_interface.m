@@ -584,6 +584,11 @@ voffset=voffset-25;
 h1 = LocTextPopup_line(mfig,'Marker','marker',[offset voffset width 20],'Select marker style');
 set(h1(2),'String',L,'Value',Li);
 %
+% ------ markersize ...
+%
+voffset=voffset-25;
+h1 = LocTextEdit_line(mfig,'Size','markersize',6,[offset voffset width 20],'Select marker size');
+%
 % ------ marker colour ...
 %
 voffset=voffset-25;

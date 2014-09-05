@@ -454,8 +454,10 @@ if isequal(Props.FileInfo,'operator')
             switch Oper
                 case '10log'
                     fun='log10';
+                    filter_negative=1;
                 case 'abs'
                     fun='abs';
+                    filter_negative=0;
             end
             [Ans,FI]=getdata(P,cmd,sel);
             Props.Props.Data{1}=FI;
@@ -463,7 +465,9 @@ if isequal(Props.FileInfo,'operator')
             for i = 1:length(F)
                 f = F{1};
                 if isfield(Ans,f);
-                    Ans.(f)(Ans.(f)<=0)=NaN;
+                    if filter_negative
+                        Ans.(f)(Ans.(f)<=0)=NaN;
+                    end
                     Ans.(f)=feval(fun,Ans.(f));
                 end
             end

@@ -404,9 +404,6 @@ if DataRead
         case {'thin dams','temporarily inactive velocity points','domain decomposition boundaries','open boundaries','closed boundaries'}
             Props.NVal=2;
             ThinDam=1;
-        case {'bed level in velocity points'}
-            Props.NVal=2;
-            ThinDam=2;
         case 'base level of sediment layer'
             if strcmp(Props.Val1,'THLYR')
                 elidx{end+1}=0;
@@ -415,6 +412,10 @@ if DataRead
             DepthInZeta=DataInCell | strcmp(Props.ReqLoc,'z');
         case {'Shepard deposit classification','USDA deposit classification'}
             elidx{end+1}=0;
+    end
+    if Props.NVal==0.9
+            Props.NVal=2;
+            ThinDam=2;
     end
     if isequal(subforig,'s') || isequal(subforig,'sb')
         if isequal(Props.SubFld,length(subf)) && length(subf)>1
@@ -972,6 +973,14 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     ''       [1 0 1 1 0]  2         5    ''        'z'   'z'       ''      'map-series'     'KFU'     ''       []       0
     'temporarily inactive velocity points' ...
     ''       [1 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-series'     'KFU'     'KFV'    []       0
+    'top active layer at water level point (kfsmax)' ...
+                                       ''       [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'KFSMAX'  ''       []       0
+    'top active layer at velocity points (kfu/vmax)' ...
+                                       ''       [1 0 1 1 0]  1         0.9  ''        'd'   'd'       ''      'map-series'     'KFUMAX'  'KFVMAX' []       0
+    'bottom active layer at water level point (kfsmin)' ...
+                                       ''       [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'KFSMIN'  ''       []       0
+    'bottom active layer at velocity points (kfu/vmin)' ...
+                                       ''       [1 0 1 1 0]  1         0.9  ''        'd'   'd'       ''      'map-series'     'KFUMIN'  'KFVMIN' []       0
     'parallel partition numbers'       ''       [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-const'      'PPARTITION'  ''       []       0
     '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
     'air pressure'                     'N/m^2'  [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'PATM'    ''       []       0
@@ -1005,6 +1014,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'depth averaged velocity'          'm/s'    [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-series'     'U1'      'V1'     []       1
     'staggered depth averaged velocities' 'm/s' [1 0 1 1 0]  1         1.9  ''        'd'   'd'       ''      'map-series'     'U1'      'V1'     []       2
     'horizontal velocity'              'm/s'    [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'U1'      'V1'     []       1
+    'staggered horizontal velocity'    'm/s'    [1 0 1 1 5]  1         1.9  ''        'd'   'd'       'c'     'map-series'     'U1'      'V1'     []       1
     'velocity'                         'm/s'    [1 0 1 1 1]  1         3    'u'       'u'   'z'       'c'     'map-series'     'U1'      'V1'     []       1
     'vertical velocity'                'm/s'    [1 0 1 1 1]  1         1    ''        'w'   'z'       'c'     'map-series'     'WPHY'    ''       []       0
     'velocity in depth averaged flow direction' ...
@@ -1065,12 +1075,12 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'suspended transport due to waves (zeta point)' ...
     '*'      [1 0 1 1 0]  1         2    'u'       'z'   'z'       ''      'map-sed-series' 'SSWU'    'SSWV'   'sb'     1
     'suspended transport due to waves' '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SSWUU'   'SSWVV'  'sb'     1
-    'staggered suspended transp. due to waves' '*' [1 0 1 1 0] 1     1.9    ''        'd'   'd'       ''      'map-sed-series' 'SSWUU'   'SSWVV'  'sb'     2
+    'staggered suspended transp. due to waves' '*' [1 0 1 1 0] 1       1.9  ''        'd'   'd'       ''      'map-sed-series' 'SSWUU'   'SSWVV'  'sb'     2
     'bed load transport'               '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SBUU'    'SBVV'   'sb'     1
-    'staggered bedload transport'      '*'      [1 0 1 1 0]  1       1.9    ''        'd'   'd'       ''      'map-sed-series' 'SBUU'    'SBVV'   'sb'     2
+    'staggered bedload transport'      '*'      [1 0 1 1 0]  1         1.9  ''        'd'   'd'       ''      'map-sed-series' 'SBUU'    'SBVV'   'sb'     2
     'near-bed transport correction'    '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SUCOR'   'SVCOR'  's'      1
     'd.a. suspended transport'         '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SSUU'    'SSVV'   's'      1
-    'staggered d.a. suspended transport' '*'    [1 0 1 1 0]  1       1.9    ''        'd'   'd'       ''      'map-sed-series' 'SSUU'    'SSVV'   's'      2
+    'staggered d.a. suspended transport' '*'    [1 0 1 1 0]  1         1.9  ''        'd'   'd'       ''      'map-sed-series' 'SSUU'    'SSVV'   's'      2
     'total transport'                  '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SSUU'    'SSVV'   's'      1
     'mean bed load transport'          '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-avg-series' 'SBUUA'   'SBVVA'  'sb'     1
     'mean d.a. suspended transport'    '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-avg-series' 'SSUUA'   'SSVVA'  's'      1
@@ -1085,6 +1095,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
     'near bed reference concentration' 'kg/m^3' [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'RCA'     ''       's'      0
     'bed shear stress'                 'N/m^2'  [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-series'     'TAUKSI'  'TAUETA' []       1
+    'staggered bed shear stress'       'N/m^2'  [1 0 1 1 0]  1         1.9  ''        'd'   'd'       ''      'map-series'     'TAUKSI'  'TAUETA' []       1
     'maximum bed shear stress'         'N/m^2'  [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'TAUMAX'  ''       []       0
     'excess bed shear ratio'           '-'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'TAURAT'  ''       'sb1'    0
     'initial bed level'                'm'      [1 0 1 1 0]  1         1    ''        'd'   'd'       ''      'map-const'      'DP0'     ''       []       0
@@ -2623,6 +2634,10 @@ switch cmd,
                 set(findobj(mfig,'tag','Wrestart'),'enable','on');
                 Ht=findobj(mfig,'tag','Erestart');
                 set(Ht,'string',sprintf('%i',Nt),'userdata',Nt,'enable','on','backgroundcolor',Active)
+                %
+                set(findobj(mfig,'tag','reduce_optxt'),'enable','on')
+                set(findobj(mfig,'tag','reduce_operator'),'enable','on','backgroundcolor',Active)
+                set(findobj(mfig,'tag','reduce_trim'),'enable','on')
             end
             set(findobj(mfig,'tag','checktstep'),'enable','on');
         end
@@ -2667,7 +2682,7 @@ switch cmd,
                 '*.ini' 'initial conditions file (*.ini)'};
         end
         [f,p]=uiputfile(filterspec,'Specify restart file name');
-        cd(cwd);
+        cd(cwd)
         if ischar(f)
             pf = [p f];
             [p,f,e] = fileparts(pf);
@@ -2675,29 +2690,62 @@ switch cmd,
                 e = '';
                 pf = fullfile(p,f);
             end
-            Ht=findobj(mfig,'tag','Erestart');
-            t=get(Ht,'userdata');
+            t=get(findobj(mfig,'tag','Erestart'),'userdata');
             if ustrcmpi('tri-rst',f)>0 || (ustrcmpi('.dat',e)<0 && ~isempty(e))
                 trim2rst(FI,t,pf);
             else
-                pf = fullfile(p,f);
-                grps = {'map-series','map-info-series', ...
-                    'map-sed-series','map-infsed-serie','map-sedgs-series', ...
-                    'map-rol-series','map-infrol-serie', ...
-                    'map-trit-series','map-inftri-serie'};
-                grps(2,:) = {{t}};
-                for i=length(grps):-1:1
-                    if ~isstruct(vs_disp(FI,grps{1,i},[]))
-                        grps(:,i) = [];
-                    end
-                end
-                NFS2 = vs_ini([pf '.dat'],[pf '.def']);
-                vs_copy(FI,NFS2,'*',[],'map-const','map-version',grps{:},'quiet');
+                pf = fullfile(p,f); % get rid of .dat extension
+                write_trimfile(FI,pf,t);
+            end
+        end
+    case 'reduce_trim'
+        hOp = findobj(mfig,'tag','reduce_operator');
+        Ops = get(hOp,'string');
+        if nargin>3
+            op = varargin{1};
+            iop = ustrcmpi(op,Ops);
+            if iop<0
+                ui_message('error',['Invalid operator specified in reduce_trim call: ',var2str(op)])
+                return
+            end
+        else
+            iop = get(hOp,'value');
+        end
+        op = Ops{iop};
+        %
+        if nargin>4
+            pf = varargin{2};
+            [p,f,e] = fileparts(pf);
+        else
+            cwd = pwd;
+            if isempty(FI.FileName)
+                p = fileparts(FI.DatExt);
+            else
+                p = fileparts(FI.FileName);
+            end
+            cd(p)
+            if matlabversionnumber<6
+                filterspec='trim-*.dat';
+            else
+                filterspec = ...
+                    {'trim-*.dat' 'map file (trim-*.dat)'};
+            end
+            [f,p]=uiputfile(filterspec,'Specify file name');
+            cd(cwd)
+        end
+        if ischar(f)
+            [tmp,f,e] = fileparts(f); % get rid of .dat extension
+            pf = [p f];
+            t=get(findobj(mfig,'tag','Erestart'),'userdata');
+            switch op
+                case 'compress'
+                    write_trimfile(FI,pf,t);
+                otherwise
+                    average_trim(FI,pf,t,op)
             end
         end
     case 'simsteps'
-        Ht=findobj(mfig,'tag','Erestart');
-        t=get(Ht,'userdata');
+        t=get(findobj(mfig,'tag','Erestart'),'userdata');
         Txt=simsteps(FI,t);
         ui_message('error',Txt);
     case 'dz'
@@ -2723,21 +2771,33 @@ switch cmd,
         catch
             ui_message('error',lasterr);
         end
-    case 't_restart'
+    case {'t_select','t_restart'}
+        Info=vs_disp(FI,'map-series',[]);
+        Nt=Info.SizeDim;
+        %
         Ht=findobj(mfig,'tag','Erestart');
         if nargin>3
             t=varargin{1};
-            if ischar(t), t=str2num(t); end
+            if ischar(t), t=str2vec(t,'range',[1 Nt],'applylimit'); end
         else
-            t=str2num(get(Ht,'string'));
+            t=str2vec(get(Ht,'string'),'range',[1 Nt],'applylimit');
         end
-        t=round(t);
-        Info=vs_disp(FI,'map-series',[]);
-        Nt=Info.SizeDim;
-        if t<0 || t>Nt
+        t=round(unique(t));
+        if isempty(t)
             t=get(Ht,'userdata');
         end
-        set(Ht,'string',sprintf('%i',t),'userdata',t)
+        set(Ht,'string',vec2str(t,'nobrackets'),'userdata',t)
+        %
+        if length(t)==1
+           e = 'on';
+           eg = get(findobj(mfig,'tag','Edz'),'enable');
+        else
+           e = 'off';
+           eg = 'off';
+        end
+        set(findobj(mfig,'tag','Wrestart'),'enable',e)
+        set(findobj(mfig,'tag','checktstep'),'enable',e)
+        set(findobj(mfig,'tag','map2golder'),'enable',eg)
     case {'morfac','morstt'}
         Hv=findobj(mfig,'tag',['E' cmd]);
         if nargin>3
@@ -2788,6 +2848,20 @@ switch cmd,
 end
 % -------------------------------------------------------------------------
 
+function write_trimfile(FI,pf,t)
+grps = {'map-series','map-info-series', ...
+    'map-sed-series','map-infsed-serie','map-sedgs-series', ...
+    'map-rol-series','map-infrol-serie', ...
+    'map-trit-series','map-inftri-serie'};
+grps(2,:) = {{t}};
+for i=length(grps):-1:1
+    if ~isstruct(vs_disp(FI,grps{1,i},[]))
+        grps(:,i) = [];
+    end
+end
+NFS2 = vs_ini([pf '.dat'],[pf '.def']);
+vs_copy(FI,NFS2,'*',[],'map-const','map-version',grps{:},'progressbar');
+
 % -------------------------------------------------------------------------
 function OK=optfig(h0)
 Inactive=get(0,'defaultuicontrolbackground');
@@ -2826,7 +2900,7 @@ uicontrol('Parent',h0, ...
     'Style','edit', ...
     'BackgroundColor',Inactive, ...
     'Horizontalalignment','right', ...
-    'Callback','d3d_qp fileoptions t_restart', ...
+    'Callback','d3d_qp fileoptions t_select', ...
     'Position',[91 voffset 80 20], ...
     'String','', ...
     'Value',0, ...
@@ -2873,6 +2947,31 @@ uicontrol('Parent',h0, ...
     'String','Export to Golder', ...
     'Enable','off', ...
     'Tag','map2golder');
+voffset=voffset-30;
+uicontrol('Parent',h0, ...
+    'Style','text', ...
+    'BackgroundColor',Inactive, ...
+    'Horizontalalignment','left', ...
+    'Position',[11 voffset 70 18], ...
+    'String','Operator', ...
+    'Enable','off', ...
+    'Tag','reduce_optxt');
+uicontrol('Parent',h0, ...
+    'Style','popupmenu', ...
+    'BackgroundColor',Inactive, ...
+    'Horizontalalignment','right', ...
+    'Position',[91 voffset 80 20], ...
+    'String',{'compress','min','mean','max','std','median'}, ...
+    'Value',1, ...
+    'Enable','off', ...
+    'Tag','reduce_operator');
+uicontrol('Parent',h0, ...
+    'BackgroundColor',Inactive, ...
+    'Callback','d3d_qp fileoptions reduce_trim', ...
+    'Position',[181 voffset 150 20], ...
+    'String','Write Reduced Trim File', ...
+    'Enable','off', ...
+    'Tag','reduce_trim');
 voffset=voffset-30;
 uicontrol('Parent',h0, ...
     'Style','text', ...

@@ -64,9 +64,14 @@ vs_debug=1;
 ErrMsg='';
 INP=varargin;
 quiet=0;
+useprogressbar=0;
 append=0;
 if (length(INP)>0) & isequal(INP{end},'quiet')
    quiet=1;
+   INP(end)=[];
+else (length(INP)>0) & isequal(INP{end},'progressbar')
+   quiet=1;
+   useprogressbar=1;
    INP(end)=[];
 end
 VS=[];
@@ -257,11 +262,16 @@ else
    end
    % I use here a "while" loop instead of an "if" statement to make
    % exception handling easier.
-   % Exception are handled by "break" statements, otherwise one would have
+   % Exceptions are handled by "break" statements, otherwise one would have
    % to resort to multiple local exception handlers; now, there is only one
    % global exception handler after the "loop". The loop exists always after
    % one iteration due to a "break" statement at the end.
+   hPB=0;
    while isempty(ErrMsg)
+      if useprogressbar
+          hPB=progressbar(0,'title','Writing...');
+      end
+      %
       % define all elements
       allelm=unique([gElms{:}]);
       [dummy,dummy2,ie]=intersect(allelm,{VS.ElmDef.Name});
@@ -278,6 +288,7 @@ else
       if ~isempty(ErrMsg)
          break
       end
+      %
       % define all groups
       [dummy,dummy2,ig]=intersect(gName,allgrp);
       for i=1:length(ig)
@@ -307,6 +318,7 @@ else
       if ~isempty(ErrMsg)
          break
       end
+      %
       % now transfer the data
       if isempty(VSn.GrpDat)
           gName_target={};
@@ -338,6 +350,9 @@ else
             if vs_debug
                stp=0;
                fprintf(vs_debug,'                  element: %s',eName);
+            end
+            if useprogressbar
+                progressbar(i/length(ig),hPB,'title',[gName{i0} '/' eName])
             end
             eIndex={};
             Info=vs_disp(VS,gName{i0},eName);
@@ -381,6 +396,9 @@ else
          end
       end
       break
+   end
+   if ~isequal(hPB,0)
+       delete(hPB)
    end
 end
 

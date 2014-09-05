@@ -86,7 +86,8 @@ if nargin==0
     return
 end
 
-switch lower(cmd)
+lcmd = lower(cmd);
+switch lcmd
     case {'read','open'}
         Grid=Local_read_grid(varargin{:});
         if nargout<=1
@@ -94,18 +95,18 @@ switch lower(cmd)
         else
             varargout={Grid.X Grid.Y Grid.Enclosure Grid.CoordinateSystem Grid.MissingValue};
         end
-    case {'write'}
-        Out=Local_write_grid('newrgf',varargin{:});
-        if nargout>0
-            varargout{1}=Out;
+    case {'struct','write','newrgf','writeold','oldrgf','writeswan','swangrid'}
+        switch lcmd
+            case 'write'
+                lcmd = 'newrgf';
+            case 'writeold'
+                lcmd = 'oldrgf';
+            case 'writeswan'
+                lcmd = 'swangrid';
+            otherwise
+                % just pass lcmd
         end
-    case {'writeold'}
-        Out=Local_write_grid('oldrgf',varargin{:});
-        if nargout>0
-            varargout{1}=Out;
-        end
-    case {'writeswan'}
-        Out=Local_write_grid('swangrid',varargin{:});
+        Out=Local_write_grid(lcmd,varargin{:});
         if nargout>0
             varargout{1}=Out;
         end
@@ -434,13 +435,9 @@ while i<=nargin
     if ischar(varargin{i})
         switch lower(varargin{i})
             case {'autoenc','autoenclosure'}
-                autoenc = 1;
-            case 'oldrgf'
-                fileformat      ='oldrgf';
-            case 'newrgf'
-                fileformat      ='newrgf';
-            case 'swangrid'
-                fileformat      ='swangrid';
+                autoenc    = 1;
+            case {'oldrgf','newrgf','swangrid','struct'}
+                fileformat = lower(varargin{i});
             case 'cartesian'
                 Grd.CoordinateSystem='Cartesian';
             case 'spherical'
@@ -539,8 +536,7 @@ switch j
     case 3
         Format='%15.8f';
     otherwise
-        Format=fileformat;
-        fileformat='newrgf';
+        Format='<dummy>';
 end
 if isfield(Grd,'Format')
     Format=Grd.Format;
@@ -562,6 +558,15 @@ Idx=isnan(Grd.X.*Grd.Y);                % change indicator of grid point exclusi
 Grd.X(Idx)=Grd.MissingValue;            % from NaN in Matlab to (0,0) in grid file.
 Grd.Y(Idx)=Grd.MissingValue;
 
+if ~strcmp(getorientation(Grd),'anticlockwise')
+    warning('WLGRID:Orientation','Delft3D requires an anticlockwise grid; the grid that you''re writing does not comply to this requirement. See the help of this function for more information.')
+end
+
+if strcmp(fileformat,'struct')
+    OK=Grd;
+    return
+end
+
 % detect extension
 [path,name,ext]=fileparts(filename);
 if isempty(ext)
@@ -577,10 +582,6 @@ if ~isempty(Grd.Enclosure),
     end
     fprintf(fid,'%5i%5i\n',Grd.Enclosure');
     fclose(fid);
-end
-
-if ~strcmp(getorientation(Grd),'anticlockwise')
-    warning('WLGRID:Orientation','Delft3D requires an anticlockwise grid; the grid that you''re writing does not comply to this requirement. See the help of this function for more information.')
 end
 
 % write

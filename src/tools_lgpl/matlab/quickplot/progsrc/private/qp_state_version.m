@@ -133,6 +133,9 @@ State=setopt(State,'extend2edge',0);
 if strcmp(State.axestype,'Distance-Val')
     State=setopt(State,'plotcoordinate','path distance');
 end
+if isfield(State,'marker')
+    State=setopt(State,'markersize',6);
+end
 
 
 function State=setopt(State,Field,Val)

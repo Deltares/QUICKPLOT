@@ -72,12 +72,14 @@ switch lower(cmd)
         S=getfield(lower(cmd),varargin{:});
     case 'set'
         S=setfield(varargin{:});
-    case 'delete'
+    case {'delete','remove'}
         S=setfield(varargin{:},[]);
     case 'write'
         writefile(varargin{:});
     case 'new'
         S=newfile;
+    otherwise
+        error('Unknown command: %s',cmd)
 end
 if nargout>0
     varargout={S};
@@ -281,11 +283,11 @@ else
         key=strmatch(keyS,Keywords(:,1),'exact');
         if ~isempty(key)
             if isempty(val) & ~ischar(val)
-                S{i,2}(key,:)=[];
+                S{grp,2}(key,:)=[];
             else
-                S{i,2}{key(1),2}=val;
+                S{grp,2}{key(1),2}=val;
                 if length(key)>1
-                    S{i,2}(key(2:end),:)=[];
+                    S{grp,2}(key(2:end),:)=[];
                 end
             end
         end

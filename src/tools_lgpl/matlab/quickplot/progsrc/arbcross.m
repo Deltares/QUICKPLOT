@@ -81,6 +81,8 @@ if (nargout+1==nargin | nargout-1==nargin) & nargin>1 & isstruct(varargin{1})
     ind = Keep.ind;
     indtri = Keep.indtri;
     outside = Keep.outside;
+    %dxt = Keep.dxt;
+    %dyt = Keep.dyt;
     VGRIDStr = Keep.VGRIDStr;
     szXGRID = Keep.szXGRID;
     szTRI = Keep.szTRI;
@@ -163,7 +165,7 @@ else
     %
     XB=varargin{end-1};
     YB=varargin{end};
-    [x,y,ind,wght,indtri,fracudist]=int_lntri(XB,YB,TRI,XGRID,YGRID);
+    [x,y,ind,wght,indtri,fracudist,dxt,dyt]=int_lntri(XB,YB,TRI,XGRID,YGRID);
     outside = isnan(indtri);
     indtri(outside)=1;
 
@@ -182,9 +184,31 @@ else
             ii = [1:i i i+1:length(indtri)];
             indtri=indtri(ii);
             outside=outside(ii);
+            dxt=dxt(ii);
+            dyt=dyt(ii);
         end
     end
-
+    %
+    % Remove diagonals ... maybe it would be faster to not put them in in
+    % the first place, but maybe I need them again in the future for
+    % consistency.
+    %
+    if ~isempty(QUADTRI)
+        indquad = QUADTRI(indtri);
+        rm = find((indquad(1:end-1)==indquad(2:end)) & ~isnan(x(2:end-1,1)));
+        x(rm+1,:)        =[];
+        y(rm+1,:)        =[];
+        wght(rm+1,:)     =[];
+        ind(rm+1,:)      =[];
+        fracudist(rm+1,:)=[];
+        indtri(rm,:)     =[];
+        outside(rm,:)    =[];
+        dxt(rm,:)        =[];
+        dyt(rm,:)        =[];
+    end
+    %
+    % Expand coordinates to 3D if original x/y arrays were 3D.
+    %
     if layeredxy
         x = repmat(x,[1 1 size(varargin{1},3)]);
         y = repmat(y,[1 1 size(varargin{2},3)]);
@@ -201,6 +225,8 @@ else
         Keep.fracudist = fracudist;
         Keep.indtri = indtri;
         Keep.outside = outside;
+        Keep.dxt = dxt;
+        Keep.dyt = dyt;
         Keep.VGRIDStr = VGRIDStr;
         Keep.szXGRID = szXGRID;
         Keep.szTRI = szTRI;

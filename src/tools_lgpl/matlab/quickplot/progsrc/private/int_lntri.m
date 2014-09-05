@@ -1,4 +1,4 @@
-function [xo,yo,po,mo,to,lo]=int_lntri(xi,yi,TRI,X,Y)
+function [xo,yo,po,mo,to,lo,dxt,dyt]=int_lntri(xi,yi,TRI,X,Y)
 %INT_LNTRI Intersection of line and triangular mesh.
 %   [XCROSS,YCROSS] = INT_LNTRI(XLINE,YLINE,TRI,X,Y)
 %   Computes the points where the line (XLINE,YLINE)
@@ -70,6 +70,8 @@ to=cN;
 xo=cN;
 yo=cN;
 lo=cN;
+dxt=cN;
+dyt=cN;
 
 T=NaN;
 First=1;
@@ -87,6 +89,7 @@ for i=1:N
 
     dxi=xi(i)-xi(i+1);
     dyi=yi(i)-yi(i+1);
+    dti=sqrt(dxi^2+dyi^2);
 
     %
     % Determine the mu and lambda coefficients for which the vector equality
@@ -137,6 +140,8 @@ for i=1:N
     xo{i}=xo{i}(ind);
     yo{i}=yo{i}(ind);
     lo{i}=i+l;
+    dxt{i}=repmat(-dxi/dti,size(l));
+    dyt{i}=repmat(-dyi/dti,size(l));
 
     for j=2:ncross
         edges = rev==j;
@@ -221,6 +226,8 @@ to{N}=[];
 xo{N}=xi(N);
 yo{N}=yi(N);
 lo{N}=N;
+dxt{N}=[];
+dyt{N}=[];
 if First
     %
     % Rare exception: no crossing at all. So, all points are inside one
@@ -252,12 +259,14 @@ if First
     end
 end
 
-mo=cat(1,mo{:});
-po=cat(1,po{:});
-to=cat(1,to{:});
 xo=cat(1,xo{:});
 yo=cat(1,yo{:});
+po=cat(1,po{:});
+mo=cat(1,mo{:});
+to=cat(1,to{:});
 lo=cat(1,lo{:});
+dxt=cat(1,dxt{:});
+dyt=cat(1,dyt{:});
 %
 % Coordinates could also have been determined at the end of this routine
 % using the two statements given below. However, then we would loose corner
