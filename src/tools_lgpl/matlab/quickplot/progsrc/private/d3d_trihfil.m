@@ -951,8 +951,13 @@ else
         end
     end
 end
-hisversionstr = vs_get(FI,'his-version','FILE-VERSION','quiet!');
-hisversion = str2num(strrep(hisversionstr,'.',' '))*[1;0.01;.0001];
+FV_info=vs_disp(FI,'his-version','FILE-VERSION');
+if isstruct(FV_info)
+    hisversionstr = vs_get(FI,'his-version','FILE-VERSION','quiet!');
+    hisversion = str2num(strrep(hisversionstr,'.',' '))*[1;0.01;.0001];
+else
+    hisversion = 0;
+end
 if hisversion<3.5211
     for i=1:length(Out)
         switch Out(i).Name

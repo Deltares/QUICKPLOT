@@ -792,20 +792,25 @@ switch cmd
             'enable','inactive','units','pixels','string','', ...
             'horizontalalignment','left','position',[151 1 70 20], ...
             'tag','MNcoord');
-        G=surface([],[],'parent',A,'tag','GRID','userdata',GRID);
+        G=surface([],[],[],'parent',A,'tag','GRID','userdata',GRID);
         selcolor = qp_settings('gridviewselectioncolor')/255;
         %SelectedGrid
+        if matlabversionnumber>=8.04
+            erasemode = {};
+        else
+            erasemode = {'erasemode','xor'};
+        end
         surface([],[],[],'parent',A, ...
             'facecolor',selcolor,'edgecolor','none', ...
-            'tag','SELSURF','erasemode','xor');
+            'tag','SELSURF',erasemode{:});
         %SelectedPatch
         patch('vertices',[],'faces',[],'parent',A, ...
             'facecolor',selcolor,'edgecolor','none', ...
-            'tag','SELPATCH','erasemode','xor');
+            'tag','SELPATCH',erasemode{:});
         %SelectedLine
         line('xdata',[],'ydata',[],'parent',A, ...
             'color',selcolor,'markersize',18,'linewidth',4, ...
-            'tag','SELLINE','erasemode','xor');
+            'tag','SELLINE',erasemode{:});
         set(A,'color','none','xtick',[],'ytick',[], ...
             'da',[1 1 1],'view',[0 90],'xcolor',get(F,'color'), ...
             'ycolor',get(F,'color'))
@@ -1203,7 +1208,7 @@ if isfield(GRID,'X') && isfield(GRID,'Y')
         off='on';
     else
         GRID.Type = 'none';
-        G=surface([],[],'parent',A);
+        G=surface([],[],[],'parent',A);
         off='off';
     end
 elseif isfield(GRID,'SEG')

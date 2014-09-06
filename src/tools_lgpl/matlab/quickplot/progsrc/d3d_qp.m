@@ -2344,7 +2344,10 @@ switch cmd
             currentstatus='on';
         else
             try
+                warnJF = warning('query','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
+                warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame')
                 jFrame = get(handle(UD.PlotMngr.Fig),'JavaFrame');
+                warning(warnJF);
                 if jFrame.isMinimized
                     jFrame.setMinimized(0)
                     return
