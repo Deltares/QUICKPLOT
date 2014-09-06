@@ -197,12 +197,17 @@ for i=[M_ N_ K_]
             error('Only scalars or ranges allowed for index %i',i)
         end
         if (i~=K_) && ~strcmp(subtype,'plot') && ~strcmp(Props.Geom,'POLYG')
-            if DataInCell && isequal(idx{i},1)
-                idx{i}=[1 2];
-                ind{i}=2;
-            elseif DataInCell && idx{i}(1)==1
-                ind{i}=2:length(idx{i});
-            else
+            if DataInCell
+                if isequal(idx{i},1)
+                    idx{i}=[1 2];
+                    ind{i}=2;
+                elseif idx{i}(1)==1
+                    ind{i}=2:length(idx{i});
+                else
+                    idx{i}=[idx{i}(1)-1 idx{i}];
+                    ind{i}=(1:(length(idx{i})-1))+1;
+                end
+            else % not DataInCell
                 if idx{i}(1)==1
                     idx{i}=idx{i};
                     ind{i}=1:length(idx{i});
@@ -216,7 +221,6 @@ for i=[M_ N_ K_]
         end
     end
 end
-
 if max(idx{T_})>sz(T_)
     error('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_))
 end
@@ -413,18 +417,43 @@ switch subtype
                         wl=wl(:,max(FI.Grid.Index(:,:,1),1));
                         wl=reshape(wl,[size(z,1) size(FI.Grid.Index(:,:,1))]);
                     end
+                    %
+                    if strcmp(subtype,'map')
+                        for i=1:size(z,1)
+                            z(i,nact)=NaN;
+                        end
+                    end
                 end
+                %
+                %negdepth=0;
+                z0 = z(:,:,:,1);
+                for i=2:size(z,4)
+                    z1 = z(:,:,:,i);
+                    %if any(z1(:)<z0(:))
+                    %   negdepth=1;
+                    %end
+                    z1(z1<z0) = NaN;
+                    z0 = max(z0,z1);
+                    z(:,:,:,i) = z1;
+                end
+                %if negdepth
+                %   ui_message('warning',{'Cells with negative depth encountered!','These have been removed from the data set.'})
+                %end
+                %
+                %zerodepth=any(z(:)==0);
+                %if zerodepth
+                %    z(z==0)=NaN;
+                %    ui_message('warning',{'Cells with zero depth encountered!','These have been removed from the data set.'})
+                %end
+                %
                 if isempty(wlflag)
                     szz=[size(z) 1];
                     wl=repmat(0,szz([1 2 3]));
                     wl(all(isnan(z(:,:,:,:)),4))=NaN;
                 end
                 if DataInCell
+                    kmax=size(z,4);
                     for i=1:size(z,1)
-                        if strcmp(subtype,'map')
-                            z(i,nact)=NaN;
-                        end
-                        kmax=size(z,4);
                         for k=kmax+1:-1:2
                             z(i,:,:,k)=z(i,:,:,k-1)+wl(i,:,:);
                         end
@@ -432,22 +461,11 @@ switch subtype
                     end
                 else
                     for i=1:size(z,1)
-                        if strcmp(subtype,'map')
-                            z(i,nact)=NaN;
-                        end
                         for k=size(z,4):-1:2
                             z(i,:,:,k)=(z(i,:,:,k)+z(i,:,:,k-1))/2+wl(i,:,:);
                         end
                         z(i,:,:,1)=z(i,:,:,1)/2+wl(i,:,:);
                     end
-                end
-                %
-                z0 = z(:,:,:,1);
-                for i=2:size(z,4)
-                    z1 = z(:,:,:,i);
-                    z1(z1<z0) = NaN;
-                    z0 = max(z0,z1);
-                    z(:,:,:,i) = z1;
                 end
                 %
                 if isequal(idx{N_},0) % unstructured data sets
@@ -657,14 +675,22 @@ if allt
 end
 if ~isempty(val1)
     if ~isempty(z) && clipZ
-        val1(isnan(z(:,:,:,2:end)))=NaN;
+        if DataInCell
+            val1(isnan(z(:,:,:,2:end)))=NaN;
+        else
+            val1(isnan(z))=NaN;
+        end
     end
     val1(val1==-999)=NaN;
     val1(val1==missingvalue)=NaN;
 end
 if ~isempty(val2)
     if ~isempty(z) && clipZ
-        val2(isnan(z(:,:,:,2:end)))=NaN;
+        if DataInCell
+            val2(isnan(z(:,:,:,2:end)))=NaN;
+        else
+            val2(isnan(z))=NaN;
+        end
     end
     val2(val2==-999)=NaN;
     val2(val2==missingvalue)=NaN;
@@ -742,6 +768,9 @@ if Props.NVal>0 && ~TDam && ~strcmp(subtype,'history')
     if act_from_z
         szz1=szz([1 4:end]);
         szz1(1)=szz(1)*szz(2)*szz(3);
+        if length(szz1)<2
+            szz1(1,2)=1;
+        end
         val1=reshape(val1,szz1);
         val1(act~=1,:)=NaN;
     else
