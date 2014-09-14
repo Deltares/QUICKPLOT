@@ -55,7 +55,7 @@ end
 FI.XML = xmlread(FileName);
 %
 Doc        = FI.XML.getFirstChild;
-NameSpaces = getNameSpaces(Doc);
+NameSpaces = xparse('getNameSpaces',Doc);
 %
 try
     FI.Dictionary = getDictionary(Doc,NameSpaces);
@@ -69,50 +69,17 @@ catch
 end
 FI.TimeSeries = getTimeSeries(Doc,NameSpaces,FI.Location);
 
-function wml2 = wml2
-wml2 = 'http://www.opengis.net/waterml/2.0';
-
-function gml = gml
-gml = 'http://www.opengis.net/gml/3.2';
-
-function om = om
-om = 'http://www.opengis.net/om/2.0';
-
-function xlink = xlink
-xlink = 'http://www.w3.org/1999/xlink';
-
-function sa = sa
-sa = 'http://www.opengis.net/sampling/2.0';
-
-function sams = sams
-sams = 'http://www.opengis.net/samplingSpatial/2.0';
-
-function NS = getNameSpaces(Element)
-NS = cell(0,2);
-Attribs = Element.getAttributes;
-nAtt = Attribs.getLength;
-for i = 0:nAtt-1
-    AttNam = char(Attribs.item(i).getName);
-    if strncmp('xmlns:',AttNam,6)
-        NS{end+1,1} = AttNam(7:end);
-        NS{end,2}   = char(Attribs.item(i).getValue);
-    elseif strcmp('xmlns',AttNam)
-        NS{end+1,1} = '';
-        NS{end,2}   = char(Attribs.item(i).getValue);
-    end
-end
-
 function D = getDictionary(Doc,NameSpaces)
-D.XML = getRecursiveNamedChildNS(Doc,NameSpaces,wml2,'localDictionary',gml,'Dictionary',gml,'dictionaryEntry');
+D.XML = xparse('getRecursiveNamedChildNS',Doc,NameSpaces,wml2,'localDictionary',gml,'Dictionary',gml,'dictionaryEntry');
 nQ = length(D.XML);
 D.Name = cell(nQ,1);
 for i = 1:nQ
-    Name = getRecursiveNamedChildNS(D.XML(i),NameSpaces,gml,'Definition',gml,'name');
+    Name = xparse('getRecursiveNamedChildNS',D.XML(i),NameSpaces,gml,'Definition',gml,'name');
     D.Name{i} = char(Name.getTextContent);
 end
 
 function L = getLocations(Doc,NameSpaces)
-L.XML = getRecursiveNamedChildNS(Doc,NameSpaces,wml2,'samplingFeatureMember',wml2,'MonitoringPoint');
+L.XML = xparse('getRecursiveNamedChildNS',Doc,NameSpaces,wml2,'samplingFeatureMember',wml2,'MonitoringPoint');
 nL = length(L.XML);
 L.Id = cell(nL,1);
 L.Name = cell(nL,1);
@@ -123,25 +90,18 @@ for i = 1:nL
 end
 
 function [Id,Name,Description,Coord] = getMonitoringPoint(MP,NameSpaces)
-Id= getAttributeNS(MP,NameSpaces,gml,'id');
-Name = getChar(getRecursiveNamedChildNS(MP,NameSpaces,gml,'name'));
-Description = getChar(getRecursiveNamedChildNS(MP,NameSpaces,gml,'description'));
+Id= xparse('getAttributeNS',MP,NameSpaces,gml,'id');
+Name = xparse('getChar',xparse('getRecursiveNamedChildNS',MP,NameSpaces,gml,'name'));
+Description = xparse('getChar',xparse('getRecursiveNamedChildNS',MP,NameSpaces,gml,'description'));
 if isempty(Name)
-    SF = getRecursiveNamedChildNS(MP,NameSpaces,sa,'sampledFeature');
-    [Name,err] = getAttributeNS(SF,NameSpaces,xlink,'title');
+    SF = xparse('getRecursiveNamedChildNS',MP,NameSpaces,sa,'sampledFeature');
+    [Name,err] = xparse('getAttributeNS',SF,NameSpaces,xlink,'title');
 end
-Coord = getRecursiveNamedChildNS(MP,NameSpaces,sams,'shape',gml,'Point',gml,'pos');
+Coord = xparse('getRecursiveNamedChildNS',MP,NameSpaces,sams,'shape',gml,'Point',gml,'pos');
 Coord = sscanf(char(Coord.getTextContent),'%f',[1 2]);
 
-function S = getChar(Elm)
-if isempty(Elm)
-    S = '';
-else
-    S = char(Elm.getTextContent);
-end
-
 function TS = getTimeSeries(Doc,NameSpaces,Locations)
-TS.XML = getRecursiveNamedChildNS(Doc,NameSpaces,wml2,'observationMember');
+TS.XML = xparse('getRecursiveNamedChildNS',Doc,NameSpaces,wml2,'observationMember');
 nTS = length(TS.XML);
 if nTS==0
     error('At least one observationMember element required in WaterML2 file.')
@@ -153,16 +113,16 @@ TS.LocationName = cell(nTS,1);
 TS.LocationCoord = NaN(nTS,2);
 TS.Series = cell(nTS,1);
 for i = 1:nTS
-    TSeries  = getRecursiveNamedChildNS(TS.XML(i),NameSpaces,om,'OM_Observation');
+    TSeries  = xparse('getRecursiveNamedChildNS',TS.XML(i),NameSpaces,om,'OM_Observation');
     if length(TSeries)>1
         error('Only one OM_Observation element allowed in observationMember.')
     end
-    P = getRecursiveNamedChildNS(TSeries,NameSpaces,om,'observedProperty');
-    TS.QuantityName{i} = getAttributeNS(P,NameSpaces,xlink,'title');
+    P = xparse('getRecursiveNamedChildNS',TSeries,NameSpaces,om,'observedProperty');
+    TS.QuantityName{i} = xparse('getAttributeNS',P,NameSpaces,xlink,'title');
     %
-    L = getRecursiveNamedChildNS(TSeries,NameSpaces,om,'featureOfInterest');
+    L = xparse('getRecursiveNamedChildNS',TSeries,NameSpaces,om,'featureOfInterest');
     if length(L)==1
-        MP = getRecursiveNamedChildNS(L,NameSpaces,wml2,'MonitoringPoint');
+        MP = xparse('getRecursiveNamedChildNS',L,NameSpaces,wml2,'MonitoringPoint');
         if ~isempty(MP)
             [Id,Name,Description,Coord] = getMonitoringPoint(MP,NameSpaces);
             if ~isempty(Name)
@@ -174,9 +134,9 @@ for i = 1:nTS
         end
         %
         if isempty(TS.LocationName{i})
-            [TS.LocationName{i},err] = getAttributeNS(L,NameSpaces,xlink,'title');
+            [TS.LocationName{i},err] = xparse('getAttributeNS',L,NameSpaces,xlink,'title');
             if err
-                [TS.LocationName{i},err] = getAttributeNS(L,NameSpaces,xlink,'href');
+                [TS.LocationName{i},err] = xparse('getAttributeNS',L,NameSpaces,xlink,'href');
                 if err || isempty(TS.LocationName{i})
                     TS.LocationName{i} = '';
                 elseif TS.LocationName{i}(1)=='#' && ~isempty(Locations)
@@ -198,23 +158,51 @@ for i = 1:nTS
         TS.LocationName{i} = '';
     end
     %
-    D = getRecursiveNamedChildNS(TSeries,NameSpaces,om,'result',wml2,'MeasurementTimeseries');
-    TS.Name{i} = getAttributeNS(D,NameSpaces,gml,'id');
+    D = xparse('getRecursiveNamedChildNS',TSeries,NameSpaces,om,'result',wml2,'MeasurementTimeseries');
+    TS.Name{i} = xparse('getAttributeNS',D,NameSpaces,gml,'id');
     %
     try
         % equidistant time series
-        BeginTime = str2tim(getRecursiveNamedChildNS(D,NameSpaces,wml2,'metadata',wml2,'MeasurementTimeseriesMetadata',wml2,'baseTime'));
-        SP = getRecursiveNamedChildNS(D,NameSpaces,wml2,'metadata',wml2,'MeasurementTimeseriesMetadata',wml2,'spacing');
+        BeginTime = str2tim(xparse('getRecursiveNamedChildNS',D,NameSpaces,wml2,'metadata',wml2,'MeasurementTimeseriesMetadata',wml2,'baseTime'));
+        SP = xparse('getRecursiveNamedChildNS',D,NameSpaces,wml2,'metadata',wml2,'MeasurementTimeseriesMetadata',wml2,'spacing');
         TimeStep = iso8601period(char(SP.getTextContent));
     catch
         BeginTime = [];
         TimeStep = [];
     end
     %
-    U = getRecursiveNamedChildNS(D,NameSpaces,wml2,'defaultPointMetadata',wml2,'DefaultTVPMeasurementMetadata',wml2,'uom');
+    U = xparse('getRecursiveNamedChildNS',D,NameSpaces,wml2,'defaultPointMetadata',wml2,'DefaultTVPMeasurementMetadata',wml2,'uom');
     TS.QuantityUnit{i} = char(U.getAttribute('code'));
     TS.Series{i} = getTimeSeriesData(D,NameSpaces,BeginTime,TimeStep);
 end
+
+function TSD = getTimeSeriesData(D,NameSpaces,BeginTime,TimeStep)
+TSV = xparse('getNamedChildrenNS',D,NameSpaces,wml2,'point');
+nTSV = length(TSV);
+TSD = NaN(nTSV,2);
+noData = true(nTSV,1);
+for i = 1:nTSV
+    TSVi = xparse('getNamedChildNS',TSV(i),NameSpaces,wml2,'MeasurementTVP');
+    if isempty(BeginTime)
+        try
+            TSD(i,1) = str2tim(xparse('getNamedChildNS',TSVi,NameSpaces,wml2,'time'));
+            noData(i) = false;
+        catch
+        end
+    else
+        TSD(i,1) = datenum(datevec(BeginTime) + (i-1)*TimeStep);
+    end
+    try
+        V = xparse('getNamedChildNS',TSVi,NameSpaces,wml2,'value');
+        TSD(i,2) = str2double(char(V.getTextContent));
+        noData(i) = false;
+    catch
+    end
+end
+if any(noData)
+    TSD(noData,:)=[];
+end
+%----------------------
 
 function P = iso8601period(S)
 % P[n]Y[n]M[n]DT[n]H[n]M[n]S or P[n]W
@@ -278,120 +266,23 @@ else
     end
 end
 
-function TSD = getTimeSeriesData(D,NameSpaces,BeginTime,TimeStep)
-TSV = getNamedChildrenNS(D,NameSpaces,wml2,'point');
-nTSV = length(TSV);
-TSD = NaN(nTSV,2);
-noData = true(nTSV,1);
-for i = 1:nTSV
-    TSVi = getNamedChildNS(TSV(i),NameSpaces,wml2,'MeasurementTVP');
-    if isempty(BeginTime)
-        try
-            TSD(i,1) = str2tim(getNamedChildNS(TSVi,NameSpaces,wml2,'time'));
-            noData(i) = false;
-        catch
-        end
-    else
-        TSD(i,1) = datenum(datevec(BeginTime) + (i-1)*TimeStep);
-    end
-    try
-        V = getNamedChildNS(TSVi,NameSpaces,wml2,'value');
-        TSD(i,2) = str2double(char(V.getTextContent));
-        noData(i) = false;
-    catch
-    end
-end
-if any(noData)
-    TSD(noData,:)=[];
-end
-
 function T = str2tim(S)
 T = datenum(sscanf(char(S.getTextContent),'%4i-%2d-%2dT%d:%d:%f',[1 6])); % ignoring time zone for the moment
 
-function Children = getChildren(Node)
-nChild = Node.getLength;
-c = cell(1,nChild);
-c{1} = Node.getFirstChild;
-for i = 2:nChild
-    c{i} = c{i-1}.getNextSibling;
-end
-Children = [c{:}];
+function wml2 = wml2
+wml2 = 'http://www.opengis.net/waterml/2.0';
 
-function ok = checkNameNS(NameSpaces,Item,namespace,name)
-fullNodeName = char(Item.getNodeName);
-colon = strfind(fullNodeName,':');
-if isempty(colon)
-    ok = isequal(fullNodeName,name);
-    Idx = strcmp('',NameSpaces(:,1));
-else
-    nodeName = fullNodeName(colon+1:end);
-    ok = isequal(nodeName,name);
-    Idx = strcmp(fullNodeName(1:colon-1),NameSpaces(:,1));
-    if ~any(Idx)
-        error('Unknown namespace encountered while processing attribute "%s".',fullNodeName)
-    end
-end
-if ok && any(Idx)
-    ok = isequal(NameSpaces{Idx,2},namespace);
-end
+function gml = gml
+gml = 'http://www.opengis.net/gml/3.2';
 
-function Items = getNamedChildrenNS(Parent,NameSpaces,namespace,element)
-AllItems = getChildren(Parent);
-if isempty(AllItems)
-    Items = [];
-else
-    for i = length(AllItems):-1:1
-        matching(i) = checkNameNS(NameSpaces,AllItems(i),namespace,element);
-    end
-    Items = AllItems(matching);
-end
+function om = om
+om = 'http://www.opengis.net/om/2.0';
 
-function Item = getRecursiveNamedChildNS(Parent,NameSpaces,varargin)
-Item = Parent;
-for i = 1:2:length(varargin)-2
-    Item = getNamedChildNS(Item,NameSpaces,varargin{i},varargin{i+1});
-end
-Item = getNamedChildrenNS(Item,NameSpaces,varargin{end-1},varargin{end});
+function xlink = xlink
+xlink = 'http://www.w3.org/1999/xlink';
 
-function Item = getNamedChildNS(Parent,NameSpaces,namespace,element)
-Item = getNamedChildrenNS(Parent,NameSpaces,namespace,element);
-if isempty(Item)
-    error('Element <%s> does not include child element <%s>',char(Parent.getNodeName),element)
-elseif length(Item)>1
-    error('Element <%s> includes multiple child elements <%s>',char(Parent.getNodeName),element)
-end
+function sa = sa
+sa = 'http://www.opengis.net/sampling/2.0';
 
-function [S,err] = getAttributeNS(Element,NameSpaces,namespace,name)
-Attribs = Element.getAttributes;
-nAtt = Attribs.getLength;
-err = false;
-for i = 0:nAtt-1
-    fullAttName = char(Attribs.item(i).getName);
-    colon = strfind(fullAttName,':');
-    if isempty(colon)
-        ok = isequal(fullAttName,name);
-        Idx = strcmp('',NameSpaces(:,1));
-    else
-        attName = fullAttName(colon+1:end);
-        ok = isequal(attName,name);
-        Idx = strcmp(fullAttName(1:colon-1),NameSpaces(:,1));
-        if ~any(Idx)
-            if nargout>1
-                err = true;
-                return
-            else
-                error('Unknown namespace encountered while processing attribute "%s".',fullAttName)
-            end
-        end
-    end
-    if ok && any(Idx) && isequal(NameSpaces{Idx,2},namespace)
-        S = char(Attribs.item(i).getValue);
-        return
-    end
-end
-if nargout>1
-    S = '';
-    err = true;
-else
-    error('Attribute "%s" from namespace "%s" not found.',name,namespace)
-end
+function sams = sams
+sams = 'http://www.opengis.net/samplingSpatial/2.0';

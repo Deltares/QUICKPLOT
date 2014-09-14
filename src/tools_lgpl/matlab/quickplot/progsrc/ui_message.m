@@ -195,6 +195,7 @@ if isempty(fig) || ~ishandle(fig)
    rect(3) = Fig_Width-2*XX.Margin;
    rect(4) = ListHeight;
    uicontrol('style','listbox', ...
+      'callback','ui_message select', ...
       'position',rect, ...
       'parent',fig, ...
       'string',errors, ...
@@ -282,6 +283,21 @@ else
          NL=length(Msg);
          set(findobj(fig,'tag','errorlist'),'string',errors,'value',length(errors)+1-(1:NL));
          LastType=Cmd;
+       case 'select'
+           if strcmp(get(gcbf,'SelectionType'),'open')
+               S = get(gcbo,'string');
+               v = get(gcbo,'value');
+               s = S{v};
+               if strncmp(s,'http://',7)
+                   web(s,'-browser')
+               elseif strncmp(s,'In ',3) && ~isempty(strfind(s,' at line ')) && ~isstandalone
+                   i = strfind(s,' at line ');
+                   file = s(4:i-1);
+                   line = sscanf(s(i+9:end),'%i',1);
+                   file = which(file);
+                   opentoline(file,line,0)
+               end
+           end
       case 'clear'
          errors={};
          MessageOffset=[];

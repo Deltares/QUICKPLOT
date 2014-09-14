@@ -1177,5 +1177,7 @@ for i=1:length(hNewVec)
             set(a,'cameraposition',cp)
         end
     end
+    %set(a,'zlim',limits(a,'zlim')+[-1 +1])
+    %set(a,'CameraViewAngle',get(a,'CameraViewAngle'))
 end
 setappdata(hNewVec(1),'Level',Level)

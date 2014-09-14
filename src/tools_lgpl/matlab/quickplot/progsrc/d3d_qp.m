@@ -119,6 +119,10 @@ end
 
 cmdargs=varargin;
 
+if strncmp(cmd,'geodata_wms',11)
+    cmdfull = cmd;
+    cmd = 'geodata_wms';
+end
 switch cmd
     case {'slider','startanim','animselect','animpush','stopanim'}
         qck_anim(cmd,cmdargs{:});
@@ -139,7 +143,8 @@ switch cmd
             'selectaxes', 'selectitem','refreshfigprop', ...
             'refreshaxprop','moveitemup','moveitemdown', ...
             'updatearrows', 'newaxes_oneplot', 'newaxes_matrix', ...
-            'newaxes_specloc', 'secondy', 'secondy_left', 'secondy_right'}
+            'newaxes_specloc', 'secondy', 'secondy_left', ...
+            'secondy_right', 'moveitemtoback'}
         qp_plotmanager(cmd,UD,logfile,logtype,cmdargs);
         
     case {'selectedfigure', 'selectedaxes', 'selecteditem'}
@@ -149,12 +154,13 @@ switch cmd
         pos=get(gcbf,'position');
         set(UD.PlotMngr.GeoDataMenu,'position',get(0,'pointerlocation')-pos(1:2),'visible','on')
         
-    case {'geodata_gshhs','geodata_border','geodata_river'}
+    case {'geodata_gshhs','geodata_border','geodata_river','geodata_wms'}
         pfig = qpsf;
         parent = qpsa;
         PS.FI.FileType = 'geodata';
         PS.Domain = [];
         subtype = cmd(9:end);
+        toback = 0;
         switch subtype
             case 'gshhs'
                 PS.Props.Name = 'shore lines';
@@ -162,6 +168,11 @@ switch cmd
                 PS.Props.Name = 'country and state borders';
             case 'river'
                 PS.Props.Name = 'rivers';
+            case 'wms'
+                cmd = cmdfull;
+                subtype = cmd(13:end);
+                PS.Props.Name = subtype;
+                toback = 1;
         end
         PS.Props.DimFlag = zeros(1,5);
         PS.Props.NVal = -1;
@@ -177,6 +188,9 @@ switch cmd
         set(UD.PlotMngr.FigList,'value',1,'string',listnames(pfig,'showType','no','showHandle','no','showTag','no'),'userdata',pfig);
         set(UD.PlotMngr.ItList,'value',[]) % clear item selection such that new item will be selected
         d3d_qp refreshfigs
+        if toback
+            d3d_qp moveitemtoback
+        end
         
     case 'plotmanagerresize'
         if ~isempty(UD)

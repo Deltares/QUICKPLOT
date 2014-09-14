@@ -44,7 +44,6 @@ switch lower(cmd)
         error('Unknown command: %s',var2str(cmd)) 
 end
 
-
 function FI = LocalShipmaParameterOpen(FileName,SubType)
 FI.FileName = FileName;
 [p,f,e] = fileparts(FileName);
@@ -107,10 +106,8 @@ switch SubType
 end
 fclose(fid);
 
-
 function ShipmaUnzipFolderDelete(unzipDir)
 rmdir(unzipDir,'s')
-
 
 function FI = LocalShipmaOpen(FileName)
 [p,f,e]=fileparts(FileName);
@@ -165,8 +162,8 @@ if FI.XML.getLength~=1 || ...
         ~isequal(char(Doc.getAttribute('key')),'Shipma Projects')
     error('First level of Shipma XML file should be a single documentTag with key=Shipma Projects')
 end
-IntProp = getNamedChild(Doc,'internal_properties');
-Proj = getNamedChildren(Doc,'shipmaProject');
+IntProp = xparse('getNamedChild',Doc,'internal_properties');
+Proj = xparse('getNamedChildren',Doc,'shipmaProject');
 nProj = length(Proj);
 FI.TempFilePath = char(IntProp.getFirstChild.getTextContent);
 %
@@ -175,19 +172,19 @@ if nProj==0
     FI.Project(:,1) = [];
 else
     for p = 1:nProj
-        FI.Project(p).Name = getName(Proj(p));
+        FI.Project(p).Name = xparse('getName',Proj(p));
         ProjFolder = fullfile(FI.UnzipFolder,['shi_' FI.Project(p).Name]);
-        FI.Project(p).Ships = getMembers(getNamedChild(Proj(p),'shipmaShips'));
+        FI.Project(p).Ships = xparse('getMembers',xparse('getNamedChild',Proj(p),'shipmaShips'));
         FI.Project(p).Ships.Data = getShipData(FI.Project(p).Ships.XML);
-        FI.Project(p).Sceneries = getMembers(getNamedChild(Proj(p),'shipmaSceneries'));
+        FI.Project(p).Sceneries = xparse('getMembers',xparse('getNamedChild',Proj(p),'shipmaSceneries'));
         FI.Project(p).Sceneries.Data = getSceneryData(FI.Project(p).Sceneries.XML,ProjFolder);
-        FI.Project(p).Environments = getMembers(getNamedChild(Proj(p),'shipmaEnvironment'));
+        FI.Project(p).Environments = xparse('getMembers',xparse('getNamedChild',Proj(p),'shipmaEnvironment'));
         FI.Project(p).Environments = getEnvironmentData(FI.Project(p).Environments,ProjFolder);
-        FI.Project(p).Manoeuvres = getMembers(getNamedChild(Proj(p),'shipmaManoeuvres'));
+        FI.Project(p).Manoeuvres = xparse('getMembers',xparse('getNamedChild',Proj(p),'shipmaManoeuvres'));
         FI.Project(p).Manoeuvres.Data = getManoeuvreData(FI.Project(p).Manoeuvres.XML);
-        FI.Project(p).Pilots = getMembers(getNamedChild(Proj(p),'shipmaPilots'));
-        FI.Project(p).TugScenarios = getMembers(getNamedChild(Proj(p),'shipmaTugScenarios'));
-        FI.Project(p).Cases = getMembers(getNamedChild(Proj(p),'shipmaCases'));
+        FI.Project(p).Pilots = xparse('getMembers',xparse('getNamedChild',Proj(p),'shipmaPilots'));
+        FI.Project(p).TugScenarios = xparse('getMembers',xparse('getNamedChild',Proj(p),'shipmaTugScenarios'));
+        FI.Project(p).Cases = xparse('getMembers',xparse('getNamedChild',Proj(p),'shipmaCases'));
         FI.Project(p).Cases.Data = getCaseData(FI.Project(p).Cases.XML,ProjFolder);
         Data = FI.Project(p).Cases.Data;
         for i=1:length(Data)
@@ -225,51 +222,6 @@ for p = 1:length(FI.Project)
     end
 end
 
-
-function S = getMembers(Node)
-S.XML = getChildren(Node);
-S.Names = getName(S.XML,true);
-
-
-function Name = getName(Node,forceCell)
-nNode = length(Node);
-if nNode==1
-    Name = char(Node.getAttribute('key'));
-    if nargin>1 && forceCell
-        Name = {Name};
-    end
-else
-    Name = cell(1,nNode);
-    for i = 1:nNode
-        Name{i} = char(Node(i).getAttribute('key'));
-    end
-end
-
-
-function Name = getNodeName(Node,forceCell)
-nNode = length(Node);
-if nNode==1
-    Name = char(Node.getNodeName);
-    if nargin>1 && forceCell
-        Name = {Name};
-    end
-else
-    Name = cell(1,nNode);
-    for i = 1:nNode
-        Name{i} = char(Node(i).getNodeName);
-    end
-end
-
-function Children = getChildren(Node)
-nChild = Node.getLength;
-c = cell(1,nChild);
-c{1} = Node.getFirstChild;
-for i = 2:nChild
-    c{i} = c{i-1}.getNextSibling;
-end
-Children = [c{:}];
-
-
 function Data = getManoeuvreData(Manoeuvres)
 nManoeuvres = length(Manoeuvres);
 if nManoeuvres==0
@@ -278,14 +230,14 @@ if nManoeuvres==0
 end
 Data(nManoeuvres).track = [];
 for m = 1:nManoeuvres
-    ManProps = getChildren(Manoeuvres(m));
+    ManProps = xparse('getChildren',Manoeuvres(m));
     try
-        checkName(ManProps(1),'ManoeuvreTrack')
-        Points = getChildren(ManProps(1));
+        xparse('checkName',ManProps(1),'ManoeuvreTrack')
+        Points = xparse('getChildren',ManProps(1));
         nPoints = length(Points);
         track = zeros(nPoints,2);
         for i = 1:nPoints
-            Point = getChildren(Points(i));
+            Point = xparse('getChildren',Points(i));
             track(i,1) = str2double(char(Point(1).getTextContent));
             track(i,2) = str2double(char(Point(2).getTextContent));
         end
@@ -295,27 +247,26 @@ for m = 1:nManoeuvres
     end
 end
 
-
 function Env = getEnvironmentData(Env,UnzipFolder)
 for i = 1:length(Env.Names)
-    envInstances = getChildren(Env.XML(i));
+    envInstances = xparse('getChildren',Env.XML(i));
     if isempty(envInstances)
         envNames = {};
     else
-        envNames = getName(envInstances,true);
+        envNames = xparse('getName',envInstances,true);
     end
     %
     envData = [];
     nInstances = length(envInstances);
     for j = 1:nInstances
-        instanceParam = getChildren(envInstances(j));
-        instanceParamName = getName(instanceParam,true);
+        instanceParam = xparse('getChildren',envInstances(j));
+        instanceParamName = xparse('getName',instanceParam,true);
         p = 0;
         for ip = 1:length(instanceParamName)
             iPN = instanceParamName{ip};
             switch iPN
                 case {'simpleSelected','fileSelected'}
-                    envData(j).(iPN) = getbool(instanceParam(ip));
+                    envData(j).(iPN) = xparse('getBool',instanceParam(ip));
                 case 'file'
                     FileDir = fullfile(UnzipFolder,'shi_Environment',['shi_' Env.Names{i}],['shi_' envNames{j}],'Emb_file','embCtnt');
                     embFiles = dir(FileDir);
@@ -351,16 +302,6 @@ for i = 1:length(Env.Names)
     Env.(Env.Names{i}).Data  = envData;
 end
 
-
-function bool = getbool(XML)
-bool = char(XML.getTextContent);
-switch bool
-    case 'true'
-        bool = true;
-    case 'false'
-        bool = false;
-end
-
 function Data = getSceneryData(Sceneries,UnzipFolder)
 nSceneries = length(Sceneries);
 if nSceneries==0
@@ -374,8 +315,8 @@ Data(nSceneries).description = [];
 for i = 1:nSceneries
     SceneryName = char(Sceneries(i).getAttribute('key'));
     %
-    SceneProps = getChildren(Sceneries(i));
-    ScenePropNames = getName(SceneProps,true);
+    SceneProps = xparse('getChildren',Sceneries(i));
+    ScenePropNames = xparse('getName',SceneProps,true);
     for ip = 1:length(ScenePropNames)
         switch ScenePropNames{ip}
             case {'fairwayContourFile','banksuctionFile','bottomFile'}
@@ -394,7 +335,6 @@ for i = 1:nSceneries
     end
 end
 
-
 function Data = getCaseData(Cases,UnzipFolder)
 nCases = length(Cases);
 if nCases==0
@@ -405,10 +345,10 @@ Data(nCases).Props = [];
 for i = 1:nCases
     CaseName = char(Cases(i).getAttribute('key'));
     %
-    CaseDef = getNamedChild(Cases(i),'CaseDefinition');
-    CaseComposition = getNamedChild(CaseDef,'CaseComposition');
-    CaseCompItems = getChildren(CaseComposition);
-    CaseCompositionNames = getName(CaseCompItems,true);
+    CaseDef = xparse('getNamedChild',Cases(i),'CaseDefinition');
+    CaseComposition = xparse('getNamedChild',CaseDef,'CaseComposition');
+    CaseCompItems = xparse('getChildren',CaseComposition);
+    CaseCompositionNames = xparse('getName',CaseCompItems,true);
     for ic = 1:length(CaseCompositionNames)
         switch CaseCompositionNames{ic}
             case {'shipId','windId','wavesId','currentId','swellId','sceneryId'}
@@ -416,7 +356,7 @@ for i = 1:nCases
             case {'windIsSelected','wavesIsSelected', ...
                     'currentIsSelected','swellIsSelected', ...
                     'sceneryIsSelected'}
-                Data(i).(CaseCompositionNames{ic}) = getbool(CaseCompItems(ic));
+                Data(i).(CaseCompositionNames{ic}) = xparse('getBool',CaseCompItems(ic));
         end
     end
     %
@@ -432,7 +372,6 @@ for i = 1:nCases
     Data(i).bottomFile = fullfile(CaseDir,'shipma.BOT');
 end
 
-
 function Data = getShipData(Ships)
 nShips = length(Ships);
 Data(nShips).Props = [];
@@ -440,9 +379,8 @@ for i = 1:nShips
     Data(i).Props = getShipProps(Ships(i));
 end
 
-
 function ShipProps = getShipProps(Ship)
-Props = getChildren(Ship);
+Props = xparse('getChildren',Ship);
 nProp = length(Props);
 ShipProps(nProp).Unit = [];
 for p = 1:nProp
@@ -457,61 +395,33 @@ for p = 1:nProp
                 'maxPropellerAcceleration'}
             ShipProps(p).Value = str2double(char(Props(p).getTextContent));
         case 'contour'
-            checkName(Props(p),'Contour')
-            Contour = getChildren(Props(p)); % String and Points
-            if checkName(Contour(1),'String')
-                checkName(Contour(1),'String')
-                checkName(Contour(2),'Points')
-                Points = getChildren(Contour(2));
+            xparse('checkName',Props(p),'Contour')
+            Contour = xparse('getChildren',Props(p)); % String and Points
+            if xparse('checkName',Contour(1),'String')
+                xparse('checkName',Contour(1),'String')
+                xparse('checkName',Contour(2),'Points')
+                Points = xparse('getChildren',Contour(2));
             else
                 Points = Contour;
             end
-            if length(Points)>0
-                checkName(Points(1),'collectionElement')
+            if isempty(Points)
+                contour = zeros(0,2);
+            else
+                xparse('checkName',Points(1),'collectionElement')
                 nPoints = length(Points);
                 contour = zeros(nPoints,2);
                 for i=1:nPoints
-                    Point = getChildren(Points(i));
+                    Point = xparse('getChildren',Points(i));
                     contour(i,1) = str2double(char(Point(1).getTextContent));
                     contour(i,2) = str2double(char(Point(2).getTextContent));
                 end
-            else
-                contour = zeros(0,2);
             end
             ShipProps(p).Value = contour;
         otherwise
             if isequal(class(Props(p).getFirstChild),'org.apache.xerces.dom.DeferredTextImpl')
                 ShipProps(p).Value = char(Props(p).getTextContent);
             else
-                ShipProps(p).Value = getChildren(Props(p));
+                ShipProps(p).Value = xparse('getChildren',Props(p));
             end
     end
 end
-
-function OK = checkName(Item,name)
-nodeName = char(Item.getNodeName);
-ok = isequal(nodeName,name);
-if nargout==0
-    if ~ok
-        error('Encountered tag <%s> while expecting tag <%s>',nodeName,name)
-    end
-else
-    OK = ok;
-end
-
-function Items = getNamedChildren(Parent,name)
-AllItems = getChildren(Parent);
-for i = length(AllItems):-1:1
-    matching(i) = checkName(AllItems(i),name);
-end
-Items = AllItems(matching);
-
-function Item = getNamedChild(Parent,name)
-Items = getChildren(Parent);
-for i = 1:length(Items)
-    if checkName(Items(i),name)
-        Item = Items(i);
-        return
-    end
-end
-error('Tag <%s> does not include child tag <%s>',char(Parent.getNodeName),name)

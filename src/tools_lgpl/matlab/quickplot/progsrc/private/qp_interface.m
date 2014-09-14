@@ -854,7 +854,11 @@ PM.GeoDataMenu = uicontextmenu('parent',PM.Fig);
 qp_uimenu(PM.GeoDataMenu, ...
     {'geodata_gshhs','Plot GSHHG shore lines',1,1,0
     'geodata_border','Plot GSHHG borders',1,1,0
-    'geodata_river','Plot GSHHG rivers',1,1,0});
+    'geodata_river','Plot GSHHG rivers',1,1,0
+    'geodata_wms_bluemarble','Plot WMS Blue Marble',1,1,1
+    'geodata_wms_bingmaps','Plot WMS Bing Maps Virtual Earth',1,1,0
+    'geodata_wms_esri_worldimagery','Plot WMS ESRI World Imagery',1,1,0
+    'geodata_wms_openstreetmap','Plot WMS Open Street Map',1,1,0});
 set([PM.DelIt PM.ItInfo PM.ItLink PM.GeoData],'enable','off');
 %
 PM.Show = uicontrol('Parent',PM.Fig, ...

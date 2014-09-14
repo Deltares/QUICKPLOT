@@ -705,7 +705,7 @@ switch cmd
             end
         end
 
-    case {'moveitemup','moveitemdown'}
+    case {'moveitemup','moveitemdown','moveitemtoback'}
         Ax = getAx(UD);
         if any(~ishandle(Ax))
             d3d_qp refreshaxes
@@ -726,40 +726,53 @@ switch cmd
             end
             ZCurrent1 = getappdata(hItem1,'Level');
             %
-            switch cmd
-                case 'moveitemup'
-                    ItVal2 = ItVal-1;
-                case 'moveitemdown'
-                    ItVal2 = ItVal+1;
+            while 1
+                switch cmd
+                    case 'moveitemup'
+                        ItVal2 = ItVal-1;
+                    case {'moveitemdown','moveitemtoback'}
+                        ItVal2 = ItVal+1;
+                end
+                if ItVal2>length(ItTags)
+                    break
+                end
+                %
+                ItTag2 = ItTags{ItVal2};
+                hIt2 = findall(pfig,'tag',ItTag2); % the object itself
+                if length(hIt2)>1
+                    hItem2 = hIt2(~cellfun('isempty',get(hIt2,'userdata')));
+                else
+                    hItem2 = hIt2;
+                end
+                ZCurrent2 = getappdata(hItem2,'Level');
+                %
+                setzcoord(hIt1,ZCurrent2)
+                setappdata(hItem1,'Level',ZCurrent2)
+                setzcoord(hIt2,ZCurrent1)
+                setappdata(hItem2,'Level',ZCurrent1)
+                %
+                children = allchild(Ax);
+                child1 = find(ismember(children,hIt1));
+                child2 = find(ismember(children,hIt2));
+                BeforeBoth = children(1:min([min(child1) min(child2)])-1);
+                AfterBoth = children(max([max(child1) max(child2)])+1:end);
+                switch cmd
+                    case 'moveitemup'
+                        children = [BeforeBoth; children(child1); ...
+                            children(child2); AfterBoth];
+                    case {'moveitemdown','moveitemtoback'}
+                        children = [BeforeBoth; children(child2); ...
+                            children(child1); AfterBoth];
+                end
+                set(Ax,'children',children)
+                %
+                if ~strcmp(cmd,'moveitemtoback')
+                    break
+                end
+                %
+                ItTags([ItVal ItVal2]) = ItTags([ItVal2 ItVal]);
+                ItVal = ItVal2;
             end
-            ItTag2 = ItTags{ItVal2};
-            hIt2 = findall(pfig,'tag',ItTag2); % the object itself
-            if length(hIt2)>1
-                hItem2 = hIt2(~cellfun('isempty',get(hIt2,'userdata')));
-            else
-                hItem2 = hIt2;
-            end
-            ZCurrent2 = getappdata(hItem2,'Level');
-            %
-            setzcoord(hIt1,ZCurrent2)
-            setappdata(hItem1,'Level',ZCurrent2)
-            setzcoord(hIt2,ZCurrent1)
-            setappdata(hItem2,'Level',ZCurrent1)
-            %
-            children = allchild(Ax);
-            child1 = find(ismember(children,hIt1));
-            child2 = find(ismember(children,hIt2));
-            BeforeBoth = children(1:min([min(child1) min(child2)])-1);
-            AfterBoth = children(max([max(child1) max(child2)])+1:end);
-            switch cmd
-                case 'moveitemup'
-                    children = [BeforeBoth; children(child1); ...
-                        children(child2); AfterBoth];
-                case 'moveitemdown'
-                    children = [BeforeBoth; children(child2); ...
-                        children(child1); AfterBoth];
-            end
-            set(Ax,'children',children)
             %
             d3d_qp refreshitems
         end

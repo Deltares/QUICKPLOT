@@ -195,7 +195,11 @@ for i=m*n:-1:1
     if qp_settings('boundingbox')
         set(ax,'box','on');
     end
-    set(ax,'tag',tags{i},'drawmode','fast');
+    if matlabversionnumber>=8.04;
+        set(ax,'tag',tags{i},'sortMethod','childOrder');
+    else
+        set(ax,'tag',tags{i},'drawmode','fast');
+    end
 end
 md_paper('no edit',orient,'7box');
 

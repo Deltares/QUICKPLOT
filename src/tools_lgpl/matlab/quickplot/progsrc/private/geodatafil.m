@@ -49,12 +49,18 @@ function varargout=geodatafil(FI,domain,field,cmd,varargin)
 persistent root
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
+GSHHS_types = {'gshhs', 'border', 'river', 'shore lines', 'country and state borders', 'rivers'};
 if isequal(FI,'file_exists') % domain is proxy for type
-    type = gshhg('type','type',domain);
-    if ~isfield(root,type)
-        root.(type) = search_file(type);
+    switch domain
+        case GSHHS_types
+            type = gshhg('type','type',domain);
+            if ~isfield(root,type)
+                root.(type) = search_file(type);
+            end
+            varargout = {~isequal(root.(type),'')};
+        otherwise
+            varargout = {1};
     end
-    varargout = {~isequal(root.(type),'')};
     return
 elseif nargin<2
     error('Not enough input arguments');
@@ -100,16 +106,27 @@ switch cmd
     case 'plot'
         Parent = varargin{1};
         Ops = varargin{2};
-        type = gshhg('type','type',Props.Subtype);
         %
-        if ~isfield(root,type)
-            root.(type) = search_file(type);
+        switch Props.Subtype
+            case GSHHS_types
+                type = gshhg('type','type',Props.Subtype);
+                %
+                if ~isfield(root,type)
+                    root.(type) = search_file(type);
+                end
+                %
+                hNew = gshhg('plot','rootfolder',root.(type), ...
+                    'type',Props.Subtype, ...
+                    'parent',Parent, ...
+                    'color','k');
+            otherwise
+                [IMG,lon,lat] = wms('image',wms('tms',Props.Subtype),'',get(gca,'xlim'),get(gca,'ylim'));
+                hNew = surface(lon,lat,zeros(length(lat),length(lon)), ...
+                    'cdata',IMG, ...
+                    'facecolor','texturemap', ...
+                    'edgecolor','none', ...
+                    'cLimInclude','off');
         end
-        %
-        hNew = gshhg('plot','rootfolder',root.(type), ...
-            'type',Props.Subtype, ...
-            'parent',Parent, ...
-            'color','k');
         %
         varargout={hNew FI};
         return
