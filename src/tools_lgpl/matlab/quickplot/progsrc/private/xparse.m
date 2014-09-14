@@ -35,35 +35,35 @@ function varargout = xparse(cmd,varargin)
 
 switch cmd
     case 'getMembers'
-        varargout{1} = getMembers(varargin{:});
+        [varargout{1:nargout}] = getMembers(varargin{:});
     case 'getName'
-        varargout{1} = getName(varargin{:});
+        [varargout{1:nargout}] = getName(varargin{:});
     case 'getNodeName'
-        varargout{1} = getNodeName(varargin{:});
+        [varargout{1:nargout}] = getNodeName(varargin{:});
     case 'getChildren'
-        varargout{1} = getChildren(varargin{:});
+        [varargout{1:nargout}] = getChildren(varargin{:});
     case 'getBool'
-        varargout{1} = getBool(varargin{:});
+        [varargout{1:nargout}] = getBool(varargin{:});
     case 'checkName'
-        varargout{1} = checkName(varargin{:});
+        [varargout{1:nargout}] = checkName(varargin{:});
     case 'getNamedChildren'
-        varargout{1} = getNamedChildren(varargin{:});
+        [varargout{1:nargout}] = getNamedChildren(varargin{:});
     case 'getNamedChild'
-        varargout{1} = getNamedChild(varargin{:});
+        [varargout{1:nargout}] = getNamedChild(varargin{:});
     case 'getNameSpaces'
-        varargout{1} = getNameSpaces(varargin{:});
+        [varargout{1:nargout}] = getNameSpaces(varargin{:});
     case 'getChar'
-        varargout{1} = getChar(varargin{:});
+        [varargout{1:nargout}] = getChar(varargin{:});
     case 'checkNameNS'
-        varargout{1} = checkNameNS(varargin{:});
+        [varargout{1:nargout}] = checkNameNS(varargin{:});
     case 'getNamedChildrenNS'
-        varargout{1} = getNamedChildrenNS(varargin{:});
+        [varargout{1:nargout}] = getNamedChildrenNS(varargin{:});
     case 'getRecursiveNamedChild'
-        varargout{1} = getRecursiveNamedChild(varargin{:});
+        [varargout{1:nargout}] = getRecursiveNamedChild(varargin{:});
     case 'getRecursiveNamedChildNS'
-        varargout{1} = getRecursiveNamedChildNS(varargin{:});
+        [varargout{1:nargout}] = getRecursiveNamedChildNS(varargin{:});
     case 'getNamedChildNS'
-        varargout{1} = getNamedChildNS(varargin{:});
+        [varargout{1:nargout}] = getNamedChildNS(varargin{:});
     case 'getAttributeNS'
         [varargout{1:nargout}] = getAttributeNS(varargin{:});
     otherwise
