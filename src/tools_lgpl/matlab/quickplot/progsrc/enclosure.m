@@ -665,7 +665,7 @@ fid=fopen(filename,'w');
 if fid<0
     error('Error opening output file.')
 end
-if nargin>3 % waqua format
+if nargin>2 % waqua format
     fprintf(fid,'e=\n');
 end
 fprintf(fid,'%5i%5i\n',MN);
