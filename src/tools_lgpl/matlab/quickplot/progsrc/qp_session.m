@@ -333,7 +333,7 @@ function C = local_serialize(S)
 C = addline({},'Delft3D-QUICKPLOT ''session file'' 1.0');
 for fgi = 1:length(S)
     C = addline(C,'');
-    C = addline(C,'Figure             ''%s''',S(fgi).name);
+    C = addline(C,'Figure             ''%s''',quote_protect(S(fgi).name));
     C = addline(C,'  PaperType        ''%s''',S(fgi).papertype);
     C = addline(C,'  PaperOrientation ''%s''',S(fgi).paperorientation);
     if strcmp(S(fgi).papertype,'<custom>')
@@ -353,25 +353,25 @@ for fgi = 1:length(S)
             C = addline(C,'    FileName  ''%s''',S(fgi).expandpar.filename);
         end
         if ~isempty(S(fgi).expandpar.domain)
-            C = addline(C,'    Domain    ''%s''',S(fgi).expandpar.domain);
+            C = addline(C,'    Domain    ''%s''',quote_protect(S(fgi).expandpar.domain));
         end
         C = addline(C,'  EndParameterSource');
     end
-    C = addline(C,'  FrameStyle       ''%s''',S(fgi).frame.style);
+    C = addline(C,'  FrameStyle       ''%s''',quote_protect(S(fgi).frame.style));
     ibt = 1;
     fld = 'frametext1';
     while isfield(S(fgi).frame,fld)
-        C = addline(C,'  FrameText%-4i    ''%s''',ibt,S(fgi).frame.(fld));
+        C = addline(C,'  FrameText%-4i    ''%s''',ibt,quote_protect(S(fgi).frame.(fld)));
         ibt = ibt+1;
         fld = sprintf('frametext%i',ibt);
     end
     %
     for axi = 1:length(S(fgi).axes)
         C = addline(C,'');
-        C = addline(C,'  Axes        ''%s''',S(fgi).axes(axi).name);
+        C = addline(C,'  Axes        ''%s''',quote_protect(S(fgi).axes(axi).name));
         C = addline(C,'    Position  [%g %g %g %g]',S(fgi).axes(axi).position);
         if ~strcmp(S(fgi).axes(axi).title,'<automatic>')
-            C = addline(C,'    Title     ''%s''',S(fgi).axes(axi).title);
+            C = addline(C,'    Title     ''%s''',quote_protect(S(fgi).axes(axi).title));
         end
         if ischar(S(fgi).axes(axi).colour)
             C = addline(C,'    Colour    ''none''');
@@ -383,7 +383,7 @@ for fgi = 1:length(S)
         for x = 'xy'
             X = upper(x);
             if ~strcmp(S(fgi).axes(axi).([x 'label']),'<automatic>')
-                C = addline(C,'    %sLabel    ''%s''',X,S(fgi).axes(axi).([x 'label']));
+                C = addline(C,'    %sLabel    ''%s''',X,quote_protect(S(fgi).axes(axi).([x 'label'])));
             end
             if ~strcmp(S(fgi).axes(axi).([x 'grid']),'off')
                 C = addline(C,'    %sGrid     ''%s''',X,S(fgi).axes(axi).([x 'grid']));
@@ -404,7 +404,7 @@ for fgi = 1:length(S)
         %
         for itm = 1:length(S(fgi).axes(axi).items)
             C = addline(C,'');
-            C = addline(C,'    Item        ''%s''',S(fgi).axes(axi).items(itm).name);
+            C = addline(C,'    Item        ''%s''',quote_protect(S(fgi).axes(axi).items(itm).name));
             if iscell(S(fgi).axes(axi).items(itm).filename)
                 N = length(S(fgi).axes(axi).items(itm).filename);
                 C = addline(C,['      FileName ',repmat(' ''%s''',1,N)],S(fgi).axes(axi).items(itm).filename{:});
@@ -412,10 +412,10 @@ for fgi = 1:length(S)
                 C = addline(C,'      FileName  ''%s''',S(fgi).axes(axi).items(itm).filename);
             end
             if ~isempty(S(fgi).axes(axi).items(itm).domain)
-                C = addline(C,'      Domain    ''%s''',S(fgi).axes(axi).items(itm).domain);
+                C = addline(C,'      Domain    ''%s''',quote_protect(S(fgi).axes(axi).items(itm).domain));
             end
             if ~isempty(S(fgi).axes(axi).items(itm).subfield)
-                C = addline(C,'      SubField  ''%s''',S(fgi).axes(axi).items(itm).subfield);
+                C = addline(C,'      SubField  ''%s''',quote_protect(S(fgi).axes(axi).items(itm).subfield));
             end
             if ~isempty(S(fgi).axes(axi).items(itm).dimensions)
                 C = addline(C,'      Dimensions');
@@ -438,7 +438,7 @@ for fgi = 1:length(S)
                 for ifld = 1:length(flds)
                     val = S(fgi).axes(axi).items(itm).options.(flds{ifld});
                     if ischar(val)
-                        C = addline(C,'        %-24s ''%s''',flds{ifld},val);
+                        C = addline(C,'        %-24s ''%s''',flds{ifld},quote_protect(val));
                     elseif isnumeric(val) && isequal(size(val),[1 1])
                         C = addline(C,'        %-24s %g',flds{ifld},val);
                     elseif isnumeric(val) && size(val,1)==1
@@ -946,3 +946,9 @@ for j = 1:numel(A)
         end
     end
 end
+
+function str = quote_protect(str)
+str = strrep(str,'''','''''');
+
+function str = unquote_protect(str)
+str = strrep(str,'''''','''');

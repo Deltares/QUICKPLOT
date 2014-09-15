@@ -54,7 +54,13 @@ while ~isempty(rmndr)
                 if isempty(endquote)
                     error('Invalid command argument: unterminated string ''%s',rmndr)
                 else
-                    cmdargs{end+1}=rmndr(1:endquote-1);
+                    unquoted=rmndr(1:endquote-1);
+                    % reduce double quotes inside
+                    quotes_inside=quotes(quotes<endquote);
+                    quotes_inside(2:2:end)=[];
+                    unquoted(quotes_inside)=[];
+                    %
+                    cmdargs{end+1}=unquoted;
                     rmndr=rmndr(endquote+1:end);
                 end
             case '['
