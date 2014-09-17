@@ -77,10 +77,10 @@ end
 
 function val=qp_settings_default(param,defval)
 steelblue3 = [79 148 205]/255;
-if 0%isunix
-   Set.UIActiveColor      = steelblue3;
-   Set.UIInActiveColor    = steelblue3;
-   Set.UIForeGroundColor  = [1 1 1];
+if isunix
+   Set.UIActiveColor      = [1 1 1];           %steelblue3;
+   Set.UIInActiveColor    = [235 233 237]/255; %steelblue3;
+   Set.UIForeGroundColor  = [0 0 0];           %[1 1 1];
 else
    Set.UIActiveColor      = [1 1 1];
    Set.UIInActiveColor    = get(0,'factoryuicontrolbackgroundcolor');
