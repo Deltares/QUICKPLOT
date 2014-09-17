@@ -44,21 +44,27 @@ end
 while ~found
     switch iter
         case 1
-            SvnVersion = '../../../../third_party_open/subversion/bin/win32/svnversion.exe';
+            if strncmp(computer,'PCWIN',5)
+               SvnVersion = '../../../../third_party_open/subversion/bin/win32/svnversion.exe';
+            else
+               SvnVersion = '/usr/bin/svnversion';
+            end
         case 2
-            SvnVersion = SvnVersion(4:end); % one level less deep
-        case 2
+            if strncmp(SvnVersion,'../',3)
+               SvnVersion = SvnVersion(4:end); % one level less deep
+            end
+        case 3
             svnbin = getenv('SVN_BIN_PATH');
             SvnVersion = [svnbin filesep 'svnversion.exe'];
-        case 3
+        case 4
             svnbin = 'c:\Program Files\Subversion\bin';
             SvnVersion = [svnbin filesep 'svnversion.exe'];
-        case 4
+        case 5
             [s,SvnVersion] = system('which svnversion');
             if s~=0
                 SvnVersion = 'The WHICH command failed';
             end
-        case 5
+        case 6
             dprintf(dbid,'Unable to locate SVNVERSION program.\nUsing built-in implementation of svnversion.\n')
             [revmin,revmax,changed] = svnversion(dirname,dbid);
             return
