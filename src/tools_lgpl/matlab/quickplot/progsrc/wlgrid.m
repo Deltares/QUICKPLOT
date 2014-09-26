@@ -25,7 +25,11 @@ function varargout=wlgrid(cmd,varargin)
 %                                      (default)
 %                         'OldRGF'   - single precision file
 %                         'SWANgrid' - SWAN formatted single precision file
-%     'MissingValue'    : Missing value to be used for NaN coordinates
+%     'MissingValue'    : Missing value MV to be used for NaN coordinates.
+%                         Any (X,Y) pair that matches (MV,MV) will be
+%                         shifted slightly to avoid clipping, hence don't
+%                         use MV to already mark clipped points in the X,Y
+%                         datasets provided.
 %
 %   Accepted without property name: x-coordinates, y-coordinates and
 %   enclosure array (in this order), file name, file format, coordinate
@@ -558,7 +562,7 @@ Idx=isnan(Grd.X.*Grd.Y);                % change indicator of grid point exclusi
 Grd.X(Idx)=Grd.MissingValue;            % from NaN in Matlab to (0,0) in grid file.
 Grd.Y(Idx)=Grd.MissingValue;
 
-if ~strcmp(getorientation(Grd),'anticlockwise')
+if ~strcmp(getorientation(Grd,~Idx),'anticlockwise')
     warning('WLGRID:Orientation','Delft3D requires an anticlockwise grid; the grid that you''re writing does not comply to this requirement. See the help of this function for more information.')
 end
 

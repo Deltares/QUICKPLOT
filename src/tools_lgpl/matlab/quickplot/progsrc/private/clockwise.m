@@ -56,8 +56,11 @@ i=i(1);
 %
 if i==1
     ip=length(x);
-    while x(ip)==x0 & y(ip)==y0
+    while x(ip)==x0 && y(ip)==y0
         ip=ip-1;
+        if ip==0
+            error('Polygon only contains one unique point: (%g, %g)',x0,y0)
+        end
     end
 else
     ip=i-1;
@@ -69,7 +72,7 @@ in=i+1;
 if in>length(x)
     in=1;
 end
-while x(in)==x0 & y(in)==y0
+while x(in)==x0 && y(in)==y0
     in=in+1;
 end
 %I=[ip i in];
@@ -92,7 +95,7 @@ at=atan2(y-y(1),x-x(1));
 %at(1)=NaN;
 %
 N=length(at);
-while x(N)==x(1) & y(N)==y(1)
+while x(N)==x(1) && y(N)==y(1)
     N=N-1;
     if N==0, CW=0; return; end
 end
