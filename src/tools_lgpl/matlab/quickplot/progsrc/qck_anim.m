@@ -241,18 +241,11 @@ switch cmd
         set(findall(par_fig,'tag','startanim'),'enable','off');
         set(findall(par_fig,'tag','stopanim'),'enable','on');
         %
-        v72 = matlabversionnumber>=7.02;
+        mversion = matlabversionnumber;
         for fg = par_fig(:)'
-            if v72
-                %Disable listeners
-                mmgr = uigetmodemanager(fg);
-                set(mmgr.WindowListenerHandles,'Enable','off');
-            end
+            disable_listeners(fg,mversion)
             set(fg,'keypressfcn','qck_anim stopanimkey')
-            if v72
-                %Enable listeners
-                set(mmgr.WindowListenerHandles,'Enable','on');
-            end
+            enable_listeners(fg,mversion)
         end
         try
             if strcmp(output,'avi file')
@@ -377,16 +370,9 @@ switch cmd
             ish=ishandle(par_fig);
             if ish
                 for fg = par_fig(ish)'
-                    if v72
-                        %Disable listeners
-                        mmgr = uigetmodemanager(fg);
-                        set(mmgr.WindowListenerHandles,'Enable','off');
-                    end
+                    disable_listeners(fg,mversion)
                     set(fg,'keypressfcn','','vis','on')
-                    if v72
-                        %Enable listeners
-                        set(mmgr.WindowListenerHandles,'Enable','on');
-                    end
+                    enable_listeners(fg,mversion)
                 end
             end
             for i=1:length(sld)
@@ -597,7 +583,8 @@ for iobj=1:length(UDh)
     if ~isempty(findall(0,'tag',AS(iobj).Tag))
         try
             [hNew,Error,FileInfo]=qp_plot(AnimObj.PlotState);
-        catch
+        catch Ex
+            qp_error('Catch in qck_anim:',Ex,'qck_anim')
         end
     end
 end
@@ -863,3 +850,22 @@ b = uicontrol('Parent',a, ...
 %
 set(a,'visible','on')
 
+function disable_listeners(fg,mversion)
+%Disable listeners
+if mversion>=8.04
+    mmgr = uigetmodemanager(fg);
+    [mmgr.WindowListenerHandles(:).Enabled] = deal(0);
+elseif mversion>=7.02
+    mmgr = uigetmodemanager(fg);
+    set(mmgr.WindowListenerHandles,'Enable','off');
+end
+
+function enable_listeners(fg,mversion)
+%Enable listeners
+if mversion>=8.04
+    mmgr = uigetmodemanager(fg);
+    [mmgr.WindowListenerHandles(:).Enabled] = deal(1);
+elseif mversion>=7.02
+    mmgr = uigetmodemanager(fg);
+    set(mmgr.WindowListenerHandles,'Enable','on');
+end

@@ -792,7 +792,7 @@ switch NVal
                             end
                     end
                     if ScaleFacZ==1
-                        hNew=qp_vector(Ops.vectorstyle,s,Zvector,[],planecomp,data.ZComp,[],quivopt{:});
+                        hNew=qp_vector(Parent,Ops.vectorstyle,s,Zvector,[],planecomp,data.ZComp,[],quivopt{:});
                     else
                         
                         %       ----------
@@ -805,9 +805,9 @@ switch NVal
                         %        mag1=sqrt(planecomp.^2+data.ZComp.^2);
                         %        mag2=sqrt(planecomp.^2+(ScaleFacZ*data.ZComp).^2); mag2(mag2==0)=1;
                         %        mfac=mag1./mag2;
-                        %        hNew=qp_vector(Ops.vectorstyle,s,ScaleFacZ*Zvector,[],mfac.*planecomp,ScaleFacZ*mfac.*data.ZComp,[],quivopt{:});
+                        %        hNew=qp_vector(Parent,Ops.vectorstyle,s,ScaleFacZ*Zvector,[],mfac.*planecomp,ScaleFacZ*mfac.*data.ZComp,[],quivopt{:});
                         %       ----------
-                        hNew=qp_vector(Ops.vectorstyle,s,ScaleFacZ*Zvector,[],planecomp,ScaleFacZ*data.ZComp,[],quivopt{:});
+                        hNew=qp_vector(Parent,Ops.vectorstyle,s,ScaleFacZ*Zvector,[],planecomp,ScaleFacZ*data.ZComp,[],quivopt{:});
                         for i=1:length(hNew)
                             set(hNew(i),'ydata',get(hNew(i),'ydata')/ScaleFacZ)
                         end
@@ -858,9 +858,9 @@ switch NVal
                     end
                     %
                     if isfield(data,'ZComp')
-                        hNew=qp_vector(Ops.vectorstyle,data.X,data.Y,data.Z,data.XComp,data.YComp,data.ZComp,quivopt{:});
+                        hNew=qp_vector(Parent,Ops.vectorstyle,data.X,data.Y,data.Z,data.XComp,data.YComp,data.ZComp,quivopt{:});
                     else
-                        hNew=qp_vector(Ops.vectorstyle,data.X,data.Y,[],data.XComp,data.YComp,[],quivopt{:});
+                        hNew=qp_vector(Parent,Ops.vectorstyle,data.X,data.Y,[],data.XComp,data.YComp,[],quivopt{:});
                     end
                     
                     if ~isempty(Ops.vectorcolour)

@@ -58,18 +58,18 @@ elseif isequal(size(Thresholds),[1 1]) && ...
     switch Ops.thresholddistribution
         case 'logarithmic'
             if all(lm>0)
-                Thresholds=lm(1)*10.^((log10(lm(2))-log10(lm(1)))*(LocStartClass:Thresholds)/Thresholds);
+                Thresholds=lm(1)*10.^((log10(lm(2))-log10(lm(1)))*(LocStartClass:Thresholds)/(Thresholds+1));
             elseif all(lm<0)
-                Thresholds=lm(2)*10.^((log10(abs(lm(1)))-log10(abs(lm(2))))*(Thresholds:-1:LocStartClass)/Thresholds);
+                Thresholds=lm(2)*10.^((log10(abs(lm(1)))-log10(abs(lm(2))))*(Thresholds:-1:LocStartClass)/(Thresholds+1));
             else
                 ui_message('warning','The colour limits have different sign: switching to linear distribution of thresholds')
-                Thresholds=lm(1)+(lm(2)-lm(1))*(LocStartClass:Thresholds)/Thresholds;
+                Thresholds=lm(1)+(lm(2)-lm(1))*(LocStartClass:Thresholds)/(Thresholds+1);
             end
         case 'anti-logarithmic'
             ui_message('warning','anti-logarithmic not yet implemented: switching to linear distribution of thresholds')
-            Thresholds=lm(1)+(lm(2)-lm(1))*(LocStartClass:Thresholds)/Thresholds;
+            Thresholds=lm(1)+(lm(2)-lm(1))*(LocStartClass:Thresholds)/(Thresholds+1);
         otherwise
-            Thresholds=lm(1)+(lm(2)-lm(1))*(LocStartClass:Thresholds)/Thresholds;
+            Thresholds=lm(1)+(lm(2)-lm(1))*(LocStartClass:Thresholds)/(Thresholds+1);
     end
 elseif isequal(size(Thresholds),[1 1])
     Thresholds=[-inf Thresholds];
