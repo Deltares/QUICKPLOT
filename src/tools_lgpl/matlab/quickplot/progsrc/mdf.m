@@ -61,7 +61,7 @@ function varargout = mdfclip(MDF1,varargin)
 % MDFCLIP(MDF,MMIN,MMAX,NMIN,NMAX
 % MDFCLIP(MDF,MLIM,NLIM)
 %
-mnkmax = inifile('get',MDF1.mdf,'','MNKmax');
+mnkmax = inifile('geti',MDF1.mdf,'','MNKmax');
 switch nargin
     case 2
         % MDFCLIP(MDF,MASK)
@@ -134,7 +134,7 @@ for i = 1:length(domains)
     cmask = ~mask1(mmin:mmax,nmin:nmax);
     gmask = cmask([2:end end],[2:end end])&cmask(:,[2:end end])&cmask([2:end end],:)&cmask;
     %
-    MDF2.mdf = inifile('set',MDF2.mdf,'','MNKmax',[mmax-mmin+1 nmax-nmin+1 mnkmax(3)]);
+    MDF2.mdf = inifile('seti',MDF2.mdf,'','MNKmax',[mmax-mmin+1 nmax-nmin+1 mnkmax(3)]);
     MDF2.grd.X = MDF2.grd.X(mmin:mmax-1,nmin:nmax-1);
     MDF2.grd.X(gmask(1:end-1,1:end-1))=MDF2.grd.MissingValue;
     MDF2.grd.Y = MDF2.grd.Y(mmin:mmax-1,nmin:nmax-1);
@@ -144,7 +144,7 @@ for i = 1:length(domains)
     if isfield(MDF2,'dep')
         MDF2.dep = MDF2.dep(mmin:mmax,nmin:nmax);
         %
-        dpsopt = upper(getstring(inifile('get',MDF2.mdf,'','Dpsopt','DEFAULT')));
+        dpsopt = upper(getstring(inifile('geti',MDF2.mdf,'','Dpsopt','DEFAULT')));
         if strcmp(dpsopt,'DP')
             MDF2.dep(cmask)=-999;
         else
@@ -201,21 +201,21 @@ if nargin>1
 end
 MDF2 = MDF1;
 %
-mnkmax = inifile('get',MDF2.mdf,'','MNKmax');
+mnkmax = inifile('geti',MDF2.mdf,'','MNKmax');
 MMAX = mnkmax(1);
-MDF2.mdf = inifile('set',MDF2.mdf,'','MNKmax',mnkmax([2 1 3]));
+MDF2.mdf = inifile('seti',MDF2.mdf,'','MNKmax',mnkmax([2 1 3]));
 %
-ccofu = inifile('get',MDF2.mdf,'','Ccofu');
-ccofv = inifile('get',MDF2.mdf,'','Ccofv');
-MDF2.mdf = inifile('set',MDF2.mdf,'','Ccofu',ccofv);
-MDF2.mdf = inifile('set',MDF2.mdf,'','Ccofv',ccofu);
+ccofu = inifile('geti',MDF2.mdf,'','Ccofu');
+ccofv = inifile('geti',MDF2.mdf,'','Ccofv');
+MDF2.mdf = inifile('seti',MDF2.mdf,'','Ccofu',ccofv);
+MDF2.mdf = inifile('seti',MDF2.mdf,'','Ccofv',ccofu);
 %
 MDF2.grd.X = fliplr(MDF2.grd.X');
 MDF2.grd.Y = fliplr(MDF2.grd.Y');
 MDF2.grd.Enclosure = rotate(MDF2.grd.Enclosure,MMAX);
 %
 if isfield(MDF2,'dep')
-    dpsopt = inifile('get',MDF2.mdf,'','Dpsopt');
+    dpsopt = inifile('geti',MDF2.mdf,'','Dpsopt');
     if strcmpi(dpsopt,'DP')
         % data in cell centres: dummy row along all sides
         MDF2.dep = fliplr(MDF2.dep');
@@ -288,76 +288,82 @@ end
 if isfield(MDF,'grd')
     filename = [caseid '.grd'];
     wlgrid('write',fullfile(path,filename),MDF.grd);
-    MDF.mdf = inifile('set',MDF.mdf,'','Filcco',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Filcco',['#' filename '#']);
     %
     filename = [caseid '.enc'];
-    MDF.mdf = inifile('set',MDF.mdf,'','Filgrd',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Filgrd',['#' filename '#']);
 end
 %
 if isfield(MDF,'dep')
     filename = [caseid '.dep'];
     wldep('write',fullfile(path,filename),'',MDF.dep);
-    MDF.mdf = inifile('set',MDF.mdf,'','Fildep',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Fildep',['#' filename '#']);
 end
 %
 if isfield(MDF,'dry')
     filename = [caseid '.dry'];
     d3d_attrib('write',fullfile(path,filename),MDF.dry);
-    MDF.mdf = inifile('set',MDF.mdf,'','Fildry',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Fildry',['#' filename '#']);
 end
 %
 if isfield(MDF,'thd')
     filename = [caseid '.thd'];
     d3d_attrib('write',fullfile(path,filename),MDF.thd);
-    MDF.mdf = inifile('set',MDF.mdf,'','Filtd',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Filtd',['#' filename '#']);
 end
 %
 if isfield(MDF,'bnd')
     filename = [caseid '.bnd'];
     d3d_attrib('write',fullfile(path,filename),MDF.bnd);
-    MDF.mdf = inifile('set',MDF.mdf,'','Filbnd',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Filbnd',['#' filename '#']);
 end
 %
 if isfield(MDF,'bct')
     filename = [caseid '.bct'];
     bct_io('write',fullfile(path,filename),MDF.bct);
-    MDF.mdf = inifile('set',MDF.mdf,'','FilbcT',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','FilbcT',['#' filename '#']);
 end
 %
 if isfield(MDF,'bch')
     filename = [caseid '.bch'];
     bch_io('write',fullfile(path,filename),MDF.bch);
-    MDF.mdf = inifile('set',MDF.mdf,'','FilbcH',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','FilbcH',['#' filename '#']);
 end
 %
 if isfield(MDF,'bcc')
     filename = [caseid '.bcc'];
     bct_io('write',fullfile(path,filename),MDF.bcc);
-    MDF.mdf = inifile('set',MDF.mdf,'','FilbcC',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','FilbcC',['#' filename '#']);
 end
 %
 if isfield(MDF,'sed')
     filename = [caseid '.sed'];
     inifile('write',fullfile(path,filename),MDF.sed);
-    MDF.mdf = inifile('set',MDF.mdf,'','Filsed',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Filsed',['#' filename '#']);
 end
 %
 if isfield(MDF,'mor')
     filename = [caseid '.mor'];
     inifile('write',fullfile(path,filename),MDF.mor);
-    MDF.mdf = inifile('set',MDF.mdf,'','Filmor',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Filmor',['#' filename '#']);
+end
+%
+if isfield(MDF,'tra')
+    filename = [caseid '.tra'];
+    inifile('write',fullfile(path,filename),MDF.tra);
+    MDF.mdf = inifile('seti',MDF.mdf,'','TraFrm',['#' filename '#']);
 end
 %
 if isfield(MDF,'sta')
     filename = [caseid '.obs'];
     d3d_attrib('write',fullfile(path,filename),MDF.sta);
-    MDF.mdf = inifile('set',MDF.mdf,'','Filsta',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Filsta',['#' filename '#']);
 end
 %
 if isfield(MDF,'crs')
     filename = [caseid '.crs'];
     d3d_attrib('write',fullfile(path,filename),MDF.crs);
-    MDF.mdf = inifile('set',MDF.mdf,'','Filcrs',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Filcrs',['#' filename '#']);
 end
 %
 filename = [caseid '.mdf'];
@@ -368,7 +374,7 @@ function MDF = mdfread(filename)
 MDF.mdf = inifile('open',filename);
 mdfpath = fileparts(filename);
 %
-grdname = inifile('get',MDF.mdf,'','Filcco','');
+grdname = inifile('geti',MDF.mdf,'','Filcco','');
 grdname = rmhash(grdname);
 if ~isempty(grdname)
     grdname = relpath(mdfpath,grdname);
@@ -377,84 +383,84 @@ else
     error('Filcco is empty: grid in mdf file not yet supported.');
 end
 %
-depname = inifile('get',MDF.mdf,'','Fildep','');
+depname = inifile('geti',MDF.mdf,'','Fildep','');
 depname = rmhash(depname);
 if ~isempty(depname)
     depname = relpath(mdfpath,depname);
     MDF.dep = wldep('read',depname,MDF.grd);
 end
 %
-rghname = inifile('get',MDF.mdf,'','Filrgh','');
+rghname = inifile('geti',MDF.mdf,'','Filrgh','');
 rghname = rmhash(rghname);
 if ~isempty(rghname)
     warning('Support for Filrgh not yet implemented.')
 end
 %
-dryname = inifile('get',MDF.mdf,'','Fildry','');
+dryname = inifile('geti',MDF.mdf,'','Fildry','');
 dryname = rmhash(dryname);
 if ~isempty(dryname)
     dryname = relpath(mdfpath,dryname);
     MDF.dry = d3d_attrib('read',dryname);
 end
 %
-thdname = inifile('get',MDF.mdf,'','Filtd','');
+thdname = inifile('geti',MDF.mdf,'','Filtd','');
 thdname = rmhash(thdname);
 if ~isempty(thdname)
     thdname = relpath(mdfpath,thdname);
     MDF.thd = d3d_attrib('read',thdname);
 end
 %
-wndname = inifile('get',MDF.mdf,'','Filwnd','');
+wndname = inifile('geti',MDF.mdf,'','Filwnd','');
 wndname = rmhash(wndname);
 if ~isempty(wndname)
     warning('Support for Filwnd not yet implemented.')
 end
 %
-wndname = inifile('get',MDF.mdf,'','Filwp','');
+wndname = inifile('geti',MDF.mdf,'','Filwp','');
 wndname = rmhash(wndname);
 if ~isempty(wndname)
     warning('Support for Filwp not yet implemented.')
 end
 %
-wndname = inifile('get',MDF.mdf,'','Filwu','');
+wndname = inifile('geti',MDF.mdf,'','Filwu','');
 wndname = rmhash(wndname);
 if ~isempty(wndname)
     warning('Support for Filwu not yet implemented.')
 end
 %
-wndname = inifile('get',MDF.mdf,'','Filwv','');
+wndname = inifile('geti',MDF.mdf,'','Filwv','');
 wndname = rmhash(wndname);
 if ~isempty(wndname)
     warning('Support for Filwv not yet implemented.')
 end
 %
-bndname = inifile('get',MDF.mdf,'','Filbnd','');
+bndname = inifile('geti',MDF.mdf,'','Filbnd','');
 bndname = rmhash(bndname);
 if ~isempty(bndname)
     bndname = relpath(mdfpath,bndname);
     MDF.bnd = d3d_attrib('read',bndname);
     %
-    bctname = inifile('get',MDF.mdf,'','FilbcT','');
+    bctname = inifile('geti',MDF.mdf,'','FilbcT','');
     bctname = rmhash(bctname);
     if ~isempty(bctname)
         bctname = relpath(mdfpath,bctname);
         MDF.bct = bct_io('read',bctname);
     end
     %
-    bcaname = inifile('get',MDF.mdf,'','Filana','');
+    bcaname = inifile('geti',MDF.mdf,'','Filana','');
     bcaname = rmhash(bcaname);
     if ~isempty(bcaname)
         warning('Support for Filana not yet implemented.')
     end
     %
-    bchname = inifile('get',MDF.mdf,'','FilbcH','');
+    bchname = inifile('geti',MDF.mdf,'','FilbcH','');
     bchname = rmhash(bchname);
     if ~isempty(bchname)
         bchname = relpath(mdfpath,bchname);
         MDF.bch = bch_io('read',bchname);
     end
     %
-    bccname = inifile('get',MDF.mdf,'','FilbcC','');
+    bccname = inifile('geti',MDF.mdf,'','FilbcC','');
     bccname = rmhash(bccname);
     if ~isempty(bccname)
         bccname = relpath(mdfpath,bccname);
@@ -462,28 +468,35 @@ if ~isempty(bndname)
     end
 end
 %
-sedname = inifile('get',MDF.mdf,'','Filsed','');
+sedname = inifile('geti',MDF.mdf,'','Filsed','');
 sedname = rmhash(sedname);
 if ~isempty(sedname)
     sedname = relpath(mdfpath,sedname);
     MDF.sed = inifile('open',sedname);
 end
 %
-morname = inifile('get',MDF.mdf,'','Filmor','');
+morname = inifile('geti',MDF.mdf,'','Filmor','');
 morname = rmhash(morname);
 if ~isempty(morname)
     morname = relpath(mdfpath,morname);
     MDF.mor = inifile('open',morname);
 end
 %
-staname = inifile('get',MDF.mdf,'','Filsta','');
+traname = inifile('geti',MDF.mdf,'','TraFrm','');
+traname = rmhash(traname);
+if ~isempty(traname)
+    traname = relpath(mdfpath,traname);
+    MDF.tra = readtra(traname);
+end
+%
+staname = inifile('geti',MDF.mdf,'','Filsta','');
 staname = rmhash(staname);
 if ~isempty(staname)
     staname = relpath(mdfpath,staname);
     MDF.sta = d3d_attrib('read',staname);
 end
 %
-crsname = inifile('get',MDF.mdf,'','Filcrs','');
+crsname = inifile('geti',MDF.mdf,'','Filcrs','');
 crsname = rmhash(crsname);
 if ~isempty(crsname)
     crsname = relpath(mdfpath,crsname);
@@ -585,3 +598,6 @@ if ~feof(fid) || (ischar(Line) && ~isempty(Line))
     error('More data lines in file than expected.')
 end
 fclose(fid);
+
+function I = readtra(filename)
+I =inifile('open',filename);

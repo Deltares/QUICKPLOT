@@ -257,7 +257,6 @@
 %   update_option_positions     - Update vertical position of plot option controls.
 %   updateuicontrols            - Force an update of the uicontrol properties.
 %   uv2cen                      - Interpolate velocities.
-%   var2str                     - Generic "display" function with string output.
 %   vec2str                     - Create a string representation of a vector.
 %   writelog                    - Write QuickPlot logfile or MATLAB script.
 %   xx_constants                - Define several constants.

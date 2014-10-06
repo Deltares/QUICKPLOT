@@ -67,6 +67,9 @@ switch class(X)
                                     YStr = '0 (false)';
                                 end
                             end
+                        elseif ndims(Y)==2 && size(Y,1)==1 && size(Y,2)<11
+                            YStr = sprintf(' %g',Y);
+                            YStr = ['[' YStr(2:end) ']'];
                         end
                     case 'cell'
                         if isempty(Y)

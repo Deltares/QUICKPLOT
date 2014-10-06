@@ -66,10 +66,10 @@ INP=varargin;
 quiet=0;
 useprogressbar=0;
 append=0;
-if (length(INP)>0) & isequal(INP{end},'quiet')
+if ~isempty(INP) & isequal(INP{end},'quiet')
    quiet=1;
    INP(end)=[];
-else (length(INP)>0) & isequal(INP{end},'progressbar')
+elseif ~isempty(INP) & isequal(INP{end},'progressbar')
    quiet=1;
    useprogressbar=1;
    INP(end)=[];

@@ -68,12 +68,12 @@ switch lower(cmd)
         S=readfile(varargin{:});
     case 'chapters'
         S=chapfile(varargin{:});
-    case {'get','getstring'}
+    case {'get','getstring','geti','getstringi'}
         S=getfield(lower(cmd),varargin{:});
-    case 'set'
-        S=setfield(varargin{:});
+    case {'set','seti'}
+        S=setfield(lower(cmd),varargin{:});
     case {'delete','remove'}
-        S=setfield(varargin{:},[]);
+        S=setfield(lower(cmd),varargin{:},[]);
     case 'write'
         writefile(varargin{:});
     case 'new'
@@ -104,7 +104,7 @@ while ~feof(fid)
     L = fgetl(fid);
     if ischar(L)
         nLine=deblank2(L);
-        if length(nLine)>0
+        if ~isempty(nLine)
             Line{end+1}=nLine;
         end
     end
@@ -119,8 +119,8 @@ for i=1:length(Line)
             S(end+1,1:2)={'' cell(0,2)};
         end
         eq=strfind(ln,'=');
-        if length(eq)>0
-            SF={ln(1:eq(1)-1) deblank2(ln(eq(1)+1:end))};
+        if ~isempty(eq)
+            SF={deblank2(ln(1:eq(1)-1)) deblank2(ln(eq(1)+1:end))};
         else
             SF={'' ln};
         end
@@ -181,42 +181,57 @@ chaps=FI.Data(:,1);
 
 
 function val=getfield(cmd,FI,grpS,keyS,def)
-S=FI.Data;
+S = FI.Data;
+keyS = deblank(keyS);
+CaseInsensitive = cmd(end)=='i';
+if CaseInsensitive
+    cmd = cmd(1:end-1);
+end
 if ischar(grpS)
     if isequal(grpS,'*')
-        grp=1:size(S,1);
+        grp = 1:size(S,1);
     else
-        grp=strmatch(grpS,S(:,1),'exact');
+        if CaseInsensitive
+            grp = strcmpi(grpS,S(:,1));
+        else
+            grp = strcmp(grpS,S(:,1));
+        end
+        grp = find(grp);
     end
 else
-    grp=grpS;
-    grpS=sprintf('group#%i',grp);
+    grp = grpS;
+    grpS = sprintf('group#%i',grp);
 end
 if isempty(grp)
     if nargin>=4
-        val=def;
-        return;
+        val = def;
+        return
     end
     error('Chapter ''%s'' does not exist',grpS)
 end
-Keywords=cat(1,S{grp,2});
-key=strmatch(keyS,Keywords(:,1),'exact');
+Keywords = cat(1,S{grp,2});
+if CaseInsensitive
+    key = strcmpi(keyS,Keywords(:,1));
+else
+    key = strcmp(keyS,Keywords(:,1));
+end
+key = find(key);
 if isequal(size(key),[1 1])
     val=Keywords{key,2};
     if ischar(val) && ~strcmp(cmd,'getstring')
         [lni,n,err,SF2i]=sscanf(val,'%f',[1 inf]);
-        if isempty(err) & SF2i>length(val)
+        if isempty(err) && SF2i>length(val)
             val=lni;
         end
     end
-elseif isempty(key) & nargin>=5
+elseif isempty(key) && nargin>=5
     val=def;
 elseif ~isempty(key)
     val=Keywords(key,2);
     if ~strcmp(cmd,'getstring')
         for i=1:length(val)
             [lni,n,err,SF2i]=sscanf(val{i},'%f',[1 inf]);
-            if isempty(err) & SF2i>length(val{i})
+            if isempty(err) && SF2i>length(val{i})
                 val{i}=lni;
             end
         end
@@ -226,23 +241,30 @@ else
 end
 
 
-function FI=setfield(FI,grpS,keyS,val)
-S=FI.Data;
-if nargin<4
+function FI=setfield(cmd,FI,grpS,keyS,val)
+S = FI.Data;
+keyS = deblank(keyS);
+CaseInsensitive = cmd(end)=='i';
+if nargin<5
     error('Not enough input arguments.')
 end
 if ischar(grpS)
     if isequal(grpS,'*')
-        grp=1:size(S,1);
+        grp = 1:size(S,1);
     else
-        grp=strmatch(grpS,S(:,1),'exact');
+        if CaseInsensitive
+            grp = strcmpi(grpS,S(:,1));
+        else
+            grp = strcmp(grpS,S(:,1));
+        end
+        grp = find(grp);
     end
 else
     grp=grpS;
     grpS=sprintf('group#%i',grp);
 end
 if isempty(grp)
-    if isempty(val) & ~ischar(val)
+    if isempty(val) && ~ischar(val)
         return
     end
     S(end+1,1:2)={grpS cell(0,2)};
@@ -251,13 +273,17 @@ end
 ingrp=zeros(size(grp));
 for i=1:length(grp)
     Keywords=S{grp(i),2};
-    key=strmatch(keyS,Keywords(:,1),'exact');
-    if ~isempty(key)
+    if CaseInsensitive
+        key = strcmpi(keyS,Keywords(:,1));
+    else
+        key = strcmp(keyS,Keywords(:,1));
+    end
+    if any(key)
         ingrp(i)=1;
     end
 end
 if ~any(ingrp)
-    if isempty(val) & ~ischar(val)
+    if isempty(val) && ~ischar(val)
         return
     end
     if length(grp)==1
@@ -270,7 +296,7 @@ else
         %
         % Key found in multiple chapters: which one to change?
         %
-        if isempty(val) & ~ischar(val)
+        if isempty(val) && ~ischar(val)
             error('Cannot remove key from multiple chapters at once.')
         end
         error('Cannot set value of key in multiple chapters at once.')
@@ -280,11 +306,16 @@ else
         %
         grp = grp(ingrp~=0);
         Keywords=S{grp,2};
-        key=strmatch(keyS,Keywords(:,1),'exact');
-        if ~isempty(key)
-            if isempty(val) & ~ischar(val)
+        if CaseInsensitive
+            key = strcmpi(keyS,Keywords(:,1));
+        else
+            key = strcmp(keyS,Keywords(:,1));
+        end
+        if any(key)
+            if isempty(val) && ~ischar(val)
                 S{grp,2}(key,:)=[];
             else
+                key = find(key);
                 S{grp,2}{key(1),2}=val;
                 if length(key)>1
                     S{grp,2}(key(2:end),:)=[];

@@ -97,6 +97,7 @@
 %   floodmask           - Find connected points in an array.
 %   qp_unitconversion   - Convert unit strings.
 %   ustrcmpi            - Find a unique string.
+%   var2str             - Generic "display" function with string output.
 %   vardiff             - Determines the differences between two variables.
 %   wildstrmatch        - Find matching strings using wildcards.
 
