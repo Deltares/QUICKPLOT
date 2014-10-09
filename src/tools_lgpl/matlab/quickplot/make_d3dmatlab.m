@@ -74,6 +74,7 @@ if nargin<2
     qpversion=read_identification(sourcedir,'d3d_qp.m');
     T=now;
 end
+qpversion = sscanf(qpversion,'%[^(]'); % strip off the 32/64 bit flag (the toolbox is platform independent)
 disp(['Delft3D-MATLAB interface version: ' qpversion]);
 TStr=datestr(T);
 disp(['Current date and time           : ' TStr]);

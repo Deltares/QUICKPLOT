@@ -54,12 +54,6 @@ set(ifig,'visible','on')
 vers = qpversion;
 if vers(1)=='v'
     vers = ['Version ' vers(2:end)];
-    nbits = ' (32bit)';
-    if strncmp(fliplr(computer),'46',2)
-        nbits = ' (64bit)';
-    end
-else
-    nbits='';
 end
 switch style
     case 'matlab'
@@ -68,7 +62,7 @@ switch style
             'Position',[0 100 300 40], ...
             'Style','text', ...
             'horizontalalignment','center', ...
-            'String',['Deltares Delft3D-QUICKPLOT' char(10) vers nbits]);
+            'String',['Deltares Delft3D-QUICKPLOT' char(10) vers]);
        
         uicontrol('Parent',ifig, ...
             'Callback','closereq', ...
@@ -112,7 +106,7 @@ switch style
             'Position',[0 40 300 20], ...
             'Style','text', ...
             'horizontalalignment','center', ...
-            'String',[vers nbits]);
+            'String',vers);
 end
 
 uicontrol('Parent',ifig, ...

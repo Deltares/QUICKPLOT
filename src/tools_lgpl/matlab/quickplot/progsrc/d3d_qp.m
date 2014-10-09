@@ -48,7 +48,7 @@ catch Ex
 end
 
 function outdata=d3d_qp_core(cmd,varargin)
-%VERSION = 2.25
+%VERSION = 2.26
 qpversionbase = 'v<VERSION>';
 qpcreationdate = '<CREATIONDATE>';
 %
@@ -56,16 +56,23 @@ persistent qpversion logfile logtype
 
 if isempty(qpversion)
     if isequal(qpversionbase(1:2),'v<')
-        qpversion=['development code ' datestr(clock)];
+        qpversion='source code version';
     else
         qpversion=qpversionbase;
+    end
+    if isempty(strfind(qpversion,'('))
+        if strncmp(fliplr(computer),'46',2)
+            nbits=64;
+        else
+            nbits=32;
+        end
+        qpversion=sprintf('%s (%ibit)',qpversion,nbits);
     end
     logfile=0;
     logtype=1;
 end
 
 T_=1; ST_=2; M_=3; N_=4; K_=5;
-DimStr={'subfield ','timestep ','station ','M=','N=','K='};
 
 if ~ischar(cmd)
     ui_message('error','Invalid command: must be char array')

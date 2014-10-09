@@ -63,5 +63,13 @@ end
 [a,b] = strtok(baseversion);
 version = sprintf('%s.%s%s',a,revstring,b);
 %
+% Append 32 or 64 bit flag
+%
+if strncmp(fliplr(computer),'46',2)
+    version=[version ' (64bit)'];
+else
+    version=[version ' (32bit)'];
+end
+%
 % Done.
 %
