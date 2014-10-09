@@ -67,13 +67,10 @@ if ~exist('progsrc','dir')
 end
 sourcedir=[pwd,filesep,'progsrc'];
 disp('Copying files ...')
-switch computer
-    case 'PCWIN'
-        qpdir = 'quickplot32';
-    case 'PCWIN64'
-        qpdir = 'quickplot64';
-    otherwise
-        qpdir = 'quickplot';
+if strncmp(fliplr(computer),'46',2)
+    qpdir = 'quickplot64';
+else
+    qpdir = 'quickplot32';
 end
 if ~exist([pwd,filesep,qpdir])
     [success,message] = mkdir(qpdir);

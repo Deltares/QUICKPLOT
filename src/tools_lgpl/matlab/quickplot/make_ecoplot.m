@@ -67,14 +67,19 @@ if ~exist('progsrc','dir')
 end
 sourcedir=[pwd,filesep,'progsrc'];
 disp('Copying files ...')
-if ~exist([pwd,filesep,'ecoplot'])
-    [success,message] = mkdir('ecoplot');
+if strncmp(fliplr(computer),'46',2)
+    ecodir = 'ecoplot64';
+else
+    ecodir = 'ecoplot32';
+end
+if ~exist([pwd,filesep,ecodir])
+    [success,message] = mkdir(ecodir);
     if ~success,
         err=message;
         return
     end
 end
-cd('ecoplot');
+cd(ecodir);
 diary make_ecoplot_diary
 if isunix
     unix('cp -rf ../progsrc/* .');
@@ -103,6 +108,8 @@ fstrrep('d3d_qp.m','<VERSION>',qpversion)
 fstrrep('d3d_qp.m','<CREATIONDATE>',TStr)
 fstrrep('wl_identification.c','<VERSION>',qpversion)
 fstrrep('wl_identification.c','<CREATIONDATE>',TStr)
+g = which('-all','gscript');
+copyfile(g{1},'.')
 make_eco_exe
 X={'*.asv'
     '*.bak'
