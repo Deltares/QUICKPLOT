@@ -100,7 +100,7 @@ try
       ui_message('error',{'Cannot open logfile for validation report.','Stopping validation process.'})
       return
    else
-      writeheader(logid)
+      t1 = writeheader(logid);
       fprintf(logid,'<table bgcolor=CCCCFF>\n<tr bgcolor=AAAAFF><td><b>Validation case</b></td><td><b>Result<br>file read</b></td><td><b>Result<br>log files</b></td><td><b>View Log</b></td></tr>\n');
    end
    cd(val_dir)
@@ -148,7 +148,7 @@ try
          if localexist(CaseInfo)
             CaseInfo=inifile('open',CaseInfo);
             logid2=fopen(logname,'w');
-            writeheader(logid2,d(i).name)
+            t2 = writeheader(logid2,d(i).name);
             %
             % check for log files to run ...
             %
@@ -554,10 +554,12 @@ try
          if ~isempty(CrashMsg)
             fprintf(logid2,'<font color=FF0000><b>%s</b></font><br>\n',CrashMsg);
          end
+         dt2 = writefooter(logid2,t2);
          fprintf(logid2,'</body>');
          fclose(logid2);
       elseif ~isempty(CrashMsg)
           result = [result CrashMsg];
+          dt2 = (now-t2)*86400;
       end
       CaseFailed = ~isempty(strmatch('FAILED',frresult)) | ~isempty(strmatch('FAILED',lgresult)) | ~isempty(strmatch('FAILED',result));
       NFailed=NFailed + double(CaseFailed);
@@ -568,9 +570,9 @@ try
          UserInterrupt=1;
       end
       if ~isempty(result)
-         fprintf(logid,'<tr><td>%s</td><td colspan=2><font color=%s><b>%s</b></font></td><td><a href="%s/%s">Click</a></tr>\n',d(i).name,color,result,d(i).name,logname);
+         fprintf(logid,'<tr><td>%s</td><td colspan=2><font color=%s><b>%s</b></font></td><td><a href="%s/%s">Click</a></td><td>%s</td></tr>\n',d(i).name,color,result,d(i).name,logname,duration(dt2));
       else
-         fprintf(logid,'<tr><td>%s</td><td><font color=%s><b>%s</b></font></td><td><font color=%s><b>%s</b></font></td><td><a href="%s/%s">Click</a></tr>\n',d(i).name,frcolor,frresult,lgcolor,lgresult,d(i).name,logname);
+         fprintf(logid,'<tr><td>%s</td><td><font color=%s><b>%s</b></font></td><td><font color=%s><b>%s</b></font></td><td><a href="%s/%s">Click</a></td><td>%s</td></tr>\n',d(i).name,frcolor,frresult,lgcolor,lgresult,d(i).name,logname,duration(dt2));
       end
       flush(logid);
       if UserInterrupt
@@ -588,7 +590,9 @@ if ishandle(Hpb)
 end
 cd(currdir)
 if logid>0
-   fprintf(logid,'</table>\n</body>');
+   fprintf(logid,'</table>\n');
+   writefooter(logid,t1);
+   fprintf(logid,'</body>');
    fclose(logid);
 end
 if AnyFail
@@ -612,14 +616,15 @@ qp_settings('defaultaxescolor',DefFigProp.defaultaxescolor)
 qp_settings('boundingbox',DefFigProp.boundingbox)
 
 
-function writeheader(logid,casename)
+function t = writeheader(logid,casename)
 fprintf(logid,'<html>\n<title>Delft3D-QUICKPLOT validation report</title>\n<body bgcolor=DDDDFF>\n');
 fprintf(logid,'<table bgcolor=CCCCFF><tr><td colspan=2 bgcolor=AAAAFF><b>Deltares validation report</b></td></tr>\n<tr><td>Program:</td><td>Delft3D-QUICKPLOT</td></tr>\n');
 stalone=' ';
 if isstandalone
    stalone=' (standalone)';
 end
-fprintf(logid,'<tr><td>Version:</td><td>%s%s</td></tr>\n<tr><td>Date:</td><td>%4.4i-%2.2i-%2.2i %2.2i:%2.2i:%02.0f</td></tr>\n',d3d_qp('version'),stalone,clock);
+c = clock;
+fprintf(logid,'<tr><td>Version:</td><td>%s%s</td></tr>\n<tr><td>Date:</td><td>%4.4i-%2.2i-%2.2i %2.2i:%2.2i:%02.0f</td></tr>\n',d3d_qp('version'),stalone,c);
 fprintf(logid,'<tr><td>MATLAB version:</td><td>%s</td></tr>\n',version);
 fprintf(logid,'<tr><td>Computer type:</td><td>%s</td></tr>\n',computer);
 if nargin>1
@@ -627,7 +632,26 @@ if nargin>1
 end
 fprintf(logid,'</table><br>\n');
 flush(logid)
+t = datenum(c);
 
+
+function dt = writefooter(logid,t0)
+fprintf(logid,'<table bgcolor=CCCCFF><tr><td colspan=2 bgcolor=AAAAFF><b>End of validation report</b></td></tr>\n');
+c = clock;
+fprintf(logid,'<tr><td>Date:</td><td>%4.4i-%2.2i-%2.2i %2.2i:%2.2i:%02.0f</td></tr>\n',c);
+dt = (datenum(c)-t0)*86400;
+fprintf(logid,'<tr><td>Duration:</td><td>%s</td></tr>\n',duration(dt));
+fprintf(logid,'</table><br>\n');
+flush(logid)
+
+function s = duration(dt)
+if dt>60
+   mdt = floor(dt/60);
+   sdt = dt-60*mdt;
+   s = sprintf('%.1fs (%im %.1fs)',dt,mdt,sdt);
+else
+   s = sprintf('%.1fs',dt);
+end
 
 function X=localexist(file)
 %X=exist(file);
