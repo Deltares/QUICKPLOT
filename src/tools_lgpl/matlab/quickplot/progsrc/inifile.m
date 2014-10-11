@@ -14,6 +14,9 @@ function varargout=inifile(cmd,varargin)
 %   ListOfChapters=INIFILE('chapters',Info)
 %   Retrieve list of Chapters (cell array of strings).
 %
+%   ListOfKeywords=INIFILE('keywords',Info,Chapter)
+%   Retrieve list of Keywords in specified Chapter (cell array of strings).
+%
 %   Val=INIFILE('get',Info,Chapter,Keyword,Default)
 %   Retrieve Chapter/Keyword from the Info data set. The Default value is
 %   optional. If the Chapter ID is '*', the Keyword is searched for in
@@ -63,17 +66,20 @@ function varargout=inifile(cmd,varargin)
 %   $Id$
 
 S=[];
-switch lower(cmd)
+lcmd = lower(cmd);
+switch lcmd
     case 'open'
         S=readfile(varargin{:});
-    case 'chapters'
-        S=chapfile(varargin{:});
+    case {'chapters','chaptersi'}
+        S=chapfile(lcmd,varargin{:});
+    case {'keywords','keywordsi'}
+        S=chapkeys(lcmd,varargin{:});
     case {'get','getstring','geti','getstringi'}
-        S=getfield(lower(cmd),varargin{:});
+        S=getfield(lcmd,varargin{:});
     case {'set','seti'}
-        S=setfield(lower(cmd),varargin{:});
-    case {'delete','remove'}
-        S=setfield(lower(cmd),varargin{:},[]);
+        S=setfield(lcmd,varargin{:});
+    case {'delete','remove','deletei','removei'}
+        S=setfield(lcmd,varargin{:},[]);
     case 'write'
         writefile(varargin{:});
     case 'new'
@@ -176,13 +182,46 @@ end
 fclose(fid);
 
 
-function chaps=chapfile(FI)
-chaps=FI.Data(:,1);
+function Chapters = chapfile(cmd,FI)
+CaseInsensitive = cmd(end)=='i';
+Chapters = FI.Data(:,1);
+if CaseInsensitive
+    Chapters = lower(Chapters);
+end
+
+
+function Keywords = chapkeys(cmd,FI,grpS)
+S = FI.Data;
+CaseInsensitive = cmd(end)=='i';
+if ischar(grpS)
+    if isequal(grpS,'*')
+        grp = 1:size(S,1);
+    else
+        if CaseInsensitive
+            grp = strcmpi(grpS,S(:,1));
+        else
+            grp = strcmp(grpS,S(:,1));
+        end
+        grp = find(grp);
+    end
+elseif isnumeric(grpS) && all(grpS(:)<=size(S,1))
+    grp = grpS(:)';
+else
+    grp = [];
+end
+if isempty(grp)
+    error('Chapter ''%s'' does not exist.',var2str(grpS))
+elseif length(grp)>1
+    error('Can''t retrieve keywords for multiple chapters at once.')
+end
+Keywords = S{grp,2}(:,1);
+if CaseInsensitive
+    Keywords = lower(Keywords);
+end
 
 
 function val=getfield(cmd,FI,grpS,keyS,def)
 S = FI.Data;
-keyS = deblank(keyS);
 CaseInsensitive = cmd(end)=='i';
 if CaseInsensitive
     cmd = cmd(1:end-1);
@@ -198,24 +237,34 @@ if ischar(grpS)
         end
         grp = find(grp);
     end
-else
+elseif isnumeric(grpS) && all(grpS(:)<=size(S,1))
     grp = grpS;
     grpS = sprintf('group#%i',grp);
+else
+    grp = [];
 end
 if isempty(grp)
     if nargin>=4
         val = def;
         return
     end
-    error('Chapter ''%s'' does not exist',grpS)
+    error('Chapter ''%s'' does not exist',var2str(grpS))
 end
 Keywords = cat(1,S{grp,2});
-if CaseInsensitive
-    key = strcmpi(keyS,Keywords(:,1));
+if ischar(keyS)
+    keyS = deblank(keyS);
+    if CaseInsensitive
+        key = strcmpi(keyS,Keywords(:,1));
+    else
+        key = strcmp(keyS,Keywords(:,1));
+    end
+    key = find(key);
 else
-    key = strcmp(keyS,Keywords(:,1));
+    key = keyS;
+    if length(grp)>1
+        error('Keyword indexing not supported for multiple chapters at once.')
+    end
 end
-key = find(key);
 if isequal(size(key),[1 1])
     val=Keywords{key,2};
     if ischar(val) && ~strcmp(cmd,'getstring')
@@ -243,7 +292,6 @@ end
 
 function FI=setfield(cmd,FI,grpS,keyS,val)
 S = FI.Data;
-keyS = deblank(keyS);
 CaseInsensitive = cmd(end)=='i';
 if nargin<5
     error('Not enough input arguments.')
@@ -259,9 +307,11 @@ if ischar(grpS)
         end
         grp = find(grp);
     end
-else
+elseif isnumeric(grpS) && all(grpS(:)<=size(S,1))
     grp=grpS;
     grpS=sprintf('group#%i',grp);
+else
+    grp = [];
 end
 if isempty(grp)
     if isempty(val) && ~ischar(val)
@@ -271,15 +321,23 @@ if isempty(grp)
     grp=size(S,1);
 end
 ingrp=zeros(size(grp));
-for i=1:length(grp)
-    Keywords=S{grp(i),2};
-    if CaseInsensitive
-        key = strcmpi(keyS,Keywords(:,1));
-    else
-        key = strcmp(keyS,Keywords(:,1));
+if ischar(keyS)
+    keyS = deblank(keyS);
+    for i=1:length(grp)
+        Keywords=S{grp(i),2};
+        if CaseInsensitive
+            key = strcmpi(keyS,Keywords(:,1));
+        else
+            key = strcmp(keyS,Keywords(:,1));
+        end
+        if any(key)
+            ingrp(i)=1;
+        end
     end
-    if any(key)
-        ingrp(i)=1;
+else
+    ingrp(grp)=1;
+    if length(grp)>1
+        error('Keyword indexing not supported for multiple chapters at once.')
     end
 end
 if ~any(ingrp)
@@ -303,19 +361,24 @@ else
     else
         %
         % Key found in one chapter (may still occur multiple times).
+        % Get key index if key is specified using string.
         %
-        grp = grp(ingrp~=0);
-        Keywords=S{grp,2};
-        if CaseInsensitive
-            key = strcmpi(keyS,Keywords(:,1));
+        if ischar(keyS)
+            grp = grp(ingrp~=0);
+            Keywords=S{grp,2};
+            if CaseInsensitive
+                key = strcmpi(keyS,Keywords(:,1));
+            else
+                key = strcmp(keyS,Keywords(:,1));
+            end
+            key = find(key);
         else
-            key = strcmp(keyS,Keywords(:,1));
+            key = keyS;
         end
-        if any(key)
+        if ~isempty(key)
             if isempty(val) && ~ischar(val)
                 S{grp,2}(key,:)=[];
             else
-                key = find(key);
                 S{grp,2}{key(1),2}=val;
                 if length(key)>1
                     S{grp,2}(key(2:end),:)=[];
