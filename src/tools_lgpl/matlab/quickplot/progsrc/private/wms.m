@@ -301,7 +301,7 @@ switch INFO.Type
             drawnow
         end
         %
-        IMG=repmat(uint8(0),INFO.TileSize(2)*(yLR-yUL+1),INFO.TileSize(1)*(xLR-xUL+1),3);
+        IMG=repmat(uint8(0),[INFO.TileSize(2)*(yLR-yUL+1) INFO.TileSize(1)*(xLR-xUL+1) 3]);
         servernr = 1;
         for xPos = xUL:xLR
             for yPos = yUL:yLR
