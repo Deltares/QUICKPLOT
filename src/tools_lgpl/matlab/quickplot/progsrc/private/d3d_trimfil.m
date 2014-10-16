@@ -1046,6 +1046,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'total pressure'                   'Pa'     [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'RHO'     'HYDPRES' []      0
     'relative hydrostatic pressure'    'Pa'     [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'RHO'     ''       []       0
     'relative total pressure'          'Pa'     [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'RHO'     'HYDPRES' []      0
+    'concentration'                    'kg/m^3' [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-sedgs-series' 'RZED1' ''       's'      0
     '--constituents'                   ''       [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'R1'      ''       []       0
     '--constituents flux'              ''       [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'R1FLX_UU' 'R1FLX_VV' []    0
     '--constituents cumulative flux'   ''       [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'R1FLX_UUC' 'R1FLX_VVC' []  0
@@ -1062,6 +1063,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'height above bed for characteristic velocity' ...
     'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'ZUMOD'   ''       []       0
     'bed shear velocity magnitude'     'm/s'    [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'USTAR'   ''       []       0
+    'settling velocity'                'm/s'    [1 0 1 1 1]  1         1    ''        ''    'z'       'i'     'map-sedgs-series' 'WSS'   ''       's1'     0
     'settling velocity'                'm/s'    [1 0 1 1 1]  1         1    ''        ''    'z'       'i'     'map-sed-series' 'WS'      ''       's1'     0
     '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
     'equilibrium concentration'        'kg/m^3' [1 0 1 1 1]  1         1    ''        ''    'z'       'c'     'map-sed-series' 'RSEDEQ'  ''       's1'     0
@@ -1090,9 +1092,6 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'kg/m^3/s'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'SOURSE'  ''       's'      1
     'sink term suspended sediment fractions'   ...
     '1/s'           [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'SINKSE'  ''       's'      1
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
-    'concentration'                    'kg/m^3' [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-sedgs-series' 'RZED1' ''       's'      0
-    'settling velocity'                'm/s'    [1 0 1 1 1]  1         1    ''        ''    'z'       'i'     'map-sedgs-series' 'WSS'   ''       's1'     0
     '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
     'near bed reference concentration' 'kg/m^3' [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'RCA'     ''       's'      0
     'bed shear stress'                 'N/m^2'  [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-series'     'TAUKSI'  'TAUETA' []       1
@@ -1295,13 +1294,22 @@ lstci=vs_get(FI,'map-const','LSTCI','quiet!');
 if ischar(lstci), lstci=0; end
 ltur=vs_get(FI,'map-const','LTUR','quiet!');
 if ischar(ltur), ltur=0; end
-i=find(strcmp('--constituents',{Out.Name}));
+i=strcmp('concentration',{Out.Name});
+if any(i)
+    % general sigma
+    txt_append = ' (averaged to flow layers)';
+    i=find(strcmp('settling velocity',{Out.Name}) & strcmp('map-sed-series',{Out.Group}));
+    Out(i).Name = [Out(i).Name txt_append];
+else
+    txt_append = '';
+end
+i = find(strcmp('--constituents',{Out.Name}));
 if (lstci>0) && ~isempty(i)
-    Ins=Out(i*ones(lstci,1));
-    for j=1:lstci
-        Ins(j).Name=names{j};
-        Ins(j).SubFld=j;
-        Ins(j).Units=getunit(names{j},sednames);
+    Ins = Out(i*ones(lstci,1));
+    for j = 1:lstci
+        Ins(j).Name   = [names{j} txt_append];
+        Ins(j).SubFld = j;
+        Ins(j).Units  = getunit(names{j},sednames);
     end
     Out=insstruct(Out,i,Ins);
 end
