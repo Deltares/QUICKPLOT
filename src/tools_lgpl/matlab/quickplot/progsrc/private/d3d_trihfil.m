@@ -677,6 +677,7 @@ DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     '' 
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'settling velocity'         'm/s'    [1 5 0 0 1]  0         1     ''       'z'   'z'       'i'     'his-sed-series' 'ZWS'      ''         's1'     0
     'equilibrium concentrations' 'kg/m^3' [1 5 0 0 1] 0         1     ''       'z'   'z'       'c'     'his-sed-series' 'ZRSDEQ'   ''         'sb'     0
+    'available mass in fluff layer' 'kg/m^2' [1 5 0 0 0]  0     1    ''        'z'   'z'       ''      'his-sed-series' 'MFLUFF'   ''         's'      0
     'available mass of sediment' 'kg/m^2' [1 5 0 0 0] 0         1     ''       'z'   'z'       ''      'his-sed-series' 'ZBDSED'   ''         'sb'     0
     'bed load transport'        'm^3/s/m' [1 5 0 0 0]  0        2     'u'      'z'   'z'       ''      'his-sed-series' 'ZSBU'     'ZSBV'     'sb'     1
     'd.a. suspended transport'  'm^3/s/m' [1 5 0 0 0]  0        2     'u'      'z'   'z'       ''      'his-sed-series' 'ZSSU'     'ZSSV'     'sb'     1
