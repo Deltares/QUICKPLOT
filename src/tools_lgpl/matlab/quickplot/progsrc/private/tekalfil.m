@@ -541,6 +541,8 @@ switch FI.FileType
                                         Col1='date and time';
                                     elseif isequal(Col1,'yymmdd') && isequal(Col2,'hhmmss')
                                         Col1='date and time';
+                                    elseif isequal(Col1,'yyyymmdd') && isequal(Col2,'hhmmss')
+                                        Col1='date and time';
                                     end
                                 end
                                 if strncmpi(Col1,'z coord',7) || strncmpi(Col1,'z-coord',7)
