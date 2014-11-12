@@ -220,7 +220,7 @@ while ii < size(CS,2)
     ii = ii + nl + 1;
 end
 
-if style>2
+if style>2 && ncurves>0
     % Plot patches in order of decreasing size. This makes sure that
     % all the levels get drawn, no matter if we are going up a hill or
     % down into a hole. Lowest curve is largest and encloses higher data

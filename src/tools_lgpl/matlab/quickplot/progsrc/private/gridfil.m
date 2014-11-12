@@ -1078,15 +1078,15 @@ switch cmd
         [f,p]=uiputfile(NewFI.FileName,'Save as ...');
         if ischar(f)
             CCWFI = NewFI;
-            CCWFI.X = CCWFI.X.';
-            CCWFI.Y = CCWFI.Y.';
+            CCWFI.X = CCWFI.X(1:end-1,1:end-1).';
+            CCWFI.Y = CCWFI.Y(1:end-1,1:end-1).';
             if isfield(CCWFI,'Enclosure')
                %what if the enclosure does not match the full grid?
                %would this work?
                %CCWFI.Enclosure = flipud(CCWFI.Enclosure(:,[2 1]));
                %or would this give problems with holes?
                %ignore this issue for the time being.
-               CCWFI.Enclosure = rmfield(CCWFI,'Enclosure');
+               CCWFI = rmfield(CCWFI,'Enclosure');
                opt = {'AutoEnclosure'};
             else
                opt = {};

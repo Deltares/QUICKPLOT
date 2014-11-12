@@ -935,7 +935,7 @@ else
         Param.compat7={'v6'};
     end
 
-    for d=length(data):-1:1
+    for d = length(data):-1:1
         do=min(length(hOld),d);
         plotargs={hOld{do},Parent,Param,data(d),Ops,Props};
         geom='';
@@ -965,6 +965,10 @@ else
                 PlotState.Parent=Parent;
         end
     end
+    for d = length(data)+1:length(hNew)
+        delete(hNew{d});
+    end
+    hNew = hNew(1:length(data));
     
     ChangeCLim = strcmp(Thresholds,'none') || ~isempty(Ops.colourlimits);
 
