@@ -280,6 +280,23 @@ switch subtype
                     case 'Serafin'
                         x=FI.Grid.Discr.X(idx{M_});
                         y=FI.Grid.Discr.Y(idx{M_});
+                    case 'ESRI-Shape'
+                        xy=shape('read',FI.Grid,0,'polyline');
+                        Sep=[0;find(isnan(xy(:,1)));size(xy,1)];
+                        MaxNPnt=max(diff(Sep))-1;
+                        x = zeros(FI.Grid.NShapes,MaxNPnt);
+                        y = zeros(FI.Grid.NShapes,MaxNPnt);
+                        for i=1:length(Sep)-1
+                            NPnt = Sep(i+1)-Sep(i)-1;
+                            x(i,1:NPnt) = xy(Sep(i)+1:Sep(i+1)-1,1)';
+                            y(i,1:NPnt) = xy(Sep(i)+1:Sep(i+1)-1,2)';
+                        end
+                        getPnt=ismember(FI.Grid.Index(:,1),idx{M_});
+                        if ~all(getPnt)
+                            x=x(getPnt,:);
+                            y=y(getPnt,:);
+                        end
+                        DimFlag(K_)=0;
                     case 'netCDF'
                         if DataInCell
                            [x, errmsg] = qp_netcdf_get(FI.Grid,FI.Grid.BCoordinates{1},FI.Grid.CoordDims);
@@ -329,7 +346,7 @@ switch subtype
                 x=repmat(X(1)+(X(2)-X(1))*(gidx{N_})/sz(N_),length(gidx{M_}),1);
                 y=repmat(transpose(X(3)+(X(4)-X(3))*(gidx{M_})/sz(M_)),1,length(gidx{N_}));
         end
-        if DimFlag(K_)
+        if DimFlag(K_) && ~strcmp(Props.Geom,'POLYG')
             if isbinary
                 names=LocFI.SubsName;
             else
@@ -1100,7 +1117,7 @@ switch Type
                             DataProps{r,5}(M_)=6;
                             DataProps{r,5}(N_)=0;
                             %DataProps{r,6}=0;
-                        case {'netCDF'} % polygon bounds
+                        case {'netCDF','ESRI-Shape'} % polygon bounds
                             enablegridview=0;
                             %
                             DataProps{r,3}='POLYG';

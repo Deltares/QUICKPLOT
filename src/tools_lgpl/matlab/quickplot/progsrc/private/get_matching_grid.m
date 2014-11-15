@@ -43,7 +43,8 @@ filters = {'*.cco;*.lga' 'Delft3D Grid (Aggregation) Files'
    '*.m2b' 'SOBEK Grid Aggregation Files'
    '*.geo;geo*;*.slf' 'Telemac Grid Files'
    'T2DD12;*.dwq' 'DIDO Aggregation File (for Telemac)'
-   '*.nc' 'UGRID netCDF Files (D-Flow FM, Untrim)'};
+   '*.nc' 'UGRID netCDF Files (D-Flow FM, Untrim)'
+   '*.shp' 'Shape File'};
 telemacfilter = filters(3,:);
 if nargin<3
    filterspec = '';
@@ -103,6 +104,24 @@ while 1
                G=delwaq('openlga',GridFileName);
                GridSeg=G.NoSeg;
                PerLayer=G.NoSegPerLayer;
+               CouldReadGridData = 1;
+            catch
+               trytp = '.shp';
+            end
+         case '.shp'
+            try
+               G=shape('open',GridFileName);
+               G.AggregationFld=ustrcmpi('DWAQ_AGG',{G.dBase.Fld.Name});
+               if G.AggregationFld>0
+                   Agg=dbase('read',G.dBase,0,G.AggregationFld);
+                   G.Index=Agg{1};
+                   GridSeg=max(G.Index);
+               else
+                   GridSeg=G.NShapes;
+                   G.Index=(1:GridSeg)';
+               end
+               G.MNK=[G.NShapes 1];
+               PerLayer=GridSeg;
                CouldReadGridData = 1;
             catch
                trytp = '.grd';
