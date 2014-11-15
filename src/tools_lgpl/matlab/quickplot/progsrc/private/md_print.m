@@ -208,7 +208,7 @@ while i<length(figlist)
                 Printer=PL{LocSettings.PrtID,2};
                 Method = LocSettings.Method;
                 %
-                HG2 = ~ismember('zbuffer',set(0,'defaultfigurerenderer'))
+                HG2 = ~ismember('zbuffer',set(0,'defaultfigurerenderer'));
                 %
                 switch PL{LocSettings.PrtID,1}
                     case -1 % painters/zbuffer irrelevant
