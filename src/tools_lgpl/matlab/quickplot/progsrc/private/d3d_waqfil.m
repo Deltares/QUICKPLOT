@@ -296,7 +296,6 @@ switch subtype
                             x=x(getPnt,:);
                             y=y(getPnt,:);
                         end
-                        DimFlag(K_)=0;
                     case 'netCDF'
                         if DataInCell
                            [x, errmsg] = qp_netcdf_get(FI.Grid,FI.Grid.BCoordinates{1},FI.Grid.CoordDims);
@@ -888,7 +887,7 @@ if (~DimFlag(T_) || (DimFlag(T_) && isequal(size(idx{T_}),[1 1]))) && ~strcmp(Pr
         val1=reshape(val1,sz);
         val2=reshape(val2,sz);
     end
-    if DimFlag(K_)
+    if DimFlag(K_) && ~strcmp(Props.Geom,'POLYG')
         if ~isempty(x)
             sz=size(x); sz=[sz(2:end) 1];
             x=reshape(x,sz);
