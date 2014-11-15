@@ -282,10 +282,10 @@ switch subtype
                         y=FI.Grid.Discr.Y(idx{M_});
                     case 'ESRI-Shape'
                         xy=shape('read',FI.Grid,0,'polyline');
-                        Sep=[0;find(isnan(xy(:,1)));size(xy,1)];
+                        Sep=[0;find(isnan(xy(:,1)));size(xy,1)+1];
                         MaxNPnt=max(diff(Sep))-1;
-                        x = zeros(FI.Grid.NShapes,MaxNPnt);
-                        y = zeros(FI.Grid.NShapes,MaxNPnt);
+                        x = NaN(FI.Grid.NShapes,MaxNPnt);
+                        y = NaN(FI.Grid.NShapes,MaxNPnt);
                         for i=1:length(Sep)-1
                             NPnt = Sep(i+1)-Sep(i)-1;
                             x(i,1:NPnt) = xy(Sep(i)+1:Sep(i+1)-1,1)';
