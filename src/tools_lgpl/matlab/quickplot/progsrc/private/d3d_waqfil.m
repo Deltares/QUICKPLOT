@@ -923,9 +923,12 @@ if XYRead
                     end
                 end
             end
+            if size(val1,2)>1
+                val1 = reshape(val1,[size(val1,1) 1 size(val1,2)]);
+            end
             val1 = repmat(val1,1,size(x,2));
-            val1 = val1';
-            val1 = val1(:);
+            val1 = permute(val1,[2 1 3]);
+            val1 = reshape(val1,[size(val1,1)*size(val1,2) size(val1,3)]);
             x = x';
             Ans.X = x(:);
             y = y';
