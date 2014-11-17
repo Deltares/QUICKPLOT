@@ -1713,6 +1713,7 @@ switch cmd
                         otherwise
                             [Chk,data,Info]=qp_getdata(Info,DomainNr,Props,'griddata',subf{:},selected{:});
                     end
+                    data = qp_thinning(data,Ops);
                     % reset pointer ...
                     set(mfig,'pointer','arrow')
                     if Chk

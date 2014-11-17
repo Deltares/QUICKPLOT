@@ -199,11 +199,9 @@ for f=1:ntim
         filename='';
         return
     end
-    if isfield(data,'XYZ') && ~MATfile
-        data(1).X=data.XYZ(:,:,:,1);
-        data(1).Y=data.XYZ(:,:,:,2);
-        if size(data(1).XYZ,4)>2
-            data(1).Z=data.XYZ(:,:,:,3);
+    if ~isempty(data)
+        if ~(isfield(data,'XYZ') && ~MATfile) || ~strcmp(Ops.thinningmode,'none')
+            data = qp_thinning(data,Ops);
         end
     end
     if ~isempty(data)
