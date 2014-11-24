@@ -59,6 +59,7 @@
 %   bct_io              - Read/write boundary condition tables.
 %   bil                 - Read/write bil/hdr files.
 %   d3d_attrib          - Read/write a various Delft3D attribute files.
+%   dxf                 - File operations for AutoCad DXF files
 %   ecomsed             - Read an ECOMSED data file.
 %   enclosure           - Read/write enclosure files and convert enclosures.
 %   golder              - Read/write a Golder data file.

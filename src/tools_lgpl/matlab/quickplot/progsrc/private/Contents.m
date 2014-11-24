@@ -15,7 +15,6 @@
 %   delwaqt0                    - Parse Delwaq T0 string.
 %   dbase                       - Read data from a dBase file.
 %   delwaqtimfile               - Reads in a Delwaq .tim input file (Lex Yacc type).
-%   dxf                         - File operations for AutoCad DXF files
 %   fls                         - Read Delft-FLS and SOBEK2D incremental files.
 %   geomesh                     - Read a Geo mesh topology file.
 %   getlds                      - Get LDS information from SDS file.
