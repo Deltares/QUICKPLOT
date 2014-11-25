@@ -46,7 +46,7 @@ y0=[];
 z0=[];
 for i=1:length(varargin)
     if ischar(varargin{i})
-        switch varargin{i}
+        switch lower(varargin{i})
             case {'geographic','spherical','deg'}
                 igeo=1;
         end
