@@ -39,7 +39,7 @@ function [data,s] = qp_thinning(data,Ops)
 %   $$
 %   $$
 
-multi_time = isfield(data,'Time') && length(data.Time)>1;
+multi_time = isfield(data,'Time') && length(data(1).Time)>1;
 s = [];
 if isfield(data,'TRI')
     switch lower(Ops.thinningmode)

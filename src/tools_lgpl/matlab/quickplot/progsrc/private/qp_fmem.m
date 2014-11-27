@@ -478,6 +478,7 @@ switch cmd
                                 FI=[];
                             else
                                 Tp=FI.FileType;
+                                FI.Options=1;
                             end
                         end
                     case 'asciiwind'

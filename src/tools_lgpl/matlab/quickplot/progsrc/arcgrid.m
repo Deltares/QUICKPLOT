@@ -140,6 +140,11 @@ Structure.NRows=0;
 Structure.CellSize=[0 0];
 Structure.NoData=NaN;
 Structure.DataStart=0;
+if time_in_file
+    Structure.TimeFormat = 1; % relative time in file
+else
+    Structure.TimeFormat = 0; % no time, or just file index
+end
 %
 while ischar(Line) && ~isempty(Line)
     [keyw,remLine]=strtok(Line);
@@ -222,6 +227,7 @@ Times=Time;
 % lines ...
 %
 if ~isempty(Time)
+    Structure.TimeFormat = 1; % relative time in file
     Time=[];
     while ~feof(fid)
         LineStartsAt=ftell(fid);
@@ -247,70 +253,83 @@ elseif Structure.CellSize<=0
     error('Cell size not specified or invalid')
 end
 Structure.Check='OK';
-if ~isempty(Times)
-    Structure.Times=Times;
+Structure.FileBase=[p filesep n];
+if isempty(Times)
+    Times=[];
     %
-    Structure.FileBase=[p filesep n];
-    lwc=Structure.Extension-upper(Structure.Extension);
-    switch lower(Structure.Extension)
-        case 'amu'
-            amv=char('AMV'+lwc);
-            fid=fopen([Structure.FileBase '.' amv],'r');
-            if fid>0
-                Structure.Extension=char('AMUV'+lwc([1:3 3]));
-                fclose(fid);
-            end
-        case 'amv'
-            amu=char('AMU'+lwc);
-            fid=fopen([Structure.FileBase '.' amu],'r');
-            if fid>0
-                Structure.Extension=char('AMUV'+lwc([1:3 3]));
-                fclose(fid);
-            end
-    end
+    % For case sensitive file systems assume that all extensions have the same
+    % case (upper/lower characters) on a character by character basis.
     %
-    return
-end
-Structure.Times=[];
-%
-% For case sensitive file systems assume that all extensions have the same
-% case (upper/lower characters) on a character by character basis.
-%
-ndigits=0;
-while ndigits<=length(n) && abs(n(end-ndigits))>47 && abs(n(end-ndigits))<58
-    ndigits=ndigits+1;
-end
-digits=n(length(n)-ndigits+1:end);
-if all(abs(digits)>47 & abs(digits)<58)
-    Structure.FileBase=[p filesep n(1:end-ndigits)];
-    Structure.NDigits=ndigits;
-    [Structure.Times,FileNr]=getfiletimes(Structure.FileBase,Structure.Extension,time_in_file);
-    if ~isempty(FileNr)
-        Structure.FileNr = FileNr;
+    ndigits=0;
+    while ndigits<=length(n) && abs(n(end-ndigits))>47 && abs(n(end-ndigits))<58
+        ndigits=ndigits+1;
+    end
+    digits=n(length(n)-ndigits+1:end);
+    if all(abs(digits)>47 & abs(digits)<58)
+        Structure.FileBase=[p filesep n(1:end-ndigits)];
+        Structure.NDigits=ndigits;
+        [Times,FileNr]=getfiletimes(Structure.FileBase,'',Structure.Extension,time_in_file);
+        if ~isempty(FileNr)
+            Structure.FileNr = FileNr;
+        end
     end
 end
-lwc=Structure.Extension-upper(Structure.Extension);
-if strcmpi(Structure.Extension,'amu')
-    amv=char('AMV'+lwc);
-    Times=getfiletimes(Structure.FileBase,amv,time_in_file);
-    if isequal(Times,Structure.Times)
-        Structure.Extension=char('AMUV'+lwc([1:3 3]));
+Structure.Times=Times;
+%
+am1=Structure.Extension;
+if strcmpi(am1,'amu') || strcmpi(am1,'amv')
+    vector = 2;
+else
+    am1 = Structure.FileBase(end);
+    if strcmpi(am1,'u') || strcmpi(am1,'v');
+        vector = 1;
+    else
+        vector = 0;
     end
-elseif strcmpi(Structure.Extension,'amv')
-    amu=char('AMU'+lwc);
-    Times=getfiletimes(Structure.FileBase,amu,time_in_file);
+end
+lwc=am1-upper(am1);
+if vector
+    if strcmpi(am1,'amu')
+        am2 = char('AMV'+lwc);
+    elseif strcmpi(am1,'amu')
+        am2 = char('AMU'+lwc);
+    elseif strcmpi(am1,'u')
+        am2 = char('V'+lwc);
+    else%if strcmpi(am1,'v')
+        am2 = char('U'+lwc);
+    end
+    if isfield(Structure,'NDigits')
+        if vector==2
+            Times=getfiletimes(Structure.FileBase,'',am2,time_in_file);
+        else
+            Times=getfiletimes(Structure.FileBase(1:end-1),am2,Structure.Extension,time_in_file);
+        end
+    else
+        fid=fopen([Structure.FileBase '.' am2],'r');
+        if fid>0
+            Times=Structure.Times;
+            fclose(fid);
+        else
+            Times=NaN;
+        end
+    end
     if isequal(Times,Structure.Times)
-        Structure.Extension=char('AMUV'+lwc([1:3 3]));
+        if vector==2
+            Structure.Extension=char('AMUV'+lwc([1:3 3]));
+        else
+            Structure.FileBase=Structure.FileBase(1:end-1);
+            Structure.FileBaseExtension=char('UV'+lwc);
+        end
     end
 end
 
 
-function [Times,FileNr]=getfiletimes(FileBase,Extension,time_in_file)
-[FilePath,FileName]=fileparts([FileBase '.x']); % dummy extension needed to avoid stripping off extension
+function [Times,FileNr]=getfiletimes(FileBase,BaseExtension,Extension,time_in_file)
+[FilePath,FileName]=fileparts([FileBase BaseExtension '.x']); % dummy extension needed to avoid stripping off extension
 last_char=length(FileName);
 len_ext=length(Extension)+1;
 %
-Files=dir([FileBase '*.' Extension]);
+Files=dir([FileBase BaseExtension '*.' Extension]);
 ntimes=length(Files);
 FileNr=cell(ntimes,1);
 Times=zeros(ntimes,1);
@@ -366,11 +385,24 @@ if strcmp(Structure.Check,'NotOK')
     return
 end
 
-ext=3;
 if strcmpi(Structure.Extension,'amuv')
-    ext=[3 4];
+    ncomp = 2;
+elseif isfield(Structure,'FileBaseExtension')
+    ncomp = 2;
+else
+    ncomp = 1;
 end
-for i=ext
+FileBaseExtension = '';
+for comp = 1:ncomp
+    if isfield(Structure,'FileBaseExtension')
+        FileBaseExtension = Structure.FileBaseExtension(comp);
+        Extension = Structure.Extension;
+    elseif ncomp>1
+        i = 2 + comp;
+        Extension = Structure.Extension([1 2 i]);
+    else
+        Extension = Structure.Extension;
+    end
     fil=Structure.FileName;
     subnr=1;
     if nargin>1 && length(Structure.DataStart)==1
@@ -385,10 +417,10 @@ for i=ext
             format=sprintf('%%%i.%ii',ndigits,ndigits);
             Nr=sprintf(format,Structure.Times(nr));
         end
-        fil=[Structure.FileBase Nr '.' Structure.Extension([1 2 i])];
+        fil=[Structure.FileBase FileBaseExtension Nr '.' Extension];
     elseif nargin>1
         subnr=nr;
-        fil=[Structure.FileBase '.' Structure.Extension([1 2 i])];
+        fil=[Structure.FileBase FileBaseExtension '.' Extension];
     end
     fid=fopen(fil,'r');
     fseek(fid,Structure.DataStart(subnr),-1);
@@ -421,7 +453,7 @@ for i=ext
     if ~isnan(Structure.NoData)
         Data(Data==Structure.NoData)=NaN;
     end
-    if i==3
+    if comp==1
         Structure.Data=Data;
     else
         Structure.Data2=Data;
@@ -430,7 +462,7 @@ for i=ext
     Structure.Check='OK';
 end
 if isstruct(filename)
-    if isequal(ext,3)
+    if ncomp==1
         Structure={Structure.Data};
     else
         Structure={Structure.Data Structure.Data2};
