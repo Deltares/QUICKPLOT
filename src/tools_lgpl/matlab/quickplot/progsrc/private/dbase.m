@@ -679,7 +679,41 @@ for j=1:length(Fields)
                             Tmp=Tmp2;
                         end
                     case {'F','N'} % F floating point, or N numeric
-                        Tmp=sscanf(St,Format,[NPerRead 1]);
+                        ValidValues = ~all(St==' ');
+                        if ~all(ValidValues)
+                            St = St(:,ValidValues);
+                        end
+                        %
+                        % You would expect that this would be as simple as
+                        %
+                        %Tmp=sscanf(St,Format,[NPerRead 1]);
+                        %
+                        % However, the simple testcase
+                        %
+                        %   sscanf(' 1.3  457.9 ','%4g',3)
+                        %
+                        % shows that behaviour is different than expected.
+                        % You would expect to receive [1.3 45 7.9] but you
+                        % receive [1.3 457. 9]. Hence spaces are not
+                        % counted and the number (4) in the format string
+                        % indicates the maximum number of characters to
+                        % read for one value.
+                        %
+                        % The following is a workaround that works always.
+                        %
+                        St(end+1,:)=' ';
+                        Tmp=sscanf(St,'%f',[NPerRead 1]);
+                        %
+                        % Tmp=str2num(St')
+                        %
+                        % works as well, but is much slower for large data
+                        % sets.
+                        %
+                        if ~all(ValidValues)
+                            Tmp2=NaN(length(ValidValues),1);
+                            Tmp2(ValidValues)=Tmp;
+                            Tmp=Tmp2;
+                        end
                     case 'L' % logical (T:t,F:f,Y:y,N:n,? or space)
                         Tmp=upper(St');
                         Tmp(Tmp=='Y')='T';
