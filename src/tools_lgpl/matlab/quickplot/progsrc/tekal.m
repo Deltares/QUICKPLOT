@@ -7,14 +7,14 @@ function Out=tekal(cmd,varargin)
 %
 %   The following optional arguments are supported for the read call:
 %
-%    * 'autocorrect'      : try to correct for some file format errors.
-%    * 'loaddata'         : load data into structure while reading file.
+%    * 'autocorrect'      : Try to correct for some file format errors.
+%    * 'loaddata'         : Load data into structure while reading file.
 %                           This creates a bigger INFO data structure, but
 %                           prevents further file access during 'read'
 %                           calls. Switched off by default.
-%    * 'nskipdatalines',N : skip the first N data lines. Comment lines
+%    * 'nskipdatalines',N : Skip the first N data lines. Comment lines
 %                           (starting with *) are always skipped.
-%    * 'sorted'           : return data blocks not in read order, but in
+%    * 'sorted'           : Return data blocks not in read order, but in
 %                           ASCII dictionary order of the data block names.
 %
 %   DATA = TEKAL('read',INFO,RECORD) reads the selected data record from
@@ -30,13 +30,22 @@ function Out=tekal(cmd,varargin)
 %
 %   NEWINFO = TEKAL('write',FILENAME,INFO, ...) writes a more complete new
 %   Tekal file based on the information in the INFO structure. INFO should
-%   be a structure with at least a field called Field having two subfields
-%   Name and Data. An optional subfield Comments will also be processed and
-%   written to file.
+%   be a structure (array) containing at least a field called Data, and
+%   optional fields Name, Comments, and Format. This structure may be
+%   nested inside another structure as a field called Field (see example,
+%   and return argument of TEKAL('read',...) command. The default number
+%   format used is '%.15g'; this can be overruled by means of the Format
+%   field which may specify either a single valid format specification such
+%   as '%15.7f' or '%16.7e', or string with as many format specifications
+%   as values per data line.
+%
+%   Alternatively, INFO may be a structure containing fields X, Y, and
+%   Values where X and Y are M x N matrices and Values is an M x N x NVal
+%   array. The block name may be specified as Blckname instead of Name.
 %
 %   The following optional argument is supported for the write call:
 %
-%    * 'sorted'           : write data blocks not in specified order, but
+%    * 'sorted'           : Write data blocks not in specified order, but
 %                           in ASCII dictionary order of the data block
 %                           names.
 %
@@ -507,9 +516,18 @@ end
 if isstruct(FileInfo)
     NewFileInfo.FileName=filename;
     %
+    if ~isfield(FileInfo,'Field') && (isfield(FileInfo,'Data') || isfield(FileInfo,'Values'))
+        F2.Field = FileInfo;
+        FileInfo = F2;
+    end
+    %
     for i=1:length(FileInfo.Field)
-        if isempty(FileInfo.Field(i).Name)
-            FileInfo.Field(i).Name = sprintf('BL%2.2i',i);
+        if ~isfield(FileInfo.Field(i),'Name') || isempty(FileInfo.Field(i).Name)
+            if isfield(FileInfo.Field(i),'Blckname') && ~isempty(FileInfo.Field(i).Blckname)
+                FileInfo.Field(i).Name = FileInfo.Field(i).Blckname;
+            else
+                FileInfo.Field(i).Name = sprintf('BL%2.2i',i);
+            end
         end
     end
     %
@@ -519,10 +537,16 @@ if isstruct(FileInfo)
     end
     %
     for i=1:length(FileInfo.Field)
-        Data = FileInfo.Field(i).Data;
-        if isempty(Data) && isfield(FileInfo.Field(i),'Offset')
+        if isfield(FileInfo.Field(i),'Data') && ~isempty(FileInfo.Field(i).Data)
+            Data = FileInfo.Field(i).Data;
+        elseif isfield(FileInfo.Field(i),'Offset')
             Data = tekal('read',FileInfo,i);
+        elseif isfield(FileInfo.Field(i),'X')
+            Data = cat(3,FileInfo.Field(i).X,FileInfo.Field(i).Y,FileInfo.Field(i).Values);
+        else
+            Data = [];
         end
+        %
         NewFileInfo.Field(i).Size=size(Data);
         if ndims(Data)>2
             NewFileInfo.Field(i).Size=[prod(NewFileInfo.Field(i).Size(1:end-1)) NewFileInfo.Field(i).Size(end) NewFileInfo.Field(i).Size(1:end-1)];
@@ -554,14 +578,36 @@ if isstruct(FileInfo)
         fprintf(fid,' %i',NewFileInfo.Field(i).Size); fprintf(fid,'\n');
         NewFileInfo.Field(i).Offset=ftell(fid);
 
-        if length(NewFileInfo.Field(i).ColLabels)>1 && ...
-                strcmp(NewFileInfo.Field(i).ColLabels(1),'Date') && ...
-                strcmp(NewFileInfo.Field(i).ColLabels(2),'Time')
-            Format=['%08i %06i' repmat(' %.15g',1,size(Data,2)-2) '\n'];
+        if isfield(FileInfo.Field(i),'Format') && ~isempty(FileInfo.Field(i).Format)
+            Format = FileInfo.Field(i).Format;
         else
-            Format=[repmat(' %.15g',1,size(Data,2)) '\n'];
+            Format = '%.15g';
         end
-
+        nperc  = sum(Format=='%');
+        eol    = strfind(Format,'\n');
+        if nperc==size(Data,2)
+            if isempty(eol)
+                Format=[Format '\n']; %#ok<AGROW>
+            elseif length(eol)>1 || eol<max(nperc)
+                fclose(fid);
+                error('Invalid format "%s" specified for field %i.',Format,i)
+            end
+        elseif nperc==1
+            if ~isempty(eol)
+                fclose(fid);
+                error('Invalid format "%s" specified for field %i.',Format,i)
+            elseif length(NewFileInfo.Field(i).ColLabels)>1 && ...
+                    strcmp(NewFileInfo.Field(i).ColLabels(1),'Date') && ...
+                    strcmp(NewFileInfo.Field(i).ColLabels(2),'Time')
+                Format=['%08i %06i' repmat([' ' Format],1,size(Data,2)-2) '\n'];
+            else
+                Format=[repmat([' ' Format],1,size(Data,2)) '\n'];
+            end
+        else
+            fclose(fid);
+            error('Invalid format "%s" specified for field %i.',Format,i)
+        end
+        
         if any(isnan(Data(:)))
             Data(isnan(Data))=-999;
         end
