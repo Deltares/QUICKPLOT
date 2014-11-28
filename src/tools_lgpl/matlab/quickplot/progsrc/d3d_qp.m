@@ -2323,7 +2323,7 @@ switch cmd
         end
         p = {qp_basedir('exe') getenv('D3D_HOME')};
         found = 0;
-        for ip = 1:2
+        for ip = 1:length(p)
             pth = [p{ip} filesep];
             dp = strfind(pth,filesep);
             for i=length(dp):-1:1
