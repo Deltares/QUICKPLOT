@@ -1,12 +1,10 @@
-function varargout = reducepoints(varargin);
-%REDUCEPOINTS Filters a set points using a distance threshold.
-%   I = REDUCEPOINTS(Thresh_Dist,X,Y,Z)
-%   returns an array I of indices of points that form
-%   together a set of points that are mutually separated
-%   by at least a distance Thresh_Dist. The function
-%   works in 1 (X), 2 (X and Y) and 3 (X, Y and Z) dimensions.
-%
-%   See also REDUCEPNTSQ.
+function varargout = reducepoints(varargin)
+%REDUCEPOINTS Filters a set of points using a distance threshold.
+%   I = REDUCEPOINTS(THRESH_DIST,X,Y,Z) returns an array I of indices of
+%   points that form together a set of points that are mutually separated
+%   by at least the specified distance THRESH_DIST. The Y and Z arguments
+%   are optional, so the function works in 1 (X), 2 (X and Y) and 3 (X, Y
+%   and Z) dimensions.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               

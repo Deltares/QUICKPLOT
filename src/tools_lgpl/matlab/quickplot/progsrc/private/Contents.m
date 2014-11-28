@@ -80,7 +80,6 @@
 %   legendbox                   - Display legend.
 %   multiline                   - Converts a string containing LineFeeds to a char matrix.
 %   realset                     - Manipulate sets of real values.
-%   reducepoints                - Filters a set points using a distance threshold.
 %   reducepoints_r13_6p5        - MEX file for REDUCEPOINTS compiled with R13.
 %   reducepoints_r2007a_7p4     - MEX file for REDUCEPOINTS compiled with R2007A.
 %   relativepath                - Determine file name relative to second file.
