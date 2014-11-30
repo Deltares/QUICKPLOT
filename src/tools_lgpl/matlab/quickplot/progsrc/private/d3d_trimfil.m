@@ -2409,11 +2409,13 @@ if TLikeFlow
                 % The following approach assumes Tstart equal to 0.
                 T=vs_let(FI,'map-info-series',{t},'ITMAPC','quiet!');
                 T=T*Dt*Tunit/60; % Determine relative time in minutes
-                if isfield(FI,'morstt')
-                    T=max(0,T-FI.morstt);
+                morstt = qp_option(FI,'morstt');
+                morfac = qp_option(FI,'morfac');
+                if ~isempty(morstt)
+                    T=max(0,T-morstt);
                 end
-                if isfield(FI,'morfac')
-                    T=T*FI.morfac;
+                if ~isempty(morfac)
+                    T=T*morfac;
                 end
                 T=d0+T/(24*60);
             end
@@ -2435,19 +2437,19 @@ tmpidx{1}=1;
 % change the qp_option dps value of the main FI, storing it
 % locally is the only correct thing to do.
 %
-if strcmp(Name,'cum. erosion/sedimentation')
-    dps0=0;
-else
-    %
-    % In case of cumulative mass error, the bed composition is
-    % always based on the first time step. So, also use that bed
-    % level otherwise that will introduce a consistent invalid mass
-    % error.
-    %
-    dps0=1;
-end
-if isfield(FI,'dps0')
-    dps0=FI.dps0;
+dps0 = qp_option(FI,'dps0');
+if isempty(dps0)
+    if strcmp(Name,'cum. erosion/sedimentation')
+        dps0=0;
+    else
+        %
+        % In case of cumulative mass error, the bed composition is
+        % always based on the first time step. So, also use that bed
+        % level otherwise that will introduce a consistent invalid mass
+        % error.
+        %
+        dps0=1;
+    end
 end
 %
 % There are two ways for determining the initial bed level. The
@@ -2479,10 +2481,10 @@ switch dps0
     case 0
         if all(abs(dp0a(:)-dp0b(:))<=2.4e-7*abs(dp0a(:)) | isnan(dp0b(:)))
             dp0=dp0a;
-            FI.dps0=1;
+            FI = qp_option(FI,'dps0',1);
         else
             dp0=dp0b;
-            FI.dps0=2;
+            FI = qp_option(FI,'dps0',2);
         end
     case 1
         dp0=dp0a;
@@ -2619,7 +2621,7 @@ switch cmd,
         dpstxt=findobj(mfig,'tag','dpstxt');
         dpslst=findobj(mfig,'tag','dpslst');
         dpsops=get(dpslst,'string');
-        if ~isfield(FI,'dps')
+        if isempty(qp_option(FI,'dps'))
             nfltp=vs_get(FI,'map-const','DRYFLP','quiet!');
             nfltp=lower(deblank(nfltp));
             %if isempty(nfltp)
@@ -2659,11 +2661,8 @@ switch cmd,
         Info=vs_disp(FI,'map-infsed-serie',[]);
         if isstruct(Info)
             set(findobj(mfig,'tag','displaytime'),'enable','on');
-            dispnr=1;
             Hdispt=findobj(mfig,'tag','displaytime=?');
-            if isfield(FI,'displaytime')
-                dispnr=ustrcmpi(qp_option(FI,'displaytime'),get(Hdispt,'string'));
-            end
+            dispnr=ustrcmpi(qp_option(FI,'displaytime'),get(Hdispt,'string'));
             set(Hdispt,'enable','on','backgroundcolor',Active,'value',dispnr);
             Info=vs_disp(FI,'map-infsed-serie','MORFAC');
             if ~isstruct(Info)
@@ -2820,7 +2819,7 @@ switch cmd,
         if isnan(v)
             v=get(Hv,'userdata');
         end
-        NewFI.(cmd)=v;
+        NewFI = qp_option(NewFI,cmd,v);
         set(Hv,'string',sprintf('%g',v),'userdata',v)
     case 'dps'
         dpslst=findobj(mfig,'tag','dpslst');

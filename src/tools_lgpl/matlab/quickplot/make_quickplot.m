@@ -111,6 +111,9 @@ fstrrep('wl_identification.c','<CREATIONDATE>',TStr)
 g = which('-all','gscript');
 copyfile(g{1},'.')
 make_exe
+if ispc
+   movefile('d3d_qp.exe','d3d_qp.exec');
+end
 X={'*.asv'
     '*.bak'
     '*.m'
