@@ -94,7 +94,8 @@ switch cmd
         % integrated below
         hParent = varargin{1};
         Ops = varargin{2};
-        varargin = varargin(3:end);
+        hOld=varargin{3};
+        varargin = varargin(4:end);
         XYRead = 1;
     otherwise
         [XYRead,DataRead,DataInCell]=gridcelldata(cmd);

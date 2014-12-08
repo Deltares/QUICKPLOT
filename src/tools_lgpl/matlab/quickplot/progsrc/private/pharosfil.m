@@ -93,7 +93,8 @@ switch cmd,
     case 'plot'
         Parent=varargin{1};
         Ops=varargin{2};
-        Station=varargin{3};
+        hOld=varargin{3};
+        Station=varargin{4};
         Location = vs_get(FI,'SEICH_loc',{Station},'Point_nr','quiet');
         %
         Freqs = vs_let(FI,'SEICH_def','FREQ','quiet');

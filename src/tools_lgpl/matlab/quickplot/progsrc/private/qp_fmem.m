@@ -267,12 +267,12 @@ switch cmd
                                         FI=F;
                                     end
                                 case {'delft3d-trim'}
-                                    FI.QP_Options.morfac      = 1;
-                                    FI.QP_Options.morstt      = 0;
-                                    FI.QP_Options.dps         = '';
-                                    FI.QP_Options.displaytime = 'hydrodynamic time';
+                                    FI = qp_option(FI,'morfac',1);
+                                    FI = qp_option(FI,'morstt',0);
+                                    FI = qp_option(FI,'dps','');
+                                    FI = qp_option(FI,'displaytime','hydrodynamic time');
                                 case {'delft3d-trih'}
-                                    FI.QP_Options.displaytime = 'hydrodynamic time';
+                                    FI = qp_option(FI,'displaytime','hydrodynamic time');
                             end
                             if isfield(FI,'SubType')
                                 Tp=FI.SubType;
@@ -283,7 +283,7 @@ switch cmd
                         
                         if isfield(FI,'SubType')
                             switch lower(FI.SubType)
-                                case {'delft3d-trim','delft3d-com','delft3d-trih','delft3d-waq-map','delft3d-par-map'}
+                                case {'delft3d-trim','delft3d-com','delft3d-trih','delft3d-waq-map','delft3d-waq-his','delft3d-par-map'}
                                     FI.Options=1;
                             end
                         end
@@ -429,16 +429,20 @@ switch cmd
                                         FI=F;
                                     end
                             end
-                            FI.balancefile=0;
                             if strcmp(FI.FileType,'DelwaqHIS')
                                 [pn,fn,fne]=fileparts(FI.FileName);
                                 if isequal(lower(fne),'.bal')
-                                    FI.balancefile=1;
+                                    balfil=1;
                                 elseif length(FI.FileName)>7 && ...
                                         isequal(lower(FI.FileName(end-6:end)),'bal.his')
-                                    FI.balancefile=1;
+                                    balfil=1;
+                                else
+                                    balfil=0;
                                 end
+                            else
+                                balfil=0;
                             end
+                            FI = qp_option(FI,'balancefile',balfil);
                             FI.Options=1;
                         end
                     case 'fls'

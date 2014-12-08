@@ -12,7 +12,7 @@ function varargout=morftreefil(FI,domain,field,cmd,varargin)
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'gridcelldata',subf,t,station,m,n,k)
 %                             XXXFIL(FI,[],'options',OptionsFigure,'initialize')
 %   [NewFI     ,cmdargs]    = XXXFIL(FI,[],'options',OptionsFigure,OptionsCommand, ...)
-%   [hNew      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'plot',Parent,Ops,subf,t,station,m,n,k)
+%   [hNew      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'plot',Parent,Ops,hOld,subf,t,station,m,n,k)
 %
 %   The DataFld can only be either an element of the DataProps structure.
 

@@ -93,6 +93,7 @@ switch cmd
         PlotIt=1;
         Parent=varargin{1};
         Ops=varargin{2};
+        hOld=varargin{3};
         hNew=lddplot(FI,Parent);
         set(hNew,'color',Ops.colour);
         setaxesprops(Parent,'X-Y')

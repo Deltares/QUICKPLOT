@@ -3628,7 +3628,7 @@ switch cmd
             if matlabversionnumber>=7.02
                 WBUZOF = getappdata(F,'WrappedButtonUpZoomOutFcn');
                 if isempty(WBUZOF)
-                    WBUZOF = get(F,'WindowButtonUpFcn')
+                    WBUZOF = get(F,'WindowButtonUpFcn');
                     setappdata(F,'WrappedButtonUpZoomOutFcn',WBUZOF)
                 end
                 %

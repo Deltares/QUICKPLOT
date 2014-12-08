@@ -94,44 +94,100 @@ switch cmd
             % balance plot
             Parent=varargin{1};
             Ops=varargin{2};
-            Station=varargin{3};
+            hOld=varargin{3};
+            delete([hOld{:}])
+            Station=varargin{4};
             [Time,Data]=delwaq('read',FI,Props.BalSubFld{1},Station,0);
             Labels=Props.BalSubFld{2};
-            transin=strmatch('Transport In',Labels);
-            transout=strmatch('Transport Out',Labels);
-            if isfield(FI,'nettransport') && FI.nettransport
-                if ~isempty(transin) && ~isempty(transout)
-                    Data(transin,:,:) = Data(transin,:,:)+Data(transout,:,:);
-                    Labels(transin) = {'Net transport'};
-                    Labels(transout) = [];
-                    Data(transout,:,:) = [];
+            %
+            BalAreas=FI.SegmentName;
+            if strcmpi(BalAreas{end},'Sum_of_balance_areas')
+                BalAreas{end}=[];
+            end
+            ibal = -1;
+            %
+            FluxLabels=Labels;
+            InOut=zeros(1,length(Labels));
+            for i=1:length(Labels)
+                if length(Labels{i})>3 && (strcmpi(Labels{i}(end-2:end),'_in') || strcmpi(Labels{i}(end-2:end),' in'))
+                    InOut(i)=1;
+                    FluxLabels{i}=deblank(FluxLabels{i}(1:end-3));
+                elseif length(Labels{i})>4 && (strcmpi(Labels{i}(end-3:end),'_out') || strcmpi(Labels{i}(end-3:end),' out'))
+                    InOut(i)=-1;
+                    FluxLabels{i}=deblank(FluxLabels{i}(1:end-4));
                 else
-                    transin=strmatch('Transp in',Labels);
-                    transout=strmatch('Transp out',Labels);
-                    if ~isempty(transin) && ~isempty(transout)
-                        Data(transin,:,:) = Data(transin,:,:)+Data(transout,:,:);
-                        Labels{transin} = 'Net transport';
-                        Labels(transout) = [];
-                        Data(transout,:,:) = [];
+                    FluxLabels{i}='';
+                end
+                %
+                switch lower(FluxLabels{i})
+                    case ''
+                        Labels{i}=substdb(Labels{i});
+                    case 'all bo+lo'
+                        FluxLabels{i} = 'all boundaries and waste loads';
+                    case 'waste-loa'
+                        FluxLabels{i} = 'waste loads';
+                    case {'transp','transport'}
+                        FluxLabels{i} = 'other internal areas';
+                    case 'other'
+                        FluxLabels{i} = 'non-balance areas';
+                        ibal = 0;
+                    otherwise
+                        if ibal>=0
+                            if InOut(i)==1
+                                ibal=ibal+1;
+                                FluxLabels{i} = BalAreas{ibal};
+                            else
+                                FluxLabels{i} = BalAreas{ibal};
+                            end
+                        end
+                        % Can't expand boundary names
+                end
+            end
+            %
+            if isequal(qp_option(FI,'nettransport'),1)
+                transin            = InOut ==  1;
+                transout           = InOut == -1;
+                Data(transin,:,:)  = Data(transin,:,:)+Data(transout,:,:);
+                for i = find(transin)
+                   Labels{i} = ['Net transport in from ' FluxLabels{i}];
+                end
+                Labels(transout)   = [];
+                Data(transout,:,:) = [];
+            else
+                for i = 1:length(Labels)
+                    if InOut(i)==1
+                        Labels{i} = ['Transport in from ' FluxLabels{i}];
+                    elseif InOut(i)==-1
+                        Labels{i} = ['Transport out to ' FluxLabels{i}];
                     end
                 end
             end
+            %
+            NoContribution=all(Data==0,3);
+            Data(NoContribution,:,:)=[];
+            Labels(NoContribution)=[];
+            %
             hNew=balanceplot(Time,squeeze(Data)','parent',Parent,'color',Ops.colour);
             for i=1:length(Labels)
                 Labels{i}=strrep(Labels{i},'_','\_');
             end
             legend(Parent,hNew(end-(0:length(Labels)-1)),Labels,3);
-            tick(Parent,'x','autodate')
+            %
             setappdata(Parent,'AxesType','Time-<blocking>')
+            setappdata(Parent,'BasicAxesType','Time-<blocking>')
+            setappdata(Parent,'xquantity','time')
+            tick(Parent,'x','autodate')
+            %
             LocationStr=readsts(FI,Props,Station);
             set(get(Parent,'title'),'string',LocationStr,'interpreter','none')
             set(get(Parent,'xlabel'),'string','time \rightarrow')
+            setappdata(Parent,'xtickmode','autodate')
             set(get(Parent,'ylabel'),'string',[Props.Name,' (',Props.Units,') \rightarrow'])
         else
             % limiting factors
             Parent=varargin{1};
             Ops=varargin{2};
-            hNew=plotlimitingfactors(FI,Parent,varargin(3:end),'color',Ops.colour);
+            hNew=plotlimitingfactors(FI,Parent,varargin(4:end),'color',Ops.colour);
             setappdata(Parent,'AxesType','LimitingFactorsAxes')
             setappdata(getappdata(Parent,'LimitingFactorsAxes'), ...
                 'AxesType','LimitingFactorsAxes2')
@@ -180,11 +236,7 @@ end
 %  sz([M_ N_])=sz([N_ M_]);
 %  idx([M_ N_])=idx([N_ M_]);
 %end
-if isfield(FI,'clipwherezundefined')
-    clipZ = FI.clipwherezundefined;
-else
-    clipZ = 1;
-end
+clipZ = qp_option(FI,'clipwherezundefined','default',1);
 
 %========================= GENERAL CODE =======================================
 allidx=zeros(size(sz));
@@ -250,7 +302,7 @@ switch subtype
         else
             stations = idx{M_};
         end
-        if isfield(FI,'treatas1d') && FI.treatas1d
+        if isequal(qp_option(FI,'treatas1d'),1)
             x = stations;
         end
         if DimFlag(K_)
@@ -1091,7 +1143,7 @@ switch Type
         return
     case {'delft3d-waq-history','delwaqhis','delft3d-par-his','delft3d-par-history'}
         DataProps={'--constituents'       ''      '' ''    [1 5 0 0 0]  0         1     ''       'z'   'z'       'c'     casemod('DELWAQ_RESULTS') casemod('SUBST_001')     ''    []       0 0};
-        if isfield(FI,'treatas1d') && FI.treatas1d
+        if isequal(qp_option(FI,'treatas1d'),1)
             DataProps{5}=[1 0 1 0 0];
         end
         mass_per='cell';
@@ -1175,9 +1227,8 @@ end
 %======================== SPECIFIC CODE ADD ===================================
 icnst=strmatch('--constituents',{Out.Name});
 ii=0;
-if ~isfield(FI,'balancefile')
-    FI.balancefile=0;
-end
+FI=qp_option(FI,'balancefile','ifnew',0);
+minlen=20;
 if ~isempty(icnst)
     [Out.BedLayer]=deal(0);
     [Out.ShortName]=deal('');
@@ -1188,14 +1239,16 @@ if ~isempty(icnst)
     else
         [names,Chk]=vs_get(LocFI,casemod([DELWAQ '_PARAMS']),casemod('SUBST_NAMES'),'quiet');
     end
-    if FI.balancefile
+    if qp_option(FI,'balancefile')
         if iscell(names)
             names=strvcat(names{:});
         end
         if size(names,2)>7 && sum(names(:,7)=='_')>size(names,1)/2
+            minlen = 6;
             nn1 = names(:,1:6);
             nn2 = cellstr(names(:,8:end));
         elseif size(names,2)>11
+            minlen = 10;
             nn1 = names(:,1:10);
             nn2 = cellstr(names(:,11:end));
         else
@@ -1519,22 +1572,17 @@ if ~isempty(icnst)
     end
     for j=1:length(Ins)
         Ins(j).ShortName = Ins(j).Name;
-        [Ins(j).Name,Ins(j).Units,Ins(j).SubsGrp]=substdb(Ins(j).Name,mass_per);
+        [Ins(j).Name,Ins(j).Units,Ins(j).SubsGrp]=substdb(Ins(j).Name,mass_per,'minmatchlen',minlen);
         if Ins(j).BedLayer>0
             Ins(j).SubsGrp=[Ins(j).SubsGrp '-bedlayer'];
             Ins(j).Name=[Ins(j).Name ' (bed layer)'];
             Ins(j).Units='kg/m^2';
         end
-        if FI.balancefile
+        if qp_option(FI,'balancefile')
             %
             % balance file
             %
             Ins(j).Units = [Ins(j).Units '/d'];
-            if Ins(j).NVal<0
-                for k=1:length(Ins(j).BalSubFld{2})
-                    Ins(j).BalSubFld{2}{k}=substdb(Ins(j).BalSubFld{2}{k},mass_per);
-                end
-            end
             Out(1).BalSubFld=[];
         end
         if isequal(Ins(j).Name,'Limit Chlo') || isequal(Ins(j).Name,'total chlorophyll in algae')
@@ -1825,10 +1873,10 @@ end
 % -----------------------------------------------------------------------------
 
 
-function [Full,Unit,GroupID]=substdb(Abb,cmd)
+function [Full,Unit,GroupID]=substdb(Abb,cmd,varargin)
 % substance database
 persistent x
-if nargin==2
+if nargin>=2
     switch cmd
         case 'filename'
             if isempty(x)
@@ -1913,8 +1961,11 @@ if isempty(x)
     end
  else
     if isstruct(x)
-       db=strmatch(lower(Abb),x.ID,'exact');
-       if isequal(size(db),[1 1])
+       db=ustrcmpi(lower(Abb),cellstr(x.ID),'casematch',4,varargin{:});
+       % much faster:
+       %db=strmatch(lower(Abb),x.ID,'exact');
+       %if isempty(db), db=-1; end
+       if db>0
           Full=deblank(x.NM(db,:));
           if isequal(lower(Full),'undefined')
              Full=Abb;
@@ -2011,7 +2062,7 @@ elseif strcmp(DELWAQ,'DELWAQ')
     bool = 0;
 elseif strcmp(subtype,'grid')
     bool = 0;
-elseif isfield(FI,'balancefile') && FI.balancefile
+elseif isequal(qp_option(FI,'balancefile'),1)
     bool = 0;
 else
     bool = 0; % unknown
@@ -2051,16 +2102,13 @@ switch cmd
         for cellfld = cellflds
             Fld = cellfld{1};
             f = findobj(mfig,'tag',Fld);
-            if isfield(FI,Fld)
-                value = getfield(FI,Fld);
-            else
-                switch Fld
-                    case {'clipwherezundefined'}
-                        value = 1;
-                    otherwise
-                        value = 0;
-                end
+            switch Fld
+                case {'clipwherezundefined'}
+                    defval = 1;
+                otherwise
+                    defval = 0;
             end
+            value = qp_option(FI,Fld,'default',defval);
             set(f,'value',value,'enable','on')
             %
             switch Fld
@@ -2068,11 +2116,7 @@ switch cmd
                     Fld = 'nettransport';
                     f = findobj(mfig,'tag',Fld);
                     if value
-                        if isfield(FI,Fld)
-                            value = getfield(FI,Fld);
-                        else
-                            value = 0;
-                        end
+                        value = qp_option(FI,Fld,'default',0);
                         set(f,'value',value,'enable','on')
                     else
                         set(f,'value',0,'enable','off')
@@ -2173,18 +2217,14 @@ switch cmd
             value = get(f,'value');
         end
         set(f,'value',value)
-        NewFI = setfield(NewFI,cmd,value);
+        NewFI = qp_option(NewFI,cmd,value);
         cmdargs = {cmd value};
         %
         if isequal(cmd,'balancefile')
             Fld = 'nettransport';
             f = findobj(mfig,'tag',Fld);
             if value
-                if isfield(FI,Fld)
-                    value = getfield(FI,Fld);
-                else
-                    value = 0;
-                end
+                value = qp_option(FI,Fld,'default',0);
                 set(f,'value',value,'enable','on')
             else
                 set(f,'value',0,'enable','off')

@@ -93,7 +93,8 @@ switch cmd
     case 'plot'
         Parent = varargin{1};
         Ops = varargin{2};
-        SubSelected = varargin(3:end);
+        hOld=varargin{3};
+        SubSelected = varargin(4:end);
         Selected = FI.Selected;
         j=0;
         for i = 1:5
@@ -103,7 +104,7 @@ switch cmd
             end
         end
         Selected(FI.DimFlag==0)=[];
-        [Chk,hNew,FI.FileInfo]=qp_getdata(FI.FileInfo,FI.Domain,FI.Props,'plot',Parent,Ops,Selected{:});
+        [Chk,hNew,FI.FileInfo]=qp_getdata(FI.FileInfo,FI.Domain,FI.Props,'plot',Parent,Ops,hOld,Selected{:});
         varargout={hNew FI};
         return
     otherwise

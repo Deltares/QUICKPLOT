@@ -1,4 +1,4 @@
-function [I,IAll]=ustrcmpi(Str,StrSet,opt)
+function [I,IAll]=ustrcmpi(Str,StrSet,varargin)
 %USTRCMPI Find a unique string.
 %   INDEX = USTRCMPI(STR,STRSET) compares the string STR with the strings
 %   in the string set STRSET and returns the INDEX of the string in the set
@@ -52,8 +52,24 @@ function [I,IAll]=ustrcmpi(Str,StrSet,opt)
 
 if nargin<2
    error('Not enough input arguments.')
-elseif nargin<3
-    opt=6;
+end
+opt=1:6;
+minlen=0;
+i=1;
+while i<=length(varargin)
+    if strcmpi(varargin{i},'casematch')
+        opt(opt==2*round(opt/2))=[];
+    elseif strcmpi(varargin{i},'minmatchlen')
+        i=i+1;
+        minlen = varargin{i};
+    elseif isnumeric(varargin{i})
+        if numel(varargin{i})==1
+            opt(opt>varargin{i})=[];
+        else
+            opt(~ismember(opt,varargin{i}))=[];
+        end
+    end
+    i=i+1;
 end
 
 if (ischar(Str) && size(Str,1)>1) || (iscellstr(Str) && length(Str)>1) % multiple Str values
@@ -69,40 +85,64 @@ else
    end
 end
 
-I=strcmp(Str,StrSet);
-if ~any(I) && opt>1
-   I=strcmpi(Str,StrSet);
-   if ~any(I) && opt>2
-      I=strncmp(Str,StrSet,length(Str));
-      if ~any(I) && opt>3
-         I=strncmpi(Str,StrSet,length(Str));
-         if ~any(I) && opt>4
-            I=double(I);
-            LS = length(Str);
-            for i=1:length(StrSet)
-               L = length(StrSet{i});
-               if L<LS
-                  I(i)=strncmp(Str,StrSet{i},L)*L;
-               end
-            end
-            if ~any(I) && opt>5
-               for i=1:length(StrSet)
-                  L = length(StrSet{i});
-                  if L<LS
-                     I(i)=strncmpi(Str,StrSet{i},L)*L;
-                  end
-               end
-            end
-            if any(I)
-               m=max(I);
-               I=I==m;
-            end
-         end
-      end
-   end
+nany=1;
+if nany && ismember(1,opt)
+    I=strcmp(Str,StrSet);
+    nany = ~any(I);
 end
-I=find(I);
-IAll=I;
-if ~isequal(size(I),[1 1])
-   I=-1;
+if nany && ismember(2,opt)
+    I=strcmpi(Str,StrSet);
+    nany = ~any(I);
+end
+if length(Str)<minlen
+    Str(minlen) = ' ';
+end
+if nany && ismember(3,opt)
+    I=strncmp(Str,StrSet,length(Str));
+    nany = ~any(I);
+end
+if nany && ismember(4,opt)
+    I=strncmpi(Str,StrSet,length(Str));
+    nany = ~any(I);
+end
+if nany && ismember(5,opt)
+    I=double(I);
+    LS = length(Str);
+    for i=1:length(StrSet)
+        L = length(StrSet{i});
+        if L<LS && L>=minlen
+            I(i)=strncmp(Str,StrSet{i},L)*L;
+        end
+    end
+    nany = ~any(I);
+    if ~nany
+        m=max(I);
+        I=I==m;
+    end
+end
+if nany && ismember(6,opt)
+    I=double(I);
+    LS = length(Str);
+    for i=1:length(StrSet)
+        L = length(StrSet{i});
+        if L<LS && L>=minlen
+            I(i)=strncmpi(Str,StrSet{i},L)*L;
+        end
+    end
+    nany = ~any(I);
+    if ~nany
+        m=max(I);
+        I=I==m;
+    end
+end
+if nany
+    I=-1;
+    IAll=[];
+else
+    IAll=find(I);
+    if numel(IAll)==1
+        I=IAll;
+    else
+        I=-1;
+    end
 end

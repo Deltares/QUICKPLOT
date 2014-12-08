@@ -421,10 +421,6 @@ if isequal(S.FileType,'DelwaqHIS')
         try
             hia = inifile('open',HIA);
             %
-            %for i=1:length(S.SubsName)
-            %    S.SubsName{i}=inifile('get',hia,'Long Parameters',num2str(i),S.SubsName{i});
-            %end
-            %
             par=ustrcmpi('Long Parameters',hia.Data(:,1));
             if par>0
                 PAR=hia.Data{par,2};
@@ -435,10 +431,16 @@ if isequal(S.FileType,'DelwaqHIS')
                     end
                 end
             end
-            %
-            %for i=1:length(S.SegmentName)
-            %    S.SegmentName{i}=inifile('get',hia,'Long Locations',num2str(i),S.SegmentName{i});
-            %end
+            par=ustrcmpi('Parameter Descriptions',hia.Data(:,1));
+            if par>0
+                PAR=hia.Data{par,2};
+                for i=1:size(PAR,1)
+                    j=str2double(PAR{i,1});
+                    if j==round(j)
+                        S.SubsName{j}=sprintf('%s (%s)',S.SubsName{j},PAR{i,2});
+                    end
+                end
+            end
             %
             loc=ustrcmpi('Long Locations',hia.Data(:,1));
             if loc>0
@@ -447,6 +449,16 @@ if isequal(S.FileType,'DelwaqHIS')
                     j=str2double(LOC{i,1});
                     if j==round(j)
                         S.SegmentName{j}=LOC{i,2};
+                    end
+                end
+            end
+            loc=ustrcmpi('Location Descriptions',hia.Data(:,1));
+            if loc>0
+                LOC=hia.Data{loc,2};
+                for i=1:size(LOC,1)
+                    j=str2double(LOC{i,1});
+                    if j==round(j)
+                        S.SegmentName{j}=sprintf('%s (%s)',S.SegmentName{j},LOC{i,2});
                     end
                 end
             end

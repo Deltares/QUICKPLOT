@@ -12,7 +12,7 @@ function varargout=bitmapfil(FI,domain,field,cmd,varargin)
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'gridcelldata',subf,t,station,m,n,k)
 %                             XXXFIL(FI,[],'options',OptionsFigure,'initialize')
 %   [NewFI     ,cmdargs]    = XXXFIL(FI,[],'options',OptionsFigure,OptionsCommand, ...)
-%   [hNew      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'plot',Parent,Ops,subf,t,station,m,n,k)
+%   [hNew      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'plot',Parent,Ops,hOld,subf,t,station,m,n,k)
 %
 %   The DataFld can only be either an element of the DataProps structure.
 
@@ -95,10 +95,11 @@ end
 
 Parent=varargin{1};
 Ops=varargin{2};
+hOld=varargin{3};
 
 t=1;
-if length(varargin)>2
-    t=varargin{3};
+if length(varargin)>3
+    t=varargin{4};
 end
 
 switch Props.Name

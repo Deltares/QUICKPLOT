@@ -106,6 +106,7 @@ switch cmd
     case 'plot'
         Parent = varargin{1};
         Ops = varargin{2};
+        % hOld=varargin{3};
         %
         switch Props.Subtype
             case GSHHS_types

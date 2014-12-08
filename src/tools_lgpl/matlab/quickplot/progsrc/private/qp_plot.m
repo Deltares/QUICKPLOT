@@ -738,10 +738,10 @@ end
 %==========================================================================
 Quant = protectstring(Quant);
 if NVal==-2
-    [Chk,hNewVec,FileInfo]=qp_getdata(FileInfo,Domain,Props,'plot',Parent,Ops,SubField{:},SubSelected{:});
+    [Chk,hNewVec,FileInfo]=qp_getdata(FileInfo,Domain,Props,'plot',Parent,Ops,hOld,SubField{:},SubSelected{:});
     return
 elseif NVal==-1
-    [Chk,hNewVec,FileInfo]=qp_getdata(FileInfo,Domain,Props,'plot',Parent,Ops,SubField{:},SubSelected{:});
+    [Chk,hNewVec,FileInfo]=qp_getdata(FileInfo,Domain,Props,'plot',Parent,Ops,hOld,SubField{:},SubSelected{:});
     hNew{1}=hNewVec;
     hObsolete=setdiff(hOld{1},hNew{1});
     delete(hObsolete(ishandle(hObsolete)));

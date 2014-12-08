@@ -93,9 +93,10 @@ switch cmd
     case 'plot'
         Parent=varargin{1};
         Ops=varargin{2};
+        hOld=varargin{3};
         subf={'ellipsephase','ellipsephasevec','ellipse','cross'};
-        subf = subf{varargin{3}};
-        idx = varargin(4:5);
+        subf = subf{varargin{4}};
+        idx = varargin(5:6);
         if isequal(idx{1},0)
             idx{1}=':';
         end

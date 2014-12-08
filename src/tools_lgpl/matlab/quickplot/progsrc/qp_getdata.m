@@ -42,7 +42,7 @@ function [varargout]=qp_getdata(varargin)
 %
 %      [Success]                       = QP_GETDATA(FI,'options',OptionsFigure,'initialize')
 %      [Success,NewFI     ,cmdargs]    = QP_GETDATA(FI,'options',OptionsFigure,OptionsCommand, ...)
-%      [Success,hNew      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'plot',Parent,Ops,subf,t,station,m,n,k)
+%      [Success,hNew      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'plot',Parent,Ops,hOld,subf,t,station,m,n,k)
 
 %----- LGPL --------------------------------------------------------------------
 %
@@ -154,7 +154,7 @@ try
             % [Success,Times     ]            = QP_GETDATA(FI,Domain,DataFld,'times',T)
             % [Success,StNames   ]            = QP_GETDATA(FI,Domain,DataFld,'stations',S)
             % [Success,SubFields ]            = QP_GETDATA(FI,Domain,DataFld,'subfields',F)
-            % [Success,hNew      ]            = QP_GETDATA(FI,Domain,DataFld,'plot',Parent,Ops,subf,t,station,m,n,k)
+            % [Success,hNew      ]            = QP_GETDATA(FI,Domain,DataFld,'plot',Parent,Ops,hOld,subf,t,station,m,n,k)
             % [Success,Data      ]            = QP_GETDATA(FI,Domain,DataFld,'data',subf,t,station,m,n,k)
             %
             % Check for domain index ... add if necessary
@@ -204,7 +204,7 @@ try
                     % [Success,Times     ]            = QP_GETDATA(FI,Domain,DataFld,'times',T)
                     % [Success,StNames   ]            = QP_GETDATA(FI,Domain,DataFld,'stations',S)
                     % [Success,SubFields ]            = QP_GETDATA(FI,Domain,DataFld,'subfields',F)
-                    % [Success,hNew      ]            = QP_GETDATA(FI,Domain,DataFld,'plot',Parent,Ops,subf,t,station,m,n,k)
+                    % [Success,hNew      ]            = QP_GETDATA(FI,Domain,DataFld,'plot',Parent,Ops,hOld,subf,t,station,m,n,k)
                     % [Success,Data      ]            = QP_GETDATA(FI,Domain,DataFld,'data',subf,t,station,m,n,k)
                     %
                     % Nothing to do, we already have a domain number.
@@ -226,7 +226,7 @@ try
                     % [Success,Times     ]            = QP_GETDATA(FI,DataFld,'times',T)
                     % [Success,StNames   ]            = QP_GETDATA(FI,DataFld,'stations',S)
                     % [Success,SubFields ]            = QP_GETDATA(FI,DataFld,'subfields',F)
-                    % [Success,hNew      ]            = QP_GETDATA(FI,DataFld,'plot',Parent,Ops,subf,t,station,m,n,k)
+                    % [Success,hNew      ]            = QP_GETDATA(FI,DataFld,'plot',Parent,Ops,hOld,subf,t,station,m,n,k)
                     % [Success,Data      ]            = QP_GETDATA(FI,DataFld,'data',subf,t,station,m,n,k)
                     %
                     % No domain number, so use default domain number 0.
@@ -315,7 +315,7 @@ try
             % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'griddata',subf,t,station,m,n,k)
             % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'gridcelldata',subf,t,station,m,n,k)
             % [Success,NewFI     ,cmdargs]    = QP_GETDATA(FI,'options',OptionsFigure,OptionsCommand, ...)
-            % [Success,hNew      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'plot',Parent,Ops,subf,t,station,m,n,k)
+            % [Success,hNew      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'plot',Parent,Ops,hOld,subf,t,station,m,n,k)
             %
             % If a NewFI argument is returned, it may have to be wrapped in a
             % QuickPlot wrapper. However, it is sometimes returned as the
@@ -386,7 +386,7 @@ try
                 calltype=X{3};
                 if isequal(calltype,'plot')
                     %
-                    % [Success,hNew      ,NewFI]   = QP_GETDATA(FI,Domain,DataFld,'plot',Parent,Ops,subf,t,station,m,n,k)
+                    % [Success,hNew      ,NewFI]   = QP_GETDATA(FI,Domain,DataFld,'plot',Parent,Ops,hOld,subf,t,station,m,n,k)
                     %
                     [varargout{2:3}]=feval(Fcn,FI,X{:});
                 else
