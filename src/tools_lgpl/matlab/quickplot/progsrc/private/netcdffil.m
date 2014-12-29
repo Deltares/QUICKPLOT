@@ -971,7 +971,9 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 tvar = FI.Dataset(Props.varid(1)+1).Time;
 tinfo = FI.Dataset(tvar).Info;
 T = double(nc_varget(FI.FileName,FI.Dataset(tvar).Name));
-if ischar(tinfo.RefDate)
+if ~isstruct(tinfo) % likely even empty
+    % continue with T = T;
+elseif ischar(tinfo.RefDate)
     switch tinfo.RefDate
         case 'day as %Y%m%d.%f'
             Y = floor(T/10000);

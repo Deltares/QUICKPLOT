@@ -889,21 +889,21 @@ switch cmd
                         'f(A) = user defined','f(A,B) = user defined'};
                     if Vars(i).DimFlag(M_)
                         if NVal==1
-                            Ops(end+(1:4))={'max m' 'alg.mean m' 'min m' 'sum m'};
+                            Ops(end+(1:2))={'min m' 'max m'};
                         end
-                        Ops(end+1) = {'flip m'};
+                        Ops(end+(1:3)) = {'alg.mean m' 'sum m' 'flip m'};
                     end
                     if Vars(i).DimFlag(N_)
                         if NVal==1
-                            Ops(end+(1:4))={'max n' 'alg.mean n' 'min n' 'sum n'};
+                            Ops(end+(1:2))={'min n' 'max n'};
                         end
-                        Ops(end+1) = {'flip n'};
+                        Ops(end+(1:3)) = {'alg.mean n' 'sum n' 'flip n'};
                     end
                     if Vars(i).DimFlag(K_)
                         if NVal==1
-                            Ops(end+(1:4))={'max k' 'alg.mean k' 'min k' 'sum k'};
+                            Ops(end+(1:2))={'min k' 'max k'};
                         end
-                        Ops(end+1) = {'flip k'};
+                        Ops(end+(1:3)) = {'alg.mean k' 'sum k' 'flip k'};
                     end
                     if NVal>1
                         Ops(end+1)={'magnitude'};

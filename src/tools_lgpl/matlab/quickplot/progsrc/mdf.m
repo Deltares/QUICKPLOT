@@ -492,9 +492,9 @@ if ~isempty(rghname)
 end
 %
 ininame = inifile('geti',MDF.mdf,'','Restid','');
-ininame = ['tri-rst.',rmhash(ininame)];
+ininame = rmhash(ininame);
 if ~isempty(ininame)
-    ininame = relpath(mdfpath,ininame);
+    ininame = relpath(mdfpath,['tri-rst.' ininame]);
     MDF.ini = trirst('read',ininame,MDF.grd,'all');
     nfields = length(MDF.ini);
     % water level, velocity, constituents, turbulent quantities, u/v mnldf
