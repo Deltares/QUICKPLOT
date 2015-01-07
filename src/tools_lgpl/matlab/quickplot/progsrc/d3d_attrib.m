@@ -91,8 +91,8 @@ end
 
 function Types = Local_supported_types
 Types = {'openboundary', 'rigidsheet', '3dgate', 'weir', 'weir-waqua', ...
-    'thindam', 'thindam-waqua', 'drypoint', 'discharge stations', ...
-    'cross-sections', 'observation points'};
+    'thindam', 'thindam-waqua', 'drypoint', 'cross-sections', ...
+    'discharge stations', 'observation points'};
 
 
 function Out = Local_read_attrib(filename,filetype)
