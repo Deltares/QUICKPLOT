@@ -81,10 +81,10 @@ function delwaq2raster(ini_file)
 %   $Id$  
 
 if isstandalone
-   fprintf(1,repmat('-',1,80))
-   fprintf(1,'Delft3D-DELWAQ2RASTER conversion tool.')
-   fprintf(1,'Version <VERSION> (<CREATIONDATE>)')
-   fprintf(1,repmat('-',1,80))
+   fprintf(1,'--------------------------------------------------------------------------------\n')
+   fprintf(1,'Delft3D-DELWAQ2RASTER conversion tool.\n')
+   fprintf(1,'Version <VERSION> (<CREATIONDATE>)\n')
+   fprintf(1,'--------------------------------------------------------------------------------\n')
 end
 
 if nargin==0
@@ -193,6 +193,8 @@ end
 for ifld = 1:length(chp)
     if ~isempty(chp{ifld,3})
         nq = length(chp{ifld,3});
+        info = chp{ifld,4};
+        %
         AllTimes  = cell(2,0);
         for i = 1:nq
             if chp{ifld,3}(i)>0
@@ -239,6 +241,8 @@ for ifld = 1:length(chp)
         elseif info.tstop>length(AllTimes{1})
             error('Time range selected (%i:%i) does not fall inside the time range available (1:%i)',info.tstart,info.tstop,length(AllTimes{1}))
         end
+        %
+        chp{ifld,4} = info;
     end
 end
 %

@@ -27,11 +27,10 @@
 %                                                                               
 %-------------------------------------------------------------------------------
 %
-% Graphical user interfaces
+% Graphical tools
 %   d3d_qp              - QuickPlot user interface: plotting interface for Delft3D output data.
 %   ecoplot             - EcoPlot: Case Analysis Tool for Delft3D-WAQ/ECO/SED data.
-%   qpsa                - Get handle to the current QuickPlot axis.
-%   qpsf                - Get handle to the current QuickPlot figure.
+%   delwaq2raster       - Rasterize delwaq MAP results.
 %
 % Delft3D QuickPlot functions
 %   qpfopen             - General routine for open various types of data files.
@@ -43,6 +42,8 @@
 %   vrange              - Selection of data based on a vertical coordinate range.
 %   qpcross             - Cross-section of data: one point in time.
 %   qpcrosst            - Cross-section of data: time-dependent track.
+%   qpsa                - Get handle to the current QuickPlot axis.
+%   qpsf                - Get handle to the current QuickPlot figure.
 %
 % NEFIS Viewer Selector functions
 %   vs_use              - Initiates the use of a NEFIS file.
