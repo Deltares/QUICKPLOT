@@ -80,6 +80,13 @@ function delwaq2raster(ini_file)
 %   $HeadURL$
 %   $Id$  
 
+if isstandalone
+   fprintf(1,repmat('-',1,80))
+   fprintf(1,'Delft3D-DELWAQ2RASTER conversion tool.')
+   fprintf(1,'Version <VERSION> (<CREATIONDATE>)')
+   fprintf(1,repmat('-',1,80))
+end
+
 if nargin==0
     fprintf(1,'Syntax: delwaq2raster <configuration.ini>\n');
     error('No configuration.ini file specified')
