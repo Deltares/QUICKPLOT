@@ -64,9 +64,7 @@ autoscale = 1; % Autoscale if ~= 0 then scale by this.
 plotarrows = 1;
 
 filled = 0;
-ls = '-';
 ms = '';
-col = '';
 vert = {};
 
 nin = nargs;
@@ -81,8 +79,6 @@ while ischar(args{nin})
         if ~isempty(msg)
             error('Unknown option "%s".', vv)
         end
-        if ~isempty(l), ls = l; end
-        if ~isempty(c), col = c; end
         if ~isempty(m), ms = m; plotarrows = 0; end
         if isequal(m,'.'), ms = ''; end % Don't plot '.'
         nin = nin-1;
@@ -183,7 +179,7 @@ if ~isempty(ms) % Plot marker on base
         vert = {z(:)};
     end
     h3 = line(hu(:),hv(:),vert{:},'parent',cax);
-    set(h3,'marker',ms,'color',col)
+    set(h3,'marker',ms,'color',get(h1,'color'),'linestyle','none')
     if filled, set(h3,'markerfacecolor',get(h1,'color')); end
 else
     h3 = [];
