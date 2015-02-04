@@ -1048,8 +1048,8 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'relative total pressure'          'Pa'     [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'RHO'     'HYDPRES' []      0
     'concentration'                    'kg/m^3' [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-sedgs-series' 'RZED1' ''       's'      0
     '--constituents'                   ''       [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'R1'      ''       []       0
-    '--constituents flux'              ''       [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'R1FLX_UU' 'R1FLX_VV' []    0
-    '--constituents cumulative flux'   ''       [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'R1FLX_UUC' 'R1FLX_VVC' []  0
+    '--constituents flux staggered'    ''       [1 0 1 1 1]  1         1.9  ''        'd'   'd'       'c'     'map-series'     'R1FLX_UU' 'R1FLX_VV' []    2
+    '--constituents cumulative flux staggered' '' [1 0 1 1 1] 1        1.9  ''        'd'   'd'       'c'     'map-series'     'R1FLX_UUC' 'R1FLX_VVC' []  2
     '--turbquant'                      ''       [1 0 1 1 1]  1         1    ''        'z'   'z'       'i'     'map-series'     'RTUR1'   ''       []       0
     'vertical eddy viscosity'          'm^2/s'  [1 0 1 1 1]  1         1    ''        'z'   'z'       'i'     'map-series'     'VICWW'   ''       []       0
     'vertical eddy diffusivity'        'm^2/s'  [1 0 1 1 1]  1         1    ''        'z'   'z'       'i'     'map-series'     'DICWW'   ''       []       0
@@ -1082,6 +1082,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'bed load transport'               '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SBUU'    'SBVV'   'sb'     1
     'staggered bedload transport'      '*'      [1 0 1 1 0]  1         1.9  ''        'd'   'd'       ''      'map-sed-series' 'SBUU'    'SBVV'   'sb'     2
     'near-bed transport correction'    '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SUCOR'   'SVCOR'  's'      1
+    'staggered near-bed transport correction' '*' [1 0 1 1 0]  1       1.9  ''        'd'   'd'       ''      'map-sed-series' 'SUCOR'   'SVCOR'  's'      2
     'd.a. suspended transport'         '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SSUU'    'SSVV'   's'      1
     'staggered d.a. suspended transport' '*'    [1 0 1 1 0]  1         1.9  ''        'd'   'd'       ''      'map-sed-series' 'SSUU'    'SSVV'   's'      2
     'total transport'                  '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SSUU'    'SSVV'   's'      1
@@ -1313,7 +1314,7 @@ if (lstci>0) && ~isempty(i)
     end
     Out=insstruct(Out,i,Ins);
 end
-i=find(strcmp('--constituents flux',{Out.Name}));
+i=find(strcmp('--constituents flux staggered',{Out.Name}));
 if (lstci>0) && ~isempty(i)
     Ins=Out(i*ones(lstci,1));
     for j=1:lstci
@@ -1326,7 +1327,7 @@ if (lstci>0) && ~isempty(i)
     end
     Out=insstruct(Out,i,Ins);
 end
-i=find(strcmp('--constituents cumulative flux',{Out.Name}));
+i=find(strcmp('--constituents cumulative flux staggered',{Out.Name}));
 if (lstci>0) && ~isempty(i)
     Ins=Out(i*ones(lstci,1));
     for j=1:lstci
