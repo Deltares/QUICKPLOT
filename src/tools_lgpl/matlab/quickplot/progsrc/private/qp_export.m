@@ -206,7 +206,12 @@ for f=1:ntim
     end
     if ~isempty(data)
         Units=data(1).Units;
-        if isfield(Ops,'units') && ~isempty(Ops.units) && ~isempty(Units)
+        if isfield(Ops,'vectorcomponent') && strcmp(Ops.vectorcomponent,'angle')
+            Units='radians';
+            if isfield(Ops,'units') && isempty(Ops.units)
+                Ops.units='radians';
+            end
+        elseif isfield(Ops,'units') && ~isempty(Ops.units) && ~isempty(Units)
             dataX=qp_unitconversion(Units,Ops.units,data);
             if ~ischar(dataX)
                 data=dataX;

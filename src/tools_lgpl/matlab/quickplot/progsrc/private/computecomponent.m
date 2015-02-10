@@ -145,7 +145,11 @@ for d=1:length(data)
             end
             data(d).Val=sqrt(data(d).Val);
         case 'angle'
-            sf = qp_unitconversion('radians',Ops.units);
+            if strcmp(Ops.units,'**Hide**')
+                sf = 1;
+            else
+                sf = qp_unitconversion('radians',Ops.units);
+            end
             switch Ops.angleconvention
                 case {'Nautical','Nautical Positive'}
                     data(d).Val=sf*atan2(data(d).XComp,data(d).YComp); % Nautical convention

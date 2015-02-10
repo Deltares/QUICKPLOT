@@ -910,7 +910,6 @@ if ~isempty(Units)
         set(dunit,'string',user_units)
     elseif system==length(systems)
         % Hide
-        user_units='**Hide**';
         Units='**Hide**';
         Ops.units='**Hide**';
     elseif system==length(systems)-1

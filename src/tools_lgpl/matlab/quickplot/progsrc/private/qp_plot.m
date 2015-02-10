@@ -173,7 +173,12 @@ if ~isempty(data)
 end
 %
 if isfield(Ops,'units')
-    if isequal(Ops.units,'**Hide**')
+    if isfield(Ops,'vectorcomponent') && strcmp(Ops.vectorcomponent,'angle')
+        Units='radians';
+        if isempty(Ops.units) % if not empty, it's '**Hide**' or more likely 'deg'
+            Ops.units='radians';
+        end
+    elseif isequal(Ops.units,'**Hide**')
         Units='';
     elseif ~isempty(Ops.units) && ~isempty(Units)
         dataX=qp_unitconversion(Units,Ops.units,data);
@@ -236,6 +241,9 @@ if isfield(data,'XComp')
     else
         Quant=[Quant ', ' Ops.vectorcomponent];
         Units = data(1).Units;
+    end
+    if strcmp(Ops.units,'**Hide**')
+        Units = '';
     end
     if scalar
         NVal=1;
