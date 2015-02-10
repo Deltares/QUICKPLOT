@@ -79,29 +79,29 @@ end
 cmd=lower(cmd);
 switch cmd
     case 'size'
-        varargout={getsize(FI,Props)};
+        varargout={getsize(FI,domain,Props)};
         return;
     case 'times'
-        varargout={readtim(FI,Props,varargin{:})};
+        varargout={readtim(FI,domain,Props,varargin{:})};
         return
     case 'stations'
-        varargout={readsts(FI,Props,varargin{:})};
+        varargout={readsts(FI,domain,Props,varargin{:})};
         return
     case 'subfields'
-        varargout={getsubfields(FI,Props,varargin{:})};
+        varargout={getsubfields(FI,domain,Props,varargin{:})};
         return
     otherwise
         [XYRead,DataRead,DataInCell]=gridcelldata(cmd);
 end
 
-[success,Ans,FI(1)] = qp_getdata(FI(1),Props.Q1,cmd,varargin{:});
+[success,Ans,FI(1)] = qp_getdata(FI(1),domain,Props.Q1,cmd,varargin{:});
 if ~success
     error(lasterr)
 end
 
 if Props.NVal>0
     cmd = strrep(cmd,'grid','');
-    [success,Data2,FI(2)] = qp_getdata(FI(2),Props.Q2,cmd,varargin{:});
+    [success,Data2,FI(2)] = qp_getdata(FI(2),domain,Props.Q2,cmd,varargin{:});
     if ~success
         error(lasterr)
     end
@@ -125,20 +125,31 @@ varargout={Ans FI};
 function Domains=domains(FI)
 [success,D1] = qp_getdata(FI(1),'domains');
 [success,D2] = qp_getdata(FI(2),'domains');
-if ~isempty(D1) || ~isempty(D2)
-    error('Support for domains not yet implemented.')
+if isempty(D1) && isempty(D2)
+    Domains = {};
+elseif isequal(D1,D2)
+    Domains = D1;
+elseif length(D1)<=1 && length(D2)<=1
+    if length(D1)==1 && isempty(D2)
+        Domains = D1;
+    elseif isempty(D1) && length(D2)==1
+        Domains = D2;
+    else % length(D1)==1 && length(D2)==1
+        Domains = { sprintf('%s/%s',D1{1},D2{1}) };
+    end
+else
+    error('Multiple different domains not supported.')
 end
-Domains = {};
 % -----------------------------------------------------------------------------
 
 
 % -----------------------------------------------------------------------------
 function Out=infile(FI,domain)
-[success,Q1] = qp_getdata(FI(1));
+[success,Q1] = qp_getdata(FI(1),domain);
 if ~success
     error(lasterr)
 end
-[success,Q2] = qp_getdata(FI(2));
+[success,Q2] = qp_getdata(FI(2),domain);
 if ~success
     error(lasterr)
 end
@@ -172,11 +183,11 @@ for i=1:length(Q1)
         % no match found
         continue
     end
-    [success,sz] = qp_getdata(FI(1),Q1(i),'size');
+    [success,sz] = qp_getdata(FI(1),domain,Q1(i),'size');
     if ~success
         error(lasterr)
     end
-    [success,sf] = qp_getdata(FI(1),Q1(i),'subfields');
+    [success,sf] = qp_getdata(FI(1),domain,Q1(i),'subfields');
     if ~success
         error(lasterr)
     end
@@ -190,7 +201,7 @@ for i=1:length(Q1)
             % dependence and stations might be acceptable in the future.
             i2(k)=[];
         else
-            [success,sz2] = qp_getdata(FI(2),Q2(i2(k)),'size');
+            [success,sz2] = qp_getdata(FI(2),domain,Q2(i2(k)),'size');
             if ~success
                 error(lasterr)
             end
@@ -199,7 +210,7 @@ for i=1:length(Q1)
                 % future?
                 i2(k)=[];
             else
-                [success,sf2] = qp_getdata(FI(2),Q2(i2(k)),'subfields');
+                [success,sf2] = qp_getdata(FI(2),domain,Q2(i2(k)),'subfields');
                 if ~success
                     error(lasterr)
                 end
@@ -260,27 +271,27 @@ Out(j+1:end)=[];
 
 
 % -----------------------------------------------------------------------------
-function subf=getsubfields(FI,Props,f)
+function subf=getsubfields(FI,domain,Props,f)
 subf = Props.SubFld;
-if nargin>2
+if nargin>3
     subf = subf(f);
 end
 % -----------------------------------------------------------------------------
 
 
 % -----------------------------------------------------------------------------
-function sz=getsize(FI,Props)
+function sz=getsize(FI,domain,Props)
 sz = Props.Size;
 % -----------------------------------------------------------------------------
 
 
 % -----------------------------------------------------------------------------
-function T=readtim(FI,Props,t)
+function T=readtim(FI,domain,Props,t)
 TimeNr = {};
-if nargin>2
+if nargin>3
     TimeNr = {t};
 end
-[success,T] = qp_getdata(FI(1),Props.Q1,'times',TimeNr{:});
+[success,T] = qp_getdata(FI(1),domain,Props.Q1,'times',TimeNr{:});
 if ~success
     error(lasterr)
 end
@@ -288,12 +299,12 @@ end
 
 
 % -----------------------------------------------------------------------------
-function S=readsts(FI,Props,t)
+function S=readsts(FI,domain,Props,t)
 StationNr = {};
-if nargin>2
+if nargin>3
     StationNr = {t};
 end
-[success,S] = qp_getdata(FI(1),Props.Q1,'stations',StationNr{:});
+[success,S] = qp_getdata(FI(1),domain,Props.Q1,'stations',StationNr{:});
 if ~success
     error(lasterr)
 end
