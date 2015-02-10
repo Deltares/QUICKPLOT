@@ -1641,7 +1641,7 @@ set(H(2),'position',pos, ...
 
 %============
 function H=LocTextPopup_line(hP,str,cmd,pos,tooltip)
-txtwidth=0.36*pos(3);
+txtwidth=0.38*pos(3);
 txtpos=pos;
 txtpos(3:4)=[txtwidth 18];
 H(1) = uicontrol('Parent',hP, ...
