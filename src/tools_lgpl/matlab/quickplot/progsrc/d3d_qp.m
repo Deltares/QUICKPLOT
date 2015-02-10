@@ -1683,7 +1683,7 @@ switch cmd
                     DS.SubField=subf;
                     DS.Selected=selected;
                     DS.Ops=Ops;
-                    FileName=qp_export(getappdata(findobj(mfig,'tag','exportdata'),'exporttype'),FileName,DS);
+                    FileName=qp_export(getappdata(findobj(UD.Options.Handles,'tag','exportdata'),'exporttype'),FileName,DS);
                     set(mfig,'pointer','arrow')
                 catch Ex
                     FileName='';

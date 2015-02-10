@@ -120,6 +120,17 @@ else
     end
 end
 for d=1:length(data)
+    if strcmp(Ops.units,'**Hide**') || isempty(Ops.units) || ~isfield(data,'Units') || isempty(data(d).Units)
+        sf = 1;
+        if isfield(data,'Units')
+            Units = data(d).Units;
+        else
+            Units = '';
+        end
+    else
+        sf = qp_unitconversion(data(d).Units,Ops.units);
+        Units = Ops.units;
+    end
     switch lower(vpt)
         case {'vector','vector (split x,y)'}
         case 'magnitude'
@@ -130,7 +141,7 @@ for d=1:length(data)
             if isfield(data,'ZComp')
                 data(d).Val=data(d).Val+data(d).ZComp.^2;
             end
-            data(d).Val=sqrt(data(d).Val);
+            data(d).Val=sf*sqrt(data(d).Val);
         case 'magnitude in plane'
             if isfield(data,'XComp') && size(data(d).XComp,1)>1
                 data(d).Val=data(d).XComp.^2;
@@ -143,10 +154,12 @@ for d=1:length(data)
             if isfield(data,'ZComp') && size(data(d).ZComp,3)>1
                 data(d).Val=data(d).Val+data(d).ZComp.^2;
             end
-            data(d).Val=sqrt(data(d).Val);
+            data(d).Val=sf*sqrt(data(d).Val);
         case 'angle'
-            if strcmp(Ops.units,'**Hide**')
+            if strcmp(Ops.units,'**Hide**') || isempty(Ops.units)
                 sf = 1;
+                Ops.units = 'radians';
+                Units = 'radians';
             else
                 sf = qp_unitconversion('radians',Ops.units);
             end
@@ -163,27 +176,28 @@ for d=1:length(data)
             data(d).Units=Ops.units;
             vpt='angle';
         case 'x component'
-            data(d).Val=data(d).XComp;
+            data(d).Val=sf*data(d).XComp;
         case 'y component'
-            data(d).Val=data(d).YComp;
+            data(d).Val=sf*data(d).YComp;
         case 'z component'
-            data(d).Val=data(d).ZComp;
+            data(d).Val=sf*data(d).ZComp;
         case 'm component'
-            data(d).Val=data(d).XComp; %MComp
+            data(d).Val=sf*data(d).XComp; %MComp
         case 'n component'
-            data(d).Val=data(d).YComp; %NComp
+            data(d).Val=sf*data(d).YComp; %NComp
         case 'k component'
-            data(d).Val=data(d).ZComp; %KComp
+            data(d).Val=sf*data(d).ZComp; %KComp
         case 'normal component' % only for a vertical slice
             if  size(data(d).XComp,1)>1
-                data(d).Val=data(d).YComp; %NComp
+                data(d).Val=sf*data(d).YComp; %NComp
             else
-                data(d).Val=data(d).XComp; %MComp
+                data(d).Val=sf*data(d).XComp; %MComp
             end
         otherwise
             ui_message('error','Unexpected colour/plot type encountered: %s.',vpt);
             scalar=0;
     end
+    data(d).Units = Units;
     if isfield(data,'Val')
         if isfield(data,'X') && isequal(size(data(d).Val),size(data(d).X))
             data(d).Val(isnan(data(d).X))=NaN;

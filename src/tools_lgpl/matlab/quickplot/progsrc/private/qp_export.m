@@ -199,36 +199,39 @@ for f=1:ntim
         filename='';
         return
     end
+    componentof='';
     if ~isempty(data)
         if ~(isfield(data,'XYZ') && ~MATfile) || ~strcmp(Ops.thinningmode,'none')
             data = qp_thinning(data,Ops);
         end
-    end
-    if ~isempty(data)
-        Units=data(1).Units;
-        if isfield(Ops,'vectorcomponent') && strcmp(Ops.vectorcomponent,'angle')
-            Units='radians';
-            if isfield(Ops,'units') && isempty(Ops.units)
-                Ops.units='radians';
+        %
+        VecUnits=data(1).Units;
+        if isfield(data,'XComp')
+            [data,scalar,component]=computecomponent(data,Ops);
+            componentof=[component ' of '];
+            if scalar
+                Props.NVal=1;
             end
-        elseif isfield(Ops,'units') && ~isempty(Ops.units) && ~isempty(Units)
-            dataX=qp_unitconversion(Units,Ops.units,data);
+        end
+        %
+        ValUnits=data(1).Units;
+        if isfield(Ops,'units') && strcmp(Ops.units,'**Hide**')
+            ValUnits='';
+            VecUnits='';
+        elseif isfield(data,'XComp')
+            % data conversion of vector component already done in computecomponent
+        elseif isfield(Ops,'units') && ~isempty(Ops.units) && ~isempty(ValUnits)
+            dataX=qp_unitconversion(ValUnits,Ops.units,data);
             if ~ischar(dataX)
                 data=dataX;
                 dataX=[];
-                Units=data(1).Units;
+                ValUnits=data(1).Units;
             end
         end
-        ValUnits=Units;
     end
-    component='';
-    if isfield(data,'XComp')
-        [data,scalar,component]=computecomponent(data,Ops);
-        component=[component ' of '];
-        ValUnits=data(1).Units;
-        if scalar
-            Props.NVal=1;
-        end
+    if isfield(Ops,'units') && strcmp(Ops.units,'**Hide**')
+        VecUnits = '';
+        ValUnits = '';
     end
 
     if f==1
@@ -251,27 +254,27 @@ for f=1:ntim
         if isfield(data,'XComp') && Props.NVal>1
             flds{1,end+1}='XComp';
             vars{1,end+1}=sprintf('%s component of %s',componentstrings{1},Props.Name);
-            if ~isempty(Units)
-                vars{1,end}=cat(2,vars{1,end},' (',Units,')');
+            if ~isempty(VecUnits)
+                vars{1,end}=cat(2,vars{1,end},' (',VecUnits,')');
             end
         end
         if isfield(data,'YComp') && Props.NVal>1
             flds{1,end+1}='YComp';
             vars{1,end+1}=sprintf('%s component of %s',componentstrings{2},Props.Name);
-            if ~isempty(Units)
-                vars{1,end}=cat(2,vars{1,end},' (',Units,')');
+            if ~isempty(VecUnits)
+                vars{1,end}=cat(2,vars{1,end},' (',VecUnits,')');
             end
         end
         if isfield(data,'ZComp') && Props.NVal>1
             flds{1,end+1}='ZComp';
             vars{1,end+1}=sprintf('%s component of %s',componentstrings{3},Props.Name);
-            if ~isempty(Units)
-                vars{1,end}=cat(2,vars{1,end},' (',Units,')');
+            if ~isempty(VecUnits)
+                vars{1,end}=cat(2,vars{1,end},' (',VecUnits,')');
             end
         end
         if isfield(data,'Val')
             flds{1,end+1}='Val';
-            vars{1,end+1}=[component Props.Name];
+            vars{1,end+1}=[componentof Props.Name];
             if ~isempty(ValUnits)
                 vars{1,end}=cat(2,vars{1,end},' (',ValUnits,')');
             end
@@ -554,7 +557,7 @@ for f=1:ntim
                         end
                         if isfield(data,'Val')
                             cv=[cv data(d).Val(:)];
-                            cLabels{end+1}=component;
+                            cLabels{end+1}=componentof;
                         end
                         if isempty(cv)
                             %

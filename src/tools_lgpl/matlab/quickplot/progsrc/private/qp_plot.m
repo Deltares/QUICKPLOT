@@ -173,13 +173,20 @@ if ~isempty(data)
 end
 %
 if isfield(Ops,'units')
-    if isfield(Ops,'vectorcomponent') && strcmp(Ops.vectorcomponent,'angle')
-        Units='radians';
-        if isempty(Ops.units) % if not empty, it's '**Hide**' or more likely 'deg'
-            Ops.units='radians';
-        end
-    elseif isequal(Ops.units,'**Hide**')
+    if isequal(Ops.units,'**Hide**')
         Units='';
+    elseif isfield(data,'XComp')
+        % data conversion of vector component will be done in computecomponent
+        if isempty(Ops.units) % default values
+            if (isfield(Ops,'vectorcomponent') && strcmp(Ops.vectorcomponent,'angle')) || ...
+                    (isfield(Ops,'vectorcolour') && strcmp(Ops.vectorcolour,'angle'))
+                Units='radians';
+            else
+                % data units used above should be correct
+            end
+        else
+            Units=Ops.units;
+        end            
     elseif ~isempty(Ops.units) && ~isempty(Units)
         dataX=qp_unitconversion(Units,Ops.units,data);
         if ~ischar(dataX)

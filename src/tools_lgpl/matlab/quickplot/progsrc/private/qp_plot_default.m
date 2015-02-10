@@ -60,7 +60,7 @@ switch NVal
     
     case {0,0.5}
         switch axestype
-            case {'X-Y','Lon-Lat'}
+            case {'X-Y','Lon-Lat','X-Y-Val','Lon-Lat-Val'}
                 
                 if isfield(data,'TRI')
                     if FirstFrame
@@ -236,7 +236,7 @@ switch NVal
         
     case {1,5,6}
         switch axestype
-            case {'X-Y','Lon-Lat'}
+            case {'X-Y','Lon-Lat','X-Y-Val','Lon-Lat-Val'}
                 if isfield(data,'TRI')
                     set(Parent,'NextPlot','add');
                     switch Ops.presentationtype
@@ -870,7 +870,7 @@ switch NVal
                     qp_title(Parent,{TStr},'quantity',Quant,'unit',Units,'time',TStr)
                 end
                 
-            case {'X-Y','Lon-Lat'}
+            case {'X-Y','Lon-Lat','X-Y-Val','Lon-Lat-Val'}
                 data.XComp((data.XComp==0) & (data.YComp==0))=NaN;
                 I=~isnan(data.XComp(:));
                 %
