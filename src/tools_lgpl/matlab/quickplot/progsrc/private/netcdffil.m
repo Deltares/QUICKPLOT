@@ -969,8 +969,13 @@ function T=readtim(FI,Props,t)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
 tvar = FI.Dataset(Props.varid(1)+1).Time;
-tinfo = FI.Dataset(tvar).Info;
-T = double(nc_varget(FI.FileName,FI.Dataset(tvar).Name));
+if isempty(tvar)
+    tinfo = [];
+    T = [];
+else
+    tinfo = FI.Dataset(tvar).Info;
+    T = double(nc_varget(FI.FileName,FI.Dataset(tvar).Name));
+end
 if ~isstruct(tinfo) % likely even empty
     % continue with T = T;
 elseif ischar(tinfo.RefDate)

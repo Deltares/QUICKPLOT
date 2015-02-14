@@ -208,6 +208,17 @@ while 1
                        end
                        %
                        if ~matching
+                           matching = 0;
+                           for i=1:size(C,1)
+                               K = MapSeg/C{i,4};
+                               if isequal(K,round(K))
+                                   matching = i;
+                                   break
+                               end
+                           end
+                       end
+                       %
+                       if ~matching
                            error('Unable to identify coordinate bounds variables for %i segments.',MapSeg)
                        else
                            segdim = C{matching,3};

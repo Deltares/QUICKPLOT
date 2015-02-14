@@ -29,6 +29,9 @@ function delwaq2raster(ini_file)
 %              default 1, that is the first time step).
 %     tstop  : stop index of time steps to include in processing (by
 %              default the last time step in the file).
+%     ntstep : number of successive time steps to include in each operation
+%              (not used for operation ident). By default all time steps
+%              from tstart to tstop are included.
 %
 %     One or more [action] blocks containing the following keywords:
 %     time_op: name of operation in time. The tool supports the following
@@ -42,6 +45,13 @@ function delwaq2raster(ini_file)
 %              value taken from [general] block).
 %     tstop  : stop index of time steps to include in processing (default
 %              value taken from [general] block).
+%     ntstep : number of successive time steps to include in each operation
+%              (not used for operation ident). By default all time steps
+%              from tstart to tstop are included.
+%     tshift : time steps shift between periods to be processed. The
+%              periods are tstart+N*tshift until tstart+N*tshift+ntstep-1
+%              for N = 0,1,... The default tshift is equal to ntstep such
+%              that the processed periods are sequential.
 %     include: name of a variable to be converted to raster (the include
 %              keyword may be repeated to convert multiple variables using
 %              the same settings). The names specified should either match
@@ -78,13 +88,13 @@ function delwaq2raster(ini_file)
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
-%   $Id$  
+%   $Id$
 
 if isstandalone
-   fprintf(1,'--------------------------------------------------------------------------------\n')
-   fprintf(1,'Delft3D-DELWAQ2RASTER conversion tool.\n')
-   fprintf(1,'Version <VERSION> (<CREATIONDATE>)\n')
-   fprintf(1,'--------------------------------------------------------------------------------\n')
+    fprintf(1,'--------------------------------------------------------------------------------\n');
+    fprintf(1,'Delft3D-DELWAQ2RASTER conversion tool.\n');
+    fprintf(1,'Version <VERSION> (<CREATIONDATE>)\n');
+    fprintf(1,'--------------------------------------------------------------------------------\n');
 end
 
 if nargin==0
@@ -96,7 +106,7 @@ ini_info       = inifile('open',ini_file);
 raster_reffile = inifile('get',ini_info,'general','raster');
 gridfile       = inifile('get',ini_info,'general','grid');
 waqfile        = inifile('get',ini_info,'general','data');
-flwfile        = gridfile;
+flwfile        = inifile('get',ini_info,'general','flow',gridfile);
 method         = inifile('get',ini_info,'general','method');
 outdir         = inifile('get',ini_info,'general','outdir');
 %
@@ -136,25 +146,77 @@ dwq            = waq_info.DwqBin;
 waq_qnt        = qpread(waq_info);
 waq_qnt(strcmp('-------',{waq_qnt.Name}'))=[];
 %
-flw_info       = qpfopen(flwfile);
-flw_qnt        = qpread(flw_info);
-flw_qnt(strcmp('-------',{flw_qnt.Name}'))=[];
-nElm = waq_info.Grid.CoordDims{1};
-% filter quantities at cell centers
+[p,f,e] = fileparts(flwfile);
+ipar = strfind(f,'_par_')+5;
+if isempty(ipar)
+    % regular simulation
+    flw_info       = qpfopen(flwfile);
+    flw_info1      = flw_info;
+else
+    % MPI parallel simulation
+    d = dir(fullfile(p,[f(1:ipar-1) '*' f(ipar+4:end) e]));
+    d = {d.name};
+    npart = length(d);
+    %
+    d2 = cell(1,npart);
+    for i = 1:npart
+        d2{i} = sprintf('%s%04i%s',f(1:ipar-1),i-1,[f(ipar+4:end) e]);
+    end
+    %
+    if ~isequal(d,d2)
+        err = cat(2,'Flow data seems to consist of multiple files. The following files were found:',d,'but expected:',d2);
+        for i = [1+(1:npart) npart+2+(1:npart)]
+            err{i} = ['  ' err{i}];
+        end
+        error('%s\n',err{:})
+    end
+    %
+    flw_info = cell(length(d),2);
+    for i = 1:length(d)
+        INFO = qpfopen(fullfile(p,d{i}));
+        FEGN = nc_varget(INFO.FileName,'FlowElemGlobalNr'); % nFlowElem
+        FED  = nc_varget(INFO.FileName,'FlowElemDomain');   % nFlowElem
+        %
+        flw_info{i,1} = INFO;
+        flw_info{i,2} = FEGN;
+        flw_info{i,3} = FED;
+    end
+    %
+    if max(cat(1,flw_info{:,2})) ~= waq_info.Grid.MNK(1)
+        error('Total number of cells in flow partitions (%i) should match 2D number of WAQ segments (%i).',max(cat(1,flw_info{:,2})), waq_info.Grid.MNK(1))
+    end
+    %
+    flw_info1 = flw_info{1,1};
+end
+%
+flw_qnt        = qpread(flw_info1);
 for i = length(flw_qnt):-1:1
-    if ~strcmp(flw_qnt(i).DimName{3},nElm)
+    idm = flw_qnt(i).varid;
+    if isempty(idm) || ~ismember('nFlowElem',flw_info1.Dataset(idm(1)+1).Dimension)
         flw_qnt(i) = [];
     end
 end
 %
+if waq_info.Grid.MNK(3)>1
+    ildp = filter_qnt('LocalDepth',waq_qnt,flw_qnt([]));
+    if ildp==0
+        error('Missing depth information (LocalDepth) on 3D delwaq MAP file selected.');
+    else
+        ildp = waq_qnt(ildp).Val1;
+    end
+    %
+    nLayers = waq_info.Grid.MNK(3);
+    nSeg2D  = waq_info.DwqBin.NumSegm/nLayers;
+end
+%
 tstart         = inifile('get',ini_info,'general','tstart',1);
 tstop          = inifile('get',ini_info,'general','tstop' ,inf);
+ntstep         = inifile('get',ini_info,'general','ntstep',inf);
 %
 if exist(outdir,'dir')~=7
     error('Invalid output directory: %s',outdir)
 end
 %
-ndatasets = 0;
 chp = inifile('chapters',ini_info);
 for ifld = 1:length(chp)
     switch chp{ifld,1}
@@ -166,13 +228,9 @@ for ifld = 1:length(chp)
             info = [];
             info.tstart = inifile('get',ini_info,ifld,'tstart',tstart);
             info.tstop  = inifile('get',ini_info,ifld,'tstop' ,tstop);
+            info.ntstep = inifile('get',ini_info,ifld,'ntstep',ntstep);
+            info.tshift = inifile('get',ini_info,ifld,'tshift',NaN);
             chp{ifld,4} = info;
-            %
-            if strcmp(chp{ifld,1},'ident')
-                ndatasets = ndatasets + length(chp{ifld,2})*(info.tstop-info.tstart+1);
-            else
-                ndatasets = ndatasets + length(chp{ifld,2});
-            end
         otherwise
             error('Unknown chapter encountered: %s',chp{ifld,1})
     end
@@ -190,7 +248,8 @@ if any(iqnt==0)
     error('%s\n',err,qnts{:})
 end
 %
-for ifld = 1:length(chp)
+ndatasets = 0;
+for ifld = 1:size(chp,1)
     if ~isempty(chp{ifld,3})
         nq = length(chp{ifld,3});
         info = chp{ifld,4};
@@ -200,7 +259,7 @@ for ifld = 1:length(chp)
             if chp{ifld,3}(i)>0
                 times = delwaq('read',dwq,[],[]);
             else
-                times = qpread(flw_info,flw_qnt(-chp{ifld,3}(i)),'times');
+                times = qpread(flw_info1,flw_qnt(-chp{ifld,3}(i)),'times');
             end
             match=0;
             for it = 1:size(AllTimes,2)
@@ -241,6 +300,23 @@ for ifld = 1:length(chp)
         elseif info.tstop>length(AllTimes{1})
             error('Time range selected (%i:%i) does not fall inside the time range available (1:%i)',info.tstart,info.tstop,length(AllTimes{1}))
         end
+        %
+        ntotstep = info.tstop - info.tstart + 1;
+        if strcmp(chp{ifld,1},'ident')
+            info.ntstep = 1;
+        elseif info.ntstep <= 0
+            info.ntstep = ntotstep;
+        elseif info.ntstep > ntotstep
+            info.ntstep = ntotstep;
+        end
+        %
+        if isnan(info.tshift)
+            info.tshift = info.ntstep;
+        else
+            info.tshift = max(1,info.tshift);
+        end
+        %
+        ndatasets = ndatasets + length(chp{ifld,2})*(floor((ntotstep-info.ntstep)/info.tshift)+1);
         %
         chp{ifld,4} = info;
     end
@@ -432,90 +508,164 @@ for ifld = 1:nfld
     idwq = [waq_qnt(iqnt_waq).Val1];
     iqnt_flw = -iqnt(~iwaq);
     %
-    ntim = info.tstop - info.tstart + 1;
+    ntotstep = info.tstop - info.tstart + 1;
+    np = floor((ntotstep-info.ntstep)/info.tshift)+1;
+    tPeriods = cell(np,1);
+    for ip = 1:np
+        tPeriods{ip} = info.tstart + (ip-1)*info.tshift + [0 info.ntstep-1];
+    end
     %
-    if strcmp(tmop,'ident')
-        it1 = info.tstart;
-        it2 = info.tstop;
-    else
-        it1 = 1;
-        it2 = 1;
+    switch tmop
+        case {'ident','max','min'}
+            missing_value = NaN;
+        otherwise
+            missing_value = 0;
+    end
+    %
+    for iper = 1:length(tPeriods)
+        itstart = tPeriods{iper}(1);
+        itstop  = tPeriods{iper}(2);
+        ntim    = 0;
+        %
+        tmopstr = sprintf('%s_%i-%i',tmop,itstart,itstop);
         switch tmop
             case {'max','min'}
-                D = NaN;
+                DATA = NaN;
             otherwise
-                D  = 0;
-                D2 = 0;
+                DATA  = 0;
+                DATA2 = 0;
         end
-        for it = info.tstart:info.tstop
+        %
+        for it = itstart:itstop
+            if strcmp(tmop,'ident')
+                tmopstr = sprintf('time_step_%i',it);
+            end
             if any(iwaq)
-                [t,Dt] = delwaq('read',dwq,idwq,0,it);
-                Dt(Dt==-999)=0;
+                [t,DATA_t] = delwaq('read',dwq,idwq,0,it);
+                iMissing = DATA_t==-999;
+                if waq_info.Grid.MNK(3)>1
+                    % 3D quantity --> perform depth averaging
+                    %
+                    % Determine segment thickness
+                    %
+                    [t,LDP_t] = delwaq('read',dwq,ildp,0,it);
+                    LDP_t(LDP_t==-999) = 0;
+                    LDP_t = reshape(LDP_t,[nSeg2D nLayers]);
+                    LDP_t(:,2:end) = diff(LDP_t,1,2);
+                    %
+                    % Determine total waterdepth (set to 1 if 0 to avoid
+                    % division by zero).
+                    %
+                    TDP_t = sum(LDP_t,2);
+                    zeroDepth = TDP_t==0;
+                    TDP_t(zeroDepth) = 1;
+                    %
+                    % Assuming that missing data value occurs in all layers
+                    % such that depth average is equal to missing data
+                    % value again. Will it be so exactly?
+                    %
+                    for iq = size(DATA_t,1):-1:1
+                        DATA2D_t(iq,:)   = (sum(reshape(DATA_t(iq,:)  .*LDP_t(:)',size(LDP_t)),2)./TDP_t).';
+                        iMissing2D(iq,:) = (sum(reshape(iMissing(iq,:).*LDP_t(:)',size(LDP_t)),2)./TDP_t).'>0;
+                        iMissing2D(iq,zeroDepth) = true;
+                    end
+                    %
+                    DATA_t   = DATA2D_t;
+                    iMissing = iMissing2D;
+                else
+                    % 2D quantity
+                end
+                DATA_t(iMissing) = missing_value;
             end
             if any(~iwaq)
                 if any(iwaq)
-                    % expand Dt for flow fields
-                    Dt(iwaq,:) = Dt;
+                    % expand DATA_t for flow fields
+                    DATA_t(iwaq,:) = DATA_t;
+                    iMissing(iwaq,:) = iMissing;
                 end
                 for i = length(iflw):-1:1
-                    X = qpread(flw_info,flw_qnt(iqnt_flw(i)),'data',it,0);
-                    Dt(iflw(i),1:size(X.Val,1)) = X.Val';
+                    if iscell(flw_info)
+                        val = zeros(1,ncell)-123;
+                        for ipar = 1:length(flw_info)
+                            X      = qpread(flw_info{ipar,1},flw_qnt(iqnt_flw(i)),'data',it,0);
+                            GlobNr = flw_info{ipar,2};
+                            PartNr = flw_info{ipar,3};
+                            val(GlobNr(PartNr==ipar-1)) = X.Val(PartNr==ipar-1);
+                        end
+                    else
+                        X = qpread(flw_info,flw_qnt(iqnt_flw(i)),'data',it,0);
+                        val = X.Val';
+                    end
+                    %
+                    iMissing(iflw(i),:) = isnan(val);
+                    val(iMissing) = missing_value;
+                    %
+                    DATA_t(iflw(i),:) = val;
                 end
             end
             switch tmop
+                case 'ident'
+                    DATA   = DATA_t;
                 case 'mean'
-                    D = D+Dt;
-                    if it==info.tstop
-                        D = D/ntim;
+                    DATA = DATA + DATA_t;
+                    ntim = ntim + ~iMissing;
+                    if it==itstop
+                        DATA = DATA./max(1,ntim);
+                        DATA(ntim==0) = NaN;
                     end
                 case 'max'
-                    D = max(D,Dt);
-                case 'min'
-                    D = min(D,Dt);
-                case 'std'
-                    D  = D  + Dt;
-                    D2 = D2 + Dt.^2;
-                    if it==info.tstop
-                        D = sqrt(D2 - (D.^2)/ntim)/max(1,ntim-1);
+                    DATA = max(DATA,DATA_t);
+                    ntim = ntim + ~iMissing;
+                    if it==itstop
+                        DATA(ntim==0) = NaN;
                     end
+                case 'min'
+                    DATA = min(DATA,DATA_t);
+                    ntim = ntim + ~iMissing;
+                    if it==itstop
+                        DATA(ntim==0) = NaN;
+                    end
+                case 'std'
+                    DATA  = DATA  + DATA_t;
+                    DATA2 = DATA2 + DATA_t.^2;
+                    ntim  = ntim  + iMissing;
+                    if it==itstop
+                        DATA = sqrt(DATA2 - (DATA.^2)./max(1,ntim))./max(1,ntim-1);
+                        DATA(ntim==0) = NaN;
+                    end
+            end
+            %
+            if it==itstop || strcmp(tmop,'ident')
+                for i = 1:length(iqnt)
+                    data = accumarray(Wght(:,2),Wght(:,1).*DATA(i,Wght(:,3))',[prod(raster_sz) 1]);
+                    wght = accumarray(Wght(:,2),Wght(:,1),[prod(raster_sz) 1]);
+                    if min_area>0
+                        data(wght<min_area)=0;
+                        wght(wght<min_area)=0;
+                    end
+                    data = reshape(data./wght,raster_sz);
+                    %
+                    if yflip
+                        data = flipud(data);
+                    end
+                    %
+                    filename = fullfile(outdir,sprintf('%s.%s',qstr{i},tmopstr));
+                    switch raster_info.FileType
+                        case 'HDR Raster File - BIP/BIL/BSQ'
+                            bil('write',filename,raster_info,data);
+                        case 'arcgrid'
+                            FD = raster_info;
+                            FD.Data = data';
+                            arcgrid('write',FD,[filename '.asc']);
+                    end
+                    idataset = idataset+1;
+                    lcwaitbar(idataset/ndatasets,h)
+                    drawnow
+                end
             end
         end
     end
     %
-    for it = it1:it2
-        if strcmp(tmop,'ident')
-            [t,D] = delwaq('read',dwq,idwq,0,it);
-            D(D==-999)=NaN;
-            tmopstr = sprintf('time_step_%i',it);
-        else
-            tmopstr = sprintf('%s_%i-%i',tmop,info.tstart,info.tstop);
-        end
-        for i = 1:length(iqnt)
-            data = accumarray(Wght(:,2),Wght(:,1).*D(i,Wght(:,3))',[prod(raster_sz) 1]);
-            wght = accumarray(Wght(:,2),Wght(:,1),[prod(raster_sz) 1]);
-            if min_area>0
-                data(wght<min_area)=0;
-                wght(wght<min_area)=0;
-            end
-            data = reshape(data./wght,raster_sz);
-            %
-            if yflip
-                data = flipud(data);
-            end
-            %
-            filename = fullfile(outdir,sprintf('%s.%s',qstr{i},tmopstr));
-            switch raster_info.FileType
-                case 'HDR Raster File - BIP/BIL/BSQ'
-                    bil('write',filename,raster_info,data);
-                case 'arcgrid'
-                    FD = raster_info;
-                    FD.Data = data';
-                    arcgrid('write',FD,[filename '.asc']);
-            end
-            idataset = idataset+1;
-            lcwaitbar(idataset/ndatasets,h)
-        end
-    end
 end
 delete(h)
 
@@ -640,10 +790,10 @@ else
     %
     xa = [0 NaN 1 NaN 1 NaN];
     ya = [0 NaN 1 NaN 1 NaN];
-%     idx = idx+1;
-%     if ismember(idx,39)
-%         figure; plot([0 0 1 1 0],[0 1 1 0 0],'b:',[0 x0 x1 0],[0 y0 y1 0],'b',x0,y0,'b*');
-%     end
+    %     idx = idx+1;
+    %     if ismember(idx,39)
+    %         figure; plot([0 0 1 1 0],[0 1 1 0 0],'b:',[0 x0 x1 0],[0 y0 y1 0],'b',x0,y0,'b*');
+    %     end
     %
     if (x0<0 && y3z<0) || (y0<0 && x3z>=0)
         if x3z>1 && x0>=1 && x1<1
@@ -773,8 +923,8 @@ else
     %area=polyarea(xa,ya)*clockwise([0 x0 x1],[0 y0 y1]);
     area=-sum(xa(2:end-1).*(ya(3:end)-ya(2:end-1))-ya(2:end-1).*(xa(3:end)-xa(2:end-1)))/2;
     %
-%     if ismember(idx,39)
-%         figure; plot([0 0 1 1 0],[0 1 1 0 0],'b:',[0 x0 x1 0],[0 y0 y1 0],'b',[xa xa(1)],[ya ya(1)],'r',x0,y0,'b*');
-%         title(sprintf('%g',area))
-%     end
+    %     if ismember(idx,39)
+    %         figure; plot([0 0 1 1 0],[0 1 1 0 0],'b:',[0 x0 x1 0],[0 y0 y1 0],'b',[xa xa(1)],[ya ya(1)],'r',x0,y0,'b*');
+    %         title(sprintf('%g',area))
+    %     end
 end
