@@ -563,7 +563,7 @@ if isequal(S2.Check,'OK')
                 S2.Header.dx~=S.Header.dx || ...
                 S2.Header.dy~=S.Header.dy
             ui_message('','Grid locations in wind files for x and y don''t match.')
-        elseif  ~isequal(S2.Header.value_pos,S.Header.value_pos)
+        elseif (isfield(S2.Header,'value_pos') || isfield(S.Header,'value_pos')) && ~isequal(S2.Header.value_pos,S.Header.value_pos)
             ui_message('','Data locations in wind files for x and y don''t match.')
         elseif  ~isequal(S2.Data,S.Data)
             ui_message('','Times in wind files for x and y don''t match.')
