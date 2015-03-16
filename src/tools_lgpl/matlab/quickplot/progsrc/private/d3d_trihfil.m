@@ -1270,7 +1270,7 @@ switch cmd,
         if isstruct(Info)
             set(findobj(mfig,'tag','displaytime'),'enable','on');
             Hdispt=findobj(mfig,'tag','displaytime=?');
-            dispnr=strmatch(qp_option(FI,'displaytime'),get(Hdispt,'string'));
+            dispnr=ustrcmpi(qp_option(FI,'displaytime'),get(Hdispt,'string'));
             set(Hdispt,'enable','on','backgroundcolor',Active,'value',dispnr);
         end
     case 'displaytime'
