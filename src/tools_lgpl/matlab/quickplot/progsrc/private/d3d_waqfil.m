@@ -598,6 +598,68 @@ if strcmp(Props.Name,'grid') && ~strcmp(Props.Geom,'POLYG')
     TDam=1;
     Props.NVal=2;
 elseif (strcmp(subtype,'map') && mapgrid) || strcmp(subtype,'plot') || strcmp(subtype,'grid')
+    szPerTimestep = cellfun('length',elidx);
+    if strcmp(subtype,'plot')
+        if DimFlag(K_)
+            szV = sz([M_ N_ K_]);
+        else
+            szV = sz([M_ N_]);
+        end
+        if isfield(Props,'BedLayer') && Props.BedLayer == 1
+            if isfield(FI,'K')
+                nlyr = FI.K-1;
+            else
+                Info = vs_disp(FI,Props.Group,Props.Val1);
+                nlyr = Info.SizeDim/prod(szV)-1;
+            end
+            index = reshape(1:prod(szV),szV)+prod(szV)*max(1,nlyr);
+        else
+            index = reshape(1:prod(szV),szV);
+        end
+    else
+        if isfield(Props,'BedLayer') && Props.BedLayer == 1
+            index = FI.Grid.Index(:,:,1)+sign(FI.Grid.Index(:,:,1))*FI.Grid.NoSeg;
+        else
+            if mapgrid
+                index=FI.Grid.Index;
+            else
+                index=FI.Index;
+            end
+            if ~DimFlag(K_) && isempty(Props.SubFld)
+                index=index(:,:,1);
+            end
+        end
+    end
+    if iscell(Props.Val1) || (isnumeric(Props.Val1) && length(Props.Val1)>1)
+        % layers shouldn't be included in index because the segment numbers
+        % will be derived from index, and we don't have that many segments
+        % per quantity
+        index   = index(elidx{1:end-1},1);
+        Props.Val1 = Props.Val1(elidx{end});
+    else
+        index   = index(elidx{:});
+    end
+    missing = index<=0;
+    if any(missing(:))
+        mn = min(index(~missing));
+        if isempty(mn)
+            mn = 1;
+        end
+        index(missing) = mn;
+    end
+    %
+    [seg,ia,ic] = unique(index);
+    if iscell(Props.Val1) || (isnumeric(Props.Val1) && length(Props.Val1)>1)
+        nlyr = length(Props.Val1);
+        missing = repmat(missing,[ones(1,length(elidx)-1) nlyr]);
+        numic = length(ic);
+        maxic = max(ic);
+        for k = nlyr:-1:2
+            ic(numic*(k-1)+(1:numic)) = ic(1:numic)+maxic*(k-1);
+        end
+    end
+    %
+    val2=[];
     if isempty(Props.Val1)
         %
         % Requesting segment number
@@ -606,8 +668,10 @@ elseif (strcmp(subtype,'map') && mapgrid) || strcmp(subtype,'plot') || strcmp(su
     elseif strcmp(subtype,'grid')
         %
         % Delwaq Vol, Flux, ... file
+        % Supports current only a single time step per read
         %
         val1=waqfil('read',FI.Attributes.(Props.Val1),idx{T_},Props.AttPar{:})';
+        val1=val1(seg); % all segments have been read, extract segments needed
         if strcmp(Props.Name,'bed level')
             val1 = -val1;
         end
@@ -616,88 +680,41 @@ elseif (strcmp(subtype,'map') && mapgrid) || strcmp(subtype,'plot') || strcmp(su
         % Plot grid or non-aggregated map grid with multiple layers stored in
         % different substances.
         %
-        val1=zeros([length(idx{T_}) sz(N_) sz(M_) sz(K_)]);
-        for s=idx{K_}
-            [Tmp,Chk]=vs_let(LocFI,Props.Group,idx(T_),Props.Val1{s},'quiet'); % load all
-            val1(:,:,:,s)=reshape(Tmp,[size(val1,1) sz(N_) sz(M_)]);
+        val1=zeros([length(idx{T_}) szPerTimestep]);
+        szV = size(val1);
+        for s = 1:length(Props.Val1)
+            [Tmp,Chk]=vs_let(LocFI,Props.Group,idx(T_),Props.Val1{s},{seg},'quiet');
+            val1(:,:,:,s)=reshape(Tmp,szV(1:3));
         end
     else
         if isbinary
-            [T,val1]=delwaq('read',LocFI,Props.Val1,0,idx{T_});
+            [T,val1]=delwaq('read',LocFI,Props.Val1,seg,idx{T_});
             val1=permute(val1,[3 2 1]);
         else
-            [val1,Chk]=vs_let(LocFI,Props.Group,idx(T_),Props.Val1,'quiet'); % load all
+            [val1,Chk]=vs_let(LocFI,Props.Group,idx(T_),Props.Val1,{seg},'quiet');
         end
-        %
-        if isfield(Props,'BedLayer')
-            if Props.BedLayer == -1
-                NoSegFlow=prod(sz([M_ N_ K_]));
-                if size(val1,2)>NoSegFlow
-                    val1=val1(:,1:NoSegFlow);
-                end
-            elseif Props.BedLayer == 1
-                if strcmp(subtype,'plot')
-                   NoSegBedLayer=sz(M_)*sz(N_);
-                else
-                   NoSegBedLayer=FI.Grid.NoSegPerLayer;
-                end
-                val1=val1(:,end-NoSegBedLayer+1:end);
+        if ~isempty(Props.Val2)
+            if isbinary
+                 [T,val2]=delwaq('read',LocFI,Props.Val2,seg,idx{T_});
+                val2=permute(val2,[3 2 1]);
+            else
+                [val2,Chk]=vs_let(LocFI,Props.Group,idx(T_),Props.Val2,{seg},'quiet');
             end
         end
     end
-    if isempty(Props.Val2)
-        val2=[];
+    %
+    if isempty(val1) % segment number
+        val1=reshape(index,[1 szPerTimestep]);
+        val1(:,missing) = NaN;
     else
-        if isbinary
-            [T,val2]=delwaq('read',LocFI,Props.Val2,0,idx{T_});
-            val2=permute(val2,[3 2 1]);
-        else
-            [val2,Chk]=vs_let(LocFI,Props.Group,idx(T_),Props.Val2,'quiet'); % load all
-        end
-    end
-    if strcmp(subtype,'plot')
-        if DimFlag(K_)
-            val1=reshape(val1,[size(val1,1) sz([M_ N_ K_])]);
-            if ~isempty(val2)
-               val2=reshape(val2,[size(val2,1) sz([M_ N_ K_])]);
-            end
-        else
-            val1=reshape(val1,[size(val1,1) sz([M_ N_])]);
-            if ~isempty(val2)
-                val2=reshape(val2,[size(val2,1) sz([M_ N_])]);
-            end
-        end
-        %val1=permute(val1,[1 3 2 4]);
-    else
-        if mapgrid
-            index=FI.Grid.Index;
-            if Props.BedLayer == 1
-                index=index(:,:,1);
-            end
-        else
-            index=FI.Index;
-        end
-        if ~DimFlag(K_) && isempty(Props.SubFld)
-            index=index(:,:,1);
-        end
-        if isempty(val1) % segment number
-            val1=reshape(index,[1 size(index)]);
-        else
-            val1=val1(:,max(index,1));
-            if ~isempty(val2)
-                val2=val2(:,max(index,1));
-            end
-        end
-        val1(:,index<=0)=NaN;
-        val1=reshape(val1,[size(val1,1) size(index)]);
+        val1 = val1(:,ic);
+        val1(:,missing) = NaN;
+        val1 = reshape(val1,[size(val1,1) szPerTimestep]);
         if ~isempty(val2)
-            val2(:,index<=0)=NaN;
-            val2=reshape(val2,[size(val2,1) size(index)]);
+            val2 = val2(:,ic);
+            val2(:,missing) = NaN;
+            val2 = reshape(val2,[size(val2,1) szPerTimestep]);
         end
-    end
-    val1=val1(:,elidx{:});
-    if ~isempty(val2)
-        val2=val2(:,elidx{:});
     end
 else
     st_ = ST_;

@@ -8,7 +8,10 @@ function [Out1,Out2]=delwaq(cmd,varargin)
 %   specified time step (0 for all) from the Delwaq HIS or MAP file. The
 %   returned TIME is a MATLAB serial date if reference date and time step
 %   size information is available in the file; otherwise time index
-%   information is returned.
+%   information is returned. The returned array is of size NSUBS x NSEGM x
+%   NTIMES where NSUBS is the number of selected substances, NSEGM the
+%   number of selected segments, and NTIMES the number of selected time
+%   steps.
 %
 %   STRUCT = DELWAQ('write',FILENAME,HEADER,SUBSTANCENAMES,TIMEINFO,...
 %   TIME,DATA) writes the data to a Delwaq MAP file. Substance names should
@@ -878,6 +881,7 @@ if tim==0
     else
         fseek(fid,S.DataStart+FormRecSize+4+4*(seg-1)*NSubs+4*(subs-1),-1);
         Data=local_fread(fid,can_use_skip,[1 S.NTimes],'float32',4*NTot+2*FormRecSize)';
+        Data=reshape(Data,1,1,S.NTimes);
     end
 else
     %
