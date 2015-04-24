@@ -1108,15 +1108,15 @@ if Initialise
     if ~isempty(RefTime)
         S.T0=RefTime(1);
         S.TStep=RefTime(2)/(24*3600);
-        ClockUnit='S';
+        ClockUnit='s';
         if (round(RefTime(2)/(24*3600))*24*3600==RefTime(2))
-            ClockUnit='D';
+            ClockUnit='d';
             RefTime(2)=RefTime(2)/(24*3600);
         elseif (round(RefTime(2)/3600)*3600==RefTime(2))
-            ClockUnit='U';
+            ClockUnit='u';
             RefTime(2)=RefTime(2)/3600;
         elseif (round(RefTime(2)/60)*60==RefTime(2))
-            ClockUnit='M';
+            ClockUnit='m';
             RefTime(2)=RefTime(2)/60;
         end;
         dTstr = sprintf('%8g',RefTime(2));
@@ -1128,7 +1128,9 @@ if Initialise
             S.TStep = RT;
             warning('Time scale rounded to %g seconds.',RT)
         end
-        Header(4,:)=sprintf('T0: %4i-%2.2i-%2.2i %2i:%2.2i:%2.2i  (scu=%s%c)',round(datevec(RefTime(1))),dTstr,ClockUnit);
+        Header(4,:)=sprintf('T0: %4i.%2.2i.%2.2i %2i:%2.2i:%2.2i  (scu=%s%c)',round(datevec(RefTime(1))),dTstr,ClockUnit);
+    else
+       [S.T0,S.TStep] = delwaqt0(Header(4,:));        
     end
     S.Header=Header;
     %
