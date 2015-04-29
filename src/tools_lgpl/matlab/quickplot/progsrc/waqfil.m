@@ -131,7 +131,7 @@ end
 
 %% Vol file
 function S = openvol(file,nseg)
-S = openfile(file,nseg);
+S = openfile(file,nseg,1);
 
 function D = readvol(file,itime,ipar)
 if nargin<3

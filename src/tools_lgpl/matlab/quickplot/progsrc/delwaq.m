@@ -1128,7 +1128,7 @@ if Initialise
             S.TStep = RT;
             warning('Time scale rounded to %g seconds.',RT)
         end
-        Header(4,:)=sprintf('T0: %4i.%2.2i.%2.2i %2i:%2.2i:%2.2i  (scu=%s%c)',round(datevec(RefTime(1))),dTstr,ClockUnit);
+        Header(4,:)=sprintf('T0: %4i.%2.2i.%2.2i %2.2i:%2.2i:%2.2i  (scu=%s%c)',round(datevec(RefTime(1))),dTstr,ClockUnit);
     else
        [S.T0,S.TStep] = delwaqt0(Header(4,:));        
     end
