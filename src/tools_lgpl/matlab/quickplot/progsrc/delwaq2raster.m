@@ -6,57 +6,71 @@ function delwaq2raster(ini_file)
 %   should contain the following elements:
 %
 %   Block [general] containing keywords:
-%     raster : name of reference raster file (determining raster dimensions
-%              and raster file format). Currently, supports bil/hdr pairs
-%              and asc files. Output files will use the same settings.
-%     data   : name of delwaq MAP file
-%     grid   : reference to Delft3D curvilinear cco/lga files or flexible
-%              mesh netCDF file.
-%     method : data mapping method, one of:
-%              center   : raster value determined by simulation cell in
-%                         which the raster cell center is located
-%              maxarea  : raster value determined by biggest overlapping
-%                         (aggregated) simulation cell
-%              weighted : raster value determined by area weighted average
-%                         of overlapping simulationn cells; the total
-%                         overlapping area fraction must be at least equal
-%                         to minarea.
-%     minarea: indicates for method 'weighted' the minimum overlap area to
-%              determine the average (in case of smaller overlap, the
-%              raster cell is assigned the nodata value). Default: 0.
-%     outdir : output directory for the raster files.
-%     tstart : start index of time steps to include in processing (by
-%              default 1, that is the first time step).
-%     tstop  : stop index of time steps to include in processing (by
-%              default the last time step in the file).
-%     ntstep : number of successive time steps to include in each operation
-%              (not used for operation ident). By default all time steps
-%              from tstart to tstop are included.
+%     raster :  name of reference raster file (determining raster
+%               dimensions and raster file format). Currently, supports
+%               bil/hdr pairs and asc files. Output files will use the same
+%               settings.
+%     data   :  name of delwaq MAP file
+%     grid   :  reference to Delft3D curvilinear cco/lga files or flexible
+%               mesh netCDF file.
+%     method :  data mapping method, one of:
+%               center   : raster value determined by simulation cell in
+%                          which the raster cell center is located
+%               maxarea  : raster value determined by biggest overlapping
+%                          (aggregated) simulation cell
+%               weighted : raster value determined by area weighted average
+%                          of overlapping simulationn cells; the total
+%                          overlapping area fraction must be at least equal
+%                          to minarea.
+%     minarea:  indicates for method 'weighted' the minimum overlap area to
+%               determine the average (in case of smaller overlap, the
+%               raster cell is assigned the nodata value). Default: 0.
+%     outdir :  output directory for the raster files.
+%     tstart :  start index of time steps to include in processing (by
+%               default 1, that is the first time step).
+%     tstop  :  stop index of time steps to include in processing (by
+%               default the last time step in the file).
+%     ntstep :  length of period (expressed in number of time steps on the
+%               file) to include in each operation (not used for operation
+%               ident). See next block for details.
+%     skipstep: number of time steps skipped between the time steps
+%               actually included in the operation (not used for operation
+%               ident). See next block for details.
 %
 %     One or more [action] blocks containing the following keywords:
-%     time_op: name of operation in time. The tool supports the following
-%              operations:
-%              max, mean, min, std, and ident (default)
-%              The default time operator "ident" will convert every time
-%              step in the specified period (from tstart until tstop). In
-%              the other cases, it will take the max, mean, min, std of all
-%              values in the selected time period.
-%     tstart : start index of time steps to include in processing (default
-%              value taken from [general] block).
-%     tstop  : stop index of time steps to include in processing (default
-%              value taken from [general] block).
-%     ntstep : number of successive time steps to include in each operation
-%              (not used for operation ident). By default all time steps
-%              from tstart to tstop are included.
-%     tshift : time steps shift between periods to be processed. The
-%              periods are tstart+N*tshift until tstart+N*tshift+ntstep-1
-%              for N = 0,1,... The default tshift is equal to ntstep such
-%              that the processed periods are sequential.
-%     include: name of a variable to be converted to raster (the include
-%              keyword may be repeated to convert multiple variables using
-%              the same settings). The names specified should either match
-%              the short DELWAQ name, or the expanded names as used by
-%              Delft3D-QUICKPLOT.
+%     time_op:  name of operation in time. The tool supports the following
+%               operations:
+%               max, mean, min, std, and ident (default)
+%               The default time operator "ident" will convert every time
+%               step in the specified period (from tstart until tstop). In
+%               the other cases, it will take the max, mean, min, std of
+%               all values in the selected time period.
+%     tstart :  start index of time steps to include in processing (default
+%               value taken from [general] block).
+%     tstop  :  stop index of time steps to include in processing (default
+%               value taken from [general] block).
+%     ntstep :  length of period (expressed in number of time steps on the
+%               file) to include in each operation (not used for operation
+%               ident). By default all time steps from tstart to tstop are
+%               included. The number of time steps actually included in the
+%               operation may be less (see skipstep).
+%     tshift :  time steps shift between periods to be processed. The
+%               periods are tstart+N*tshift until tstart+N*tshift+ntstep-1
+%               for N = 0,1,... The default tshift is equal to ntstep such
+%               that the processed periods are sequential.
+%     skipstep: number of time steps skipped between the time steps
+%               actually included in the operation (not used for operation
+%               ident). By default no time steps are skipped (skipstep=0).
+%               Note that if you want to use every second value, you skip
+%               one value, and hence you need to specify skipstep=1. The
+%               time steps included in the operation are
+%                     tstart+N*tshift+(skipstep+1)*i
+%               for i=0,1,..., floor((ntstep-1)/(skipstep+1)).
+%     include:  name of a variable to be converted to raster (the include
+%               keyword may be repeated to convert multiple variables using
+%               the same settings). The names specified should either match
+%               the short DELWAQ name, or the expanded names as used by
+%               Delft3D-QUICKPLOT.
 %
 %   See also: DELWAQ, ARCGRID.
 
@@ -212,6 +226,7 @@ end
 tstart         = inifile('get',ini_info,'general','tstart',1);
 tstop          = inifile('get',ini_info,'general','tstop' ,inf);
 ntstep         = inifile('get',ini_info,'general','ntstep',inf);
+ntskip         = inifile('get',ini_info,'general','skipstep',0);
 %
 if exist(outdir,'dir')~=7
     error('Invalid output directory: %s',outdir)
@@ -230,6 +245,7 @@ for ifld = 1:length(chp)
             info.tstop  = inifile('get',ini_info,ifld,'tstop' ,tstop);
             info.ntstep = inifile('get',ini_info,ifld,'ntstep',ntstep);
             info.tshift = inifile('get',ini_info,ifld,'tshift',NaN);
+            info.ntskip = inifile('get',ini_info,ifld,'skipstep',ntskip);
             chp{ifld,4} = info;
         otherwise
             error('Unknown chapter encountered: %s',chp{ifld,1})
@@ -525,9 +541,19 @@ for ifld = 1:nfld
     for iper = 1:length(tPeriods)
         itstart = tPeriods{iper}(1);
         itstop  = tPeriods{iper}(2);
+        itstep  = info.ntskip+1;
         ntim    = 0;
         %
-        tmopstr = sprintf('%s_%i-%i',tmop,itstart,itstop);
+        if itstep==1
+            tmopstr = sprintf('%s_%i-%i',tmop,itstart,itstop);
+        else
+            itstop = itstart + itstep*floor((itstop-itstart)/itstep);
+            if itstop>itstart
+                tmopstr = sprintf('%s_%i-%i-step%i',tmop,itstart,itstop,itstep);
+            else
+                tmopstr = sprintf('%s_%i',tmop,itstart);
+            end
+        end
         switch tmop
             case {'max','min'}
                 DATA = NaN;
@@ -536,7 +562,7 @@ for ifld = 1:nfld
                 DATA2 = 0;
         end
         %
-        for it = itstart:itstop
+        for it = itstart:itstep:itstop
             if strcmp(tmop,'ident')
                 tmopstr = sprintf('time_step_%i',it);
             end
@@ -585,7 +611,7 @@ for ifld = 1:nfld
                 end
                 for i = length(iflw):-1:1
                     if iscell(flw_info)
-                        val = zeros(1,ncell)-123;
+                        val = NaN(1,ncell);
                         for ipar = 1:length(flw_info)
                             X      = qpread(flw_info{ipar,1},flw_qnt(iqnt_flw(i)),'data',it,0);
                             GlobNr = flw_info{ipar,2};
