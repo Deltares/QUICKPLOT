@@ -435,7 +435,12 @@ if Props.File~=0
                 case 'observation points'
                     MN=tmpData.MN(idx{M_},:);
                 case 'discharge stations'
-                    MN=tmpData.MNK(idx{M_},[1 2]);
+                    switch Props.Fld
+                        case 1
+                            MN=tmpData.MNK(idx{M_},[1 2]);
+                        case 2
+                            MN=tmpData.MNK_out(idx{M_},[1 2]);
+                    end
             end
             linidx=sub2ind(size(FI.X),MN(:,1),MN(:,2));
             [x,y]=gridinterp(0,0,'z',FI.X,FI.Y);
@@ -855,6 +860,12 @@ if ~isempty(Attribs)
                 Str=sprintf('discharge stations (%s)',AttribName);
                 DataProps(l,:)={...
                     Str 'sQUAD' 'xy'  [0 0 1 0 0]  0       4    ''        ''    ''       ''      i      1   };
+                if isfield(Attrib,'MNK_out')
+                    l=l+1;
+                    Str=sprintf('discharge station outlets (%s)',AttribName);
+                    DataProps(l,:)={...
+                        Str 'sQUAD' 'xy'  [0 0 1 0 0]  0       4    ''        ''    ''       ''      i      2   };
+                end
             case {'drypoint'}
                 l=l+1;
                 Str=sprintf('dry points (%s)',AttribName);
@@ -1110,6 +1121,9 @@ switch cmd
         end
         %
         [Attrib,FileName] = qp_proxy(lcl_cmd,targetdir,size(NewFI.X));
+        if isempty(Attrib)
+            return
+        end
         %
         if isempty(Attribs)
             Str={abbrevfn(FileName,60)};

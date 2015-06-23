@@ -36,4 +36,9 @@ function qp_error(msg,Ex,varargin)
 %   $Id$
 
 stacklist = stack2str(Ex.stack,varargin{:});
-ui_message('error',{msg,Ex.message,stacklist{:}})
+message = Ex.message;
+if isequal(message(1:min(20,end)),'Error using <a href=')
+    newline = find(message==char(10));
+    message = message(newline(1)+1:end);
+end
+ui_message('error',{msg,message,stacklist{:}})

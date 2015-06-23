@@ -108,7 +108,7 @@ end
 Out.FileName=filename;
 Out.Check='OK';
 fid = -1;
-if nargin<2
+if nargin<2 || isempty(filetype)
     types = Local_supported_types;
 else
     types = {filetype};
@@ -303,17 +303,23 @@ for tpC = types
                     if n==0
                         DischType{i,1}='normal discharge';
                     else
-                        switch char(X(1))
-                            case {'w','W'}
+                        switch upper(char(X(1)))
+                            case 'W'
                                 DischType{i,1}='walking discharge';
-                            case {'p','P'}
+                            case 'P'
                                 DischType{i,1}='power station';
                                 if n<4
                                     error('Missing outlet location');
                                 end
                                 MNK_out(i,1:3)=X(2:4);
+                            case {'C','D','E','U'}
+                                DischType{i,1}='culvert';
+                                if n<4
+                                    error('Missing outlet location');
+                                end
+                                MNK_out(i,1:3)=X(2:4);
                             otherwise
-                                error('Unknown discharge type');
+                                error('Unknown discharge type: %s',char(X(1)))
                         end
                     end
                 end
@@ -359,12 +365,12 @@ for tpC = types
                 error('Reading file format ''%s'' not supported.',tp)
         end
         return
-    catch
+    catch err
         if ~isempty(fopen(fid))
             fclose(fid);
         end
         if length(types)==1
-            rethrow(lasterror)
+            rethrow(err)
         end
     end
 end
