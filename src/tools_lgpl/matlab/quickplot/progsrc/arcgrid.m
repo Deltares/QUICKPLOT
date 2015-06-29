@@ -22,9 +22,26 @@ function [Out,Out2]=arcgrid(cmd,varargin)
 %   DATA = ARCGRID('read',FILENAME) opens the FILENAME and immediately
 %   reads the data.
 %
-%   ARCGRID('write',FILEDATA,FILENAME) writes data to an arcgrid file. The
-%   FILEDATA should mirror the structure obtained from an
-%   ARCGRID('open',FILENAME) call.
+%   ARCGRID('write',...) writes data to an arcgrid file. The
+%   following arguments are supported:
+%     *  FILENAME string indicating the name of the file to be written.
+%     *  FILEDATA structure that mirros the structure with XCorner,
+%        YCorner, CellSize, and optional Data and NoData fields (as
+%        obtained from an ARCGRID('open',FILENAME) call).
+%     *  DATA matrix which overrules the Data field of FILEDATA if
+%        specified.
+%     *  'xcorner',X0 pair indicating the X coordinate of the lower left
+%        corner of the grid (alternatively 'xllcenter' for the X coordinate
+%        of the center of the lower left cell of the grid - half a cellsize
+%        to the right of the actual grid corner).
+%     *  'ycorner',Y0 pair indicating the Y coordinate of the lower left
+%        corner of the grid (alternatively 'yllcenter' for the Y coordinate
+%        of the center of the lower left cell of the grid - half a cellsize
+%        up from the actual grid corner).
+%     *  'cellsize',[DX DY] pair indicating the grid cell size. If DY and
+%        DX are equal then just one value DX needs to be specified.
+%     *  'comment',COMMENT_STRING pair indicating the comments to be
+%        included in the header of the file.
 %
 %   H = ARCGRID('plot',FILEDATA,AXES) reads the data from an arcgrid file
 %   previously opened using an ARCGRID('open',FILENAME) call. The data is
@@ -470,8 +487,94 @@ if isstruct(filename)
 end
 
 
-function Local_write_file(Structure,filename)
-
+function Local_write_file(varargin)
+Data = [];
+Structure = [];
+filename = '';
+format = '%f';
+xll = 'corner';
+yll = 'corner';
+i = 1;
+while i<=nargin
+    if isstruct(varargin{i})
+        if ~isstruct(Structure)
+            Structure = varargin{i};
+        else
+            error('Structure argument %i duplicates previous arguments.',i)
+        end
+    elseif ischar(varargin{i})
+        fld = '';
+        switch lower(varargin{i})
+            case {'xllcorner','xcorner'}
+                fld = 'XCorner';
+            case {'yllcorner','ycorner'}
+                fld = 'YCorner';
+            case {'xllcentre','xllcenter','xcentre','xcenter'}
+                fld = 'XCorner';
+                xll = 'centre';
+            case {'yllcentre','yllcenter','ycentre','ycenter'}
+                fld = 'YCorner';
+                yll = 'centre';
+            case 'cellsize'
+                fld = 'CellSize';
+            case 'nodata'
+                fld = 'NoData';
+            case 'comment'
+                fld = 'Comment';
+            case 'format'
+                format = varargin{i+1};
+                i = i+1;
+            otherwise
+                if isempty(filename)
+                    filename = varargin{i};
+                else
+                    error('Unrecognized string argument %i: %s',i,varargin{i})
+                end
+        end
+        if ~isempty(fld)
+            if i==nargin
+                error('Missing value for last argument: %s',varargin{i})
+            elseif isfield(Structure,fld)
+                error('Duplicate specification of %s detected as argument %i',fld,i)
+            else
+                Structure.(fld) = varargin{i+1};
+                i = i+1;
+            end
+        end
+    elseif isnumeric(varargin{i})
+        if isempty(Data)
+            Data = varargin{i};
+        else
+            error('Unsupported second numeric argument %i',i)
+        end
+    end
+    i = i+1;
+end
+if ~isfield(Structure,'XCorner') || numel(Structure.XCorner)~=1
+    error('Missing or invalid XCorner')
+end
+if ~isfield(Structure,'YCorner') || numel(Structure.YCorner)~=1
+    error('Missing or invalid YCorner')
+end
+if ~isfield(Structure,'CellSize') || isempty(Structure.CellSize) || numel(Structure.CellSize)>2
+    error('Missing or invalid CellSize')
+end
+if isfield(Structure,'NoData') && numel(Structure.NoData)~=1
+    error('Invalid NoData value')
+end
+if strcmp(xll,'centre')
+    Structure.XCorner = Structure.XCorner - Structure.CellSize(1)/2;
+end
+if strcmp(yll,'centre')
+    Structure.YCorner = Structure.YCorner - Structure.CellSize(end)/2;
+end
+if isempty(Data)
+    if isfield(Structure,'Data') && ~isempty(Structure.Data)
+        Data = Structure.Data;
+    else
+        error('No data specified')
+    end
+end
 if nargin==1
     [fn,fp]=uiputfile('*.arc');
     if ~ischar(fn)
@@ -481,11 +584,22 @@ if nargin==1
 end
 fid=fopen(filename,'wt');
 if fid<0
-    error(['Could not create or open: ',filename])
+    error('Could not create or open: %s',filename)
 end
-fprintf(fid,'/* arc grid file created by Matlab\n');
-fprintf(fid,'ncols         %i\n',Structure.NCols);
-fprintf(fid,'nrows         %i\n',Structure.NRows);
+if isfield(Structure,'Comment') 
+    comment = Structure.Comment;
+else
+    comment = ['ARC/INFO ASCII GRID file generated from MATLAB on ' datestr(now)];
+end
+if isempty(comment)
+    % no header
+elseif iscell(comment)
+    fprintf(fid,'/* %s\n',comment{:});
+elseif ischar(comment)
+    fprintf(fid,'/* %s\n',comment);
+end
+fprintf(fid,'ncols         %i\n',size(Data,1));
+fprintf(fid,'nrows         %i\n',size(Data,2));
 fprintf(fid,'xllcorner     %f\n',Structure.XCorner);
 fprintf(fid,'yllcorner     %f\n',Structure.YCorner);
 if length(Structure.CellSize)==1
@@ -495,14 +609,13 @@ elseif Structure.CellSize(1)==Structure.CellSize(2)
 else
     fprintf(fid,'cellsize      %f %f\n',Structure.CellSize(1:2));
 end
-Data=Structure.Data;
 
-if ~isnan(Structure.NoData)
-    fprintf(fid,'nodata_value  %f\n',Structure.NoData);
+if isfield(Structure,'NoData') && ~isnan(Structure.NoData)
+    fprintf(fid,['nodata_value  ' format '\n'],Structure.NoData);
     Data(isnan(Data))=Structure.NoData;
 end
 
-FormatString=[repmat(' %f',[1 Structure.NCols]) '\n'];
+FormatString=[repmat([' ' format],[1 size(Data,1)]) '\n'];
 fprintf(fid,FormatString,Data);
 fclose(fid);
 
