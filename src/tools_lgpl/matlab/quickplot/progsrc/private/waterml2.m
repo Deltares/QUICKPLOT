@@ -184,11 +184,8 @@ noData = true(nTSV,1);
 for i = 1:nTSV
     TSVi = xparse('getNamedChildNS',TSV(i),NameSpaces,wml2,'MeasurementTVP');
     if isempty(BeginTime)
-        try
-            TSD(i,1) = str2tim(xparse('getNamedChildNS',TSVi,NameSpaces,wml2,'time'));
-            noData(i) = false;
-        catch
-        end
+        TSD(i,1) = str2tim(xparse('getNamedChildNS',TSVi,NameSpaces,wml2,'time'));
+        noData(i) = false;
     else
         TSD(i,1) = datenum(datevec(BeginTime) + (i-1)*TimeStep);
     end
@@ -267,7 +264,12 @@ else
 end
 
 function T = str2tim(S)
-T = datenum(sscanf(char(S.getTextContent),'%4i-%2d-%2dT%d:%d:%f',[1 6])); % ignoring time zone for the moment
+str = char(S.getTextContent);
+[datetime,N,err] = sscanf(str,'%4i-%2d-%2dT%d:%d:%f',[1 6]);
+if N~=6
+    error('%s while parsing time string "%s"',err,str)
+end
+T = datenum(datetime); % ignoring time zone for the moment
 
 function wml2 = wml2
 wml2 = 'http://www.opengis.net/waterml/2.0';
