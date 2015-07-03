@@ -464,7 +464,7 @@ if isequal(Props.FileInfo,'operator')
             Props.Props.Data{1}=FI;
             F = {'XComp','YComp','ZComp','Val'};
             for i = 1:length(F)
-                f = F{1};
+                f = F{i};
                 if isfield(Ans,f);
                     if filter_negative
                         Ans.(f)(Ans.(f)<=0)=NaN;
