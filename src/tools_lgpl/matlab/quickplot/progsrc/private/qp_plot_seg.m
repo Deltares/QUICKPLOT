@@ -2,30 +2,30 @@ function [hNew,Thresholds,Param]=qp_plot_seg(hNew,Parent,Param,data,Ops,Props)
 %QP_PLOT_SEG Plot function of QuickPlot for 1D line segment data sets.
 
 %----- LGPL --------------------------------------------------------------------
-%                                                                               
-%   Copyright (C) 2011-2015 Stichting Deltares.                                     
-%                                                                               
-%   This library is free software; you can redistribute it and/or                
-%   modify it under the terms of the GNU Lesser General Public                   
-%   License as published by the Free Software Foundation version 2.1.                         
-%                                                                               
-%   This library is distributed in the hope that it will be useful,              
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of               
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU            
-%   Lesser General Public License for more details.                              
-%                                                                               
-%   You should have received a copy of the GNU Lesser General Public             
-%   License along with this library; if not, see <http://www.gnu.org/licenses/>. 
-%                                                                               
-%   contact: delft3d.support@deltares.nl                                         
-%   Stichting Deltares                                                           
-%   P.O. Box 177                                                                 
-%   2600 MH Delft, The Netherlands                                               
-%                                                                               
-%   All indications and logos of, and references to, "Delft3D" and "Deltares"    
-%   are registered trademarks of Stichting Deltares, and remain the property of  
-%   Stichting Deltares. All rights reserved.                                     
-%                                                                               
+%
+%   Copyright (C) 2011-2015 Stichting Deltares.
+%
+%   This library is free software; you can redistribute it and/or
+%   modify it under the terms of the GNU Lesser General Public
+%   License as published by the Free Software Foundation version 2.1.
+%
+%   This library is distributed in the hope that it will be useful,
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%   Lesser General Public License for more details.
+%
+%   You should have received a copy of the GNU Lesser General Public
+%   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+%
+%   contact: delft3d.support@deltares.nl
+%   Stichting Deltares
+%   P.O. Box 177
+%   2600 MH Delft, The Netherlands
+%
+%   All indications and logos of, and references to, "Delft3D" and "Deltares"
+%   are registered trademarks of Stichting Deltares, and remain the property of
+%   Stichting Deltares. All rights reserved.
+%
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
@@ -49,9 +49,12 @@ NVal=Param.NVal;
 DimFlag=Props.DimFlag;
 Thresholds=[];
 
+if strcmp(Ops.presentationtype,'values')
+    NVal = 4;
+end
 switch NVal
     case 0
-        if multiple(M_) % network
+        if multiple(M_) && ~strcmp(Ops.presentationtype,'markers') % network
             if ishandle(hNew)
                 set(hNew,'vertices',data.XY,'faces',data.SEG(:,[1 2 2]))
             else
@@ -66,6 +69,10 @@ switch NVal
                     'markerfacecolor',Ops.markerfillcolour);
             end
         else % point
+            if strcmp(data.ValLocation,'EDGE')
+                % compute edge centers
+                data.XY = sum(reshape(data.XY(data.SEG,:),[size(data.SEG,1) 2 2]),2)/2;
+            end
             if ishandle(hNew)
                 set(hNew,'xdata',data.XY(:,1),'ydata',data.XY(:,2))
             else
@@ -75,8 +82,28 @@ switch NVal
             end
         end
     case 1
-        if multiple(M_) % network
-            if Props.DataInCell % segment data
+        switch Ops.presentationtype
+            case 'markers'
+                if strcmp(data.ValLocation,'EDGE')
+                    % compute edge centers
+                    data.XY = reshape(sum(reshape(data.XY(data.SEG,:),[size(data.SEG,1) 2 2]),2)/2,[size(data.SEG,1) 2]);
+                end
+                if ishandle(hNew)
+                    set(hNew,'vertices',data.XY,'faces',(1:size(data.XY,1))', ...
+                        'facevertexcdata',data.Val(:))
+                else
+                    hNew=patch('vertices',data.XY,'faces',(1:size(data.XY,1))', ...
+                        'facevertexcdata',data.Val(:), ...
+                        'parent',Parent, ...
+                        'marker',Ops.marker, ...
+                        'markersize',Ops.markersize, ...
+                        'markeredgecolor',Ops.markercolour, ...
+                        'markerfacecolor',Ops.markerfillcolour, ...
+                        'linestyle','none', ...
+                        'edgecolor','flat', ...
+                        'facecolor','none');
+                end
+            case 'edge'
                 XY=data.XY(data.SEG(:),:);
                 SEG=data.SEG; SEG(:)=1:2*size(SEG,1);
                 Val=cat(1,data.Val(:),data.Val(:));
@@ -96,9 +123,9 @@ switch NVal
                         'markeredgecolor',Ops.markercolour, ...
                         'markerfacecolor',Ops.markerfillcolour);
                 end
-            else % point data
+            case 'continuous shades'
                 if ishandle(hNew)
-                    if isfield(data,'SEG')
+                    if isfield(data,'SEG') && ~isempty(data.SEG)
                         set(hNew,'vertices',data.XY,'faces',data.SEG, ...
                             'facevertexcdata',data.Val(:))
                     else
@@ -106,7 +133,7 @@ switch NVal
                             'facevertexcdata',data.Val(:))
                     end
                 else
-                    if isfield(data,'SEG')
+                    if isfield(data,'SEG') && ~isempty(data.SEG) && isfield(Ops,'linestyle')
                         hNew=patch('vertices',data.XY,'faces',data.SEG, ...
                             'facevertexcdata',data.Val(:), ...
                             'parent',Parent, ...
@@ -125,29 +152,38 @@ switch NVal
                             'markersize',Ops.markersize, ...
                             'markeredgecolor',Ops.markercolour, ...
                             'markerfacecolor',Ops.markerfillcolour, ...
-                            'markersize',6, ...
                             'linestyle','none', ...
                             'edgecolor','flat', ...
                             'facecolor','none');
                     end
                 end
-            end
-        else % point
-            if multiple(T_)
-                if ishandle(hNew)
-                    set(hNew,'xdata',data.Time(:),'ydata',data.Val(:));
-                else
-                    hNew=line(data.Time(:),data.Val(:,1), ...
-                        'parent',Parent, ...
-                        Ops.LineParams{:});
+            otherwise
+                if multiple(T_)
+                    if ishandle(hNew)
+                        set(hNew,'xdata',data.Time(:),'ydata',data.Val(:));
+                    else
+                        hNew=line(data.Time(:),data.Val(:,1), ...
+                            'parent',Parent, ...
+                            Ops.LineParams{:});
+                    end
                 end
-            end
         end
     case {2,3}
         if multiple(M_) % network
         else % point
         end
     case 4
+        if strcmp(data.ValLocation,'EDGE')
+            % compute edge centers
+            data.XY = sum(reshape(data.XY(data.SEG,:),[size(data.SEG,1) 2 2]),2)/2;
+        end
+        if isnumeric(data.Val)
+            Remove = isnan(data.Val);
+            if any(Remove)
+                data.Val(Remove) = [];
+                data.XY(Remove,:) = [];
+            end
+        end
         hNew=gentextfld(hNew,Ops,Parent,data.Val,data.XY(:,1),data.XY(:,2));
 end
 if strcmp(Ops.colourbar,'none')

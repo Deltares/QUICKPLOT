@@ -1,19 +1,20 @@
 function varargout=cfxfil(FI,domain,field,cmd,varargin)
 %CFXFIL QP support for CFX4 files.
-%      Domains                 = XXXFIL(FI,[],'domains')
-%      DataProps               = XXXFIL(FI,Domain)
-%      Size                    = XXXFIL(FI,Domain,DataFld,'size')
-%      Times                   = XXXFIL(FI,Domain,DataFld,'times',T)
-%      StNames                 = XXXFIL(FI,Domain,DataFld,'stations')
-%      SubFields               = XXXFIL(FI,Domain,DataFld,'subfields')
-%      [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'data',subf,t,station,m,n,k)
-%      [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'celldata',subf,t,station,m,n,k)
-%      [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'griddata',subf,t,station,m,n,k)
-%      [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'gridcelldata',subf,t,station,m,n,k)
-%                                XXXFIL(FI,[],'options',OptionsFigure,'initialize')
-%      [NewFI     ,cmdargs]    = XXXFIL(FI,[],'options',OptionsFigure,OptionsCommand, ...)
+%   Domains                 = XXXFIL(FI,[],'domains')
+%   DataProps               = XXXFIL(FI,Domain)
+%   Size                    = XXXFIL(FI,Domain,DataFld,'size')
+%   Times                   = XXXFIL(FI,Domain,DataFld,'times',T)
+%   StNames                 = XXXFIL(FI,Domain,DataFld,'stations')
+%   SubFields               = XXXFIL(FI,Domain,DataFld,'subfields')
+%   [TZshift   ,TZstr  ]    = XXXFIL(FI,Domain,DataFld,'timezone')
+%   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'data',subf,t,station,m,n,k)
+%   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'celldata',subf,t,station,m,n,k)
+%   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'griddata',subf,t,station,m,n,k)
+%   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'gridcelldata',subf,t,station,m,n,k)
+%                             XXXFIL(FI,[],'options',OptionsFigure,'initialize')
+%   [NewFI     ,cmdargs]    = XXXFIL(FI,[],'options',OptionsFigure,OptionsCommand, ...)
 %
-%      The DataFld can only be either an element of the DataProps structure.
+%   The DataFld can only be either an element of the DataProps structure.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -49,7 +50,7 @@ function varargout=cfxfil(FI,domain,field,cmd,varargin)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 if nargin<2
-    error('Not enough input arguments');
+    error('Not enough input arguments')
 elseif nargin==2
     varargout={infile(FI,domain)};
     return
@@ -66,14 +67,17 @@ else
 end
 
 cmd=lower(cmd);
-switch cmd,
-    case 'size',
+switch cmd
+    case 'size'
         varargout={getsize(FI,Props)};
-        return;
-    case 'times',
+        return
+    case 'times'
         varargout={readtim(FI,Props,varargin{:})};
         return
-    case 'stations',
+    case 'timezone'
+        [varargout{1:2}]=gettimezone(FI,domain,Props);
+        return
+    case 'stations'
         varargout={{}};
         return
     case 'subfields'

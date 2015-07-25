@@ -59,11 +59,11 @@ end
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 AnimSlid=findobj(afig,'tag','animslid');
 AS=get(AnimSlid,'userdata');
-if isempty(AS)
-    set(AnimSlid,'enable','off')
-    par_ax = [];
+if strcmp(cmd,'animselect')
     h = [];
     par_fig = [];
+elseif isempty(AS)
+    set(AnimSlid,'enable','off')
     return
 else
     t_=AS(1).Fld(1);
@@ -515,7 +515,7 @@ switch cmd
         NStep=getappdata(animslid,'maxival');
         NoUpdateNec=1;
         ASold=get(animslid,'userdata');
-        if isstruct(ASold)
+        if isstruct(ASold) && ~isempty(ASold)
             ASoldFld=ASold(1).Fld;
         else
             ASoldFld=0;

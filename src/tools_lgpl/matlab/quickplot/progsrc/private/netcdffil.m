@@ -6,6 +6,7 @@ function varargout=netcdffil(FI,domain,field,cmd,varargin)
 %   Times                   = XXXFIL(FI,Domain,DataFld,'times',T)
 %   StNames                 = XXXFIL(FI,Domain,DataFld,'stations')
 %   SubFields               = XXXFIL(FI,Domain,DataFld,'subfields')
+%   [TZshift   ,TZstr  ]    = XXXFIL(FI,Domain,DataFld,'timezone')
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'data',subf,t,station,m,n,k)
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'celldata',subf,t,station,m,n,k)
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'griddata',subf,t,station,m,n,k)
@@ -49,8 +50,22 @@ function varargout=netcdffil(FI,domain,field,cmd,varargin)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 if nargin<2
-    error('Not enough input arguments');
-elseif nargin==2
+    error('Not enough input arguments')
+end
+
+OrigFI = FI;
+if FI.NumDomains>1
+    if isempty(domain)
+        % continue
+    elseif domain>FI.NumDomains
+        % continue
+    else
+        FI = FI.Partitions{domain};
+        domain = 1;
+    end
+end
+
+if nargin==2
     varargout={infile(FI,domain)};
     return
 elseif ischar(field)
@@ -79,9 +94,12 @@ cmd=lower(cmd);
 switch cmd
     case 'size'
         varargout={getsize(FI,Props)};
-        return;
+        return
     case 'times'
         varargout={readtim(FI,Props,varargin{:})};
+        return
+    case 'timezone'
+        [varargout{1:2}]=gettimezone(FI,domain,Props);
         return
     case 'stations'
         varargout={readsts(FI,Props,0)};
@@ -91,6 +109,22 @@ switch cmd
         return
     otherwise
         [XYRead,DataRead,DataInCell]=gridcelldata(cmd);
+end
+
+if FI.NumDomains>1
+    for i = 1:FI.NumDomains
+        Data2 = netcdffil(FI,i,field,cmd,varargin{:});
+        if i==1
+            Data = Data2;
+        else
+            flds = fieldnames(Data2);
+            for j = 1:length(flds)
+                Data(i).(flds{j}) = Data2.(flds{j});
+            end
+        end
+    end
+    varargout = {Data OrigFI};
+    return
 end
 
 DimFlag=Props.DimFlag;
@@ -138,7 +172,12 @@ if ~isempty(Props.SubFld)
     end
 end
 % read data ...
-Info=FI.Dataset(Props.varid(1)+1);
+if iscell(Props.varid)
+    ivar = Props.varid{2};
+else
+    ivar = Props.varid(1);
+end
+Info=FI.Dataset(ivar+1);
 %
 if isfield(Info.Attribute,'Name')
     Attribs = {Info.Attribute.Name};
@@ -149,40 +188,77 @@ end
 removeTime   = 0;
 activeloaded = 0;
 if DataRead && Props.NVal>0
-    for ii=1:length(Props.varid)
-        if ~isempty(Info.CharDim)
-            cdim = Info.Dimension(Info.CharDim==Info.Dimid);
-            cidx = 1:FI.Dimension(Info.CharDim+1).Length;
-            [data, status] = qp_netcdf_get(FI,Props.varid(ii),[Props.DimName cdim],[idx {cidx}]);
-            data = num2cell(data,ndims(data));
-        else
-            [data, status] = qp_netcdf_get(FI,Props.varid(ii),Props.DimName,idx);
+    if iscell(Props.varid)
+        switch Props.varid{1}
+            case 'stream_function'
+                edge_idx = idx;
+                edge_idx{3} = 1:FI.Dimension(Info.TSMNK(3)+1).Length;
+                [Discharge, status] = qp_netcdf_get(FI,ivar,Props.DimName,edge_idx);
+                %
+                meshInfo    = FI.Dataset(Info.Mesh{2});
+                meshAttribs = {meshInfo.Attribute.Name};
+                connect     = strmatch('edge_node_connectivity',meshAttribs,'exact');
+                [EdgeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
+                EdgeConnect(EdgeConnect<0) = NaN;
+                %
+                % Compute stream function psi (u = dpsi/dy, v = -dpsi/dx)
+                Psi = NaN(sz(3),1);
+                Psi(1) = 0;
+                found = true;
+                while found
+                    found = false;
+                    for i = 1:size(EdgeConnect,1)
+                        if ~isnan(Psi(EdgeConnect(i,1))) && isnan(Psi(EdgeConnect(i,2)))
+                            Psi(EdgeConnect(i,2)) = Psi(EdgeConnect(i,1)) + Discharge(i);
+                            found = true;
+                        elseif isnan(Psi(EdgeConnect(i,1))) && ~isnan(Psi(EdgeConnect(i,2)))
+                            Psi(EdgeConnect(i,1)) = Psi(EdgeConnect(i,2)) - Discharge(i);
+                            found = true;
+                        end
+                    end
+                end
+                Psi = Psi - min(Psi);
+                %
+                Ans.Val = Psi(idx{3});
+            otherwise
+                error('Special case "%s" not yet implemented.',Props.varid{1})
         end
-        szData = size(data);
-        %
-        if Props.DimFlag(T_) && length(idx{T_})==1
-            szV = [size(data) 1];
-            data = reshape(data,szV(2:end));
-            removeTime = 1;
-        end
-        %
-        %positive = strmatch('positive',Attribs,'exact');
-        %if ~isempty(positive)
-        %   if isequal(lower(Info.Attribute(positive).Value),'down')
-        %      data = -data;
-        %   end
-        %end
-        %
-        if ii==1
-            if length(Props.varid)==1
-                Ans.Val = data;
+    else
+        for ii=1:length(Props.varid)
+            if ~isempty(Info.CharDim)
+                cdim = Info.Dimension(Info.CharDim==Info.Dimid);
+                cidx = 1:FI.Dimension(Info.CharDim+1).Length;
+                [data, status] = qp_netcdf_get(FI,Props.varid(ii),[Props.DimName cdim],[idx {cidx}]);
+                data = num2cell(data,ndims(data));
             else
-                Ans.XComp = data;
+                [data, status] = qp_netcdf_get(FI,Props.varid(ii),Props.DimName,idx);
             end
-        elseif ii==2
-            Ans.YComp = data;
-        else
-            Ans.ZComp = data;
+            szData = size(data);
+            %
+            if Props.DimFlag(T_) && length(idx{T_})==1
+                szV = [size(data) 1];
+                data = reshape(data,szV(2:end));
+                removeTime = 1;
+            end
+            %
+            %positive = strmatch('positive',Attribs,'exact');
+            %if ~isempty(positive)
+            %   if isequal(lower(Info.Attribute(positive).Value),'down')
+            %      data = -data;
+            %   end
+            %end
+            %
+            if ii==1
+                if length(Props.varid)==1
+                    Ans.Val = data;
+                else
+                    Ans.XComp = data;
+                end
+            elseif ii==2
+                Ans.YComp = data;
+            else
+                Ans.ZComp = data;
+            end
         end
     end
     %
@@ -211,14 +287,69 @@ if XYRead
     npolpnt = 0;
     if strncmp(Props.Geom,'UGRID',5)
         %ugrid
-        mesh_settings = FI.Dataset(Props.varid+1).Mesh;
+        mesh_settings = Info.Mesh;
         meshInfo      = FI.Dataset(mesh_settings{2});
-        [Ans.X, status] = qp_netcdf_get(FI,FI.Dataset(meshInfo.X));
-        [Ans.Y, status] = qp_netcdf_get(FI,FI.Dataset(meshInfo.Y));
+        %
+        for c = 'XY'
+            CoordInfo2 = FI.Dataset(meshInfo.(c));
+            [Ans.(c), status] = qp_netcdf_get(FI,CoordInfo2);
+            %
+            if ~isempty(CoordInfo2.Attribute)
+                Attribs = {CoordInfo2.Attribute.Name};
+                j = strmatch('units',Attribs,'exact');
+                if ~isempty(j)
+                    unit = CoordInfo2.Attribute(j).Value;
+                    units = {'degrees_east','degree_east','degreesE','degreeE', ...
+                        'degrees_north','degree_north','degreesN','degreeN'};
+                    if ismember(unit,units)
+                        unit = 'deg';
+                    end
+                    Ans.([c 'Units']) = unit;
+                end
+            end
+        end
         %
         meshAttribs = {meshInfo.Attribute.Name};
         connect = strmatch('face_node_connectivity',meshAttribs,'exact');
+        iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name});
         [Ans.Connect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
+        istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name});
+        if isempty(istart)
+            start = 0;
+        else
+            start = FI.Dataset(iconnect).Attribute(istart).Value;
+        end
+        Ans.Connect = Ans.Connect - start + 1;
+        Ans.Connect(Ans.Connect<1) = NaN;
+        %
+        Ans.ValLocation = Props.Geom(7:end);
+        if strcmp(Ans.ValLocation,'EDGE')
+            connect = strmatch('edge_node_connectivity',meshAttribs,'exact');
+            [Ans.EdgeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
+            Ans.EdgeConnect(Ans.EdgeConnect<0) = NaN;
+        elseif ~DataRead
+            % hack to load EdgeNodeConnect if available for use in GridView
+            try
+                connect = strmatch('edge_node_connectivity',meshAttribs,'exact');
+                [Ans.EdgeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
+                Ans.EdgeConnect(Ans.EdgeConnect<0) = NaN;
+            catch
+            end
+        end
+        %
+        switch Ans.ValLocation
+            case 'NODE'
+                Ans.X = Ans.X(idx{M_});
+                Ans.Y = Ans.Y(idx{M_});
+                Cnct = all(ismember(Ans.Connect,idx{M_}) | isnan(Ans.Connect),2);
+                renum(idx{M_}) = 1:length(idx{M_});
+                Ans.Connect = Ans.Connect(Cnct,:);
+                Ans.Connect(~isnan(Ans.Connect)) = renum(Ans.Connect(~isnan(Ans.Connect)));
+            case 'EDGE'
+                Ans.EdgeConnect = Ans.EdgeConnect(idx{M_},:);
+            case 'FACE'
+                Ans.Connect = Ans.Connect(idx{M_},:);
+        end
     else
         if Props.hasCoords
             coordname={'X','Y'};
@@ -246,6 +377,14 @@ if XYRead
             dimvals = idx;
             isbounds = strcmp(coordname{iCoord}(2:end),'Bounds');
             if isbounds
+                % when plotting the coordinate bounds variable, the
+                % variable itself already has a dimension like "Two" or
+                % "nMaxmesh2_face_nodes" which conflicts with the dimension
+                % of the bounds to be added later. Since these coordinates
+                % are non-spatial anyway, remove them.
+                dims(6:end) = [];
+                dimvals(6:end) = [];
+                %
                 vdim2 = getfield(Info,coordname{iCoord}(1));
                 if isempty(vdim2)
                     CoordInfo2 = [];
@@ -590,7 +729,7 @@ if XYRead
     %
     if ~Props.hasCoords
         %
-        % Grid regular grid
+        % Define a simple regular grid
         %
         Ans.X = repmat(idx{M_}(:),1,length(idx{N_}));
         Ans.Y = repmat(idx{N_}(:)',length(idx{M_}),1);
@@ -611,16 +750,31 @@ if Props.DimFlag(T_)
 end
 Ans.Time=T;
 
-varargout={Ans FI};
+varargout={Ans OrigFI};
 % -----------------------------------------------------------------------------
 
+% -------------------------------------------------------------------------
+function [TZshift,TZstr]=gettimezone(FI,domain,Props)
+TZstr = '';
+if iscell(Props.varid)
+    ivar = Props.varid{2};
+else
+    ivar = Props.varid(1);
+end
+timevar = FI.Dataset(ivar+1).Time;
+if isempty(timevar)
+    TZshift = NaN;
+else
+    TZshift = FI.Dataset(timevar).Info.TZshift;
+end
+% -------------------------------------------------------------------------
 
 % -----------------------------------------------------------------------------
 function Out=infile(FI,domain)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
-PropNames={'Name'                   'Units' 'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVal' 'SubFld' 'MNK' 'varid'  'DimName' 'hasCoords' 'VectorDef' 'ClosedPoly'};
-DataProps={'dummy field'            ''      ''     ''      [0 0 0 0 0]  0           0      []       0     []          {}          0         0          0};
+PropNames={'Name'                   'Units' 'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVal' 'SubFld' 'MNK' 'varid'  'DimName' 'hasCoords' 'VectorDef' 'ClosedPoly' 'UseGrid'};
+DataProps={'dummy field'            ''      ''     ''      [0 0 0 0 0]  0           0      []       0     []          {}          0         0          0          0};
 Out=cell2struct(DataProps,PropNames,2);
 %Out.MName='M';
 %Out.NName='N';
@@ -672,13 +826,18 @@ else
         %
         % Show long name, or standard name, or variable name
         %
-        j = strmatch('long_name',Attribs,'exact');
+        j = strmatch('standard_name',Attribs,'exact');
         if ~isempty(j)
+            standard_name = Info.Attribute(j).Value;
+        else
+            standard_name = '';
+        end
+        j = strmatch('long_name',Attribs,'exact');
+        if ~isempty(j) && ~isempty(Info.Attribute(j).Value)
             Insert.Name = Info.Attribute(j).Value;
         else
-            j = strmatch('standard_name',Attribs,'exact');
-            if ~isempty(j)
-                Insert.Name = Info.Attribute(j).Value;
+            if ~isempty(standard_name)
+                Insert.Name = standard_name;
             else
                 Insert.Name = Info.Name;
             end
@@ -732,15 +891,22 @@ else
             Insert.Coords = 'xy';
             Insert.hasCoords=1;
             switch Info.Mesh{3}
+                case -1 % the mesh itself
+                    Insert.Geom = 'UGRID-NODE';
+                    Insert.DimFlag(3) = 6;
                 case 0 % node
                     Insert.Geom = 'UGRID-NODE';
+                    Insert.DimFlag(3) = 6;
                 case 1 % edge
                     Insert.Geom = 'UGRID-EDGE';
+                    Insert.DimFlag(3) = 6;
                 case 2 % face
                     Insert.Geom = 'UGRID-FACE';
+                    Insert.DimFlag(3) = 6;
                     Insert.DataInCell = 1;
                 case 3 % volume
                     Insert.Geom = 'UGRID-VOLUME';
+                    Insert.DimFlag(3) = 6;
                     Insert.DataInCell = 1;
             end
             if strcmp(Info.Type,'ugrid_mesh')
@@ -767,6 +933,14 @@ else
         Insert.varid = Info.Varid;
         %
         Out(end+1)=Insert;
+        %
+        if strcmp(standard_name,'discharge')
+            Insert.Name = 'stream function'; % previously: discharge potential
+            Insert.Geom = 'UGRID-NODE';
+            Insert.varid = {'stream_function' Insert.varid};
+            %
+            Out(end+1)=Insert;
+        end
     end
     Out(1)=[];
 end
@@ -788,6 +962,10 @@ nVecStdNames = size(VecStdNameTable,1);
 
 i=1;
 while i<length(Out)
+    if iscell(Out(i).varid)
+        i=i+1;
+        continue
+    end
     stdname = FI.Dataset(Out(i).varid+1).StdName;
     j = strmatch(stdname,VecStdNameTable(:,1:2),'exact');
     y=[];
@@ -894,12 +1072,52 @@ for i = 1:length(Out)
 end
 %
 for i = 1:length(Out)
-    if ~isempty(Out(i).varid)
+    if iscell(Out(i).varid)
+        %TODO
+    elseif ~isempty(Out(i).varid)
         Info = FI.Dataset(Out(i).varid(1)+1);
         for j = 1:length(Info.Attribute)
             if strcmp(Info.Attribute(j).Name,'cell_methods')
                 Out(i).Name = [Out(i).Name ' - ' Info.Attribute(j).Value];
             end
+        end
+    end
+end
+%
+Meshes = zeros(0,2);
+for loop = 1:2
+    for i = 1:length(Out)
+        switch Out(i).Geom
+            case {'UGRID-NODE','UGRID-EDGE','UGRID-FACE'}
+                if iscell(Out(i).varid)
+                    varid = Out(i).varid{2};
+                else
+                    varid = Out(i).varid(1);
+                end
+                thisMesh = FI.Dataset(varid+1).Mesh;
+                if loop == 1
+                    if thisMesh{3} == -1
+                        Meshes(end+1,:) = [thisMesh{2} i];
+                    end
+                else % loop == 2
+                    if thisMesh{3} == -1
+                        Out(i).UseGrid = i;
+                    else
+                        j = find(Meshes(:,1) == thisMesh{2});
+                        Out(i).UseGrid = Meshes(j,2);
+                    end
+                end
+        end
+    end
+end
+%
+if domain==FI.NumDomains+1
+    for i =1 :length(Out)
+        if Out(i).DimFlag(M_)
+            Out(i).DimFlag(M_) = inf;
+        end
+        if Out(i).DimFlag(N_)
+            Out(i).DimFlag(N_) = inf;
         end
     end
 end
@@ -951,7 +1169,21 @@ end
 function sz=getsize(FI,Props)
 ndims = length(Props.DimFlag);
 sz = zeros(1,ndims);
-if ~isempty(Props.varid)
+if iscell(Props.varid)
+    switch Props.varid{1}
+        case 'stream_function'
+            % get underlying discharge on edge variable
+            Info = FI.Dataset(Props.varid{2}+1);
+            sz(1) = FI.Dimension(Info.TSMNK(1)+1).Length;
+            % get the x-coordinates variable for the nodes of the mesh
+            XVar = FI.Dataset(Info.Mesh{2}).X;
+            % get the node dimension
+            dimNodes = FI.Dataset(XVar).TSMNK(3)+1;
+            sz(3) = FI.Dimension(dimNodes).Length;
+        otherwise
+            error('Size function not yet implemented for special case "%s"',Props.varid{1})
+    end
+elseif ~isempty(Props.varid)
     Info=FI.Dataset(Props.varid(1)+1);
     for d_ = 1:ndims
         if Props.DimFlag(d_)
@@ -962,19 +1194,31 @@ end
 %======================== SPECIFIC CODE =======================================
 
 % -----------------------------------------------------------------------------
+function Domains=domains(FI)
+if FI.NumDomains > 1
+    Domains = multiline(sprintf('partition %4.4d-',0:FI.NumDomains-1),'-','cell');
+    Domains{end} = 'all partitions';
+else
+    Domains = {};
+end
 
 
 % -----------------------------------------------------------------------------
 function T=readtim(FI,Props,t)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
-tvar = FI.Dataset(Props.varid(1)+1).Time;
+if iscell(Props.varid)
+    varid = Props.varid{2};
+else
+    varid = Props.varid(1);
+end
+tvar = FI.Dataset(varid+1).Time;
 if isempty(tvar)
     tinfo = [];
     T = [];
 else
     tinfo = FI.Dataset(tvar).Info;
-    T = double(nc_varget(FI.FileName,FI.Dataset(tvar).Name));
+    T = double(nc_varget(FI.Filename,FI.Dataset(tvar).Name));
 end
 if ~isstruct(tinfo) % likely even empty
     % continue with T = T;
@@ -996,6 +1240,9 @@ elseif ~isempty(tinfo.RefDate)
 else
     T = tinfo.DT * T;
 end
+%if ~isnan(tinfo.TZshift)
+%    T = T - tinfo.TZshift/24;
+%end
 if t~=0
     T=T(t);
 end
@@ -1005,7 +1252,11 @@ end
 % -----------------------------------------------------------------------------
 function S=readsts(FI,Props,t)
 %======================== SPECIFIC CODE =======================================
-stcrd = FI.Dataset(Props.varid+1).Station;
+if iscell(Props.varid)
+    %TODO
+else
+    stcrd = FI.Dataset(Props.varid+1).Station;
+end
 [Stations, status] = qp_netcdf_get(FI,stcrd-1,FI.Dataset(stcrd).Dimension);
 if t~=0
     Stations = Stations(t,:);

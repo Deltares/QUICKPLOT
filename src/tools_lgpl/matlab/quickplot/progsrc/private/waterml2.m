@@ -163,7 +163,7 @@ for i = 1:nTS
     %
     try
         % equidistant time series
-        BeginTime = str2tim(xparse('getRecursiveNamedChildNS',D,NameSpaces,wml2,'metadata',wml2,'MeasurementTimeseriesMetadata',wml2,'baseTime'));
+        BeginTime = iso8601datetime(xparse('getRecursiveNamedChildNS',D,NameSpaces,wml2,'metadata',wml2,'MeasurementTimeseriesMetadata',wml2,'baseTime'));
         SP = xparse('getRecursiveNamedChildNS',D,NameSpaces,wml2,'metadata',wml2,'MeasurementTimeseriesMetadata',wml2,'spacing');
         TimeStep = iso8601period(char(SP.getTextContent));
     catch
@@ -184,7 +184,7 @@ noData = true(nTSV,1);
 for i = 1:nTSV
     TSVi = xparse('getNamedChildNS',TSV(i),NameSpaces,wml2,'MeasurementTVP');
     if isempty(BeginTime)
-        TSD(i,1) = str2tim(xparse('getNamedChildNS',TSVi,NameSpaces,wml2,'time'));
+        TSD(i,1) = iso8601datetime(xparse('getNamedChildNS',TSVi,NameSpaces,wml2,'time'));
         noData(i) = false;
     else
         TSD(i,1) = datenum(datevec(BeginTime) + (i-1)*TimeStep);
@@ -263,13 +263,39 @@ else
     end
 end
 
-function T = str2tim(S)
+function [T,TZshift] = iso8601datetime(S)
 str = char(S.getTextContent);
-[datetime,N,err] = sscanf(str,'%4i-%2d-%2dT%d:%d:%f',[1 6]);
-if N~=6
+[datetime,N,err,i] = sscanf(str,'%4i-%2d-%2dT%2d:%2d:%2d',[1 6]);
+if N==1
+    [datetime,N,err,i] = sscanf(str,'%4i%2d%2dT%2d%2d%2d',[1 6]);
+end
+TZ = deblank(str(i:end));
+if isempty(TZ) || strcmp(TZ,'Z')
+    TZshift = 0;
+else
+    [TZshift,NTZ,err] = sscanf(TZ,'%1[+-]%d:%d',[1 3]);
+    switch NTZ
+        case 0
+            err='Missing time zone sign';
+        case 1
+            err='Missing time zone hour';
+        case 2
+            if TZshift(2)>100
+                TZshift(2) = fix(TZshift(2)/100)+rem(TZshift(2),100)/60;
+            end
+            TZshift = (44-TZshift(1))*TZshift(2);
+        case 3
+            TZshift = (44-TZshift(1))*(TZshift(2)+TZshift(3)/60);
+    end
+end
+if ~isempty(err)
     error('%s while parsing time string "%s"',err,str)
 end
-T = datenum(datetime); % ignoring time zone for the moment
+if nargout==1
+    T = datenum(datetime); % ignoring time zone for the moment
+else
+    T = datenum(datetime - [0 0 0 TZshift 0 0]);
+end
 
 function wml2 = wml2
 wml2 = 'http://www.opengis.net/waterml/2.0';

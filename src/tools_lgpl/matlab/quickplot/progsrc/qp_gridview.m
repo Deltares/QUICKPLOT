@@ -13,8 +13,11 @@ function [out,out2]=qp_gridview(cmd,varargin)
 %   'range', 'line', 'lineseg', 'pwline', 'genline'. See the 'getrange'
 %   call output for the contents of the Range field.
 %
-%   QP_GRIDVIEW('setgrid',FIG,GRID) update the grid used by the grid
-%   in the specified Grid View interface FIG.
+%   QP_GRIDVIEW('setgrid',FIG,GRID) update the grid to be used in the
+%   specified Grid View interface FIG.
+%
+%   GRID = QP_GRIDVIEW('getgrid',FIG) retrieve the grid used in the
+%   specified Grid View interface FIG.
 %
 %   QP_GRIDVIEW('setrange',FIG,RANGE) update the selected range of the
 %   specified Grid View interface FIG to the specified RANGE.
@@ -75,28 +78,8 @@ if nargin==0
     UsrRange=[];
     GRID.X=[];
     GRID.Y=[];
-elseif nargin==1 && ischar(cmd)
-elseif ischar(cmd) && strcmpi(cmd,'getrange')
-    if nargin==1
-        F=gcbf;
-    else
-        F=varargin{1};
-    end
-    G=findobj(F,'tag','GRID');
-    GRID=get(G,'userdata');
-    xx=GRID.Selected;
-    if ~isfield(xx,'Type')
-        xx.Type='none';
-        xx.Range=[];
-    end
-    if nargout<=1
-        out=xx;
-    else
-        out=xx.Type;
-        out2=xx.Range;
-    end
-    return
 elseif ischar(cmd)
+    % handled below
 else
     if isstruct(cmd)
         GRID=cmd;
@@ -115,62 +98,53 @@ else
 end
 
 switch cmd
+    case 'getrange'
+        if nargin==1
+            F=gcbf;
+        else
+            F=varargin{1};
+        end
+        G=findobj(F,'tag','GRID');
+        GRID=get(G,'userdata');
+        xx=GRID.Selected;
+        if ~isfield(xx,'Type')
+            xx.Type='none';
+            xx.Range=[];
+        end
+        if nargout<=1
+            out=xx;
+        else
+            out=xx.Type;
+            out2=xx.Range;
+        end
+        return
     case {'gridrangeup','gridrangemotion'}
+        % Process movement and button presses for selecting a grid range
         G=findobj(gcbf,'tag','GRID');
         GRID=get(G,'userdata');
-        SelectedGrid=findobj(gcbf,'tag','SELSURF');
-        SelectedPatch=findobj(gcbf,'tag','SELPATCH');
-        SelectedLine=findobj(gcbf,'tag','SELLINE');
-        ij0=get(SelectedLine,'userdata');
+        if length(GRID.Selected.Range)==2
+            ij0=GRID.Selected.Range;
+        else
+            ij0=GRID.Selected.Range([1 3]);
+        end
         [i,j]=trackpnt(gcbf);
         i0=ij0(1);
         j0=ij0(2);
-        i1=min(i0,i);
-        i2=max(i0,i);
-        j1=min(j0,j);
-        j2=max(j0,j);
-        if (i1~=i2) && (j1~=j2)
-            set(SelectedGrid, ...
-                'xdata',GRID.X(i1:i2,j1:j2), ...
-                'ydata',GRID.Y(i1:i2,j1:j2), ...
-                'zdata',zeros(i2-i1+1,j2-j1+1))
-            set(SelectedLine,'xdata',[],'ydata',[])
-            set(SelectedPatch,'vertices',[],'faces',[])
-        elseif (i1==i2) && (j1==j2)
-            set(SelectedLine, ...
-                'xdata',GRID.X(i0,j0), ...
-                'ydata',GRID.Y(i0,j0), ...
-                'marker','.')
-            set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
-            set(SelectedPatch,'vertices',[],'faces',[])
-        elseif i1==i2
-            set(SelectedLine, ...
-                'xdata',GRID.X(i0,j1:j2), ...
-                'ydata',GRID.Y(i0,j1:j2), ...
-                'marker','none','linestyle','-')
-            set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
-            set(SelectedPatch,'vertices',[],'faces',[])
-        else
-            set(SelectedLine, ...
-                'xdata',GRID.X(i1:i2,j0), ...
-                'ydata',GRID.Y(i1:i2,j0), ...
-                'marker','none','linestyle','-')
-            set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
-            set(SelectedPatch,'vertices',[],'faces',[])
-        end
-        switch cmd
-            case {'gridrangeup'}
-                GRID.Selected.Type='range';
-                GRID.Selected.Range=[i1 i2 j1 j2];
-                set(G,'userdata',GRID)
-                normalstate(gcbf)
+        localdrawsel(gcbf,'range',[i0 i j0 j])
+        if strcmp(cmd,'gridrangeup')
+            normalstate(gcbf)
         end
 
     case {'draglineup','draglinemotion','dragwholelineup','dragwholelinemotion'}
+        % Process movement and button presses for selecting a whole line or
+        % line segment
         G=findobj(gcbf,'tag','GRID');
-        SelectedLine=findobj(gcbf,'tag','SELLINE');
-        ij0=get(SelectedLine,'userdata');
         GRID=get(G,'userdata');
+        if length(GRID.Selected.Range)==2
+            ij0=GRID.Selected.Range;
+        else
+            ij0=GRID.Selected.Range([1 3]);
+        end
         pnt=get(get(G,'parent'),'currentpoint');
         pnt=pnt(1,1:2);
         dist=(pnt(1)-GRID.X).^2+(pnt(2)-GRID.Y).^2;
@@ -184,43 +158,12 @@ switch cmd
                     j1=find(dist(i0,:)==midist);
                     j1=j1(1);
                     i1=i0;
-                    if j1==j0
-                        set(SelectedLine, ...
-                            'xdata',GRID.X(i0,j0), ...
-                            'ydata',GRID.Y(i0,j0), ...
-                            'marker','.')
-                    elseif j1<j0
-                        set(SelectedLine, ...
-                            'xdata',GRID.X(i0,j1:j0), ...
-                            'ydata',GRID.Y(i0,j1:j0), ...
-                            'marker','none','linestyle','-')
-                    else
-                        set(SelectedLine, ...
-                            'xdata',GRID.X(i0,j0:j1), ...
-                            'ydata',GRID.Y(i0,j0:j1), ...
-                            'marker','none','linestyle','-')
-                    end
                 else
                     i1=find(dist(:,j0)==mjdist);
                     i1=i1(1);
                     j1=j0;
-                    if i1==i0
-                        set(SelectedLine, ...
-                            'xdata',GRID.X(i0,j0), ...
-                            'ydata',GRID.Y(i0,j0), ...
-                            'marker','.')
-                    elseif i1<i0
-                        set(SelectedLine, ...
-                            'xdata',GRID.X(i1:i0,j0), ...
-                            'ydata',GRID.Y(i1:i0,j0), ...
-                            'marker','none','linestyle','-')
-                    else
-                        set(SelectedLine, ...
-                            'xdata',GRID.X(i0:i1,j0), ...
-                            'ydata',GRID.Y(i0:i1,j0), ...
-                            'marker','none','linestyle','-')
-                    end
                 end
+                localdrawsel(gcbf,'range',[i0 i1 j0 j1])
                 %---trackcoord start
                 trackxy(gcbf,pnt)
                 MN=findobj(gcbf,'tag','MNcoord');
@@ -228,15 +171,9 @@ switch cmd
                 %---trackcoord stop
             case {'dragwholelineup','dragwholelinemotion'}
                 if midist<mjdist
-                    set(SelectedLine, ...
-                        'xdata',GRID.X(i0,:), ...
-                        'ydata',GRID.Y(i0,:), ...
-                        'marker','none','linestyle','-')
+                    localdrawsel(gcbf,'line',[i0 0 j0 inf])
                 else
-                    set(SelectedLine, ...
-                        'xdata',GRID.X(:,j0), ...
-                        'ydata',GRID.Y(:,j0), ...
-                        'marker','none','linestyle','-')
+                    localdrawsel(gcbf,'line',[i0 inf j0 0])
                 end
                 %---trackcoord start
                 trackxy(gcbf,pnt)
@@ -244,46 +181,30 @@ switch cmd
                 set(MN,'string','m,n:')
                 %---trackcoord stop
         end
-        switch cmd
-            case 'draglineup'
-                GRID.Selected.Type='lineseg';
-                GRID.Selected.Range=[i0 i1 j0 j1];
-                set(G,'userdata',GRID)
-                normalstate(gcbf)
-            case 'dragwholelineup'
-                GRID.Selected.Type='line';
-                if midist<mjdist
-                    GRID.Selected.Range=[i0 inf];
-                else
-                    GRID.Selected.Range=[inf j0];
-                end
-                set(G,'userdata',GRID)
-                normalstate(gcbf)
+        if strcmp(cmd(end-1:end),'up')
+            normalstate(gcbf)
         end
 
     case {'pwlinedown','pwlinemotion'}
         G=findobj(gcbf,'tag','GRID');
-        SelectedLine=findobj(gcbf,'tag','SELLINE');
-        Ln=get(SelectedLine,'userdata');
         GRID=get(G,'userdata');
+        NFixed = getappdata(G,'NFixed');
+        if isempty(NFixed)
+            NFixed = 0;
+        end
+        %
         pnt=get(get(G,'parent'),'currentpoint');
         pnt=pnt(1,1:2);
         dist=(pnt(1)-GRID.X).^2+(pnt(2)-GRID.Y).^2;
-        if isempty(Ln)
+        if NFixed==0
             mdist=min(dist(:));
             [i,j]=find(dist==mdist);
             i=i(1);
             j=j(1);
-            set(SelectedLine, ...
-                'xdata',GRID.X(i,j), ...
-                'ydata',GRID.Y(i,j), ...
-                'marker','.')
+            localdrawsel(gcbf,'pwline',[i j])
             switch cmd
                 case 'pwlinedown'
-                    Ln.ij0=[i j];
-                    Ln.RefPnt=Ln.ij0;
-                    Ln.XY=zeros(0,2);
-                    set(SelectedLine,'userdata',Ln)
+                    setappdata(G,'NFixed',1);
             end
             %---trackcoord start
             trackxy(gcbf,pnt)
@@ -291,50 +212,32 @@ switch cmd
             set(MN,'string',sprintf('m,n: %i,%i',i,j))
             %---trackcoord stop
         else
-            i0=Ln.ij0(1);
-            j0=Ln.ij0(2);
+            Range = GRID.Selected.Range;
+            i0=Range(NFixed,1);
+            j0=Range(NFixed,2);
+            %
             midist=min(dist(i0,:));
             mjdist=min(dist(:,j0));
             [mddist,indrng,i1,j1]=NearDiag(dist,i0,j0);
             if (mddist<midist) && (mddist<mjdist)
-                XY=[GRID.X(indrng)' GRID.Y(indrng)'];
+                % Closest to the diagonal
             elseif midist<mjdist
+                % Closest to grid line in second direction
                 i1=i0;
                 j1=find(dist(i0,:)==midist);
                 j1=j1(1);
-                if j1==j0
-                    XY=zeros(0,2);
-                elseif j1<j0
-                    XY=[GRID.X(i0,j0:-1:j1)' GRID.Y(i0,j0:-1:j1)'];
-                else
-                    XY=[GRID.X(i0,j0:j1)' GRID.Y(i0,j0:j1)'];
-                end
             else
+                % Closest to grid line in first direction
                 j1=j0;
                 i1=find(dist(:,j0)==mjdist);
                 i1=i1(1);
-                if i1==i0
-                    XY=zeros(0,2);
-                elseif i1<i0
-                    XY=[GRID.X(i0:-1:i1,j0) GRID.Y(i0:-1:i1,j0)];
-                else
-                    XY=[GRID.X(i0:i1,j0) GRID.Y(i0:i1,j0)];
-                end
             end
-            set(SelectedLine, ...
-                'xdata',[Ln.XY(:,1);XY(:,1)], ...
-                'ydata',[Ln.XY(:,2);XY(:,2)], ...
-                'marker','none','linestyle','-')
+            Range(NFixed+1,:) = [i1 j1];
+            localdrawsel(gcbf,'pwline',Range)
             switch cmd
                 case {'pwlinedown'}
-                    Ln.ij0=[i1 j1];
-                    Ln.RefPnt(end+1,:)=Ln.ij0;
-                    Ln.XY=[Ln.XY;XY];
-                    set(SelectedLine,'userdata',Ln);
+                    setappdata(G,'NFixed',NFixed+1);
                     if ~strcmp(get(gcbf,'selectiontype'),'normal')
-                        GRID.Selected.Type='pwline';
-                        GRID.Selected.Range=Ln.RefPnt;
-                        set(G,'userdata',GRID)
                         normalstate(gcbf)
                     end
             end
@@ -348,9 +251,12 @@ switch cmd
     case {'genlinedown','genrectdown','genlinemotion','genrectmotion', ...
             'genareadown','genareamotion'}
         G=findobj(gcbf,'tag','GRID');
-        SelectedLine=findobj(gcbf,'tag','SELLINE');
-        SelectedPatch=findobj(gcbf,'tag','SELPATCH');
-        Ln=get(SelectedLine,'userdata');
+        GRID=get(G,'userdata');
+        NFixed = getappdata(G,'NFixed');
+        if isempty(NFixed)
+            NFixed = 0;
+        end
+        %
         pnt=get(get(G,'parent'),'currentpoint');
         pnt=pnt(1,1:2);
         %---trackcoord start
@@ -358,95 +264,57 @@ switch cmd
         MN=findobj(gcbf,'tag','MNcoord');
         set(MN,'string','')
         %---trackcoord stop
-        if isempty(Ln)
-            set(SelectedLine,'xdata',pnt(1),'ydata',pnt(2),'marker','.')
-            switch cmd
-                case {'genlinedown','genareadown'}
-                    Ln.XY=pnt;
-                    set(SelectedLine,'userdata',Ln)
-                case 'genrectdown'
-                    Ln.XY=pnt;
-                    set(SelectedLine,'userdata',Ln)
-                    set(SelectedPatch,'vertices',pnt,'faces',[1 1 1 1])
+        if NFixed==0
+            localdrawsel(gcbf,cmd(1:7),pnt)
+            if strcmp(cmd(end-3:end),'down')
+                setappdata(G,'NFixed',1)
             end
         else
-            switch cmd
-                case {'genlinedown','genlinemotion'}
-                    set(SelectedLine,'xdata',[Ln.XY(:,1);pnt(1)], ...
-                        'ydata',[Ln.XY(:,2);pnt(2)], ...
-                        'marker','none','linestyle','-')
-                case {'genareadown','genareamotion'}
-                    if length(Ln.XY(:,1))==1
-                        set(SelectedLine,'xdata',[Ln.XY(:,1);pnt(1)], ...
-                            'ydata',[Ln.XY(:,2);pnt(2)], ...
-                            'marker','none','linestyle','-')
-                        set(SelectedPatch, ...
-                            'vertices',[Ln.XY;pnt], ...
-                            'faces',1:size(Ln.XY,1)+1)
-                    else
-                        set(SelectedLine,'xdata',[],'ydata',[])
-                        set(SelectedPatch, ...
-                            'vertices',[Ln.XY;pnt], ...
-                            'faces',1:size(Ln.XY,1)+1)
-                    end
-                case {'genrectmotion'}
-                    xy=[Ln.XY(1,:)
-                        Ln.XY(1,1) pnt(2)
-                        pnt(1) Ln.XY(1,2)
-                        pnt];
-                    set(SelectedLine,'xdata',[],'ydata',[])
-                    set(SelectedPatch,'vertices',xy, ...
-                        'faces',[1 2 4 3])
-            end
-            Ln.XY=[Ln.XY;pnt];
-            GRID=get(G,'userdata');
+            Range = GRID.Selected.Range;
+            Range(NFixed+1,:) = pnt;
+            localdrawsel(gcbf,cmd(1:7),Range)
             switch cmd
                 case {'genlinedown'}
-                    set(SelectedLine,'userdata',Ln);
+                    setappdata(G,'NFixed',NFixed+1)
                     if ~strcmp(get(gcbf,'selectiontype'),'normal')
-                        GRID.Selected.Type='genline';
-                        GRID.Selected.Range=Ln.XY;
-                        set(G,'userdata',GRID)
                         normalstate(gcbf)
                     end
-                case {'genareadown'}
-                    set(SelectedLine,'userdata',Ln);
-                    if ~strcmp(get(gcbf,'selectiontype'),'normal')
-                        GRID.Selected.Type='range';
-                        switch GRID.Type
-                            case 'network'
-                                idx = inpolygon(GRID.XY(:,1),GRID.XY(:,2),Ln.XY(:,1),Ln.XY(:,2));
-                            case 'triangular'
-                                idx = inpolygon(GRID.XYZ(:,1),GRID.XYZ(:,2),Ln.XY(:,1),Ln.XY(:,2));
+                case {'genareadown','genrectdown'}
+                    setappdata(G,'NFixed',NFixed+1)
+                    if ~strcmp(get(gcbf,'selectiontype'),'normal') || strcmp(cmd,'genrectdown')
+                        switch GRID.ValLocation
+                            case 'NODE'
+                                X = GRID.X;
+                                Y = GRID.Y;
+                            case 'EDGE'
+                                EdgeConnect = GRID.EdgeNodeConnect;
+                                missing = false;
+                                X = GRID.X(EdgeConnect);
+                                Y = GRID.Y(EdgeConnect);
+                            case 'FACE'
+                                Faces = GRID.FaceNodeConnect;
+                                missing = isnan(Faces);
+                                Faces(missing) = 1;
+                                X = GRID.X(Faces);
+                                Y = GRID.Y(Faces);
                         end
-                        GRID.Selected.Range={find(idx)'};
-                        set(G,'userdata',GRID)
+                        if strcmp(cmd,'genareadown')
+                            idx = inpolygon(X,Y,Range(:,1),Range(:,2));
+                        else
+                            idx = X>=min(Range(:,1)) & X<=max(Range(:,1)) & ...
+                                  Y>=min(Range(:,2)) & Y<=max(Range(:,2));
+                        end
+                        if ~strcmp(GRID.ValLocation,'NODE')
+                            idx = all(idx | missing,2);
+                        end
+                        localdrawsel(gcbf,'range',{find(idx)'})
                         normalstate(gcbf)
-                        qp_gridview('setrange',gcbf,GRID.Selected)
                     end
-                case {'genrectdown'}
-                    GRID.Selected.Type='range';
-                    Ln.XY=sort(Ln.XY,1);
-                    switch GRID.Type
-                        case 'network'
-                            idx = GRID.XY(:,1)>=Ln.XY(1,1) & ...
-                                GRID.XY(:,1)<=Ln.XY(2,1) & ...
-                                GRID.XY(:,2)>=Ln.XY(1,2) & ...
-                                GRID.XY(:,2)<=Ln.XY(2,2);
-                        case 'triangular'
-                            idx = GRID.XYZ(:,1)>=Ln.XY(1,1) & ...
-                                GRID.XYZ(:,1)<=Ln.XY(2,1) & ...
-                                GRID.XYZ(:,2)>=Ln.XY(1,2) & ...
-                                GRID.XYZ(:,2)<=Ln.XY(2,2);
-                    end
-                    GRID.Selected.Range={find(idx)'};
-                    set(G,'userdata',GRID)
-                    normalstate(gcbf)
-                    qp_gridview('setrange',gcbf,GRID.Selected)
             end
         end
 
     case 'trackcoord'
+        % Default mouse tracking function: x,y coordinates in status bar
         G=findobj(gcbf,'tag','GRID');
         pnt=get(get(G,'parent'),'currentpoint');
         if ~isempty(pnt)
@@ -457,72 +325,42 @@ switch cmd
         set(MN,'string','')
 
     case {'selpointup','selpointmotion','draglinedown','dragwholelinedown','gridrangedown'}
-        G=findobj(gcbf,'tag','GRID');
-        SelectedLine=findobj(gcbf,'tag','SELLINE');
-        GRID=get(G,'userdata');
         [i,j]=trackpnt(gcbf);
-        switch GRID.Type
-            case 'structured'
-                set(SelectedLine, ...
-                    'xdata',GRID.X(i,j), ...
-                    'ydata',GRID.Y(i,j), ...
-                    'marker','.')
-            case 'network'
-                set(SelectedLine, ...
-                    'xdata',GRID.XY(i,1), ...
-                    'ydata',GRID.XY(i,2), ...
-                    'marker','.')
-            case 'triangular'
-                set(SelectedLine, ...
-                    'xdata',GRID.XYZ(i,1), ...
-                    'ydata',GRID.XYZ(i,2), ...
-                    'marker','.')
-        end
+        localdrawsel(gcbf,'point',[i,j])
         switch cmd
             case 'selpointup'
-                X.Type='point';
-                switch GRID.Type
-                    case 'structured'
-                        X.Range=[i j];
-                    case {'network','triangular'}
-                        X.Range=i;
-                end
-                GRID.Selected=X;
-                set(G,'userdata',GRID)
                 normalstate(gcbf)
-                %            qp_gridview('setrange',gcbf,GRID.Selected)
             case 'draglinedown'
                 set(gcbf,'WindowButtonDownFcn','qp_gridview draglineup')
                 set(gcbf,'WindowButtonMotionFcn','qp_gridview draglinemotion')
                 set(gcbf,'WindowButtonUpFcn','')
-                set(SelectedLine,'userdata',[i j])
             case 'dragwholelinedown'
                 set(gcbf,'WindowButtonDownFcn','qp_gridview dragwholelineup')
                 set(gcbf,'WindowButtonMotionFcn','qp_gridview dragwholelinemotion')
                 set(gcbf,'WindowButtonupFcn','')
-                set(SelectedLine,'userdata',[i j])
             case 'gridrangedown'
                 set(gcbf,'WindowButtonDownFcn','qp_gridview gridrangeup')
                 set(gcbf,'WindowButtonMotionFcn','qp_gridview gridrangemotion')
                 set(gcbf,'WindowButtonupFcn','')
-                set(SelectedLine,'userdata',[i j])
         end
 
     case {'pathdown','pathmotion'}
         G=findobj(gcbf,'tag','GRID');
-        SelectedLine=findobj(gcbf,'tag','SELLINE');
         GRID=get(G,'userdata');
         i=trackpnt(gcbf);
-        UD = get(SelectedLine,'userdata');
+        NFixed = getappdata(G,'NFixed');
+        if isempty(NFixed)
+            NFixed = 0;
+        end
         %
-        if isempty(UD)
+        if NFixed==0
             points = [];
         else
-            points = UD{1};
-            DistanceState = UD{2};
+            points = GRID.Selected.Range(1:NFixed,:);
+            DistanceState = getappdata(G,'DistanceState');
             if DistanceState.distfromlast(i) ==0
                 DistanceState = determine_frompoint(DistanceState,i);
-                set(SelectedLine,'userdata',{points DistanceState})
+                setappdata(G,'DistanceState',DistanceState)
             end
             frompoint = DistanceState.frompoint;
             ilast = points(end);
@@ -537,89 +375,142 @@ switch cmd
         end
         %
         points = cat(1,points,i);
-        mrkr='none';
-        if length(points)==1
-            mrkr='.';
-        end
-        switch GRID.Type
-            case 'network'
-                set(SelectedLine, ...
-                    'xdata',GRID.XY(points,1), ...
-                    'ydata',GRID.XY(points,2), ...
-                    'linestyle','-','marker',mrkr)
-            case 'structured'
-                set(SelectedLine, ...
-                    'xdata',GRID.X(points), ...
-                    'ydata',GRID.Y(points), ...
-                    'linestyle','-','marker',mrkr)
-            case 'triangular'
-                set(SelectedLine, ...
-                    'xdata',GRID.XYZ(points,1), ...
-                    'ydata',GRID.XYZ(points,2), ...
-                    'linestyle','-','marker',mrkr)
-        end
+        localdrawsel(gcbf,'pwline',points)
         switch cmd
             case 'pathdown'
+                setappdata(G,'NFixed',size(points,1))
                 if strcmp(get(gcbf,'selectiontype'),'normal')
                     set(gcbf,'WindowButtonMotionFcn','qp_gridview pathmotion')
                     ilast = points(end);
+                    dist = [];
                     switch GRID.Type
-                        case 'network'
-                            SEG = GRID.SEG;
-                            Nseg = size(SEG,1);
-                            Npnt = size(GRID.XY,1);
-                            XY = reshape(GRID.XY(GRID.SEG,:),[Nseg 2 2]);
-                            xx=GRID.XY(ilast,1);
-                            yy=GRID.XY(ilast,2);
+                        case 'ugrid'
+                            switch GRID.ValLocation
+                                case 'NODE'
+                                    SEG = GRID.EdgeNodeConnect;
+                                    %
+                                    X = GRID.X;
+                                    Y = GRID.Y;
+                                case 'EDGE'
+                                    Edges = GRID.EdgeNodeConnect;
+                                    X = GRID.X(Edges);
+                                    Y = GRID.Y(Edges);
+                                    D = sqrt((X(:,1)-X(:,2)).^2 + (Y(:,1)-Y(:,2)).^2);
+                                    X = sum(X,2)/2;
+                                    Y = sum(Y,2)/2;
+                                    % determine neighboring edges
+                                    nedges = size(Edges,1);
+                                    nnodes = size(GRID.X,1);
+                                    NEdgesPerNode = accumarray(Edges(:),1,[nnodes 1]);
+                                    NConnPerNode = NEdgesPerNode.*(NEdgesPerNode-1)/2;
+                                    SEG = zeros(sum(NConnPerNode),2);
+                                    NodeEdge = [Edges(:) (mod(0:2*nedges-1,nedges)+1)'];
+                                    [sNodeEdge,I] = sort(NodeEdge(:,1));
+                                    NodeEdge = NodeEdge(I,:);
+                                    EdgeOffset = [0;cumsum(NEdgesPerNode(1:end-1))];
+                                    j = 0;
+                                    for i = 1:nnodes
+                                        for e1 = 1:NEdgesPerNode(i)
+                                            for e2 = e1+1:NEdgesPerNode(i)
+                                                j = j+1;
+                                                SEG(j,:) = NodeEdge(EdgeOffset(i)+[e1 e2],2);
+                                            end
+                                        end
+                                    end
+                                    % determine distance of edge centres
+                                    dist = sum(D(SEG),2)/2;
+                                case 'FACE'
+                                    % determine Edge-Face relationship (code copy)
+                                    Faces = GRID.FaceNodeConnect;
+                                    missing = isnan(Faces);
+                                    NEdges = sum(~missing(:));
+                                    Edges = zeros(3,NEdges);
+                                    ie = 0;
+                                    for j = 1:size(Faces,2)
+                                        for i = 1:size(Faces,1)
+                                            if ~isnan(Faces(i,j))
+                                                ie = ie+1;
+                                                Edges(1,ie) = Faces(i,j);
+                                                if j==size(Faces,2) || isnan(Faces(i,j+1))
+                                                    Edges(2,ie) = Faces(i,1);
+                                                else
+                                                    Edges(2,ie) = Faces(i,j+1);
+                                                end
+                                                Edges(3,ie) = i;
+                                            end
+                                        end
+                                    end
+                                    Edges(1:2,:) = sort(Edges(1:2,:));
+                                    Edges = Edges';
+                                    %
+                                    [c,ia,ic]=unique(Edges(:,1:2),'rows');
+                                    SEG = zeros(size(c,1),2);
+                                    for i = 1:length(ic)
+                                        if SEG(ic(i),1)==0
+                                            j = 1;
+                                        else
+                                            j = 2;
+                                        end
+                                        SEG(ic(i),j) = Edges(i,3);
+                                    end
+                                    SEG(any(SEG==0,2),:) = [];
+                                    %
+                                    Faces(missing) = 1;
+                                    X = GRID.X(Faces);
+                                    Y = GRID.Y(Faces);
+                                    np = sum(~missing,2);
+                                    X(missing) = 0;
+                                    X = sum(X,2)./np;
+                                    Y(missing) = 0;
+                                    Y = sum(Y,2)./np;
+                            end
+                            %
+                            Npnt = size(X,1);
+                            %
+                            XY = cat(3,X(SEG),Y(SEG));
+                            xx = X(ilast);
+                            yy = Y(ilast);
                             %
                             [dd,I]=sort((sum(XY(:,1,:),3)/2-xx).^2+(sum(XY(:,2,:),3)/2-yy).^2);
-                            SEG=SEG(I,:);
-                            XY=XY(I,:);
-                        case 'triangular'
-                            Ntri = size(GRID.TRI,1);
-                            SEG = reshape(GRID.TRI(:,[1 1 2 2 3 3]),[3*Ntri 2]);
-                            SEG = sort(SEG,2);
-                            SEG = unique(SEG,'rows');
-                            Nseg = size(SEG,1);
-                            Npnt = size(GRID.XYZ,1);
-                            XY = reshape(GRID.XYZ(SEG,[1 2]),[Nseg 2 2]);
-                            xx=GRID.XYZ(ilast,1);
-                            yy=GRID.XYZ(ilast,2);
-                            %
-                            [dd,I]=sort((sum(XY(:,1,:),3)/2-xx).^2+(sum(XY(:,2,:),3)/2-yy).^2);
-                            SEG=SEG(I,:);
-                            XY=XY(I,:,:);
                         case 'structured'
-                            I = reshape(1:numel(GRID.X),size(GRID.X));
-                            SEGx = [I(1:end-1,:) I(2:end,:)];
-                            SEGx = reshape(SEGx,[numel(SEGx)/2 2]);
-                            SEGy = [I(:,1:end-1) I(:,2:end)];
-                            SEGy = reshape(SEGy,[numel(SEGy)/2 2]);
-                            Missing = isnan(GRID.X(1:end-1,1:end-1)) | ...
-                                isnan(GRID.X(2:end,1:end-1)) | ...
-                                isnan(GRID.X(1:end-1,2:end)) | ...
-                                isnan(GRID.X(2:end,2:end));
-                            SEGd1= [I(1:end-1,1:end-1) I(2:end,2:end)];
-                            SEGd1= reshape(SEGd1,[numel(SEGd1)/2 2]);
-                            SEGd1(Missing,:)=[];
-                            SEGd2= [I(2:end,1:end-1) I(1:end-1,2:end)];
-                            SEGd2= reshape(SEGd2,[numel(SEGd2)/2 2]);
-                            SEGd2(Missing,:)=[];
-                            SEG = cat(1,SEGx,SEGy,SEGd1,SEGd2);
-                            Nseg = size(SEG,1);
-                            XY = [GRID.X(:) GRID.Y(:)];
-                            Npnt = size(XY,1);
-                            XY = reshape(XY(SEG,:),[Nseg 2 2]);
-                            rm = any(isnan(XY(:,:,1)),2);
-                            SEG(rm,:)=[];
-                            XY(rm,:,:)=[];
-                            [M,N]=ind2sub(size(GRID.X),SEG);
-                            [m,n]=ind2sub(size(GRID.X),ilast);
-                            [dd,I]=sort((sum(M,2)/2-m).^2+(sum(N,2)/2-n).^2);
-                            SEG=SEG(I,:);
-                            XY=XY(I,:,:);
+                            switch GRID.ValLocation
+                                case 'NODE'
+                                    I = reshape(1:numel(GRID.X),size(GRID.X));
+                                    SEGx = [I(1:end-1,:) I(2:end,:)];
+                                    SEGx = reshape(SEGx,[numel(SEGx)/2 2]);
+                                    SEGy = [I(:,1:end-1) I(:,2:end)];
+                                    SEGy = reshape(SEGy,[numel(SEGy)/2 2]);
+                                    Missing = isnan(GRID.X(1:end-1,1:end-1)) | ...
+                                        isnan(GRID.X(2:end,1:end-1)) | ...
+                                        isnan(GRID.X(1:end-1,2:end)) | ...
+                                        isnan(GRID.X(2:end,2:end));
+                                    SEGd1= [I(1:end-1,1:end-1) I(2:end,2:end)];
+                                    SEGd1= reshape(SEGd1,[numel(SEGd1)/2 2]);
+                                    SEGd1(Missing,:)=[];
+                                    SEGd2= [I(2:end,1:end-1) I(1:end-1,2:end)];
+                                    SEGd2= reshape(SEGd2,[numel(SEGd2)/2 2]);
+                                    SEGd2(Missing,:)=[];
+                                    SEG = cat(1,SEGx,SEGy,SEGd1,SEGd2);
+                                    %
+                                    Nseg = size(SEG,1);
+                                    XY = [GRID.X(:) GRID.Y(:)];
+                                    Npnt = size(XY,1);
+                                    XY = reshape(XY(SEG,:),[Nseg 2 2]);
+                                    rm = any(isnan(XY(:,:,1)),2);
+                                    SEG(rm,:)=[];
+                                    XY(rm,:,:)=[];
+                                    [M,N]=ind2sub(size(GRID.X),SEG);
+                                    [m,n]=ind2sub(size(GRID.X),ilast);
+                                    [dd,I]=sort((sum(M,2)/2-m).^2+(sum(N,2)/2-n).^2);
+                            end
                     end
-                    dist = sqrt(sum(diff(XY,1,2).^2,3));
+                    SEG=SEG(I,:);
+                    XY=XY(I,:,:);
+                    if isempty(dist)
+                        dist = sqrt(sum(diff(XY,1,2).^2,3));
+                    else
+                        dist = dist(I);
+                    end
                     %
                     DistanceState=[];
                     DistanceState.Npnt=Npnt;
@@ -628,137 +519,169 @@ switch cmd
                     DistanceState.dist=dist;
                     %
                     DistanceState = determine_frompoint(DistanceState,ilast);
-                    set(SelectedLine,'userdata',{points DistanceState})
+                    setappdata(G,'DistanceState',DistanceState)
                 else
-                    GRID.Selected.Type='pwline';
-                    switch GRID.Type
-                        case {'network','triangular'}
-                            GRID.Selected.Range=points;
-                        case 'structured'
-                            [i,j]=ind2sub(size(GRID.X),points);
-                            GRID.Selected.Range=[i j];
-                    end
-                    set(G,'userdata',GRID)
                     normalstate(gcbf)
-                    qp_gridview('setrange',gcbf,GRID.Selected)
                 end
         end
 
-    case {'gridviewlineseg','gridviewline','gridviewrange', ...
-            'gridviewpiecewise','gridviewarbline','gridviewarbrect', ...
-            'gridviewpoint','gridviewpath','gridviewarbarea'}
+    case 'gridviewlineseg'
         menusoff(gcbf)
         zoom(gcbf,'off');
-        set(gcbf,'WindowButtonDownFcn','')
-        set(gcbf,'WindowButtonUpFcn','')
-        switch cmd
-            case 'gridviewlineseg'
-                set(gcbf,'WindowButtonDownFcn','qp_gridview draglinedown')
-                set(gcbf,'WindowButtonMotionFcn','qp_gridview selpointmotion')
-            case 'gridviewline'
-                set(gcbf,'WindowButtonDownFcn','qp_gridview dragwholelinedown')
-                set(gcbf,'WindowButtonMotionFcn','qp_gridview selpointmotion')
-            case 'gridviewrange'
-                set(gcbf,'WindowButtonDownFcn','qp_gridview gridrangedown')
-                set(gcbf,'WindowButtonMotionFcn','qp_gridview selpointmotion')
-            case 'gridviewpiecewise'
-                set(gcbf,'WindowButtonDownFcn','qp_gridview pwlinedown')
-                set(gcbf,'WindowButtonMotionFcn','qp_gridview pwlinemotion')
-            case 'gridviewarbline'
-                set(gcbf,'WindowButtonDownFcn','qp_gridview genlinedown')
-                set(gcbf,'WindowButtonMotionFcn','qp_gridview genlinemotion')
-            case 'gridviewarbrect'
-                set(gcbf,'WindowButtonDownFcn','qp_gridview genrectdown')
-                set(gcbf,'WindowButtonMotionFcn','qp_gridview genrectmotion')
-            case 'gridviewarbarea'
-                set(gcbf,'WindowButtonDownFcn','qp_gridview genareadown')
-                set(gcbf,'WindowButtonMotionFcn','qp_gridview genareamotion')
-            case 'gridviewpoint'
-                set(gcbf,'WindowButtonMotionFcn','qp_gridview selpointmotion')
-                set(gcbf,'WindowButtonUpFcn','qp_gridview selpointup')
-            case 'gridviewpath'
-                set(gcbf,'WindowButtonDownFcn','qp_gridview pathdown')
-                set(gcbf,'WindowButtonMotionFcn','qp_gridview selpointmotion')
-        end
-        SelectedGrid=findobj(gcbf,'tag','SELSURF');
-        set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[],'userdata',[])
-        SelectedPatch=findobj(gcbf,'tag','SELPATCH');
-        set(SelectedPatch,'vertices',[],'faces',[])
-        SelectedLine=findobj(gcbf,'tag','SELLINE');
-        set(SelectedLine,'userdata',[])
-        switch cmd
-            case {'gridviewlineseg','gridviewline','gridviewrange'}
-                qp_gridview selpointmotion
-            case 'gridviewpiecewise'
-                qp_gridview pwlinemotion
-            case 'gridviewarbline'
-                qp_gridview genlinemotion
-            case 'gridviewarbrect'
-                qp_gridview genrectmotion
-            case 'gridviewarbrect'
-                qp_gridview genareamotion
-            case 'gridviewpoint'
-                qp_gridview selpointmotion
-            case 'gridviewpath'
-                qp_gridview pathmotion
-        end
-
+        set(gcbf,'WindowButtonDownFcn','qp_gridview draglinedown')
+        set(gcbf,'WindowButtonMotionFcn','qp_gridview selpointmotion')
+        localdrawsel(gcbf,'none')
+        qp_gridview selpointmotion
+        
+    case 'gridviewline'
+        menusoff(gcbf)
+        zoom(gcbf,'off');
+        set(gcbf,'WindowButtonDownFcn','qp_gridview dragwholelinedown')
+        set(gcbf,'WindowButtonMotionFcn','qp_gridview selpointmotion')
+        localdrawsel(gcbf,'none')
+        qp_gridview selpointmotion
+        
+    case 'gridviewrange'
+        menusoff(gcbf)
+        zoom(gcbf,'off');
+        set(gcbf,'WindowButtonDownFcn','qp_gridview gridrangedown')
+        set(gcbf,'WindowButtonMotionFcn','qp_gridview selpointmotion')
+        localdrawsel(gcbf,'none')
+        qp_gridview selpointmotion
+        
+    case 'gridviewpiecewise'
+        menusoff(gcbf)
+        zoom(gcbf,'off');
+        set(gcbf,'WindowButtonDownFcn','qp_gridview pwlinedown')
+        set(gcbf,'WindowButtonMotionFcn','qp_gridview pwlinemotion')
+        localdrawsel(gcbf,'none')
+        qp_gridview pwlinemotion
+        
+    case 'gridviewarbline'
+        menusoff(gcbf)
+        zoom(gcbf,'off');
+        set(gcbf,'WindowButtonDownFcn','qp_gridview genlinedown')
+        set(gcbf,'WindowButtonMotionFcn','qp_gridview genlinemotion')
+        localdrawsel(gcbf,'none')
+        qp_gridview genlinemotion
+        
+    case 'gridviewarbrect'
+        menusoff(gcbf)
+        zoom(gcbf,'off');
+        set(gcbf,'WindowButtonDownFcn','qp_gridview genrectdown')
+        set(gcbf,'WindowButtonMotionFcn','qp_gridview genrectmotion')
+        localdrawsel(gcbf,'none')
+        qp_gridview genrectmotion
+        
+    case 'gridviewarbarea'
+        menusoff(gcbf)
+        zoom(gcbf,'off');
+        set(gcbf,'WindowButtonDownFcn','qp_gridview genareadown')
+        set(gcbf,'WindowButtonMotionFcn','qp_gridview genareamotion')
+        localdrawsel(gcbf,'none')
+        qp_gridview genareamotion
+        
+    case 'gridviewpoint'
+        menusoff(gcbf)
+        zoom(gcbf,'off');
+        set(gcbf,'WindowButtonMotionFcn','qp_gridview selpointmotion')
+        set(gcbf,'WindowButtonUpFcn','qp_gridview selpointup')
+        localdrawsel(gcbf,'none')
+        qp_gridview selpointmotion
+        
+    case 'gridviewpath'
+        menusoff(gcbf)
+        zoom(gcbf,'off');
+        set(gcbf,'WindowButtonDownFcn','qp_gridview pathdown')
+        set(gcbf,'WindowButtonMotionFcn','qp_gridview selpointmotion')
+        localdrawsel(gcbf,'none')
+        qp_gridview pathmotion
+        
     case 'gridviewall'
-        G=findobj(gcbf,'tag','GRID');
-        SelectedLine=findobj(gcbf,'tag','SELLINE');
-        X.Type='wholegrid';
-        X.Range=[];
-        set(SelectedLine,'xdata',[],'ydata',[],'userdata',X)
-        GRID=get(G,'userdata');
-        SelectedPatch=findobj(gcbf,'tag','SELPATCH');
-        set(SelectedPatch,'vertices',[],'faces',[])
-        SelectedGrid=findobj(gcbf,'tag','SELSURF');
-        switch GRID.Type
-            case 'structured'
-                set(SelectedGrid,'xdata',GRID.X,'ydata',GRID.Y,'zdata',zeros(size(GRID.X)))
-            case 'network'
-                NSeg = size(GRID.SEG,1);
-                XY = reshape(GRID.XY(GRID.SEG,:),[NSeg 2 2]);
-                XY(:,3,:) = NaN;
-                X=XY(:,:,1)';
-                Y=XY(:,:,2)';
-                set(SelectedLine,'xdata',X(:),'ydata',Y(:),'marker','none')
-            case 'triangular'
-                set(SelectedPatch,'vertices',GRID.XYZ,'faces',GRID.TRI)
-        end
+        % Convenience function to setrange wholegrid
+        localdrawsel(gcbf,'wholegrid')
         qp_gridview execcallback
 
+    case 'getgrid'
+        F = varargin{1};
+        G = findall(F,'tag','GRID');
+        out = get(G,'userdata');
+        return
+
+    case 'setloc'
+        % Change grid location
+        F = varargin{1};
+        NewLoc = varargin{2};
+        %
+        G = findall(F,'tag','GRID');
+        GRID = get(G,'userdata');
+        UseGrid = get(F,'userdata');
+        %
+        OldLoc = UseGrid{4}; % or GRID.ValLocation
+        OldRange = qp_gridview('getrange',F);
+        [NewRange,RangeMax] = switchrange(GRID,OldLoc,OldRange,NewLoc);
+        %
+        GRID.ValLocation = NewLoc;
+        UseGrid{4} = NewLoc;
+        set(G,'userdata',GRID)
+        set(F,'userdata',UseGrid)
+        qp_gridview('setrange',F,NewRange)
+        %
+        out = NewRange;
+        out2 = RangeMax;
+        
     case 'setgrid'
+        % Change grid to new grid
         F=varargin{1};
+        ValLocation = '';
         if isstruct(varargin{2})
             GRID = varargin{2};
+            if nargin>3
+                ValLocation = varargin{3};
+            end
         else
             GRID.X=varargin{2};
-            if nargin<4
-                GRID.Y=[];
-            else
+            if nargin>3
                 GRID.Y=varargin{3};
+            else
+                GRID.Y=[];
             end
         end
-        if isfield(GRID,'XYZ')
+        if ~isempty(ValLocation)
+            GRID.ValLocation = ValLocation;
+        elseif ~isfield(GRID,'ValLocation')
+            GRID.ValLocation = 'NODE';
+        end
+        if isfield(GRID,'Connect')
+            GRID.FaceNodeConnect = GRID.Connect;
+            GRID = rmfield(GRID,'Connect');
+        end
+        if isfield(GRID,'EdgeConnect')
+            GRID.EdgeNodeConnect = GRID.EdgeConnect;
+            GRID = rmfield(GRID,'EdgeConnect');
+        end
+        if isfield(GRID,'SEG')
+            GRID.EdgeNodeConnect = GRID.SEG;
+            GRID.FaceNodeConnect = [];
+            GRID.X = GRID.XY(:,1);
+            GRID.Y = GRID.XY(:,2);
+            GRID = rmfield(GRID,'SEG');
+            GRID = rmfield(GRID,'XY');
+        elseif isfield(GRID,'TRI')
+            GRID.FaceNodeConnect = GRID.TRI;
             GRID.XYZ=squeeze(GRID.XYZ(1,:,1,:));
+            GRID.X = GRID.XYZ(:,1);
+            GRID.Y = GRID.XYZ(:,2);
+            GRID = rmfield(GRID,'TRI');
+            GRID = rmfield(GRID,'XYZ');
         end
         %
-        SelectedGrid=findobj(F,'tag','SELSURF');
-        set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
-        SelectedPatch=findobj(F,'tag','SELPATCH');
-        set(SelectedPatch,'vertices',[],'faces',[])
-        SelectedLine=findobj(F,'tag','SELLINE');
-        set(SelectedLine,'xdata',[],'ydata',[])
-        %
-        localdrawgrid(F,GRID);
-        G=findall(F,'tag','GRID');
-        GRID=get(G,'userdata');
-        GRID.Selected.Type='none';
-        GRID.Selected.Range=[];
-        set(G,'userdata',GRID)
+        normalstate(F)
+        localdrawgrid(F,GRID)
+        localdrawsel(F,'none')
 
     case 'initialize'
+        % Create gridview figure
         MonSize = qp_getscreen;
         unt = get(0,'defaultfigureunits');
         set(0,'defaultfigureunits','pixels')
@@ -814,9 +737,14 @@ switch cmd
             'tag','SELPATCH',erasemode{:});
         %SelectedLine
         line('xdata',[],'ydata',[],'parent',A, ...
-            'color',selcolor,'markersize',18,'linewidth',4, ...
+            'color',selcolor,'linestyle','-','linewidth',4, ...
             'tag','SELLINE',erasemode{:});
-        set(A,'color','none','xtick',[],'ytick',[], ...
+        %SelectedPoint
+        line('xdata',[],'ydata',[],'parent',A, ...
+            'color',selcolor,'linestyle','none', ...
+            'marker','.','markersize',18, ...
+            'tag','SELPOINT',erasemode{:});
+        set(A,'color','w','xtick',[],'ytick',[], ...
             'da',[1 1 1],'view',[0 90],'xcolor',get(F,'color'), ...
             'ycolor',get(F,'color'))
         xl=limits(A,'xlim'); xl=xl+[-1 1]*diff(xl)/20;
@@ -880,22 +808,14 @@ switch cmd
         set(F,'visible','on')
         set(F,'windowbuttonmotionfcn','qp_gridview trackcoord')
 
-    case 'execcallback'
-        F=gcbf;
-        G=findobj(F,'tag','GRID');
-        A=get(G,'parent');
-        UD=get(A,'userdata');
-        if ~isempty(UD)
-            %    d3d_qp gridviewupdate
-            feval(UD{1},UD{2:end})
-        end
-
     case 'keypress'
+        % Handle key presses
         F = gcbf;
         ch = get(gcbf,'currentcharacter');
         if ~isempty(ch)
             switch ch
                 case 27
+                    % ESCAPE character
                     normalstate(F)
                     G = findobj(F,'tag','GRID');
                     GRID = get(G,'userdata');
@@ -905,224 +825,55 @@ switch cmd
         end
 
     case 'callback'
+        % Set callback function to be executed upon selection change
         F=varargin{1};
         G=findobj(F,'tag','GRID');
         A=get(G,'parent');
         set(A,'userdata',varargin(2:end))
 
+    case 'execcallback'
+        % Trigger execution of callback function
+        F=gcbf;
+        G=findobj(F,'tag','GRID');
+        A=get(G,'parent');
+        UD=get(A,'userdata');
+        if ~isempty(UD)
+            feval(UD{1},UD{2:end})
+        end
+
     case 'setrange'
+        % Set selection type and range
         F=varargin{1};
         UsrRange=varargin{2};
         %
-%         zoom(F,'off');
-%         v72 = matlabversionnumber>=7.02;
-%         if v72
-%             %Disable listeners
-%             mmgr = uigetmodemanager(F);
-%             set(mmgr.WindowListenerHandles,'Enable','off');
-%         end
-%         set(F,'WindowButtonDownFcn','')
-%         set(F,'WindowButtonUpFcn','')
         set(F,'WindowButtonMotionFcn','qp_gridview trackcoord')
-%         zoom(F,'on');
-%         if v72
-%             set(mmgr.WindowListenerHandles,'Enable','on');
-%         end
         %
-        SelectedGrid=findobj(F,'tag','SELSURF');
-        SelectedPatch=findobj(F,'tag','SELPATCH');
-        SelectedLine=findobj(F,'tag','SELLINE');
-        G=findobj(F,'tag','GRID');
-        GRID=get(G,'userdata');
-        GRID.Selected.Type='none';
-        GRID.Selected.Range=[];
         if ~isempty(UsrRange)
-            if isstruct(UsrRange)
-                GRID.Selected=UsrRange;
-            else
-                GRID.Selected.Type='range';
-                GRID.Selected.Range=UsrRange;
-            end
-        end
-        %
-        if isempty(GRID.Selected.Range) && ~strcmp(GRID.Selected.Type,'wholegrid')
-            GRID.Selected.Type='none';
-        end
-        switch GRID.Selected.Type
-            case 'none'
-                set(SelectedLine,'xdata',[],'ydata',[])
-                set(SelectedPatch,'vertices',[],'faces',[])
-                set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
-            case 'point'
-                switch GRID.Type
-                    case 'structured'
-                        set(SelectedPatch,'vertices',[],'faces',[])
-                        set(SelectedLine, ...
-                            'xdata',GRID.X(GRID.Selected.Range(1),GRID.Selected.Range(2)), ...
-                            'ydata',GRID.Y(GRID.Selected.Range(1),GRID.Selected.Range(2)), ...
-                            'marker','.')
-                    case 'triangular'
-                        set(SelectedLine,'xdata',[],'ydata',[])
-                        set(SelectedPatch, ...
-                            'vertices',GRID.XYZ, ...
-                            'faces',GRID.TRI(GRID.Selected.Range(1),:))
-                end
-                set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
-            case 'range'
-                Range = GRID.Selected.Range;
-                if ~iscell(Range)
-                    Range={min(Range(1:2)):max(Range(1:2)) min(Range(3:4)):max(Range(3:4))};
-                end
-                switch GRID.Type
-                    case 'structured'
-                        im = Range{1};
-                        if length(Range)>=2
-                            in = Range{2};
-                        else
-                            in = 1;
-                        end
-                        if length(im)==1 || length(in)==1
-                            mrkr='none';
-                            if length(im)==1 && length(in)==1
-                                mrkr='.';
-                            end
-                            set(SelectedPatch,'vertices',[],'faces',[])
-                            set(SelectedLine, ...
-                                'xdata',GRID.X(im,in), ...
-                                'ydata',GRID.Y(im,in), ...
-                                'marker',mrkr,'linestyle','-')
-                            set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
-                        else
-                            set(SelectedLine,'xdata',[],'ydata',[])
-                            set(SelectedPatch,'vertices',[],'faces',[])
-                            set(SelectedGrid, ...
-                                'xdata',GRID.X(im,in), ...
-                                'ydata',GRID.Y(im,in), ...
-                                'zdata',zeros(length(im),length(in)))
-                        end
-                    case 'triangular'
-                        ip = Range{1};
-                        it = GRID.TRI(all(ismember(GRID.TRI,ip),2),:);
-                        ip = ip(~ismember(ip,it));
-                        set(SelectedLine, ...
-                            'xdata',GRID.XYZ(ip,1), ...
-                            'ydata',GRID.XYZ(ip,2), ...
-                            'marker','.','linestyle','none')
-                        set(SelectedPatch,'vertices',GRID.XYZ,'faces',it)
-                        set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
-                    case 'network'
-                        ip = Range{1};
-                        SEG = GRID.SEG(all(ismember(GRID.SEG,ip),2),:);
-                        if isempty(SEG)
-                            set(SelectedLine, ...
-                                'xdata',GRID.XY(ip,1), ...
-                                'ydata',GRID.XY(ip,2), ...
-                                'marker','.','linestyle','none')
-                        else
-                            NSeg = size(SEG,1);
-                            XY = reshape(GRID.XY(SEG,:),[NSeg 2 2]);
-                            XY(:,3,:) = NaN;
-                            X=XY(:,:,1)';
-                            Y=XY(:,:,2)';
-                            set(SelectedLine, ...
-                                'xdata',X(:), ...
-                                'ydata',Y(:), ...
-                                'marker','none','linestyle','-')
-                        end
-                        set(SelectedPatch,'vertices',[],'faces',[])
-                        set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
-                end
-            case 'wholegrid'
-                set(SelectedLine,'xdata',[],'ydata',[])
-                set(SelectedPatch,'vertices',[],'faces',[])
-                set(SelectedGrid, ...
-                    'xdata',GRID.X, ...
-                    'ydata',GRID.Y, ...
-                    'zdata',zeros(size(GRID.X)))
-            case 'genline'
-                mrkr='none';
-                if size(GRID.Selected.Range,1)==1
-                    mrkr='.';
-                end
-                set(SelectedLine, ...
-                    'xdata',GRID.Selected.Range(:,1), ...
-                    'ydata',GRID.Selected.Range(:,2), ...
-                    'marker',mrkr,'linestyle','-')
-                set(SelectedPatch,'vertices',[],'faces',[])
-                set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
-            case 'line'
-                if isfinite(GRID.Selected.Range(1))
-                    set(SelectedLine, ...
-                        'xdata',GRID.X(GRID.Selected.Range(1),:), ...
-                        'ydata',GRID.Y(GRID.Selected.Range(1),:), ...
-                        'marker','none','linestyle','-')
+            if ischar(UsrRange)
+                selection.Type = UsrRange;
+                if nargin>3
+                    selection.Range = varargin{3};
                 else
-                    set(SelectedLine, ...
-                        'xdata',GRID.X(:,GRID.Selected.Range(2)), ...
-                        'ydata',GRID.Y(:,GRID.Selected.Range(2)), ...
-                        'marker','none','linestyle','-')
+                    selection.Range = [];
                 end
-                set(SelectedPatch,'vertices',[],'faces',[])
-                set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
-            case 'lineseg'
-                i1=min(GRID.Selected.Range([1 2]));
-                i2=max(GRID.Selected.Range([1 2]));
-                j1=min(GRID.Selected.Range([3 4]));
-                j2=max(GRID.Selected.Range([3 4]));
-                mrkr='none';
-                if (i1==i2) && (j1==j2)
-                    mrkr='.';
+            elseif isstruct(UsrRange)
+                selection = UsrRange;
+                if isempty(selection.Range) && ~strcmp(selection.Type,'wholegrid')
+                    selection.Type = 'none';
                 end
-                set(SelectedLine, ...
-                    'xdata',GRID.X(i1:i2,:), ...
-                    'ydata',GRID.Y(j1:j2,:), ...
-                    'marker',mrkr,'linestyle','-')
-                set(SelectedPatch,'vertices',[],'faces',[])
-                set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
-            case 'pwline'
-                switch GRID.Type
-                    case 'structured'
-                        RNG=piecewise(GRID.Selected.Range,size(GRID.X));
-                        i0 = RNG(:,1);
-                        j0 = RNG(:,2);
-                        ind=sub2ind(size(GRID.X),i0,j0);
-                        mrkr='none';
-                        if length(ind)==1
-                            mrkr='.';
-                        end
-                        set(SelectedLine, ...
-                            'xdata',GRID.X(ind), ...
-                            'ydata',GRID.Y(ind), ...
-                            'marker',mrkr,'linestyle','-')
-                    case 'triangular'
-                        ind = GRID.Selected.Range;
-                        mrkr='none';
-                        if length(ind)==1
-                            mrkr='.';
-                        end
-                        set(SelectedLine, ...
-                            'xdata',GRID.XYZ(ind,1), ...
-                            'ydata',GRID.XYZ(ind,2), ...
-                            'marker',mrkr,'linestyle','-')
-                    case 'network'
-                        ind = GRID.Selected.Range;
-                        mrkr='none';
-                        if length(ind)==1
-                            mrkr='.';
-                        end
-                        set(SelectedLine, ...
-                            'xdata',GRID.XY(ind,1), ...
-                            'ydata',GRID.XY(ind,2), ...
-                            'marker',mrkr,'linestyle','-')
-                end
-                set(SelectedPatch,'vertices',[],'faces',[])
-                set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
+            else
+                selection.Type  = 'range';
+                selection.Range = UsrRange;
+            end
+        else
+            selection.Type  = 'none';
+            selection.Range = [];
         end
-        set(G,'userdata',GRID)
+        localdrawsel(F,selection)
         return
 
     otherwise
-        fprintf('Unkwown command: %s\n',cmd)
+        fprintf('Unkwown command: %s\n',cmd);
 end
 
 function [mdist,indrng,i1,j1]=NearDiag(dist,i0,j0)
@@ -1189,50 +940,389 @@ if separator
 end
 qp_toolbarpush(TB,tag,separator,tooltip,prog);
 
+function localdrawsel(F,varargin)
+SelectedGrid=findobj(F,'tag','SELSURF');
+SelectedPatch=findobj(F,'tag','SELPATCH');
+SelectedLine=findobj(F,'tag','SELLINE');
+SelectedPoint=findobj(F,'tag','SELPOINT');
+G=findobj(F,'tag','GRID');
+GRID=get(G,'userdata');
+%
+if nargin==1
+    selection = GRID.Selected;
+elseif nargin==2
+    if isstruct(varargin{1})
+        selection = varargin{1};
+    elseif ischar(varargin{1})
+        selection.Type = varargin{1};
+        selection.Range = [];
+    end
+elseif nargin==3
+    selection.Type = varargin{1};
+    selection.Range = varargin{2};
+end
+%
+Range = selection.Range;
+switch selection.Type
+    case 'none'
+        set(SelectedPoint,'xdata',[],'ydata',[])
+        set(SelectedLine ,'xdata',[],'ydata',[])
+        set(SelectedPatch,'vertices',[],'faces',[])
+        set(SelectedGrid ,'xdata',[],'ydata',[],'zdata',[])
+
+    case 'point'
+        switch GRID.Type
+            case 'structured'
+                switch GRID.ValLocation
+                    case 'NODE'
+                        set(SelectedPatch,'vertices',[],'faces',[])
+                        set(SelectedLine,'xdata',[],'ydata',[])
+                        set(SelectedPoint, ...
+                            'xdata',GRID.X(Range(1),Range(2)), ...
+                            'ydata',GRID.Y(Range(1),Range(2)))
+                    case 'EDGE'
+                    case 'FACE'
+                end
+            otherwise
+                i = Range(1);
+                switch GRID.ValLocation
+                    case 'NODE'
+                        set(SelectedPatch,'vertices',[],'faces',[])
+                        set(SelectedLine,'xdata',[],'ydata',[])
+                        set(SelectedPoint, ...
+                            'xdata',GRID.X(i), ...
+                            'ydata',GRID.Y(i))
+                    case 'EDGE'
+                        j = GRID.EdgeNodeConnect(i,:);
+                        set(SelectedPatch,'vertices',[],'faces',[])
+                        set(SelectedPoint,'xdata',[],'ydata',[])
+                        set(SelectedLine, ...
+                            'xdata',GRID.X(j), ...
+                            'ydata',GRID.Y(j))
+                    case 'FACE'
+                        set(SelectedPatch,'vertices',[GRID.X GRID.Y],'faces',GRID.FaceNodeConnect(i,:))
+                        set(SelectedLine,'xdata',[],'ydata',[])
+                        set(SelectedPoint,'xdata',[],'ydata',[])
+                end
+        end
+        set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
+
+    case {'range','wholegrid'}
+        if strcmp(selection.Type,'wholegrid')
+            switch GRID.Type
+                case 'structured'
+                    switch GRID.ValLocation
+                        case 'NODE'
+                            Range = {1:size(GRID.X,1),1:size(GRID.X,2)};
+                        case 'EDGE'
+                        case 'FACE'
+                    end
+                case 'ugrid'
+                    switch GRID.ValLocation
+                        case 'NODE'
+                            if ~isempty(GRID.FaceNodeConnect)
+                                Range = {1:max(GRID.FaceNodeConnect(:))};
+                            else
+                                Range = {1:max(GRID.EdgeNodeConnect(:))};
+                            end
+                        case 'EDGE'
+                            Range = {1:size(GRID.EdgeNodeConnect,1)};
+                        case 'FACE'
+                            Range = {1:size(GRID.FaceNodeConnect,1)};
+                    end
+            end
+        elseif ~iscell(Range)
+            Range={min(Range(1:2)):max(Range(1:2)) min(Range(3:4)):max(Range(3:4))};
+        end
+        switch GRID.Type
+            case 'structured'
+                switch GRID.ValLocation
+                    case 'NODE'
+                        im = Range{1};
+                        if length(Range)>=2
+                            in = Range{2};
+                        else
+                            in = 1;
+                        end
+                        if length(im)==1 && length(in)==1
+                            set(SelectedPatch,'vertices',[],'faces',[])
+                            set(SelectedLine,'xdata',[],'ydata',[])
+                            set(SelectedPoint, ...
+                                'xdata',GRID.X(im,in), ...
+                                'ydata',GRID.Y(im,in))
+                            set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
+                        elseif length(im)==1 || length(in)==1
+                            set(SelectedPatch,'vertices',[],'faces',[])
+                            set(SelectedPoint,'xdata',[],'ydata',[])
+                            set(SelectedLine, ...
+                                'xdata',GRID.X(im,in), ...
+                                'ydata',GRID.Y(im,in))
+                            set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
+                        else
+                            set(SelectedPoint,'xdata',[],'ydata',[])
+                            set(SelectedLine,'xdata',[],'ydata',[])
+                            set(SelectedPatch,'vertices',[],'faces',[])
+                            set(SelectedGrid, ...
+                                'xdata',GRID.X(im,in), ...
+                                'ydata',GRID.Y(im,in), ...
+                                'zdata',zeros(length(im),length(in)))
+                        end
+                end
+            case 'ugrid'
+                switch GRID.ValLocation
+                    case 'NODE'
+                        ip    = Range{1};
+                        lface = all(ismember(GRID.FaceNodeConnect,ip) | isnan(GRID.FaceNodeConnect),2);
+                        ip    = ip(~ismember(ip,GRID.FaceNodeConnect(lface,:)));
+                        ledge = all(ismember(GRID.EdgeNodeConnect,ip),2);
+                        ip    = ip(~ismember(ip,GRID.EdgeNodeConnect(ledge,:)));
+                        CNECT = GRID.FaceNodeConnect(lface,:);
+                        set(SelectedPoint, ...
+                            'xdata',GRID.X(ip), ...
+                            'ydata',GRID.Y(ip))
+                        Edges = GRID.EdgeNodeConnect(ledge,:)';
+                        X = GRID.X(Edges);
+                        Y = GRID.Y(Edges);
+                        X(3,:) = NaN;
+                        Y(3,:) = NaN;
+                        set(SelectedLine, ... %TODO
+                            'xdata',X(:), ...
+                            'ydata',Y(:))
+                    case 'EDGE'
+                        % determine Edge-Face relationship (code copy)
+                        Faces = GRID.FaceNodeConnect;
+                        missing = isnan(Faces);
+                        NEdges = sum(~missing(:));
+                        Edges = zeros(3,NEdges);
+                        ie = 0;
+                        for j = 1:size(Faces,2)
+                            for i = 1:size(Faces,1)
+                                if ~isnan(Faces(i,j))
+                                    ie = ie+1;
+                                    Edges(1,ie) = Faces(i,j);
+                                    if j==size(Faces,2) || isnan(Faces(i,j+1))
+                                        Edges(2,ie) = Faces(i,1);
+                                    else
+                                        Edges(2,ie) = Faces(i,j+1);
+                                    end
+                                    Edges(3,ie) = i;
+                                end
+                            end
+                        end
+                        Edges(1:2,:) = sort(Edges(1:2,:));
+                        Edges = Edges';
+                        % determine for which Faces all Edges have been selected
+                        EdgeSel = sort(GRID.EdgeNodeConnect(Range{1},:),2);
+                        yEdges = ismember(Edges(:,1:2),EdgeSel,'rows');
+                        NEdgesIncluded = accumarray(Edges(:,3),double(yEdges));
+                        NEdgesTotal    = sum(~missing,2);
+                        lface = NEdgesIncluded==NEdgesTotal;
+                        CNECT = GRID.FaceNodeConnect(lface,:);
+                        % determine which Edges are not part of the selected faces
+                        FacesIncluded  = find(lface);
+                        ledge = ismember(Edges(:,3),FacesIncluded);
+                        Edges = EdgeSel(~ismember(EdgeSel,Edges(ledge,1:2),'rows'),:)';
+                        X = GRID.X(Edges);
+                        Y = GRID.Y(Edges);
+                        X(3,:) = NaN;
+                        Y(3,:) = NaN;
+                        set(SelectedLine, ...
+                            'xdata',X(:), ...
+                            'ydata',Y(:))
+                        set(SelectedPoint,'xdata',[],'ydata',[])
+                    case 'FACE'
+                        CNECT = GRID.FaceNodeConnect(Range{1},:);
+                        set(SelectedLine,'xdata',[],'ydata',[])
+                        set(SelectedPoint,'xdata',[],'ydata',[])
+                end
+                for l = 1:size(CNECT,1)
+                    np = sum(~isnan(CNECT(l,:)));
+                    CNECT(l,np+1:end) = CNECT(l,np);
+                end
+                set(SelectedPatch,'vertices',[GRID.X GRID.Y],'faces',CNECT)
+                set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
+        end
+        
+    case 'genline'
+        if size(Range,1)==1
+            set(SelectedLine,'xdata',[],'ydata',[])
+            set(SelectedPoint, ...
+                'xdata',Range(:,1), ...
+                'ydata',Range(:,2))
+        else
+            set(SelectedPoint,'xdata',[],'ydata',[])
+            set(SelectedLine, ...
+                'xdata',Range(:,1), ...
+                'ydata',Range(:,2))
+        end
+        set(SelectedPatch,'vertices',[],'faces',[])
+        set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
+
+    case 'genarea'
+        nPnt = size(Range,1);
+        if nPnt==1
+            set(SelectedLine,'xdata',[],'ydata',[])
+            set(SelectedPoint, ...
+                'xdata',Range(:,1), ...
+                'ydata',Range(:,2))
+            set(SelectedPatch,'vertices',[],'faces',[])
+        elseif nPnt==2
+            set(SelectedPoint,'xdata',[],'ydata',[])
+            set(SelectedLine, ...
+                'xdata',Range(:,1), ...
+                'ydata',Range(:,2))
+            set(SelectedPatch,'vertices',[],'faces',[])
+        else
+            set(SelectedPoint,'xdata',[],'ydata',[])
+            set(SelectedLine,'xdata',[],'ydata',[])
+            set(SelectedPatch, ...
+                'vertices',Range, ...
+                'faces',1:nPnt)
+        end
+        set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
+        
+    case 'genrect'
+        nPnt = size(Range,1);
+        if nPnt==1
+            set(SelectedPoint, ...
+                'xdata',Range(:,1), ...
+                'ydata',Range(:,2))
+            set(SelectedLine,'xdata',[],'ydata',[])
+            set(SelectedPatch,'vertices',[],'faces',[])
+        else
+            set(SelectedPoint,'xdata',[],'ydata',[])
+            set(SelectedLine,'xdata',[],'ydata',[])
+            xy=[Range(1,:)
+                Range(1,1) Range(2,2)
+                Range(2,1) Range(1,2)
+                Range(2,:)];
+            set(SelectedPatch, ...
+                'vertices',xy, ...
+                'faces',[1 2 4 3])
+        end
+        set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
+
+    case 'line'
+        if ~isfinite(Range(4))
+            % [i0 0 j0 inf]
+            set(SelectedPoint,'xdata',[],'ydata',[])
+            set(SelectedLine, ...
+                'xdata',GRID.X(Range(1),:), ...
+                'ydata',GRID.Y(Range(1),:))
+        else
+            % [i0 inf j0 0]
+            set(SelectedPoint,'xdata',[],'ydata',[])
+            set(SelectedLine, ...
+                'xdata',GRID.X(:,Range(3)), ...
+                'ydata',GRID.Y(:,Range(3)))
+        end
+        set(SelectedPatch,'vertices',[],'faces',[])
+        set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
+
+    case 'pwline'
+        switch GRID.Type
+            case {'structured','ugrid'}
+                if size(Range,2)==1
+                    ind = Range;
+                else
+                    RNG=piecewise(Range,size(GRID.X));
+                    i0 = RNG(:,1);
+                    j0 = RNG(:,2);
+                    ind=sub2ind(size(GRID.X),i0,j0);
+                end
+                switch GRID.ValLocation
+                    case 'NODE'
+                        if length(ind)==1
+                            set(SelectedLine,'xdata',[],'ydata',[])
+                            set(SelectedPoint, ...
+                                'xdata',GRID.X(ind), ...
+                                'ydata',GRID.Y(ind))
+                        else
+                            set(SelectedPoint,'xdata',[],'ydata',[])
+                            set(SelectedLine, ...
+                                'xdata',GRID.X(ind), ...
+                                'ydata',GRID.Y(ind))
+                        end
+                        set(SelectedPatch,'vertices',[],'faces',[])
+                    case 'EDGE'
+                        X = GRID.X(GRID.EdgeNodeConnect(ind,:));
+                        Y = GRID.Y(GRID.EdgeNodeConnect(ind,:));
+                        X(:,3) = NaN;
+                        Y(:,3) = NaN;
+                        X = X';
+                        Y = Y';
+                        set(SelectedPoint,'xdata',[],'ydata',[])
+                        set(SelectedLine, ...
+                            'xdata',X(:), ...
+                            'ydata',Y(:))
+                        set(SelectedPatch,'vertices',[],'faces',[])
+                    case 'FACE'
+                        set(SelectedPoint,'xdata',[],'ydata',[])
+                        set(SelectedLine,'xdata',[],'ydata',[])
+                        set(SelectedPatch, ...
+                            'vertices',[GRID.X GRID.Y], ...
+                            'faces',GRID.FaceNodeConnect(ind,:))
+                end
+        end
+        set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
+end
+GRID.Selected = selection;
+set(G,'userdata',GRID)
+
+
 function localdrawgrid(F,GRID)
 zoom(F,'off');
+SelectedLine=findobj(F,'tag','SELLINE');
 G=findobj(F,'tag','GRID');
 Go=findobj(F,'tag','GRIDother');
-A=get(G,'parent');
+A=get(SelectedLine,'parent');
 delete(G)
 delete(Go)
 gridcol = qp_settings('gridviewgridcolor')/255;
 off = 'off';
-if isfield(GRID,'X') && isfield(GRID,'Y')
-    if ~isempty(GRID.X)
-        GRID.Type = 'structured';
-        GRID.X = GRID.X(:,:,1);
-        GRID.Y = GRID.Y(:,:,1);
-        if qp_settings('gridviewshowindices')
-            gridstep = max(10,round(size(GRID.X)/10));
-        else
-            gridstep = [];
-        end
-        G=drawgrid(GRID.X,GRID.Y, ...
-            'color',gridcol,'fontsize',8,'parent',A,'gridstep',gridstep);
-        off='on';
+%
+if isfield(GRID,'FaceNodeConnect') % unstructured
+    GRID.Type = 'ugrid';
+    if isfield(GRID,'EdgeNodeConnect')
+        eConnect = GRID.EdgeNodeConnect;
     else
-        GRID.Type = 'none';
-        G=surface([],[],[],'parent',A);
-        off='off';
+        Faces = GRID.FaceNodeConnect;
+        nc = size(Faces,2);
+        iConnect = ceil(([0 0:2*nc-2])/2+0.1);
+        eConnect = Faces(:,iConnect);
+        ncP = sum(~isnan(Faces),2);
+        eConnect(:,1) = Faces(sub2ind(size(Faces),(1:size(Faces,1))',ncP));
+        eConnect = unique(sort(reshape(eConnect',[2 numel(Faces)]),1)','rows');
+        eConnect(any(isnan(eConnect),2),:) = [];
+        GRID.EdgeNodeConnect = eConnect;
     end
-elseif isfield(GRID,'SEG')
-    GRID.Type = 'network';
-    NSeg = size(GRID.SEG,1);
-    XY = reshape(GRID.XY(GRID.SEG,:),[NSeg 2 2]);
-    XY(:,3,:) = NaN;
-    X=XY(:,:,1)';
-    Y=XY(:,:,2)';
+    xy = eConnect(:,[1 2 2])';
+    xy = xy(:);
+    X = GRID.X(xy);
+    Y = GRID.Y(xy);
+    X(3:3:end) = NaN;
+    Y(3:3:end) = NaN;
     G=line('parent',A);
     set(G,'xdata',X(:),'ydata',Y(:),'color',gridcol);
     if ~isempty(X)
         off = 'on';
     end
-else
-    GRID.Type = 'triangular';
-    G = patch('faces',GRID.TRI,'vertices',GRID.XYZ,...
-        'facecolor','none','edgecolor',gridcol,'parent',A);
+elseif ~isempty(GRID.X) % structured
+    GRID.Type = 'structured';
+    GRID.X = GRID.X(:,:,1);
+    GRID.Y = GRID.Y(:,:,1);
+    if qp_settings('gridviewshowindices')
+        gridstep = max(10,round(size(GRID.X)/10));
+    else
+        gridstep = [];
+    end
+    G=drawgrid(GRID.X,GRID.Y, ...
+        'color',gridcol,'fontsize',8,'parent',A,'gridstep',gridstep);
     off='on';
+else
+    GRID.Type = 'none';
+    G=surface([],[],[],'parent',A);
+    off='off';
 end
 set(G(1),'tag','GRID','userdata',GRID)
 set(G(2:end),'tag','GRIDother')
@@ -1254,22 +1344,19 @@ selectMenu = findall(F,'label','&Select');
 set(selectMenu,'enable',off)
 set(findall(selectMenu),'enable',off)
 set(findall(F,'type','uipushtool'),'enable',off)
-switch GRID.Type
-    case 'triangular'
-        set(findall(F,'tag','gridviewrange'),'enable','off')
-        set(findall(F,'tag','gridviewpiecewise'),'enable','off')
-        set(findall(F,'tag','gridviewlineseg'),'enable','off')
-        set(findall(F,'tag','gridviewline'),'enable','off')
-    case 'network'
-        set(findall(F,'tag','gridviewrange'),'enable','off')
-        set(findall(F,'tag','gridviewpiecewise'),'enable','off')
-        set(findall(F,'tag','gridviewlineseg'),'enable','off')
-        set(findall(F,'tag','gridviewline'),'enable','off')
+if strcmp(GRID.Type,'structured')
+    set(findall(F,'tag','gridviewarbrect'),'enable','off')
+    set(findall(F,'tag','gridviewarbarea'),'enable','off')
+else
+    set(findall(F,'tag','gridviewrange'),'enable','off')
+    set(findall(F,'tag','gridviewpiecewise'),'enable','off')
+    set(findall(F,'tag','gridviewlineseg'),'enable','off')
+    set(findall(F,'tag','gridviewline'),'enable','off')
+    if strcmp(GRID.Type,'network') || ...
+            ~isfield(GRID,'FaceNodeConnect') || ...
+            isempty(GRID.FaceNodeConnect)
         set(findall(F,'tag','gridviewarbline'),'enable','off')
-        %set(findall(F,'tag','gridviewarbrect'),'enable','off')
-    case 'structured'
-        set(findall(F,'tag','gridviewarbrect'),'enable','off')
-        set(findall(F,'tag','gridviewarbarea'),'enable','off')
+    end
 end
 
 function menusoff(F)
@@ -1281,60 +1368,220 @@ end
 function menusreset(F)
 obj = cat(1,findall(F,'type','uimenu'),findall(F,'type','uipushtool'));
 for i=1:length(obj)
-    set(obj(i),'enable',get(obj(i),'userdata'))
+    enabled = get(obj(i),'userdata');
+    if isequal(enabled,'on') || isequal(enabled,'off')
+        set(obj(i),'enable',enabled)
+    end
 end
 
 function trackxy(F,pnt)
-XY=findobj(F,'tag','XYcoord');
+XY = findobj(F,'tag','XYcoord');
 xf = sprintf('%%.%if',min(3,6-floor(log10(abs(pnt(1))))));
 yf = sprintf('%%.%if',min(3,6-floor(log10(abs(pnt(2))))));
 set(XY,'string',sprintf(['x,y: ',xf,',',yf],pnt))
 
-function [i,j]=trackpnt(F)
-G=findobj(F,'tag','GRID');
-GRID=get(G,'userdata');
-pnt=get(get(G,'parent'),'currentpoint');
-pnt=pnt(1,1:2);
-switch GRID.Type
-    case 'structured'
-        dist=(pnt(1)-GRID.X).^2+(pnt(2)-GRID.Y).^2;
-    case 'network'
-        dist=(pnt(1)-GRID.XY(:,1)).^2+(pnt(2)-GRID.XY(:,2)).^2;
-    case 'triangular'
-        dist=(pnt(1)-GRID.XYZ(:,1)).^2+(pnt(2)-GRID.XYZ(:,2)).^2;
+function [i,j] = trackpnt(F)
+G = findobj(F,'tag','GRID');
+GRID = get(G,'userdata');
+pnt = get(get(G,'parent'),'currentpoint');
+pnt = pnt(1,1:2);
+switch GRID.ValLocation
+    case 'NODE'
+        if isfield(GRID,'X')
+            dist = (pnt(1)-GRID.X).^2+(pnt(2)-GRID.Y).^2;
+            mdist = min(dist(:));
+            [i,j] = find(dist==mdist);
+            i = i(1);
+            j = j(1);
+        else
+            i = 1;
+            j = 1;
+        end
+    case 'EDGE'
+        Edges = GRID.EdgeNodeConnect;
+        X = GRID.X(Edges);
+        Y = GRID.Y(Edges);
+        %
+        LM = (X(:,2)-X(:,1)).^2+(Y(:,2)-Y(:,1)).^2;
+        L = ((X(:,2)-X(:,1)).*(pnt(1) - X(:,1)) + (Y(:,2)-Y(:,1)).*(pnt(2) - Y(:,1)))./LM;
+        L = max(0,min(L,1));
+        d = (pnt(1)-X(:,1)-L.*(X(:,2)-X(:,1))).^2 + (pnt(2)-Y(:,1)-L.*(Y(:,2)-Y(:,1))).^2;
+        [dm,i]=min(d);
+        j = 1;
+    case 'FACE'
+        Faces = GRID.FaceNodeConnect;
+        missing = isnan(Faces);
+        Faces(missing) = 1;
+        X = GRID.X(Faces);
+        Y = GRID.Y(Faces);
+        X(missing) = NaN;
+        Y(missing) = NaN;
+        inside = pnt(1)>=min(X,[],2) & pnt(1)<=max(X,[],2) & ...
+            pnt(2)>=min(Y,[],2) & pnt(2)<=max(Y,[],2);
+        i = 0;
+        if any(inside)
+            ipvec = find(inside)';
+            for ip = ipvec
+                in = 1:sum(~missing(ip,:));
+                if inpolygon(pnt(1),pnt(2),X(ip,in),Y(ip,in))
+                    i = ip;
+                    break
+                end
+            end
+        end
+        %
+        if i==0
+            % Current point is not inside any polygon, just find "closest".
+            % We define the "closest" polygon as the one with the centre
+            % closest to the current point.
+            np = sum(~missing,2);
+            X(missing) = 0;
+            X = sum(X,2)./np;
+            Y(missing) = 0;
+            Y = sum(Y,2)./np;
+            %
+            dist = (pnt(1)-X).^2+(pnt(2)-Y).^2;
+            mdist = min(dist(:));
+            i = find(dist==mdist);
+            i = i(1);
+        end
+        j = 1;
+    otherwise
+        i = 1;
+        j = 1;
 end
-mdist=min(dist(:));
-[i,j]=find(dist==mdist);
-i=i(1);
-j=j(1);
 %
 trackxy(gcbf,pnt)
 MN=findobj(gcbf,'tag','MNcoord');
-switch GRID.Type
-    case 'structured'
-        set(MN,'string',sprintf('m,n: %i,%i',i,j))
-        %
-        if nargout==1
-            i=sub2ind(size(GRID.X),i,j);
-        end
-    case {'network','triangular'}
-        set(MN,'string',sprintf('pnt: %i',i))
+if strcmp(GRID.Type,'structured')
+    set(MN,'string',sprintf('m,n: %i,%i',i,j))
+    %
+    if nargout==1
+        i=sub2ind(size(GRID.X),i,j);
+    end
+else
+    set(MN,'string',sprintf('%s: %i',lower(GRID.ValLocation),i))
 end
 
 function normalstate(F)
 set(F,'WindowButtonDownFcn','')
 set(F,'WindowButtonMotionFcn','')
 set(F,'WindowButtonUpFcn','')
+%
+SelectedLine = findobj(F,'tag','SELLINE');
+set(SelectedLine,'userdata',[])
+%
+G=findobj(F,'tag','GRID');
+if ~isempty(G)
+    if isappdata(G,'NFixed')
+        rmappdata(G,'NFixed')
+    end
+    if isappdata(G,'DistanceState')
+        rmappdata(G,'DistanceState')
+    end
+end
+%
 menusreset(F)
 zoom(F,'inmode');
-% v72 = matlabversionnumber>=7.02;
-% if v72
-%     %Disable listeners
-%     mmgr = uigetmodemanager(gcbf);
-%     set(mmgr.WindowListenerHandles,'Enable','off');
-% end
 set(F,'WindowButtonMotionFcn','qp_gridview trackcoord')
-% if v72
-%     set(mmgr.WindowListenerHandles,'Enable','on');
-% end
 qp_gridview execcallback
+%qp_gridview('setrange',F,GRID.Selected)
+
+function [NewRange,RangeMax] = switchrange(GRID,OldLoc,OldRange,NewLoc)
+switch NewLoc
+    case 'NODE'
+        RangeMax = length(GRID.X);
+        switch OldLoc
+            case 'EDGE'
+                % find node numbers associated with the selected edges
+                iEdge = OldRange.Range{1};
+                iNode = GRID.EdgeNodeConnect(iEdge,:);
+                iNode = unique(iNode(:));
+                NewRange.Type = 'range';
+                NewRange.Range = {iNode};
+            case 'FACE'
+                % find node numbers associated with the selected nodes
+                switch OldRange.Type
+                    case 'point'
+                        iFace = OldRange.Range(1);
+                    case 'range'
+                        iFace = OldRange.Range{1};
+                end
+                iNode = GRID.FaceNodeConnect(iFace,:);
+                iNode = unique(iNode(~isnan(iNode)));
+                NewRange.Type = 'range';
+                NewRange.Range = {iNode};
+            otherwise
+                error('Transition from %s to %s not yet implemented',OldLoc,NewLoc)
+        end
+    case 'EDGE'
+        RangeMax = size(GRID.EdgeNodeConnect,1);
+        switch OldLoc
+            case {'NODE','FACE'}
+                if strcmp(OldLoc,'FACE')
+                    % find node numbers associated with the selected nodes
+                    iFace = OldRange.Range{1};
+                    iNode = GRID.FaceNodeConnect(iFace,:);
+                    iNode = unique(iNode(~isnan(iNode)));
+                else
+                    iNode = OldRange.Range{1};
+                end
+                % find edges for which all nodes are selected
+                lEdge = all(ismember(GRID.EdgeNodeConnect,iNode),2);
+                iEdge = find(lEdge);
+                NewRange.Type = 'range';
+                NewRange.Range = {iEdge};
+            otherwise
+                error('Transition from %s to %s not yet implemented',OldLoc,NewLoc)
+        end
+    case 'FACE'
+        RangeMax = size(GRID.FaceNodeConnect,1);
+        switch OldLoc
+            case {'NODE','EDGE'}
+                switch OldRange.Type
+                    case 'point'
+                        iThingy = OldRange.Range(1);
+                        if strcmp(OldLoc,'NODE')
+                            MatchLevel = 1;
+                        else
+                            MatchLevel = 2;
+                        end
+                    case 'range'
+                        iThingy = OldRange.Range{1};
+                        MatchLevel = 3;
+                end
+                if strcmp(OldLoc,'EDGE')
+                    % find node numbers associated with the selected edges
+                    iEdge = iThingy;
+                    iNode = GRID.EdgeNodeConnect(iEdge,:);
+                    iNode = unique(iNode(:));
+                else
+                    iNode = iThingy;
+                end
+                % find faces for which all nodes are selected
+                switch MatchLevel
+                    case 1
+                        lFace = any(ismember(GRID.FaceNodeConnect,iNode) & ~isnan(GRID.FaceNodeConnect),2);
+                        iFace = find(lFace);
+                        iFace = iFace(1);
+                    case 2
+                        lFace = sum(ismember(GRID.FaceNodeConnect,iNode) & ~isnan(GRID.FaceNodeConnect),2);
+                        iFace = find(lFace==2);
+                        iFace = iFace(1);
+                    case 3
+                        lFace = all(ismember(GRID.FaceNodeConnect,iNode) | isnan(GRID.FaceNodeConnect),2);
+                        iFace = find(lFace);
+                end
+                if length(iFace)==1
+                    NewRange.Type = 'point';
+                    NewRange.Range = [iFace 1];
+                else
+                    NewRange.Type = 'range';
+                    NewRange.Range = {iFace};
+                end
+            otherwise
+                error('Transition from %s to %s not yet implemented',OldLoc,NewLoc)
+        end
+    otherwise
+        error('Transition from %s to %s not yet implemented',OldLoc,NewLoc)
+end

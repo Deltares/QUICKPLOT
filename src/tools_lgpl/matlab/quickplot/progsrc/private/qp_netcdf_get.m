@@ -103,10 +103,6 @@ fliporder = ~getpref('SNCTOOLS','PRESERVE_FVD',false);
    reverse=1:Info.Rank;
 %end
 %
-loadtype = 'double';
-if Info.Nctype == nc_char
-    loadtype = 'text';
-end
 if isempty(Info.Dimid)
     Data = nc_varget(FI.Filename,FI.Dataset(varid+1).Name);
 elseif nargin==3
@@ -133,16 +129,11 @@ else
         end
     end
     %
-    %if fliporder
-    %    start_coord = fliplr(start_coord);
-    %    count_coord = fliplr(count_coord);
-    %end
-    %
     Data = nc_varget(FI.Filename,FI.Dataset(varid+1).Name,start_coord,count_coord);
     if length(count_coord)>1
         Data = reshape(Data,count_coord);
     end
-    %Data=Data(RS_netcdf{reverse});
+    Data = Data(RS_netcdf{:});
 end
 %
 if ~isa(Data,'double') && ~isa(Data,'char')

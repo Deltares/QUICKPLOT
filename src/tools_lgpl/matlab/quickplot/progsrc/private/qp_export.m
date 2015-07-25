@@ -355,10 +355,14 @@ for f=1:ntim
                         error(['Could not create or open: ',filename])
                     end
                     Format=cat(2,'%04d-%02d-%02d %02d:%02d:%02d',repmat(', %14.6g',1,size(expdata,1)-6),'\n');
+                    %Format=cat(2,'%6.1f',repmat(' %14.6g',1,size(expdata,1)-6),' 999.999\n');
                     if size(expdata,1)-5>256
                         ui_message('error','Number of columns exceeds 256. Too many data columns for Excel!')
                     end
                     fprintf(fid,cat(2,'date and time',repmat(',%s',1,nVar-nCrd),'\n'),vars{nCrd+1:nVar});
+                    %dt = datenum(expdata(1,:),expdata(2,:),expdata(3,:),expdata(4,:),expdata(5,:),expdata(6,:));
+                    %dt = (dt-datenum(2011,11,4,0,0,0))*24*60;
+                    %expdata = cat(1,dt,expdata(7:end,:));
                     Str=sprintf(Format,expdata);
                     Str=strrep(Str,'NaN','');
                     fprintf(fid,'%s',Str);
@@ -438,7 +442,7 @@ for f=1:ntim
                 otherwise
                     expdata(isnan(expdata))=-999;
             end
-            if ~isempty(data.Time) && ~isnan(data.Time)
+            if isfield(data,'Time') && ~isempty(data.Time) && ~isnan(data.Time)
                 cmnt={sprintf('time     = %s',datestr(data.Time,0)),cmnt{:}};
             end
             xx.Field(f).Comments=cmnt;
@@ -668,6 +672,8 @@ for f=1:ntim
                                 if size(xy{i},1)==1
                                     xy(i) = [];
                                     cv(i,:) = [];
+                                else
+                                    xy{i} = xy{i}(:,1:2);
                                 end
                             end
                             inside = false(length(xy));

@@ -1,4 +1,4 @@
-function nc = nc_interpret(nc)
+function nc = nc_interpret(nc,NumDomains,DomainOffset)
 %NC_INTERPRET  Interpret the netCDF data based on conventions.
 %    NC_OUT = NC_INTERPRET(NC_IN)
 %
@@ -35,6 +35,40 @@ function nc = nc_interpret(nc)
 %   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
+
+if ischar(nc)
+    nc = nc_info(nc);
+end
+if nargin>1
+    nc1 = rmfield(nc,'Filename');
+    nc1.Dimension = rmfield(nc1.Dimension,'Length');
+    nc1.Dataset   = rmfield(nc1.Dataset,'Size');
+    %
+    FileName2  = nc.Filename;
+    Partitions = cell(1,NumDomains);
+    for i = 1:NumDomains
+        FileName2(DomainOffset+(1:4)) = sprintf('%4.4d',i-1);
+        nc2 = nc_info(FileName2);
+        Partitions{i} = nc_interpret(nc2);
+        nc2 = rmfield(nc2,'Filename');
+        nc2.Dimension = rmfield(nc2.Dimension,'Length');
+        nc2.Dataset   = rmfield(nc2.Dataset,'Size');
+        %
+        if vardiff(nc1,nc2)>1
+            NumDomains = 1;
+            break
+        end
+    end
+    %
+    nc.NumDomains   = NumDomains;
+    if NumDomains>1
+        nc.Partitions = Partitions;
+        nc.DomainOffset = DomainOffset;
+        nc.Filename(DomainOffset+(1:4)) = '0000';
+    end
+else
+    nc.NumDomains = 1;
+end
 
 if isfield(nc,'Group') && ~isempty(nc.Group)
     for g = 1:length(nc.Group)
@@ -122,7 +156,7 @@ for ivar = 1:nvars
             node_coords = {};
         end
         Info.Coordinates = node_coords;
-        Info.Mesh = {'ugrid' ivar 0};
+        Info.Mesh = {'ugrid' ivar -1};
         AuxCoordVars = union(AuxCoordVars,Info.Coordinates);
     %elseif ~isempty(strmatch('locations',Attribs,'exact'))
     %    Info.Type = 'ugrid_mesh';
@@ -347,13 +381,28 @@ for ivar = 1:nvars
             end
             refdate = sscanf(unit2,' since %d-%d-%d %d:%d:%f %d:%d',[1 8]);
             if length(refdate)>=6
+                if length(refdate)==8
+                    TZshift = refdate(7) + sign(refdate(7))*refdate(8)/60;
+                elseif length(refdate)==7
+                    % this is actually not correct: report this and continue
+                    TZshift = refdate(7);
+                    TZformat = 'HH';
+                    if abs(TZshift)>24
+                        TZshift = fix(TZshift/100)+rem(TZshift,100)/60;
+                        TZformat = 'HHMM';
+                    end
+                    ui_message('error','Time zone format invalid in "%s", expecting HH:MM instead of %s',unit,TZformat)
+                else
+                    TZshift = 0;
+                end
                 refdate = datenum(refdate(1:6));
-                % optional time zone shift not yet taken into account
             elseif length(refdate)>=3
                 refdate(6) = 0;
                 refdate = datenum(refdate);
+                TZshift = NaN;
             else
                 refdate = [];
+                TZshift = NaN;
             end
             nc.Dataset(ivar).Info.DT      = dt/86400;
             if ~isempty(unit2) & isempty(refdate)
@@ -361,6 +410,8 @@ for ivar = 1:nvars
             else
                 nc.Dataset(ivar).Info.RefDate = refdate;
             end
+            % Pass TZshift to QUICKPLOT for optional processing
+            nc.Dataset(ivar).Info.TZshift = TZshift;
             continue
         end
     end

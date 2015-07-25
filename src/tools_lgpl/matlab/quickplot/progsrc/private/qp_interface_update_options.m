@@ -289,7 +289,7 @@ switch geometry
                 axestype={'Time-Val','Text'};
             end
         end
-    case 'SEG'
+    case {'SEG','SEG-NODE','SEG-EDGE'}
         axestype={'X-Y'};
         lineproperties=1;
     case 'sSEG'
@@ -403,7 +403,6 @@ switch geometry
     case 'HEX'
     case 'PYR'
     case 'GEN3D'
-    case 'GEN-3D'
 end
 if isequal(axestype,{'noplot'})
     MultipleColors = 0;
@@ -476,6 +475,21 @@ elseif ~multiple(M_) && ~multiple (N_) && ~multiple(K_) && strcmp(axestype,'X-Y'
     animate = 0;
 elseif strcmp(axestype,'Distance-Val')
     animate = 0;
+end
+
+if DimFlag(T_)
+    if ~strcmpi(qp_settings('timezone'),'Ignored')
+        atz = findobj(OH,'tag','axestimezone=?');
+        set(findobj(OH,'tag','axestimezone'),'enable','on');
+        set(atz,'enable','on','backgroundcolor',Active)
+        TZsel = get(atz,'value');
+        TZstr = get(atz,'string');
+        TZshift = get(atz,'userdata');
+        Ops.axestimezone_str   = strtok(TZstr{TZsel});
+        Ops.axestimezone_shift = TZshift(TZsel);
+    else
+        Ops.axestimezone_shift = NaN;
+    end
 end
 
 coords={'path distance','reverse path distance','x coordinate','y coordinate'};
@@ -675,7 +689,7 @@ end
 %---- presentation type
 %
 extend2edge = 0;
-if ((nval==1 || nval==6) && data2d && ~strcmp(geometry,'SEG')) || nval==1.9 || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') || strcmp(geometry,'POLYG') % || (nval==0 & ~DimFlag(ST_))
+if ((nval==1 || nval==6) && data2d) || nval==1.9 || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') || strcmp(geometry,'POLYG') % || (nval==0 & ~DimFlag(ST_))
     switch nvalstr
         case 1.9
             PrsTps={'vector','edge'};
@@ -704,18 +718,23 @@ if ((nval==1 || nval==6) && data2d && ~strcmp(geometry,'SEG')) || nval==1.9 || s
             end
             switch dic
                 case 0
-                    if triangles
-                        if SpatialV
+                    switch geometry
+                        case {'TRI','TRI+'}
+                            if SpatialV
+                                PrsTps={'continuous shades';'markers';'values'};
+                            else
+                                PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
+                            end
+                        case {'PNT','PNT+'}
+                            PrsTps={'markers';'values'};
+                        case {'SEG','SEG-NODE'}
                             PrsTps={'continuous shades';'markers';'values'};
-                        else
-                            PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
-                        end
-                    elseif isequal(geometry,'PNT') || isequal(geometry,'PNT+')
-                        PrsTps={'markers';'values'};
-                    elseif isequal(geometry,'POLYL')
-                        PrsTps={'polylines'};
-                    else
-                        PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
+                        case {'POLYL'}
+                            PrsTps={'polylines'};
+                        case {'UGRID-EDGE'}
+                            PrsTps={'markers';'values';'edge'};
+                        otherwise
+                            PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                     end
                 case 1
                     switch geometry
@@ -725,6 +744,10 @@ if ((nval==1 || nval==6) && data2d && ~strcmp(geometry,'SEG')) || nval==1.9 || s
                             else
                                 PrsTps={'polygons';'markers';'values'};
                             end
+                        case {'SEG','SEG-EDGE'}
+                            PrsTps={'edge';'markers';'values'};
+                        case {'UGRID-FACE'}
+                            PrsTps={'patches';'patches with lines';'markers';'values'};
                         otherwise
                             switch axestype
                                 case {'X-Time','Time-X'}
@@ -800,6 +823,7 @@ if ((nval==1 || nval==6) && data2d && ~strcmp(geometry,'SEG')) || nval==1.9 || s
         case 'markers'
             usesmarker=1;
             forcemarker=1;
+            lineproperties=0;
             switch nvalstr
                 case {'strings'}
                     SingleColor=0;
@@ -1316,10 +1340,8 @@ end
 %---- axes type
 %
 
-levelvar=0;
 if ~isempty(strfind(axestype,'Val'))
     if ~isempty(strfind(Props.Name,'level'))
-        levelvar=1;
         % only convert to elevation if unit is equivalent to m or
         % dimensionless
         if ~ischar(qp_unitconversion(Units,'m')) || ...
@@ -1354,7 +1376,7 @@ end
 
 ExpTypes={};
 if nval>=0
-    if (Spatial<=1) && nval>0
+    if (~multiple(M_) && ~multiple(N_)) && nval>0
         ExpTypes{end+1}='csv file (time series)';
         ExpTypes{end+1}='Tekal file (time series)';
     end
@@ -1432,8 +1454,6 @@ if ~isempty(ExpTypes)
     set(ed,'enable','on');
     setappdata(ed,'exporttype',ExpTypes{et})
 end
-%
-OH=-1;
 %
 %-------- END OF PLOT OPTIONS -------------
 %

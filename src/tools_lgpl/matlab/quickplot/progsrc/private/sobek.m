@@ -307,6 +307,9 @@ for i=1:NBranch
     Network.Branch.XY{i}=repmat(Network.Branch.XYXY(i,1:2),length(Locs),1)+Locs'*(Network.Branch.XYXY(i,3:4)-Network.Branch.XYXY(i,1:2))/Network.Branch.Length(i);
 end
 
+Network.nNodes = sum(cellfun('size',Network.Branch.XY,1));
+Network.nBranches = NBranch;
+
 
 function Network=localreadnetw(filename)
 %LOCALREADNETW Read contents of SOBEK network files.
@@ -427,8 +430,7 @@ Parameters={
     'S' 'NdToSysStr'      x     x   38
     'I' 'NdToIden'       36    39   39};
 %
-iVersion = find(Versions==Network.Version);
-index = [Parameters{:,iVersion}]+1;
+index = [Parameters{:,Versions==Network.Version}]+1;
 infile = index==round(index);
 Parameters = Parameters(infile,:);
 %
@@ -440,16 +442,19 @@ Network.Branch.LinkNr = Network.Branch.BrReach;
 Network.Branch.Type   = Network.Branch.BrObjID;
 %
 From     = Network.Branch.NdFrmID;
+FromName = Network.Branch.NdFrmName;
 FromType = Network.Branch.NdFrmObjID;
 FromXY   = [Network.Branch.NdFrmX Network.Branch.NdFrmY];
 %
 To       = Network.Branch.NdToID;
+ToName   = Network.Branch.NdToName;
 ToType   = Network.Branch.NdToObjID;
 ToXY     = [Network.Branch.NdToX Network.Branch.NdToY];
 %
 % Process information ...
 %
 PointIDs=cat(1,From,To);
+Name=cat(1,FromName,ToName);
 Type=cat(1,FromType,ToType);
 XY=cat(1,FromXY,ToXY);
 %
@@ -458,6 +463,7 @@ XY(idummy,:) = NaN;
 %
 [Network.Node.ID,I,J]=unique(PointIDs);
 Network.Node.XY      =XY(I,:);
+Network.Node.Name    =Name(I,:);
 Network.Node.Type    =Type(I,:);
 Network.Branch.XYXY  =[FromXY ToXY];
 Network.Branch.IFrom =J(1:nBranches);

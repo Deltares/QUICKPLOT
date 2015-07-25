@@ -184,7 +184,7 @@ if nargin<2
     else
         error('No time selected')
     end
-elseif isequal(t,':')
+elseif isequal(t,':') && ischar(t)
     t = 1:length(Structure.Data);
 elseif isempty(t)
     t = 1;
@@ -238,7 +238,7 @@ for i = 1:length(t)
                     Header.n_cols,cols);
             else
                 r = repmat(Header.spw_radius*(rows-1)'/Header.n_rows,1,length(cols));
-                phi = repmat(2*pi*(cols-1)/Header.n_cols,length(rows),1);
+                phi = pi/2 - repmat(2*pi*(cols-1)/Header.n_cols,length(rows),1);
                 x = Structure.Data(t(i)).x_spw_eye + r.*cos(phi);
                 y = Structure.Data(t(i)).y_spw_eye + r.*sin(phi);
             end
@@ -301,6 +301,10 @@ z_grid_eye = x_grid_eq*sin(latrad)                                    +z_grid_eq
 
 lat = asin(z_grid_eye)*180/pi;
 lon = atan2(y_grid_eye,x_grid_eye)*180/pi;
+
+% move longitude back to value range specified in input file
+
+lon = lon - atan2(y_grid_eye(1),x_grid_eye(1))*180/pi + lon_spw_eye;
 
 
 function Structure=Local_open_file(filename,vector)

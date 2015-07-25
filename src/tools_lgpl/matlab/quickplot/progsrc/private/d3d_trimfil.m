@@ -6,6 +6,7 @@ function varargout=d3d_trimfil(FI,domain,field,cmd,varargin)
 %   Times                   = XXXFIL(FI,Domain,DataFld,'times',T)
 %   StNames                 = XXXFIL(FI,Domain,DataFld,'stations')
 %   SubFields               = XXXFIL(FI,Domain,DataFld,'subfields')
+%   [TZshift   ,TZstr  ]    = XXXFIL(FI,Domain,DataFld,'timezone')
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'data',subf,t,station,m,n,k)
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'celldata',subf,t,station,m,n,k)
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'griddata',subf,t,station,m,n,k)
@@ -49,7 +50,7 @@ function varargout=d3d_trimfil(FI,domain,field,cmd,varargin)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 if nargin<2
-    error('Not enough input arguments');
+    error('Not enough input arguments')
 elseif nargin==2
     varargout={infile(FI,domain)};
     return
@@ -85,6 +86,9 @@ switch cmd
         return
     case 'times'
         varargout={readtim(FI,Props,varargin{:})};
+        return
+    case 'timezone'
+        [varargout{1:2}]=gettimezone(FI,domain,Props);
         return
     case 'stations'
         varargout={{}};
@@ -430,6 +434,9 @@ if DataRead
         end
     end
 
+    if ~DimFlag(T_)
+        idx{T_} = 1;
+    end
     elidx(~DimFlag(2:end))=[];
     if (Props.NVal==0) || DepthInZeta
         val1=[];
@@ -949,10 +956,22 @@ switch Props.NVal
 end
 
 % read time ...
-T=readtim(FI,Props,idx{T_});
-Ans.Time=T;
+if DimFlag(T_)
+    Ans.Time=readtim(FI,Props,idx{T_});
+end
 
 varargout={Ans FI};
+% -------------------------------------------------------------------------
+
+% -------------------------------------------------------------------------
+function [TZshift,TZstr]=gettimezone(FI,domain,Props)
+TZstr = '';
+Info = vs_disp(FI,'map-const','TZONE');
+if isstruct(Info)
+    TZshift = vs_get(FI,'map-const','TZONE','quiet');
+else
+    TZshift = NaN;
+end
 % -------------------------------------------------------------------------
 
 % -------------------------------------------------------------------------
@@ -966,10 +985,10 @@ FI = guarantee_options(FI);
 PropNames={'Name'                   'Units'   'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc'  'Loc3D' 'Group'          'Val1'    'Val2'  'SubFld' 'MNK' };
 DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'XCOR'    ''       []       0
     'hydrodynamic grid'                ''       [1 0 1 1 1]  0         0    ''        'z'   'z'       'i'     'map-series'     'S1'      ''       []       0
-    'domain decomposition boundaries'  ''       [1 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'KCS'     ''       []       0
-    'open boundaries'                  ''       [1 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'KCS'     ''       []       0
-    'closed boundaries'                ''       [1 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'KCS'     ''       []       0
-    'thin dams'                        ''       [1 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'KCU'     'KCV'    []       0
+    'domain decomposition boundaries'  ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'KCS'     ''       []       0
+    'open boundaries'                  ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'KCS'     ''       []       0
+    'closed boundaries'                ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'KCS'     ''       []       0
+    'thin dams'                        ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'KCU'     'KCV'    []       0
     'temporarily inactive water level points' ...
     ''       [1 0 1 1 0]  2         5    ''        'z'   'z'       ''      'map-series'     'KFU'     ''       []       0
     'temporarily inactive velocity points' ...
@@ -982,7 +1001,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
                                        ''       [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'KFSMIN'  ''       []       0
     'bottom active layer at velocity points (kfu/vmin)' ...
                                        ''       [1 0 1 1 0]  1         0.9  ''        'd'   'd'       ''      'map-series'     'KFUMIN'  'KFVMIN' []       0
-    'parallel partition numbers'       ''       [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-const'      'PPARTITION'  ''       []       0
+    'parallel partition numbers'       ''       [0 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-const'      'PPARTITION'  ''       []       0
     '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
     'air pressure'                     'N/m^2'  [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'PATM'    ''       []       0
     'air temperature'                  '°C'     [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'AIRTEM'  ''       []       0
@@ -1099,7 +1118,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'staggered bed shear stress'       'N/m^2'  [1 0 1 1 0]  1         1.9  ''        'd'   'd'       ''      'map-series'     'TAUKSI'  'TAUETA' []       1
     'maximum bed shear stress'         'N/m^2'  [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'TAUMAX'  ''       []       0
     'excess bed shear ratio'           '-'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'TAURAT'  ''       'sb1'    0
-    'initial bed level'                'm'      [1 0 1 1 0]  1         1    ''        'd'   'd'       ''      'map-const'      'DP0'     ''       []       0
+    'initial bed level'                'm'      [0 0 1 1 0]  1         1    ''        'd'   'd'       ''      'map-const'      'DP0'     ''       []       0
     'bed level in water level points'  'm'      [1 0 1 1 0]  1         1    ''        'd'   'z'       ''      'map-const'      'DP0'     ''       []       0
     'bed level in velocity points'     'm'      [1 0 1 1 0]  1         0.9  ''        'd'   'd'       ''      'map-const'      'DPU0'    'DPV0'   []       0
     'bed slope'                        '-'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'DZDUU'   'DZDVV'  []       1
@@ -1127,7 +1146,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'base level of sediment layer'     'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'THLYR'   ''       []       0
     'base level of sediment layer'     'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'DPSED'   ''       []       0
     '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
-    'grid cell surface area'           'm^2'    [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-const'      'XCOR'    ''       []       0
+    'grid cell surface area'           'm^2'    [0 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-const'      'XCOR'    ''       []       0
     '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0};
 
 %============================= AUTODETECTION ==============================

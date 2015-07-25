@@ -942,7 +942,6 @@ switch cmd
             end
         end
         
-        
     case 'updatedomains'
         Handle_SelectFile=findobj(mfig,'tag','selectfile');
         File=get(Handle_SelectFile,'userdata');
@@ -1111,6 +1110,68 @@ switch cmd
             outdata = found;
         end
         
+    case 'updatetimezone'
+        TZhandling=qp_settings('timezone');
+        MW = UD.MainWin;
+        %
+        File=get(MW.File,'userdata');
+        NrInList=get(MW.File,'value');
+        if ~isempty(File)
+            Info=File(NrInList);
+            DomainNr=get(MW.DList,'value');
+            Props=get(MW.Field,'userdata');
+            fld=get(MW.Field,'value');
+        end
+        %
+        if strcmpi(TZhandling,'ignored')
+            set(MW.TZdata,'userdata',NaN,'visible','off')
+            set(MW.TZtxt,'visible','off')
+        else
+            if ~isempty(File) && ...
+                    ~isempty(Props) && ...
+                    ~strncmp('---',Props(fld).Name,3) && ...
+                    isfield(Props,'DimFlag') && ...
+                    (Props(fld).DimFlag(T_)==1 || Props(fld).DimFlag(T_)==2)
+                [Chk,TZshift,TZstr]=qp_getdata(Info,DomainNr,Props(fld),'timezone');
+                if isnan(TZshift)
+                    TZstr = 'unknown';
+                elseif ~strcmpi(TZhandling,'as in dataset')
+                    [TZshift,TZstr] = gettimezone(TZhandling);
+                end
+            else
+                TZstr   = 'N/A';
+                TZshift = NaN;
+            end
+            if isempty(TZstr)
+                if TZshift>0
+                    TZstr = sprintf('UTC+%i',TZshift);
+                elseif TZshift<0
+                    TZstr = sprintf('UTC%i',TZshift);
+                else
+                    TZstr = 'UTC';
+                end
+            end
+            if isnan(TZshift)
+                set(MW.TZdata,'string',TZstr,'enable','off','userdata',NaN,'visible','on')
+                set(MW.TZtxt,'enable','off','visible','on')
+            else
+                set(MW.TZdata,'string',TZstr,'enable','on','userdata',TZshift,'visible','on')
+                set(MW.TZtxt,'enable','on','visible','on')
+            end
+        end
+        if get(MW.TList,'userdata')
+            Times   = getappdata(MW.TList,'original_times');
+            TZshift = getappdata(MW.TList,'original_tzshift');
+            tzreq = get(findobj(mfig,'tag','datatimezone'),'userdata');
+            if ~isnan(TZshift) && ~isnan(tzreq) && ...
+                    (Props(fld).DimFlag(T_)==1 || Props(fld).DimFlag(T_)==2)
+                Times = Times + (tzreq-TZshift)/24;
+            end
+            Str = qp_time2str(Times,Props(fld).DimFlag(T_));
+            set(MW.TList,'string',Str)
+        end
+        qp_interface_update_options(mfig,UD);
+        
     case 'updatefieldprop'
         qp_updatefieldprop(UD);
         d3d_qp('gridview_update')
@@ -1130,8 +1191,8 @@ switch cmd
         end
         
     case 'showtimes'
-        st=findobj(mfig,'tag','showtimes');
-        tl=findobj(mfig,'tag','timelist');
+        st=UD.MainWin.ShowT; %findobj(mfig,'tag','showtimes')
+        tl=UD.MainWin.TList; %findobj(mfig,'tag','timelist')
         if get(st,'value') && strcmp(get(st,'enable'),'on')
             if ~get(tl,'userdata')
                 datafields=findobj(mfig,'tag','selectfield');
@@ -1150,10 +1211,19 @@ switch cmd
                 DomainNr=get(Handle_Domain,'value');
                 
                 set(mfig,'pointer','watch')
+                [Chk,TZshift,TZstr]=qp_getdata(Info,DomainNr,Props(fld),'timezone');
                 [Chk,Times]=qp_getdata(Info,DomainNr,Props(fld),'times');
                 set(mfig,'pointer','arrow')
                 if size(Times,1)==1
                     Times=Times';
+                end
+                setappdata(tl,'original_times',Times)
+                setappdata(tl,'original_tzshift',TZshift)
+                
+                tzreq = get(findobj(mfig,'tag','datatimezone'),'userdata');
+                if ~isnan(TZshift) && ~isnan(tzreq) && ...
+                        (Props(fld).DimFlag(T_)==1 || Props(fld).DimFlag(T_)==2)
+                    Times = Times + (tzreq-TZshift)/24;
                 end
                 Str = qp_time2str(Times,Props(fld).DimFlag(T_));
                 set(tl,'string',Str,'userdata',1)
@@ -1889,7 +1959,7 @@ switch cmd
             'climmode','presenttype','vecscalem','vertscalem','thinfld', ...
             'linestyle','marker','threshdistr','horizontalalignment', ...
             'verticalalignment','exporttype','vectorcolour','dataunits', ...
-            'vectorstyle','angleconvention'}
+            'vectorstyle','angleconvention','axestimezone'}
         % commands require an input string
         %
         % nothing to do except refreshing the options
@@ -2505,14 +2575,14 @@ switch cmd
         if isstruct(Rng) && isfield(Rng,'Type')
             switch Rng.Type
                 case 'line'
-                    if isfinite(Rng.Range(1))
+                    if ~isfinite(Rng.Range(4))
                         d3d_qp('allm*',0)
                         d3d_qp('editm*',Rng.Range(1))
                         d3d_qp('alln*',1)
-                    else %isfinite(Rng.Range(2))
+                    else %~isfinite(Rng.Range(2))
                         d3d_qp('allm*',1)
                         d3d_qp('alln*',0)
-                        d3d_qp('editn*',Rng.Range(2))
+                        d3d_qp('editn*',Rng.Range(3))
                     end
                 case {'lineseg','range'}
                     if iscell(Rng.Range)
@@ -2658,16 +2728,7 @@ switch cmd
                 Handle_Domain=findobj(mfig,'tag','selectdomain');
                 DomainNr=get(Handle_Domain,'value');
                 %
-                UseGrid=get(UD.GridView.Fig,'userdata');
-                i_grd=Props(fld).UseGrid;
-                UseGridNew={Info.Name,DomainNr,i_grd};
-                if ~isequal(UseGrid,UseGridNew)
-                    set(UD.GridView.Fig,'name','Grid View: updating grid ...')
-                    [Chk,GRID]=qp_getdata(Info,DomainNr,Props(i_grd),'grid');
-                    qp_gridview('setgrid',UD.GridView.Fig,GRID)
-                    set(UD.GridView.Fig,'name','Grid View')
-                    set(UD.GridView.Fig,'userdata',UseGridNew)
-                end
+                qp_gridviewhelper(UD,Info,DomainNr,Props,fld)
                 d3d_qp('gridview_update')
             else
                 qp_gridview('setgrid',UD.GridView.Fig,[],[])
@@ -4216,7 +4277,8 @@ switch cmd
             'defaultfigurecolor','gridviewshowindices','changefont', ...
             'defaultaxescolor','boundingbox','v6zoombehavior', ...
             'organizationname','filefilterselection','colorbar_ratio', ...
-            'showinactiveopt', 'defaultfigurepos'}
+            'showinactiveopt', 'defaultfigurepos','timezonehandling', ...
+            'enforcedtimezone'}
         qp_prefs(UD,mfig,cmd,cmdargs);
         
     case {'deltaresweb','deltaresweboss'}

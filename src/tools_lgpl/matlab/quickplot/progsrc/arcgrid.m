@@ -1,5 +1,5 @@
 function [Out,Out2]=arcgrid(cmd,varargin)
-%ARCGRID Read/write arcgrid files.
+%ARCGRID Read/write ESRI ASCII Raster files.
 %   FILEDATA = ARCGRID('open',FILENAME) opens the FILENAME as an arcgrid
 %   file and determines the dimensions of the grid. This call does not
 %   immediately read the actual data. Detects the presence of a time series
@@ -25,9 +25,9 @@ function [Out,Out2]=arcgrid(cmd,varargin)
 %   ARCGRID('write',...) writes data to an arcgrid file. The
 %   following arguments are supported:
 %     *  FILENAME string indicating the name of the file to be written.
-%     *  FILEDATA structure that mirros the structure with XCorner,
-%        YCorner, CellSize, and optional Data and NoData fields (as
-%        obtained from an ARCGRID('open',FILENAME) call).
+%     *  FILEDATA structure that mirrors the structure with XCorner,
+%        YCorner, CellSize, and optional Data and NoData fields as
+%        obtained from an ARCGRID('open',FILENAME) call.
 %     *  DATA matrix which overrules the Data field of FILEDATA if
 %        specified.
 %     *  'xcorner',X0 pair indicating the X coordinate of the lower left
@@ -155,7 +155,7 @@ Structure.YCorner=0;
 Structure.NCols=0;
 Structure.NRows=0;
 Structure.CellSize=[0 0];
-Structure.NoData=NaN;
+Structure.NoData=NaN; % ESRI's default NoData value is actually -9999
 Structure.DataStart=0;
 if time_in_file
     Structure.TimeFormat = 1; % relative time in file
@@ -589,7 +589,7 @@ end
 if isfield(Structure,'Comment') 
     comment = Structure.Comment;
 else
-    comment = ['ARC/INFO ASCII GRID file generated from MATLAB on ' datestr(now)];
+    comment = ['ESRI ASCII Raster file generated from MATLAB on ' datestr(now)];
 end
 if isempty(comment)
     % no header

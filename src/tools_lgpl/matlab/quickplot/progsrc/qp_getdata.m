@@ -21,6 +21,7 @@ function [varargout]=qp_getdata(varargin)
 %   [Success,Times     ]            = QP_GETDATA(FI,Domain,DataFld,'times',T)
 %   [Success,StNames   ]            = QP_GETDATA(FI,Domain,DataFld,'stations',S)
 %   [Success,SubFields ]            = QP_GETDATA(FI,Domain,DataFld,'subfields',F)
+%   [Success,TZshift   ,TZstr]      = QP_GETDATA(FI,Domain,DataFld,'timezone')
 %   [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'data',subf,t,station,m,n,k)
 %   [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'celldata',subf,t,station,m,n,k)
 %   [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'griddata',subf,t,station,m,n,k)
@@ -309,12 +310,13 @@ try
             end
         case 3
             %
+            % [Success,NewFI     ,cmdargs]    = QP_GETDATA(FI,'options',OptionsFigure,OptionsCommand, ...)
             % [Success,Data      ,NewFI]      = QP_GETDATA(FI,'data',Quantity,DimSelection)
+            % [Success,TZshift   ,TZstr]      = QP_GETDATA(FI,Domain,DataFld,'timezone')
             % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'data',subf,t,station,m,n,k)
             % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'celldata',subf,t,station,m,n,k)
             % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'griddata',subf,t,station,m,n,k)
             % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'gridcelldata',subf,t,station,m,n,k)
-            % [Success,NewFI     ,cmdargs]    = QP_GETDATA(FI,'options',OptionsFigure,OptionsCommand, ...)
             % [Success,hNew      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'plot',Parent,Ops,hOld,subf,t,station,m,n,k)
             %
             % If a NewFI argument is returned, it may have to be wrapped in a
@@ -331,7 +333,6 @@ try
                 %
                 % Add empty array for dummy domain argument.
                 %
-                calltype='options3';
                 calltype=sprintf('options3/%s',X{3});
                 X=cat(2,{[]},X);
                 [varargout{2:3}]=feval(Fcn,FI,X{:});
@@ -350,10 +351,8 @@ try
                 [varargout{2:3}]=feval(Fcn,FI,X{:});
             else
                 %
+                % [Success,TZshift   ,TZstr]      = QP_GETDATA(FI,...,'timezone')
                 % [Success,Data      ,NewFI]      = QP_GETDATA(FI,...)
-                % NewFI returned as third argument ...
-                %
-                fi=3;
                 %
                 % Check for domain number ... and add if necessary.
                 %
@@ -361,6 +360,7 @@ try
                     %
                     % Case with domain number ...
                     %
+                    % [Success,TZshift   ,TZstr]      = QP_GETDATA(FI,Domain,DataFld,'timezone')
                     % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,...)
                     % Nothing to do, we already have a domain number.
                     %
@@ -368,12 +368,14 @@ try
                     %
                     % Case without domain number ...
                     %
+                    % [Success,TZshift   ,TZstr]      = QP_GETDATA(FI,DataFld,'timezone')
                     % [Success,Data      ,NewFI]      = QP_GETDATA(FI,DataFld,...)
                     % No domain number, so use default domain number 0.
                     %
                     X=cat(2,{0},X);
                 end
                 %
+                % [Success,TZshift   ,TZstr]      = QP_GETDATA(FI,Domain,DataFld,'timezone')
                 % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,...)
                 %
                 % If DataFld is indicated by a character string (name) replace
@@ -384,20 +386,31 @@ try
                 end
                 %
                 calltype=X{3};
-                if isequal(calltype,'plot')
+                if strcmp(calltype,'timezone')
+                    % [Success,TZshift   ,TZstr]      = QP_GETDATA(FI,Domain,DataFld,'timezone')
                     %
-                    % [Success,hNew      ,NewFI]   = QP_GETDATA(FI,Domain,DataFld,'plot',Parent,Ops,hOld,subf,t,station,m,n,k)
+                    % NewFI not returned ...
+                    fi=[];
+                    [varargout{2:3}]=feval(Fcn,FI,X{:});
+                elseif strcmp(calltype,'plot')
                     %
+                    % [Success,hNew      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'plot',Parent,Ops,hOld,subf,t,station,m,n,k)
+                    %
+                    %
+                    % NewFI returned as third argument ...
+                    fi=3;
                     [varargout{2:3}]=feval(Fcn,FI,X{:});
                 else
                     %
-                    % [Success,Data      ,NewFI]   = QP_GETDATA(FI,Domain,DataFld,'data',subf,t,station,m,n,k)
-                    % [Success,Data      ,NewFI]   = QP_GETDATA(FI,Domain,DataFld,'celldata',subf,t,station,m,n,k)
-                    % [Success,Data      ,NewFI]   = QP_GETDATA(FI,Domain,DataFld,'griddata',subf,t,station,m,n,k)
-                    % [Success,Data      ,NewFI]   = QP_GETDATA(FI,Domain,DataFld,'gridcelldata',subf,t,station,m,n,k)
+                    % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'data',subf,t,station,m,n,k)
+                    % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'celldata',subf,t,station,m,n,k)
+                    % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'griddata',subf,t,station,m,n,k)
+                    % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'gridcelldata',subf,t,station,m,n,k)
                     %
-                    % Catch v_slice options for further processing a bit further
-                    % down.
+                    % NewFI returned as third argument ...
+                    fi=3;
+                    %
+                    % Catch v_slice options for further processing a bit further down.
                     %
                     [arg2,arg3] = hvslice(Fcn,FI,X);
                     %
@@ -411,7 +424,9 @@ try
             %
             % If NewFI was returned, add QuickPlot wrapper if necessary ...
             %
-            varargout{fi}=qp_wrapfi(varargout{fi},Info);
+            if ~isempty(fi)
+                varargout{fi}=qp_wrapfi(varargout{fi},Info);
+            end
         case 4
             %
             % [Success,DataFields,Dims ,NVal] = QP_GETDATA(FI,Domain)

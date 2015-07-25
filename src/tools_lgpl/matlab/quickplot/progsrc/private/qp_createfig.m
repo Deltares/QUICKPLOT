@@ -121,7 +121,7 @@ elseif strcmp(dfp,'qp main')
     MonPos = qp_getscreen(mfig);
 elseif length(dfp)>8 && strcmp(dfp(1:8),'monitor ')
     screen = sscanf(dfp(9:end),'%i',1);
-    MonPos = qp_getscreen('screen');
+    MonPos = qp_getscreen('screen',screen);
 else % strcmp(dfp,'auto') or unknown
     % nothing to do: keep default
     MonPos = [];

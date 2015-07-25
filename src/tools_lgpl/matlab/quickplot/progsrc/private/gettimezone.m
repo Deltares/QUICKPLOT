@@ -1,20 +1,5 @@
-function [mn0,mn]=piecewise(mn,mnmax)
-%PIECEWISE Checks and fixes a piecewise grid line.
-%   A piecewise grid line follows either a grid line or a diagonal line
-%   across the grid. The function PIECEWISE checks whether each line
-%   segment is either horizontal, vertical or diagonal on the grid.
-%
-%   [MN0,MN2] = PIECEWISE(MN1)
-%   The input array MN1 should consist of the grid points intended to be
-%   on the line; each line should contain an M,N pair (integers). The
-%   output array MN0 will contain all points on the line (expanded list)
-%   fixing possible deviations from horizontal, vertical or diagonal
-%   lines in the original MN1 array. The output array MN2 contains only
-%   those points at which the line changes direction.
-%
-%   [MN0,MN2] = PIECEWISE(MN1,MNMAX)
-%   The line is restricted to the area defined by 1:MNMAX(1) and
-%   1:MNMAX(2).
+function [TZshift,TZstr]=gettimezone(FI,domain,Props)
+%GETTIMEZONE Default implementation for timezone.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -46,55 +31,76 @@ function [mn0,mn]=piecewise(mn,mnmax)
 %   $HeadURL$
 %   $Id$
 
-if isempty(mn)
-    mn0 = mn;
-    return
-end
-mn0=mn(1,:);
-mndiff=diff(mn,1,1);
-num=size(mndiff,1);
-i=1;
-while i<=num
-    dmn = mndiff(i,:);
-    sdmn = sign(dmn);
-    dmax = max(abs(dmn));
-    if ~isequal(dmax*sdmn,dmn)
-        dmin = min(abs(dmn));
-        abs_dmn = dmn.*sdmn;
-        if abs_dmn(2) < abs_dmn(1)/2
-            dmn = [dmax-dmin 0; dmin dmin];
-        elseif abs_dmn(1) < abs_dmn(2)/2
-            dmn = [0 dmax-dmin; dmin dmin];
-        elseif abs_dmn(2) < abs_dmn(1)
-            dmn = [dmin dmin; dmax-dmin 0];
-        else%if abs_dmn(1) < abs_dmn(2)
-            dmn = [dmin dmin; 0 dmax-dmin];
-        end
-        dmn(1,:) = dmn(1,:).*sdmn;
-        dmn(2,:) = dmn(2,:).*sdmn;
-        %
-        mndiff = [mndiff(1:i-1,:);dmn;mndiff(i+1:end,:)];
-        num = num+1;
-        %
-        dmn = dmn(1,:);
-        sdmn = sign(dmn);
-        dmax = max(abs(dmn));
+if ischar(FI)
+    switch FI
+        case 'supported'
+            [TZshift,TZstr] = gettables;
+        otherwise
+            [TZshift,TZstr] = gettables;
+            i = ustrcmpi(FI,TZstr);
+            if i<0
+                TZshift = NaN;
+                TZstr   = FI;
+            else
+                TZshift = TZshift(i);
+                TZstr = TZstr{i};
+            end
     end
-    if dmax~=0
-        mn0 = [mn0; repmat(mn0(end,:),dmax,1)+(1:dmax)'*sdmn];
+else
+    TZshift = NaN;
+    TZstr    = '';
+end
+
+function [TZshift,TZstr] = gettables
+table = {...
+    'PST'	-8
+    'PDT'	-7
+    'MST'	-7
+    'MDT'	-6
+    'CST'	-6
+    'CDT'	-5
+    'EST'	-5
+    'EDT'	-4
+    'GMT'   0
+    'WET'	0
+    'UTC'	0
+    'WEDT'	1
+    'CET'	1
+    'CEDT'	2
+    'EET'	2
+    'EEDT'	3
+    'WAT'	1
+    'CAT'	2
+    'EAT'	3
+    'AWST'	8
+    'AWDT'	9
+    'ACST'	9.5
+    'ACDT'	10.5
+    'AEST'	10
+    'AEDT'	11};
+tzones = [-12 -11 -10 -9.5 -9 -8 -7 -6 -5 -4.5 -4 -3.5 -3 -2 -1 1 2 3 3.5 4 4.5 5 5.5 5.75 6 6.5 7 8 8.75 9 9.5 10 10.5 11 11.5 12 12.75 13 14]';
+TZstr = table(:,1);
+TZshift = cat(1,table{:,2},tzones);
+TZstr{length(TZshift)} = '';
+for i = length(TZshift):-1:1
+    Si = abs(TZshift(i));
+    if round(Si)==Si
+        shift = sprintf('%2.2d',Si);
+    else
+        shift = sprintf('%2.2d:%2.2d',floor(Si),round((Si-floor(Si))*60));
     end
-    i=i+1;
-end
-if nargin>1
-    mn0(:,1) = max(1,min(mn0(:,1),mnmax(1)));
-    mn0(:,2) = max(1,min(mn0(:,2),mnmax(2)));
-    mndiff = diff(mn0);
-    mn0(all(mndiff==0,2),:)=[];
-end
-if nargout>1
-    mndiff = diff(mn0);
-    mn = mn0([1;find(any(diff(mndiff),2))+1;size(mn0,1)],:);
-    if size(mn,1)==2 && isequal(mn(1,:),mn(end,:))
-        mn = mn(1,:);
+    if TZshift(i)>0
+        UTCshift = ['UTC+' shift];
+    elseif TZshift(i)<0
+        UTCshift = ['UTC-' shift];
+    else % 0
+        UTCshift = 'UTC±00';
+    end
+    if isempty(TZstr{i})
+        TZstr{i} = UTCshift;
+    elseif ~strcmp(TZstr{i},'UTC')
+        TZstr{i} = [TZstr{i} ' (' UTCshift ')'];
     end
 end
+[TZshift,Reorder] = sort(TZshift);
+TZstr = TZstr(Reorder);

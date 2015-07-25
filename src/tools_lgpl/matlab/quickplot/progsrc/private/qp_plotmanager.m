@@ -884,6 +884,7 @@ switch cmd
         
     case 'deleteitems'
         Ax = getAx(UD);
+        hItList = UD.PlotMngr.ItList;
         if any(~ishandle(Ax))
             d3d_qp refreshaxes
             d3d_qp refreshfigprop
@@ -892,8 +893,8 @@ switch cmd
             if iscell(pfig)
                 pfig=unique(cat(1,pfig{:}));
             end
-            ItIDs=get(UD.PlotMngr.ItList,'userdata');
-            ItVal=get(UD.PlotMngr.ItList,'value');
+            ItIDs=get(hItList,'userdata');
+            ItVal=get(hItList,'value');
             ItTags=ItIDs{1};
             for itVal=ItVal
                 ItTag=ItTags{itVal};
@@ -909,19 +910,26 @@ switch cmd
                         animpush=findobj(ItFig,'tag','animpush');
                         set(animpush,'enable','off')
                     end
-                    UD=get(animsld,'userdata');
+                    SliderUD=get(animsld,'userdata');
                     iobj=1;
-                    while iobj<=length(UD)
-                        if strcmp(UD(iobj).Tag,ItTag)
-                            UD(iobj)=[];
+                    while iobj<=length(SliderUD)
+                        if strcmp(SliderUD(iobj).Tag,ItTag)
+                            SliderUD(iobj)=[];
                         end
                         iobj=iobj+1;
                     end
                     animsldEnab='on';
-                    if isempty(UD)
+                    if isempty(SliderUD)
                         animsldEnab='off';
                     end
-                    set(animsld,'enable',animsldEnab,'userdata',UD)
+                    set(animsld,'enable',animsldEnab,'userdata',SliderUD)
+                end
+            end
+            if length(ItVal)==1
+                if ItVal<size(ItIDs{1},1)
+                    set(hItList,'value',ItVal+1)
+                elseif ItVal>1
+                    set(hItList,'value',ItVal-1)
                 end
             end
             d3d_qp refreshitems

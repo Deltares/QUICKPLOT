@@ -6,6 +6,7 @@ function varargout=gridfil(FI,domain,field,cmd,varargin)
 %   Times                   = XXXFIL(FI,Domain,DataFld,'times',T)
 %   StNames                 = XXXFIL(FI,Domain,DataFld,'stations')
 %   SubFields               = XXXFIL(FI,Domain,DataFld,'subfields')
+%   [TZshift   ,TZstr  ]    = XXXFIL(FI,Domain,DataFld,'timezone')
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'data',subf,t,station,m,n,k)
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'celldata',subf,t,station,m,n,k)
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'griddata',subf,t,station,m,n,k)
@@ -50,7 +51,7 @@ function varargout=gridfil(FI,domain,field,cmd,varargin)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 if nargin<2
-    error('Not enough input arguments');
+    error('Not enough input arguments')
 elseif nargin==2
     varargout={infile(FI,domain)};
     return
@@ -83,6 +84,9 @@ switch cmd
         return
     case 'times'
         varargout={readtim(FI,Props,varargin{:})};
+        return
+    case 'timezone'
+        [varargout{1:2}]=gettimezone(FI,domain,Props);
         return
     case 'stations'
         varargout={{}};
@@ -284,7 +288,7 @@ if Props.File~=0
             if length(Props.Fld)==2
                 val{2}=tmpData.Data(:,:,Props.Fld(2));
             end
-        case 'FLS-inc'
+        case {'fls','FLS-inc'}
             if isfield(tmpData,'Times')
                 T = tmpData.Times(idx{T_});
             else
@@ -800,7 +804,7 @@ if ~isempty(Attribs)
                 l=l+1;
                 DataProps(l,:)={'area fraction' ...
                     'sQUAD'     'xy'                   [1 0 1 1 0]  1          1     ''        'z'   'z'      ''      i      1   };
-            case 'FLS-inc'
+            case {'fls','FLS-inc'}
                 if isfield(Attrib,'StartTime')
                     it = 1;
                 else
@@ -997,7 +1001,7 @@ if Props.DimFlag(K_)
 end
 if Props.DimFlag(T_)
     switch Attribs(Props.File).FileType
-        case {'FLS-inc'}
+        case {'fls','FLS-inc'}
             if isfield(Attrib,'Times')
                 sz(T_) = length(Attrib.Times);
             else
@@ -1021,7 +1025,7 @@ if Props.File>0
     Attribs = qp_option(FI,'AttribFiles');
     Attrib = qp_unwrapfi(Attribs(Props.File));
     switch Attribs(Props.File).FileType
-        case 'FLS-inc'
+        case {'fls','FLS-inc'}
             if isfield(Attrib,'Times')
                 T = Attrib.Times/24;
                 if ~isequal(t,0)

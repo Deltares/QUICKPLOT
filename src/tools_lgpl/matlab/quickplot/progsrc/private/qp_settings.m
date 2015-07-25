@@ -119,6 +119,7 @@ Set.filefilterselection       = '"ARC/INFO Ascii Grid Files","Delft3D Grid Files
 Set.debugging                 = 0;
 Set.showinactiveopt           = 0;
 Set.stopruniferror            = 1;
+Set.timezone                  = 'Ignored';
 %
 Set.delwaq_procdef            = 'auto';
 %

@@ -6,6 +6,7 @@ function varargout=sobekfil(FI,domain,field,cmd,varargin)
 %   Times                   = XXXFIL(FI,Domain,DataFld,'times',T)
 %   StNames                 = XXXFIL(FI,Domain,DataFld,'stations')
 %   SubFields               = XXXFIL(FI,Domain,DataFld,'subfields')
+%   [TZshift   ,TZstr  ]    = XXXFIL(FI,Domain,DataFld,'timezone')
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'data',subf,t,station,m,n,k)
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'celldata',subf,t,station,m,n,k)
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'griddata',subf,t,station,m,n,k)
@@ -50,7 +51,7 @@ function varargout=sobekfil(FI,domain,field,cmd,varargin)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 if nargin<2
-    error('Not enough input arguments');
+    error('Not enough input arguments')
 elseif nargin==2
     varargout={infile(FI,domain)};
     return
@@ -80,9 +81,12 @@ cmd=lower(cmd);
 switch cmd
     case 'size'
         varargout={getsize(FI,Props)};
-        return;
+        return
     case 'times'
         varargout={readtim(FI,Props,varargin{:})};
+        return
+    case 'timezone'
+        [varargout{1:2}]=gettimezone(FI,domain,Props);
         return
     case 'stations'
         varargout={readsts(FI,Props,varargin{:})};
@@ -121,109 +125,150 @@ if idx{ST_}==0
     idx{ST_}=1:sz(ST_);
 end
 
-if Props.DFil==-1
-    inodes=strmatch(strtok(Props.Name),FI.Node.Type);
-    inodes=inodes(idx{ST_});
-    Ans.XY=FI.Node.XY(inodes,:);
-    Ans.SEG=zeros(0,2);
-elseif Props.DFil==-2
-    Ans.XY=(FI.Branch.XYXY(idx{ST_},1:2)+FI.Branch.XYXY(idx{ST_},3:4))/2;
-    Ans.SEG=zeros(0,2);
-elseif strcmp(FI.FileType,'SOBEK River network')
+Ans.XY = [];
+Ans.SEG = zeros(0,2);
+Ans.ValLocation = Props.Geom(5:end);
+if strcmp(FI.FileType,'SOBEK River network')
+    % Always ValLocation = 'NODE'
     if strcmp(Props.Name,'network (nodes only)')
         Ans.XY=FI.Node.XY;
         Ans.SEG=cat(2,FI.Branch.IFrom,FI.Branch.ITo);
     else
         Ans.XY=cat(1,FI.Branch.XY{FI.Grid.IBranch});
         BrLen=cellfun('size',FI.Branch.XY,1)-1;
-        SEG=zeros(sum(BrLen),2);
-        offset=0;
-        Noffset=0;
-        for i=FI.Grid.IBranch%1:length(BrLen)
-            BL=BrLen(i);
-            SEG(offset+(1:BL),1)=Noffset+(1:BL)';
-            offset=offset+BL;
-            Noffset=Noffset+BL+1;
+        BrFirstPoint = zeros(1,FI.nBranches);
+        BrLastPoint = zeros(1,FI.nBranches);
+        SEG = zeros(sum(BrLen),2);
+        offset = 0;
+        Noffset = 0;
+        for i = FI.Grid.IBranch
+            BL = BrLen(i);
+            SEG(offset+(1:BL),1) = Noffset+(1:BL)';
+            offset = offset+BL;
+            BrFirstPoint(i) = Noffset+1;
+            BrLastPoint(i)  = Noffset+BL+1;
+            %
+            Noffset = Noffset+BL+1;
         end
         SEG(:,2)=SEG(:,1)+1;
-        Ans.SEG=SEG;
-    end
-else
-    Ans.XY=FI.Node.XY;
-    if Props.NVal==0
-        Ans.SEG=cat(2,FI.Branch.IFrom,FI.Branch.ITo);
-        Renum=zeros(sz(M_),1);
-        Renum(idx{M_})=1:length(idx{M_});
-        Ans.SEG=Renum(Ans.SEG);
-        Ans.SEG(any(Ans.SEG==0,2),:)=[];
-        Ans.XY=Ans.XY(idx{M_},:);
-    else
-        if Props.DataInCell
-            HisFile=FI.Data{Props.DFil};
-            [ID,BranchReorder,KnownBranches]=intersect(HisFile.SegmentName(idx{M_}),FI.Branch.ID);
-            MissingBranches=1:FI.nBranches;
-            MissingBranches(KnownBranches)=[];
-            %
-            MB=ismember(FI.Node.Type(FI.Branch.IFrom(MissingBranches)), ...
-                {'SBK_PROFILE','SBK_LATERALFLOW','SBK_MEASSTAT','SBK_PUMP','SBK_WEIR'});
-            ProfileBranches=MissingBranches(MB);
-            OtherPart=zeros(1,length(ProfileBranches));
-            %
-            %    '3B_OPENWATER','3B_PAVED','3B_UNPAVED','3B_WEIR','SBK_SBK-3B-NODE'
-            %
-            %    'SBK_BOUNDARY','SBK_CHANNELCONNECTION','SBK_CONNECTIONNODE', ...
-            %    'SBK_CHANNEL_STORCONN&LAT','SBK_CONN&LAT','SBK_GRIDPOINT'
-            %
-            %    'SBK_LATERALFLOW','SBK_MEASSTAT','SBK_PROFILE','SBK_PUMP','SBK_WEIR',
-            %
-            for i=1:length(ProfileBranches)
-                Ref=find(FI.Branch.ITo(KnownBranches)==FI.Branch.IFrom(ProfileBranches(i)));
-                if ~isempty(Ref)
-                    OtherPart(i)=Ref;
+        %
+        for i=length(FI.Node.ID):-1:1
+            Points = [BrFirstPoint(FI.Branch.IFrom==i) BrLastPoint(FI.Branch.ITo==i)];
+            nodeSEG{i} = zeros(length(Points)*(length(Points)-1),2);
+            j=0;
+            for p1 = Points
+                for p2 = Points(2:end)
+                    j=j+1;
+                    nodeSEG{i}(j,:) = [p1 p2];
                 end
             end
-            stimes=0;
-            while any(OtherPart==0) & stimes<5
-                stimes=stimes+1;
-                NewBranches=ProfileBranches(OtherPart>0);
-                for i=1:length(ProfileBranches)
-                    Ref=find(FI.Branch.ITo(NewBranches)==FI.Branch.IFrom(ProfileBranches(i)));
-                    if ~isempty(Ref)
-                        OtherPart(i)=OtherPart(ProfileBranches==NewBranches(Ref));
+        end
+        SEG = cat(1,SEG,nodeSEG{:});
+        %
+        Ans.SEG=SEG;
+        %
+        Renum = zeros(FI.nNodes,1);
+        Renum(idx{M_}) = 1:length(idx{M_});
+        Ans.XY = Ans.XY(idx{M_},:);
+        Ans.SEG = Renum(Ans.SEG);
+        Ans.SEG(any(Ans.SEG==0,2),:) = [];
+        %
+        DataIndex = idx{M_};
+        NodeHasData = 1:length(idx{M_});
+    end
+elseif strcmp(Ans.ValLocation,'NODE')
+    if Props.DFil==-1
+        nodetype = strtok(Props.Name);
+        if strcmp(nodetype,'all')
+            inodes=idx{M_};
+        else
+            inodes=strmatch(nodetype,FI.Node.Type);
+            inodes=inodes(idx{ST_});
+        end
+    elseif Props.NVal==0
+        inodes=idx{M_};
+    else
+        inodes=idx{M_};
+        HisFile=FI.Data{Props.DFil};
+        [NodeHasData,DataIndex]=ismember(FI.Node.ID(idx{M_}),HisFile.SegmentName);
+        DataIndex(~NodeHasData)=[];
+    end
+    Ans.XY=FI.Node.XY(inodes,:);
+    if DimFlag(M_)
+        Ans.SEG=cat(2,FI.Branch.IFrom,FI.Branch.ITo);
+        Renum=zeros(FI.nNodes,1);
+        Renum(inodes)=1:length(inodes);
+        Ans.SEG=Renum(Ans.SEG);
+        Ans.SEG(any(Ans.SEG==0,2),:)=[];
+    end
+elseif strcmp(Ans.ValLocation,'EDGE')
+    Ans.XY=FI.Node.XY;
+    iedges=idx{M_};
+    Ans.SEG=cat(2,FI.Branch.IFrom(iedges,1),FI.Branch.ITo(iedges,1));
+    if Props.DFil~=-2
+        %
+        % Process whole network since some of the selected edges may be
+        % linked to the his-file content via edges not selected.
+        %
+        HisFile=FI.Data{Props.DFil};
+        [EdgeHasData,DataIndex]=ismember(FI.Branch.ID,HisFile.SegmentName);
+        %
+        found = true;
+        while found
+            found = false;
+            for i = find(~EdgeHasData)'
+                ifn = FI.Branch.IFrom(i);
+                if ismember(FI.Node.Type(ifn), ...
+                        {'SBK_PROFILE','SBK_MEASSTAT','SBK_SBK-3B-REACH','SBK_WEIR','SBK_CULVERT','SBK_PUMP','SBK_LATERALFLOW'})
+                    ibr = find(EdgeHasData & FI.Branch.ITo==ifn);
+                    if ~isempty(ibr)
+                        EdgeHasData(i) = true;
+                        DataIndex(i) = DataIndex(ibr);
+                        found = true;
                     end
                 end
             end
-            ProfileBranches(OtherPart==0)=[];
-            OtherPart(OtherPart==0)=[];
-            KnownBranches=cat(1,KnownBranches(:),ProfileBranches(:));
-            ValueRef=cat(1,BranchReorder(:),BranchReorder(OtherPart));
-            SEG=[FI.Branch.IFrom FI.Branch.ITo];
-            Ans.SEG=SEG(KnownBranches,:);
-        else
-            HisFile=FI.Data{Props.DFil};
-            [ID,NodeReorder,NodeIndex]=intersect(HisFile.SegmentName(idx{M_}),FI.Node.ID);
-            Ans.XY=Ans.XY(NodeIndex,:);
         end
+        %
+        % Now clip data set to selected edges
+        %
+        EdgeHasData = EdgeHasData(iedges);
+        DataIndex = DataIndex(iedges);
+        DataIndex(~EdgeHasData) = [];
     end
 end
-%         l=patch(Network.Node.XY(NodeIndex,1)',Network.Node.XY(NodeIndex,2)',Val(NodeReorder), ...
 
 if Props.DFil==-1
-    Ans.Val=FI.Node.ID(inodes);
+    switch Props.Name
+        case 'all nodes: ID'
+            fld='ID';
+        case 'all nodes: name'
+            fld='Name';
+        case 'all nodes: type'
+            fld='Type';
+        otherwise
+            fld='ID';
+    end
+    Ans.Val=FI.Node.(fld)(inodes)';
 elseif Props.DFil==-2
-    Ans.Val=FI.Branch.ID(idx{ST_});
+    switch Props.Name
+        case 'all reach segments: ID'
+            fld='ID';
+        case 'all reach segments: type'
+            fld='Type';
+        case 'all reach segments: name'
+            fld='Name';
+        case 'all reach segments: reach number'
+            fld='BrReach';
+    end
+    Ans.Val=FI.Branch.(fld)(iedges);
 elseif Props.NVal>0
     HisFile=FI.Data{Props.DFil};
-    [t,Ans.Val]=delwaq('read',HisFile,Props.Subs,idx{M_},idx{T_});
-    if idx{M_}==0
-        Ans.Val=permute(Ans.Val,[3 2 1]);
-    end
-    if strcmp(FI.FileType,'SOBEK network')
-        if Props.DataInCell
-            Ans.Val=Ans.Val(:,ValueRef);
-        else
-            Ans.Val=Ans.Val(:,NodeReorder);
-        end
+    Ans.Val = NaN(length(idx{T_}),length(idx{M_}));
+    if strcmp(Ans.ValLocation,'NODE')
+        [t,Ans.Val(:,NodeHasData)]=delwaq('read',HisFile,Props.Subs,DataIndex,idx{T_});
+    else
+        [t,Ans.Val(:,EdgeHasData)]=delwaq('read',HisFile,Props.Subs,DataIndex,idx{T_});
     end
     Ans.Time=t;
 end
@@ -237,36 +282,54 @@ function Out=infile(FI,domain)
 %
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'                           'Geom'  'Coords' 'DimFlag' 'DataInCell' 'NVal' 'DFil' 'Subs' 'UseGrid'};
-%          'network*'                             'SEG' 'xy' [0 0 4 0 0]   0          -1      0      0       0
-DataProps={'network'                              'SEG' 'xy' [0 0 6 0 0]   0           0      0      0       1};
+%          'network*'                       'SEG-NODE' 'xy' [0 0 4 0 0]   0          -1      0      0       0
+DataProps={'network'                        'SEG-NODE' 'xy' [0 0 6 0 0]   0           0      0      0       1};
 if strcmp(FI.FileType,'SOBEK River network')
     DataProps(2,:)=DataProps(1,:);
     DataProps{2,1}='network (nodes only)';
+    DataProps{2,9}=2;
 else
     nodetypes = unique(FI.Node.Type);
-    for i=1:length(nodetypes)
-        DataProps(i+1,:)=DataProps(1,:);
-        DataProps{i+1,1}=[nodetypes{i} ' nodes'];
-        DataProps{i+1,4}=[0 3 0 0 0];
-        DataProps{i+1,6}=4;
-        DataProps{i+1,7}=-1;
-        DataProps{i+1,end}=0;
+    DataProps(2,:)=DataProps(1,:);
+    DataProps{2,1}='all nodes: ID';
+    DataProps{2,6}=4;
+    DataProps{2,7}=-1;
+    DataProps(3,:)=DataProps(2,:);
+    DataProps{3,1}='all nodes: name';
+    DataProps(4,:)=DataProps(2,:);
+    DataProps{4,1}='all nodes: type';
+    i0 = size(DataProps,1);
+    for i=length(nodetypes):-1:1
+        DataProps(i+i0,:)=DataProps(1,:);
+        DataProps{i+i0,1}=[nodetypes{i} ' nodes'];
+        DataProps{i+i0,4}=[0 3 0 0 0];
+        DataProps{i+i0,6}=4;
+        DataProps{i+i0,7}=-1;
+        DataProps{i+i0,9}=0;
     end
     DataProps(end+1,:)=DataProps(1,:);
-    DataProps{end,1}='reach segments';
-    DataProps{end,4}=[0 3 0 0 0];
+    DataProps{end,1}='all reach segments: ID';
+    DataProps{end,2}='SEG-EDGE';
+    DataProps{end,5}=1;
     DataProps{end,6}=4;
     DataProps{end,7}=-2;
-    DataProps{end,end}=0;
+    DataProps(end+1,:)=DataProps(end,:);
+    DataProps{end,1}='all reach segments: name';
+    DataProps(end+1,:)=DataProps(end,:);
+    DataProps{end,1}='all reach segments: type';
+    DataProps(end+1,:)=DataProps(end,:);
+    DataProps{end,1}='all reach segments: reach number';
+    DataProps{end,6}=1;
 end
 for i=1:length(FI.Data)
     [pn,fn]=fileparts(FI.Data{i}.FileName);
     fn=lower(fn);
-    DataProps(end+1,:)={'-------'                  ''    ''   [0 0 0 0 0]   0           0      0      0       0};
+    DataProps(end+1,:)={'-------'                  ''         ''   [0 0 0 0 0]   0           0      0      0       0};
     for j=1:length(FI.Data{i}.SubsName)
-        DataProps(end+1,:)={FI.Data{i}.SubsName{j}  'SEG' 'xy' [1 0 6 0 0]   0           1      i      j       0};
+        DataProps(end+1,:)={FI.Data{i}.SubsName{j} 'SEG-NODE' 'xy' [1 0 6 0 0]   0           1      i      j       1};
         if strcmp(fn,'reachseg')
-            DataProps{end,5}=1; % DataInCell
+            DataProps{end,2} = 'SEG-EDGE';
+            DataProps{end,5}  = 1; % DataInCell
         end
     end
 end
@@ -285,7 +348,11 @@ sz=[0 0 0 0 0];
 if Props.DimFlag(T_)
     FIH=FI.Data{Props.DFil};
     sz(T_)=FIH.NTimes;
-    sz(M_)=FIH.NumSegm;
+    if strcmp(Props.Geom(5:end),'NODE')
+        sz(M_)=FI.nNodes; %length(FI.Node.ID); %FIH.NumSegm;
+    else % EDGE
+        sz(M_)=FI.nBranches; %length(FI.Branch.ID);
+    end
 else
     if strcmp(FI.FileType,'SOBEK River network')
         if strcmp(Props.Name,'network (nodes only)')
@@ -294,9 +361,14 @@ else
             sz(M_)=sum(cellfun('size',FI.Branch.XY,1));
         end
     elseif Props.DFil==-1
-        sz(ST_)=length(strmatch(strtok(Props.Name),FI.Node.Type));
+        nodetype = strtok(Props.Name);
+        if strcmp(nodetype,'all')
+            sz(M_)=length(FI.Node.Type);
+        else
+            sz(ST_)=length(strmatch(nodetype,FI.Node.Type));
+        end
     elseif Props.DFil==-2
-        sz(ST_)=length(FI.Branch.ID);
+        sz(M_)=length(FI.Branch.ID);
     else
         sz(M_)=length(FI.Node.ID);
     end

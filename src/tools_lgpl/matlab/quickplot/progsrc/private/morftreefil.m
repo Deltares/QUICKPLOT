@@ -6,6 +6,7 @@ function varargout=morftreefil(FI,domain,field,cmd,varargin)
 %   Times                   = XXXFIL(FI,Domain,DataFld,'times',T)
 %   StNames                 = XXXFIL(FI,Domain,DataFld,'stations')
 %   SubFields               = XXXFIL(FI,Domain,DataFld,'subfields')
+%   [TZshift   ,TZstr  ]    = XXXFIL(FI,Domain,DataFld,'timezone')
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'data',subf,t,station,m,n,k)
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'celldata',subf,t,station,m,n,k)
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'griddata',subf,t,station,m,n,k)
@@ -49,7 +50,7 @@ function varargout=morftreefil(FI,domain,field,cmd,varargin)
 %========================= GENERAL CODE =======================================
 
 if nargin<2
-    error('Not enough input arguments');
+    error('Not enough input arguments')
 elseif nargin==2
     varargout={infile(FI,domain)};
     return
@@ -79,6 +80,9 @@ cmd=lower(cmd);
 switch cmd
     case 'size'
         varargout={getsize(FI,Props)};
+        return
+    case 'timezone'
+        [varargout{1:2}]=gettimezone(FI,domain,Props);
         return
     case 'subfields'
         varargout={{}};

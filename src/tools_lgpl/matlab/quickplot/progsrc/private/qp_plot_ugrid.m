@@ -56,12 +56,13 @@ Thresholds=Ops.Thresholds;
 axestype=Ops.basicaxestype;
 
 if isfield(data,'TRI')
-    Connect = data.TRI;
+    FaceNodeConnect = data.TRI;
+elseif isfield(data,'FaceNodeConnect')
+    FaceNodeConnect = data.FaceNodeConnect;
 elseif isfield(data,'Connect')
-    Connect = data.Connect;
+    FaceNodeConnect = data.Connect;
 end
-nc = size(Connect,2);
-iConnect = ceil(mod(1:2*nc,2*nc)/2+0.1);
+nc = size(FaceNodeConnect,2);
 if isfield(data,'XYZ')
     data.X = data.XYZ(:,:,:,1);
     data.Y = data.XYZ(:,:,:,2);
@@ -73,15 +74,34 @@ switch NVal
     case {0,0.5}
         switch axestype
             case {'X-Y','Lon-Lat'}
-                xy = unique(sort(reshape(Connect(:,iConnect)',[2 numel(data.Connect)]),1)','rows');
-                xy = xy(:,[1 2 2])';
+                %
+                % edges
+                %
+                if isfield(data,'EdgeNodeConnect')
+                    EdgeNodeConnect = data.EdgeNodeConnect;
+                else
+                    iConnect = ceil(([0 0:2*nc-2])/2+0.1);
+                    EdgeNodeConnect = FaceNodeConnect(:,iConnect);
+                    ncP = sum(~isnan(FaceNodeConnect),2);
+                    EdgeNodeConnect(:,1) = FaceNodeConnect(sub2ind(size(FaceNodeConnect),(1:size(FaceNodeConnect,1))',ncP));
+                    EdgeNodeConnect = unique(sort(reshape(EdgeNodeConnect',[2 numel(FaceNodeConnect)]),1)','rows');
+                    EdgeNodeConnect(any(isnan(EdgeNodeConnect),2),:) = [];
+                end
+                %
+                xy = EdgeNodeConnect(:,[1 2 2])';
                 xy = xy(:);
                 X = data.X(xy);
                 Y = data.Y(xy);
                 X(3:3:end) = NaN;
                 Y(3:3:end) = NaN;
+                %
+                % points without edge
+                %
+                ip = find(~ismember(1:length(data.X),xy));
+                Xp = data.X(ip);
+                Yp = data.Y(ip);
                 if FirstFrame
-                    hNew=line(X,Y, ...
+                    hNew=line(1,1, ...
                         'color',Ops.colour, ...
                         'linewidth',Ops.linewidth, ...
                         'linestyle',Ops.linestyle, ...
@@ -90,9 +110,21 @@ switch NVal
                         'markeredgecolor',Ops.markercolour, ...
                         'markerfacecolor',Ops.markerfillcolour, ...
                         'parent',Parent);
-                else
-                    set(hNew,'xdata',X,'ydata',Y);
+                    pMarker = Ops.marker;
+                    if strcmp(pMarker,'none')
+                        pMarker = '.';
+                    end
+                    hNew(2)=line(1,1, ...
+                        'color',Ops.colour, ...
+                        'linestyle','none', ...
+                        'marker',pMarker, ...
+                        'markersize',Ops.markersize, ...
+                        'markeredgecolor',Ops.markercolour, ...
+                        'markerfacecolor',Ops.markerfillcolour, ...
+                        'parent',Parent);
                 end
+                set(hNew,'xdata',X,'ydata',Y);
+                set(hNew(2),'xdata',Xp,'ydata',Yp);
                 %
                 if strcmp(Ops.colourbar,'none')
                     qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
@@ -206,54 +238,11 @@ switch NVal
     case {1,5}
         switch axestype
             case {'X-Y','Lon-Lat'}
-                if isfield(data,'TRI')
-                    set(Parent,'NextPlot','add');
-                    switch Ops.presentationtype
-                        case {'values','markers'}
-                            if isfield(data,'Z') && 0
-                                hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'QUAD',data.X,data.Y,data.Z,data.Val,Ops);
-                            else
-                                hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'QUAD',data.X,data.Y,[],data.Val,Ops);
-                            end
-                        otherwise
-                            hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'TRI',data.TRI,data.XYZ,data.Val,Ops);
-                    end
-                    if strcmp(Ops.colourbar,'none')
-                        qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
-                    else
-                        qp_title(Parent,{TStr},'quantity',Quant,'unit',Units,'time',TStr)
-                    end
+                hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'UGRID',data,Ops);
+                if strcmp(Ops.colourbar,'none')
+                    qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
                 else
-                    data = qp_dimsqueeze(data,Ops.axestype,multiple,DimFlag,Props);
-                    if isfield(data,'Z') && 0
-                        hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'QUAD',data.X,data.Y,data.Z,data.Val,Ops);
-                    else
-                        hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'QUAD',data.X,data.Y,[],data.Val,Ops);
-                    end
-                    if isempty(Selected{K_})
-                        str=PName;
-                        lyr={};
-                    else
-                        str=sprintf('%s in layer %i',PName,Selected{K_});
-                        lyr={sprintf('layer %i',Selected{K_})};
-                    end
-                    %
-                    if strcmp(Ops.colourbar,'none')
-                        tit = {str};
-                    else
-                        tit = lyr;
-                    end
-                    if ~isempty(stn)
-                        tit{end+1}=stn;
-                    end
-                    if ~isempty(TStr)
-                        tit{end+1}=TStr;
-                    end
-                    if length(tit)>2
-                        tit{1}=[tit{1} ' at ' tit{2}];
-                        tit(2)=[];
-                    end
-                    qp_title(Parent,tit,'quantity',Quant,'unit',Units)
+                    qp_title(Parent,{TStr},'quantity',Quant,'unit',Units,'time',TStr)
                 end
                 
             case {'Distance-Val','X-Val','X-Z','X-Time','Time-X'}

@@ -309,9 +309,13 @@ for jj=IA
             ipc=sub2ind(szx,imnc(2,:),imnc(1,:));
             dmnc=(mnc-imnc)>0;
             ii=find(isnan(z(ipc)+z(ipc+dmnc(2,:))+z(ipc+mz*dmnc(1,:))+z(ipc+dmnc(2,:)+mz*dmnc(1,:))));
-            ndiag=length(ii);
-            ii2=ii+(1:ndiag);
-            nl = nl+ndiag;
+            if isempty(ii)
+                ii2=[];
+            else
+                ndiag=length(ii);
+                ii2=ii+(1:ndiag);
+                nl = nl+ndiag;
+            end
             isel=1:nl;
             isel(ii2)=[];
             xp(isel)=xp;

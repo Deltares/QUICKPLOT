@@ -166,6 +166,17 @@ else
     end
 end
 
+if isfield(Ops,'axestimezone_shift') && ~isnan(Ops.axestimezone_shift)
+    [Chk,datatimezone_shift,datatimezone_str] = qp_getdata(FileInfo,Domain,Props,'timezone');
+    if isnan(datatimezone_shift)
+        error('Cannot convert unknown time zone to %s',Ops.axestimezone_str)
+    else
+        for i = length(data):-1:1
+            data(i).Time = data(i).Time + (Ops.axestimezone_shift-datatimezone_shift)/24;
+        end
+    end
+end
+
 Quant=Props.Name;
 Units='';
 if ~isempty(data)
@@ -526,6 +537,9 @@ end
 TStr='';
 if isfield(data,'Time') && length(data(1).Time)==1
     TStr = qp_time2str(data(1).Time,DimFlag(T_));
+    if ~isnan(Ops.axestimezone_shift)
+        TStr = [TStr ' (' Ops.axestimezone_str ')'];
+    end
 end
 
 fld = 'XYZ';
@@ -639,7 +653,7 @@ if ~isempty(Parent) && all(ishandle(Parent)) && strcmp(get(Parent(1),'type'),'ax
     set(pfig,'currentaxes',Parent(1))
 end
 
-if isfield(Ops,'linestyle') && isfield(Ops,'marker')
+if isfield(Ops,'linestyle') && isfield(Ops,'marker') && ~strcmp(Ops.presentationtype,'markers')
     Ops.LineParams={'color',Ops.colour, ...
         'linewidth',Ops.linewidth, ...
         'linestyle',Ops.linestyle, ...
@@ -802,13 +816,13 @@ else
             end
         end
         switch geom
-            case 'SEG'
+            case {'SEG','SEG-NODE','SEG-EDGE'}
                 [hNew{d},Thresholds,Param]=qp_plot_seg(plotargs{:});
             case 'PNT'
                 [hNew{d},Thresholds,Param]=qp_plot_pnt(plotargs{:});
             case {'POLYL','POLYG'}
                 [hNew{d},Thresholds,Param]=qp_plot_polyl(plotargs{:});
-            case {'UGRID-NODE'}
+            case {'UGRID-NODE','UGRID-FACE','UGRID-EDGE'}
                 [hNew{d},Thresholds,Param]=qp_plot_ugrid(plotargs{:});
             otherwise
                 [hNew{d},Thresholds,Param,Parent]=qp_plot_default(plotargs{:});
@@ -836,7 +850,11 @@ if isfield(Ops,'basicaxestype') && ~isempty(Ops.basicaxestype) && length(Parent)
         switch axestype{d}
             case 'Time'
                 dimension{d} = 'time';
-                unit{d} = '';
+                if isnan(Ops.axestimezone_shift)
+                    unit{d} = '';
+                else
+                    unit{d} = Ops.axestimezone_str;
+                end
             case 'Distance'
                 dimension{d} = 'distance';
                 if isfield(data,'XUnits') && ~isempty(data(1).XUnits)

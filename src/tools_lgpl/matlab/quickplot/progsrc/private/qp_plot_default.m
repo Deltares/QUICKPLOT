@@ -424,7 +424,7 @@ switch NVal
                             y=data.Val;
                             z=zeros(size(x));
                     end
-                    if length(data.Time)>1
+                    if isfield(data,'Time') && length(data.Time)>1
                         nx = numel(x);
                         nt = numel(data.Time);
                         if strcmp(Ops.axestype,'X-Time')

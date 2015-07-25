@@ -6,6 +6,7 @@ function varargout=samplesfil(FI,domain,field,cmd,varargin)
 %   Times                   = XXXFIL(FI,Domain,DataFld,'times',T)
 %   StNames                 = XXXFIL(FI,Domain,DataFld,'stations')
 %   SubFields               = XXXFIL(FI,Domain,DataFld,'subfields')
+%   [TZshift   ,TZstr  ]    = XXXFIL(FI,Domain,DataFld,'timezone')
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'data',subf,t,station,m,n,k)
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'celldata',subf,t,station,m,n,k)
 %   [Data      ,NewFI]      = XXXFIL(FI,Domain,DataFld,'griddata',subf,t,station,m,n,k)
@@ -50,7 +51,7 @@ function varargout=samplesfil(FI,domain,field,cmd,varargin)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 if nargin<2
-    error('Not enough input arguments');
+    error('Not enough input arguments')
 elseif nargin==2
     varargout={infile(FI,domain)};
     return
@@ -83,6 +84,9 @@ switch cmd
         return
     case 'times'
         varargout={readtim(FI,Props,varargin{:})};
+        return
+    case 'timezone'
+        [varargout{1:2}]=gettimezone(FI,domain,Props);
         return
     case 'stations'
         varargout={readsts(FI,Props,varargin{:})};
@@ -254,7 +258,9 @@ switch Props.NVal
             Ans.YComp = M.*sind(A);
         end
 end
-Ans.Time=T;
+if DimFlag(T_)
+    Ans.Time=T;
+end
 
 varargout={Ans FI};
 % -----------------------------------------------------------------------------

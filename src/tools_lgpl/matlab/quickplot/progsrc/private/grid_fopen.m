@@ -62,7 +62,7 @@ switch cmd
         FileName  = '';
         targetdir = varargin{1};
     case 'open'
-        FileName  = varargin{1};
+        FileName  = deblank(varargin{1});
         targetdir = fileparts(FileName);
 end
 gridsize  = varargin{2};
@@ -87,7 +87,7 @@ elseif strncmpi('tri-rst',fn,7)
 elseif strncmpi('swanout',fn,7)
     try_next='swanout';
 else
-    switch lower(en),
+    switch lower(deblank(en))
         case {'.aru','.arv'}
             try_next='trtarea';
         case {'.dep','.qin'}

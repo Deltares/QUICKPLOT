@@ -61,11 +61,19 @@ end
 FacesIndex=(1:length(Val))';
 %
 plot_using_patch=0;
-if strcmp(Ops.markercolour,'auto') && hasvals
-    plot_using_patch=1;
+if strcmp(Ops.markercolour,'auto')
+    if hasvals
+        plot_using_patch=1;
+    else
+        Ops.markercolour='b';
+    end
 end
-if strcmp(Ops.markerfillcolour,'flat') && hasvals
-    plot_using_patch=1;
+if strcmp(Ops.markerfillcolour,'flat')
+    if hasvals
+        plot_using_patch=1;
+    else
+        Ops.markerfillcolour='none';
+    end
 end
 
 if isfield(Ops,'Thresholds') && ~strcmp(Ops.Thresholds,'none')
@@ -134,15 +142,15 @@ else
     end
     if ~isempty(hOld)
         hNew=hOld;
-        set(hNew,'xdata',xyz(:,1), ...
-            'ydata',xyz(:,2));
     else
-        hNew=line('xdata',xyz(:,1), ...
-            'ydata',xyz(:,2), ...
+        hNew=line('xdata',1, ...
+            'ydata',1, ...
             'linestyle','none', ...
             'marker',Ops.marker, ...
             'markersize',Ops.markersize, ...
             'markeredgecolor',Ops.markercolour, ...
             'markerfacecolor',Ops.markerfillcolour);
     end
+    set(hNew,'xdata',xyz(:,1), ...
+        'ydata',xyz(:,2));
 end

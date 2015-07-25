@@ -39,7 +39,32 @@ switch cmd
         orgn=findobj(gcbf,'tag','organizationname');
         name=deblank2(get(orgn,'string'));
         qp_settings('organizationname',name);
+        
+    case 'timezonehandling'
+        tzh=findobj(gcbf,'tag','timezonehandling');
+        tze=findobj(gcbf,'tag','enforcedtimezone');
+        itzh=get(tzh,'value');
+        tzhstr=get(tzh,'string');
+        if itzh<3
+            qp_settings('timezone',tzhstr{itzh})
+            set(tze,'enable','off')
+        else % timezonehandling = enforced
+            set(tze,'enable','on')
+            itze=get(tze,'value');
+            tzestr=get(tze,'string');
+            qp_settings('timezone',tzestr{itze})
+        end
+        d3d_qp updatetimezone
 
+    case 'enforcedtimezone'
+        tze=findobj(gcbf,'tag','enforcedtimezone');
+        % timezonehandling = enforced
+        set(tze,'enable','on')
+        itze=get(tze,'value');
+        tzestr=get(tze,'string');
+        qp_settings('timezone',tzestr{itze})
+        d3d_qp updatetimezone
+        
     case 'prefpane'
         currentpane = get(gcbf,'userdata');
         newpane = get(gcbo,'value');
@@ -234,4 +259,8 @@ switch cmd
            filterstring(end)=[];
            qp_settings('filefilterselection',filterstring);
         end
+        
+    otherwise
+        error('Unknown command in qp_settings: %s',cmd)
 end
+

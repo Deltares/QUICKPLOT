@@ -120,18 +120,8 @@ if isfield(Props(fld),'UseGrid') && ~isempty(Props(fld).UseGrid) && Props(fld).U
     %
     % Gridview information: update grid view when shown
     %
-    UseGrid=get(UD.GridView.Fig,'userdata');
-    i_grd=Props(fld).UseGrid;
-    UseGridNew={Info.Name,DomainNr,i_grd};
-    if strcmp(get(UD.GridView.Fig,'visible'),'on') ...
-            && ~isequal(UseGrid,UseGridNew) ...
-            && UseGridNew{2}>0
-        set(UD.GridView.Fig,'name','Grid View: updating grid ...')
-        drawnow
-        [Chk,GRID]=qp_getdata(Info,DomainNr,Props(i_grd),'grid');
-        qp_gridview('setgrid',UD.GridView.Fig,GRID)
-        set(UD.GridView.Fig,'name','Grid View')
-        set(UD.GridView.Fig,'userdata',UseGridNew)
+    if strcmp(get(UD.GridView.Fig,'visible'),'on')
+        qp_gridviewhelper(UD,Info,DomainNr,Props,fld)
     end
 else
     %
@@ -166,6 +156,41 @@ if any(DimFlag(2:end)==7)
     end
 else
     dimlabels=cell(size(DimFlag));
+end
+
+%
+TZhandling=qp_settings('timezone');
+if strcmpi(TZhandling,'ignored')
+    set(MW.TZdata,'userdata',NaN,'visible','off')
+    set(MW.TZtxt,'visible','off')
+else
+    if sz(T_)>0
+        [Chk,TZshift,TZstr]=qp_getdata(Info,DomainNr,Props(fld),'timezone');
+        if isnan(TZshift)
+            TZstr = 'unknown';
+        elseif ~strcmpi(TZhandling,'as in dataset')
+            [TZshift,TZstr] = gettimezone(TZhandling);
+        end
+    else
+        TZstr   = 'N/A';
+        TZshift = NaN;
+    end
+    if isempty(TZstr)
+        if TZshift>0
+            TZstr = sprintf('UTC+%i',TZshift);
+        elseif TZshift<0
+            TZstr = sprintf('UTC%i',TZshift);
+        else
+            TZstr = 'UTC';
+        end
+    end
+    if isnan(TZshift)
+        set(MW.TZdata,'string',TZstr,'enable','off','userdata',NaN,'visible','on')
+        set(MW.TZtxt,'enable','off','visible','on')
+    else
+        set(MW.TZdata,'string',TZstr,'enable','on','userdata',TZshift,'visible','on')
+        set(MW.TZtxt,'enable','on','visible','on')
+    end
 end
 
 %
@@ -272,13 +297,18 @@ elseif DimFlag(M_)
     if v==3
         v=1;
     end
-    set(MW.HSelType,'string',{'M range and N range','(M,N) point/path'},'value',1)
+    set(MW.HSelType,'string',{'M range and N range','(M,N) point/path'},'value',v)
 else
     % no m,n
     set(MW.HSelType,'enable','off','backgroundcolor',Inactive)
 end
 if 1%~DimFlag(K_)
     set(MW.VSelType,'enable','off','backgroundcolor',Inactive)
+end
+if strcmp(get(MW.HSelType,'enable'),'off')
+    v = 1;
+else
+    v = get(MW.HSelType,'value');
 end
 
 %
@@ -288,6 +318,14 @@ for m_ = 2:10 % limit to 10 supported dimensions
     %
     % Get handles of relevant controls ...
     %
+    if m_==3 || m_==4 % M or N
+        vis = {'visible','off'};
+        if v==1
+            vis = {'visible','on'};
+        end
+    else
+        vis = {};
+    end
     if m_<=5
         m=dims{m_};
         %
@@ -414,15 +452,15 @@ for m_ = 2:10 % limit to 10 supported dimensions
             end
             %
             setappdata(UDEditM,'dimlabels',dimlabels{m_})
-            set(UDM,'string',mstr,'enable','on')
-            set(UDAllM,'enable',allmon,'value',allm,'userdata',{allm selm sz(m_)})
-            set(UDEditM,'string',vec2str(selm,'nobrackets','noones'),'userdata',selm)
+            set(UDM,'string',mstr,'enable','on',vis{:})
+            set(UDAllM,'enable',allmon,'value',allm,'userdata',{allm selm sz(m_)},vis{:})
+            set(UDEditM,'string',vec2str(selm,'nobrackets','noones'),'userdata',selm,vis{:})
             if allm,
                 set(UDEditM,'enable','off','backgroundcolor',Inactive);
             else
                 set(UDEditM,'enable','on','backgroundcolor',Active);
             end
-            set(UDMaxM,'enable','on','string',sprintf('%i',sz(m_)),'userdata',sz(m_))
+            set(UDMaxM,'enable','on','string',sprintf('%i',sz(m_)),'userdata',sz(m_)) % always visible
             %
             set(UDAllM,'tooltip',cat(2,'Select all ',lower(mstr),' (equal to : range)'))
             switch DimFlag(m_)
@@ -478,9 +516,9 @@ for m_ = 2:10 % limit to 10 supported dimensions
         %
         % Dimension not active, disable controls
         %
-        set(UDM,'string',mstr,'enable','off')
-        set(UDAllM,'enable','off','value',0)
-        set(UDEditM,'enable','off','string','','backgroundcolor',Inactive)
+        set(UDM,'string',mstr,'enable','off',vis{:})
+        set(UDAllM,'enable','off','value',0,vis{:})
+        set(UDEditM,'enable','off','string','','backgroundcolor',Inactive,vis{:})
         set(UDMaxM,'enable','off','string','-')
         if m_==ST_
             set(MW.StList,'enable','off','value',1,'string',' ','backgroundcolor',Inactive)
@@ -492,8 +530,12 @@ end
 % If horizontal 2D spatial data, activate other MN/XY selection mechanisms
 %
 if strcmp(get(MW.HSelType,'enable'),'on')
-    set(MW.MN,'enable','on')
-    set(MW.EditMN,'enable','on','backgroundcolor',Active)
+    vis = {'visible','off'};
+    if v==2
+        vis = {'visible','on'};
+    end
+    set(MW.MN,'enable','on',vis{:})
+    set(MW.EditMN,'enable','on','backgroundcolor',Active,vis{:})
     mn = get(MW.EditMN,'userdata');
     if DimFlag(N_) && size(mn,2)<2
         mn=[];
@@ -533,15 +575,19 @@ if strcmp(get(MW.HSelType,'enable'),'on')
         set(MW.EditMN,'string',mnstr,'userdata',mn1)
     end
 else
-    set(MW.MN,'enable','off')
-    set(MW.EditMN,'enable','off','backgroundcolor',Inactive)
+    set(MW.MN,'enable','off','visible','off')
+    set(MW.EditMN,'enable','off','backgroundcolor',Inactive,'visible','off')
 end
 if ~isempty(strmatch('(X,Y) ',get(MW.HSelType,'string'))) && strcmp(get(MW.HSelType,'enable'),'on')
-    set(MW.XY,'enable','on')
-    set(MW.EditXY,'enable','on','backgroundcolor',Active)
+    vis = {'visible','off'};
+    if v==3
+        vis = {'visible','on'};
+    end
+    set(MW.XY,'enable','on',vis{:})
+    set(MW.EditXY,'enable','on','backgroundcolor',Active,vis{:})
 else
-    set(MW.XY,'enable','off')
-    set(MW.EditXY,'enable','off','backgroundcolor',Inactive)
+    set(MW.XY,'enable','off','visible','off')
+    set(MW.EditXY,'enable','off','backgroundcolor',Inactive,'visible','off')
 end
 
 %
@@ -568,6 +614,8 @@ MW=UD.MainWin;
 %
 % Time controls ...
 %
+set(MW.TZtxt,'enable','off')
+set(MW.TZdata,'enable','off','string','N/A')
 set(MW.T,'enable','off')
 set(MW.AllT,'enable','off')
 set(MW.EditT,'enable','off','string','','backgroundcolor',UD.Inactive)

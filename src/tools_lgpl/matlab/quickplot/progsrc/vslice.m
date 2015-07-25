@@ -1,4 +1,4 @@
-function [data,Slice] = vslice(data,v_slice,pnts)
+function [data,Slice] = vslice(data,v_slice,isel)
 %VSLICE Vertical slice/section of 2D/3D data set.
 %   DATA2DV = VSLICE(DATA3D,'XY',XY) extracts a vertical data slice out of
 %   a 3D data set obtained from QPREAD along the specified (X,Y) line.
@@ -50,123 +50,165 @@ function [data,Slice] = vslice(data,v_slice,pnts)
 %   See also QPFOPEN, QPREAD, HSLICE, VRANGE.
 
 %----- LGPL --------------------------------------------------------------------
-%                                                                               
-%   Copyright (C) 2011-2015 Stichting Deltares.                                     
-%                                                                               
-%   This library is free software; you can redistribute it and/or                
-%   modify it under the terms of the GNU Lesser General Public                   
-%   License as published by the Free Software Foundation version 2.1.                         
-%                                                                               
-%   This library is distributed in the hope that it will be useful,              
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of               
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU            
-%   Lesser General Public License for more details.                              
-%                                                                               
-%   You should have received a copy of the GNU Lesser General Public             
-%   License along with this library; if not, see <http://www.gnu.org/licenses/>. 
-%                                                                               
-%   contact: delft3d.support@deltares.nl                                         
-%   Stichting Deltares                                                           
-%   P.O. Box 177                                                                 
-%   2600 MH Delft, The Netherlands                                               
-%                                                                               
-%   All indications and logos of, and references to, "Delft3D" and "Deltares"    
-%   are registered trademarks of Stichting Deltares, and remain the property of  
-%   Stichting Deltares. All rights reserved.                                     
-%                                                                               
+%
+%   Copyright (C) 2011-2015 Stichting Deltares.
+%
+%   This library is free software; you can redistribute it and/or
+%   modify it under the terms of the GNU Lesser General Public
+%   License as published by the Free Software Foundation version 2.1.
+%
+%   This library is distributed in the hope that it will be useful,
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%   Lesser General Public License for more details.
+%
+%   You should have received a copy of the GNU Lesser General Public
+%   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+%
+%   contact: delft3d.support@deltares.nl
+%   Stichting Deltares
+%   P.O. Box 177
+%   2600 MH Delft, The Netherlands
+%
+%   All indications and logos of, and references to, "Delft3D" and "Deltares"
+%   are registered trademarks of Stichting Deltares, and remain the property of
+%   Stichting Deltares. All rights reserved.
+%
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
 
+if isfield(data,'Connect')
+    data.FaceNodeConnect = data.Connect;
+end
 switch v_slice
-   case 'MN'
-      if isfield(data,'TRI') | isfield(data,'SEG')
-         if isfield(data,'TRI')
-            data.X = data.XYZ(:,pnts,:,1);
-            data.Y = data.XYZ(:,pnts,:,2);
+    case 'MN'
+        if isfield(data,'FaceNodeConnect') || isfield(data,'TRI') || isfield(data,'SEG')
+            if isfield(data,'FaceNodeConnect')
+                switch data.ValLocation
+                    case 'NODE'
+                        if isfield(data,'EdgeNodeConnect')
+                            EdgeNodeConnect = data.EdgeNodeConnect;
+                        else
+                            Faces = data.FaceNodeConnect;
+                            nc = size(Faces,2);
+                            iConnect = ceil(([0 0:2*nc-2])/2+0.1);
+                            EdgeNodeConnect = Faces(:,iConnect);
+                            ncP = sum(~isnan(Faces),2);
+                            EdgeNodeConnect(:,1) = Faces(sub2ind(size(Faces),(1:size(Faces,1))',ncP));
+                            EdgeNodeConnect = unique(sort(reshape(EdgeNodeConnect',[2 numel(Faces)]),1)','rows');
+                            EdgeNodeConnect(any(isnan(EdgeNodeConnect),2),:) = [];
+                        end
+                        %
+                        iedge = all(ismember(EdgeNodeConnect,isel),2);
+                        data.EdgeNodeConnect = EdgeNodeConnect(iedge,:);
+                        data.X  = data.X(isel);
+                        data.Y  = data.Y(isel);
+                        renum = zeros(max(isel),1);
+                        renum(isel) = 1:length(isel);
+                        data.EdgeNodeConnect = renum(data.EdgeNodeConnect);
+                    case 'EDGE'
+                        iedge = isel;
+                        data.EdgeNodeConnect = data.EdgeNodeConnect(iedge,:);
+                    case 'FACE'
+                        'VSLICE3'
+                end
+            elseif isfield(data,'TRI')
+                data.X = data.XYZ(:,isel,:,1);
+                data.Y = data.XYZ(:,isel,:,2);
+                if size(data.XYZ,4)>2
+                    data.Z = data.XYZ(:,isel,:,3);
+                end
+                data = rmfield(data,'TRI');
+                data = rmfield(data,'XYZ');
+            else % isfield(data,'SEG')
+                switch data.ValLocation
+                    case 'NODE'
+                        iedge = all(ismember(data.SEG,isel),2);
+                        data.SEG = data.SEG(iedge,:);
+                        data.XY  = data.XY(isel,:);
+                        renum = zeros(max(isel),1);
+                        renum(isel) = 1:length(isel);
+                        data.SEG = renum(data.SEG);
+                    case 'EDGE'
+                        iedge = isel;
+                        data.SEG = data.SEG(iedge,:);
+                end
+            end
+            Flds = {'Val','XComp','YComp','ZComp'};
+            for i=1:length(Flds)
+                fld = Flds{i};
+                if isfield(data,fld)
+                    Tmp = data.(fld);
+                    data.(fld) = Tmp(:,isel,:);
+                end
+            end
+        else
+            szX = size(data.X);
+            szX = szX(1:2); nX=szX(1)*szX(2);
+            szX1 = szX-1; nX1=szX1(1)*szX1(2);
+            sliceMN = piecewise(isel,szX);
+            ind = sub2ind(szX,sliceMN(:,1),sliceMN(:,2));
+            ind1 = [];
+            Flds = {'X','Y','Z','Val','XComp','YComp','ZComp'};
+            for i=1:length(Flds)
+                fld = Flds{i};
+                if isfield(data,fld)
+                    Tmp = data.(fld);
+                    szTmp = size(Tmp);
+                    if isequal(szTmp(1:2),szX)
+                        Tmp = reshape(Tmp,[nX 1 szTmp(3:end)]);
+                        data.(fld) = Tmp(ind,:,:);
+                    elseif isequal(szTmp(1:2),szX1)
+                        if isempty(ind1)
+                            ind1 = sub2ind(szX1,sliceMN(:,1),sliceMN(:,2));
+                        end
+                        Tmp = reshape(Tmp,[nX1 1 szTmp(3:end)]);
+                        data.(fld) = Tmp(ind1,:,:);
+                    end
+                end
+            end
+        end
+    case 'XY'
+        istri = 0;
+        if isfield(data,'TRI')
+            istri = 1;
+        end
+        if istri
+            geomin = {data.TRI,data.XYZ(:,:,:,1),data.XYZ(:,:,:,2)};
+        else
+            geomin = {data.X,data.Y};
+        end
+        if isstruct(isel)
+            Slice = isel;
+        else
+            Slice = arbcross(geomin{:},isel(:,1),isel(:,2));
+        end
+        Flds = {'X','Y','Z','Val','XComp','YComp','ZComp'};
+        for i=1:length(Flds)
+            fld = Flds{i};
+            if isfield(data,fld)
+                if isequal(fld,'X')
+                    data.(fld) = Slice.x;
+                    data.dX_tangential = Slice.dxt;
+                elseif isequal(fld,'Y')
+                    data.(fld) = Slice.y;
+                    data.dY_tangential = Slice.dyt;
+                else
+                    data.(fld) = arbcross(Slice,data.(fld));
+                end
+            end
+        end
+        if istri
+            data.X = arbcross(Slice,data.XYZ(:,:,:,1));
+            data.Y = arbcross(Slice,data.XYZ(:,:,:,2));
             if size(data.XYZ,4)>2
-               data.Z = data.XYZ(:,pnts,:,3);
+                data.Z = arbcross(Slice,data.XYZ(:,:,:,3));
             end
-            data = rmfield(data,'TRI');
-            data = rmfield(data,'XYZ');
-         else
-            %data.XY = data.XY(pnts,:);
-            data.SEG = data.SEG(all(ismember(data.SEG,pnts),2),:);
-         end
-         Flds = {'Val','XComp','YComp','ZComp'};
-         for i=1:length(Flds)
-            fld = Flds{i};
-            if isfield(data,fld)
-               Tmp = data.(fld);
-               data.(fld) = Tmp(:,pnts,:);
-            end
-         end
-      else
-         szX = size(data.X);
-         szX = szX(1:2); nX=szX(1)*szX(2);
-         szX1 = szX-1; nX1=szX1(1)*szX1(2);
-         sliceMN = piecewise(pnts,szX);
-         ind = sub2ind(szX,sliceMN(:,1),sliceMN(:,2));
-         ind1 = [];
-         Flds = {'X','Y','Z','Val','XComp','YComp','ZComp'};
-         for i=1:length(Flds)
-            fld = Flds{i};
-            if isfield(data,fld)
-               Tmp = data.(fld);
-               szTmp = size(Tmp);
-               if isequal(szTmp(1:2),szX)
-                  Tmp = reshape(Tmp,[nX 1 szTmp(3:end)]);
-                  data.(fld) = Tmp(ind,:,:);
-               elseif isequal(szTmp(1:2),szX1)
-                  if isempty(ind1)
-                     ind1 = sub2ind(szX1,sliceMN(:,1),sliceMN(:,2));
-                  end
-                  Tmp = reshape(Tmp,[nX1 1 szTmp(3:end)]);
-                  data.(fld) = Tmp(ind1,:,:);
-               end
-            end
-         end
-      end
-   case 'XY'
-      istri = 0;
-      if isfield(data,'TRI')
-         istri = 1;
-      end
-      if istri
-         geomin = {data.TRI,data.XYZ(:,:,:,1),data.XYZ(:,:,:,2)};
-      else
-         geomin = {data.X,data.Y};
-      end
-      if isstruct(pnts)
-         Slice = pnts;
-      else
-         Slice = arbcross(geomin{:},pnts(:,1),pnts(:,2));
-      end
-      Flds = {'X','Y','Z','Val','XComp','YComp','ZComp'};
-      for i=1:length(Flds)
-         fld = Flds{i};
-         if isfield(data,fld)
-            if isequal(fld,'X')
-               data.(fld) = Slice.x;
-               data.dX_tangential = Slice.dxt;
-            elseif isequal(fld,'Y')
-               data.(fld) = Slice.y;
-               data.dY_tangential = Slice.dyt;
-            else
-               data.(fld) = arbcross(Slice,data.(fld));
-            end
-         end
-      end
-      if istri
-         data.X = arbcross(Slice,data.XYZ(:,:,:,1));
-         data.Y = arbcross(Slice,data.XYZ(:,:,:,2));
-         if size(data.XYZ,4)>2
-            data.Z = arbcross(Slice,data.XYZ(:,:,:,3));
-         end
-         data=rmfield(data,'TRI');
-         data=rmfield(data,'XYZ');
-      end
-   otherwise
-      error('Expected ''XY'' or ''MN'' slice TYPE.')
+            data=rmfield(data,'TRI');
+            data=rmfield(data,'XYZ');
+        end
+    otherwise
+        error('Expected ''XY'' or ''MN'' slice TYPE.')
 end

@@ -348,10 +348,35 @@ switch cmd
                             end
                         end
                     case 'NetCDF'
-                        FI = nc_info(FileName);
-                        FI = nc_interpret(FI);
+                        [p,n,e]=fileparts(FileName);
+                        Opt = {};
+                        if length(n)>8 && strcmp(n(end-3:end),'_map') ...
+                                && strcmp(n(end-8),'_') ...
+                                && all(ismember(n(end-7:end-4),'0123456789'))
+                            iOffset  = length(n)-8;
+                            iPOffset = length(p)+1+iOffset;
+                            FileName1 = FileName(1:iPOffset);
+                            FileName2 = FileName(iPOffset+5:end);
+                            %
+                            % find all files with same structure
+                            d = dir([FileName1 '*' FileName2]);
+                            Files = {d.name}';
+                            lFiles = cellfun('length',Files);
+                            Files(lFiles~=length([n e])) = [];
+                            %
+                            Files = char(Files);
+                            N = Files(:,iOffset+(1:4));
+                            N(~all(ismember(N,'0':'9'),2),:) = [];
+                            N = str2num(N)';
+                            %
+                            if isequal(sort(N),0:length(N)-1)
+                                Opt = {length(N) iPOffset};
+                            end
+                        end
+                        %
+                        FI = nc_interpret(FileName,Opt{:});
                         %nc_dump(FileName)
-                        FI.FileName = FileName;
+                        FI.FileName = FI.Filename;
                         Tp = try_next;
                     case 'sobek1d'
                         FI=sobek('open',FileName);

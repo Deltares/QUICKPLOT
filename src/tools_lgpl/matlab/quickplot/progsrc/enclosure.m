@@ -99,33 +99,40 @@ end
 
 % Grid enclosure file
 fid=fopen(filename);
+err=[];
 if fid>0
-    while 1
-        line=fgetl(fid);
-        if ~ischar(line)
-            break
-        end
-        
-        %
-        % TK : X returned empty on comgrid scaloost model waqua,
-        %      remove the delimiters
-        %
-        for i_lim = 1: length(delimiters)
-            line(line == delimiters{i_lim}) = ' ';
-        end
-        
-        X=sscanf(line,'%i');
-       
-       if length(X)>=2,
-            %
-            % Multiple coordinate pairs on 1 single line ==> reshape
-            %
-            X = reshape(X,2,size(X,1)/2)';
+    try
+        while 1
+            line=fgetl(fid);
+            if ~ischar(line)
+                break
+            end
             
-            Enc=[Enc; X];
+            %
+            % TK : X returned empty on comgrid scaloost model waqua,
+            %      remove the delimiters
+            %
+            for i_lim = 1: length(delimiters)
+                line(line == delimiters{i_lim}) = ' ';
+            end
+            
+            X=sscanf(line,'%i');
+            
+            if length(X)>=2
+                %
+                % Multiple coordinate pairs on 1 single line ==> reshape
+                %
+                X = reshape(X,2,size(X,1)/2)';
+                
+                Enc=[Enc; X];
+            end
         end
+    catch err
     end
     fclose(fid);
+    if ~isempty(err)
+        rethrow(err)
+    end
 else
     error('Error opening file.')
 end
