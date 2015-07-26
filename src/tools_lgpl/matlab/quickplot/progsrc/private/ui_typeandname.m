@@ -25,30 +25,30 @@ function varargout=ui_typeandname(varargin)
 %   See also UI_TYPE
 
 %----- LGPL --------------------------------------------------------------------
-%                                                                               
-%   Copyright (C) 2011-2015 Stichting Deltares.                                     
-%                                                                               
-%   This library is free software; you can redistribute it and/or                
-%   modify it under the terms of the GNU Lesser General Public                   
-%   License as published by the Free Software Foundation version 2.1.                         
-%                                                                               
-%   This library is distributed in the hope that it will be useful,              
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of               
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU            
-%   Lesser General Public License for more details.                              
-%                                                                               
-%   You should have received a copy of the GNU Lesser General Public             
-%   License along with this library; if not, see <http://www.gnu.org/licenses/>. 
-%                                                                               
-%   contact: delft3d.support@deltares.nl                                         
-%   Stichting Deltares                                                           
-%   P.O. Box 177                                                                 
-%   2600 MH Delft, The Netherlands                                               
-%                                                                               
-%   All indications and logos of, and references to, "Delft3D" and "Deltares"    
-%   are registered trademarks of Stichting Deltares, and remain the property of  
-%   Stichting Deltares. All rights reserved.                                     
-%                                                                               
+%
+%   Copyright (C) 2011-2015 Stichting Deltares.
+%
+%   This library is free software; you can redistribute it and/or
+%   modify it under the terms of the GNU Lesser General Public
+%   License as published by the Free Software Foundation version 2.1.
+%
+%   This library is distributed in the hope that it will be useful,
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%   Lesser General Public License for more details.
+%
+%   You should have received a copy of the GNU Lesser General Public
+%   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+%
+%   contact: delft3d.support@deltares.nl
+%   Stichting Deltares
+%   P.O. Box 177
+%   2600 MH Delft, The Netherlands
+%
+%   All indications and logos of, and references to, "Delft3D" and "Deltares"
+%   are registered trademarks of Stichting Deltares, and remain the property of
+%   Stichting Deltares. All rights reserved.
+%
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
@@ -156,7 +156,9 @@ bottom = ss(2)+(sheight-Fig_Height)/2;
 rect = [left bottom Fig_Width Fig_Height];
 
 fig=qp_uifigure(windowtitle,'','ui_typeandname',rect);
-set(fig,'resize','on','resizefcn',@ui_typeandname_resize)
+set(fig,'resize','on', ...
+    'resizefcn',@ui_typeandname_resize, ...
+    'keypressfcn',@ui_typeandname_keypress)
 
 rect = [XX.Margin XX.Margin (Fig_Width-3*XX.Margin)/2 XX.But.Height];
 uicontrol('style','pushbutton', ...
@@ -164,6 +166,7 @@ uicontrol('style','pushbutton', ...
     'string','Cancel', ...
     'tag','cancel', ...
     'parent',fig, ...
+    'keypressfcn',@ui_typeandname_keypress, ...
     'callback','set(gcbf,''userdata'',-1)');
 
 rect(1) = (Fig_Width+XX.Margin)/2;
@@ -172,6 +175,7 @@ uicontrol('style','pushbutton', ...
     'string','Continue', ...
     'tag','continue', ...
     'parent',fig, ...
+    'keypressfcn',@ui_typeandname_keypress, ...
     'callback','set(gcbf,''userdata'',0)');
 
 rect(1) = XX.Margin;
@@ -189,8 +193,9 @@ if specifyname
         'string',selname, ...
         'parent',fig, ...
         'backgroundcolor',XX.Clr.White, ...
+        'keypressfcn',@ui_typeandname_keypress, ...
         'callback','set(gcbf,''userdata'',2)');
-
+    
     rect(2) = rect(2)+rect(4);
     rect(4) = XX.Txt.Height;
     uicontrol('style','text', ...
@@ -209,6 +214,7 @@ ListBox=uicontrol('style','listbox', ...
     'string',types, ...
     'value',seltype, ...
     'backgroundcolor',XX.Clr.White, ...
+    'keypressfcn',@ui_typeandname_keypress, ...
     'callback','set(gcbf,''userdata'',1)', ...
     'enable','on');
 
@@ -232,7 +238,7 @@ while 1
     Cmd=get(fig,'userdata');
     set(fig,'userdata',[]);
     switch Cmd
-        case -1 % cancel
+        case {-1,27} % cancel
             break;
         case 0 % continue
             selnr=get(ListBox,'value');
@@ -249,6 +255,11 @@ while 1
     end
 end
 delete(fig);
+
+function ui_typeandname_keypress(source,event)
+if isequal(get(gcbf,'currentcharacter'),27) % escape
+    set(gcbf,'userdata',-1)
+end
 
 function ui_typeandname_resize(source,event)
 XX=xx_constants;

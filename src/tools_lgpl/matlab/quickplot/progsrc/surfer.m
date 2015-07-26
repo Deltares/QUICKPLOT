@@ -90,13 +90,13 @@ try
         case 'DSAA' % SURFER ASCII grid
             fgetl(fid);
             %
-            n = fscanf(fgetl(fid),'%i %i',2);
+            n = sscanf(fgetl(fid),'%i %i',2);
             Structure.NCols     = n(1);
             Structure.NRows     = n(2);
             %
-            xlim = fscanf(fgetl(fid),'%f %f',2);
-            ylim = fscanf(fgetl(fid),'%f %f',2);
-            zlim = fscanf(fgetl(fid),'%f %f',2);
+            xlim = sscanf(fgetl(fid),'%f %f',2);
+            ylim = sscanf(fgetl(fid),'%f %f',2);
+            zlim = sscanf(fgetl(fid),'%f %f',2);
             %
             Structure.CellSize  = [(xlim(2)-xlim(1))/(Structure.NCols-1) (ylim(2)-ylim(1))/(Structure.NRows-1)];
             Structure.XCorner   = xlim(1) - Structure.CellSize(1)/2;
@@ -139,6 +139,7 @@ try
             %
             % Following blocks could be in any order
             %
+            szDat = [];
             while ~feof(fid);
                 idBlk = fread(fid,[1 4],'*char'); % GRID
                 szBlk = fread(fid,1,'uint32=>double'); % 72
@@ -165,7 +166,9 @@ try
                 end
             end
             szDatExpect = 8*Structure.NRows*Structure.NCols;
-            if szDat~=szDatExpect
+            if isempty(szDat)
+                error('Missing DATA block in SURFER DSRB file.')
+            elseif szDat~=szDatExpect
                 error('Size of data block (%i) does not match expected size (%i)',szDat,szDatExpect)
             end
         otherwise
@@ -204,7 +207,9 @@ switch Structure.Format
         DATA = fread(fid,sz,'float32');
     case 'DSRB'
         DATA = fread(fid,sz,'double');
+        DATA(DATA==Structure.NoData) = NaN;
 end
+DATA(DATA<Structure.ZRange(1) | DATA>Structure.ZRange(2)) = NaN;
 fclose(fid);
 
 
@@ -217,16 +222,17 @@ switch Structure.Format
     case 'DSAA'
         fprintf(fid,'DSAA\n');
         fprintf(fid,'%i %i\n', Structure.NCols,Structure.NRows);
-        fprintf(fid,'%f %f\n', ...
+        fprintf(fid,'%g %f\n', ...
             Structure.XCorner + Structure.CellSize(1)/2, ...
             Structure.XCorner + (Structure.NCols-1)*Structure.CellSize(1)/2);
         fprintf(fid,'%f %f\n', ...
             Structure.YCorner + Structure.CellSize(2)/2, ...
             Structure.YCorner + (Structure.NRows-1)*Structure.CellSize(2)/2);
-        fprintf(fid,'%f %f\n', ...
+        fprintf(fid,'%g %g\n', ...
             min(DATA(:)), ...
             max(DATA(:)));
-        fprintf(fid,' %f',DATA);
+        DATA(isnan(DATA)) = 1.70141e+38;
+        fprintf(fid,' %g',DATA);
     case 'DSBB'
         fwrite(fid,'DSBB','char');
         fwrite(fid,[Structure.NCols Structure.NRows],'uint16');
@@ -237,6 +243,7 @@ switch Structure.Format
         limits(2) = Structure.XCorner + (Structure.NCols-0.5)*Structure.CellSize(1);
         limits(1) = Structure.XCorner + 0.5*Structure.CellSize(1);
         fwrite(fid,limits,'double');
+        DATA(isnan(DATA)) = 1.70141e+38;
         fwrite(fid,DATA,'float32');
     case 'DSRB'
         fwrite(fid,'DSRB','char');
@@ -245,20 +252,20 @@ switch Structure.Format
         %
         fwrite(fid,'GRID','char');
         fwrite(fid,72,'uint32');
-        fwrite(fid,1,'uint32');
         fwrite(fid,[Structure.NRows Structure.NCols],'uint32');
         limits(8) = Structure.NoData;
         limits(7) = Structure.Rotation;
         limits(6) = max(DATA(:));
         limits(5) = min(DATA(:));
-        limits(4) = CellSize(2);
-        limits(3) = CellSize(1);
+        limits(4) = Structure.CellSize(2);
+        limits(3) = Structure.CellSize(1);
         limits(2) = Structure.YCorner + 0.5*Structure.CellSize(2);
         limits(1) = Structure.XCorner + 0.5*Structure.CellSize(1);
         fwrite(fid,limits,'double');
         %
         fwrite(fid,'DATA','char');
         fwrite(fid,8*Structure.NRows*Structure.NCols,'uint32');
+        DATA(isnan(DATA)) = Structure.NoData;
         fwrite(fid,DATA,'double');
 end
 fclose(fid);

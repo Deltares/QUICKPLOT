@@ -58,6 +58,7 @@ filtertbl={...
     '*.his;*.map;*.plo;*.psf;*.lga'                        'Delwaq Binary Files'               'delwaqbin'
     '*.tim'                                                'Delwaq Time Series Input Files'    'DelwaqTimFile'
     '*.arc;*.am?;*.asc'                                    'ARC/INFO Ascii Grid Files'         'arcgrid'
+    '*.grd'                                                'Surfer Ascii or Binary Grid Files' 'surfer'
     '*.map'                                                'PC-Raster Files'                   'pcraster'
     '*.hdr'                                                'BIL/HDR Files'                     'bil/hdr'
     '*.ldb;*.pol'                                          'Land Boundary and Polygon Files'   '>tekal'

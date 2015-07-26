@@ -63,6 +63,7 @@ F={'Delft3D-com'                'd3d_comfil'
     'Skylla'                     'skyllafil'
     'Pharos'                     'pharosfil'
     'arcgrid'                    'arcgridfil'
+    'SURFER'                     'arcgridfil'
     'asciiwind'                  'asciiwindfil'
     'PCraster'                   'pcrasterfil'
     'SIMONA SDS FILE'            'waquafil'
@@ -184,7 +185,7 @@ if ~any(id)
         end
     end
     if ~previousMessage
-        ui_message('warning','No function associated with file of type %s.',tp)
+        ui_message('warning','No function associated with a file of type "%s".',tp)
     end
     return
 end

@@ -510,6 +510,9 @@ switch cmd
                                 FI.Options=1;
                             end
                         end
+                    case 'surfer'
+                        FI=surfer('open',FileName);
+                        Tp=FI.FileType;
                     case 'asciiwind'
                         FI=asciiwind('open',FileName);
                         if ~isfield(FI,'Check')

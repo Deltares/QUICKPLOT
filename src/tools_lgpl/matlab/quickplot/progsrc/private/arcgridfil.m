@@ -173,7 +173,11 @@ if XYRead
 end
 
 if DataRead && Props.NVal>0
-    if strcmpi(FI.Extension,'amuv') || isfield(FI,'FileBaseExtension')
+    if strcmp(FI.FileType,'SURFER')
+        val1=surfer('read',FI);
+        val1=val1(idx{[M_ N_]});
+        val2=[];
+    elseif strcmpi(FI.Extension,'amuv') || isfield(FI,'FileBaseExtension')
         nM = length(idx{M_});
         nN = length(idx{N_});
         val1 = zeros(length(idx{T_}),nM,nN);
@@ -255,6 +259,11 @@ DataProps={'grid'               ''        [0 0 1 1 0]  0         0         0
 %------------------------------------------------------------------------------
 Out=cell2struct(DataProps,PropNames,2);
 %------------------------------------------------------------------------------
+if strcmp(FI.FileType,'SURFER')
+    Out(3).DimFlag(1) = 0;
+    Out(4).DimFlag(1) = 0;
+    return
+end
 RefDate=qp_option(FI,'RefDate');
 if ~isempty(RefDate)
     for i=1:length(Out)
@@ -426,6 +435,10 @@ end
 % -----------------------------------------------------------------------------
 function subf=getsubfields(FI,Props,f)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
+if strcmp(FI.FileType,'SURFER')
+    subf={};
+    return
+end
 if length(FI.Times)>1 && Props.DimFlag(T_)==0 && Props.NVal==1
     subf=cell(length(FI.Times),1);
     for i=1:length(FI.Times)
