@@ -312,27 +312,27 @@ if XYRead
         meshAttribs = {meshInfo.Attribute.Name};
         connect = strmatch('face_node_connectivity',meshAttribs,'exact');
         iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name});
-        [Ans.Connect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
+        [Ans.FaceNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
         istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name});
         if isempty(istart)
             start = 0;
         else
             start = FI.Dataset(iconnect).Attribute(istart).Value;
         end
-        Ans.Connect = Ans.Connect - start + 1;
-        Ans.Connect(Ans.Connect<1) = NaN;
+        Ans.FaceNodeConnect = Ans.FaceNodeConnect - start + 1;
+        Ans.FaceNodeConnect(Ans.FaceNodeConnect<1) = NaN;
         %
         Ans.ValLocation = Props.Geom(7:end);
         if strcmp(Ans.ValLocation,'EDGE')
             connect = strmatch('edge_node_connectivity',meshAttribs,'exact');
-            [Ans.EdgeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
-            Ans.EdgeConnect(Ans.EdgeConnect<0) = NaN;
+            [Ans.EdgeNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
+            Ans.EdgeNodeConnect(Ans.EdgeNodeConnect<0) = NaN;
         elseif ~DataRead
             % hack to load EdgeNodeConnect if available for use in GridView
             try
                 connect = strmatch('edge_node_connectivity',meshAttribs,'exact');
-                [Ans.EdgeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
-                Ans.EdgeConnect(Ans.EdgeConnect<0) = NaN;
+                [Ans.EdgeNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
+                Ans.EdgeNodeConnect(Ans.EdgeNodeConnect<0) = NaN;
             catch
             end
         end
@@ -341,14 +341,14 @@ if XYRead
             case 'NODE'
                 Ans.X = Ans.X(idx{M_});
                 Ans.Y = Ans.Y(idx{M_});
-                Cnct = all(ismember(Ans.Connect,idx{M_}) | isnan(Ans.Connect),2);
+                Cnct = all(ismember(Ans.FaceNodeConnect,idx{M_}) | isnan(Ans.FaceNodeConnect),2);
                 renum(idx{M_}) = 1:length(idx{M_});
-                Ans.Connect = Ans.Connect(Cnct,:);
-                Ans.Connect(~isnan(Ans.Connect)) = renum(Ans.Connect(~isnan(Ans.Connect)));
+                Ans.FaceNodeConnect = Ans.FaceNodeConnect(Cnct,:);
+                Ans.FaceNodeConnect(~isnan(Ans.FaceNodeConnect)) = renum(Ans.FaceNodeConnect(~isnan(Ans.FaceNodeConnect)));
             case 'EDGE'
-                Ans.EdgeConnect = Ans.EdgeConnect(idx{M_},:);
+                Ans.EdgeNodeConnect = Ans.EdgeNodeConnect(idx{M_},:);
             case 'FACE'
-                Ans.Connect = Ans.Connect(idx{M_},:);
+                Ans.FaceNodeConnect = Ans.FaceNodeConnect(idx{M_},:);
         end
     else
         if Props.hasCoords

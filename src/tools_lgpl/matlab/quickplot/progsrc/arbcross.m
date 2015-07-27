@@ -165,9 +165,9 @@ else
     %
     XB=varargin{end-1};
     YB=varargin{end};
-    [x,y,ind,wght,indtri,fracudist,dxt,dyt]=int_lntri(XB,YB,TRI,XGRID,YGRID);
-    outside = isnan(indtri);
-    indtri(outside)=1;
+    [x,y,ind,wght,indtri,fracudist,dxt,dyt,outside]=int_lntri(XB,YB,TRI,XGRID,YGRID);
+    %outside = isnan(indtri);
+    %indtri(outside)=1;
 
     %
     % Add dummy points where the slice goes out of the computational domain

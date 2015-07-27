@@ -64,17 +64,51 @@ switch presentationtype
         
     case 'values'
         I=~isnan(Val);
+        if numel(X)==numel(Val)+1
+            X = (X(1:end-1)+X(2:end))/2;
+            Y = (Y(1:end-1)+Y(2:end))/2;
+        end
         hNew=gentextfld(hNew,Ops,Parent,Val(I),X(I),Y(I));
         
     case 'continuous shades'
-        if isequal(size(X),size(Z))
-            z=Z;
+        if size(X,2)==1
+            XY = [X(:) Y(:);NaN NaN];
+            SEG = 1:size(XY,1);
+            Val = [Val(:);NaN];
+            if ishandle(hNew)
+                set(hNew,'vertices',XY,'faces',SEG, ...
+                    'facevertexcdata',Val)
+            else
+                edgecolor = 'interp';
+                if strcmp(Ops.linestyle,'none')
+                    edgecolor = 'flat';
+                end
+                hNew=patch('vertices',XY, ...
+                    'faces',SEG, ...
+                    'facevertexcdata',Val, ...
+                    'parent',Parent, ...
+                    'edgecolor',edgecolor, ...
+                    'linewidth',Ops.linewidth, ...
+                    'linestyle',Ops.linestyle, ...
+                    'marker',Ops.marker, ...
+                    'markersize',Ops.markersize, ...
+                    'markeredgecolor',Ops.markercolour, ...
+                    'markerfacecolor',Ops.markerfillcolour);
+            end
         else
-            z=Val;
+            if isequal(size(X),size(Z))
+                z=Z;
+            else
+                z=Val;
+            end
+            hNew=gensurface(hNew,Ops,Parent,Val,X,Y,z);
         end
-        hNew=gensurface(hNew,Ops,Parent,Val,X,Y,z);
         
     case 'markers'
+        if numel(X)==numel(Val)+1
+            X = (X(1:end-1)+X(2:end))/2;
+            Y = (Y(1:end-1)+Y(2:end))/2;
+        end
         hNew=genmarkers(hNew,Ops,Parent,Val,X,Y);
         
     case {'contour lines','coloured contour lines','contour patches','contour patches with lines'}
@@ -86,6 +120,27 @@ switch presentationtype
         hNew=gencontour(hNew,Ops,Parent,X,Y,Val,Ops.Thresholds);
         if strcmp(Ops.presentationtype,'contour lines')
             set(hNew,Ops.LineParams{:});
+        end
+        
+    case 'edge'
+        XY = [X(:) Y(:)];
+        SEG = 1:numel(X);
+        Val = cat(1,Val(:),NaN);
+        if ishandle(hNew)
+            set(hNew,'vertices',XY,'faces',SEG, ...
+                'facevertexcdata',Val)
+        else
+            hNew=patch('vertices',XY, ...
+                'faces',SEG, ...
+                'facevertexcdata',Val, ...
+                'parent',Parent, ...
+                'edgecolor','flat', ...
+                'linewidth',Ops.linewidth, ...
+                'linestyle',Ops.linestyle, ...
+                'marker',Ops.marker, ...
+                'markersize',Ops.markersize, ...
+                'markeredgecolor',Ops.markercolour, ...
+                'markerfacecolor',Ops.markerfillcolour);
         end
 end
 
@@ -148,6 +203,15 @@ function hNew = qp_scalarfield_ugrid(Parent,hNew,presentationtype,data,Ops)
 set(Parent,'NextPlot','add')
 unknown_ValLocation = 0;
 Val = data.Val;
+
+if isfield(data,'TRI')
+    FaceNodeConnect = data.TRI;
+elseif isfield(data,'FaceNodeConnect')
+    FaceNodeConnect = data.FaceNodeConnect;
+elseif isfield(data,'Connect')
+    FaceNodeConnect = data.Connect;
+end
+
 switch data.ValLocation
     case 'NODE'
         switch presentationtype
@@ -168,7 +232,7 @@ switch data.ValLocation
                 
             case 'continuous shades'
                 XY = [data.X data.Y];
-                nNodes = sum(~isnan(data.Connect),2);
+                nNodes = sum(~isnan(FaceNodeConnect),2);
                 uNodes = unique(nNodes);
                 first = isempty(hNew);
                 for i = length(uNodes):-1:1
@@ -176,7 +240,7 @@ switch data.ValLocation
                     if first
                         hNew(i) = patch(...
                             'vertices',XY, ...
-                            'faces',data.Connect(I,1:uNodes(i)), ...
+                            'faces',FaceNodeConnect(I,1:uNodes(i)), ...
                             'facevertexcdata',Val, ...
                             'facecolor','interp', ...
                             'edgecolor','none', ...
@@ -189,7 +253,7 @@ switch data.ValLocation
                 end
                 
             case {'contour lines','coloured contour lines','contour patches','contour patches with lines'}
-                nNodes = sum(~isnan(data.Connect),2);
+                nNodes = sum(~isnan(FaceNodeConnect),2);
                 uNodes = unique(nNodes);
                 %
                 % approach: split every face into triangles (assuming
@@ -207,7 +271,7 @@ switch data.ValLocation
                     I = nNodes==uNodes(i);
                     nFace = sum(I);
                     for j = 2:uNodes(i)-1
-                        TRI(nTri + (1:nFace),:) = data.Connect(I,[1 j j+1]);
+                        TRI(nTri + (1:nFace),:) = FaceNodeConnect(I,[1 j j+1]);
                         nTri = nTri + nFace;
                     end
                 end
@@ -278,7 +342,7 @@ switch data.ValLocation
         switch presentationtype
             case {'patches','patches with lines'}
                 XY = reshape([data.X data.Y],[1 length(data.X) 1 2]);
-                nNodes = sum(~isnan(data.Connect),2);
+                nNodes = sum(~isnan(FaceNodeConnect),2);
                 uNodes = unique(nNodes);
                 first = isempty(hNew);
                 for i = length(uNodes):-1:1
@@ -288,7 +352,7 @@ switch data.ValLocation
                     else
                         hOld = hNew(i);
                     end
-                    hNew(i) = genfaces(hOld,Ops,Parent,data.Val(I),XY,data.Connect(I,1:uNodes(i)));
+                    hNew(i) = genfaces(hOld,Ops,Parent,data.Val(I),XY,FaceNodeConnect(I,1:uNodes(i)));
                 end
                 
             %case 'markers'

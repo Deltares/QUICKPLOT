@@ -230,7 +230,17 @@ switch geometry
     case 'SELFPLOT'
         axestype={''};
     case {'UGRID-NODE','UGRID-EDGE','UGRID-FACE'}
-        if multiple(M_) && multiple(K_)
+        if vslice
+            axestype={'X-Val','X-Y'};
+            switch geometry
+                case 'UGRID-FACE'
+                    geometry = 'SEG-EDGE';
+                    lineproperties = 1;
+                otherwise
+                    geometry = 'SEG-NODE';
+                    lineproperties = 1;
+            end
+        elseif multiple(M_) && multiple(K_)
             % noplot
         elseif multiple(M_)
             axestype={'X-Y'};

@@ -280,16 +280,19 @@ end
 % Disable/enable switching between spatial selection mechanisms
 %
 TRI = 0;
+UGRID = 0;
 if isfield(Props,'Tri') && ~isempty(Props(fld).Tri) && Props(fld).Tri
    TRI = 1;
 elseif isfield(Props,'Geom') && isequal(Props(fld).Geom,'TRI')
    TRI = 1;
+elseif isfield(Props,'Geom') && length(Props(fld).Geom)>5 && isequal(Props(fld).Geom(1:5),'UGRID')
+   UGRID = 1;
 end
 if DimFlag(M_) && DimFlag(N_)
     % structured grid
     set(MW.HSelType,'string',{'M range and N range','(M,N) point/path','(X,Y) point/path'})
-elseif DimFlag(M_) && TRI
-    % triangular
+elseif DimFlag(M_) && (TRI || UGRID)
+    % triangular or unstructured
     set(MW.HSelType,'string',{'M range and N range','(M,N) point/path','(X,Y) point/path'})
 elseif DimFlag(M_)
     % network

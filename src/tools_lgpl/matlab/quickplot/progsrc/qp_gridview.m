@@ -1491,6 +1491,18 @@ function [NewRange,RangeMax] = switchrange(GRID,OldLoc,OldRange,NewLoc)
 switch NewLoc
     case 'NODE'
         RangeMax = length(GRID.X);
+    case 'EDGE'
+        RangeMax = size(GRID.EdgeNodeConnect,1);
+    case 'FACE'
+        RangeMax = size(GRID.FaceNodeConnect,1);
+end
+if strcmp(OldRange.Type,'genline')
+    NewRange = OldRange;
+    return
+end
+%
+switch NewLoc
+    case 'NODE'
         switch OldLoc
             case 'EDGE'
                 % find node numbers associated with the selected edges
@@ -1515,7 +1527,6 @@ switch NewLoc
                 error('Transition from %s to %s not yet implemented',OldLoc,NewLoc)
         end
     case 'EDGE'
-        RangeMax = size(GRID.EdgeNodeConnect,1);
         switch OldLoc
             case {'NODE','FACE'}
                 if strcmp(OldLoc,'FACE')
@@ -1535,7 +1546,6 @@ switch NewLoc
                 error('Transition from %s to %s not yet implemented',OldLoc,NewLoc)
         end
     case 'FACE'
-        RangeMax = size(GRID.FaceNodeConnect,1);
         switch OldLoc
             case {'NODE','EDGE'}
                 switch OldRange.Type

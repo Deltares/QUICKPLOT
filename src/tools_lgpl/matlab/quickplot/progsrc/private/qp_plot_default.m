@@ -470,6 +470,11 @@ switch NVal
                         end
                     else
                         if strcmp(Ops.facecolour,'none')
+                            if length(y)==length(x)-1
+                                x = x(ceil(1:.5:length(x)-0.5));
+                                y = y(ceil(.5:.5:length(y)));
+                                z = z(ceil(1:.5:length(z)-0.5));
+                            end
                             if FirstFrame
                                 hNew=line(x,y,z, ...
                                     'parent',Parent, ...

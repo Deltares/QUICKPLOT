@@ -171,11 +171,9 @@ switch v_slice
             end
         end
     case 'XY'
-        istri = 0;
-        if isfield(data,'TRI')
-            istri = 1;
-        end
-        if istri
+        if isfield(data,'FaceNodeConnect')
+            geomin = {data.FaceNodeConnect,data.X,data.Y};
+        elseif isfield(data,'TRI')
             geomin = {data.TRI,data.XYZ(:,:,:,1),data.XYZ(:,:,:,2)};
         else
             geomin = {data.X,data.Y};
@@ -200,7 +198,10 @@ switch v_slice
                 end
             end
         end
-        if istri
+        if isfield(data,'FaceNodeConnect')
+            data=rmfield(data,'FaceNodeConnect');
+            data.Geom = 'sQUAD';
+        elseif isfield(data,'TRI')
             data.X = arbcross(Slice,data.XYZ(:,:,:,1));
             data.Y = arbcross(Slice,data.XYZ(:,:,:,2));
             if size(data.XYZ,4)>2

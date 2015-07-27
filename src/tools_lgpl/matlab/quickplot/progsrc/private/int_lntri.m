@@ -1,4 +1,4 @@
-function [xo,yo,po,mo,to,lo,dxt,dyt]=int_lntri(xi,yi,TRI,X,Y)
+function [xo,yo,po,mo,to,lo,dxt,dyt,out]=int_lntri(xi,yi,TRI,X,Y)
 %INT_LNTRI Intersection of line and triangular mesh.
 %   [XCROSS,YCROSS] = INT_LNTRI(XLINE,YLINE,TRI,X,Y)
 %   Computes the points where the line (XLINE,YLINE)
@@ -44,7 +44,22 @@ function [xo,yo,po,mo,to,lo,dxt,dyt]=int_lntri(xi,yi,TRI,X,Y)
 %   $HeadURL$
 %   $Id$
 
-TRI  = double(TRI); % fix in case TRI is provided as int32 (not supported by tsearch)
+if ~isa(TRI,'double')
+    TRI  = double(TRI); % fix in case TRI is provided as int32 (not supported by tsearch)
+end
+connect = size(TRI,2)>3;
+if connect
+    FACE = TRI;
+    ntri = sum(~isnan(TRI(:,3:end)));
+    TRI = zeros(sum(ntri),3);
+    iFACE = zeros(sum(ntri),1);
+    offset = 0;
+    for i = 1:length(ntri)
+        TRI(offset+(1:ntri(i)),:) = FACE(~isnan(FACE(:,2+i)),[1 1+i 2+i]);
+        iFACE(offset+(1:ntri(i))) = find(~isnan(FACE(:,2+i)));
+        offset = offset + ntri(i);
+    end
+end
 ntri = size(TRI,1);
 edge = TRI(:,[1 1 2 2 3 3]);
 edge = reshape(edge,[ntri*3 2]);
@@ -72,6 +87,7 @@ yo=cN;
 lo=cN;
 dxt=cN;
 dyt=cN;
+out=cN;
 
 T=NaN;
 First=1;
@@ -218,6 +234,22 @@ for i=1:N
         T = T2;
         to{i}(j) = T;
     end
+    out{i} = isnan(to{i});
+    to{i}(out{i}) = 1;
+    %
+    if connect
+        indquad = iFACE(to{i});
+        rm = find((indquad(1:end-1)==indquad(2:end)));
+        xo{i}(rm+1,:)    =[];
+        yo{i}(rm+1,:)    =[];
+        po{i}(rm+1,:)    =[];
+        mo{i}(rm+1,:)    =[];
+        lo{i}(rm+1,:)    =[];
+        to{i}(rm,:)      =[];
+        dxt{i}(rm,:)     =[];
+        dyt{i}(rm,:)     =[];
+        out{i}(rm,:)     =[];
+    end
 end
 
 po{N} = PO;
@@ -228,6 +260,7 @@ yo{N}=yi(N);
 lo{N}=N;
 dxt{N}=[];
 dyt{N}=[];
+out{N}=logical([]);
 if First
     %
     % Rare exception: no crossing at all. So, all points are inside one
@@ -267,6 +300,7 @@ to=cat(1,to{:});
 lo=cat(1,lo{:});
 dxt=cat(1,dxt{:});
 dyt=cat(1,dyt{:});
+out=cat(1,out{:});
 %
 % Coordinates could also have been determined at the end of this routine
 % using the two statements given below. However, then we would loose corner
@@ -274,6 +308,11 @@ dyt=cat(1,dyt{:});
 %
 % xo=sum(mo.*X(po),2);
 % yo=sum(mo.*Y(po),2);
+%
+if connect
+    to = iFACE(to);
+end
+
 
 
 function abc=trival(xtri,ytri,xi,yi)
