@@ -58,7 +58,7 @@ function [varargout]=arbcross(varargin)
 %   $Id$
 
 varargout=cell(1,nargout);
-if (nargout+1==nargin | nargout-1==nargin) & nargin>1 & isstruct(varargin{1})
+if (nargout+1==nargin || nargout-1==nargin) && nargin>1 && isstruct(varargin{1})
     %
     % One input argument more than there are output arguments: besides the
     % fields that match between input and output (VGRIDi - Vi), the list of
@@ -78,23 +78,22 @@ if (nargout+1==nargin | nargout-1==nargin) & nargin>1 & isstruct(varargin{1})
     x = Keep.x;
     y = Keep.y;
     wght = Keep.wght;
-    ind = Keep.ind;
-    indtri = Keep.indtri;
+    iNode = Keep.iNode;
+    iFace = Keep.iFace;
+    iEdge = Keep.iEdge;
     outside = Keep.outside;
     %dxt = Keep.dxt;
     %dyt = Keep.dyt;
     VGRIDStr = Keep.VGRIDStr;
     szXGRID = Keep.szXGRID;
-    szTRI = Keep.szTRI;
-    QUADTRI = Keep.QUADTRI;
+    nFaces = Keep.nFaces;
 else
     %
     % No structure containing all necessary information.
     %
-    structure_out = 0;
     input_skip_end = 2;
     layeredxy = 0;
-    if nargout+2==nargin | ((nargout==1 | nargout==3) & nargin==4)
+    if nargout+2==nargin || ((nargout==1 || nargout==3) && nargin==4)
         %
         % CURVILINEAR GRID:
         % (1) Two input arguments more than there are output arguments:
@@ -114,18 +113,21 @@ else
         %
         structure_out = nargout+2~=nargin;
         %
-        XGRID = varargin{1}(:,:,1);
-        YGRID = varargin{2}(:,:,1);
-        [TRI,QUADTRI] = grid2tri(XGRID,YGRID);
         input_offset = 2;
-        layeredxy = size(varargin{1},3)>1;
-        output_offset = input_offset;
         if nargout==1
             output_offset = 0;
+        else
+            output_offset = 2;
         end
+        XGRID = varargin{1}(:,:,1);
+        YGRID = varargin{2}(:,:,1);
+        [FaceNodeConnect,QUADTRI] = grid2tri(XGRID,YGRID);
+        EdgeNodeConnect = [];
+        layeredxy = size(varargin{1},3)>1;
         VGRIDStr = 'VGRID';
-        szTRI = [];
-    elseif nargout+3==nargin | ((nargout==1 | nargout==3) & nargin==5)
+        nFaces = [];
+    elseif nargout+3==nargin || nargout+4==nargin || ...
+            ((nargout==1 || nargout==3) && (nargin==5 || nargin==6))
         %
         % TRIANGULAR MESH
         % (1) Three input arguments more than there are output arguments:
@@ -144,17 +146,27 @@ else
         %
         structure_out = nargout+3~=nargin;
         %
-        TRI = varargin{1};
+        if nargin==6
+            input_offset = 4;
+        else
+            input_offset = 3;
+        end
+        if nargout==1
+            output_offset = 0;
+        else
+            output_offset = 2;
+        end
+        FaceNodeConnect = varargin{1};
+        if input_offset==4
+            EdgeNodeConnect = varargin{4};
+        else
+            EdgeNodeConnect = [];
+        end
         QUADTRI = [];
         XGRID = varargin{2}(:,:,1);
         YGRID = varargin{3}(:,:,1);
-        input_offset = 3;
-        output_offset = 2;
-        if nargout==1
-            output_offset = 0;
-        end
         VGRIDStr = 'VTRI';
-        szTRI = size(TRI,1);
+        nFaces = size(FaceNodeConnect,1);
     else
         error('Number of input arguments does not match number of output arguments.');
     end
@@ -165,9 +177,8 @@ else
     %
     XB=varargin{end-1};
     YB=varargin{end};
-    [x,y,ind,wght,indtri,fracudist,dxt,dyt,outside]=int_lntri(XB,YB,TRI,XGRID,YGRID);
-    %outside = isnan(indtri);
-    %indtri(outside)=1;
+    [x,y,iNode,wght,iFace,fracudist,dxt,dyt,outside]=int_lntri(XB,YB,FaceNodeConnect,XGRID,YGRID);
+    iEdge = [];
 
     %
     % Add dummy points where the slice goes out of the computational domain
@@ -178,11 +189,11 @@ else
             ii = [1:i i i+1:length(x)];
             x=x(ii); x(i+1)=NaN;
             y=y(ii); y(i+1)=NaN;
-            ind=ind(ii,:);
+            iNode=iNode(ii,:);
             wght=wght(ii,:); wght(i+1,:)=NaN;
             fracudist=fracudist(ii);
-            ii = [1:i i i+1:length(indtri)];
-            indtri=indtri(ii);
+            ii = [1:i i i+1:length(iFace)];
+            iFace=iFace(ii);
             outside=outside(ii);
             dxt=dxt(ii);
             dyt=dyt(ii);
@@ -194,14 +205,13 @@ else
     % consistency.
     %
     if ~isempty(QUADTRI)
-        indquad = QUADTRI(indtri);
-        rm = find((indquad(1:end-1)==indquad(2:end)) & ~isnan(x(2:end-1,1)));
+        iFace = QUADTRI(iFace);
+        rm = find((iFace(1:end-1)==iFace(2:end)) & ~isnan(x(2:end-1,1)));
         x(rm+1,:)        =[];
         y(rm+1,:)        =[];
         wght(rm+1,:)     =[];
-        ind(rm+1,:)      =[];
+        iNode(rm+1,:)    =[];
         fracudist(rm+1,:)=[];
-        indtri(rm,:)     =[];
         outside(rm,:)    =[];
         dxt(rm,:)        =[];
         dyt(rm,:)        =[];
@@ -214,6 +224,17 @@ else
         y = repmat(y,[1 1 size(varargin{2},3)]);
     end
     %
+    %
+    %
+    if ~isempty(EdgeNodeConnect)
+        edgeCrossing = sum(~isnan(wght) & wght~=0,2)==2;
+        edgeNodes = sort(iNode(:,1:2),2);
+        EdgeNodeConnect = sort(EdgeNodeConnect,2);
+        [isEdge,edgeNr] = ismember(edgeNodes,EdgeNodeConnect,'rows');
+        iEdge = NaN(size(wght,1),1);
+        iEdge(isEdge & edgeCrossing) = edgeNr(isEdge & edgeCrossing);
+    end
+    %
     % Define structure for future use
     %
     szXGRID = size(XGRID);
@@ -221,16 +242,16 @@ else
         Keep.x = x;
         Keep.y = y;
         Keep.wght = wght;
-        Keep.ind = ind;
+        Keep.iNode = iNode;
         Keep.fracudist = fracudist;
-        Keep.indtri = indtri;
+        Keep.iFace = iFace;
+        Keep.iEdge = iEdge;
         Keep.outside = outside;
         Keep.dxt = dxt;
         Keep.dyt = dyt;
         Keep.VGRIDStr = VGRIDStr;
         Keep.szXGRID = szXGRID;
-        Keep.szTRI = szTRI;
-        Keep.QUADTRI = QUADTRI;
+        Keep.nFaces = nFaces;
         varargout{nargout} = Keep;
     end
 end
@@ -248,39 +269,45 @@ end
 % before the last two arguments.
 %
 for i=1:nargin-input_offset-input_skip_end
+    VLOC = '?';
     VGRID = varargin{input_offset+i};
+    if iscell(VGRID)
+        VLOC  = VGRID{1};
+        VGRID = VGRID{2};
+    end
     szVGRID = size(VGRID);
-    if isequal(szVGRID(1:2),szXGRID)
+    if strcmp(VLOC,'NODE') || ...
+            (strcmp(VLOC,'?') && ...
+             (isequal(szVGRID(1:2),szXGRID) || ...
+              (isequal(szVGRID([2 1]),szXGRID) && szXGRID(2)==1)))
         %
-        % Values defined at mesh points (triangular or curvilinear)
+        % Values defined at mesh nodes
         %
         v=[];
         for k = size(VGRID,3):-1:1
             vgrid = VGRID(:,:,k);
-            v(:,1,k) = sum(wght.*vgrid(ind),2);
+            v(:,1,k) = sum(wght.*vgrid(iNode),2);
         end
-    elseif isequal(szVGRID([2 1]),szXGRID) & szXGRID(2)==1
-        v = sum(wght.*VGRID(ind),2);
-    elseif isequal(szVGRID(1:2),szXGRID-1)
+    elseif strcmp(VLOC,'FACE') || ...
+            (strcmp(VLOC,'?') && ...
+             (isequal(szVGRID(1:2),szXGRID-1) || ...
+              numel(VGRID)==nFaces))
         %
-        % Values defined on patches of curvilinear grid
+        % Values defined on mesh patches
         %
         v=[];
-        indquad = QUADTRI(indtri);
         for k = size(VGRID,3):-1:1
             vgrid = VGRID(:,:,k);
-            v(:,1,k) = vgrid(indquad);
+            v(:,1,k) = vgrid(iFace);
             v(outside,1,k) = NaN;
         end
-    elseif numel(VGRID)==szTRI
-        %
-        % Values defined on patches of triangular mesh
-        %
-        v = VGRID(indtri);
-        v(outside) = NaN;
+    elseif strcmp(VLOC,'EDGE')
+        noEdge = isnan(iEdge);
+        iEdge(noEdge) = 1;
+        v = VGRID(iEdge);
+        v(noEdge) = NaN;
     else
-        errmsg = sprintf('Invalid size of %s%i',VGRIDStr,i);
-        error(errmsg)
+        error('Invalid size of %s%i',VGRIDStr,i)
     end
     varargout{output_offset+i} = v;
 end

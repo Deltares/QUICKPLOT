@@ -300,7 +300,7 @@ switch data.ValLocation
                 unknown_ValLocation = 1;
         end
     case 'EDGE'
-        iEdge = data.EdgeConnect; % EdgeNodeConnection;
+        iEdge = data.EdgeNodeConnect;
         switch presentationtype
             case 'edge'
                 if isempty(hNew)

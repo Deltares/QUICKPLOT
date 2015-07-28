@@ -173,6 +173,9 @@ switch v_slice
     case 'XY'
         if isfield(data,'FaceNodeConnect')
             geomin = {data.FaceNodeConnect,data.X,data.Y};
+            if isfield(data,'EdgeNodeConnect')
+                geomin{4} = data.EdgeNodeConnect;
+            end
         elseif isfield(data,'TRI')
             geomin = {data.TRI,data.XYZ(:,:,:,1),data.XYZ(:,:,:,2)};
         else
@@ -193,6 +196,10 @@ switch v_slice
                 elseif isequal(fld,'Y')
                     data.(fld) = Slice.y;
                     data.dY_tangential = Slice.dyt;
+                elseif isequal(fld,'Z')
+                    data.(fld) = arbcross(Slice,data.(fld));
+                elseif isfield(data,'ValLocation') && ~isempty(data.ValLocation)
+                    data.(fld) = arbcross(Slice,{data.ValLocation data.(fld)});
                 else
                     data.(fld) = arbcross(Slice,data.(fld));
                 end
