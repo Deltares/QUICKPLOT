@@ -757,7 +757,7 @@ if ((nval==1 || nval==6) && data2d) || nval==1.9 || strcmp(nvalstr,'strings') ||
                         case {'SEG','SEG-EDGE'}
                             PrsTps={'edge';'markers';'values'};
                         case {'UGRID-FACE'}
-                            PrsTps={'patches';'patches with lines';'markers';'values'};
+                            PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                         otherwise
                             switch axestype
                                 case {'X-Time','Time-X'}

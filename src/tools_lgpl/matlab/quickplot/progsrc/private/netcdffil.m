@@ -350,6 +350,9 @@ if XYRead
             case 'FACE'
                 Ans.FaceNodeConnect = Ans.FaceNodeConnect(idx{M_},:);
         end
+        %
+        %[Ans.XFace, status] = qp_netcdf_get(FI,'mesh2d_face_x');
+        %[Ans.YFace, status] = qp_netcdf_get(FI,'mesh2d_face_y');
     else
         if Props.hasCoords
             coordname={'X','Y'};

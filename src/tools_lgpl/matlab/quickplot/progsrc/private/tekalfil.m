@@ -178,9 +178,9 @@ if max(idx{T_})>sz(T_)
     error('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_))
 end
 
-x=[];
-y=[];
-z=[];
+x='dummy';
+y='dummy';
+z='dummy';
 val1=[];
 val2=[];
 OutTime=NaN;
@@ -353,7 +353,7 @@ if XYRead
                 y=Data(idx{M_},2);
             end
         end
-    elseif DimFlag(ST_) && ~isempty(x)
+    elseif DimFlag(ST_) && ~ischar(x)
         SToutofrange = idx{ST_}>sz(ST_);
         idx{ST_}(SToutofrange)=1;
         x=x(idx{ST_});
@@ -362,13 +362,13 @@ if XYRead
         y(SToutofrange)=NaN;
     end
 end
-if ~isempty(x)
+if ~ischar(x)
     x(x==-999)=NaN;
 end
-if ~isempty(y)
+if ~ischar(y)
     y(y==-999)=NaN;
 end
-if ~isempty(z)
+if ~ischar(z)
     z(z==-999)=NaN;
 end
 
@@ -453,13 +453,13 @@ end
 
 % generate output ...
 if XYRead
-    if ~isempty(x)
+    if ~ischar(x)
         Ans.X=x;
     end
-    if ~isempty(y)
+    if ~ischar(y)
         Ans.Y=y;
     end
-    if ~isempty(z)
+    if ~ischar(z)
         Ans.Z=z;
     end
     if strcmp(FI.FileType,'tekal')

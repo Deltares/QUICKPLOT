@@ -355,6 +355,9 @@ switch data.ValLocation
                     hNew(i) = genfaces(hOld,Ops,Parent,data.Val(I),XY,FaceNodeConnect(I,1:uNodes(i)));
                 end
                 
+            case {'continuous shades','contour lines','coloured contour lines','contour patches','contour patches with lines'}
+                data = dual_ugrid(data);
+                hNew = qp_scalarfield_ugrid(Parent,hNew,presentationtype,data,Ops);
             %case 'markers'
                 
             %case 'values'

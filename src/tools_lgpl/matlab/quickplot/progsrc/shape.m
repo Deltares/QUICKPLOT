@@ -320,7 +320,11 @@ function [Out,Obj]=Local_read_shape(S,shapes,datatype)
 if ~isfield(S,'FileType') || ~strcmp(S.FileType,'ESRI-Shape')
     error('No shape file specified.')
 end
-if isequal(shapes,0)
+if isempty(shapes)
+    Out=zeros(0,2);
+    Obj=zeros(0,1);
+    return
+elseif isequal(shapes,0)
     shapes=1:S.NShapes;
 elseif min(shapes(:))<1 || max(shapes(:))>S.NShapes || ~isequal(shapes,round(shapes))
     error('Invalid shape number.')
