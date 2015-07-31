@@ -265,6 +265,8 @@ switch geometry
                 axestype={'Time-Val','Distance-Val'};
             elseif nval==0
                 axestype={'X-Y'};
+            elseif isempty(coordinates)
+                axestype={'Time-Val'};
             else
                 axestype={'Time-Val','X-Y'};
             end
