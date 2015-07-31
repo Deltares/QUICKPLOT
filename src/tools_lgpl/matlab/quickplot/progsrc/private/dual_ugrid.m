@@ -93,9 +93,8 @@ iBoundaryNodes = find(nEdgesPerNode>nFacesPerNode);
 %-----
 FCe = repmat(1:nFaces,size(FaceNodeConnect,2),1);
 FCe = FCe(~missing');
-NFCe = [FNCe FCe]; % array contains for each edge N1, N2, faceNr
-[lia,edgeNr] = ismember(NFCe(:,1:2),EdgeNodeConnect,'rows');
-[lia2,edgeNr2] = ismember(NFCe(:,[2 1]),EdgeNodeConnect,'rows');
+[lia,edgeNr] = ismember(FNCe,EdgeNodeConnect,'rows');
+[lia2,edgeNr2] = ismember(FNCe(:,[2 1]),EdgeNodeConnect,'rows');
 EdgeFaceConnect = NaN(nEdges,2);
 EdgeFaceConnect(edgeNr(lia),1)   = FCe(lia);
 EdgeFaceConnect(edgeNr2(lia2),2) = FCe(lia2);
@@ -122,7 +121,6 @@ for i=1:nNodes
         jE = 1;
     end
     newEdges_i(1) = jE;
-    jF = Edges_i_Faces(jE,2);
     %
     for k=1:nFaces_i
         jF = Edges_i_Faces(jE,2);
@@ -153,8 +151,17 @@ data.Y = [yFace;yBoundEdge;yBoundNode];
 NodeFaceDual = NodeFaceConnect;
 nFacesPerBoundNode_max = max(nFacesPerNode(iBoundaryNodes));
 NodeFaceDual(:,end+1:nFacesPerBoundNode_max+3) = NaN;
-NodeFaceDual(iBoundaryNodes,1:nFacesPerBoundNode_max+3) = [nFaces+iBoundEdge2 nFaces+nBoundEdges+(1:nBoundNodes)' nFaces+iBoundEdge1 NodeFaceConnect(iBoundaryNodes,1:nFacesPerBoundNode_max)];
-data.FaceNodeConnect = NodeFaceDual; % WARNING: Boundary faces may not be convex!
+for i = 1:nBoundNodes
+    nFpN = nFacesPerNode(iBoundaryNodes(i));
+    NodeFaceDual(iBoundaryNodes(i),1:nFpN+3) = [nFaces+nBoundEdges+i nFaces+iBoundEdge1(i) NodeFaceConnect(iBoundaryNodes(i),1:nFpN) nFaces+iBoundEdge2(i)];
+end
+data.FaceNodeConnect = NodeFaceDual;
+% WARNING: The boundary faces will not be convex if the model domain at the
+% boundary node is not convex! However this is not a major problem since in
+% qp_scalarfield we will subdivide the face into triangles for contours and
+% continuous shades plotting and those triangles will be generated based by
+% combining node 1 with nodes j and j+1. Since we use the central boundary
+% node as node 1 all triangles generated will be located inside the domain.
 %-----
 bEdgeVal = data.Val(max(EdgeFaceConnect(iBoundaryEdges,:),[],2));
 bNodeVal = (bEdgeVal(iBoundEdge1) + bEdgeVal(iBoundEdge2))/2;

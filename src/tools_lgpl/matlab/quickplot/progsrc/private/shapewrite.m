@@ -116,12 +116,17 @@ else
     else
         Patch=IN{2};
         NShp=size(Patch,1);
-        NPnt=size(Patch,2);
+        nPntPerPatch = sum(~isnan(Patch),2);
+        NPnt=min(nPntPerPatch);
         offset=1;
-        if NPnt<=2, error('Invalid number of columns in Patch, should be at least 3'); end
+        if NPnt<=2
+            error('Invalid number of columns in Patch, should be at least 3')
+        end
     end
     %data3d=size(XY,2)==3;
-    if size(XY,2)~=2, error('Invalid number of columns in XY'); end
+    if size(XY,2)~=2
+        error('Invalid number of columns in XY')
+    end
     switch length(IN)
         case 1+offset
             Val=[];
@@ -140,14 +145,14 @@ end
 if isempty(Val)
     Val=zeros(NShp,0);
 elseif size(Val,1)~=NShp
-    error('Invalid length of value vector.');
+    error('Invalid length of value vector.')
 end
 StoreVal=size(Val,2);
 if isempty(ValLbl)
     ValLbl(1:StoreVal)={''};
 else
     if length(ValLbl)>StoreVal
-        error('More value labels than values encountered.');
+        error('More value labels than values encountered.')
     else
         if length(ValLbl)<StoreVal
             ValLbl(end+1:StoreVal)={''};
@@ -209,8 +214,10 @@ switch DataType
               end
             end
         else
-            if ~isequal(Patch(:,end),Patch(:,1))
-                Patch(:,end+1)=Patch(:,1);
+            LastPnt = Patch((1:NShp)'+NShp*(nPntPerPatch-1));
+            if ~isequal(LastPnt,Patch(:,1))
+                Patch = [LastPnt Patch];
+                nPntPerPatch = nPntPerPatch+1;
             end
         end
         %
@@ -401,15 +408,14 @@ elseif iscell(XY)
         fwrite(fid,xy','float64');
     end
 else
-    NPnt=size(Patch,2);
     Admin = zeros(2,NShp);
     Admin(1,:) = 1:NShp;
-    Admin(2,:) = 24+8*NPnt;
+    Admin(2,:) = 24+8*nPntPerPatch;
     nBytes = Admin(2,:)*2;
     Admin = int32_byteflip(Admin);
     Admin(3,:)=DataType;
     for i=1:NShp
-        ind=Patch(i,:);
+        ind=Patch(i,1:nPntPerPatch(i));
         xy=XY(ind,:);
         if checkclockwise && (DataType==5) && (clockwise(xy(:,1),xy(:,2))<0)
             xy=flipud(xy);
@@ -420,7 +426,7 @@ else
         ranges(3)=max(xy(:,1));
         ranges(4)=max(xy(:,2));
         fwrite(fid,ranges,'float64');
-        fwrite(fid,[1 NPnt 0],'int32'); % one part, # points, single part starting at point 0
+        fwrite(fid,[1 nPntPerPatch(i) 0],'int32'); % one part, # points, single part starting at point 0
         fwrite(fid,xy','float64');
     end
 end

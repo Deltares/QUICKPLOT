@@ -516,7 +516,17 @@ for f=1:ntim
                         shapewrite(filename,shp_type,xyc,vals{:})
                     else
                         d=1;
-                        if isfield(Props,'Tri') && Props.Tri
+                        if isfield(Props,'Geom') && strncmp(Props.Geom,'UGRID',5)
+                            switch Props.Geom(7:end)
+                                case 'NODE'
+                                    xy=[data(d).X data(d).Y];
+                                    rm=[];
+                                case 'FACE'
+                                    xv=[data(d).X data(d).Y];
+                                    fv=data(d).FaceNodeConnect;
+                                    rm=[];
+                            end
+                        elseif isfield(Props,'Tri') && Props.Tri
                             if strcmp(retrieve,'gridcelldata')
                                 xv=data(d).XYZ(1,:,1,1:2);
                                 xv=reshape(xv,[size(xv,2) 2]);
@@ -585,7 +595,7 @@ for f=1:ntim
                             %
                             % make sure that polygons are stored clockwise ...
                             %
-                            if clockwise(data(d).X(fv(1,:)),data(d).Y(fv(1,:)))<0
+                            if ~any(isnan(fv(1,:))) && clockwise(data(d).X(fv(1,:)),data(d).Y(fv(1,:)))<0
                                 fv=fliplr(fv);
                             end
                             shapewrite(filename,xv,fv,cv{:})
@@ -646,6 +656,7 @@ for f=1:ntim
                                     shapewrite(filename,'polyline',xy,{'Value'},cv)
                             end
                         case {'contour patches','contour patches with lines'}
+                            hNew = hNew(strcmp(get(hNew,'type'),'patch'));
                             xy=get(hNew,'vertices');
                             cv=get(hNew,'facevertexcdata');
                             UD=get(hNew0,'userdata');

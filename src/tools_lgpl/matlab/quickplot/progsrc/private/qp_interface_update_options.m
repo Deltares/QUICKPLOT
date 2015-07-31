@@ -1415,7 +1415,7 @@ if nval>=0
             ExpTypes{end+1}='-SIMONA box file';
         end
     end
-    if (multiple(M_) && (multiple(N_) || triangles)) && ~multiple(K_) && ~multiple(T_)
+    if (multiple(M_) && (multiple(N_) || triangles || strncmp(geometry,'UGRID',5) || strcmp(geometry,'sSEG'))) && ~multiple(K_) && ~multiple(T_)
         if ~isfield(Ops,'presentationtype') || ~isequal(Ops.presentationtype,'continuous shades')
             ExpTypes{end+1}='ARCview shape';
         end
