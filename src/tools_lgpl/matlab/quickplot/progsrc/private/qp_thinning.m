@@ -36,8 +36,8 @@ function [data,s] = qp_thinning(data,Ops)
 %                                                                               
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
-%   $$
-%   $$
+%   $HeadURL$
+%   $Id$
 
 multi_time = isfield(data,'Time') && length(data(1).Time)>1;
 s = [];

@@ -182,7 +182,7 @@ if exist([S.FileBase '.shx'])
         error('Invalid shape index header.');
     end
     fseek(fidx,100,-1);
-    S.Idx=2*fread(fidx,[2 inf],'int32'); % stored in bytes!
+    S.Idx=2*fread(fidx,[2 inf],'int32'); % offset stored in words (16 bit)
     fclose(fidx);
     S.IndexExt='.shx';
 end
@@ -233,37 +233,11 @@ while ~feof(fid)
             NPnt=fread(fid,1,'int32');
             TNPnt=TNPnt+NPnt;
             fread(fid,[2 NPnt],'float64');
-        case 11 % pointz
-            % x,y,z,m
-            fread(fid,4,'float64');
-        case {13,15} % polylinez, polygonz
-            % box, NPrt, NPnt, {iprt}, {x,y} zrange, {z}, mrange, {m}
-            fread(fid,4,'float64');
-            NPrt=fread(fid,1,'int32');
-            NPnt=fread(fid,1,'int32');
-            TNPrt=TNPrt+NPrt;
-            TNPnt=TNPnt+NPnt;
-            fread(fid,[1 NPrt],'int32'); % 0-based offset of first node of part
-            fread(fid,[2 NPnt],'float64');
-            fread(fid,2,'float64');
-            fread(fid,[1 NPnt],'float64');
-            fread(fid,2,'float64');
-            fread(fid,[1 NPnt],'float64');
-        case 18 % multipointz
-            % box, N, {x,y}, zrange, {z}, mrange, {m}
-            fread(fid,4,'float64');
-            NPnt=fread(fid,1,'int32');
-            TNPnt=TNPnt+NPnt;
-            fread(fid,[2 NPnt],'float64');
-            fread(fid,2,'float64');
-            fread(fid,[1 NPnt],'float64');
-            fread(fid,2,'float64');
-            fread(fid,[1 NPnt],'float64');
-        case 21 % pointm
-            % x,y,m
+        case {11,21} % pointz, pointm
+            % x,y,z or x,y,m
             fread(fid,3,'float64');
-        case {23,25} % polylinem, polygonm
-            % box, NPrt, NPnt, {iprt}, {x,y}, mrange, {m}
+        case {13,15,23,25} % polylinez, polygonz, polylinem, polygonm
+            % box, NPrt, NPnt, {iprt}, {x,y} zrange, {z} or mrange, {m}
             fread(fid,4,'float64');
             NPrt=fread(fid,1,'int32');
             NPnt=fread(fid,1,'int32');
@@ -273,8 +247,8 @@ while ~feof(fid)
             fread(fid,[2 NPnt],'float64');
             fread(fid,2,'float64');
             fread(fid,[1 NPnt],'float64');
-        case 28 % multipointm
-            % box, N, {x,y}
+        case {18, 28} % multipointz, multipointm
+            % box, N, {x,y}, zrange, {z} or mrange, {m}
             fread(fid,4,'float64');
             NPnt=fread(fid,1,'int32');
             TNPnt=TNPnt+NPnt;
@@ -282,7 +256,7 @@ while ~feof(fid)
             fread(fid,2,'float64');
             fread(fid,[1 NPnt],'float64');
         case 31 % multipatch
-            % box, NPrt, NPnt, {iprt}, {prttyp}, {x,y}, zrange, {z}, mrange, {m}
+            % box, NPrt, NPnt, {iprt}, {prttyp}, {x,y}, zrange, {z} or mrange, {m}
             PrtTyps={'trianglestrip','trianglefan','outerring','innerring','firstring','ring'}; % 0 -- 5
             fread(fid,4,'float64');
             NPrt=fread(fid,1,'int32');
@@ -292,8 +266,6 @@ while ~feof(fid)
             fread(fid,[1 NPrt],'int32');
             fread(fid,[1 NPrt],'int32');
             fread(fid,[2 NPnt],'float64');
-            fread(fid,2,'float64');
-            fread(fid,[1 NPnt],'float64');
             fread(fid,2,'float64');
             fread(fid,[1 NPnt],'float64');
         otherwise % skip unknown
@@ -366,42 +338,13 @@ switch datatype
                     Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
                     Obj(TNPnt+(1:NPnt))=shp;
                     TNPnt=TNPnt+NPnt;
-                case 11 % pointz
-                    % x,y,z,m
-                    TNPnt=TNPnt+1;
-                    Out(TNPnt,1:4)=fread(fid,[1 4],'float64');
-                    Obj(TNPnt)=shp;
-                case {13,15} % polylinez, polygonz
-                    % box, NPrt, NPnt, {iprt}, {x,y} zrange, {z}, mrange, {m}
-                    fread(fid,4,'float64');
-                    NPrt=fread(fid,1,'int32');
-                    NPnt=fread(fid,1,'int32');
-                    fread(fid,[1 NPrt],'int32');
-                    Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
-                    fread(fid,2,'float64');
-                    Out(TNPnt+(1:NPnt),3)=fread(fid,[NPnt 1],'float64');
-                    fread(fid,2,'float64');
-                    Out(TNPnt+(1:NPnt),4)=fread(fid,[NPnt 1],'float64');
-                    Obj(TNPnt+(1:NPnt))=shp;
-                    TNPnt=TNPnt+NPnt;
-                case 18 % multipointz
-                    % box, N, {x,y}, zrange, {z}, mrange, {m}
-                    fread(fid,4,'float64');
-                    NPnt=fread(fid,1,'int32');
-                    Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
-                    fread(fid,2,'float64');
-                    Out(TNPnt+(1:NPnt),3)=fread(fid,[NPnt 1],'float64');
-                    fread(fid,2,'float64');
-                    Out(TNPnt+(1:NPnt),4)=fread(fid,[NPnt 1],'float64');
-                    Obj(TNPnt+(1:NPnt))=shp;
-                    TNPnt=TNPnt+NPnt;
-                case 21 % pointm
-                    % x,y,m
+                case {11,21} % pointz, pointm
+                    % x,y,z or x,y,m
                     TNPnt=TNPnt+1;
                     Out(TNPnt,1:3)=fread(fid,[1 3],'float64');
                     Obj(TNPnt)=shp;
-                case {23,25} % polylinem, polygonm
-                    % box, NPrt, NPnt, {iprt}, {x,y}, mrange, {m}
+                case {13,15,23,25} % polylinez, polygonz, polylinem, polygonm
+                    % box, NPrt, NPnt, {iprt}, {x,y} zrange, {z} or mrange, {m}
                     fread(fid,4,'float64');
                     NPrt=fread(fid,1,'int32');
                     NPnt=fread(fid,1,'int32');
@@ -409,19 +352,19 @@ switch datatype
                     Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
                     fread(fid,2,'float64');
                     Out(TNPnt+(1:NPnt),3)=fread(fid,[NPnt 1],'float64');
-                    Obj(TNPnt+(1:NPnt))=shp;
+                    fread(fid,2,'float64');
                     TNPnt=TNPnt+NPnt;
-                case 28 % multipointm
-                    % box, N, {x,y}
+                case {18,28} % multipointz, multipointm
+                    % box, N, {x,y}, zrange, {z} or mrange, {m}
                     fread(fid,4,'float64');
                     NPnt=fread(fid,1,'int32');
                     Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
                     fread(fid,2,'float64');
                     Out(TNPnt+(1:NPnt),3)=fread(fid,[NPnt 1],'float64');
-                    Obj(TNPnt+(1:NPnt))=shp;
+                    fread(fid,2,'float64');
                     TNPnt=TNPnt+NPnt;
                 case 31 % multipatch
-                    % box, NPrt, NPnt, {iprt}, {prttyp}, {x,y}, zrange, {z}, mrange, {m}
+                    % box, NPrt, NPnt, {iprt}, {prttyp}, {x,y}, zrange, {z} or mrange, {m}
                     PrtTyps={'trianglestrip','trianglefan','outerring','innerring','firstring','ring'}; % 0 -- 5
                     fread(fid,4,'float64');
                     NPrt=fread(fid,1,'int32');
@@ -431,8 +374,6 @@ switch datatype
                     Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
                     fread(fid,2,'float64');
                     Out(TNPnt+(1:NPnt),3)=fread(fid,[NPnt 1],'float64');
-                    fread(fid,2,'float64');
-                    Out(TNPnt+(1:NPnt),4)=fread(fid,[NPnt 1],'float64');
                     Obj(TNPnt+(1:NPnt))=shp;
                     TNPnt=TNPnt+NPnt;
                 otherwise % skip unknown
@@ -476,54 +417,13 @@ switch datatype
                     Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
                     Obj(TNPnt+(1:NPnt))=shp;
                     TNPnt=TNPnt+NPnt+1;
-                case 11 % pointz
-                    % x,y,z,m
-                    Out(TNPnt+1,1:4)=fread(fid,[1 4],'float64');
-                    Obj(TNPnt+1)=shp;
-                    TNPnt=TNPnt+2;
-                case {13,15} % polylinez, polygonz
-                    % box, NPrt, NPnt, {iprt}, {x,y} zrange, {z}, mrange, {m}
-                    fread(fid,4,'float64');
-                    NPrt=fread(fid,1,'int32');
-                    NPnt=fread(fid,1,'int32');
-                    PSz=fread(fid,[1 NPrt],'int32');
-                    PSz=diff([PSz NPnt]);
-                    TNPnt0=TNPnt;
-                    for p=PSz
-                        Out(TNPnt+(1:p),1:2)=fread(fid,[2 p],'float64')';
-                        Obj(TNPnt+(1:p))=shp;
-                        TNPnt=TNPnt+p+1;
-                    end
-                    fread(fid,2,'float64');
-                    TNPnt=TNPnt0;
-                    for p=PSz
-                        Out(TNPnt+(1:p),3)=fread(fid,[p 1],'float64');
-                        TNPnt=TNPnt+p+1;
-                    end
-                    fread(fid,2,'float64');
-                    TNPnt=TNPnt0;
-                    for p=PSz
-                        Out(TNPnt+(1:p),3)=fread(fid,[p 1],'float64');
-                        TNPnt=TNPnt+p+1;
-                    end
-                case 18 % multipointz
-                    % box, N, {x,y}, zrange, {z}, mrange, {m}
-                    fread(fid,4,'float64');
-                    NPnt=fread(fid,1,'int32');
-                    Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
-                    fread(fid,2,'float64');
-                    Out(TNPnt+(1:NPnt),3)=fread(fid,[NPnt 1],'float64');
-                    fread(fid,2,'float64');
-                    Out(TNPnt+(1:NPnt),4)=fread(fid,[NPnt 1],'float64');
-                    Obj(TNPnt+(1:NPnt))=shp;
-                    TNPnt=TNPnt+NPnt+1;
-                case 21 % pointm
-                    % x,y,m
+                case {11,21} % pointz, pointm
+                    % x,y,z or x,y,m
                     Out(TNPnt+1,1:3)=fread(fid,[1 3],'float64');
                     Obj(TNPnt+1)=shp;
                     TNPnt=TNPnt+2;
-                case {23,25} % polylinem, polygonm
-                    % box, NPrt, NPnt, {iprt}, {x,y}, mrange, {m}
+                case {13,15,23,25} % polylinez, polygonz, polylinem, polygonm
+                    % box, NPrt, NPnt, {iprt}, {x,y} zrange, {z} or mrange, {m}
                     fread(fid,4,'float64');
                     NPrt=fread(fid,1,'int32');
                     NPnt=fread(fid,1,'int32');
@@ -541,8 +441,8 @@ switch datatype
                         Out(TNPnt+(1:p),3)=fread(fid,[p 1],'float64');
                         TNPnt=TNPnt+p+1;
                     end
-                case 28 % multipointm
-                    % box, N, {x,y}
+                case {18,28} % multipointz, multipointm
+                    % box, N, {x,y}, zrange, {z} or mrange, {m}
                     fread(fid,4,'float64');
                     NPnt=fread(fid,1,'int32');
                     Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
@@ -551,7 +451,7 @@ switch datatype
                     Obj(TNPnt+(1:NPnt))=shp;
                     TNPnt=TNPnt+NPnt+1;
                 case 31 % multipatch
-                    % box, NPrt, NPnt, {iprt}, {prttyp}, {x,y}, zrange, {z}, mrange, {m}
+                    % box, NPrt, NPnt, {iprt}, {prttyp}, {x,y}, zrange, {z} or mrange, {m}
                     PrtTyps={'trianglestrip','trianglefan','outerring','innerring','firstring','ring'}; % 0 -- 5
                     fread(fid,4,'float64');
                     NPrt=fread(fid,1,'int32');
@@ -562,8 +462,6 @@ switch datatype
                     fread(fid,2,'float64');
                     Out(TNPnt+(1:NPnt),3)=fread(fid,[NPnt 1],'float64');
                     fread(fid,2,'float64');
-                    Out(TNPnt+(1:NPnt),4)=fread(fid,[NPnt 1],'float64');
-                    Obj(TNPnt+(1:NPnt))=shp;
                     TNPnt=TNPnt+NPnt+1;
                 otherwise % skip unknown
                     fread(fid,NrSize(2)-2,'int16');
