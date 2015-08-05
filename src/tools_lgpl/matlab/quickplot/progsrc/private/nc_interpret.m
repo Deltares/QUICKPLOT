@@ -43,6 +43,7 @@ if nargin>1
     nc1 = rmfield(nc,'Filename');
     nc1.Dimension = rmfield(nc1.Dimension,'Length');
     nc1.Dataset   = rmfield(nc1.Dataset,'Size');
+    nc1 = rmfield(nc1,'Attribute');
     %
     FileName2  = nc.Filename;
     Partitions = cell(1,NumDomains);
@@ -53,6 +54,7 @@ if nargin>1
         nc2 = rmfield(nc2,'Filename');
         nc2.Dimension = rmfield(nc2.Dimension,'Length');
         nc2.Dataset   = rmfield(nc2.Dataset,'Size');
+        nc2 = rmfield(nc2,'Attribute');
         %
         if vardiff(nc1,nc2)>1
             NumDomains = 1;

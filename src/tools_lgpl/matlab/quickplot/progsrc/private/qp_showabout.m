@@ -1,4 +1,4 @@
-function ifig=qp_showabout(qpversion,style)
+function ifig=qp_showabout(qpversion,style,qpdate)
 %QP_SHOWABOUT Show QuickPlot about window.
 
 %----- LGPL --------------------------------------------------------------------
@@ -101,12 +101,19 @@ switch style
             'horizontalalignment','center', ...
             'String','Delft3D-QUICKPLOT');
         
+        if strcmp(qpdate,'<CREATIONDATE>')
+            voffset = 40;
+            str = vers;
+        else
+            voffset = 20;
+            str = {vers,qpdate};
+        end
         uicontrol('Parent',ifig, ...
             'Callback','closereq', ...
-            'Position',[0 40 300 20], ...
+            'Position',[0 voffset 300 60-voffset], ...
             'Style','text', ...
             'horizontalalignment','center', ...
-            'String',vers);
+            'String',str);
 end
 
 uicontrol('Parent',ifig, ...

@@ -2425,7 +2425,7 @@ switch cmd
         end
         
     case {'about','version'}
-        qp_showabout(qpversion,'quickplot');
+        qp_showabout(qpversion,'quickplot',qpcreationdate);
         
     case {'aboutmatlab'}
         qp_showabout(qpversion,'matlab');

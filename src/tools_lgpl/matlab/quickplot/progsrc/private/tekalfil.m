@@ -347,6 +347,9 @@ if XYRead
             if strcmp(Props.Coords,'xy')
                 y=Data(:,2);
             end
+            if size(Data,2)==3
+                z=Data(:,3);
+            end
         else
             x=Data(idx{M_},1);
             if strcmp(Props.Coords,'xy')
