@@ -40,46 +40,46 @@ function filtertbl = qp_filefilters(filters)
 %   $Id$
 
 filtertbl={...
-    '*.dat;*.ada;*.hda'                                    'Delft3D Output Files'              'nefis'
-    '*.grd;*.rgf'                                          'Delft3D Grid Files'                'wlgrid'
-    '*.mesh'                                               'Mike Flexible Mesh Files'          'mikemesh'
-    '*.14'                                                 'Adcirc Mesh Files'                 'adcircmesh'
-    '*.shy'                                                'SHYFEM Mesh Files'                 'SHYFEM mesh'
-    '*.mesh;*.node;*.ele;*.n;*.e'                          'EasyMesh and Triangle Mesh Files'  'nodelemesh'
-    '*.gem'                                                'GeoSystems Mesh Files'             'geomesh'
-    '*.bct;*.bcc;*.bcb'                                    'Delft3D-FLOW Bound. Cond. Files'   'bct'
-    '*.am?;*.spw;*.wnd'                                    'Delft3D/SOBEK Meteo Files'         'asciiwind'
-    'gcmplt.*;gcmtsr.*'                                    'ECOMSED Binary Files'              'ecomsed-binary'
-    '*.stu;*.pst'                                          'JSPost Files'                      'JSPost'
-    '*.xyz'                                                'Sample Files'                      'samples'
-    '*.nc'                                                 'NetCDF Files'                      'NetCDF'
-    '*.grib;*.grib1;*.grib2'                               'GRIB Files'                        'grib'
-    'sds-*'                                                'Simona SDS Files'                  'waquasds'
-    '*.his;*.map;*.plo;*.psf;*.lga'                        'Delwaq Binary Files'               'delwaqbin'
-    '*.tim'                                                'Delwaq Time Series Input Files'    'DelwaqTimFile'
-    '*.arc;*.am?;*.asc'                                    'ARC/INFO Ascii Grid Files'         'arcgrid'
-    '*.grd'                                                'Surfer Ascii or Binary Grid Files' 'surfer'
-    '*.map'                                                'PC-Raster Files'                   'pcraster'
-    '*.hdr'                                                'BIL/HDR Files'                     'bil/hdr'
-    '*.ldb;*.pol'                                          'Land Boundary and Polygon Files'   '>tekal'
-    '*.tek;*.ann;*.ldb;*.pol;*.spl;*.tka;*.tkp;*.tkf'      'Tekal Data Files'                  'tekal'
-    '*.dxf'                                                'AutoCAD DXF Files'                 'AutoCAD DXF'
-    '*.shp'                                                'Shape Files'                       'shape'
-    '*.gen'                                                'ArcInfo Ungenerate Files'          'ArcInfoUngenerate'
-    '*.bna'                                                'BNA Files'                         'BNA File'
-    '*.jpg;*.jpeg;*.bmp;*.tif;*.tiff;*.png;*.pcx;*.xwd'    'Bitmap Files'                      'bitmap'
-    '*.fun;*.daf'                                          'Unibest Files'                     'unibest'
-    '*.sp1;*.sp2;*.s1d;*.s2d'                              'SWAN Spectral Files'               'SWAN spectral'
-    '*.slf;*.out;*.res'                                    'Telemac Files'                     'telemac'
-    '*.dt0;*.dt1;*.dt2;*.dfs0;*.dfs1;*.dfs2;*.dfs3;*.dfsu' 'Mike Data Files'                   'mike0'
-    'DEFTOP.1;NETWORK.NTW'                                 'Sobek Networks'                    'sobek1d'
-    '*.inc;*.crs;*.bin'                                    'FLS Files'                         'fls'
-    '*.seq'                                                'AukePC Files'                      'aukepc'
-    '*.mat'                                                'MATLAB Files (Exported from QP)'   'matlab'
-    '*.sma'                                                'Shipma Project Files'              'shipma'
-    '*.dmp'                                                'CFX4 Dump Files'                   'CFX dmp'
-    '*.noos'                                               'NOOS and MATROOS Files'            'NOOS time series'
-    '*.wml'                                                'WaterML Files'                     'WaterML2'
+    '*.dat;*.ada;*.hda'                                    'Delft3D Output Files'              'nefis'              0
+    '*.grd;*.rgf'                                          'Delft3D Grid Files'                'wlgrid'             0
+    '*.mesh'                                               'Mike Flexible Mesh Files'          'mikemesh'           0
+    '*.14'                                                 'Adcirc Mesh Files'                 'adcircmesh'         0
+    '*.shy'                                                'SHYFEM Mesh Files'                 'SHYFEM mesh'        0
+    '*.mesh;*.node;*.ele;*.n;*.e'                          'EasyMesh and Triangle Mesh Files'  'nodelemesh'         0
+    '*.gem'                                                'GeoSystems Mesh Files'             'geomesh'            0
+    '*.bct;*.bcc;*.bcb'                                    'Delft3D-FLOW Bound. Cond. Files'   'bct'                0
+    '*.am?;*.spw;*.wnd'                                    'Delft3D/SOBEK Meteo Files'         'asciiwind'          0
+    'gcmplt.*;gcmtsr.*'                                    'ECOMSED Binary Files'              'ecomsed-binary'     0
+    '*.stu;*.pst'                                          'JSPost Files'                      'JSPost'             0
+    '*.xyz'                                                'Sample Files'                      'samples'            0
+    '*.nc'                                                 'NetCDF Files'                      'NetCDF'             0
+    '*.grib;*.grib1;*.grib2'                               'GRIB Files'                        'grib'               0
+    'sds-*'                                                'Simona SDS Files'                  'waquasds'           0
+    '*.his;*.map;*.plo;*.psf;*.lga'                        'Delwaq Binary Files'               'delwaqbin'          0
+    '*.tim'                                                'Delwaq Time Series Input Files'    'DelwaqTimFile'      0
+    '*.arc;*.am?;*.asc'                                    'ARC/INFO Ascii Grid Files'         'arcgrid'            0
+    '*.grd'                                                'Surfer Ascii or Binary Grid Files' 'surfer'             0
+    '*.map'                                                'PC-Raster Files'                   'pcraster'           0
+    '*.hdr'                                                'BIL/HDR Files'                     'bil/hdr'            0
+    '*.ldb;*.pol'                                          'Land Boundary and Polygon Files'   '>tekal'             1
+    '*.tek;*.ann;*.ldb;*.pol;*.spl;*.tka;*.tkp;*.tkf'      'Tekal Data Files'                  'tekal'              0
+    '*.dxf'                                                'AutoCAD DXF Files'                 'AutoCAD DXF'        1
+    '*.shp'                                                'Shape Files'                       'shape'              1
+    '*.gen'                                                'ArcInfo Ungenerate Files'          'ArcInfoUngenerate'  1
+    '*.bna'                                                'BNA Files'                         'BNA File'           1
+    '*.jpg;*.jpeg;*.bmp;*.tif;*.tiff;*.png;*.pcx;*.xwd'    'Bitmap Files'                      'bitmap'             0
+    '*.fun;*.daf'                                          'Unibest Files'                     'unibest'            0
+    '*.sp1;*.sp2;*.s1d;*.s2d'                              'SWAN Spectral Files'               'SWAN spectral'      0
+    '*.slf;*.out;*.res'                                    'Telemac Files'                     'telemac'            0
+    '*.dt0;*.dt1;*.dt2;*.dfs0;*.dfs1;*.dfs2;*.dfs3;*.dfsu' 'Mike Data Files'                   'mike0'              0
+    'DEFTOP.1;NETWORK.NTW'                                 'Sobek Networks'                    'sobek1d'            0
+    '*.inc;*.crs;*.bin'                                    'FLS Files'                         'fls'                0
+    '*.seq'                                                'AukePC Files'                      'aukepc'             0
+    '*.mat'                                                'MATLAB Files (Exported from QP)'   'matlab'             0
+    '*.sma'                                                'Shipma Project Files'              'shipma'             0
+    '*.dmp'                                                'CFX4 Dump Files'                   'CFX dmp'            0
+    '*.noos'                                               'NOOS and MATROOS Files'            'NOOS time series'   0
+    '*.wml'                                                'WaterML Files'                     'WaterML2'           0
     };
 
 if nargin<1
@@ -87,6 +87,10 @@ if nargin<1
 end
 switch filters
     case 'all'
+    case 'files-with-lines'
+        isldb = cat(1,filtertbl{:,4});
+        filtertbl(isldb~=1,:) = [];
+        return % don't want to sort this one
     case 'latest'
         lasttp  = qp_settings('LastFileType','nefis');
         iFull = strncmp(lasttp,filtertbl(:,3),length(lasttp));
@@ -117,4 +121,4 @@ switch filters
         filtertbl = filtertbl(iFull,:);
 end
 [dum,Reorder] = sort(filtertbl(:,2));
-filtertbl = filtertbl(Reorder,:);
+filtertbl = filtertbl(Reorder,1:3);

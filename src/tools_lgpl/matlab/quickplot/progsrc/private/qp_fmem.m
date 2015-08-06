@@ -41,12 +41,17 @@ FileFromCall=0;
 Otherargs={};
 switch cmd
     case {'open','openldb','opennew','openurl'}
-        if strcmp(cmd,'opennew') || strcmp(cmd,'openldb')
+        if strcmp(cmd,'opennew') %|| strcmp(cmd,'openldb')
             targetdir=varargin{1};
             filterspec='';
         elseif nargin>1
             filterspec=varargin{1};
-            targetdir=fileparts(filterspec);
+            if exist(filterspec,'dir')
+                targetdir = filterspec;
+                filterspec = '';
+            else
+                targetdir=fileparts(filterspec);
+            end
         else
             filterspec='';
             targetdir=pwd;
@@ -80,7 +85,7 @@ switch cmd
                 filterspec=[tmpfn,tmpext];
             else
                 if strcmp(cmd,'openldb')
-                    filtertbl={'*.ldb;*.pol;*.gen;*.bna;*.shp;*.dxf'           'Land Boundary Files'         'tekal'};
+                    filtertbl = qp_filefilters('files-with-lines');
                 else
                     filtertbl = qp_filefilters('selected+');
                     [dum,Reorder] = sort(filtertbl(:,2));
@@ -209,7 +214,7 @@ switch cmd
         
         %collect the IDs of all file types for the following switch block
         if ~DoDS
-            types_to_check = qp_filefilters('all');
+            types_to_check = qp_filefilters('all'); %filtertable?
             types_to_check = types_to_check(:,3);
             for i = 1:length(types_to_check)
                 if types_to_check{i}(1)=='>'
@@ -1013,7 +1018,11 @@ switch cmd
                             ui_message('error',Message)
                             break
                         else
-                            filtertbl = qp_filefilters('all');
+                            if strcmp(cmd,'openldb')
+                                filtertbl = qp_filefilters('files-with-lines');
+                            else
+                                filtertbl = qp_filefilters('all');
+                            end
                             [usertrytp,try_i]=ui_type(filtertbl(:,2),'windowtitle','Specify file format');
                         end
                         if isempty(usertrytp)

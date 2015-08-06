@@ -462,6 +462,9 @@ Layer=sprintf('%bx',handle);
 
 % *** AXES **************
 for a=A % loop over axes
+    if strcmp(get(a,'visible'),'off')
+        continue
+    end
     if SeparateLayers, Layer=sprintf('Axes%bx',a); end;
     fprintf(fid,'0\nPOLYLINE\n8\n%s\n66\n1\n',Layer);  % start polyline on layer
     fprintf(fid,'10\n0.0\n20\n0.0\n30\n0.0\n'); % '30' field can be non-zero for Z value

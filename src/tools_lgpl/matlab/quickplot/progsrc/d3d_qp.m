@@ -1467,7 +1467,34 @@ switch cmd
             d3d_qp('gridview_update');
         end
         
-    case {'editmn*','editmn','editxy*','editxy'}
+    case 'savexy'
+        MW=UD.MainWin;
+        filtertbl = qp_filefilters('files-with-lines');
+        [fn,fp,tp] = uiputfile(filtertbl(:,1:2),'Save as');
+        if ischar(fn)
+            fn = [fp fn];
+            xy = get(MW.EditXY,'userdata');
+            switch filtertbl{tp,3}
+                case '>tekal'
+                    landboundary('write',fn,xy)
+                case 'shape'
+                    shape('write',fn,'polyline',{xy})
+                case 'AutoCAD DXF'
+                    F = figure('IntegerHandle','off','visible','off');
+                    A = axes('parent',F,'visible','off');
+                    line(xy(:,1),xy(:,2),'parent',A);
+                    dxf('save',A,fn)
+                    delete(F)
+                case 'ArcInfoUngenerate'
+                    ai_ungen('write',fn,xy)
+                case 'BNA File'
+                    bna('write',fn,xy)
+                otherwise
+                    ui_message('error','Saving X,Y path as %s is not yet supported.',filtertbl{tp,2}(1:end-1)) % just "... File" not "...Files"
+            end
+        end
+        
+    case {'editmn*','editmn','editxy*','editxy','loadxy'}
         MW=UD.MainWin;
         isMN = isequal(cmd(5:6),'mn');
         if isMN
@@ -1482,7 +1509,29 @@ switch cmd
             end
         end
         try
-            if isempty(cmdargs)
+            if strcmp(cmd,'loadxy')
+                if ~isempty(cmdargs)
+                    xyfile = cmdargs(1);
+                else
+                    xyfile = {};
+                end
+                [FI,FileName,Tp,Otherargs]=qp_proxy('openldb',xyfile{:});
+                if isempty(FI) % cancel pressed
+                    return
+                else
+                    qnt = qpread(FI);
+                    if ~ismember('line',{qnt.Name})
+                        ui_message('error','This Tekal file is not supported as supplier of X,Y path.')
+                        return
+                    else
+                        LDB=qpread(FI,'line','griddata');
+                        mnstr = [LDB.X LDB.Y];
+                        if any(isnan(mnstr(end,:)))
+                            mnstr(end,:) = [];
+                        end
+                    end
+                end
+            elseif isempty(cmdargs)
                 mnstr=get(UDEditMN,'string');
             else
                 mnstr=cmdargs{1};
@@ -1561,6 +1610,9 @@ switch cmd
         set(UDEditMN,'userdata',mn)
         if isempty(mn)
             mnstr='';
+            if ~isMN
+                set(MW.SaveXY,'enable','off')
+            end
         else
             if isMN
                 if dims==2
@@ -1569,12 +1621,14 @@ switch cmd
                     mnstr=sprintf('%i; ',mn');
                 end
             else
-                mnstr='';
+                mnstr=cell(1,size(mn,1));
                 for i=1:size(mn,1)
                     xf = sprintf('%%.%if',min(3,6-floor(log10(abs(mn(i,1))))));
                     yf = sprintf('%%.%if',min(3,6-floor(log10(abs(mn(i,2))))));
-                    mnstr=[mnstr sprintf([xf,', ',yf,'; '],mn(i,:))];
+                    mnstr{i} = sprintf([xf,', ',yf,'; '],mn(i,:));
                 end
+                mnstr = cat(2,mnstr{:});
+                set(MW.SaveXY,'enable','on')
             end
             mnstr(end-1:end)=[];
         end
@@ -1585,7 +1639,11 @@ switch cmd
             if cmd(end)=='*'
                 wrcmd=cmd(1:end-1);
             end
-            writelog(logfile,logtype,wrcmd,mnstr);
+            if strcmp(wrcmd,'loadxy')
+                writelog(logfile,logtype,wrcmd,FI.Name);
+            else
+                writelog(logfile,logtype,wrcmd,mnstr);
+            end
         end
         
         if cmd(end)~='*'
@@ -4103,20 +4161,20 @@ switch cmd
         switch news
             case 'M range and N range'
                 set([MW.MN MW.EditMN],'visible','off')
-                set([MW.XY MW.EditXY],'visible','off')
+                set([MW.XY MW.EditXY MW.LoadXY MW.SaveXY],'visible','off')
                 set([MW.M MW.AllM MW.EditM MW.MaxM],'visible','on')
                 set([MW.N MW.AllN MW.EditN MW.MaxN],'visible','on')
             case '(M,N) point/path'
                 set([MW.M MW.AllM MW.EditM],'visible','off')
                 set([MW.N MW.AllN MW.EditN],'visible','off')
-                set([MW.XY MW.EditXY],'visible','off')
+                set([MW.XY MW.EditXY MW.LoadXY MW.SaveXY],'visible','off')
                 set([MW.MN MW.EditMN],'visible','on')
                 set([MW.MaxM MW.MaxN],'visible','on')
             case '(X,Y) point/path'
                 set([MW.M MW.AllM MW.EditM MW.MaxM],'visible','off')
                 set([MW.N MW.AllN MW.EditN MW.MaxN],'visible','off')
                 set([MW.MN MW.EditMN],'visible','off')
-                set([MW.XY MW.EditXY],'visible','on')
+                set([MW.XY MW.EditXY MW.LoadXY MW.SaveXY],'visible','on')
             case 'K range'
                 set([MW.Z MW.EditZ],'visible','off')
                 set([MW.K MW.AllK MW.EditK MW.MaxK],'visible','on')

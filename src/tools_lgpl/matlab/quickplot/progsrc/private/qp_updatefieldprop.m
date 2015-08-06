@@ -373,15 +373,15 @@ for m_ = 2:10 % limit to 10 supported dimensions
             % If dimension is degenerate (size one) then there is no choice.
             % Indicate selection and disable controls.
             %
-            set(UDM,'string',mstr,'enable','off')
-            set(UDAllM,'enable','off','value',0)
+            set(UDM,'string',mstr,'enable','off',vis{:})
+            set(UDAllM,'enable','off','value',0,vis{:})
             val = 1;
             if DimFlag(m_)==7
                 val = dimlabels{m_};
                 setappdata(UDEditM,'dimlabels',dimlabels{m_})
             end
-            set(UDEditM,'enable','off','string',vec2str(val,'nobrackets'),'backgroundcolor',Inactive,'userdata',val)
-            set(UDMaxM,'enable','on','string','1','userdata',1)
+            set(UDEditM,'enable','off','string',vec2str(val,'nobrackets'),'backgroundcolor',Inactive,'userdata',val,vis{:})
+            set(UDMaxM,'enable','on','string','1','userdata',1,vis{:})
             selm=1;
         elseif DimFlag(m_)==4 || DimFlag(m_)==14 || DimFlag(m_)==inf
             %
@@ -389,13 +389,13 @@ for m_ = 2:10 % limit to 10 supported dimensions
             % only option is to select all values. Indicate selection and
             % disable controls.
             %
-            set(UDM,'string',mstr,'enable','on')
-            set(UDAllM,'enable','off','value',1)
-            set(UDEditM,'enable','off','string','1','backgroundcolor',Inactive,'userdata',1)
+            set(UDM,'string',mstr,'enable','on',vis{:})
+            set(UDAllM,'enable','off','value',1,vis{:})
+            set(UDEditM,'enable','off','string','1','backgroundcolor',Inactive,'userdata',1,vis{:})
             if isfinite(DimFlag(m_))
-                set(UDMaxM,'enable','on','string',sprintf('%i',sz(m_)),'userdata',sz(m_))
+                set(UDMaxM,'enable','on','string',sprintf('%i',sz(m_)),'userdata',sz(m_),vis{:})
             else
-                set(UDMaxM,'enable','on','string','?','userdata',inf)
+                set(UDMaxM,'enable','on','string','?','userdata',inf,vis{:})
             end
         else
             %
@@ -588,9 +588,11 @@ if ~isempty(strmatch('(X,Y) ',get(MW.HSelType,'string'))) && strcmp(get(MW.HSelT
     end
     set(MW.XY,'enable','on',vis{:})
     set(MW.EditXY,'enable','on','backgroundcolor',Active,vis{:})
+    set([MW.LoadXY MW.SaveXY],vis{:})
 else
     set(MW.XY,'enable','off','visible','off')
     set(MW.EditXY,'enable','off','backgroundcolor',Inactive,'visible','off')
+    set([MW.LoadXY MW.SaveXY],'visible','off')
 end
 
 %
