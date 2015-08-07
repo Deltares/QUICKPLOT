@@ -1070,7 +1070,7 @@ for i = 1:length(Out)
    if strcmp(Out(i).Geom,'PNT')
       Out(i).Name = [Out(i).Name ' (points)'];
    elseif strncmp(Out(i).Geom,'UGRID',5)
-      Out(i).Name = [Out(i).Name ' (' lower(Out(i).Geom) ')'];
+      %Out(i).Name = [Out(i).Name ' (' lower(Out(i).Geom) ')'];
    end
 end
 %
