@@ -358,9 +358,31 @@ switch data.ValLocation
             case {'continuous shades','contour lines','coloured contour lines','contour patches','contour patches with lines'}
                 data = dual_ugrid(data);
                 hNew = qp_scalarfield_ugrid(Parent,hNew,presentationtype,data,Ops);
-            %case 'markers'
                 
-            %case 'values'
+            case {'values','markers'}
+                X = data.X;
+                Y = data.Y;
+                if isfield(data,'XFace')
+                    X = data.XFace;
+                    Y = data.YFace;
+                else
+                    missing = isnan(FaceNodeConnect);
+                    FaceNodeConnect(missing) = 1;
+                    nc=sum(~missing,2);
+                    xFace = X(FaceNodeConnect);
+                    xFace(missing)=0;
+                    X = sum(xFace,2)./nc;
+                    yFace = Y(FaceNodeConnect);
+                    yFace(missing)=0;
+                    Y=sum(yFace,2)./nc;
+                end
+                I=~isnan(Val);
+                switch presentationtype
+                    case 'values'
+                        hNew=gentextfld(hNew,Ops,Parent,Val(I),X(I),Y(I));
+                    case 'markers'
+                        hNew=genmarkers(hNew,Ops,Parent,Val(I),X(I),Y(I));
+                end
                 
             otherwise
                 unknown_ValLocation = 1;
