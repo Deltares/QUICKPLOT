@@ -1356,57 +1356,25 @@ if (lstci>0) && ~isempty(i)
     end
     Out=insstruct(Out,i,Ins);
 end
-i=find(strcmp('--constituents flux staggered',{Out.Name}));
-if (lstci>0) && ~isempty(i)
-    Ins=Out(i*ones(lstci,1));
-    for j=1:lstci
-        Ins(j).Name=[names{j} ' flux staggered'];
-        Ins(j).SubFld=j;
-        Ins(j).Units=getunit(names{j},sednames);
-        if ~isempty(Ins(j).Units)
-            Ins(j).Units = [Ins(j).Units '*m^3/s'];
+for c = {{'--constituents flux staggered','m^3/s'}, ...
+        {'--constituents unit flux','m^2/s'} ...
+        {'--constituents cumulative flux staggered','m^3'}, ...
+        {'--constituents cumulative unit flux','m^2'}}
+    nm = c{1}{1};
+    un = c{1}{2};
+    i=find(strcmp(nm,{Out.Name}));
+    if (lstci>0) && ~isempty(i)
+        Ins=Out(i*ones(lstci,1));
+        for j=1:lstci
+            Ins(j).Name=[names{j} nm(15:end)];
+            Ins(j).SubFld=j;
+            Ins(j).Units=getunit(names{j},sednames);
+            if ~isempty(Ins(j).Units)
+                Ins(j).Units = [Ins(j).Units '*' un];
+            end
         end
+        Out=insstruct(Out,i,Ins);
     end
-    Out=insstruct(Out,i,Ins);
-end
-i=find(strcmp('--constituents unit flux',{Out.Name}));
-if (lstci>0) && ~isempty(i)
-    Ins=Out(i*ones(lstci,1));
-    for j=1:lstci
-        Ins(j).Name=[names{j} ' unit flux'];
-        Ins(j).SubFld=j;
-        Ins(j).Units=getunit(names{j},sednames);
-        if ~isempty(Ins(j).Units)
-            Ins(j).Units = [Ins(j).Units '*m^2/s'];
-        end
-    end
-    Out=insstruct(Out,i,Ins);
-end
-i=find(strcmp('--constituents cumulative flux staggered',{Out.Name}));
-if (lstci>0) && ~isempty(i)
-    Ins=Out(i*ones(lstci,1));
-    for j=1:lstci
-        Ins(j).Name=[names{j} ' cumulative flux staggered'];
-        Ins(j).SubFld=j;
-        Ins(j).Units=getunit(names{j},sednames);
-        if ~isempty(Ins(j).Units)
-            Ins(j).Units = [Ins(j).Units '*m^3'];
-        end
-    end
-    Out=insstruct(Out,i,Ins);
-end
-i=find(strcmp('--constituents cumulative unit flux',{Out.Name}));
-if (lstci>0) && ~isempty(i)
-    Ins=Out(i*ones(lstci,1));
-    for j=1:lstci
-        Ins(j).Name=[names{j} ' cumulative unit flux'];
-        Ins(j).SubFld=j;
-        Ins(j).Units=getunit(names{j},sednames);
-        if ~isempty(Ins(j).Units)
-            Ins(j).Units = [Ins(j).Units '*m^2/s'];
-        end
-    end
-    Out=insstruct(Out,i,Ins);
 end
 i=find(strcmp('--turbquant',{Out.Name}));
 if (ltur>0) && ~isempty(i)
