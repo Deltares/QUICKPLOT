@@ -191,7 +191,13 @@ switch Props.Name
         if zlayermodel, computeDZ=1; end
 end
 XYRead = XYRead & ~strcmp(Props.Loc,'NA');
-if XYRead
+
+compute_unitvalue = (strcmp(Props.Val1,'R1FLX_UU') || strcmp(Props.Val1,'R1FLX_UUC')) && length(Props.Name)>9 && strcmp(Props.Name(end-8:end),'unit flux');
+[coordtype,ok]=vs_get(FI,'map-const','COORDINATES','quiet');
+Info=vs_disp(FI,'map-const','XZ');
+coord_spherical = (isstruct(Info) && isequal(Info.ElmUnits,'[  DEG  ]')) || (ok && strcmp(deblank(coordtype),'SPHERICAL'));
+
+if XYRead || compute_unitvalue
 
     %======================== SPECIFIC CODE ===============================
     if DimFlag(M_) && DimFlag(N_)
@@ -372,6 +378,13 @@ if XYRead
 
     %========================= GENERAL CODE ===============================
     % grid interpolation ...
+    if compute_unitvalue
+        if coord_spherical
+            error('unit vector not yet supported for spherical coordinates')
+        end % assuming grid locations don't vary in time
+        guu = sqrt(diff(x(1,[1 1:end],:,1),1,2).^2 + diff(y(1,[1 1:end],:,1),1,2).^2);
+        gvv = sqrt(diff(x(1,:,[1 1:end],1),1,3).^2 + diff(y(1,:,[1 1:end],1),1,3).^2);
+    end
     [x,y]=gridinterp(DataInCell,DimFlag(K_),Props.ReqLoc,x,y);
 end
 
@@ -455,6 +468,16 @@ if DataRead
         gravity = 9.81;
     end
 
+    if compute_unitvalue
+        guu(guu==0) = 1;
+        gvv(gvv==0) = 1;
+        for t = size(val1,1):-1:1
+            for k = size(val1,4):-1:1
+                val1(t,:,:,k) = val1(t,:,:,k)./guu;
+                val2(t,:,:,k) = val2(t,:,:,k)./gvv;
+            end
+        end
+    end
     switch Props.Name
         case 'total transport'
             val1r=vs_let(FI,Props.Group,idx(T_),'SBUU',elidx,'quiet!');
@@ -917,14 +940,12 @@ end
 if XYRead
     Ans.X=x;
     Ans.Y=y;
-    Ans.XUnits='m';
-    Ans.YUnits='m';
-    [coordtype,ok]=vs_get(FI,'map-const','COORDINATES','quiet');
-    Info=vs_disp(FI,'map-const','XZ');
-    if (isstruct(Info) && isequal(Info.ElmUnits,'[  DEG  ]')) || ...
-       (ok && strcmp(deblank(coordtype),'SPHERICAL'))
+    if coord_spherical
         Ans.XUnits='deg';
         Ans.YUnits='deg';
+    else
+        Ans.XUnits='m';
+        Ans.YUnits='m';
     end
     if DimFlag(K_)
         Ans.Z=z;
@@ -1068,7 +1089,9 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'concentration'                    'kg/m^3' [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-sedgs-series' 'RZED1' ''       's'      0
     '--constituents'                   ''       [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'R1'      ''       []       0
     '--constituents flux staggered'    ''       [1 0 1 1 1]  1         1.9  ''        'd'   'd'       'c'     'map-series'     'R1FLX_UU' 'R1FLX_VV' []    2
+    '--constituents unit flux'         ''       [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'R1FLX_UU' 'R1FLX_VV' []    0
     '--constituents cumulative flux staggered' '' [1 0 1 1 1] 1        1.9  ''        'd'   'd'       'c'     'map-series'     'R1FLX_UUC' 'R1FLX_VVC' []  2
+    '--constituents cumulative unit flux'      '' [1 0 1 1 1] 1        2    'u'       'u'   'z'       'c'     'map-series'     'R1FLX_UUC' 'R1FLX_VVC' []  0
     '--turbquant'                      ''       [1 0 1 1 1]  1         1    ''        'z'   'z'       'i'     'map-series'     'RTUR1'   ''       []       0
     'vertical eddy viscosity'          'm^2/s'  [1 0 1 1 1]  1         1    ''        'z'   'z'       'i'     'map-series'     'VICWW'   ''       []       0
     'vertical eddy diffusivity'        'm^2/s'  [1 0 1 1 1]  1         1    ''        'z'   'z'       'i'     'map-series'     'DICWW'   ''       []       0
@@ -1337,7 +1360,7 @@ i=find(strcmp('--constituents flux staggered',{Out.Name}));
 if (lstci>0) && ~isempty(i)
     Ins=Out(i*ones(lstci,1));
     for j=1:lstci
-        Ins(j).Name=[names{j} ' flux'];
+        Ins(j).Name=[names{j} ' flux staggered'];
         Ins(j).SubFld=j;
         Ins(j).Units=getunit(names{j},sednames);
         if ~isempty(Ins(j).Units)
@@ -1346,15 +1369,41 @@ if (lstci>0) && ~isempty(i)
     end
     Out=insstruct(Out,i,Ins);
 end
+i=find(strcmp('--constituents unit flux',{Out.Name}));
+if (lstci>0) && ~isempty(i)
+    Ins=Out(i*ones(lstci,1));
+    for j=1:lstci
+        Ins(j).Name=[names{j} ' unit flux'];
+        Ins(j).SubFld=j;
+        Ins(j).Units=getunit(names{j},sednames);
+        if ~isempty(Ins(j).Units)
+            Ins(j).Units = [Ins(j).Units '*m^2/s'];
+        end
+    end
+    Out=insstruct(Out,i,Ins);
+end
 i=find(strcmp('--constituents cumulative flux staggered',{Out.Name}));
 if (lstci>0) && ~isempty(i)
     Ins=Out(i*ones(lstci,1));
     for j=1:lstci
-        Ins(j).Name=[names{j} ' cumulative flux'];
+        Ins(j).Name=[names{j} ' cumulative flux staggered'];
         Ins(j).SubFld=j;
         Ins(j).Units=getunit(names{j},sednames);
         if ~isempty(Ins(j).Units)
             Ins(j).Units = [Ins(j).Units '*m^3'];
+        end
+    end
+    Out=insstruct(Out,i,Ins);
+end
+i=find(strcmp('--constituents cumulative unit flux',{Out.Name}));
+if (lstci>0) && ~isempty(i)
+    Ins=Out(i*ones(lstci,1));
+    for j=1:lstci
+        Ins(j).Name=[names{j} ' cumulative unit flux'];
+        Ins(j).SubFld=j;
+        Ins(j).Units=getunit(names{j},sednames);
+        if ~isempty(Ins(j).Units)
+            Ins(j).Units = [Ins(j).Units '*m^2/s'];
         end
     end
     Out=insstruct(Out,i,Ins);
