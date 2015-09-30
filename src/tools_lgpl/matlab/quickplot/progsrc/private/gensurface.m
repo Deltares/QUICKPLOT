@@ -43,7 +43,7 @@ end
 if ~isa(Val,'double')
     Val=double(Val);
 end
-if isequal(size(X),size(Val)+1)
+if ~isequal(size(X),size(Val))
     [X,Y,vv]=face2surf(X,Y,{Val Z});
     Val = vv{1};
     Z = vv{2};

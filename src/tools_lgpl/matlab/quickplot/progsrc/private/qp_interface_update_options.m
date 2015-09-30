@@ -2,30 +2,30 @@ function [DomainNr,Props,subf,selected,stats,Ops]=qp_interface_update_options(mf
 %QP_INTERFACE_UPDATE_OPTIONS Update QuickPlot user interface options.
 
 %----- LGPL --------------------------------------------------------------------
-%                                                                               
-%   Copyright (C) 2011-2015 Stichting Deltares.                                     
-%                                                                               
-%   This library is free software; you can redistribute it and/or                
-%   modify it under the terms of the GNU Lesser General Public                   
-%   License as published by the Free Software Foundation version 2.1.                         
-%                                                                               
-%   This library is distributed in the hope that it will be useful,              
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of               
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU            
-%   Lesser General Public License for more details.                              
-%                                                                               
-%   You should have received a copy of the GNU Lesser General Public             
-%   License along with this library; if not, see <http://www.gnu.org/licenses/>. 
-%                                                                               
-%   contact: delft3d.support@deltares.nl                                         
-%   Stichting Deltares                                                           
-%   P.O. Box 177                                                                 
-%   2600 MH Delft, The Netherlands                                               
-%                                                                               
-%   All indications and logos of, and references to, "Delft3D" and "Deltares"    
-%   are registered trademarks of Stichting Deltares, and remain the property of  
-%   Stichting Deltares. All rights reserved.                                     
-%                                                                               
+%
+%   Copyright (C) 2011-2015 Stichting Deltares.
+%
+%   This library is free software; you can redistribute it and/or
+%   modify it under the terms of the GNU Lesser General Public
+%   License as published by the Free Software Foundation version 2.1.
+%
+%   This library is distributed in the hope that it will be useful,
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%   Lesser General Public License for more details.
+%
+%   You should have received a copy of the GNU Lesser General Public
+%   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+%
+%   contact: delft3d.support@deltares.nl
+%   Stichting Deltares
+%   P.O. Box 177
+%   2600 MH Delft, The Netherlands
+%
+%   All indications and logos of, and references to, "Delft3D" and "Deltares"
+%   are registered trademarks of Stichting Deltares, and remain the property of
+%   Stichting Deltares. All rights reserved.
+%
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
@@ -63,8 +63,8 @@ elseif nval<0
     %    geometry='sQUAD';
     %    coordinates='xy';
     %else
-        geometry='SELFPLOT';
-        coordinates='';
+    geometry='SELFPLOT';
+    coordinates='';
     %end
 else
     if DimFlag(M_) && DimFlag(N_)
@@ -290,7 +290,11 @@ switch geometry
     case 'PNT+'
         if multiple(K_)
             if ~multiple(M_) && ~multiple(ST_)
-                axestype={'Val-Z'};
+                if multiple(T_)
+                    axestype={'Val-Z','Time-Z'};
+                else
+                    axestype={'Val-Z'};
+                end
             end
         else
             if multiple(M_) || multiple(ST_)
@@ -418,7 +422,7 @@ switch geometry
 end
 if isequal(axestype,{'noplot'})
     MultipleColors = 0;
-end    
+end
 
 h_axtype=findobj(OH,'tag','axestype=?');
 if length(axestype)>1
@@ -536,10 +540,10 @@ if strfind(axestype,'Y')
     %end
 else
     if isfield(Props,'MName') && ~isempty(Props.MName) && multiple(M_)
-    %    axestype = strrep(axestype,'X',Props.MName);
+        %    axestype = strrep(axestype,'X',Props.MName);
         coords={'x coordinate'};
     elseif isfield(Props,'NName') && ~isempty(Props.NName)
-    %    axestype = strrep(axestype,'X',Props.NName);
+        %    axestype = strrep(axestype,'X',Props.NName);
         coords={'y coordinate'};
     end
 end
@@ -629,11 +633,12 @@ if nval==2 || nval==3
                 compList={'vector','magnitude','x component','z component'};
         end
     end
-
+    
     if SpatialV
         ii=strmatch('vector (split',compList);
         compList(ii)=[];
-    elseif Spatial==1
+    end
+    if Spatial==1
         ii=strmatch('vector',compList);
         compList(ii)=[];
     end
@@ -643,7 +648,7 @@ if nval==2 || nval==3
     end
     ii=strmatch('patch centred vector',compList,'exact');
     compList(ii)=[];
-
+    
     set(compon,'enable','on','backgroundcolor',Active)
     comp=get(compon,'value');
     prevCompList=get(compon,'string');
@@ -713,13 +718,13 @@ if ((nval==1 || nval==6) && data2d) || nval==1.9 || strcmp(nvalstr,'strings') ||
             end
         case 'boolean'
             PrsTps={'patches'};
-       case 'none'
-          switch geometry
-             case {'POLYG'}
-                PrsTps={'polygons'};
-             otherwise
-                PrsTps={'grid','grid with numbers'};
-          end
+        case 'none'
+            switch geometry
+                case {'POLYG'}
+                    PrsTps={'polygons'};
+                otherwise
+                    PrsTps={'grid','grid with numbers'};
+            end
         otherwise
             if nval==6
                 dic=2;
@@ -738,7 +743,11 @@ if ((nval==1 || nval==6) && data2d) || nval==1.9 || strcmp(nvalstr,'strings') ||
                                 PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                             end
                         case {'PNT','PNT+'}
-                            PrsTps={'markers';'values'};
+                            if strcmp(axestype,'Time-Z')
+                                PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
+                            else
+                                PrsTps={'markers';'values'};
+                            end
                         case {'SEG','SEG-NODE'}
                             PrsTps={'continuous shades';'markers';'values'};
                         case {'POLYL'}
@@ -762,7 +771,7 @@ if ((nval==1 || nval==6) && data2d) || nval==1.9 || strcmp(nvalstr,'strings') ||
                             PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                         otherwise
                             switch axestype
-                                case {'X-Time','Time-X'}
+                                case {'X-Time','Time-X','Time-Z'}
                                     PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                                 otherwise
                                     PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
@@ -771,35 +780,35 @@ if ((nval==1 || nval==6) && data2d) || nval==1.9 || strcmp(nvalstr,'strings') ||
                 case 2
                     switch geometry
                         case {'POLYG'}
-                           PrsTps={'polygons'};
-                       otherwise
-                          PrsTps={'patches';'patches with lines'};
+                            PrsTps={'polygons'};
+                        otherwise
+                            PrsTps={'patches';'patches with lines'};
                     end
             end
     end
     if length(PrsTps)==1
-       p=1;
+        p=1;
     else
-       set(findobj(OH,'tag','presenttype'),'enable','on')
-       pt=findobj(OH,'tag','presenttype=?');
-       pPrsTps=get(pt,'string');
-       if isequal(pPrsTps,PrsTps)
-          set(pt,'enable','on','backgroundcolor',Active)
-          p=get(pt,'value');
-       else
-          % try to find an exact match when switching presentation type strings
-          p=get(pt,'value');
-          if iscellstr(pPrsTps),
-             p=pPrsTps{p};
-          else
-             p=pPrsTps(p,:);
-          end
-          p=strmatch(p,PrsTps,'exact');
-          if isempty(p),
-             p=1;
-          end
-          set(pt,'enable','on','value',1,'string',PrsTps,'value',p,'backgroundcolor',Active)
-       end
+        set(findobj(OH,'tag','presenttype'),'enable','on')
+        pt=findobj(OH,'tag','presenttype=?');
+        pPrsTps=get(pt,'string');
+        if isequal(pPrsTps,PrsTps)
+            set(pt,'enable','on','backgroundcolor',Active)
+            p=get(pt,'value');
+        else
+            % try to find an exact match when switching presentation type strings
+            p=get(pt,'value');
+            if iscellstr(pPrsTps),
+                p=pPrsTps{p};
+            else
+                p=pPrsTps(p,:);
+            end
+            p=strmatch(p,PrsTps,'exact');
+            if isempty(p),
+                p=1;
+            end
+            set(pt,'enable','on','value',1,'string',PrsTps,'value',p,'backgroundcolor',Active)
+        end
     end
     Ops.presentationtype=lower(PrsTps{p});
     switch Ops.presentationtype
@@ -898,10 +907,10 @@ if vectors %&& ~isempty(strmatch(axestype,{'X-Y','X-Y-Z','X-Y-Val','X-Z'},'exact
                     if isempty(pvecCLR) || length(pvecCLR)<colveci
                         colveci=1;
                     else
-                       colveci=strmatch(pvecCLR{colveci},vecCLR,'exact');
-                       if isempty(colveci)
-                           colveci=1;
-                       end
+                        colveci=strmatch(pvecCLR{colveci},vecCLR,'exact');
+                        if isempty(colveci)
+                            colveci=1;
+                        end
                     end
                     set(colvecm,'value',1,'string',vecCLR,'value',colveci)
                 end
@@ -994,10 +1003,10 @@ if thindams
         cl=get(coldams,'value');
     end
     if cl
-       Ops.colourdams = 1;
-       MultipleColors = 1;
-       SingleColor    = 0;
-       edgeflatcolour = 1;
+        Ops.colourdams = 1;
+        MultipleColors = 1;
+        SingleColor    = 0;
+        edgeflatcolour = 1;
     end
 end
 
@@ -1042,7 +1051,7 @@ end
 
 if extend2edge
     h = findobj(OH,'tag','extend2edge');
-    if multiple(M_)+multiple(N_)+multiple(K_)==2
+    if data2d
         set(h,'enable','on')
         extend2edge = get(h,'value');
     else
@@ -1071,7 +1080,7 @@ if ask_for_textprops
     hFontsize=findobj(OH,'tag','fontsize=?');
     Ops.fontsize=get(hFontsize,'userdata');
     set(hFontsize,'enable','on','backgroundcolor',Active);
-
+    
     set(findobj(OH,'tag','alignment'),'enable','on');
     set(findobj(OH,'tag','horizontalalignment'),'enable','on');
     set(findobj(OH,'tag','verticalalignment'),'enable','on');
@@ -1172,7 +1181,7 @@ elseif lineproperties || nval==0
     set(lns,'enable','on','backgroundcolor',Active)
     lnstls=get(lns,'string');
     Ops.linestyle=lnstls{get(lns,'value')};
-
+    
     set(findobj(OH,'tag','linewidth'),'enable','on')
     lnw=findobj(OH,'tag','linewidth=?');
     set(lnw,'enable','on','backgroundcolor',Active)

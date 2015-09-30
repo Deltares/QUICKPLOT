@@ -72,14 +72,22 @@ typeC = vs_type(C);
 switch typeC
     case 'Delft3D-com'
         Info = vs_disp(C,'CURTIM',[]);
+        if ~isstruct(Info)
+            error('The file does not contain a flow data group.')
+        end
         nTimes = Info.SizeDim;
         iTime = Info.SizeDim;
         Info = vs_disp(C,'CURTIM','U1');
     case 'Delft3D-trim'
         Info = vs_disp(C,'map-series',[]);
+        if ~isstruct(Info)
+            error('The file does not contain a flow data group.')
+        end
         nTimes = Info.SizeDim;
         iTime = Info.SizeDim;
         Info = vs_disp(C,'map-series','U1');
+    otherwise
+        error('A %s file is not supported by this function.',typeC)
 end
 if length(Info.SizeDim)==3
     kmax = Info.SizeDim(3);

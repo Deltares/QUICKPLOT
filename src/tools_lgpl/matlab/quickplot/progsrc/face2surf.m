@@ -94,20 +94,25 @@ function [X,Y,V] = face2surf(x,y,v,thu,thv,option)
 %   $HeadURL$
 %   $Id$
 
-if nargin==3 | nargin==4
+V = [];
+if nargin==3 || nargin==4
     if ~isequal(size(x),size(y)) && ~isequal(size(x),size(y)+[1 0])
         error('Coordinate array should have equal size.')
     else
-        if iscell(v)
-            for i=1:numel(v)
-                if ~isequal(size(x),size(v{i})+1)
-                    error('Values array should be of size(X)-1.')
-                end
+        err = false;
+        single_v = ~iscell(v);
+        if single_v
+            v = {v};
+        end
+        for i=1:numel(v)
+            if length(size(x))~=length(size(v{i}))
+                err = true;
+            elseif ~all(size(x)==size(v{i}) | size(x)==size(v{i})+1)
+                err = true;
             end
-        else
-            if ~isequal(size(x),size(v)+1)
-                error('Values array should be of size(X)-1.')
-            end
+        end
+        if err
+            error('The length of each dimension i of the values array size(V,i) should equal the length of the corresponding dimension of the coordinate variable size(X,i) or one less size(X,i)-1.')
         end
     end
     if nargin==3
@@ -136,7 +141,7 @@ if nargin==3 | nargin==4
         otherwise
             error('Option argument should read ''surf'',''tripatch'' or ''quadpatch''.')
     end
-elseif nargin==5 | nargin==6
+elseif nargin==5 || nargin==6
     if ~isequal(size(x),size(y)) && ~isequal(size(x),size(y)+[1 0])
         error('Coordinate array should have equal size.')
     elseif ~isequal(size(x),size(thu)+[0 1])
@@ -144,14 +149,12 @@ elseif nargin==5 | nargin==6
     elseif ~isequal(size(x),size(thv)+[1 0])
         error('Thin dam V array should be of size [size(X,1)-1 size(X,2)].')
     else
-        if iscell(v)
-            for i=1:numel(v)
-                if ~isequal(size(x),size(v{i})+1)
-                    error('Values array should be of size(X)-1.')
-                end
-            end
-        else
-            if ~isequal(size(x),size(v)+1)
+        single_v = ~iscell(v);
+        if single_v
+            v = {v};
+        end
+        for i=1:numel(v)
+            if ~isequal(size(x),size(v{i})+1)
                 error('Values array should be of size(X)-1.')
             end
         end
@@ -178,6 +181,9 @@ elseif nargin==5 | nargin==6
 else
     error('Invalid number of input arguments.')
 end
+if single_v & ~isempty(V)
+    V = V{1};
+end
 
 
 function [xm,ym] = compute_xy_mean(x,y)
@@ -193,14 +199,42 @@ function [x2,y2,v2] = double_resolution(x,y,v)
 %capture the edges of the domain if there are no thin dams that cause
 %discontinuities in the values.
 
-x2 = x(double_indices(end),double_indices(end));
-x2(2:2:end-1,:) = (x2(1:2:end-2,:)+x2(3:2:end,:))/2;
-x2(:,2:2:end-1) = (x2(:,1:2:end-2)+x2(:,3:2:end))/2;
+i2 = size(x,1)~=size(v{1},1);
+if i2
+    i = double_indices(size(x,1));
+    i2_odd1 = 1:2:length(i)-2;
+    i2_odd3 = 3:2:length(i);
+    i2_even = 2:2:length(i)-1;
+else
+    i = 1:size(x,1);
+end
+
+j2 = size(x,2)~=size(v{1},2);
+if j2
+    j = double_indices(size(x,2));
+    j2_odd1 = 1:2:length(j)-2;
+    j2_odd3 = 3:2:length(j);
+    j2_even = 2:2:length(j)-1;
+else
+    j = 1:size(x,2);
+end
+
+x2 = x(i,j);
+if i2
+    x2(i2_even,:) = (x2(i2_odd1,:)+x2(i2_odd3,:))/2;
+end
+if j2
+    x2(:,j2_even) = (x2(:,j2_odd1)+x2(:,j2_odd3))/2;
+end
 
 if isequal(size(x),size(y))
-    y2 = y(double_indices(end),double_indices(end));
-    y2(2:2:end-1,:) = (y2(1:2:end-2,:)+y2(3:2:end,:))/2;
-    y2(:,2:2:end-1) = (y2(:,1:2:end-2)+y2(:,3:2:end))/2;
+    y2 = y(i,j);
+    if i2
+        y2(i2_even,:) = (y2(i2_odd1,:)+y2(i2_odd3,:))/2;
+    end
+    if j2
+        y2(:,j2_even) = (y2(:,j2_odd1)+y2(:,j2_odd3))/2;
+    end
 elseif isequal(size(x,1),size(y,1)+1) && isequal(size(x,2),size(y,2))
     y2 = y(floor([1 1:0.5:end end]),double_indices(end));
     y2l = y2(3:2:end-2,:);
@@ -216,22 +250,45 @@ end
 if iscell(v)
     v2 = cell(size(v));
     for i=1:length(v)
-        v2{i} = double_one(v{i});
+        v2{i} = double_one(v{i},i2,j2);
     end
 else
-    v2 = double_one(v);
+    v2 = double_one(v,i2,j2);
 end
 
 
-function v2 = double_one(v)
+function v2 = double_one(v,i2,j2)
 mask = ~isnan(v);
 v(~mask) = 0;
-v2 = zeros(2*size(v)+1);
-m2 = zeros(2*size(v)+1);
-for i=-1:1
-    for j=-1:1
-        v2(2+i:2:end-1+i,2+j:2:end-1+j) = v2(2+i:2:end-1+i,2+j:2:end-1+j)+v;
-        m2(2+i:2:end-1+i,2+j:2:end-1+j) = m2(2+i:2:end-1+i,2+j:2:end-1+j)+mask;
+sz_v2 = size(v);
+if i2
+    sz_v2(1) = 2*size(v,1)+1;
+    irange = -1:1;
+else
+    irange = 0;
+end
+if j2
+    sz_v2(2) = 2*size(v,2)+1;
+    jrange = -1:1;
+else
+    jrange = 0;
+end
+v2 = zeros(sz_v2);
+m2 = zeros(sz_v2);
+for i = irange
+    if i2
+        isel = 2+i:2:sz_v2(1)-1+i;
+    else
+        isel = 1:sz_v2(1);
+    end
+    for j = jrange
+        if j2
+            jsel = 2+j:2:sz_v2(2)-1+j;
+        else
+            jsel = 1:sz_v2(2);
+        end
+        v2(isel,jsel) = v2(isel,jsel)+v;
+        m2(isel,jsel) = m2(isel,jsel)+mask;
     end
 end
 m2(m2==0) = NaN;
@@ -403,6 +460,7 @@ end
 
 
 function [xyz,tri] = make_xyv_tris(nangle,x,y,thu,thv,v)
+v = v{1};
 thu([1 end],:) = 1;
 thv(:,[1 end]) = 1;
 thu(2:end-1,:) = thu(2:end-1,:) | isnan(v(1:end-1,:)) | isnan(v(2:end,:));

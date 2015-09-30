@@ -268,10 +268,17 @@ if XYRead
             switch Props.Loc3D
                 case 'i'
                     cthk=cumsum([0 thk]);
+                    idxK_=idx{K_};
                 case 'c'
-                    cthk=cumsum(thk)-thk/2;
+                    if DataInCell
+                        cthk=cumsum([0 thk]);
+                        idxK_=[idx{K_} idx{K_}(end)+1];
+                    else
+                        cthk=cumsum(thk)-thk/2;
+                        idxK_=idx{K_};
+                    end
             end
-            cthk=cthk(idx{K_});
+            cthk=cthk(idxK_);
             z=zeros([size(h) length(cthk)]);
             for k=1:length(cthk)
                 z(:,:,k)=zb+(1-cthk(k))*h;

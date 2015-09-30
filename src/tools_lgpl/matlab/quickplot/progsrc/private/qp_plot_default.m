@@ -287,12 +287,15 @@ switch NVal
                     qp_title(Parent,tit,'quantity',Quant,'unit',Units)
                 end
                 
-            case {'Distance-Val','X-Val','X-Z','X-Time','Time-X'}
+            case {'Distance-Val','X-Val','X-Z','X-Time','Time-X','Time-Z'}
                 if multiple(K_)
                     data = qp_dimsqueeze(data,Ops.axestype,multiple,DimFlag,Props);
                     Mask=repmat(min(data.Z,[],3)==max(data.Z,[],3),[1 1 size(data.Z,3)]);
                     if isequal(size(Mask),size(data.X))
                         data.X(Mask)=NaN;
+                    end
+                    if ~isfield(Ops,'plotcoordinate')
+                        Ops.plotcoordinate = 'time';
                     end
                     switch Ops.plotcoordinate
                         case {'path distance','reverse path distance'}
@@ -325,6 +328,8 @@ switch NVal
                             s=data.X;
                         case 'y coordinate'
                             s=data.Y;
+                        case 'time'
+                            s=repmat(data.Time,[1 size(data.X,3)]);
                     end
                     s=squeeze(s);
                     data.X=squeeze(data.X);
@@ -335,6 +340,9 @@ switch NVal
                     data.Val=squeeze(data.Val);
                     %
                     set(Parent,'NextPlot','add');
+                    if size(s,2)==1 && size(data.Z,2)~=1
+                        s = repmat(s,[1 size(data.Z,2)]);
+                    end
                     switch Ops.presentationtype
                         case {'patches','patches with lines'}
                             if isfield(Props,'ThreeD')
@@ -354,7 +362,7 @@ switch NVal
                             hNew=genmarkers(hNew,Ops,Parent,data.Val,s,data.Z);
                             
                         case {'contour lines','coloured contour lines','contour patches','contour patches with lines'}
-                            if isequal(size(s),size(data.Val)+1)
+                            if ~isequal(size(s),size(data.Val))
                                 [s,data.Z,data.Val]=face2surf(s,data.Z,data.Val);
                             end
                             data.Val(isnan(s) | isnan(data.Z))=NaN;
