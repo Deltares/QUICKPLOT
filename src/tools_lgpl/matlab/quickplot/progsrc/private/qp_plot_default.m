@@ -378,10 +378,17 @@ switch NVal
                         %set(get(Parent,'ylabel'),'string','elevation (m) \rightarrow')
                     end
                     if strcmp(Ops.colourbar,'none')
-                        qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                        tit = {PName};
                     else
-                        qp_title(Parent,{TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                        tit = {};
                     end
+                    if ~isempty(TStr)
+                        tit{end+1} = TStr;
+                    end
+                    if ~isempty(stn)
+                        tit{end+1}=stn;
+                    end
+                    qp_title(Parent,tit,'quantity',Quant,'unit',Units,'time',TStr)
                 else
                     %Ops.plotcoordinate='(x,y)';
                     switch Ops.plotcoordinate

@@ -513,15 +513,13 @@ elseif DimFlag(ST_)
     else
         stn=stn(Selected{ST_},:);
     end
-elseif any(multiple([M_ N_ K_]))
-    stn='';
-elseif DimFlag(M_) && DimFlag(N_) && DimFlag(K_)
+elseif DimFlag(M_) && DimFlag(N_) && DimFlag(K_) && none(multiple([M_ N_ K_]))
     stn=sprintf('point (%i,%i,%i)',Selected{M_},Selected{N_},Selected{K_});
-elseif DimFlag(M_) && DimFlag(K_)
+elseif DimFlag(M_) && ~DimFlag(N_) && DimFlag(K_) && none(multiple([M_ K_]))
     stn=sprintf('point (%i,%i)',Selected{M_},Selected{K_});
-elseif DimFlag(M_) && DimFlag(N_)
+elseif DimFlag(M_) && DimFlag(N_) && none(multiple([M_ N_]))
     stn=sprintf('point (%i,%i)',Selected{M_},Selected{N_});
-elseif DimFlag(M_)
+elseif DimFlag(M_) && ~DimFlag(N_) && ~multiple(M_)
     stn=sprintf('point %i',Selected{M_});
 end
 stn=strrep(stn,'\','\\');
