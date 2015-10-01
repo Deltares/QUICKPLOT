@@ -125,7 +125,7 @@ else
         EdgeNodeConnect = [];
         layeredxy = size(varargin{1},3)>1;
         VGRIDStr = 'VGRID';
-        nFaces = [];
+        nFaces = 0;
     elseif nargout+3==nargin || nargout+4==nargin || ...
             ((nargout==1 || nargout==3) && (nargin==5 || nargin==6))
         %
@@ -210,6 +210,7 @@ else
         x(rm+1,:)        =[];
         y(rm+1,:)        =[];
         wght(rm+1,:)     =[];
+        iFace(rm+1,:)    =[];
         iNode(rm+1,:)    =[];
         fracudist(rm+1,:)=[];
         outside(rm,:)    =[];

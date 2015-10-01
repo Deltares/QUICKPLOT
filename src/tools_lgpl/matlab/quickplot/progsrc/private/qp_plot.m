@@ -737,18 +737,22 @@ if isfield(Ops,'plotcoordinate') && ~isempty(Ops.plotcoordinate)
                     name=sprintf('m=%i',Selected{M_});
                     diststr = sprintf('distance along cross-section %s',name);
                 end
+            else
+                diststr = 'distance along path';
             end
         case 'x coordinate'
-            diststr = 'x coordinate';
             if isfield(data,'XUnits') && isequal(data(1).XUnits,'deg')
                 diststr = 'longitude';
+            else
+                diststr = 'x coordinate';
             end
         case 'y coordinate'
-            diststr = 'y coordinate';
             if ~isfield(data,'Y')
                 error('No Y data to plot against.')
             elseif isfield(data,'XUnits') && isequal(data(1).XUnits,'deg')
                 diststr = 'latitude';
+            else
+                diststr = 'y coordinate';
             end
     end
 end

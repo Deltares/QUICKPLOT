@@ -231,7 +231,11 @@ switch geometry
         axestype={''};
     case {'UGRID-NODE','UGRID-EDGE','UGRID-FACE'}
         if vslice
-            axestype={'X-Val','X-Y'};
+            if multiple(T_)
+                axestype={'X-Val','X-Y'}; % ,'X-Time','Time-X'
+            else
+                axestype={'X-Val','X-Y'};
+            end
             switch geometry
                 case 'UGRID-FACE'
                     geometry = 'SEG-EDGE';
@@ -1051,7 +1055,7 @@ end
 
 if extend2edge
     h = findobj(OH,'tag','extend2edge');
-    if data2d
+    if data2d && ~strcmp(axestype,'X-Time') && ~strcmp(axestype,'Time-X')
         set(h,'enable','on')
         extend2edge = get(h,'value');
     else

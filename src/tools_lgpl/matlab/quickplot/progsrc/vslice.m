@@ -171,6 +171,13 @@ switch v_slice
             end
         end
     case 'XY'
+        if isfield(data,'Val')
+            szV = size(data.Val);
+        elseif isfield(data,'XComp')
+            szV = size(data.XComp);
+        else
+            szV = [];
+        end
         if isfield(data,'FaceNodeConnect')
             geomin = {data.FaceNodeConnect,data.X,data.Y};
             if isfield(data,'EdgeNodeConnect')
@@ -178,6 +185,9 @@ switch v_slice
             end
         elseif isfield(data,'TRI')
             geomin = {data.TRI,data.XYZ(:,:,:,1),data.XYZ(:,:,:,2)};
+        elseif isfield(data,'Time') && length(data.Time)>1 && ndims(data.X)==length(szV)
+            szX = size(data.X);
+            geomin = {reshape(data.X,szX(2:end)),reshape(data.Y,szX(2:end))};
         else
             geomin = {data.X,data.Y};
         end
@@ -196,12 +206,24 @@ switch v_slice
                 elseif isequal(fld,'Y')
                     data.(fld) = Slice.y;
                     data.dY_tangential = Slice.dyt;
-                elseif isequal(fld,'Z')
-                    data.(fld) = arbcross(Slice,data.(fld));
-                elseif isfield(data,'ValLocation') && ~isempty(data.ValLocation)
-                    data.(fld) = arbcross(Slice,{data.ValLocation data.(fld)});
                 else
-                    data.(fld) = arbcross(Slice,data.(fld));
+                    if isfield(data,'Time') && length(data.Time)>1
+                        szV = size(data.(fld));
+                        dms = [2:max(length(szV),3) 1];
+                        data.(fld) = permute(data.(fld),dms);
+                    end
+                    if isequal(fld,'Z')
+                        data.(fld) = arbcross(Slice,data.(fld));
+                    elseif isfield(data,'ValLocation') && ~isempty(data.ValLocation)
+                        data.(fld) = arbcross(Slice,{data.ValLocation data.(fld)});
+                    else
+                        data.(fld) = arbcross(Slice,data.(fld));
+                    end
+                    if isfield(data,'Time') && length(data.Time)>1
+                        szV = size(data.(fld));
+                        dms = [length(szV) 1:length(szV)-1];
+                        data.(fld) = permute(data.(fld),dms);
+                    end
                 end
             end
         end

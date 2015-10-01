@@ -391,34 +391,39 @@ switch NVal
                     qp_title(Parent,tit,'quantity',Quant,'unit',Units,'time',TStr)
                 else
                     %Ops.plotcoordinate='(x,y)';
+                    if length(data.Time)>1
+                        mask = all(isnan(data.Val(:,:)),1);
+                    else
+                        mask = isnan(data.Val);
+                    end
                     switch Ops.plotcoordinate
                         case 'x coordinate'
-                            data.X(isnan(data.Val))=NaN;
+                            data.X(mask)=NaN;
                             x=data.X;
                             y=data.Val;
                             z=zeros(size(x));
                         case 'y coordinate'
-                            data.Y(isnan(data.Val))=NaN;
+                            data.Y(mask)=NaN;
                             x=data.Y;
                             y=data.Val;
                             z=zeros(size(x));
                         case '(x,y)'
-                            data.X(isnan(data.Val))=NaN;
-                            data.Y(isnan(data.Val))=NaN;
+                            data.X(mask)=NaN;
+                            data.Y(mask)=NaN;
                             x=data.X;
                             y=data.Y;
                             z=data.Val;
                         otherwise %case {'path distance','reverse path distance'}
-                            %data.X(isnan(data.Val))=NaN;
+                            data.X(mask)=NaN;
                             xx=data.X;
                             if isfield(data,'Y')
-                                %data.Y(isnan(data.Val))=NaN;
+                                data.Y(mask)=NaN;
                                 yy=data.Y;
                             else
                                 yy=0*xx;
                             end
                             if isfield(data,'Z')
-                                %data.Z(isnan(data.Val))=NaN;
+                                data.Z(mask)=NaN;
                                 zz=data.Z;
                             else
                                 zz=0*xx;
