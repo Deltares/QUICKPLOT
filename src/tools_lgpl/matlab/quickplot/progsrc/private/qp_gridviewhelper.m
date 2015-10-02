@@ -61,6 +61,9 @@ elseif iscell(UseGrid) && length(UseGrid)>3 && ~isequal(UseGrid{4},NewLoc)
     % change grid location
     [Range,RangeMax] = qp_gridview('setloc',F,NewLoc);
     switch Range.Type
+        case 'pwline'
+            set(UD.MainWin.EditMN,'userdata',Range.Range,'string','') % set string to empty to force update
+            set(UD.MainWin.AllM,'userdata',{0 Range.Range(1) RangeMax})
         case 'point'
             set(UD.MainWin.AllM,'userdata',{0 Range.Range(1) RangeMax})
         case 'range'

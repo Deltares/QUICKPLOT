@@ -563,7 +563,7 @@ if strcmp(get(MW.HSelType,'enable'),'on')
 
     if isempty(mn)
         set(MW.EditMN,'string','','userdata',[])
-    elseif ~isequal(mn,mn1)
+    elseif ~isequal(mn,mn1) || isempty(get(MW.EditMN,'string'))
         if size(mn,2)==2
             mnstr=sprintf('%i, %i; ',mn1');
         else

@@ -1505,12 +1505,21 @@ switch NewLoc
     case 'NODE'
         switch OldLoc
             case 'EDGE'
-                % find node numbers associated with the selected edges
-                iEdge = OldRange.Range{1};
-                iNode = GRID.EdgeNodeConnect(iEdge,:);
-                iNode = unique(iNode(:));
-                NewRange.Type = 'range';
-                NewRange.Range = {iNode};
+                if strcmp(OldRange.Type,'pwline')
+                    iEdge = OldRange.Range;
+                    iNode = GRID.EdgeNodeConnect(iEdge,:)';
+                    iNode = iNode(:);
+                    iNode(diff(iNode)==0)=[];
+                    NewRange.Type = 'pwline';
+                    NewRange.Range = iNode;
+                else
+                    % find node numbers associated with the selected edges
+                    iEdge = OldRange.Range{1};
+                    iNode = GRID.EdgeNodeConnect(iEdge,:);
+                    iNode = unique(iNode(:));
+                    NewRange.Type = 'range';
+                    NewRange.Range = {iNode};
+                end
             case 'FACE'
                 % find node numbers associated with the selected nodes
                 switch OldRange.Type
@@ -1529,19 +1538,26 @@ switch NewLoc
     case 'EDGE'
         switch OldLoc
             case {'NODE','FACE'}
-                if strcmp(OldLoc,'FACE')
-                    % find node numbers associated with the selected nodes
-                    iFace = OldRange.Range{1};
-                    iNode = GRID.FaceNodeConnect(iFace,:);
-                    iNode = unique(iNode(~isnan(iNode)));
+                if strcmp(OldRange.Type,'pwline')
+                    iNode = OldRange.Range;
+                    [dummy,iEdge]=ismember(sort([iNode(1:end-1) iNode(2:end)],2),sort(GRID.EdgeNodeConnect,2),'rows');
+                    NewRange.Type = 'pwline';
+                    NewRange.Range = iEdge;
                 else
-                    iNode = OldRange.Range{1};
+                    if strcmp(OldLoc,'FACE')
+                        % find node numbers associated with the selected nodes
+                        iFace = OldRange.Range{1};
+                        iNode = GRID.FaceNodeConnect(iFace,:);
+                        iNode = unique(iNode(~isnan(iNode)));
+                    else
+                        iNode = OldRange.Range{1};
+                    end
+                    % find edges for which all nodes are selected
+                    lEdge = all(ismember(GRID.EdgeNodeConnect,iNode),2);
+                    iEdge = find(lEdge);
+                    NewRange.Type = 'range';
+                    NewRange.Range = {iEdge};
                 end
-                % find edges for which all nodes are selected
-                lEdge = all(ismember(GRID.EdgeNodeConnect,iNode),2);
-                iEdge = find(lEdge);
-                NewRange.Type = 'range';
-                NewRange.Range = {iEdge};
             otherwise
                 error('Transition from %s to %s not yet implemented',OldLoc,NewLoc)
         end
