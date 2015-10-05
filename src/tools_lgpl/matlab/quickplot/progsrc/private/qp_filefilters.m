@@ -76,6 +76,7 @@ filtertbl={...
     '*.inc;*.crs;*.bin'                                    'FLS Files'                         'fls'                0
     '*.seq'                                                'AukePC Files'                      'aukepc'             0
     '*.mat'                                                'MATLAB Files (Exported from QP)'   'matlab'             0
+    '*.qpses'                                              'QUICKPLOT Session Files'           'qpsession'          0
     '*.sma'                                                'Shipma Project Files'              'shipma'             0
     '*.dmp'                                                'CFX4 Dump Files'                   'CFX dmp'            0
     '*.noos'                                               'NOOS and MATROOS Files'            'NOOS time series'   0
@@ -87,7 +88,7 @@ if nargin<1
 end
 switch filters
     case 'all'
-    case 'files-with-lines'
+    case 'files-with-lines' % used by gridview to open files with "line" data
         isldb = cat(1,filtertbl{:,4});
         filtertbl(isldb~=1,:) = [];
         return % don't want to sort this one

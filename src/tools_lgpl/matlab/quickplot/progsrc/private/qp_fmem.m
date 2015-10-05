@@ -234,6 +234,11 @@ switch cmd
             %pause
             try
                 switch try_next
+                    case 'qpsession'
+                        PAR.X=[];
+                        PAR = rmfield(PAR,'X');
+                        qp_session('rebuild',FileName,PAR);
+                        break
                     case 'nefis'
                         FI=vs_use(FileName,'quiet');
                         if ~isempty(FI)

@@ -1796,6 +1796,7 @@ switch cmd
                         writelog(logfile,logtype,cmd,VarName);
                     end
                 end
+
             case 'exportdata'
                 lasterr('');
                 try
@@ -3854,44 +3855,59 @@ switch cmd
                         d3d_qp refreshfigs
                     end
                 case {'savefigure','saveasfigure'}
-                    fullfilename=get(Fig,'filename');
+                    fullfilename = get(Fig,'filename');
                     set(Fig,'menubar','figure','closerequestfcn','closereq')
-                    cbar=findall(Fig,'deletefcn','qp_colorbar delete');
+                    cbar = findall(Fig,'deletefcn','qp_colorbar delete');
                     set(cbar,'deletefcn','colorbar(''delete'')')
                     if strcmp(cmd,'savefigure') && ~isempty(fullfilename)
-                        saveas(Fig,fullfilename)
+                        % fullfilename specified
                     elseif ~isempty(cmdargs)
-                        saveas(Fig,cmdargs{1})
+                        fullfilename = cmdargs{1};
+                        saveas(Fig,fullfilename)
                     else
-                        [p,f,e]=fileparts(fullfilename);
+                        [p,f,e] = fileparts(fullfilename);
                         if isempty(f)
-                            f=listnames(Fig,'showType','no','showHandle','no','showTag','no');
-                            f=str2file(f{1});
+                            f = listnames(Fig,'showType','no','showHandle','no','showTag','no');
+                            f = str2file(f{1});
                             if isempty(f)
-                                f='untitled';
+                                f = 'untitled';
                             end
                         end
                         e = '.fig';
-                        f=[f e];
+                        f = [f e];
                         if ~isempty(p)
-                            f=fullfile(p,f);
+                            f = fullfile(p,f);
                         else
                             p = qp_settings('figuredir');
                             if ~isempty(p)
-                                f=fullfile(p,f);
+                                f = fullfile(p,f);
                             end
                         end
-                        [newfile, newpath] = uiputfile(f, 'Save As');
+                        filterspec = {'*.fig'   'MATLAB figure file'
+                                      '*.qpses' 'QUICKPLOT session file'};
+                        [newfile, newpath] = uiputfile(filterspec, 'Save As', f);
                         if ischar(newfile)
                             qp_settings('figuredir',newpath)
-                            [p,f,e] = fileparts(newfile);
                             if isempty(e)
-                                newfile = [newfile '.fig'];
+                                newfile = [newfile e];
                             end
-                            fullfilename=fullfile(newpath,newfile);
-                            saveas(Fig,fullfilename);
-                            set(Fig,'filename',fullfilename);
+                            fullfilename = fullfile(newpath,newfile);
+                        else
+                            fullfilename = 0;
                         end
+                    end
+                    if ischar(fullfilename)
+                        [p,f,e] = fileparts(fullfilename);
+                        switch e
+                            case '.qpses'
+                                SES = qp_session('extract',Fig);
+                                SER = qp_session('serialize',SES);
+                                SER = qp_session('make_expandables',SER,{'filename','domain'});
+                                qp_session('save',SER,fullfilename)
+                            otherwise
+                                saveas(Fig,fullfilename);
+                        end
+                        set(Fig,'filename',fullfilename);
                     end
                     set(Fig,'menubar','none','closerequestfcn','d3d_qp closefigure')
                     set(cbar,'deletefcn','qp_colorbar delete')
