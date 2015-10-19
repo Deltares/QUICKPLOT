@@ -172,11 +172,7 @@ if ~isempty(Props.SubFld)
     end
 end
 % read data ...
-if iscell(Props.varid)
-    ivar = Props.varid{2};
-else
-    ivar = Props.varid(1);
-end
+ivar = get_varid(Props);
 Info=FI.Dataset(ivar+1);
 %
 if isfield(Info.Attribute,'Name')
@@ -262,11 +258,20 @@ if DataRead && Props.NVal>0
         end
     end
     %
-    if isfield(Props,'VectorDef') && Props.VectorDef==2
-        Ang = Ans.YComp*pi/180;
-        Mag = Ans.XComp;
-        Ans.XComp = Mag.*sin(Ang);
-        Ans.YComp = Mag.*cos(Ang);
+    switch Props.VectorDef
+        case 4
+            Ans.Angle     = Ans.YComp*pi/180;
+            Ans.Magnitude = Ans.XComp;
+            Ans.XComp = Ans.Magnitude.*sin(Ans.Angle);
+            Ans.YComp = Ans.Magnitude.*cos(Ans.Angle);
+            Ans = rmfield(Ans,'Angle');
+            Ans = rmfield(Ans,'Magnitude');
+        case 5
+            Ans.NormalComp = Ans.XComp;
+            Ans.TangentialComp = Ans.YComp;
+            % rotation at end of function
+        otherwise
+            % no rotation
     end
     %
     hdim = 1-cellfun('isempty',Props.DimName);
@@ -283,6 +288,38 @@ end
 %
 % Read coordinates
 %
+if Props.hasCoords
+    if Props.ClosedPoly && DataInCell
+        coordname={'XBounds','YBounds'};
+        isbounds = 1;
+        %
+        vdim = Info.('XBounds');
+        CoordInfo = FI.Dataset(vdim);
+        specificCoordDims = setdiff(CoordInfo.Dimension,Props.DimName(~cellfun('isempty',Props.DimName)));
+        npolpntDim = specificCoordDims{1};
+        npolpntDimid = CoordInfo.Dimid(strcmp(CoordInfo.Dimension,npolpntDim));
+        npolpnt = FI.Dimension(npolpntDimid+1).Length+2; % add one to close polygon and one for NaN
+    else
+        coordname={'X','Y'};
+        isbounds = 0;
+        npolpnt = NaN;
+    end
+else
+    coordname={};
+    isbounds = 0;
+    npolpnt = NaN;
+end
+
+if ~isnan(npolpnt)
+    for f = {'Val','XComp','YComp','Angle','Magnitude','NormalComp','TangentialComp'}
+        fc = f{1};
+        if isfield(Ans,fc)
+            Ans.(fc) = repmat(Ans.(fc)(:)',npolpnt,1);
+            Ans.(fc) = Ans.(fc)(:);
+        end
+    end
+end
+
 if XYRead
     npolpnt = 0;
     if strncmp(Props.Geom,'UGRID',5)
@@ -354,15 +391,6 @@ if XYRead
         %[Ans.XFace, status] = qp_netcdf_get(FI,'mesh2d_face_x');
         %[Ans.YFace, status] = qp_netcdf_get(FI,'mesh2d_face_y');
     else
-        if Props.hasCoords
-            coordname={'X','Y'};
-            if Props.ClosedPoly && DataInCell
-                coordname={'XBounds','YBounds'};
-            end
-        else
-            coordname={};
-        end
-        %
         firstbound = 1;
         for iCoord = 1:length(coordname)
             vdim = getfield(Info,coordname{iCoord});
@@ -378,7 +406,6 @@ if XYRead
             %
             dims = Props.DimName;
             dimvals = idx;
-            isbounds = strcmp(coordname{iCoord}(2:end),'Bounds');
             if isbounds
                 % when plotting the coordinate bounds variable, the
                 % variable itself already has a dimension like "Two" or
@@ -466,9 +493,9 @@ if XYRead
                         % the coordinates.
                         Coord = sort(Coord,2);
                         Coord(:,3:6) = NaN;
-                        if firstbound
-                            Coord(:,3:5) = Coord(:,[2 1 1]);
-                        else
+                        if firstbound % X
+                            Coord(:,1:5) = Coord(:,[1 2 2 1 1]);
+                        else % Y
                             Coord(:,1:5) = Coord(:,[2 2 1 1 2]);
                         end
                     else
@@ -490,22 +517,12 @@ if XYRead
                         end
                     end
                 end
-                if firstbound
-                    npolpnt = size(Coord,2);
-                    for f = {'Val','XComp','YComp'}
-                        fc = f{1};
-                        if isfield(Ans,fc)
-                            Ans.(fc) = repmat(Ans.(fc)(:)',npolpnt,1);
-                            Ans.(fc) = Ans.(fc)(:);
-                        end
-                    end
-                    firstbound = 0;
-                end
+                firstbound = 0;
                 Coord = Coord';
                 Coord = Coord(:);
             end
             %
-            Ans = setfield(Ans,coordname{iCoord},Coord);
+            Ans.(coordname{iCoord}) = Coord;
             if ~isempty(CoordInfo2.Attribute)
                 Attribs = {CoordInfo2.Attribute.Name};
                 j = strmatch('units',Attribs,'exact');
@@ -516,7 +533,7 @@ if XYRead
                     if ismember(unit,units)
                         unit = 'deg';
                     end
-                    Ans = setfield(Ans,[ coordname{iCoord} 'Units'],unit);
+                    Ans.([coordname{iCoord} 'Units']) = unit;
                 end
             end
         end
@@ -746,6 +763,23 @@ if XYRead
     end
 end
 
+if isfield(Ans,'NormalComp')
+    if Props.MNK==1
+        dx = diff(Ans.X(Ans.EdgeNodeConnect),1,2);
+        dy = diff(Ans.Y(Ans.EdgeNodeConnect),1,2);
+        ln = sqrt(dx.^2+dy.^2); % should never be 0, so no need to protect
+        dx = dx./ln;
+        dy = dy./ln;
+        Ans.XComp = Ans.TangentialComp.*dx + Ans.NormalComp.*dy;
+        Ans.YComp = Ans.TangentialComp.*dy - Ans.NormalComp.*dx;
+        Ans = rmfield(Ans,'NormalComp');
+        Ans = rmfield(Ans,'TangentialComp');
+    else
+        Ans = rmfield(Ans,'XComp');
+        Ans = rmfield(Ans,'YComp');
+    end
+end
+
 % read time ...
 T=[];
 if Props.DimFlag(T_)
@@ -759,12 +793,7 @@ varargout={Ans OrigFI};
 % -------------------------------------------------------------------------
 function [TZshift,TZstr]=gettimezone(FI,domain,Props)
 TZstr = '';
-if iscell(Props.varid)
-    ivar = Props.varid{2};
-else
-    ivar = Props.varid(1);
-end
-timevar = FI.Dataset(ivar+1).Time;
+timevar = FI.Dataset(get_varid(Props)+1).Time;
 if isempty(timevar)
     TZshift = NaN;
 else
@@ -937,7 +966,7 @@ else
         %
         Out(end+1)=Insert;
         %
-        if strcmp(standard_name,'discharge')
+        if strcmp(standard_name,'discharge') && iscell(Insert.varid)
             Insert.Name = 'stream function'; % previously: discharge potential
             Insert.Geom = 'UGRID-NODE';
             Insert.varid = {'stream_function' Insert.varid};
@@ -951,16 +980,19 @@ end
 %
 % detect vector quantities
 %
-% VecStdNameTable: component_1 component_2 quickplot_combined_name
+% VecStdNameTable: component_1, component_2, vector_type, quickplot_combined_name
+%   vector_type = 0: x and y
+%                 4: magnitude and direction
+%                 5: normal and tangential (on ugrid edge)
 VecStdNameTable = {
-    'sea_water_speed','direction_of_sea_water_velocity',2,'sea_water_velocity'
-    'sea_ice_speed','direction_of_sea_ice_speed',2,'sea_water_velocity'
-    'wind_speed','wind_to_direction',2,'air_velocity'
-    'eastward_sea_water_velocity','northward_sea_water_velocity',1,'velocity'
-    'eastward_sea_ice_velocity','northward_sea_ice_velocity',1,'sea_ice_velocity'
-    'eastward_wind_shear','northward_wind_shear',1,'wind_shear'
-    'surface_downward_eastward_wind','surface_downward_northward_wind',1,'surface_downward_wind'
-    'eastward_wind','northward_wind',1,'air_velocity'};
+    'sea_water_speed',               'direction_of_sea_water_velocity',4,'sea_water_velocity'
+    'sea_ice_speed',                 'direction_of_sea_ice_speed',     4,'sea_water_velocity'
+    'wind_speed',                    'wind_to_direction',              4,'air_velocity'
+    'eastward_sea_water_velocity',   'northward_sea_water_velocity',   0,'velocity'
+    'eastward_sea_ice_velocity',     'northward_sea_ice_velocity',     0,'sea_ice_velocity'
+    'eastward_wind_shear',           'northward_wind_shear',           0,'wind_shear'
+    'surface_downward_eastward_wind','surface_downward_northward_wind',0,'surface_downward_wind'
+    'eastward_wind',                 'northward_wind',                 0,'air_velocity'};
 nVecStdNames = size(VecStdNameTable,1);
 
 i=1;
@@ -985,8 +1017,19 @@ while i<length(Out)
         end
         Ystr = VecStdNameTable{j2};
         for i2=i+1:length(Out)
-            stdname = FI.Dataset(Out(i2).varid+1).StdName;
+            stdname = FI.Dataset(get_varid(Out(i2))+1).StdName;
             if strcmp(stdname,Ystr)
+                y=i2;
+                break
+            end
+        end
+    elseif length(Out(i).Name)>12 && strcmp(Out(i).Name(end-12:end),', n-component')
+        Ystr = Out(i).Name; Ystr(end-10)='t';
+        Name = Out(i).Name(1:end-13);
+        j=1; j2=2;
+        VectorDef = 5; % normal and tangential
+        for i2=1:length(Out)
+            if strcmp(Out(i2).Name,Ystr)
                 y=i2;
                 break
             end
@@ -995,7 +1038,7 @@ while i<length(Out)
         Ystr = Out(i).Name; Ystr(end-10)='y';
         Name = Out(i).Name(1:end-13);
         j=1; j2=2;
-        VectorDef = 1;
+        VectorDef = 0; % x and y
         for i2=1:length(Out)
             if strcmp(Out(i2).Name,Ystr)
                 y=i2;
@@ -1007,6 +1050,7 @@ while i<length(Out)
         Out(i).NVal=2;
         Out(i).Name = Name;
         Out(i).VectorDef = VectorDef;
+        Out(i).MNK = VectorDef==5;
         if j<j2
             Out(i).varid=[Out(i).varid Out(y).varid];
         else
@@ -1092,11 +1136,7 @@ for loop = 1:2
     for i = 1:length(Out)
         switch Out(i).Geom
             case {'UGRID-NODE','UGRID-EDGE','UGRID-FACE'}
-                if iscell(Out(i).varid)
-                    varid = Out(i).varid{2};
-                else
-                    varid = Out(i).varid(1);
-                end
+                varid = get_varid(Out(i));
                 thisMesh = FI.Dataset(varid+1).Mesh;
                 if loop == 1
                     if thisMesh{3} == -1
@@ -1125,6 +1165,14 @@ if domain==FI.NumDomains+1
     end
 end
 % -----------------------------------------------------------------------------
+
+
+function ivar = get_varid(Props)
+if iscell(Props.varid)
+    ivar = Props.varid{2};
+else
+    ivar = Props.varid(1);
+end
 
 
 % -----------------------------------------------------------------------------
@@ -1210,11 +1258,7 @@ end
 function T=readtim(FI,Props,t)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
-if iscell(Props.varid)
-    varid = Props.varid{2};
-else
-    varid = Props.varid(1);
-end
+varid = get_varid(Props);
 tvar = FI.Dataset(varid+1).Time;
 if isempty(tvar)
     tinfo = [];
@@ -1255,11 +1299,7 @@ end
 % -----------------------------------------------------------------------------
 function S=readsts(FI,Props,t)
 %======================== SPECIFIC CODE =======================================
-if iscell(Props.varid)
-    %TODO
-else
-    stcrd = FI.Dataset(Props.varid+1).Station;
-end
+stcrd = FI.Dataset(get_varid(Props)+1).Station;
 [Stations, status] = qp_netcdf_get(FI,stcrd-1,FI.Dataset(stcrd).Dimension);
 if t~=0
     Stations = Stations(t,:);

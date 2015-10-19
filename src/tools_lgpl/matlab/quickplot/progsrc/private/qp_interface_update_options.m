@@ -199,12 +199,13 @@ for i=5:-1:1
 end
 animate = multiple(T_);
 
-MNK =0;
-MNK_=0;
-if isfield(Props,'MNK')
-    MNK=Props.MNK;
+VectorDef=0;
+VectorReq=0;
+if isfield(Props,'VectorDef')
+    VectorDef=Props.VectorDef;
+elseif isfield(Props,'MNK')
+    VectorDef=Props.MNK;
 end
-
 %
 %-------- PLOT OPTIONS -------------
 %
@@ -514,13 +515,17 @@ end
 
 coords={'path distance','reverse path distance','x coordinate','y coordinate'};
 
-if strfind(axestype,'X')
+if vslice
     Spatial=1;
 else
-    Spatial=0;
-end
-if strfind(axestype,'Y')
-    Spatial=Spatial+1;
+    if strfind(axestype,'X')
+        Spatial=1;
+    else
+        Spatial=0;
+    end
+    if strfind(axestype,'Y')
+        Spatial=Spatial+1;
+    end
 end
 SpatialH=Spatial;
 if strfind(axestype,'Z')
@@ -599,8 +604,10 @@ if nval==2 || nval==3
     set(findobj(OH,'tag','component'),'enable','on');
     compon=findobj(OH,'tag','component=?');
     if DimFlag(M_) && (DimFlag(N_) || triangles)
-        if MNK<2
-            if MNK>0
+        switch VectorDef
+            case 0
+                compList={'vector','vector (split x,y)','patch centred vector','magnitude','angle','x component','y component'};
+            case 1
                 if DimFlag(K_) && DimFlag(M_) && DimFlag(N_)
                     compList={'vector','vector (split x,y)','vector (split m,n)','patch centred vector','magnitude','magnitude in plane','angle','x component','y component','z component','m component','n component'};
                     if SpatialH ~=2
@@ -613,11 +620,8 @@ if nval==2 || nval==3
                 else
                     compList={'vector','vector (split x,y)','vector (split m,n)','patch centred vector','magnitude','angle','x component','y component','m component','n component'};
                 end
-            else
-                compList={'vector','vector (split x,y)','patch centred vector','magnitude','angle','x component','y component'};
-            end
-        else
-            compList={'vector','patch centred vector','magnitude','m component','n component'};
+            case 2
+                compList={'vector','patch centred vector','magnitude','m component','n component'};
         end
     elseif DimFlag(M_) && DimFlag(K_)
         compList={'vector','patch centred vector','magnitude','x component','z component'};
@@ -625,11 +629,17 @@ if nval==2 || nval==3
         switch nvalstr
             case 'xy'
                 compList={'vector','magnitude','angle'};
-                if MNK<2
-                    compList(end+1:end+2)={'x component','y component'};
-                end
-                if MNK>0
-                    compList(end+1:end+2)={'m component','n component'};
+                switch VectorDef
+                    case 0
+                        compList(end+1:end+2)={'x component','y component'};
+                    case 1
+                        compList(end+1:end+4)={'x component','y component','m component','n component'};
+                    case 2
+                        compList(end+1:end+2)={'m component','n component'};
+                    case 4
+                        % magnitude and angle already in compList
+                    case 5
+                        compList(end+1:end+4)={'x component','y component','normal component','tangential component'};
                 end
             case 'xyz'
                 compList={'vector','magnitude','angle','x component','y component','z component'};
@@ -642,7 +652,7 @@ if nval==2 || nval==3
         ii=strmatch('vector (split',compList);
         compList(ii)=[];
     end
-    if Spatial==1
+    if Spatial==1 && ~strcmp(axestype,'Val-Z')
         ii=strmatch('vector',compList);
         compList(ii)=[];
     end
@@ -673,8 +683,8 @@ if nval==2 || nval==3
     switch Ops.vectorcomponent
         case {'vector','patch centred vector','vector (split x,y)','vector (split m,n)'}
             Ops.presentationtype=Ops.vectorcomponent;
-            if (multiple(M_) + multiple(N_) == 1) && (multiple(K_) == 1) && MNK
-                MNK_=1;
+            if VectorDef==2 && (multiple(M_) + multiple(N_) == 1) && (multiple(K_) == 1)
+                VectorReq=1;
             end
         case {'magnitude','x component','y component','z component'}
             vectors=0;
@@ -682,9 +692,9 @@ if nval==2 || nval==3
             vectors=0;
             Units = 'radians';
             ask_for_angleconvention=1;
-        case {'magnitude in plane','m component','n component','normal component'}
+        case {'magnitude in plane','m component','n component','normal component','tangential component'}
             vectors=0;
-            MNK_=1;
+            VectorReq=1;
         case 'edge'
             Ops.presentationtype=Ops.vectorcomponent;
             vectors=0;
@@ -699,10 +709,10 @@ if (nval==2 || nval==3) && ~vectors
     nval=1;
 end
 if isfield(Ops,'vectorcomponent') && strcmp(Ops.vectorcomponent,'vector')
-    if ~isequal(geometry,'TRI')
-        geometry='sSEG';
-        Props.Geom='sSEG';
-    end
+    %if ~isequal(geometry,'TRI')
+    %    geometry='sSEG';
+    %    Props.Geom='sSEG';
+    %end
     Props.ClosedPoly=0;
 end
 %--------------------------------------------------------------------------
@@ -897,15 +907,14 @@ if vectors %&& ~isempty(strmatch(axestype,{'X-Y','X-Y-Z','X-Y-Val','X-Z'},'exact
                 colvecm=findobj(OH,'tag','vectorcolour=?');
                 pvecCLR=get(colvecm,'string');
                 colveci=get(colvecm,'value');
-                if MNK_
-                    vecCLR={'magnitude in plane','m component','n component','normal component','edge'};
-                    vecCLRi=ismember(vecCLR,compList);
-                    vecCLR(~vecCLRi)=[];
-                else
-                    vecCLR={'magnitude','angle','x component','y component','z component','edge'};
-                    vecCLRi=ismember(vecCLR,compList);
-                    vecCLR(~vecCLRi)=[];
+                switch VectorReq
+                    case 0
+                        vecCLR={'magnitude','angle','x component','y component','z component','edge'};
+                    otherwise
+                        vecCLR={'magnitude in plane','m component','n component','normal component','edge'};
                 end
+                vecCLRi=ismember(vecCLR,compList);
+                vecCLR(~vecCLRi)=[];
                 if ~isequal(vecCLR,pvecCLR)
                     % try to find an exact match when switching vector colouring strings
                     if isempty(pvecCLR) || length(pvecCLR)<colveci

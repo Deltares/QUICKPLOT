@@ -271,11 +271,15 @@ switch cmd
             end
         else
             Range = GRID.Selected.Range;
-            Range(NFixed+1,:) = pnt;
+            if ~isequal(pnt,Range(NFixed,:))
+                Range(NFixed+1,:) = pnt;
+            end
             localdrawsel(gcbf,cmd(1:7),Range)
             switch cmd
                 case {'genlinedown'}
-                    setappdata(G,'NFixed',NFixed+1)
+                    if size(Range,1)>NFixed
+                        setappdata(G,'NFixed',NFixed+1)
+                    end
                     if ~strcmp(get(gcbf,'selectiontype'),'normal')
                         normalstate(gcbf)
                     end

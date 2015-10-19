@@ -219,6 +219,34 @@ end
 
 FirstFrame=isempty(hOldVec);
 
+if strcmp(Ops.presentationtype,'vector') || ...
+        strcmp(Ops.presentationtype,'markers')
+    % data = geom2pnt(data);
+    if isfield(data,'ValLocation')
+        if strcmp(data.ValLocation,'EDGE')
+            data.X = mean(data.X(data.EdgeNodeConnect),2);
+            data.Y = mean(data.Y(data.EdgeNodeConnect),2);
+        elseif strcmp(data.ValLocation,'FACE')
+            missing = isnan(data.FaceNodeConnect);
+            nNodes = size(missing,2)-sum(missing,2);
+            data.FaceNodeConnect(missing) = 1;
+            data.X = data.X(data.FaceNodeConnect);
+            data.X(missing) = 0;
+            data.X = sum(data.X,2)/nNodes;
+            data.Y = data.Y(data.FaceNodeConnect);
+            data.Y(missing) = 0;
+            data.Y = sum(data.Y,2)/nNodes;
+        end
+        for c = {'FaceNodeConnection','EdgeNodeConnection','ValLocation'}
+            s = c{1};
+            if isfield(data,s)
+                data = rmfield(data,s);
+            end
+        end
+        data.Geom = 'sSEG';
+    end
+end
+
 [data,s] = qp_thinning(data,Ops);
 
 vpt='';
@@ -242,7 +270,8 @@ elseif  NVal==1.9
 end
 
 VectorPlot=0;
-if isfield(data,'XComp')
+%if isfield(data,'XComp')
+if ~isempty(Ops.vectorcomponent)
     [data,scalar]=computecomponent(data,Ops);
     if strcmp(Ops.vectorcomponent,'edge')
         if isempty(Ops.vectorcolour)
@@ -821,7 +850,7 @@ else
             case {'SEG','SEG-NODE','SEG-EDGE'}
                 [hNew{d},Thresholds,Param]=qp_plot_seg(plotargs{:});
             case 'PNT'
-                [hNew{d},Thresholds,Param]=qp_plot_pnt(plotargs{:});
+                [hNew{d},Thresholds,Param,Parent]=qp_plot_pnt(plotargs{:});
             case {'POLYL','POLYG'}
                 [hNew{d},Thresholds,Param]=qp_plot_polyl(plotargs{:});
             case {'UGRID-NODE','UGRID-FACE','UGRID-EDGE'}

@@ -258,8 +258,10 @@ switch NVal
                     data = qp_dimsqueeze(data,Ops.axestype,multiple,DimFlag,Props);
                     if isfield(data,'Z') && 0
                         hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'QUAD',data.X,data.Y,data.Z,data.Val,Ops);
-                    else
+                    elseif isfield(data,'X')
                         hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'QUAD',data.X,data.Y,[],data.Val,Ops);
+                    else
+                        hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'QUAD',data.XY(:,1),data.XY(:,2),[],data.Val,Ops);
                     end
                     if isempty(Selected{K_})
                         str=PName;
@@ -287,15 +289,15 @@ switch NVal
                     qp_title(Parent,tit,'quantity',Quant,'unit',Units)
                 end
                 
-            case {'Distance-Val','X-Val','X-Z','X-Time','Time-X','Time-Z'}
+            case {'Distance-Val','X-Val','X-Z','X-Time','Time-X','Time-Z','Time-Val'}
+                if ~isfield(Ops,'plotcoordinate')
+                    Ops.plotcoordinate = 'time';
+                end
                 if multiple(K_)
                     data = qp_dimsqueeze(data,Ops.axestype,multiple,DimFlag,Props);
                     Mask=repmat(min(data.Z,[],3)==max(data.Z,[],3),[1 1 size(data.Z,3)]);
                     if isequal(size(Mask),size(data.X))
                         data.X(Mask)=NaN;
-                    end
-                    if ~isfield(Ops,'plotcoordinate')
-                        Ops.plotcoordinate = 'time';
                     end
                     switch Ops.plotcoordinate
                         case {'path distance','reverse path distance'}
@@ -389,9 +391,51 @@ switch NVal
                         tit{end+1}=stn;
                     end
                     qp_title(Parent,tit,'quantity',Quant,'unit',Units,'time',TStr)
-                else
+                elseif strcmp(Ops.plotcoordinate,'time')
+                    if multiple(T_)
+                        if FirstFrame
+                            hNew=line(data.Time,data.Val, ...
+                                'parent',Parent, ...
+                                Ops.LineParams{:});
+                            if Props.DimFlag(T_)~=5
+                                tick(Parent,'x','autodate')
+                            end
+                        else
+                            set(hNew,'xdata',data.Time,'ydata',data.Val);
+                        end
+                        if ~isempty(stn)
+                            Str=stn;
+                        else
+                            Str='';
+                        end
+                        qp_title(Parent,Str,'quantity',Quant,'unit',Units,'time',TStr)
+                    else
+                        strval=sprintf(Ops.numformat,data.Val);
+                        if isfield(Ops,'axestype') && ...
+                                (isequal(strtok(Ops.axestype),'Time-Val') || ...
+                                isequal(strtok(Ops.axestype),'Time-Z'))
+                            ylim = get(Parent,'ylim');
+                            yval = min(ylim(2),max(ylim(1),data.Val));
+                            if isempty(hNew)
+                                hNew(2)=line(data.Time*[1 1],ylim,'parent',Parent,'color',Ops.colour);
+                                hNew(1)=text('position',[data.Time yval 0],'string',strval,'parent',Parent,Ops.FontParams{:});
+                            else
+                                i1 = strmatch('text',get(hNew,'type')); % 1 or 2
+                                i2 = 3-i1; % consequently, 2 or 1
+                                set(hNew(i2),'xdata',data.Time*[1 1],'ydata',ylim);
+                                set(hNew(i1),'position',[data.Time yval 0],'string',strval);
+                            end
+                        else
+                            unit = '';
+                            if ~isempty(Ops.units)
+                                unit = [' ' Ops.units];
+                            end
+                            hNew=gentext(hNew,Ops,Parent,['Val = ',strval,unit]);
+                        end
+                    end
+                else % distance-Val, X-Val, X-Time, Time-X
                     %Ops.plotcoordinate='(x,y)';
-                    if length(data.Time)>1
+                    if isfield(data,'Time') && length(data.Time)>1
                         mask = all(isnan(data.Val(:,:)),1);
                     else
                         mask = isnan(data.Val);
@@ -609,49 +653,7 @@ switch NVal
                     end
                     qp_title(Parent,Str,'quantity',Quant,'unit',Units,'time',TStr)
                 end
-                
-            case {'Time-Val','Time-Z'}
-                if multiple(T_)
-                    if FirstFrame
-                        hNew=line(data.Time,data.Val, ...
-                            'parent',Parent, ...
-                            Ops.LineParams{:});
-                        if Props.DimFlag(T_)~=5
-                            tick(Parent,'x','autodate')
-                        end
-                    else
-                        set(hNew,'xdata',data.Time,'ydata',data.Val);
-                    end
-                    if ~isempty(stn)
-                        Str=stn;
-                    else
-                        Str='';
-                    end
-                    qp_title(Parent,Str,'quantity',Quant,'unit',Units,'time',TStr)
-                else
-                    strval=sprintf(Ops.numformat,data.Val);
-                    if isfield(Ops,'axestype') && ...
-                            (isequal(strtok(Ops.axestype),'Time-Val') || ...
-                            isequal(strtok(Ops.axestype),'Time-Z'))
-                        ylim = get(Parent,'ylim');
-                        yval = min(ylim(2),max(ylim(1),data.Val));
-                        if isempty(hNew)
-                            hNew(2)=line(data.Time*[1 1],ylim,'parent',Parent,'color',Ops.colour);
-                            hNew(1)=text('position',[data.Time yval 0],'string',strval,'parent',Parent,Ops.FontParams{:});
-                        else
-                            i1 = strmatch('text',get(hNew,'type')); % 1 or 2
-                            i2 = 3-i1; % consequently, 2 or 1
-                            set(hNew(i2),'xdata',data.Time*[1 1],'ydata',ylim);
-                            set(hNew(i1),'position',[data.Time yval 0],'string',strval);
-                        end
-                    else
-                        unit = '';
-                        if ~isempty(Ops.units)
-                            unit = [' ' Ops.units];
-                        end
-                        hNew=gentext(hNew,Ops,Parent,['Val = ',strval,unit]);
-                    end
-                end
+
             otherwise % Text
                 strval = sprintf(Ops.numformat,data.Val);
                 hNew=gentext(hNew,Ops,Parent,['Val=',strval]);

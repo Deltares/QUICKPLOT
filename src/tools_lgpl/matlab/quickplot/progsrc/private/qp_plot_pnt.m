@@ -1,4 +1,4 @@
-function [hNew,Thresholds,Param]=qp_plot_pnt(hNew,Parent,Param,data,Ops,Props)
+function [hNew,Thresholds,Param,Parent]=qp_plot_pnt(hNew,Parent,Param,data,Ops,Props)
 %QP_PLOT_PNT Plot function of QuickPlot for point data sets.
 
 %----- LGPL --------------------------------------------------------------------
@@ -197,9 +197,7 @@ switch NVal
             end
         end
     case {2,3}
-        if multiple(M_) % network
-        else % point
-        end
+        [hNew,Thresholds,Param,Parent]=qp_plot_default(hNew,Parent,Param,data,Ops,Props);
     case 4
         if isfield(data,'XY')
             hNew=gentextfld(hNew,Ops,Parent,data.Val,data.XY(:,1),data.XY(:,2));

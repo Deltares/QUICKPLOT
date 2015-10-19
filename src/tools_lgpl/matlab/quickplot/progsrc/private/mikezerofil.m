@@ -295,6 +295,7 @@ else
     switch FI.NumCoords
         case 1
             Out(1).DimFlag=[1 0 1 0 0];
+            Out(1).UseGrid=0;
         case 2
             Out(1).DimFlag=[1 0 1 1 0];
         case 3

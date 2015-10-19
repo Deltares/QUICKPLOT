@@ -187,12 +187,18 @@ for d=1:length(data)
             data(d).Val=sf*data(d).YComp; %NComp
         case 'k component'
             data(d).Val=sf*data(d).ZComp; %KComp
-        case 'normal component' % only for a vertical slice
-            if  size(data(d).XComp,1)>1
-                data(d).Val=sf*data(d).YComp; %NComp
-            else
-                data(d).Val=sf*data(d).XComp; %MComp
+        case 'normal component'
+            if isfield(data,'NormalComp')
+                data(d).Val=data(d).NormalComp;
+            else % only for a vertical slice
+                if  size(data(d).XComp,1)>1
+                    data(d).Val=sf*data(d).YComp; %NComp
+                else
+                    data(d).Val=sf*data(d).XComp; %MComp
+                end
             end
+        case 'tangential component'
+            data(d).Val=data(d).TangentialComp;
         otherwise
             ui_message('error','Unexpected colour/plot type encountered: %s.',vpt);
             scalar=0;

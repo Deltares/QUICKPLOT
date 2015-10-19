@@ -40,7 +40,7 @@ end
 switch Ops.vectorcomponent
     case {'vector (split m,n)'}
         MNK=-1;
-    case {'magnitude in plane','m component','n component','normal component'}
+    case {'magnitude in plane','m component','n component','normal component','tangential component'}
         MNK=1.5;
     case {'vector'}
         if  multiple(K_) && xor(multiple(M_),multiple(N_))

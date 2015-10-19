@@ -61,10 +61,10 @@ if isempty(X)
     end
 end
 %
-hNew=repmat(0,1,length(Val)+1);
 if zcoord
-    hNew(1)=line([min(X) max(X)],[min(Y) max(Y)],[min(Z) max(Z)],'linestyle','none','marker','none','parent',Parent);
-    for i=length(Val):-1:1
+    hNew = line([min(X) max(X)],[min(Y) max(Y)],[min(Z) max(Z)],'linestyle','none','marker','none','parent',Parent);
+    hNew = repmat(hNew,1,length(Val)+1); % pre-allocate hNew of appropriate length
+    for i=1:length(Val)
         if convert
             Str=sprintf(Ops.numformat,Val(i));
         else
@@ -73,8 +73,9 @@ if zcoord
         hNew(i+1)=text(X(i),Y(i),Z(i),Str,'parent',Parent); % faster to use text(X,Y,Z,Val,...)?
     end
 else
-    hNew(1)=line([min(X) max(X)],[min(Y) max(Y)],'linestyle','none','marker','none','parent',Parent);
-    for i=length(Val):-1:1
+    hNew = line([min(X) max(X)],[min(Y) max(Y)],'linestyle','none','marker','none','parent',Parent);
+    hNew = repmat(hNew,1,length(Val)+1); % pre-allocate hNew of appropriate length
+    for i=1:length(Val)
         if convert
             Str=sprintf(Ops.numformat,Val(i));
         else
