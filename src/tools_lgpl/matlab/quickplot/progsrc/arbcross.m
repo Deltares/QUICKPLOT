@@ -129,7 +129,7 @@ else
     elseif nargout+3==nargin || nargout+4==nargin || ...
             ((nargout==1 || nargout==3) && (nargin==5 || nargin==6))
         %
-        % TRIANGULAR MESH
+        % TRIANGULAR MESH / UGRID MESH
         % (1) Three input arguments more than there are output arguments:
         % besides the fields that match between input and output (VGRIDi -
         % Vi), the list of output arguments also contains X and Y (the

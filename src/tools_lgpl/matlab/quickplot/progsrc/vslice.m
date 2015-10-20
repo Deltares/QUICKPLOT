@@ -196,6 +196,7 @@ switch v_slice
         else
             Slice = arbcross(geomin{:},isel(:,1),isel(:,2));
         end
+        nValLoc = [];
         Flds = {'X','Y','Z','Val','XComp','YComp','ZComp'};
         for i=1:length(Flds)
             fld = Flds{i};
@@ -219,6 +220,7 @@ switch v_slice
                     else
                         data.(fld) = arbcross(Slice,data.(fld));
                     end
+                    nValLoc = size(data.(fld),1);
                     if isfield(data,'Time') && length(data.Time)>1
                         szV = size(data.(fld));
                         dms = [length(szV) 1:length(szV)-1];
@@ -229,7 +231,9 @@ switch v_slice
         end
         if isfield(data,'FaceNodeConnect')
             data=rmfield(data,'FaceNodeConnect');
-            data.Geom = 'sQUAD';
+            if isfield(data,'EdgeNodeConnect')
+                data=rmfield(data,'EdgeNodeConnect');
+            end
         elseif isfield(data,'TRI')
             data.X = arbcross(Slice,data.XYZ(:,:,:,1));
             data.Y = arbcross(Slice,data.XYZ(:,:,:,2));
@@ -238,6 +242,14 @@ switch v_slice
             end
             data=rmfield(data,'TRI');
             data=rmfield(data,'XYZ');
+        end
+        data.Geom = 'sQUAD';
+        if isempty(nValLoc)
+            % no values, so no ValLocation
+        elseif nValLoc==size(data.X,1)
+            data.ValLocation = 'NODE';
+        else
+            data.ValLocation = 'EDGE';
         end
     otherwise
         error('Expected ''XY'' or ''MN'' slice TYPE.')

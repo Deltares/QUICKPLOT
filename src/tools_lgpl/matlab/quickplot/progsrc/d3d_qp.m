@@ -4256,6 +4256,7 @@ switch cmd
         set(MW.EditMN,'string','','Userdata',[],'visible','off')
         set(MW.XY,'visible','off')
         set(MW.EditXY,'string','','Userdata',[],'visible','off')
+        set([MW.LoadXY MW.SaveXY],'visible','off')
         set(MW.M,'enable','off','UserData',[],'visible','on')
         set(MW.AllM,'enable','off','value',1,'UserData',[],'visible','on')
         set(MW.EditM,'enable','off','string','','backgroundcolor',Inactive,'UserData',[],'visible','on')
@@ -4322,6 +4323,7 @@ switch cmd
             Li=1;
         end
         set(findobj(UOH,'tag','marker=?'),'value',Li)
+        set(findobj(UOH,'tag','markersize=?'),'userdata',6,'string','6')
         set(findobj(UOH,'tag','usemarkercolour'),'value',0)
         set(findobj(UOH,'tag','markercolour=?'),'backgroundcolor',State.markercolour,'userdata',State.markercolour)
         set(findobj(UOH,'tag','usemarkerfillcolour'),'value',0)

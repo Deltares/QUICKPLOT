@@ -150,7 +150,7 @@ else
         [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'griddefdata',SubField{:},SubSelected{:});
     else
         switch Ops.presentationtype
-            case {'patches','patches with lines','patch centred vector','polygons'}
+            case {'patches','patches with lines','patch centred vector','polygons','edge'}
                 [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'gridcelldata',SubField{:},SubSelected{:});
                 DataInCell=1;
             otherwise
@@ -224,6 +224,9 @@ if strcmp(Ops.presentationtype,'vector') || ...
     % data = geom2pnt(data);
     if isfield(data,'ValLocation')
         if strcmp(data.ValLocation,'EDGE')
+            if strcmp(data.Geom,'sQUAD')
+                data.EdgeNodeConnect = [1:length(data.X)-1;2:length(data.X)]';
+            end
             data.X = mean(data.X(data.EdgeNodeConnect),2);
             data.Y = mean(data.Y(data.EdgeNodeConnect),2);
         elseif strcmp(data.ValLocation,'FACE')
@@ -273,6 +276,12 @@ VectorPlot=0;
 %if isfield(data,'XComp')
 if ~isempty(Ops.vectorcomponent)
     [data,scalar]=computecomponent(data,Ops);
+    % HACK: if it's the edge normal or tangential component, take the
+    % absolute value to avoid problems with direction
+    if strncmp(Ops.vectorcomponent,'edge ',5)
+        data.Val = abs(data.Val);
+    end
+    %
     if strcmp(Ops.vectorcomponent,'edge')
         if isempty(Ops.vectorcolour)
             Units='';
@@ -685,11 +694,13 @@ if isfield(Ops,'linestyle') && isfield(Ops,'marker') && ~strcmp(Ops.presentation
         'linewidth',Ops.linewidth, ...
         'linestyle',Ops.linestyle, ...
         'marker',Ops.marker, ...
+        'markersize',Ops.markersize, ...
         'markeredgecolor',Ops.markercolour, ...
         'markerfacecolor',Ops.markerfillcolour};
 elseif isfield(Ops,'marker')
     Ops.LineParams={'linestyle','none', ...
         'marker',Ops.marker, ...
+        'markersize',Ops.markersize, ...
         'markeredgecolor',Ops.markercolour, ...
         'markerfacecolor',Ops.markerfillcolour};
 end

@@ -63,6 +63,7 @@ end
 ntri = size(TRI,1);
 edge = TRI(:,[1 1 2 2 3 3]);
 edge = reshape(edge,[ntri*3 2]);
+edge = sort(edge,2); % if we don't sort then we intersect with N1-N2 and N2-N1 which may result in two points
 tri = repmat((1:ntri)',3,1);
 
 Xvec = X(:);

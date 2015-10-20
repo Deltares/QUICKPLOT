@@ -188,16 +188,34 @@ for d=1:length(data)
         case 'k component'
             data(d).Val=sf*data(d).ZComp; %KComp
         case 'normal component'
-            if isfield(data,'NormalComp')
-                data(d).Val=data(d).NormalComp;
-            else % only for a vertical slice
-                if  size(data(d).XComp,1)>1
-                    data(d).Val=sf*data(d).YComp; %NComp
-                else
-                    data(d).Val=sf*data(d).XComp; %MComp
-                end
+            if  size(data(d).XComp,1)>1
+                data(d).Val=sf*data(d).YComp; %NComp
+            else
+                data(d).Val=sf*data(d).XComp; %MComp
             end
-        case 'tangential component'
+        case {'slice normal component','slice tangential component'}
+            if size(data(d).dX_tangential,1)==size(data(d).XComp,1) % EDGE
+                dx = data(d).dX_tangential;
+                dy = data(d).dY_tangential;
+            else % NODE
+                dx = [data(d).dX_tangential;0];
+                dy = [data(d).dY_tangential;0];
+                dx(2:end) = dx(2:end)+data(d).dX_tangential;
+                dy(2:end) = dy(2:end)+data(d).dY_tangential;
+                dx(2:end-1) = dx(2:end-1)/2;
+                dy(2:end-1) = dy(2:end-1)/2;
+            end
+            ds = sqrt(dx.^2+dy.^2);
+            dx = dx./ds;
+            dy = dy./ds;
+            if strcmp(lower(vpt),'slice tangential component')
+               data(d).Val=data(d).XComp.*dx + data(d).YComp.*dy;
+            else
+               data(d).Val=-data(d).XComp.*dy + data(d).YComp.*dx;
+            end
+        case 'edge normal component'
+            data(d).Val=data(d).NormalComp;
+        case 'edge tangential component'
             data(d).Val=data(d).TangentialComp;
         otherwise
             ui_message('error','Unexpected colour/plot type encountered: %s.',vpt);

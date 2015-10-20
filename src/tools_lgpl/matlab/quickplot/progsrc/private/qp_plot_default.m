@@ -236,7 +236,7 @@ switch NVal
         
     case {1,5,6}
         switch axestype
-            case {'X-Y','Lon-Lat','X-Y-Val','Lon-Lat-Val'}
+            case {'X-Y','Lon-Lat','X-Y-Val','X-Y-Z','Lon-Lat-Val','Lon-Lat-Z'}
                 if isfield(data,'TRI')
                     set(Parent,'NextPlot','add');
                     switch Ops.presentationtype

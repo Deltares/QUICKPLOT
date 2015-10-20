@@ -218,7 +218,6 @@ forcemarkercolor=0;
 markerflatfill=0;
 edgeflatcolour=0;
 lineproperties=0;
-data2d=0;
 
 thindams = nval>0 & nval<1;
 MultipleColors = (nval>=1 & nval<4) | nval==6;
@@ -236,14 +235,6 @@ switch geometry
                 axestype={'X-Val','X-Y'}; % ,'X-Time','Time-X'
             else
                 axestype={'X-Val','X-Y'};
-            end
-            switch geometry
-                case 'UGRID-FACE'
-                    geometry = 'SEG-EDGE';
-                    lineproperties = 1;
-                otherwise
-                    geometry = 'SEG-NODE';
-                    lineproperties = 1;
             end
         elseif multiple(M_) && multiple(K_)
             % noplot
@@ -468,9 +459,21 @@ else
     i=1;
 end
 axestype=axestype{i};
+%
+if (multiple(M_) && ~multiple(N_) && DimFlag(N_)) || (~multiple(M_) && DimFlag(M_) && multiple(N_)) || vslice
+    if isempty(strfind(axestype,'Time')) && ~multiple(K_)
+        if Props.DataInCell || ~isempty(strfind(geometry,'FACE'))
+            geometry = 'SEG-EDGE';
+            lineproperties = 1;
+        else
+            geometry = 'SEG-NODE';
+            lineproperties = 1;
+        end
+    end
+end
 
 if strcmp(axestype,'X-Y-Val')
-    data2d=1;
+    % skip
 elseif strfind(axestype,'Val')
     MultipleColors=0;
     lineproperties=1;
@@ -478,10 +481,6 @@ elseif strfind(axestype,'Val')
         ask_for_textprops=1;
         ask_for_numformat=1;
     end
-elseif strcmp(axestype,'X-Y') || strcmp(axestype,'X-Z')
-    data2d=1;
-elseif strcmp(axestype,'X-Time') || strcmp(axestype,'Time-X') || strcmp(axestype,'Time-Z')
-    data2d=1;
 elseif strcmp(axestype,'Text') || (strcmp(axestype,'Time-Val') && ~multiple(T_))
     MultipleColors=0;
     ask_for_textprops=1;
@@ -515,25 +514,29 @@ end
 
 coords={'path distance','reverse path distance','x coordinate','y coordinate'};
 
-if vslice
-    Spatial=1;
+if strfind(axestype,'X')
+    SpatialH=1;
 else
-    if strfind(axestype,'X')
-        Spatial=1;
-    else
-        Spatial=0;
-    end
-    if strfind(axestype,'Y')
-        Spatial=Spatial+1;
-    end
+    SpatialH=0;
 end
-SpatialH=Spatial;
+if strfind(axestype,'Y')
+    SpatialH=SpatialH+1;
+end
+%
 if strfind(axestype,'Z')
-    Spatial=Spatial+1;
     SpatialV=1;
 else
     SpatialV=0;
 end
+%
+if strfind(axestype,'Time')
+    TimeDim=1;
+else
+    TimeDim=0;
+end
+%
+Spatial=SpatialH+SpatialV;
+TimeSpatial=Spatial+TimeDim;
 
 if strcmp(axestype,'X-Y-Z') % cannot plot 3D volumes
     %won't plot
@@ -629,17 +632,28 @@ if nval==2 || nval==3
         switch nvalstr
             case 'xy'
                 compList={'vector','magnitude','angle'};
-                switch VectorDef
-                    case 0
-                        compList(end+1:end+2)={'x component','y component'};
-                    case 1
-                        compList(end+1:end+4)={'x component','y component','m component','n component'};
-                    case 2
-                        compList(end+1:end+2)={'m component','n component'};
-                    case 4
-                        % magnitude and angle already in compList
-                    case 5
-                        compList(end+1:end+4)={'x component','y component','normal component','tangential component'};
+                if vslice
+                    switch VectorDef
+                        case 2
+                            compList(end+1:end+2)={'m component','n component'};
+                            compList(1)=[]; % can't do vector if I only have m and n components
+                        otherwise
+                            compList(end+1:end+4)={'x component','y component','slice normal component','slice tangential component'};
+                    end
+                else
+                    switch VectorDef
+                        case 0
+                            compList(end+1:end+2)={'x component','y component'};
+                        case 1
+                            compList(end+1:end+4)={'x component','y component','m component','n component'};
+                        case 2
+                            compList(end+1:end+2)={'m component','n component'};
+                            compList(1)=[]; % can't do vector if I only have m and n components
+                        case 4
+                            % magnitude and angle already in compList
+                        case 5
+                            compList(end+1:end+4)={'x component','y component','edge normal component','edge tangential component'};
+                    end
                 end
             case 'xyz'
                 compList={'vector','magnitude','angle','x component','y component','z component'};
@@ -692,7 +706,7 @@ if nval==2 || nval==3
             vectors=0;
             Units = 'radians';
             ask_for_angleconvention=1;
-        case {'magnitude in plane','m component','n component','normal component','tangential component'}
+        case {'magnitude in plane','m component','n component','normal component','slice normal component','slice tangential component','edge normal component','edge tangential component'}
             vectors=0;
             VectorReq=1;
         case 'edge'
@@ -720,7 +734,7 @@ end
 %---- presentation type
 %
 extend2edge = 0;
-if ((nval==1 || nval==6) && data2d) || nval==1.9 || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') || strcmp(geometry,'POLYG') % || (nval==0 & ~DimFlag(ST_))
+if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') || strcmp(geometry,'POLYG') % || (nval==0 & ~DimFlag(ST_))
     switch nvalstr
         case 1.9
             PrsTps={'vector','edge'};
@@ -1064,7 +1078,7 @@ end
 
 if extend2edge
     h = findobj(OH,'tag','extend2edge');
-    if data2d && ~strcmp(axestype,'X-Time') && ~strcmp(axestype,'Time-X')
+    if TimeSpatial==2 && ~strcmp(axestype,'X-Time') && ~strcmp(axestype,'Time-X')
         set(h,'enable','on')
         extend2edge = get(h,'value');
     else
@@ -1390,7 +1404,7 @@ Ops.axestype=axestype;
 %---- clipping values
 %
 
-if (nval==1 || isfield(Ops,'vectorcolour') || isfield(Ops,'colourdams')) && (lineproperties || data2d)
+if (nval==1 || isfield(Ops,'vectorcolour') || isfield(Ops,'colourdams')) && (lineproperties || TimeSpatial==2)
     set(findobj(OH,'tag','clippingvals'),'enable','on')
     set(findobj(OH,'tag','clippingvals=?'),'enable','on','backgroundcolor',Active)
     Ops.clippingvalues=get(findobj(OH,'tag','clippingvals=?'),'userdata');
