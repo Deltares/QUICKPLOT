@@ -770,8 +770,28 @@ if isfield(Ans,'NormalComp')
         ln = sqrt(dx.^2+dy.^2); % should never be 0, so no need to protect
         dx = dx./ln;
         dy = dy./ln;
-        Ans.XComp = Ans.TangentialComp.*dx + Ans.NormalComp.*dy;
-        Ans.YComp = Ans.TangentialComp.*dy - Ans.NormalComp.*dx;
+        szTC = size(Ans.TangentialComp);
+        Ans.XComp = zeros(szTC);
+        Ans.YComp = zeros(szTC);
+        if Props.DimFlag(T_) && length(idx{T_})>1
+            id = {0,':',0};
+            ND = prod(szTC(3:end));
+            dx = dx';
+            dy = dy';
+        else
+            id = {':',0};
+            ND = prod(szTC(2:end));
+        end
+        for t = 1:max(1,length(idx{T_}))
+            if Props.DimFlag(T_) && length(idx{T_})>1
+                id{1} = t;
+            end
+            for nd = 1:ND
+                id{end} = nd;
+                Ans.XComp(id{:}) = Ans.TangentialComp(id{:}).*dx + Ans.NormalComp(id{:}).*dy;
+                Ans.YComp(id{:}) = Ans.TangentialComp(id{:}).*dy - Ans.NormalComp(id{:}).*dx;
+            end
+        end
         Ans = rmfield(Ans,'NormalComp');
         Ans = rmfield(Ans,'TangentialComp');
     else

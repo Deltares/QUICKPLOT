@@ -344,16 +344,14 @@ switch data.ValLocation
                 XY = reshape([data.X data.Y],[1 length(data.X) 1 2]);
                 nNodes = sum(~isnan(FaceNodeConnect),2);
                 uNodes = unique(nNodes);
-                first = isempty(hNew);
+                delete(hNew)
+                hNew = {};
                 for i = length(uNodes):-1:1
                     I = nNodes == uNodes(i);
-                    if first
-                        hOld = [];
-                    else
-                        hOld = hNew(i);
-                    end
-                    hNew(i) = genfaces(hOld,Ops,Parent,data.Val(I),XY,FaceNodeConnect(I,1:uNodes(i)));
+                    hOld = [];
+                    hNew{i} = genfaces(hOld,Ops,Parent,data.Val(I),XY,FaceNodeConnect(I,1:uNodes(i)));
                 end
+                hNew = cat(2,hNew{:});
                 
             case {'continuous shades','contour lines','coloured contour lines','contour patches','contour patches with lines'}
                 data = dual_ugrid(data);

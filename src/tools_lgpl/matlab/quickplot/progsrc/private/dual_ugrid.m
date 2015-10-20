@@ -42,7 +42,7 @@ end
 %-----
 FNCe = FaceNodeConnect(:,[ceil(1:0.5:size(FaceNodeConnect,2)) 1])';
 FNCe(isnan(FNCe)) = [];
-FNCe = reshape(FNCe,[2 length(FNCe)/2])';
+FNCe = reshape(FNCe,[2 numel(FNCe)/2])';
 if isempty(EdgeNodeConnect)
     EdgeNodeConnect = unique(sort(FNCe,2),'rows');
 end
@@ -104,6 +104,9 @@ iBoundaryEdges = find(any(isnan(EdgeFaceConnect),2));
 for i=1:nNodes
     nEdges_i = nEdgesPerNode(i);
     nFaces_i = nFacesPerNode(i);
+    if nFaces_i==0 && nEdges_i==0
+        continue
+    end
     %
     Faces_i = NodeFaceConnect(i,1:nFaces_i);
     Edges_i = NodeEdgeConnect(i,1:nEdges_i);

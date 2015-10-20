@@ -305,8 +305,11 @@ for i=1:nargin-input_offset-input_skip_end
     elseif strcmp(VLOC,'EDGE')
         noEdge = isnan(iEdge);
         iEdge(noEdge) = 1;
-        v = VGRID(iEdge);
-        v(noEdge) = NaN;
+        for k = size(VGRID,3):-1:1
+            vgrid = VGRID(:,:,k);
+            v(:,1,k) = vgrid(iEdge);
+        end
+        v(noEdge,:) = NaN;
     else
         error('Invalid size of %s%i',VGRIDStr,i)
     end

@@ -194,7 +194,20 @@ for d=1:length(data)
                 data(d).Val=sf*data(d).XComp; %MComp
             end
         case {'slice normal component','slice tangential component'}
-            if size(data(d).dX_tangential,1)==size(data(d).XComp,1) % EDGE
+            Tangential = strcmp(lower(vpt),'slice tangential component');
+            if isfield(data,'Time')
+                Time = data(d).Time;
+            else
+                Time = [];
+            end
+            nEdge = size(data(d).dX_tangential,1);
+            if length(Time)>1
+                nVal = size(data(d).XComp,2);
+            else
+                nVal = size(data(d).XComp,1);
+            end
+            %
+            if nEdge==nVal % EDGE
                 dx = data(d).dX_tangential;
                 dy = data(d).dY_tangential;
             else % NODE
@@ -208,10 +221,24 @@ for d=1:length(data)
             ds = sqrt(dx.^2+dy.^2);
             dx = dx./ds;
             dy = dy./ds;
-            if strcmp(lower(vpt),'slice tangential component')
-               data(d).Val=data(d).XComp.*dx + data(d).YComp.*dy;
-            else
-               data(d).Val=-data(d).XComp.*dy + data(d).YComp.*dx;
+            if length(Time)>1
+                Time = data(d).Time;
+                dx = dx';
+                dy = dy';
+                data(d).Val = zeros(size(data(d).XComp));
+                for t = 1:length(Time)
+                    if Tangential
+                        data(d).Val(t,:)=data(d).XComp(t,:).*dx + data(d).YComp(t,:).*dy;
+                    else
+                        data(d).Val(t,:)=-data(d).XComp(t,:).*dy + data(d).YComp(t,:).*dx;
+                    end
+                end
+            else 
+                if Tangential
+                    data(d).Val=data(d).XComp.*dx + data(d).YComp.*dy;
+                else
+                    data(d).Val=-data(d).XComp.*dy + data(d).YComp.*dx;
+                end
             end
         case 'edge normal component'
             data(d).Val=data(d).NormalComp;

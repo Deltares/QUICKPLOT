@@ -232,7 +232,7 @@ switch geometry
     case {'UGRID-NODE','UGRID-EDGE','UGRID-FACE'}
         if vslice
             if multiple(T_)
-                axestype={'X-Val','X-Y'}; % ,'X-Time','Time-X'
+                axestype={'X-Val','X-Y','X-Time','Time-X'}; % ,'X-Time','Time-X'
             else
                 axestype={'X-Val','X-Y'};
             end
@@ -763,44 +763,47 @@ if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'stri
             end
             switch dic
                 case 0
-                    switch geometry
-                        case {'TRI','TRI+'}
-                            if SpatialV
-                                PrsTps={'continuous shades';'markers';'values'};
-                            else
-                                PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
-                            end
-                        case {'PNT','PNT+'}
-                            if strcmp(axestype,'Time-Z')
-                                PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
-                            else
-                                PrsTps={'markers';'values'};
-                            end
-                        case {'SEG','SEG-NODE'}
-                            PrsTps={'continuous shades';'markers';'values'};
-                        case {'POLYL'}
-                            PrsTps={'polylines'};
-                        case {'UGRID-EDGE'}
-                            PrsTps={'markers';'values';'edge'};
-                        otherwise
+                    switch axestype
+                        case {'X-Time','Time-X','Time-Z'}
                             PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
+                        otherwise
+                            switch geometry
+                                case {'TRI','TRI+'}
+                                    if SpatialV
+                                        PrsTps={'continuous shades';'markers';'values'};
+                                    else
+                                        PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
+                                    end
+                                case {'PNT','PNT+'}
+                                    if strcmp(axestype,'Time-Z')
+                                        PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
+                                    else
+                                        PrsTps={'markers';'values'};
+                                    end
+                                case {'SEG','SEG-NODE'}
+                                    PrsTps={'continuous shades';'markers';'values'};
+                                case {'POLYL'}
+                                    PrsTps={'polylines'};
+                                case {'UGRID-EDGE'}
+                                    PrsTps={'markers';'values';'edge'};
+                                otherwise
+                                    PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
+                            end
                     end
                 case 1
-                    switch geometry
-                        case {'POLYG'}
-                            if DimFlag(M_) && DimFlag(N_)
-                                PrsTps={'polygons';'markers';'values';'continuous shades';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
-                            else
-                                PrsTps={'polygons';'markers';'values'};
-                            end
-                        case {'SEG','SEG-EDGE'}
-                            PrsTps={'edge';'markers';'values'};
-                        case {'UGRID-FACE'}
-                            PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
+                    switch axestype
+                        case {'X-Time','Time-X','Time-Z'}
+                            PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                         otherwise
-                            switch axestype
-                                case {'X-Time','Time-X','Time-Z'}
-                                    PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
+                            switch geometry
+                                case {'POLYG'}
+                                    if DimFlag(M_) && DimFlag(N_)
+                                        PrsTps={'polygons';'markers';'values';'continuous shades';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
+                                    else
+                                        PrsTps={'polygons';'markers';'values'};
+                                    end
+                                case {'SEG','SEG-EDGE'}
+                                    PrsTps={'edge';'markers';'values'};
                                 otherwise
                                     PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                             end
