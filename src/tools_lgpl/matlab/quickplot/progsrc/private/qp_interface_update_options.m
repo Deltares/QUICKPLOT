@@ -232,7 +232,7 @@ switch geometry
     case {'UGRID-NODE','UGRID-EDGE','UGRID-FACE'}
         if vslice
             if multiple(T_)
-                axestype={'X-Val','X-Y','X-Time','Time-X'}; % ,'X-Time','Time-X'
+                axestype={'X-Val','X-Y','X-Time','Time-X'};
             else
                 axestype={'X-Val','X-Y'};
             end
