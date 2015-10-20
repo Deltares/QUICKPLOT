@@ -114,7 +114,7 @@ if isfield(data,'TRI')
                 data.ZComp=griddata(data.XYZ(1,:,1,1),data.XYZ(1,:,1,2),data.ZComp,X,Y);
             end
             if isfield(data,'Val')
-                data.Val=griddataa(data.XYZ(1,:,1,1),data.XYZ(1,:,1,2),data.Val,X,Y);
+                data.Val=griddata(data.XYZ(1,:,1,1),data.XYZ(1,:,1,2),data.Val,X,Y);
             end
             data = rmfield(data,'XYZ');
             data.X = X;
