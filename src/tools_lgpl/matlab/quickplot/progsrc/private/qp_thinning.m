@@ -198,5 +198,11 @@ elseif isfield(Ops,'thinningmode')
                     data.(f)=data.(f)(sel{:});
                 end
             end
+            for fcell = {'dX_tangential','dY_tangential'}
+                f = fcell{1};
+                if isfield(data,f)
+                    data = rmfield(data,f);
+                end
+            end
     end
 end

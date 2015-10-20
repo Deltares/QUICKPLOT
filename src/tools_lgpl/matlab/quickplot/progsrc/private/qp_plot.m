@@ -220,11 +220,12 @@ end
 FirstFrame=isempty(hOldVec);
 
 if strcmp(Ops.presentationtype,'vector') || ...
-        strcmp(Ops.presentationtype,'markers')
+        strcmp(Ops.presentationtype,'markers') || ...
+        strcmp(Ops.presentationtype,'values')
     % data = geom2pnt(data);
     if isfield(data,'ValLocation')
         if strcmp(data.ValLocation,'EDGE')
-            if strcmp(data.Geom,'sQUAD')
+            if isfield(data,'Geom') && strcmp(data.Geom,'sQUAD')
                 data.EdgeNodeConnect = [1:length(data.X)-1;2:length(data.X)]';
             end
             data.X = mean(data.X(data.EdgeNodeConnect),2);
@@ -235,10 +236,10 @@ if strcmp(Ops.presentationtype,'vector') || ...
             data.FaceNodeConnect(missing) = 1;
             data.X = data.X(data.FaceNodeConnect);
             data.X(missing) = 0;
-            data.X = sum(data.X,2)/nNodes;
+            data.X = sum(data.X,2)./nNodes;
             data.Y = data.Y(data.FaceNodeConnect);
             data.Y(missing) = 0;
-            data.Y = sum(data.Y,2)/nNodes;
+            data.Y = sum(data.Y,2)./nNodes;
         end
         for c = {'FaceNodeConnection','EdgeNodeConnection','ValLocation'}
             s = c{1};
