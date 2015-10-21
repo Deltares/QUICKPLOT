@@ -1,4 +1,4 @@
-function Out=tecplot(cmd,varargin),
+function Out=tecplot(cmd,varargin)
 %TECPLOT Read/write for Tecplot files.
 %
 %   FileInfo=TECPLOT('write',FileName,Data)
@@ -45,21 +45,80 @@ function Out=tecplot(cmd,varargin),
 %   $HeadURL$
 %   $Id$
 
-if nargin==0,
-    if nargout>0,
+if nargin==0
+    if nargout>0
         Out=[];
-    end;
-    return;
-end;
-switch cmd,
-    case 'write',
+    end
+    return
+end
+switch cmd
+    case 'open'
+        Out=Local_open_file(varargin{:});
+    case 'write'
         Out=Local_write_file(varargin{:});
-    otherwise,
+    otherwise
         uiwait(msgbox('unknown command','modal'));
-end;
+end
 
 
-function FI=Local_write_file(filename,FileInfo);
+function FI=Local_open_file(filename)
+FI.FileName=filename;
+fid=fopen(filename,'r','l');
+if fid<0
+    error('Cannot open "%s".',filename)
+end
+try
+    str = fread(fid,[1 8],'*char');
+    if ~strcmp(str(1:5),'#!TDV')
+        fclose(fid);
+        error('File "%s" does not start with "#!TDV" string',filename)
+    end
+    version = sscanf(str(6:8),'%i');
+    switch version
+        case 75
+            FI.Version = 9;
+        case 102
+            FI.Version = 10;
+        case 112
+            FI.Version = 11;
+        otherwise
+            fclose(fid);
+            error('Version %i of Tecplot file "%s" not supported.',version,file)
+    end
+    fread(fid,1,'int32'); % 1
+    fread(fid,1,'int32'); % 1
+    FI.Title = freadstring(fid);
+    nV = fread(fid,1,'int32');
+    Var = cell(1,nV);
+    for i = 1:nV
+        Var{i} = freadstring(fid);
+    end
+    FI.Variables = Var;
+    %
+    fread(fid,[1 4],'uchar'); %00 80 95 43
+    %
+    z = 1;
+    FI.Zone(z).Title = freadstring(fid);
+    switch FI.Version
+        case 9
+             fread(fid,1,'int32'); % 0=BLOCK, 1=POINT, 2=FEBLOCK, 3=FEPOINT order
+             fread(fid,1,'int32'); % ColorNumber
+        case 10
+             fread(fid,1,'int32'); % ColorNumber
+             fread(fid,1,'int32'); % 0=ORDERED, 1=FELINESEG, 2=FETRIANGULAR, 3=FEQUADRILATERAL, 4=FETETRAHEDRON, 5=FEBRICK
+             fread(fid,1,'int32'); % 0=BLOCK, 1=POINT
+             fread(fid,1,'int32'); % NODAL or CELLCENTERED data - if 1, followed by flag array of length nV: 0=NODAL, 1=CELLCENTERED
+             fread(fid,1,'int32'); % ???
+        case 11
+            % ???
+    end
+    fclose(fid);
+catch err
+    fclose(fid);
+    rethrow(err)
+end
+
+function FI=Local_write_file(filename,FileInfo)
 if ~isstruct(FileInfo),
     FI.Zone.Title='';
     FI.Zone.Data=FileInfo;
@@ -124,9 +183,9 @@ end
 % --- Open file ... always in PC style ...
 %
 fid=fopen(filename,'w','l');
-if fid<0,
-    error('Cannot open requested output file.');
-end;
+if fid<0
+    error('Cannot open requested output file.')
+end
 
 %
 % --- Start writing file and title ...
@@ -140,12 +199,12 @@ if ~ASCII
     end
 end
 if ASCII
-    if isfield(FI,'Title') & ~isempty(FI.Title)
+    if isfield(FI,'Title') && ~isempty(FI.Title)
         fprintf(fid,'TITLE= "%s"\n',FI.Title);
     end
 else
     fwrite(fid,1,'int32');
-    if isfield(FI,'Title') & ~isempty(FI.Title)
+    if isfield(FI,'Title') && ~isempty(FI.Title)
         fwritestring(fid,FI.Title)
     else
         fwritestring(fid,'')
@@ -188,7 +247,7 @@ for i=1:length(FI.Zone)
     % --- Set colorname and colornumber
     %
     Color=FI.Zone(i).Color;
-    if isequal(Color,'') | isequal(Color,-1)
+    if isequal(Color,'') || isequal(Color,-1)
         ColorNumber=-1;
     elseif ischar(Color)
         ColorNumber=strmatch(Color,Clrs,'exact')-2;
@@ -229,10 +288,10 @@ for i=1:length(FI.Zone)
         %
         % Zone title ...
         %
-        if isfield(FI.Zone,'Title') & ~isempty(FI.Zone(i).Title)
+        if isfield(FI.Zone,'Title') && ~isempty(FI.Zone(i).Title)
             fprintf(fid,' T="%s"\n',FI.Zone(i).Title);
         else
-            fprintf(fid,'\n',FI.Zone(i).Title);
+            fprintf(fid,'\n');
         end
     else
         %
@@ -240,7 +299,7 @@ for i=1:length(FI.Zone)
         %
         % Zone title ...
         %
-        if isfield(FI.Zone,'Title') & ~isempty(FI.Zone(i).Title)
+        if isfield(FI.Zone,'Title') && ~isempty(FI.Zone(i).Title)
             fwritestring(fid,FI.Zone(i).Title);
         else
             fwritestring(fid,sprintf('ZONE %3.3i',i));
@@ -387,6 +446,13 @@ if ~ASCII
 end
 FI.Check='OK';
 fclose(fid);
+
+function Str = freadstring(fid)
+Loc = ftell(fid);
+Str = fread(fid,[1 1024],'int32=>char');
+Len = min(find(Str==0));
+Str = Str(1:Len-1);
+fseek(fid,Loc+4*Len,-1);
 
 function fwritestring(fid,Str)
 fwrite(fid,Str,'int32');

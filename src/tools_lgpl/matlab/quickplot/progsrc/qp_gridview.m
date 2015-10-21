@@ -511,7 +511,13 @@ switch cmd
                     SEG=SEG(I,:);
                     XY=XY(I,:,:);
                     if isempty(dist)
-                        dist = sqrt(sum(diff(XY,1,2).^2,3));
+                        style = getappdata(gcbf,'pathstyle');
+                        switch style
+                            case 'least' % least number of segments
+                                dist = repmat(1,size(XY,1),1);
+                            case 'shortest' % shortest path
+                                dist = sqrt(sum(diff(XY,1,2).^2,3));
+                        end
                     else
                         dist = dist(I);
                     end
@@ -594,6 +600,17 @@ switch cmd
         qp_gridview selpointmotion
         
     case 'gridviewpath'
+        pos=get(gcbf,'position');
+        uicm=findobj(gcbf,'tag','gridviewpath_contextmenu');
+        set(uicm,'position',get(0,'pointerlocation')-pos(1:2),'visible','on')
+        
+    case {'gridviewpath_shortest_path','gridviewpath_least_segments'}
+        switch cmd
+            case 'gridviewpath_shortest_path'
+                setappdata(gcbf,'pathstyle','shortest')
+            case 'gridviewpath_least_segments'
+                setappdata(gcbf,'pathstyle','least')
+        end
         menusoff(gcbf)
         zoom(gcbf,'off');
         set(gcbf,'WindowButtonDownFcn','qp_gridview pathdown')
@@ -773,6 +790,10 @@ switch cmd
         %path
         qp_menutool(uim,TB,'gridviewpath', ...
             'Shortest &Path','Select shortest path',0)
+        uicm=uicontextmenu('parent',F,'tag','gridviewpath_contextmenu');
+        qp_uimenu(uicm, ...
+            {'gridviewpath_shortest_path','Shortest Path',1,1,0
+            'gridviewpath_least_segments','Least Number of Segments',1,1,0});
         %---
         %genline,genline
         qp_menutool(uim,TB,'gridviewarbline', ...
