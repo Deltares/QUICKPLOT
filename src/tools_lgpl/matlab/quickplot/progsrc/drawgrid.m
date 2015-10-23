@@ -29,6 +29,7 @@ function [x,y]=drawgrid(varargin)
 %   * 'clipzero'   by default co-ordinate pairs of (0,0) are
 %                  clipped. Set to 'off' to plot co-ordinates
 %                  at (0,0).
+%   * 'zdata'      value to raise or lower gridplot in 3D-space (default 0)
 %
 %   Example 1:
 %      TRIM = vs_use('d:\demo\trim-s33.dat');
@@ -74,6 +75,7 @@ function [x,y]=drawgrid(varargin)
 
 xcor=[];
 ycor=[];
+ZData=0;
 C=[];
 prop='';
 P.fontsize=4;
@@ -114,6 +116,9 @@ while i<=nargin
          case 'clipzero'
             i=i+1;
             P.clipzero=isequal(lower(varargin{i}),'on');
+         case 'zdata'
+            i=i+1;
+            ZData=varargin{i};             
          otherwise
             error('Invalid string argument: %s.',varargin{i})
       end
@@ -208,7 +213,8 @@ elseif size(xcor,2)==1
    xcor = cat(2,xcor,xcor);
    ycor = cat(2,ycor,ycor);
 end
-S=surface(xcor,ycor,zeros(size(xcor)),'parent',P.parent);
+zcor = zeros(size(xcor))+ZData;
+S=surface(xcor,ycor,zcor,'parent',P.parent);
 set(S,'facecolor','none','edgecolor',P.color,'linewidth',0.00001);
 
 if ~isempty(prop)
@@ -261,7 +267,7 @@ if ~isempty(P.gridstep) & ~grid1D
       vm(end+1)=size(xcor,1);
    end
    for m=vm
-      hi=procrow(xcor(m,:),ycor(m,:),m+P.m1n1(1),mgrd,P);
+      hi=procrow(xcor(m,:),ycor(m,:),zcor(m,:),m+P.m1n1(1),mgrd,P);
       h=cat(2,h,hi);
    end
    nstep=P.gridstep(2);
@@ -280,7 +286,7 @@ if ~isempty(P.gridstep) & ~grid1D
       vn(end+1)=size(xcor,2);
    end
    for n=vn
-      hi=procrow(xcor(:,n),ycor(:,n),n+P.m1n1(2),mgrd,P);
+      hi=procrow(xcor(:,n),ycor(:,n),zcor(:,n),n+P.m1n1(2),mgrd,P);
       h=cat(2,h,hi);
    end
 end
@@ -350,7 +356,7 @@ ORTH=abs((-ds3sq+ds1sq+ds2sq)./(2*sqrt(ds1sq.*ds2sq)));
 %ORTH=max(max(abs(cos1),abs(cos2)),max(abs(cos3),abs(cos4)));
 
 
-function h=procrow(X,Y,m,mgrd,P)
+function h=procrow(X,Y,Z,m,mgrd,P)
 h=[];
 Act=~isnan(X);
 if Act(1)
@@ -358,15 +364,17 @@ if Act(1)
    if (n<length(X)) & ~isnan(X(n+1))
       dx=X(n)-X(n+1);
       dy=Y(n)-Y(n+1);
+      dz=Z(n)-Z(n+1);
       if dx~=0 | dy~=0
          scale=mgrd/(sqrt(dx^2+dy^2));
          dx=scale*dx;
          dy=scale*dy;
-         h(1)=line(X(n)+[0 dx],Y(n)+[0 dy],'color',P.color,'linewidth',0.00001,'parent',P.parent);
-         h(2)=textalign(m,X(n),dx,Y(n),dy,P);
+         dz=scale*dz;
+         h(1)=line(X(n)+[0 dx],Y(n)+[0 dy],Z(n)+[0 dz],'color',P.color,'linewidth',0.00001,'parent',P.parent);
+         h(2)=textalign(m,X(n),dx,Y(n),dy,Z(n),dz,P);
       end
    else
-      h(1)=text(X(n),Y(n),int2str(m),'clipping','on','fontsize',P.fontsize,'color',P.color,'parent',P.parent);
+      h(1)=text(X(n),Y(n),Z(n),int2str(m),'clipping','on','fontsize',P.fontsize,'color',P.color,'parent',P.parent);
    end
 end
 if Act(end)
@@ -374,15 +382,17 @@ if Act(end)
    if (n>1) & ~isnan(X(n-1))
       dx=X(n)-X(n-1);
       dy=Y(n)-Y(n-1);
+      dz=Z(n)-Z(n-1);
       if dx~=0 | dy~=0
          scale=mgrd/(sqrt(dx^2+dy^2));
          dx=scale*dx;
          dy=scale*dy;
-         h(end+1)=line(X(n)+[0 dx],Y(n)+[0 dy],'color',P.color,'linewidth',0.00001,'parent',P.parent);
-         h(end+1)=textalign(m,X(n),dx,Y(n),dy,P);
+         dz=scale*dz;
+         h(end+1)=line(X(n)+[0 dx],Y(n)+[0 dy],Z(n)+[0 dz],'color',P.color,'linewidth',0.00001,'parent',P.parent);
+         h(end+1)=textalign(m,X(n),dx,Y(n),dy,Z(n),dz,P);
       end
    else
-      h(end+1)=text(X(n),Y(n),int2str(m),'clipping','on','fontsize',P.fontsize,'color',P.color,'parent',P.parent);
+      h(end+1)=text(X(n),Y(n),Z(n),int2str(m),'clipping','on','fontsize',P.fontsize,'color',P.color,'parent',P.parent);
    end
 end
 D=diff(Act(:)'); % force row vector
@@ -393,37 +403,41 @@ for i=Di
       if (n>1) & ~isnan(X(n-1)),
          dx=X(n)-X(n-1);
          dy=Y(n)-Y(n-1);
+         dz=Z(n)-Z(n-1);
          if dx~=0 | dy~=0
             scale=mgrd/(sqrt(dx^2+dy^2));
             dx=scale*dx;
             dy=scale*dy;
-            h(end+1)=line(X(n)+[0 dx],Y(n)+[0 dy],'color',P.color,'linewidth',0.00001,'parent',P.parent);
-            h(end+1)=textalign(m,X(n),dx,Y(n),dy,P);
+            dz=scale*dz;
+            h(end+1)=line(X(n)+[0 dx],Y(n)+[0 dy],Z(n)+[0 dz],'color',P.color,'linewidth',0.00001,'parent',P.parent);
+            h(end+1)=textalign(m,X(n),dx,Y(n),dy,Z(n),dz,P);
          end
       else
-         h(end+1)=text(X(n),Y(n),int2str(m),'clipping','on','fontsize',P.fontsize,'color',P.color,'parent',P.parent);
+         h(end+1)=text(X(n),Y(n),Z(n),int2str(m),'clipping','on','fontsize',P.fontsize,'color',P.color,'parent',P.parent);
       end
    else
       n=i+1;
       if (n<length(X)) & ~isnan(X(n+1))
          dx=X(n)-X(n+1);
          dy=Y(n)-Y(n+1);
+         dz=Z(n)-Z(n+1);
          if dx~=0 | dy~=0
             scale=mgrd/(sqrt(dx^2+dy^2));
             dx=scale*dx;
             dy=scale*dy;
-            h(end+1)=line(X(n)+[0 dx],Y(n)+[0 dy],'color',P.color,'linewidth',0.00001,'parent',P.parent);
-            h(end+1)=textalign(m,X(n),dx,Y(n),dy,P);
+            dz=scale*dz;
+            h(end+1)=line(X(n)+[0 dx],Y(n)+[0 dy],Z(n)+[0 dz],'color',P.color,'linewidth',0.00001,'parent',P.parent);
+            h(end+1)=textalign(m,X(n),dx,Y(n),dy,Z(n),dz,P);
          end
       else
-         h(end+1)=text(X(n),Y(n),int2str(m),'clipping','on','fontsize',P.fontsize,'color',P.color,'parent',P.parent);
+         h(end+1)=text(X(n),Y(n),Z(n),int2str(m),'clipping','on','fontsize',P.fontsize,'color',P.color,'parent',P.parent);
       end
    end
 end
 
 
-function T=textalign(m,x1,dx,y1,dy,P)
-T=text(x1+dx,y1+dy,int2str(m),'clipping','on','fontsize',P.fontsize,'color',P.color,'parent',P.parent);
+function T=textalign(m,x1,dx,y1,dy,z1,dz,P)
+T=text(x1+dx,y1+dy,z1+dz,int2str(m),'clipping','on','fontsize',P.fontsize,'color',P.color,'parent',P.parent);
 angl=atan2(dy,dx);
 if (angl<=pi/2) & (angl>-pi/2)
    set(T,'rotation',angl*180/pi);
