@@ -112,7 +112,8 @@ switch v_slice
                         iedge = isel;
                         data.EdgeNodeConnect = data.EdgeNodeConnect(iedge,:);
                     case 'FACE'
-                        'VSLICE3'
+                        iface = isel;
+                        data.FaceNodeConnect = data.FaceNodeConnect(iface,:);
                 end
             elseif isfield(data,'TRI')
                 data.X = data.XYZ(:,isel,:,1);
@@ -137,11 +138,19 @@ switch v_slice
                 end
             end
             Flds = {'Val','XComp','YComp','ZComp'};
+            multiTime = false;
+            if isfield(data,'Time') && length(data.Time)>1
+                multiTime = true;
+            end
             for i=1:length(Flds)
                 fld = Flds{i};
                 if isfield(data,fld)
                     Tmp = data.(fld);
-                    data.(fld) = Tmp(:,isel,:);
+                    if multiTime
+                        data.(fld) = Tmp(:,isel,:);
+                    else
+                        data.(fld) = Tmp(isel,:);
+                    end
                 end
             end
         else

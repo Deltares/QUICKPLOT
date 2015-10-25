@@ -539,6 +539,7 @@ if strcmp(get(MW.HSelType,'enable'),'on')
     end
     set(MW.MN,'enable','on',vis{:})
     set(MW.EditMN,'enable','on','backgroundcolor',Active,vis{:})
+    set(MW.MN2XY,vis{:})
     mn = get(MW.EditMN,'userdata');
     if DimFlag(N_) && size(mn,2)<2
         mn=[];
@@ -580,6 +581,7 @@ if strcmp(get(MW.HSelType,'enable'),'on')
 else
     set(MW.MN,'enable','off','visible','off')
     set(MW.EditMN,'enable','off','backgroundcolor',Inactive,'visible','off')
+    set(MW.MN2XY,'visible','off')
 end
 if ~isempty(strmatch('(X,Y) ',get(MW.HSelType,'string'))) && strcmp(get(MW.HSelType,'enable'),'on')
     vis = {'visible','off'};

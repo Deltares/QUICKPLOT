@@ -1495,6 +1495,11 @@ switch cmd
             end
         end
         
+    case 'convertmn2xy'
+        MW=UD.MainWin;
+        XY = qp_gridview('convertmn2xy',UD.GridView.Fig)
+        d3d_qp('editxy*',XY)
+        
     case {'editmn*','editmn','editxy*','editxy','loadxy'}
         MW=UD.MainWin;
         isMN = isequal(cmd(5:6),'mn');
@@ -4177,7 +4182,7 @@ switch cmd
         news = getvalstr(MWSelType);
         switch news
             case 'M range and N range'
-                set([MW.MN MW.EditMN],'visible','off')
+                set([MW.MN MW.EditMN MW.MN2XY],'visible','off')
                 set([MW.XY MW.EditXY MW.LoadXY MW.SaveXY],'visible','off')
                 set([MW.M MW.AllM MW.EditM MW.MaxM],'visible','on')
                 set([MW.N MW.AllN MW.EditN MW.MaxN],'visible','on')
@@ -4185,12 +4190,12 @@ switch cmd
                 set([MW.M MW.AllM MW.EditM],'visible','off')
                 set([MW.N MW.AllN MW.EditN],'visible','off')
                 set([MW.XY MW.EditXY MW.LoadXY MW.SaveXY],'visible','off')
-                set([MW.MN MW.EditMN],'visible','on')
+                set([MW.MN MW.EditMN MW.MN2XY],'visible','on')
                 set([MW.MaxM MW.MaxN],'visible','on')
             case '(X,Y) point/path'
                 set([MW.M MW.AllM MW.EditM MW.MaxM],'visible','off')
                 set([MW.N MW.AllN MW.EditN MW.MaxN],'visible','off')
-                set([MW.MN MW.EditMN],'visible','off')
+                set([MW.MN MW.EditMN MW.MN2XY],'visible','off')
                 set([MW.XY MW.EditXY MW.LoadXY MW.SaveXY],'visible','on')
             case 'K range'
                 set([MW.Z MW.EditZ],'visible','off')
@@ -4253,11 +4258,10 @@ switch cmd
         set(MW.Stat,'visible','off')
         set(MW.HSelType,'String',{'M range and N range','(M,N) point/path','(X,Y) point/path'},'value',1)
         set(MW.VSelType,'String',{'K range','Z slice','dZ below surface','dZ above bed'},'value',1)
-        set(MW.MN,'visible','off')
+        set([MW.MN MW.MN2XY],'visible','off')
         set(MW.EditMN,'string','','Userdata',[],'visible','off')
-        set(MW.XY,'visible','off')
+        set([MW.XY MW.LoadXY MW.SaveXY],'visible','off')
         set(MW.EditXY,'string','','Userdata',[],'visible','off')
-        set([MW.LoadXY MW.SaveXY],'visible','off')
         set(MW.M,'enable','off','UserData',[],'visible','on')
         set(MW.AllM,'enable','off','value',1,'UserData',[],'visible','on')
         set(MW.EditM,'enable','off','string','','backgroundcolor',Inactive,'UserData',[],'visible','on')

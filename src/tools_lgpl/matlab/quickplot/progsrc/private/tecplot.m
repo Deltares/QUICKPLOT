@@ -101,13 +101,13 @@ try
     FI.Zone(z).Title = freadstring(fid);
     switch FI.Version
         case 9
-             fread(fid,1,'int32'); % 0=BLOCK, 1=POINT, 2=FEBLOCK, 3=FEPOINT order
-             fread(fid,1,'int32'); % ColorNumber
-        case 10
-             fread(fid,1,'int32'); % ColorNumber
-             fread(fid,1,'int32'); % 0=ORDERED, 1=FELINESEG, 2=FETRIANGULAR, 3=FEQUADRILATERAL, 4=FETETRAHEDRON, 5=FEBRICK
-             fread(fid,1,'int32'); % 0=BLOCK, 1=POINT
-             fread(fid,1,'int32'); % NODAL or CELLCENTERED data - if 1, followed by flag array of length nV: 0=NODAL, 1=CELLCENTERED
+             ZoneType = fread(fid,1,'int32'); % 0=BLOCK, 1=POINT, 2=FEBLOCK, 3=FEPOINT order
+             FI.Zone(z).Color = fread(fid,1,'int32'); % ColorNumber
+        case {10,11}
+             FI.Zone(z).Color = fread(fid,1,'int32'); % ColorNumber
+             ZoneType = fread(fid,1,'int32'); % 0=ORDERED, 1=FELINESEG, 2=FETRIANGULAR, 3=FEQUADRILATERAL, 4=FETETRAHEDRON, 5=FEBRICK
+             BlockPnt = fread(fid,1,'int32'); % 0=BLOCK, 1=POINT
+             DataLoc  = fread(fid,1,'int32'); % NODAL or CELLCENTERED data - if 1, followed by flag array of length nV: 0=NODAL, 1=CELLCENTERED
              fread(fid,1,'int32'); % ???
         case 11
             % ???

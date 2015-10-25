@@ -98,6 +98,53 @@ else
 end
 
 switch cmd
+    case 'convertmn2xy'
+        F=varargin{1};
+        G=findobj(F,'tag','GRID');
+        GRID=get(G,'userdata');
+        switch GRID.ValLocation
+            case 'NODE'
+                XY = [GRID.X(GRID.Selected.Range) GRID.Y(GRID.Selected.Range)];
+            case 'FACE'
+                Nodes = GRID.FaceNodeConnect(GRID.Selected.Range,:);
+                missing = isnan(Nodes);
+                Nodes(missing) = 1;
+                X = GRID.X(Nodes);
+                Y = GRID.Y(Nodes);
+                X(missing) = 0;
+                Y(missing) = 0;
+                X = sum(X,2);
+                Y = sum(Y,2);
+                nNodes = sum(~missing,2);
+                X = X./nNodes;
+                Y = Y./nNodes;
+                XY = [X Y];
+            case 'EDGE'
+                Nodes = GRID.EdgeNodeConnect(GRID.Selected.Range,:);
+                for i = 2:size(Nodes,1)
+                    if ismember(Nodes(i,1),Nodes(i-1,:))
+                        if i==2
+                            Nodes(i-1,:) = [Nodes(i-1,Nodes(i-1,:)~=Nodes(i,1)) Nodes(i,1)];
+                        end
+                        Nodes(i,1) = NaN;
+                    elseif ismember(Nodes(i,2),Nodes(i-1,:))
+                        if i==2
+                            Nodes(i-1,:) = [Nodes(i-1,Nodes(i-1,:)~=Nodes(i,2)) Nodes(i,2)];
+                        end
+                        Nodes(i,2) = NaN;
+                    end
+                end
+                Nodes = Nodes';
+                Nodes = Nodes(:);
+                Nodes(isnan(Nodes)) = [];
+                XY = [GRID.X(Nodes) GRID.Y(Nodes)];
+        end
+        GRID.Selected.Type = 'genline';
+        GRID.Selected.Range = XY;
+        set(G,'userdata',GRID)
+        localdrawsel(F)
+        out = XY;
+
     case 'getrange'
         if nargin==1
             F=gcbf;
@@ -117,7 +164,7 @@ switch cmd
             out=xx.Type;
             out2=xx.Range;
         end
-        return
+
     case {'gridrangeup','gridrangemotion'}
         % Process movement and button presses for selecting a grid range
         G=findobj(gcbf,'tag','GRID');
@@ -895,7 +942,6 @@ switch cmd
             selection.Range = [];
         end
         localdrawsel(F,selection)
-        return
 
     otherwise
         fprintf('Unkwown command: %s\n',cmd);

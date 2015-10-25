@@ -233,8 +233,10 @@ switch geometry
         if vslice
             if multiple(T_)
                 axestype={'X-Val','X-Y','X-Time','Time-X'};
-            else
+            elseif nval~=0
                 axestype={'X-Val','X-Y'};
+            else
+                axestype={'X-Y'};
             end
         elseif multiple(M_) && multiple(K_)
             % noplot
