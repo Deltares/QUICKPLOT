@@ -98,69 +98,205 @@ if fid<0
     error('Cannot open "%s".',filename)
 end
 try
-    % $MeshFormat
-    parsecheck(fid,'$MeshFormat')
-    % version-number file-type data-size
-    % 2.2 0 8
     Line = fgetl(fid);
-    Values = sscanf(Line,'%f %i %i');
-    FI.VersionNumber = Values(1);
-    FI.FileType = Values(2);
-    FI.DataSize = Values(3);
-    if FI.VersionNumber~=2.2
-        error('GMSH file version %g is not supported; only version 2.2 is supported.')
-    elseif FI.FileType~=0 && FI.FileType~=1
-        error('GMSH file type %i is not supported; only 0 (ASCII) and 1 (BINARY) are supported.')
-    elseif FI.DataSize~=8
-        error('GMSH data size %i is not supported; only sizeof(double)=8 is supported.')
-    elseif FI.FileType==0
-        FI.FileType = 'ASCII';
-    else % FI.FileType==1
-        FI.FileType = 'BINARY';
-        ONE = fread(fid,1,'int32',0,'l');
-        if isequal(ONE,1)
-            FI.ByteOrder = 'l';
-        elseif isequal(ONE,2)
-            FI.ByteOrder = 'b';
+    if ~ischar(Line)
+        error('A GMSH file cannot be empty.')
+    end
+    % $MeshFormat
+    FI.VersionNumber = 2.2;
+    Line = deblank(Line);
+    switch Line
+        case '$MeshFormat'
+            % A modern file
+        case '$NOD'
+            FI.VersionNumber = 1.0;
+        case '$PostFormat'
+            FI.VersionNumber = 1.4;
+        otherwise
+            error('Line 1 should read $MeshFormat (or $NOD or $PostFormat) but received: %s',Line)
+    end
+    if FI.VersionNumber==1
+        % 1.0
+        isbinary = false;
+        Line = fgetl(fid);
+        NumNodes = sscanf(Line,'%i',1);
+        Nodes = fscanf(fid,'%i %f %f %f',[4 NumNodes]);
+        FI.Nodes.Nr = Nodes(1,:);
+        FI.Nodes.XYZ  = Nodes(2:end,:);
+        fgetl(fid);
+        parsecheck(fid,'$ENDNOD')
+    else
+        % 1.4 or 2.0
+        % version-number file-type data-size
+        Line = fgetl(fid);
+        Values = sscanf(Line,'%f %i %i');
+        FI.VersionNumber = Values(1);
+        FI.FileType = Values(2);
+        FI.DataSize = Values(3);
+        if FI.VersionNumber~=1.4 && FI.VersionNumber~=2.2
+            error('GMSH file version %g is not supported; only versions 1.4 and 2.2 are supported.')
+        elseif FI.FileType~=0 && FI.FileType~=1
+            error('GMSH file type %i is not supported; only 0 (ASCII) and 1 (BINARY) are supported.')
+        elseif FI.DataSize~=8
+            error('GMSH data size %i is not supported; only sizeof(double)=8 is supported.')
+        elseif FI.FileType==0
+            FI.FileType = 'ASCII';
+            isbinary = false;
+        else % FI.FileType==1
+            FI.FileType = 'BINARY';
+            isbinary = true;
+            if FI.VersionNumber==2.2
+                ONE = fread(fid,1,'int32',0,'l');
+                if isequal(ONE,1)
+                    FI.ByteOrder = 'l';
+                elseif isequal(ONE,2)
+                    FI.ByteOrder = 'b';
+                else
+                    error('Unable to identify GMSH byte order; reading %i but expecting 1.',ONE)
+                end
+            else
+                FI.ByteOrder = 'n'; % unknown, so assume native
+            end
+        end
+        if FI.VersionNumber==1.4
+            parsecheck(fid,'$EndPostFormat')
         else
-            error('Unable to identify GMSH byte order; reading %i but expecting 1.',ONE)
+            % $EndMeshFormat
+            parsecheck(fid,'$EndMeshFormat')
         end
     end
-    % $EndMeshFormat
-    parsecheck(fid,'$EndMeshFormat')
     %
     while ~feof(fid)
         Line = deblank(fgetl(fid));
         switch Line
             case '$Nodes'
-                NumNodes = fscanf(fid,'%i',1);
-                Nodes = fscanf(fid,'%i %f %f %f',[4 NumNodes]);
+                Line = fgetl(fid);
+                NumNodes = sscanf(Line,'%i',1);
+                if isbinary
+                    Nodes = zeros(4,NumNodes);
+                    for i = 1:NumNodes
+                        Nodes(1,i) = fread(fid,1,'int32',0,FI.ByteOrder);
+                        Nodes(2:4,i) = fread(fid,3,'float64',0,FI.ByteOrder);
+                    end
+                else
+                    Nodes = fscanf(fid,'%i %f %f %f',[4 NumNodes]);
+                end
                 FI.Nodes.Nr = Nodes(1,:);
                 FI.Nodes.XYZ  = Nodes(2:end,:);
                 fgetl(fid);
                 parsecheck(fid,'$EndNodes')
-            case '$Elements'
+            case {'$Elements','$ELM'}
                 NumElms = fscanf(fid,'%i \n',1);
                 FI.Element.Nr   = zeros(1,NumElms);
                 FI.Element.Type = zeros(1,NumElms);
                 FI.Element.Tags = zeros(0,NumElms);
-                FI.Elememt.Node = zeros(0,NumElms);
-                for i = 1:NumElms
-                    Line = fgetl(fid);
-                    Values = sscanf(Line,'%f');
-                    FI.Element.Nr(i)   = Values(1);
-                    FI.Element.Type(i) = Values(2);
-                    NrTag = Values(3); % tag 1: physical entity; tag 2: elementary geometrical entity; tag 3: mesh partition; following: partition ids (negative: ghost cell)
-                    [NrNod,ElmNm] = element(FI.Element.Type(i));
-                    if NrTag>0
-                        FI.Element.Tags(1:NrTag,i) = Values(3+(1:NrTag))';
+                FI.Element.Node = zeros(0,NumElms);
+                i = 0;
+                while i<NumElms
+                    i = i+1;
+                    if isbinary
+                        Values = fread(fid,3,'int32',0,FI.ByteOrder);
+                        FI.Element.Type(i) = Values(1);
+                        NrElm = Values(2);
+                        NrTag = Values(3);
+                        %
+                        [NrNod,ElmNm] = element(FI.Element.Type(i));
+                        %
+                        for j = i:i+NrElm-1
+                            Values = fread(fid,1+NrTag+NrNod,'int32',0,FI.ByteOrder);
+                            FI.Element.Nr(j)   = Values(1);
+                            if NrTag>0
+                                FI.Element.Tags(1:NrTag,j) = Values(1+(1:NrTag))';
+                            end
+                            FI.Element.Node(1:NrNod,j) = Values(1+NrTag+(1:NrNod))';
+                        end
+                        i = i+NrElm-1;
+                    else
+                        Line = fgetl(fid);
+                        Values = sscanf(Line,'%f');
+                        FI.Element.Nr(i)   = Values(1);
+                        FI.Element.Type(i) = Values(2);
+                        if FI.VersionNumber==1.0
+                            offset = 2;
+                            NrTag = 3;
+                            FI.Element.Tags(1:2,i) = Values(3:4)';
+                            NrNod = Values(5);
+                        else
+                            offset = 3;
+                            NrTag = Values(3); % tag 1: physical entity; tag 2: elementary geometrical entity; tag 3: mesh partition; following: partition ids (negative: ghost cell)
+                            %
+                            [NrNod,ElmNm] = element(FI.Element.Type(i));
+                            %
+                            if NrTag>0
+                                FI.Element.Tags(1:NrTag,i) = Values(offset+(1:NrTag))';
+                            end
+                        end
+                        FI.Element.Node(1:NrNod,i) = Values(offset+NrTag+(1:NrNod))';
                     end
-                    FI.Element.Node(1:NrNod,i) = Values(3+NrTag+(1:NrNod))';
                 end
                 parsecheck(fid,'$EndElements')
             %case '$PhysicalName'
             %case '$Periodic'
-            %case {'$NodeData','$ElementData','$ElementNodeData'}
+            %case '$View'
+            case {'$NodeData','$ElementData','$ElementNodeData'}
+                DataField = Line(2:end);
+                Field.Strings             = {};
+                Field.Reals               = {};
+                Field.Integers            = {};
+                %
+                Field.ViewName            = '';
+                Field.InterpolationScheme = '';
+                Field.Time                = 0;
+                Field.TimeIndex           = 0;
+                Field.NumFields           = 0;
+                Field.NumEntity           = 0;
+                Field.Partition           = 0;
+                %
+                Field.Data                = [];
+                %
+                NumTags = fscanf(fid,'%i \n',1); % strings
+                strings = cell(NumTags,1);
+                for i = 1:NumTags,
+                    strings{i} = deblank(fgetl(fid));
+                    if strings{i}(1)=='"' && strings{i}(end)=='"'
+                        strings{i} = strings{i}(2:end-1);
+                    end
+                end
+                Field.Strings = strings;
+                % string 1: name of the post-processing view
+                % string 2: name of the interpolation scheme
+                if NumTags>0, Field.ViewName = strings{1}; end
+                if NumTags>1, Field.InterpolationScheme = strings{2}; end
+                %
+                NumTags = fscanf(fid,'%i \n',1);
+                Field.Reals = fscanf(fid,'%f \n',NumTags);
+                % real 1: time value associated with the dataset
+                if NumTags>0, Field.Time = Field.Reals(1); end
+                %
+                NumTags = fscanf(fid,'%i \n',1);
+                Field.Integers = fscanf(fid,'%i \n',NumTags);
+                % integer 1: time step index (starting at 0)
+                % integer 2: number of field components of the data in the view (1, 3 or 9)
+                % integer 3: number of entities (nodes or elements) in the view
+                % integer 4: partition index for the view data (0 for no partition)
+                if NumTags>0, Field.TimeIndex = Field.Integers(1); end
+                if NumTags>1, Field.NumFields = Field.Integers(2); end
+                if NumTags>2, Field.NumEntity = Field.Integers(3); end
+                if NumTags>3, Field.Partition = Field.Integers(4); end
+                %
+                if isbinary
+                    Field.Data = zeros(1+Field.NumFields,Field.NumEntity);
+                    for i = 1:Field.NumEntity
+                        Field.Data(1,i) = fread(fid,1,'int32',0,FI.ByteOrder);
+                        Field.Data(2:end,i) = fread(fid,Field.NumFields,'float64',0,FI.ByteOrder);
+                    end
+                else
+                    Field.Data = fscanf(fid,'%f',[1+Field.NumFields Field.NumEntity]);
+                end
+                fgetl(fid);
+                %
+                FI.(DataField) = Field;
+                parsecheck(fid,['$End' DataField])
             otherwise
                 if Line(1)~='$' || any(isspace(Line))
                     error('Section header "%s" not supported.',Line)
