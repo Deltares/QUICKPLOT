@@ -4,8 +4,6 @@ function varargout = wms(cmd, varargin)
 %
 %   SERVICE = WMS('cap',servername)
 %   SERVICE = WMS('tms',servername)
-%
-%   The DataFld can only be either an element of the DataProps structure.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               

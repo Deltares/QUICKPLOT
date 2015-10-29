@@ -1497,7 +1497,7 @@ switch cmd
         
     case 'convertmn2xy'
         MW=UD.MainWin;
-        XY = qp_gridview('convertmn2xy',UD.GridView.Fig)
+        XY = qp_gridview('convertmn2xy',UD.GridView.Fig);
         d3d_qp('editxy*',XY)
         
     case {'editmn*','editmn','editxy*','editxy','loadxy'}
