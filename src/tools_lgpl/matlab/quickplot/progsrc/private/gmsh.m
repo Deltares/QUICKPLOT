@@ -164,9 +164,6 @@ try
                 fgetl(fid); % skip rest of line
             end
         end
-        if FI.VersionNumber==3
-            warning('GMSH file version 3 support is incomplete.')
-        end
         if FI.VersionNumber==1.4
             parsecheck(fid,'$EndPostFormat')
         else
@@ -175,81 +172,63 @@ try
         end
     end
     %
-    if FI.VersionNumber<3
-        nNodeVal = 3;
-        nodeParser = '%i %f %f %f';
-    else
-        nNodeVal = 4;
-        nodeParser = '%i %f %f %f %i';
-    end
-    %
+    % see readMSH in GModelIO_MSH
     while ~feof(fid)
         Section = deblank(fgetl(fid));
         switch Section
             case '$Nodes'
                 Line = fgetl(fid);
                 NumNodes = sscanf(Line,'%i',1);
-                if isbinary
-                    Nodes = zeros(1+nNodeVal,NumNodes);
-                    for i = 1:NumNodes
-                        Nodes(1,i) = fread(fid,1,'int32',0,FI.ByteOrder);
-                        Nodes(2:4,i) = fread(fid,3,'float64',0,FI.ByteOrder);
-                        if nNodeVal>3
-                            Nodes(5,i) = fread(fid,1,'int32',0,FI.ByteOrder);
+                NodeNr = zeros(1,NumNodes);
+                XYZ = zeros(3,NumNodes);
+                NodeValues = zeros(0,NumNodes);
+                for i = 1:NumNodes
+                    if isbinary
+                        NodeNr(i) = fread(fid,1,'int32',0,FI.ByteOrder);
+                        XYZ(:,i)  = fread(fid,3,'float64',0,FI.ByteOrder);
+                        if FI.VersionNumber==3
+                            Entity = fread(fid,1,'int32',0,FI.ByteOrder);
+                            if Entity>0
+                                ndim = fread(fid,1,'int32',0,FI.ByteOrder);
+                                NodeValues(1:ndim,i) = fread(fid,ndim,'float32',0,FI.ByteOrder);
+                            end
+                        end
+                    else
+                        Line = fgetl(fid);
+                        data = sscanf(Line,'%f');
+                        NodeNr(i) = data(1);
+                        XYZ(:,i)  = data(2:4)';
+                        if FI.VersionNumber==3
+                            Entity = data(5);
+                            if Entity>0
+                                ndim = data(6);
+                                NodeValues(1:ndim,i) = data(7:6+ndim)';
+                            end
                         end
                     end
-                else
-                    Nodes = fscanf(fid,nodeParser,[1+nNodeVal NumNodes]);
                 end
-                FI.Nodes.Nr = Nodes(1,:);
-                FI.Nodes.XYZ  = Nodes(2:end,:);
-                fgetl(fid);
+                FI.Nodes.Nr = NodeNr;
+                FI.Nodes.XYZ  = XYZ;
+                if isbinary
+                    fgetl(fid); % skip rest of line
+                end
                 parsecheck(fid,'$EndNodes')
             case {'$Elements','$ELM'}
                 NumElms = fscanf(fid,'%i \n',1);
-                FI.Element.Nr   = zeros(1,NumElms);
-                FI.Element.Type = zeros(1,NumElms);
-                FI.Element.Tags = zeros(0,NumElms);
-                FI.Element.Node = zeros(0,NumElms);
+                FI.Element.Nr     = zeros(1,NumElms);
+                FI.Element.Type   = zeros(1,NumElms);
+                FI.Element.Tags   = zeros(0,NumElms);
+                FI.Element.Entity = zeros(1,NumElms);
+                FI.Element.Node   = zeros(0,NumElms);
                 i = 0;
                 while i<NumElms
                     i = i+1;
-                    if isbinary
-                        Values = fread(fid,3,'int32',0,FI.ByteOrder);
-                        eType = Values(1);
-                        NrElm = Values(2);
-                        NrTag = Values(3);
-                        %
-                        if eType>size(element,2) || isempty(element(2,eType))
-                            error('Invalid element type %i encountered.',eType)
-                        end
-                        %ElmNm = element{1,eType};
-                        NrNod = element{2,eType};
-                        %
-                        FI.Element.Type(i) = eType;
-                        for j = i:i+NrElm-1
-                            Values = fread(fid,1+NrTag+NrNod,'int32',0,FI.ByteOrder);
-                            FI.Element.Nr(j)   = Values(1);
-                            if NrTag>0
-                                FI.Element.Tags(1:NrTag,j) = Values(1+(1:NrTag))';
-                            end
-                            FI.Element.Node(1:NrNod,j) = Values(1+NrTag+(1:NrNod))';
-                        end
-                        i = i+NrElm-1;
-                    else
-                        Line = fgetl(fid);
-                        Values = sscanf(Line,'%f');
-                        FI.Element.Nr(i)   = Values(1);
-                        eType              = Values(2);
-                        FI.Element.Type(i) = eType;
-                        if FI.VersionNumber==1.0
-                            offset = 2;
-                            NrTag = 3;
-                            FI.Element.Tags(1:2,i) = Values(3:4)';
-                            NrNod = Values(5);
-                        else
-                            offset = 3;
-                            NrTag = Values(3); % tag 1: physical entity; tag 2: elementary geometrical entity; tag 3: mesh partition; following: partition ids (negative: ghost cell)
+                    if FI.VersionNumber<3
+                        if isbinary
+                            Values = fread(fid,3,'int32',0,FI.ByteOrder);
+                            eType = Values(1);
+                            NrElm = Values(2);
+                            NrTag = Values(3);
                             %
                             if eType>size(element,2) || isempty(element(2,eType))
                                 error('Invalid element type %i encountered.',eType)
@@ -257,11 +236,68 @@ try
                             %ElmNm = element{1,eType};
                             NrNod = element{2,eType};
                             %
-                            if NrTag>0
-                                FI.Element.Tags(1:NrTag,i) = Values(offset+(1:NrTag))';
+                            FI.Element.Type(i) = eType;
+                            for j = i:i+NrElm-1
+                                Values = fread(fid,1+NrTag+NrNod,'int32',0,FI.ByteOrder);
+                                FI.Element.Nr(j)   = Values(1);
+                                if NrTag>0
+                                    FI.Element.Tags(1:NrTag,j) = Values(1+(1:NrTag))';
+                                    if NrTag>=2
+                                        FI.Element.Entity(i) = FI.Element.Tags(2,i);
+                                    end
+                                end
+                                FI.Element.Node(1:NrNod,j) = Values(1+NrTag+(1:NrNod))';
                             end
+                            i = i+NrElm-1;
+                        else
+                            Line = fgetl(fid);
+                            Values = sscanf(Line,'%f');
+                            FI.Element.Nr(i)   = Values(1);
+                            eType              = Values(2);
+                            FI.Element.Type(i) = eType;
+                            if FI.VersionNumber==1.0
+                                tagOffset = 2;
+                                nodeOffset = 5;
+                                NrTag = 2;
+                                NrNod = Values(5);
+                                FI.Element.Tags(1:2,i) = Values(3:4)';
+                            else
+                                tagOffset = 3;
+                                NrTag = Values(3); % tag 1: physical entity; tag 2: elementary geometrical entity; tag 3: mesh partition; following: partition ids (negative: ghost cell)
+                                nodeOffset = 3 + NrTag;
+                                %
+                                if eType>size(element,2) || isempty(element(2,eType))
+                                    error('Invalid element type %i encountered.',eType)
+                                end
+                                %ElmNm = element{1,eType};
+                                NrNod = element{2,eType};
+                            end
+                            if NrTag>0
+                                FI.Element.Tags(1:NrTag,i) = Values(tagOffset+(1:NrTag))';
+                                if NrTag>=2
+                                    FI.Element.Entity(i) = FI.Element.Tags(2,i);
+                                end
+                            end
+                            FI.Element.Node(1:NrNod,i) = Values(nodeOffset+(1:NrNod))';
                         end
-                        FI.Element.Node(1:NrNod,i) = Values(offset+NrTag+(1:NrNod))';
+                    else
+                        % see writeMSH in MElement.cpp
+                        if isbinary
+                            Values = fread(fid,4,'int32',0,FI.ByteOrder);
+                            FI.Element.Nr(i)     = Values(1);
+                            FI.Element.Type(i)   = Values(2);
+                            FI.Element.Entity(i) = Values(3);
+                            NrNod                = Values(4);
+                            FI.Element.Node(1:NrNod,i) = fread(fid,NrNod,'int32',0,FI.ByteOrder);
+                        else
+                            Line = fgetl(fid);
+                            Values = sscanf(Line,'%f');
+                            FI.Element.Nr(i)     = Values(1);
+                            FI.Element.Type(i)   = Values(2);
+                            FI.Element.Entity(i) = Values(3);
+                            NrNod                = Values(4);
+                            FI.Element.Node(1:NrNod,i) = Values(4+(1:NrNod))';
+                        end
                     end
                 end
                 if isbinary
@@ -273,7 +309,33 @@ try
                     case '$ELM'
                         parsecheck(fid,'$ENDELM')
                 end
-            %case '$PhysicalName'
+            case '$Entities'
+                NumEntities = fscanf(fid,'%i \n',1);
+                FI.Entity.Nr        = zeros(1,NumEntities);
+                FI.Entity.NumDim    = zeros(1,NumEntities);
+                FI.Entity.Physicals = zeros(0,NumEntities);
+                for i = 1:NumEntities
+                    Line = fgetl(fid);
+                    data = sscanf(Line,'%f');
+                    FI.Entity.Nr(i)       = data(1);
+                    FI.Entity.NumDim(i)   = data(2);
+                    nPhysicals = data(3);
+                    FI.Entity.Physicals(1:nPhysicals,i) = data(3+(1:nPhysicals))';
+                end
+                parsecheck(fid,'$EndEntities')
+            case '$PhysicalNames'
+                nPhysicals = fscanf(fid,'%i \n',1);
+                FI.Physical.Nr     = zeros(1,nPhysicals);
+                FI.Physical.NumDim = zeros(1,nPhysicals);
+                FI.Physical.Name   = cell(nPhysicals,1);
+                for i = 1:nPhysicals
+                    Line = fgetl(fid);
+                    [data,n,err,j] = sscanf(Line,'%i %i "%[^"]');
+                    FI.Physical.Nr(i) = data(2);
+                    FI.Physical.NumDim(i) = data(1);
+                    FI.Physical.Name{i} = char(data(3:end))';
+                end
+                parsecheck(fid,'$EndPhysicalNames')
             %case '$Periodic'
             %case '$View'
             case {'$NodeData','$ElementData','$ElementNodeData'}
