@@ -339,7 +339,7 @@ try
             %case '$Periodic'
             %case '$View'
             case {'$NodeData','$ElementData','$ElementNodeData'}
-                DataField = Line(2:end);
+                DataField = Section(2:end);
                 Field.Strings             = {};
                 Field.Reals               = {};
                 Field.Integers            = {};
