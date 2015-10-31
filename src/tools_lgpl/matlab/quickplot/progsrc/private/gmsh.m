@@ -61,34 +61,33 @@ if ~strcmp(Line,str)
 end
 
 
-function [NrNodes,ElmName] = element(Elm)
-switch Elm
-    case {1,8,26,27,28}
-        NrNodes = [1 2;8 3;26 4;27 5;28 6];
-        ElmName = 'edge';
-    case {2,9,20,21,22,23,24,25}
-        NrNodes = [2 3; 9 6;20 9;21 10;22 12;23 15;24 15;25 21];
-        ElmName = 'triangle';
-    case {3,10,16}
-        NrNodes = [3 4; 10 9;16 8];
-        ElmName = 'quandrangle';
-    case {4,11,29,30,31}
-        NrNodes = [4 4;11 10;29 20;30 35;31 56];
-        ElmName = 'tetrahedron';
-    case {5,12,17,92,93}
-        NrNodes = [5 8;12 27;17 20;92 64;93 125];
-        ElmName = 'hexahedron';
-    case {6,13,18}
-        NrNodes = [6 6;13 18;18 15];
-        ElmName = 'prism';
-    case {7,14,19}
-        NrNodes = [7 5;14 14;19 13];
-        ElmName = 'pyramid';
-    case 15
-        NrNodes = [15 1];
-        ElmName = 'point';
-end
-NrNodes = NrNodes(NrNodes(:,1)==Elm,2);
+function element = getElementDefinition
+element = cell(2,93);
+%
+i = [1 8 26 27 28];
+element(1,i) = {'edge'};
+element(2,i) = {2 3 4 5 6};
+i = [2 9 20 21 22 23 24 25];
+element(1,i) = {'triangle'};
+element(2,i) = {3 6 9 10 12 15 15 21};
+i = [3 10 16];
+element(1,i) = {'quadrangle'};
+element(2,i) = {4 9 8};
+i = [4 11 29 30 31];
+element(1,i) = {'tetrahedron'};
+element(2,i) = {4 10 20 35 56};
+i = [5 12 17 92 93];
+element(1,i) = {'hexahedron'};
+element(2,i) = {8 27 20 64 125};
+i = [6 13 18];
+element(1,i) = {'prism'};
+element(2,i) = {6 18 15};
+i = [7 14 19];
+element(1,i) = {'pyramid'};
+element(2,i) = {5 14 13};
+i = 15;
+element(1,i) = {'point'};
+element(2,i) = {1};
 
 
 function FI=Local_open_file(filename)
@@ -102,8 +101,14 @@ try
     if ~ischar(Line)
         error('A GMSH file cannot be empty.')
     end
+    %
+    element = getElementDefinition;
+    %
     % $MeshFormat
     FI.VersionNumber = 2.2;
+    FI.FileType = 'ASCII';
+    FI.DataSize = 8;
+    FI.ByteOrder = 'N/A';
     Line = deblank(Line);
     switch Line
         case '$MeshFormat'
@@ -133,19 +138,21 @@ try
         FI.VersionNumber = Values(1);
         FI.FileType = Values(2);
         FI.DataSize = Values(3);
-        if FI.VersionNumber~=1.4 && FI.VersionNumber~=2.2
-            error('GMSH file version %g is not supported; only versions 1.4 and 2.2 are supported.')
+        if FI.VersionNumber~=1.4 && FI.VersionNumber~=2.2 && FI.VersionNumber~=3
+            error('GMSH file version %g is not supported; only versions 1.4, 2.2 and 3 are supported.',FI.VersionNumber)
         elseif FI.FileType~=0 && FI.FileType~=1
-            error('GMSH file type %i is not supported; only 0 (ASCII) and 1 (BINARY) are supported.')
+            error('GMSH file type %i is not supported; only 0 (ASCII) and 1 (BINARY) are supported.',FI.FileType)
         elseif FI.DataSize~=8
-            error('GMSH data size %i is not supported; only sizeof(double)=8 is supported.')
+            error('GMSH data size %i is not supported; only sizeof(double)=8 is supported.',FI.DataSize)
         elseif FI.FileType==0
             FI.FileType = 'ASCII';
             isbinary = false;
         else % FI.FileType==1
             FI.FileType = 'BINARY';
             isbinary = true;
-            if FI.VersionNumber==2.2
+            if FI.VersionNumber==1.4
+                FI.ByteOrder = 'n'; % unknown, so assume native
+            else
                 ONE = fread(fid,1,'int32',0,'l');
                 if isequal(ONE,1)
                     FI.ByteOrder = 'l';
@@ -154,9 +161,11 @@ try
                 else
                     error('Unable to identify GMSH byte order; reading %i but expecting 1.',ONE)
                 end
-            else
-                FI.ByteOrder = 'n'; % unknown, so assume native
+                fgetl(fid); % skip rest of line
             end
+        end
+        if FI.VersionNumber==3
+            warning('GMSH file version 3 support is incomplete.')
         end
         if FI.VersionNumber==1.4
             parsecheck(fid,'$EndPostFormat')
@@ -166,20 +175,31 @@ try
         end
     end
     %
+    if FI.VersionNumber<3
+        nNodeVal = 3;
+        nodeParser = '%i %f %f %f';
+    else
+        nNodeVal = 4;
+        nodeParser = '%i %f %f %f %i';
+    end
+    %
     while ~feof(fid)
-        Line = deblank(fgetl(fid));
-        switch Line
+        Section = deblank(fgetl(fid));
+        switch Section
             case '$Nodes'
                 Line = fgetl(fid);
                 NumNodes = sscanf(Line,'%i',1);
                 if isbinary
-                    Nodes = zeros(4,NumNodes);
+                    Nodes = zeros(1+nNodeVal,NumNodes);
                     for i = 1:NumNodes
                         Nodes(1,i) = fread(fid,1,'int32',0,FI.ByteOrder);
                         Nodes(2:4,i) = fread(fid,3,'float64',0,FI.ByteOrder);
+                        if nNodeVal>3
+                            Nodes(5,i) = fread(fid,1,'int32',0,FI.ByteOrder);
+                        end
                     end
                 else
-                    Nodes = fscanf(fid,'%i %f %f %f',[4 NumNodes]);
+                    Nodes = fscanf(fid,nodeParser,[1+nNodeVal NumNodes]);
                 end
                 FI.Nodes.Nr = Nodes(1,:);
                 FI.Nodes.XYZ  = Nodes(2:end,:);
@@ -196,12 +216,17 @@ try
                     i = i+1;
                     if isbinary
                         Values = fread(fid,3,'int32',0,FI.ByteOrder);
-                        FI.Element.Type(i) = Values(1);
+                        eType = Values(1);
                         NrElm = Values(2);
                         NrTag = Values(3);
                         %
-                        [NrNod,ElmNm] = element(FI.Element.Type(i));
+                        if eType>size(element,2) || isempty(element(2,eType))
+                            error('Invalid element type %i encountered.',eType)
+                        end
+                        %ElmNm = element{1,eType};
+                        NrNod = element{2,eType};
                         %
+                        FI.Element.Type(i) = eType;
                         for j = i:i+NrElm-1
                             Values = fread(fid,1+NrTag+NrNod,'int32',0,FI.ByteOrder);
                             FI.Element.Nr(j)   = Values(1);
@@ -215,7 +240,8 @@ try
                         Line = fgetl(fid);
                         Values = sscanf(Line,'%f');
                         FI.Element.Nr(i)   = Values(1);
-                        FI.Element.Type(i) = Values(2);
+                        eType              = Values(2);
+                        FI.Element.Type(i) = eType;
                         if FI.VersionNumber==1.0
                             offset = 2;
                             NrTag = 3;
@@ -225,7 +251,11 @@ try
                             offset = 3;
                             NrTag = Values(3); % tag 1: physical entity; tag 2: elementary geometrical entity; tag 3: mesh partition; following: partition ids (negative: ghost cell)
                             %
-                            [NrNod,ElmNm] = element(FI.Element.Type(i));
+                            if eType>size(element,2) || isempty(element(2,eType))
+                                error('Invalid element type %i encountered.',eType)
+                            end
+                            %ElmNm = element{1,eType};
+                            NrNod = element{2,eType};
                             %
                             if NrTag>0
                                 FI.Element.Tags(1:NrTag,i) = Values(offset+(1:NrTag))';
@@ -234,7 +264,15 @@ try
                         FI.Element.Node(1:NrNod,i) = Values(offset+NrTag+(1:NrNod))';
                     end
                 end
-                parsecheck(fid,'$EndElements')
+                if isbinary
+                    fgetl(fid); % skip rest of line
+                end
+                switch Section
+                    case '$Elements'
+                        parsecheck(fid,'$EndElements')
+                    case '$ELM'
+                        parsecheck(fid,'$ENDELM')
+                end
             %case '$PhysicalName'
             %case '$Periodic'
             %case '$View'
@@ -298,15 +336,16 @@ try
                 FI.(DataField) = Field;
                 parsecheck(fid,['$End' DataField])
             otherwise
-                if Line(1)~='$' || any(isspace(Line))
-                    error('Section header "%s" not supported.',Line)
+                if Section(1)~='$' || any(isspace(Section))
+                    error('Section header "%s" not supported.',Section)
                 else % well formatted unrecognized section ... skip it
-                    EndLine = [Line(1) 'End' Line(2:end)];
-                    fprintf('Skipping lines from %s until %s\n',Line,EndLine);
-                    while ~strcmp(Line,EndLine)
+                    EndSection = [Section(1) 'End' Section(2:end)];
+                    fprintf('Skipping lines from %s until %s\n',Section,EndSection);
+                    Line = '';
+                    while ~strcmp(Line,EndSection)
                         Line = fgetl(fid);
                         if ~ischar(Line)
-                            error('End of line while searching for "%s".',EndLine)
+                            error('End of line while searching for "%s".',EndSection)
                         end
                     end
                 end
