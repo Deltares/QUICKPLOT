@@ -197,7 +197,7 @@ compute_unitvalue = (strcmp(Props.Val1,'R1FLX_UU') || strcmp(Props.Val1,'R1FLX_U
 Info=vs_disp(FI,'map-const','XZ');
 coord_spherical = (isstruct(Info) && isequal(Info.ElmUnits,'[  DEG  ]')) || (ok && strcmp(deblank(coordtype),'SPHERICAL'));
 
-if XYRead || compute_unitvalue
+if XYRead || compute_unitvalue || computeDZ
 
     %======================== SPECIFIC CODE ===============================
     if DimFlag(M_) && DimFlag(N_)
