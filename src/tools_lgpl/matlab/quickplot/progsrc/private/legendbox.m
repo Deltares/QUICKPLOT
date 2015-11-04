@@ -37,10 +37,22 @@ switch lower(cmd)
         units = get(h,'units');
         set(h,'units','centimeters')
         p=get(h,'position');
+        legendnr = 1;
+        allaxes = findall(get(h,'parent'),'type','axes');
+        for i = 1:length(allaxes)
+            a = allaxes(i);
+            if isequal(getappdata(a,'LegendBox'),1)
+                name = get(a,'tag');
+                n = sscanf(lower(name),'legend %i',1);
+                if ~isempty(n)
+                    legendnr = max(legendnr,n+1);
+                end
+            end
+        end
         set(h,'handlevisibility','off', ...
             'box','on', ...
             'units',units, ...
-            'tag','legend', ...
+            'tag',sprintf('Legend %i',legendnr), ...
             'xtick',[],'ytick',[], ...
             'xlim',[0 p(3)],'ylim',[0 p(4)])
         setappdata(h,'LegendBox',1)
