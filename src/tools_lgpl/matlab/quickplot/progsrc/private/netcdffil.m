@@ -348,40 +348,74 @@ if XYRead
         %
         meshAttribs = {meshInfo.Attribute.Name};
         connect = strmatch('face_node_connectivity',meshAttribs,'exact');
-        iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name});
-        [Ans.FaceNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
-        istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name});
-        if isempty(istart)
-            start = 0;
-        else
-            start = FI.Dataset(iconnect).Attribute(istart).Value;
+        if ~isempty(connect)
+            iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name});
+            if isempty(iconnect)
+                error('Face_node_connectivity not found!')
+            end
+            [Ans.FaceNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
+            istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name});
+            if isempty(istart)
+                maxNode = max(Ans.FaceNodeConnect(:));
+                minNode = min(Ans.FaceNodeConnect(Ans.FaceNodeConnect>=0));
+                if minNode==1 && maxNode==length(Ans.X)
+                    start = 1;
+                    ui_message('warning','No start_index found on %s.\nDefault value is 0, but data suggests otherwise.\nUsing start_index=1.',meshInfo.Attribute(connect).Value)
+                else
+                    start = 0;
+                end
+            else
+                start = FI.Dataset(iconnect).Attribute(istart).Value;
+            end
+            Ans.FaceNodeConnect = Ans.FaceNodeConnect - start + 1;
+            Ans.FaceNodeConnect(Ans.FaceNodeConnect<1) = NaN;
         end
-        Ans.FaceNodeConnect = Ans.FaceNodeConnect - start + 1;
-        Ans.FaceNodeConnect(Ans.FaceNodeConnect<1) = NaN;
         %
         Ans.ValLocation = Props.Geom(7:end);
-        if strcmp(Ans.ValLocation,'EDGE')
-            connect = strmatch('edge_node_connectivity',meshAttribs,'exact');
+        connect = strmatch('edge_node_connectivity',meshAttribs,'exact');
+        if strcmp(Ans.ValLocation,'EDGE') || ~isfield(Ans,'FaceNodeConnect') || (~DataRead && ~isempty(connect))
+            % "~DataRead" is a hack to load EdgeNodeConnect if available for use in GridView
+            iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name});
+            if isempty(iconnect)
+                error('Edge_node_connectivity not found!')
+            end
             [Ans.EdgeNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
             Ans.EdgeNodeConnect(Ans.EdgeNodeConnect<0) = NaN;
-        elseif ~DataRead
-            % hack to load EdgeNodeConnect if available for use in GridView
-            try
-                connect = strmatch('edge_node_connectivity',meshAttribs,'exact');
-                [Ans.EdgeNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
-                Ans.EdgeNodeConnect(Ans.EdgeNodeConnect<0) = NaN;
-            catch
+        end
+        if isfield(Ans,'EdgeNodeConnect')
+            istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name});
+            if isempty(istart)
+                maxNode = max(Ans.EdgeNodeConnect(:));
+                minNode = min(Ans.EdgeNodeConnect(Ans.EdgeNodeConnect>=0));
+                if minNode==1 && maxNode==length(Ans.X)
+                    start = 1;
+                    ui_message('warning','No start_index found on %s.\nDefault value is 0, but data suggests otherwise.\nUsing start_index=1.',meshInfo.Attribute(connect).Value)
+                else
+                    start = 0;
+                end
+            else
+                start = FI.Dataset(iconnect).Attribute(istart).Value;
             end
+            Ans.EdgeNodeConnect = Ans.EdgeNodeConnect - start + 1;
+            Ans.EdgeNodeConnect(Ans.EdgeNodeConnect<1) = NaN;
         end
         %
         switch Ans.ValLocation
             case 'NODE'
                 Ans.X = Ans.X(idx{M_});
                 Ans.Y = Ans.Y(idx{M_});
-                Cnct = all(ismember(Ans.FaceNodeConnect,idx{M_}) | isnan(Ans.FaceNodeConnect),2);
-                renum(idx{M_}) = 1:length(idx{M_});
-                Ans.FaceNodeConnect = Ans.FaceNodeConnect(Cnct,:);
-                Ans.FaceNodeConnect(~isnan(Ans.FaceNodeConnect)) = renum(Ans.FaceNodeConnect(~isnan(Ans.FaceNodeConnect)));
+                if isfield(Ans,'FaceNodeConnect')
+                    Cnct = all(ismember(Ans.FaceNodeConnect,idx{M_}) | isnan(Ans.FaceNodeConnect),2);
+                    renum(idx{M_}) = 1:length(idx{M_});
+                    Ans.FaceNodeConnect = Ans.FaceNodeConnect(Cnct,:);
+                    Ans.FaceNodeConnect(~isnan(Ans.FaceNodeConnect)) = renum(Ans.FaceNodeConnect(~isnan(Ans.FaceNodeConnect)));
+                end
+                %if isfield(Ans,'EdgeNodeConnect')
+                %    Cnct = all(ismember(Ans.EdgeNodeConnect,idx{M_}),2);
+                %    renum(idx{M_}) = 1:length(idx{M_});
+                %    Ans.EdgeNodeConnect = Ans.EdgeNodeConnect(Cnct,:);
+                %    Ans.EdgeNodeConnect(~isnan(Ans.EdgeNodeConnect)) = renum(Ans.EdgeNodeConnect(~isnan(Ans.EdgeNodeConnect)));
+                %end
             case 'EDGE'
                 Ans.EdgeNodeConnect = Ans.EdgeNodeConnect(idx{M_},:);
             case 'FACE'

@@ -148,6 +148,9 @@ for ivar = 1:nvars
     end
     %
     j = strmatch('cf_role',Attribs,'exact');
+    if isempty(j) % hack to support my coding error in FM
+        j = strmatch('cf_type',Attribs,'exact');
+    end
     if ~isempty(j) && strcmp(Info.Attribute(j).Value,'mesh_topology')
         % ugrid mesh
         Info.Type = 'ugrid_mesh';
@@ -675,7 +678,11 @@ for ivar = 1:nvars
         j = strmatch('bounds',coordAttribs,'exact');
         if ~isempty(j)
             Info.XBounds = strmatch(nc.Dataset(Info.X).Attribute(j).Value,varNames);
-            nc.Dataset(Info.XBounds).Type = nc.Dataset(Info.X).Type;
+            if isempty(Info.XBounds)
+                ui_message('error','The bounds attribute of %s points to %s, but that variable does not exist.',nc.Dataset(Info.X).Name,nc.Dataset(Info.X).Attribute(j).Value)
+            else
+                nc.Dataset(Info.XBounds).Type = nc.Dataset(Info.X).Type;
+            end
         end
     end
     if ~isempty(Info.Y)
@@ -734,7 +741,11 @@ for ivar = 1:nvars
         j = strmatch('bounds',coordAttribs,'exact');
         if ~isempty(j)
             Info.YBounds = strmatch(nc.Dataset(Info.Y).Attribute(j).Value,varNames);
-            nc.Dataset(Info.YBounds).Type = nc.Dataset(Info.Y).Type;
+            if isempty(Info.YBounds)
+                ui_message('error','The bounds attribute of %s points to %s, but that variable does not exist.',nc.Dataset(Info.Y).Name,nc.Dataset(Info.Y).Attribute(j).Value)
+            else
+                nc.Dataset(Info.YBounds).Type = nc.Dataset(Info.Y).Type;
+            end
         end
     end
     %

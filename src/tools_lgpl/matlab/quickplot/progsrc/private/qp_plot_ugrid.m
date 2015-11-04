@@ -61,6 +61,8 @@ elseif isfield(data,'FaceNodeConnect')
     FaceNodeConnect = data.FaceNodeConnect;
 elseif isfield(data,'Connect')
     FaceNodeConnect = data.Connect;
+else
+    FaceNodeConnect = [];
 end
 nc = size(FaceNodeConnect,2);
 if isfield(data,'XYZ')
