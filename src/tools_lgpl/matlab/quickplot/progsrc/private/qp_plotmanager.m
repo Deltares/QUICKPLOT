@@ -142,9 +142,9 @@ switch cmd
         shiftcontrol(PM.ItUp,aligntop+alignright+fgprop_shf+axprop_shf)
         shiftcontrol(PM.ItDown,alignright)
         %
-        if fgprop_shown
+        if fgprop_shw(2)>0
             set(PM.FigHandles,'visible','on')
-        else
+        elseif fgprop_shw(2)<0
             set(PM.FigHandles,'visible','off')
         end
         shiftcontrol(PM.FigNameTxt,aligntop+axprop_shf+fgprop_shw)
@@ -162,9 +162,9 @@ switch cmd
         shiftcontrol(PM.FigBorderStyle,aligntop+axprop_shf+fgprop_shw)
         shiftcontrol(PM.FigBorder,aligntop+axprop_shf+fgprop_shw)
         %
-        if axprop_shown
+        if axprop_shw(2)>0
             set(PM.AxHandles,'visible','on')
-        else
+        elseif axprop_shw(2)<0
             set(PM.AxHandles,'visible','off')
         end
         shiftcontrol(PM.AxNameTxt,aligntop+fgprop_shf+axprop_shw)
