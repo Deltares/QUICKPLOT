@@ -182,6 +182,7 @@ elseif Props.DimFlag(T_)
         end
     end
 end
+FieldList = {'XComp','YComp','ZComp','Val','XDamVal','YDamVal'};
 if isequal(Props.FileInfo,'operator')
     P=Props.Props.Data{1};
     Oper=Props.Props.Oper;
@@ -367,9 +368,8 @@ if isequal(Props.FileInfo,'operator')
                         end
                     case 'f(A,B) = user defined'
                         fun = Props.Props.Data{3};
-                        F = {'XComp','YComp','ZComp','Val'};
-                        for i = 1:length(F)
-                            f = F{i};
+                        for i = 1:length(FieldList)
+                            f = FieldList{i};
                             if isfield(Ans,f) && isfield(Ans2,f)
                                 Ans.(f)=usereval(fun,Ans.(f),Ans2.(f));
                             elseif isfield(Ans,f) && isfield(Ans2,'Val')
@@ -380,9 +380,8 @@ if isequal(Props.FileInfo,'operator')
                         end
                 end
             else
-                F = {'XComp','YComp','ZComp','Val'};
-                for i = 1:length(F)
-                    f = F{i};
+                for i = 1:length(FieldList)
+                    f = FieldList{i};
                     if isfield(Ans,f) && isfield(Ans2,f)
                         Ans.(f)=feval(OpFun,Ans.(f),Ans2.(f));
                     elseif isfield(Ans,f) && isfield(Ans2,'Val')
@@ -466,9 +465,8 @@ if isequal(Props.FileInfo,'operator')
             end
             [Ans,FI]=getdata(P,cmd,sel);
             Props.Props.Data{1}=FI;
-            F = {'XComp','YComp','ZComp','Val'};
-            for i = 1:length(F)
-                f = F{i};
+            for i = 1:length(FieldList)
+                f = FieldList{i};
                 if isfield(Ans,f);
                     if filter_negative
                         Ans.(f)(Ans.(f)<=0)=NaN;
@@ -480,9 +478,8 @@ if isequal(Props.FileInfo,'operator')
             fun=Props.Props.Data{2};
             [Ans,FI]=getdata(P,cmd,sel);
             Props.Props.Data{1}=FI;
-            F = {'XComp','YComp','ZComp','Val'};
-            for i = 1:length(F)
-                f = F{i};
+            for i = 1:length(FieldList)
+                f = FieldList{i};
                 if isfield(Ans,f)
                     Ans.(f)=usereval(fun,Ans.(f));
                 end
@@ -535,14 +532,14 @@ if isequal(Props.FileInfo,'operator')
             sel{m_}=0;
             [Ans,FI]=getdata(P,cmd,sel);
             Props.Props.Data{1}=FI;
-            for fldc={'Val','XComp','YComp','ZComp'}
-                fld = fldc{1};
-                if isfield(Ans,fld)
-                    data = getfield(Ans,fld);
+            for i=1:length(FieldList)
+                f = FieldList{i};
+                if isfield(Ans,f)
+                    data = Ans.(f);
                     dims = repmat({':'},1,ndims(data));
                     dims{dIndex} = size(data,dIndex):-1:1;
                     data = data(dims{:});
-                    Ans = setfield(Ans,fld,data);
+                    Ans.(f) = data;
                     data = [];
                 end
             end
@@ -886,7 +883,7 @@ switch cmd
             switch NVal
                 case {0,-1}
                     Ops={};
-                case {1,2,3}
+                case {1,1.9,2,3}
                     Ops={'A+B','A-B','A*B','A/B','max(A,B)','min(A,B)', ...
                         '+ constant','* constant','^ constant','max(A,constant)','min(A,constant)', ...
                         '10log','abs','series: A,B','A under condition B', ...

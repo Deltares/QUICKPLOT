@@ -61,12 +61,61 @@ switch cmd
             set(fig,'position',NewPos)
         end
         %
+        fgprop_shown = isappdata(fig,'FigPropsShown'); % figprop shown before redraw
+        axprop_shown = isappdata(fig,'AxPropsShown'); % axprop shown before redraw
+        fgprop_hght = getappdata(fig,'FigPropsHeight');
+        axprop_hght = getappdata(fig,'AxPropsHeight');
+        List  = get(PM.ShowList,'string');
+        iList = get(PM.ShowList,'value');
+        sList = List{iList};
+        List = {'Item(s)','Figure Properties','Axes Properties','Item Properties'};
+        %
+        fgprop_shw = [0 0 0 0];
+        if NewSize(2)>MinSize(2)+fgprop_hght+axprop_hght % show figprop after redraw
+            List(strcmp(List,'Figure Properties')) = [];
+            if fgprop_shown
+                fgprop_hght = 0;
+            else
+                setappdata(fig,'FigPropsShown',1);
+                fgprop_shw(2) = getappdata(fig,'FigPropsShift')+axprop_hght;
+            end
+        else % don't show figprop after redraw
+            if fgprop_shown
+                fgprop_hght = -fgprop_hght;
+                rmappdata(fig,'FigPropsShown');
+                fgprop_shw(2) = -getappdata(fig,'FigPropsShift')-axprop_hght;
+            else
+                fgprop_hght = 0;
+            end
+        end
+        %
+        axprop_shw = [0 0 0 0];
+        if NewSize(2)>MinSize(2)+axprop_hght % show axprop after redraw
+            List(strcmp(List,'Axes Properties')) = [];
+            if axprop_shown
+                axprop_hght = 0;
+            else
+                setappdata(fig,'AxPropsShown',1);
+                axprop_shw(2) = getappdata(fig,'AxPropsShift');
+            end
+        else % don't show axprop after redraw
+            if axprop_shown
+                axprop_hght = -axprop_hght;
+                rmappdata(fig,'AxPropsShown');
+                axprop_shw(2) = -getappdata(fig,'AxPropsShift');
+            else
+                axprop_hght = 0;
+            end
+        end
+        %
         % Define some shift operators
         %
         aligntop   = [0 NewSize(2)-PrevSize(2) 0 0];
         alignright = [NewSize(1)-PrevSize(1) 0 0 0];
         stretchhor = [0 0 NewSize(1)-PrevSize(1) 0];
-        stretchver = [0 0 0 NewSize(2)-PrevSize(2)];
+        fgprop_shf = [0 -fgprop_hght 0 0];
+        axprop_shf = [0 -axprop_hght 0 0];
+        stretchver = [0 0 0 NewSize(2)-PrevSize(2)-fgprop_hght-axprop_hght];
         stretch2   = stretchhor/2;
         shift2     = alignright/2;
         stretch5   = stretchhor/5;
@@ -77,90 +126,106 @@ switch cmd
         shiftcontrol(PM.FigTxt,aligntop)
         shiftcontrol(PM.FigList,aligntop+stretchhor)
         shiftcontrol(PM.FigAll,aligntop+alignright)
-        shiftcontrol(PM.AxTxt,aligntop)
-        shiftcontrol(PM.AxList,aligntop+stretchhor)
-        shiftcontrol(PM.AxAll,aligntop+alignright)
-        shiftcontrol(PM.Show,aligntop)
-        shiftcontrol(PM.ShowList,aligntop+stretchhor)
-        shiftcontrol(PM.ItTxt,aligntop)
+        shiftcontrol(PM.AxTxt,aligntop+fgprop_shf)
+        shiftcontrol(PM.AxList,aligntop+stretchhor+fgprop_shf)
+        shiftcontrol(PM.AxAll,aligntop+alignright+fgprop_shf)
+        shiftcontrol(PM.Show,aligntop+fgprop_shf+axprop_shf)
+        shiftcontrol(PM.ShowList,aligntop+stretchhor+fgprop_shf+axprop_shf)
+        iList = find(strcmp(List,sList));
+        if isempty(iList)
+            iList = 1;
+        end
+        set(PM.ShowList,'string',List,'value',iList)
+        %
+        shiftcontrol(PM.ItTxt,aligntop+fgprop_shf+axprop_shf)
         shiftcontrol(PM.ItList,stretchhor+stretchver)
-        shiftcontrol(PM.ItUp,aligntop+alignright)
+        shiftcontrol(PM.ItUp,aligntop+alignright+fgprop_shf+axprop_shf)
         shiftcontrol(PM.ItDown,alignright)
         %
-        shiftcontrol(PM.FigNameTxt,aligntop)
-        shiftcontrol(PM.FigName,aligntop+stretchhor)
-        shiftcontrol(PM.FigColorTxt,aligntop+alignright)
-        shiftcontrol(PM.FigColor,aligntop+alignright)
-        shiftcontrol(PM.FigPaperTypeTxt,aligntop)
-        shiftcontrol(PM.FigPaperType,aligntop)
-        shiftcontrol(PM.FigPaperOrientation,aligntop)
-        shiftcontrol(PM.FigPaperWidth,aligntop+stretch2)
-        shiftcontrol(PM.FigPaperX,aligntop+shift2)
-        shiftcontrol(PM.FigPaperHeight,aligntop+shift2+stretch2)
-        shiftcontrol(PM.FigPaperUnit,aligntop+alignright)
-        shiftcontrol(PM.FigBorderStyleTxt,aligntop)
-        shiftcontrol(PM.FigBorderStyle,aligntop)
-        shiftcontrol(PM.FigBorder,aligntop)
+        if fgprop_shown
+            set(PM.FigHandles,'visible','on')
+        else
+            set(PM.FigHandles,'visible','off')
+        end
+        shiftcontrol(PM.FigNameTxt,aligntop+axprop_shf+fgprop_shw)
+        shiftcontrol(PM.FigName,aligntop+stretchhor+axprop_shf+fgprop_shw)
+        shiftcontrol(PM.FigColorTxt,aligntop+alignright+axprop_shf+fgprop_shw)
+        shiftcontrol(PM.FigColor,aligntop+alignright+axprop_shf+fgprop_shw)
+        shiftcontrol(PM.FigPaperTypeTxt,aligntop+axprop_shf+fgprop_shw)
+        shiftcontrol(PM.FigPaperType,aligntop+axprop_shf+fgprop_shw)
+        shiftcontrol(PM.FigPaperOrientation,aligntop+axprop_shf+fgprop_shw)
+        shiftcontrol(PM.FigPaperWidth,aligntop+stretch2+axprop_shf+fgprop_shw)
+        shiftcontrol(PM.FigPaperX,aligntop+shift2+axprop_shf+fgprop_shw)
+        shiftcontrol(PM.FigPaperHeight,aligntop+shift2+stretch2+axprop_shf+fgprop_shw)
+        shiftcontrol(PM.FigPaperUnit,aligntop+alignright+axprop_shf+fgprop_shw)
+        shiftcontrol(PM.FigBorderStyleTxt,aligntop+axprop_shf+fgprop_shw)
+        shiftcontrol(PM.FigBorderStyle,aligntop+axprop_shf+fgprop_shw)
+        shiftcontrol(PM.FigBorder,aligntop+axprop_shf+fgprop_shw)
         %
-        shiftcontrol(PM.AxNameTxt,aligntop)
-        shiftcontrol(PM.AxName,aligntop+3*stretch5)
-        shiftcontrol(PM.AxTypeTxt,aligntop+3*shift5)
-        shiftcontrol(PM.AxType,aligntop+3*shift5+2*stretch5)
-        shiftcontrol(PM.SecondY,aligntop+alignright)
+        if axprop_shown
+            set(PM.AxHandles,'visible','on')
+        else
+            set(PM.AxHandles,'visible','off')
+        end
+        shiftcontrol(PM.AxNameTxt,aligntop+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.AxName,aligntop+3*stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.AxTypeTxt,aligntop+3*shift5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.AxType,aligntop+3*shift5+2*stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.SecondY,aligntop+alignright+fgprop_shf+axprop_shw)
         %
-        shiftcontrol(PM.AxTitleTxt,aligntop)
-        shiftcontrol(PM.AxTitleAuto,aligntop)
-        shiftcontrol(PM.AxTitle,aligntop+5*stretch5)
+        shiftcontrol(PM.AxTitleTxt,aligntop+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.AxTitleAuto,aligntop+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.AxTitle,aligntop+5*stretch5+fgprop_shf+axprop_shw)
         %
-        shiftcontrol(PM.AxColorTxt,aligntop)
-        shiftcontrol(PM.HasAxColor,aligntop)
-        shiftcontrol(PM.AxColor,aligntop+stretch5)
-        shiftcontrol(PM.AxLineWTxt,aligntop+shift5+stretch5)
-        shiftcontrol(PM.AxLineWidth,aligntop+2*shift5+stretch5)
-        shiftcontrol(PM.AxBox,aligntop+3*shift5+stretch5)
+        shiftcontrol(PM.AxColorTxt,aligntop+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.HasAxColor,aligntop+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.AxColor,aligntop+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.AxLineWTxt,aligntop+shift5+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.AxLineWidth,aligntop+2*shift5+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.AxBox,aligntop+3*shift5+stretch5+fgprop_shf+axprop_shw)
         %
-        shiftcontrol(PM.AxPosition,aligntop)
-        shiftcontrol(PM.AxXLowerLeft,aligntop+stretch5)
-        shiftcontrol(PM.AxYLowerLeft,aligntop+shift5+stretch5)
-        shiftcontrol(PM.AxWidth,aligntop+2*shift5+stretch5)
-        shiftcontrol(PM.AxHeight,aligntop+3*shift5+stretch5)
-        shiftcontrol(PM.AxPosUnit,aligntop+4*shift5+stretch5)
+        shiftcontrol(PM.AxPosition,aligntop+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.AxXLowerLeft,aligntop+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.AxYLowerLeft,aligntop+shift5+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.AxWidth,aligntop+2*shift5+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.AxHeight,aligntop+3*shift5+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.AxPosUnit,aligntop+4*shift5+stretch5+fgprop_shf+axprop_shw)
         %
-        shiftcontrol(PM.XLimitTxt,aligntop)
-        shiftcontrol(PM.XLimitMin,aligntop+stretch5)
-        shiftcontrol(PM.XLimitMax,aligntop+shift5+stretch5)
-        shiftcontrol(PM.XScale,aligntop+2*shift5+stretch5)
-        shiftcontrol(PM.XGrid,aligntop+3*shift5+stretch5)
-        shiftcontrol(PM.XLoc,aligntop+4*shift5+stretch5)
-        shiftcontrol(PM.XColor,aligntop+5*shift5)
-        shiftcontrol(PM.XLabelTxt,aligntop)
-        shiftcontrol(PM.XLabelAuto,aligntop)
-        shiftcontrol(PM.XLabel,aligntop+5*stretch5)
+        shiftcontrol(PM.XLimitTxt,aligntop+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.XLimitMin,aligntop+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.XLimitMax,aligntop+shift5+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.XScale,aligntop+2*shift5+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.XGrid,aligntop+3*shift5+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.XLoc,aligntop+4*shift5+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.XColor,aligntop+5*shift5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.XLabelTxt,aligntop+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.XLabelAuto,aligntop+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.XLabel,aligntop+5*stretch5+fgprop_shf+axprop_shw)
         %
-        shiftcontrol(PM.YLimitTxt,aligntop)
-        shiftcontrol(PM.YLimitMin,aligntop+stretch5)
-        shiftcontrol(PM.YLimitMax,aligntop+shift5+stretch5)
-        shiftcontrol(PM.YScale,aligntop+2*shift5+stretch5)
-        shiftcontrol(PM.YGrid,aligntop+3*shift5+stretch5)
-        shiftcontrol(PM.YLoc,aligntop+4*shift5+stretch5)
-        shiftcontrol(PM.YColor,aligntop+5*shift5)
-        shiftcontrol(PM.YLabelTxt,aligntop)
-        shiftcontrol(PM.YLabelAuto,aligntop)
-        shiftcontrol(PM.YLabel,aligntop+5*stretch5)
+        shiftcontrol(PM.YLimitTxt,aligntop+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.YLimitMin,aligntop+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.YLimitMax,aligntop+shift5+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.YScale,aligntop+2*shift5+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.YGrid,aligntop+3*shift5+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.YLoc,aligntop+4*shift5+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.YColor,aligntop+5*shift5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.YLabelTxt,aligntop+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.YLabelAuto,aligntop+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.YLabel,aligntop+5*stretch5+fgprop_shf+axprop_shw)
         %
-        shiftcontrol(PM.ZLimitTxt,aligntop)
-        shiftcontrol(PM.ZLimitMin,aligntop+stretch5)
-        shiftcontrol(PM.ZLimitMax,aligntop+shift5+stretch5)
-        shiftcontrol(PM.ZScale,aligntop+2*shift5+stretch5)
-        shiftcontrol(PM.ZGrid,aligntop+3*shift5+stretch5)
-        shiftcontrol(PM.ZLoc,aligntop+4*shift5+stretch5)
-        shiftcontrol(PM.ZColor,aligntop+5*shift5)
-        shiftcontrol(PM.ZLabelTxt,aligntop)
-        shiftcontrol(PM.ZLabelAuto,aligntop)
-        shiftcontrol(PM.ZLabel,aligntop+5*stretch5)
+        shiftcontrol(PM.ZLimitTxt,aligntop+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.ZLimitMin,aligntop+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.ZLimitMax,aligntop+shift5+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.ZScale,aligntop+2*shift5+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.ZGrid,aligntop+3*shift5+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.ZLoc,aligntop+4*shift5+stretch5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.ZColor,aligntop+5*shift5+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.ZLabelTxt,aligntop+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.ZLabelAuto,aligntop+fgprop_shf+axprop_shw)
+        shiftcontrol(PM.ZLabel,aligntop+5*stretch5+fgprop_shf+axprop_shw)
         %
-        shiftcontrol(PM.ItTxt2,aligntop)
-        shiftcontrol(PM.ItList2,aligntop+stretchhor)
+        shiftcontrol(PM.ItTxt2,aligntop+fgprop_shf+axprop_shf)
+        shiftcontrol(PM.ItList2,aligntop+stretchhor+fgprop_shf+axprop_shf)
         %
         % Store the new figure size for usage during next resize command
         %
@@ -430,10 +495,16 @@ switch cmd
         
     case 'pmshowselect'
         ipane = get(UD.PlotMngr.ShowList,'value');
+        spane = get(UD.PlotMngr.ShowList,'string');
         h = UD.PlotMngr.Handles;
-        idx = UD.PlotMngr.Pane == ipane;
-        set(h(idx),'visible','on')
-        set(h(~idx),'visible','off')
+        for i = 1:length(spane)
+            idx = strcmp(UD.PlotMngr.Pane,spane{i});
+            if i==ipane
+                set(h(idx),'visible','on')
+            else
+                set(h(idx),'visible','off')
+            end
+        end
         
     case 'refreshitems'
         AxIDs=get(UD.PlotMngr.AxList,'userdata');
