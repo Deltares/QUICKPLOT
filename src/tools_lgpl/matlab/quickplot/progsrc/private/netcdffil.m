@@ -57,7 +57,7 @@ OrigFI = FI;
 if FI.NumDomains>1
     if isempty(domain)
         % continue
-    elseif domain>FI.NumDomains
+    elseif domain>FI.NumDomains || domain==0
         % continue
     else
         FI = FI.Partitions{domain};
