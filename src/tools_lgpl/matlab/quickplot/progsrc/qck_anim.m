@@ -61,7 +61,10 @@ AnimSlid=findobj(afig,'tag','animslid');
 AS=get(AnimSlid,'userdata');
 if strcmp(cmd,'animselect')
     h = [];
-    par_fig = [];
+    par_fig = gcbo;
+    while ~isempty(par_fig) && ~isequal(get(par_fig,'type'),'figure')
+        par_fig=get(par_fig,'parent');
+    end
 elseif isempty(AS)
     set(AnimSlid,'enable','off')
     return

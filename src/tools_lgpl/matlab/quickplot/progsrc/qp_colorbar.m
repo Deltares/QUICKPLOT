@@ -101,43 +101,11 @@ else
    GCF=get(h,'Parent');
 end
 
-ch = get(h,'children');
-hasimage = 0; t = [];
-cdatamapping = 'direct';
-
-for i=1:length(ch),
-   typ = get(ch(i),'type');
-   if strcmp(typ,'image'),
-      cdata = get(ch(i),'cdata');
-      if size(cdata,3)~=3
-         hasimage = 1;
-         cdatamapping = get(ch(i), 'CDataMapping');
-      end
-   elseif strcmp(typ,'surface') & ...
-         strcmp(get(ch(i),'FaceColor'),'texturemap') % Texturemapped surf
-      cdata = get(ch(i),'cdata');
-      if size(cdata,3)~=3
-         hasimage = 2;
-         cdatamapping = get(ch(i), 'CDataMapping');
-      end
-   elseif strcmp(typ,'patch') | strcmp(typ,'surface')
-      cdatamapping = get(ch(i), 'CDataMapping');
-   end
-end
-
 lengthcmap=size(get(GCF,'colormap'),1);
-if ( strcmp(cdatamapping, 'scaled') )
-   % Treat images and surfaces alike if cdatamapping == 'scaled'
-   t = get(h,'clim');
-   d = (t(2) - t(1))/lengthcmap;
-   t = [t(1)+d/2  t(2)-d/2];
-else
-   if hasimage,
-      t = [1, lengthcmap];
-   else
-      t = [1.5  lengthcmap+.5];
-   end
-end
+
+t = get(h,'clim');
+d = (t(2) - t(1))/lengthcmap;
+t = [t(1)+d/2  t(2)-d/2];
 
 %
 % Use allways existing colorbar

@@ -31,9 +31,10 @@ function outdata = qp_plotmanager(cmd,UD,logfile,logtype,cmdargs)
 %   $HeadURL$
 %   $Id$
 
+mfig = findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
+UD=getappdata(mfig,'QPHandles');
 Inactive = UD.Inactive;
 Active = UD.Active;
-mfig = findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
 
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 DimStr={'subfield ','timestep ','station ','M=','N=','K='};
@@ -226,6 +227,11 @@ switch cmd
         %
         shiftcontrol(PM.ItTxt2,aligntop+fgprop_shf+axprop_shf)
         shiftcontrol(PM.ItList2,aligntop+stretchhor+fgprop_shf+axprop_shf)
+        %
+        pos = get(PM.Separator,'position');
+        pos(1) = pos(1)+NewSize(1)-PrevSize(1);
+        pos(4) = NewSize(2);
+        set(PM.Separator,'position',pos)
         %
         % Store the new figure size for usage during next resize command
         %
@@ -1003,6 +1009,7 @@ switch cmd
                     set(hItList,'value',ItVal-1)
                 end
             end
+            setaxesprops(Ax)
             d3d_qp refreshitems
             d3d_qp refreshaxprop
         end
@@ -1325,9 +1332,9 @@ switch cmd
             AxesHandles=get(UD.PlotMngr.AxList,'userdata');
             iAx = get(UD.PlotMngr.AxList,'value');
         end
-        d3d_qp refreshaxes
+        d3d_qp refreshaxes % this call triggers aksi refreshaxprop
         d3d_qp update_addtoplot
-        d3d_qp refreshaxprop
+        %d3d_qp refreshaxprop
         if logfile && iAx>0
             tags = get(AxesHandles,'tag');
             nr   = {};
@@ -1570,6 +1577,7 @@ switch cmd
         PM = UD.PlotMngr;
         if length(ax)==1
             secondy = strcmp(getappdata(ax,'linkedaxestype'),'SecondY');
+            axes2d = isequal(getappdata(ax,'axes2D'),true);
             if strcmp(getappdata(ax,'BasicAxesType'),'Lon-Lat')
                 types = get(PM.GeoDataMenu,'children');
                 anyfound = 0;
@@ -1667,7 +1675,7 @@ switch cmd
                     if secondy
                         axq = getappdata(ax,'linkedaxes');
                         x = 'y';
-                    elseif vw(2)==90
+                    elseif axes2d || vw(2)==90
                         set([PM.ZLimitTxt PM.ZLabelTxt PM.ZGrid PM.ZLabelAuto], ...
                             'enable','off')
                         set(PM.ZLimitTxt,'string','Z Limit')
@@ -1808,8 +1816,7 @@ switch cmd
                 PM.XLimitTxt PM.XLabelTxt PM.XLabelAuto ...
                 PM.YLimitTxt PM.YLabelTxt PM.YLabelAuto ...
                 PM.ZLimitTxt PM.ZLabelTxt PM.ZLabelAuto],'enable','off')
-            set([PM.AxName PM.HasAxColor PM.AxColor ...
-                PM.AxPosUnit PM.XColor PM.YColor PM.ZColor], ...
+            set([PM.AxPosUnit PM.XColor PM.YColor PM.ZColor], ...
                 'backgroundcolor',Inactive, ...
                 'enable','off')
             set(PM.AxType, ...
@@ -1817,7 +1824,8 @@ switch cmd
                 'enable','off', ...
                 'value',1, ...
                 'string',{' '})
-            set([PM.AxXLowerLeft PM.AxYLowerLeft PM.AxWidth PM.AxHeight ...
+            set([PM.AxName PM.AxTitle PM.AxColor ...
+                PM.AxXLowerLeft PM.AxYLowerLeft PM.AxWidth PM.AxHeight ...
                 PM.AxLineWidth ...
                 PM.XLimitMin PM.XLimitMax PM.XLabel ...
                 PM.YLimitMin PM.YLimitMax PM.YLabel ...
@@ -1829,7 +1837,8 @@ switch cmd
                 'backgroundcolor',Inactive, ...
                 'value',0, ...
                 'enable','off')
-            set([PM.XLoc PM.XScale ...
+            set([PM.HasAxColor ...
+                PM.XLoc PM.XScale ...
                 PM.YLoc PM.YScale ...
                 PM.ZLoc PM.ZScale], ...
                 'backgroundcolor',Inactive, ...

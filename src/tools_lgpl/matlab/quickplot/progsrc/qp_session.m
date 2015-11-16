@@ -739,7 +739,7 @@ if iscell(fn)
         d3d_qp('openfile',fn{:})
         opened_files{end+1} = fn;
     end
-else
+else % if ~strcmp(fn,'geodata')
     if any(ismember(fn,opened_files))
         d3d_qp('selectfile',fn)
     else
@@ -870,10 +870,12 @@ for fgi = length(H):-1:1
             for itm = length(u):-1:1
                 IInfo = u{itm};
                 S(fgi).axes(axi).items(itm).name     = IInfo.PlotState.Props.Name;
-                if ~isempty(IInfo.PlotState.FI.Otherargs)
+                if isfield(IInfo.PlotState.FI,'Otherargs') && ~isempty(IInfo.PlotState.FI.Otherargs)
                     S(fgi).axes(axi).items(itm).filename = [{IInfo.PlotState.FI.Name} IInfo.PlotState.FI.Otherargs];
-                else
+                elseif isfield(IInfo.PlotState.FI,'Name')
                     S(fgi).axes(axi).items(itm).filename = IInfo.PlotState.FI.Name;
+                else
+                    S(fgi).axes(axi).items(itm).filename = IInfo.PlotState.FI.FileType;
                 end
                 %
                 dom = qpread(IInfo.PlotState.FI,'domains');
@@ -924,7 +926,9 @@ for fgi = length(H):-1:1
                         Ops.yclipping = realset(Ops.yclipping);
                     end
                 end
-                Ops = rmfield(Ops,'version');
+                if isfield(Ops,'version')
+                    Ops = rmfield(Ops,'version');
+                end
                 S(fgi).axes(axi).items(itm).options  = Ops;
             end
         end

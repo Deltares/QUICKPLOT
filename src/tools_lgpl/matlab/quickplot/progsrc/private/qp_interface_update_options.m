@@ -342,7 +342,6 @@ switch geometry
         end
     case {'POLYL','POLYG'}
         axestype={'X-Y'};
-        lineproperties=1;
         if strcmp(geometry,'POLYG') && ~isfield(Props,'ClosedPoly')
             Props.ClosedPoly = 2;
         end
@@ -736,7 +735,7 @@ end
 %---- presentation type
 %
 extend2edge = 0;
-if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') || strcmp(geometry,'POLYG') % || (nval==0 & ~DimFlag(ST_))
+if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') || (strcmp(geometry,'POLYG') && nval~=2) % || (nval==0 & ~DimFlag(ST_))
     switch nvalstr
         case 1.9
             PrsTps={'vector','edge'};
@@ -898,9 +897,12 @@ if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'stri
         case 'labels'
             ask_for_textprops=1;
             SingleColor=1;
+        case 'polygons'
+            lineproperties=1;
         case 'polylines'
             markerflatfill=nval>0;
             edgeflatcolour=nval>0;
+            lineproperties=1;
         case 'grid with numbers'
             ask_for_textprops=1;
         case 'edge'
@@ -1039,6 +1041,18 @@ if thindams
         MultipleColors = 1;
         SingleColor    = 0;
         edgeflatcolour = 1;
+    end
+end
+
+if nval>0 && nval<2
+    oper=findobj(OH,'tag','operator');
+    set(oper,'enable','on')
+    oper=findobj(OH,'tag','operator=?');
+    set(oper,'enable','on','backgroundcolor',Active)
+    operstr = get(oper,'string');
+    operi   = get(oper,'value');
+    if operi>1
+        Ops.operator = operstr{operi};
     end
 end
 
@@ -1219,6 +1233,11 @@ elseif lineproperties || nval==0
     set(lnw,'enable','on','backgroundcolor',Active)
     Ops.linewidth=get(lnw,'userdata');
     usesmarker=1;
+elseif vectors
+    set(findobj(OH,'tag','linewidth'),'enable','on')
+    lnw=findobj(OH,'tag','linewidth=?');
+    set(lnw,'enable','on','backgroundcolor',Active)
+    Ops.linewidth=get(lnw,'userdata');
 end
 if usesmarker
     set(findobj(OH,'tag','marker'),'enable','on')

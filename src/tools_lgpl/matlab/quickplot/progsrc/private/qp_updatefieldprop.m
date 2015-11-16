@@ -281,11 +281,16 @@ end
 %
 TRI = 0;
 UGRID = 0;
+if isfield(Props,'Geom')
+    Geom = Props(fld).Geom;
+else
+    Geom = 'unknown';
+end
 if isfield(Props,'Tri') && ~isempty(Props(fld).Tri) && Props(fld).Tri
    TRI = 1;
-elseif isfield(Props,'Geom') && isequal(Props(fld).Geom,'TRI')
+elseif isequal(Geom,'TRI')
    TRI = 1;
-elseif isfield(Props,'Geom') && length(Props(fld).Geom)>5 && isequal(Props(fld).Geom(1:5),'UGRID')
+elseif strncmp(Geom,'UGRID',5)
    UGRID = 1;
 end
 if DimFlag(M_) && DimFlag(N_)
@@ -294,7 +299,7 @@ if DimFlag(M_) && DimFlag(N_)
 elseif DimFlag(M_) && (TRI || UGRID)
     % triangular or unstructured
     set(MW.HSelType,'string',{'M range and N range','(M,N) point/path','(X,Y) point/path'})
-elseif DimFlag(M_)
+elseif DimFlag(M_) && ~strcmp(Geom,'POLYG')
     % network
     v=get(MW.HSelType,'value');
     if v==3
@@ -303,7 +308,7 @@ elseif DimFlag(M_)
     set(MW.HSelType,'string',{'M range and N range','(M,N) point/path'},'value',v)
 else
     % no m,n
-    set(MW.HSelType,'enable','off','backgroundcolor',Inactive)
+    set(MW.HSelType,'enable','off','string',{'M range and N range'},'value',1,'backgroundcolor',Inactive)
 end
 if 1%~DimFlag(K_)
     set(MW.VSelType,'enable','off','backgroundcolor',Inactive)
@@ -540,6 +545,11 @@ if strcmp(get(MW.HSelType,'enable'),'on')
     set(MW.MN,'enable','on',vis{:})
     set(MW.EditMN,'enable','on','backgroundcolor',Active,vis{:})
     set(MW.MN2XY,vis{:})
+    if ~isempty(Props) && isfield(Props,'DimFlag') && Props(fld).DimFlag(M_) && ~Props(fld).DimFlag(N_)
+        set(MW.MN2M,vis{:})
+    else
+        set(MW.MN2M,'visible','off')
+    end
     mn = get(MW.EditMN,'userdata');
     if DimFlag(N_) && size(mn,2)<2
         mn=[];
@@ -581,7 +591,7 @@ if strcmp(get(MW.HSelType,'enable'),'on')
 else
     set(MW.MN,'enable','off','visible','off')
     set(MW.EditMN,'enable','off','backgroundcolor',Inactive,'visible','off')
-    set(MW.MN2XY,'visible','off')
+    set([MW.MN2XY MW.MN2M],'visible','off')
 end
 if ~isempty(strmatch('(X,Y) ',get(MW.HSelType,'string'))) && strcmp(get(MW.HSelType,'enable'),'on')
     vis = {'visible','off'};

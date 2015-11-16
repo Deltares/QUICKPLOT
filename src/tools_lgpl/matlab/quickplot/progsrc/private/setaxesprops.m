@@ -69,6 +69,7 @@ elseif strcmp(AxesType,'Text')
 else
     X = 'xyz';
     if nAxes==2
+        setappdata(hAx,'axes2d',true)
         set_2d_axes_behavior(hAx)
     end
     if nAxes>=2
@@ -86,8 +87,8 @@ else
         unit{nAxes} = [];
     end
     for i = 1:nAxes
-        if isempty(getappdata(hAx,[X(i) 'range']))
-            setappdata(hAx,[X(i) 'range'],'auto')
+        if isempty(getappdata(hAx,[X(i) 'limmode']))
+            setappdata(hAx,[X(i) 'limmode'],'auto')
         end
         switch Axes{i}
             case 'Time'
@@ -146,6 +147,7 @@ if ~isequal(FullAxesType,AxesType)
     setappdata(hAx,'AxesType',FullAxesType)
 end
 setappdata(hAx,'BasicAxesType',AxesType)
+update_axesprops(hAx)
 
 
 function sethscale_lonlat(hAx)
@@ -196,6 +198,27 @@ end
 if isequal(getappdata(hAx,'LonLat'),1)
     sethscale_lonlat(hAx)
 end
+% axes2d = isequal(getappdata(hAx,'axes2d'),true);
+% if axes2d
+%     alldims = 'xy';
+% else
+%     alldims = 'xyz';
+% end
+% for d = alldims
+%     dlimmode = getappdata(hAx,[d 'limmode']);
+%     if isempty(dlimmode) || strcmp(dlimmode,'auto')
+%         set(hAx,[d 'limmode'],'auto')
+%     end
+% end
+% for d = alldims
+%     update_axticks(hAx,d)
+% end
+% if isequal(getappdata(hAx,'LonLat'),1)
+%     sethscale_lonlat(hAx)
+% end
+% if axes2d
+%     set_2d_axes_behavior(hAx)
+% end
 
 
 function setlabel(ax,dir,quantity,unit)

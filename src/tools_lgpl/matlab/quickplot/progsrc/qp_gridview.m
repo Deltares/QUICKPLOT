@@ -98,6 +98,16 @@ else
 end
 
 switch cmd
+    case 'resize'
+        pos = get(gcbf,'position');
+        A = findall(gcbf,'type','axes');
+        xlim = get(A,'xlim');
+        ylim = get(A,'ylim');
+        if (ylim(2)-ylim(1))/(xlim(2)-xlim(1))>pos(4)/pos(3)
+            set(A,'xlimmode','auto','plotBoxAspectRatio',[pos(3:4) 1])
+        else
+            set(A,'ylimmode','auto','plotBoxAspectRatio',[pos(3:4) 1])
+        end
     case 'convertmn2xy'
         F=varargin{1};
         G=findobj(F,'tag','GRID');
@@ -157,6 +167,9 @@ switch cmd
         if ~isfield(xx,'Type')
             xx.Type='none';
             xx.Range=[];
+        elseif strcmp(GRID.Type,'structured') && size(xx.Range,2)==1
+            [I,J]=ind2sub(size(GRID.X),xx.Range);
+            xx.Range = [I J];
         end
         if nargout<=1
             out=xx;
@@ -433,147 +446,8 @@ switch cmd
                 if strcmp(get(gcbf,'selectiontype'),'normal')
                     set(gcbf,'WindowButtonMotionFcn','qp_gridview pathmotion')
                     ilast = points(end);
-                    dist = [];
-                    switch GRID.Type
-                        case 'ugrid'
-                            switch GRID.ValLocation
-                                case 'NODE'
-                                    SEG = GRID.EdgeNodeConnect;
-                                    %
-                                    X = GRID.X;
-                                    Y = GRID.Y;
-                                case 'EDGE'
-                                    Edges = GRID.EdgeNodeConnect;
-                                    X = GRID.X(Edges);
-                                    Y = GRID.Y(Edges);
-                                    D = sqrt((X(:,1)-X(:,2)).^2 + (Y(:,1)-Y(:,2)).^2);
-                                    X = sum(X,2)/2;
-                                    Y = sum(Y,2)/2;
-                                    % determine neighboring edges
-                                    nedges = size(Edges,1);
-                                    nnodes = size(GRID.X,1);
-                                    NEdgesPerNode = accumarray(Edges(:),1,[nnodes 1]);
-                                    NConnPerNode = NEdgesPerNode.*(NEdgesPerNode-1)/2;
-                                    SEG = zeros(sum(NConnPerNode),2);
-                                    NodeEdge = [Edges(:) (mod(0:2*nedges-1,nedges)+1)'];
-                                    [sNodeEdge,I] = sort(NodeEdge(:,1));
-                                    NodeEdge = NodeEdge(I,:);
-                                    EdgeOffset = [0;cumsum(NEdgesPerNode(1:end-1))];
-                                    j = 0;
-                                    for i = 1:nnodes
-                                        for e1 = 1:NEdgesPerNode(i)
-                                            for e2 = e1+1:NEdgesPerNode(i)
-                                                j = j+1;
-                                                SEG(j,:) = NodeEdge(EdgeOffset(i)+[e1 e2],2);
-                                            end
-                                        end
-                                    end
-                                    % determine distance of edge centres
-                                    dist = sum(D(SEG),2)/2;
-                                case 'FACE'
-                                    % determine Edge-Face relationship (code copy)
-                                    Faces = GRID.FaceNodeConnect;
-                                    missing = isnan(Faces);
-                                    NEdges = sum(~missing(:));
-                                    Edges = zeros(3,NEdges);
-                                    ie = 0;
-                                    for j = 1:size(Faces,2)
-                                        for i = 1:size(Faces,1)
-                                            if ~isnan(Faces(i,j))
-                                                ie = ie+1;
-                                                Edges(1,ie) = Faces(i,j);
-                                                if j==size(Faces,2) || isnan(Faces(i,j+1))
-                                                    Edges(2,ie) = Faces(i,1);
-                                                else
-                                                    Edges(2,ie) = Faces(i,j+1);
-                                                end
-                                                Edges(3,ie) = i;
-                                            end
-                                        end
-                                    end
-                                    Edges(1:2,:) = sort(Edges(1:2,:));
-                                    Edges = Edges';
-                                    %
-                                    [c,ia,ic]=unique(Edges(:,1:2),'rows');
-                                    SEG = zeros(size(c,1),2);
-                                    for i = 1:length(ic)
-                                        if SEG(ic(i),1)==0
-                                            j = 1;
-                                        else
-                                            j = 2;
-                                        end
-                                        SEG(ic(i),j) = Edges(i,3);
-                                    end
-                                    SEG(any(SEG==0,2),:) = [];
-                                    %
-                                    Faces(missing) = 1;
-                                    X = GRID.X(Faces);
-                                    Y = GRID.Y(Faces);
-                                    np = sum(~missing,2);
-                                    X(missing) = 0;
-                                    X = sum(X,2)./np;
-                                    Y(missing) = 0;
-                                    Y = sum(Y,2)./np;
-                            end
-                            %
-                            Npnt = size(X,1);
-                            %
-                            XY = cat(3,X(SEG),Y(SEG));
-                            xx = X(ilast);
-                            yy = Y(ilast);
-                            %
-                            [dd,I]=sort((sum(XY(:,1,:),3)/2-xx).^2+(sum(XY(:,2,:),3)/2-yy).^2);
-                        case 'structured'
-                            switch GRID.ValLocation
-                                case 'NODE'
-                                    I = reshape(1:numel(GRID.X),size(GRID.X));
-                                    SEGx = [I(1:end-1,:) I(2:end,:)];
-                                    SEGx = reshape(SEGx,[numel(SEGx)/2 2]);
-                                    SEGy = [I(:,1:end-1) I(:,2:end)];
-                                    SEGy = reshape(SEGy,[numel(SEGy)/2 2]);
-                                    Missing = isnan(GRID.X(1:end-1,1:end-1)) | ...
-                                        isnan(GRID.X(2:end,1:end-1)) | ...
-                                        isnan(GRID.X(1:end-1,2:end)) | ...
-                                        isnan(GRID.X(2:end,2:end));
-                                    SEGd1= [I(1:end-1,1:end-1) I(2:end,2:end)];
-                                    SEGd1= reshape(SEGd1,[numel(SEGd1)/2 2]);
-                                    SEGd1(Missing,:)=[];
-                                    SEGd2= [I(2:end,1:end-1) I(1:end-1,2:end)];
-                                    SEGd2= reshape(SEGd2,[numel(SEGd2)/2 2]);
-                                    SEGd2(Missing,:)=[];
-                                    SEG = cat(1,SEGx,SEGy,SEGd1,SEGd2);
-                                    %
-                                    Nseg = size(SEG,1);
-                                    XY = [GRID.X(:) GRID.Y(:)];
-                                    Npnt = size(XY,1);
-                                    XY = reshape(XY(SEG,:),[Nseg 2 2]);
-                                    rm = any(isnan(XY(:,:,1)),2);
-                                    SEG(rm,:)=[];
-                                    XY(rm,:,:)=[];
-                                    [M,N]=ind2sub(size(GRID.X),SEG);
-                                    [m,n]=ind2sub(size(GRID.X),ilast);
-                                    [dd,I]=sort((sum(M,2)/2-m).^2+(sum(N,2)/2-n).^2);
-                            end
-                    end
-                    SEG=SEG(I,:);
-                    XY=XY(I,:,:);
-                    if isempty(dist)
-                        style = getappdata(gcbf,'pathstyle');
-                        switch style
-                            case 'least' % least number of segments
-                                dist = repmat(1,size(XY,1),1);
-                            case 'shortest' % shortest path
-                                dist = sqrt(sum(diff(XY,1,2).^2,3));
-                        end
-                    else
-                        dist = dist(I);
-                    end
-                    %
-                    DistanceState=[];
-                    DistanceState.Npnt=Npnt;
-                    DistanceState.ilast=ilast;
-                    DistanceState.SEG=SEG;
-                    DistanceState.dist=dist;
+                    style = getappdata(gcbf,'pathstyle');
+                    DistanceState = init_distance(GRID,style,ilast);
                     %
                     DistanceState = determine_frompoint(DistanceState,ilast);
                     setappdata(G,'DistanceState',DistanceState)
@@ -770,6 +644,7 @@ switch cmd
             'numbertitle','off', ...
             'handlevisibility','off', ...
             'keypressfcn','qp_gridview keypress', ...
+            'resizefcn','qp_gridview resize', ...
             'units','pixels', ...
             'position',pos, ...
             'visible','off');
@@ -812,7 +687,7 @@ switch cmd
             'color',selcolor,'linestyle','none', ...
             'marker','.','markersize',18, ...
             'tag','SELPOINT',erasemode{:});
-        set(A,'color','w','xtick',[],'ytick',[], ...
+        set(A,'color',get(F,'color'),'xtick',[],'ytick',[], ...
             'da',[1 1 1],'view',[0 90],'xcolor',get(F,'color'), ...
             'ycolor',get(F,'color'))
         xl=limits(A,'xlim'); xl=xl+[-1 1]*diff(xl)/20;
@@ -1399,13 +1274,19 @@ set(G(1),'tag','GRID','userdata',GRID)
 set(G(2:end),'tag','GRIDother')
 set(G,'clipping','off','hittest','off')
 %
-xl=limits(A,'xlim'); xl=xl+[-1 1]*max(0.00001,abs(diff(xl)*0.01))/20;
-yl=limits(A,'ylim'); yl=yl+[-1 1]*max(0.00001,abs(diff(yl)*0.01))/20;
+xl=limits(G,'xlim'); xl=xl+[-1 1]*max(0.00001,abs(diff(xl)*0.01))/20;
+yl=limits(G,'ylim'); yl=yl+[-1 1]*max(0.00001,abs(diff(yl)*0.01))/20;
 if ~isfinite(xl)
     xl=[0 1];
     yl=[0 1];
 end
-set(A,'xlim',xl,'ylim',yl)
+pos = get(F,'position');
+if (yl(2)-yl(1))/(xl(2)-xl(1))>pos(4)/pos(3)
+    xl = (xl(1)+xl(2))/2 + [-1 1]*pos(3)/pos(4)*(yl(2)-yl(1))/2;
+else
+    yl = (yl(1)+yl(2))/2 + [-1 1]*pos(4)/pos(3)*(xl(2)-xl(1))/2;
+end
+set(A,'xlim',xl,'ylim',yl,'plotBoxAspectRatio',[pos(3:4) 1])
 delete(get(A,'zlabel')) % delete the old ZOOMAxesData applicationdata
 drawnow
 zoom(F,'reset');
@@ -1579,8 +1460,15 @@ switch NewLoc
                 if strcmp(OldRange.Type,'pwline')
                     iEdge = OldRange.Range;
                     iNode = GRID.EdgeNodeConnect(iEdge,:)';
-                    iNode = iNode(:);
-                    iNode(diff(iNode)==0)=[];
+                    for i = 2:size(iNode,2)
+                        if i==2
+                            if ismember(iNode(1,1),iNode(:,2))
+                               iNode(:,1) = iNode([2 1],1);
+                            end
+                        end
+                        iNode(ismember(iNode(:,i),iNode(:,i-1)),i) = NaN;
+                    end
+                    iNode = iNode(~isnan(iNode));
                     NewRange.Type = 'pwline';
                     NewRange.Range = iNode;
                 else
@@ -1592,17 +1480,61 @@ switch NewLoc
                     NewRange.Range = {iNode};
                 end
             case 'FACE'
-                % find node numbers associated with the selected nodes
-                switch OldRange.Type
-                    case 'point'
-                        iFace = OldRange.Range(1);
-                    case 'range'
-                        iFace = OldRange.Range{1};
+                if strcmp(OldRange.Type,'pwline')
+                    iFace = OldRange.Range;
+                    lCorner = ~ismember(GRID.FaceNodeConnect(iFace(1),:),GRID.FaceNodeConnect(iFace(2),:)) & ~isnan(GRID.FaceNodeConnect(iFace(1),:));
+                    iNode0 = GRID.FaceNodeConnect(iFace(1),lCorner);
+                    iNode0 = iNode0(1);
+                    GRIDreduced = GRID;
+                    GRIDreduced.ValLocation = 'NODE';
+                    GRIDreduced.FaceNodeConnect = GRID.FaceNodeConnect(iFace,:);
+                    %
+                    DS0 = init_distance(GRIDreduced,'shortest',iNode0);
+                    %
+                    DistanceState = determine_frompoint(DS0,iNode0);
+                    cl = cell(1,length(iFace)+1);
+                    cl{1} = iNode0;
+                    for i = 1:length(iFace)
+                        if i==length(iFace)
+                            lCorner = ~ismember(GRID.FaceNodeConnect(iFace(i),:),GRID.FaceNodeConnect(iFace(i-1),:)) & ~isnan(GRID.FaceNodeConnect(iFace(i),:));
+                        else
+                            lCorner = ismember(GRID.FaceNodeConnect(iFace(i),:),GRID.FaceNodeConnect(iFace(i+1),:)) & ~isnan(GRID.FaceNodeConnect(iFace(i),:));
+                        end
+                        iNode1 = GRID.FaceNodeConnect(iFace(i),lCorner);
+                        %
+                        DistanceState = determine_frompoint(DistanceState,iNode1(1));
+                        iNode1(DistanceState.distfromlast(iNode1)==0)=[];
+                        if length(iNode1)>1
+                            [m,j] = min(DistanceState.distfromlast(iNode1));
+                            iNode1 = iNode1(j);
+                        end
+                        ip = [];
+                        iPrev = iNode1;
+                        while iPrev~=iNode0
+                            ip = [iPrev ip];
+                            iPrev = DistanceState.frompoint(iPrev);
+                        end
+                        cl{i+1} = ip;
+                        %
+                        iNode0 = iNode1;
+                        DS0.ilast = iNode0;
+                        DistanceState = determine_frompoint(DS0,iNode0);
+                    end
+                    NewRange.Type = 'pwline';
+                    NewRange.Range = cat(2,cl{:});
+                else
+                    % find node numbers associated with the selected nodes
+                    switch OldRange.Type
+                        case 'point'
+                            iFace = OldRange.Range(1);
+                        case 'range'
+                            iFace = OldRange.Range{1};
+                    end
+                    iNode = GRID.FaceNodeConnect(iFace,:);
+                    iNode = unique(iNode(~isnan(iNode)));
+                    NewRange.Type = 'range';
+                    NewRange.Range = {iNode};
                 end
-                iNode = GRID.FaceNodeConnect(iFace,:);
-                iNode = unique(iNode(~isnan(iNode)));
-                NewRange.Type = 'range';
-                NewRange.Range = {iNode};
             otherwise
                 error('Transition from %s to %s not yet implemented',OldLoc,NewLoc)
         end
@@ -1610,10 +1542,17 @@ switch NewLoc
         switch OldLoc
             case {'NODE','FACE'}
                 if strcmp(OldRange.Type,'pwline')
-                    iNode = OldRange.Range;
-                    [dummy,iEdge]=ismember(sort([iNode(1:end-1) iNode(2:end)],2),sort(GRID.EdgeNodeConnect,2),'rows');
-                    NewRange.Type = 'pwline';
-                    NewRange.Range = iEdge;
+                    if strcmp(OldLoc,'NODE')
+                        iNode = OldRange.Range;
+                        [dummy,iEdge]=ismember(sort([iNode(1:end-1) iNode(2:end)],2),sort(GRID.EdgeNodeConnect,2),'rows');
+                        NewRange.Type = 'pwline';
+                        NewRange.Range = iEdge;
+                    else
+                        % convert FACE to NODE
+                        NodeRange = switchrange(GRID,OldLoc,OldRange,'NODE');
+                        % and subsequently NODE to EDGE
+                        [NewRange,RangeMax] = switchrange(GRID,'NODE',NodeRange,NewLoc);
+                    end
                 else
                     if strcmp(OldLoc,'FACE')
                         % find node numbers associated with the selected nodes
@@ -1635,46 +1574,99 @@ switch NewLoc
     case 'FACE'
         switch OldLoc
             case {'NODE','EDGE'}
-                switch OldRange.Type
-                    case 'point'
-                        iThingy = OldRange.Range(1);
-                        if strcmp(OldLoc,'NODE')
-                            MatchLevel = 1;
-                        else
-                            MatchLevel = 2;
-                        end
-                    case 'range'
-                        iThingy = OldRange.Range{1};
-                        MatchLevel = 3;
-                end
-                if strcmp(OldLoc,'EDGE')
-                    % find node numbers associated with the selected edges
-                    iEdge = iThingy;
-                    iNode = GRID.EdgeNodeConnect(iEdge,:);
-                    iNode = unique(iNode(:));
+                if strcmp(OldRange.Type,'pwline')
+                    switch OldLoc
+                        case 'NODE'
+                            iNode = OldRange.Range;
+                            lFace = sum(ismember(GRID.FaceNodeConnect,iNode(1:2)) & ~isnan(GRID.FaceNodeConnect),2);
+                            iFace1 = find(lFace==2);
+                            iFace1 = iFace1(1);
+                            lFace = any(ismember(GRID.FaceNodeConnect,iNode) & ~isnan(GRID.FaceNodeConnect),2);
+                            iFace = find(lFace);
+                            GRIDreduced = GRID;
+                            GRIDreduced.ValLocation = 'FACE';
+                            GRIDreduced.FaceNodeConnect = GRID.FaceNodeConnect(lFace,:);
+                            iFace1 = find(iFace==iFace1);
+                            %
+                            DS0 = init_distance(GRIDreduced,'shortest',iFace1);
+                            %
+                            iFace0 = iFace1;
+                            DistanceState = determine_frompoint(DS0,iFace0);
+                            cl = cell(1,length(iNode)-1);
+                            cl{1} = iFace0;
+                            for i = 2:length(iNode)-1
+                                lFace = sum(ismember(GRIDreduced.FaceNodeConnect,iNode(i:i+1)) & ~isnan(GRIDreduced.FaceNodeConnect),2);
+                                iFace1 = find(lFace==2);
+                                DistanceState = determine_frompoint(DistanceState,iFace1(1));
+                                if length(iFace1)==2
+                                    if DistanceState.distfromlast(iFace1(2))==0
+                                        iFace1 = iFace1(1);
+                                    else
+                                        iFace1 = iFace1(2);
+                                    end
+                                end
+                                ip = [];
+                                iPrev = iFace1;
+                                while iPrev~=iFace0
+                                    ip = [iPrev ip];
+                                    iPrev = DistanceState.frompoint(iPrev);
+                                end
+                                cl{i} = ip;
+                                %
+                                iFace0 = iFace1;
+                                DS0.ilast = iFace0;
+                                DistanceState = determine_frompoint(DS0,iFace0);
+                            end
+                            NewRange.Type = 'pwline';
+                            NewRange.Range = iFace(cat(2,cl{:}));
+                        case 'EDGE'
+                            % convert EDGE to NODE
+                            NodeRange = switchrange(GRID,OldLoc,OldRange,'NODE');
+                            % and subsequently NODE to FACE
+                            [NewRange,RangeMax] = switchrange(GRID,'NODE',NodeRange,NewLoc);
+                    end
                 else
-                    iNode = iThingy;
-                end
-                % find faces for which all nodes are selected
-                switch MatchLevel
-                    case 1
-                        lFace = any(ismember(GRID.FaceNodeConnect,iNode) & ~isnan(GRID.FaceNodeConnect),2);
-                        iFace = find(lFace);
-                        iFace = iFace(1);
-                    case 2
-                        lFace = sum(ismember(GRID.FaceNodeConnect,iNode) & ~isnan(GRID.FaceNodeConnect),2);
-                        iFace = find(lFace==2);
-                        iFace = iFace(1);
-                    case 3
-                        lFace = all(ismember(GRID.FaceNodeConnect,iNode) | isnan(GRID.FaceNodeConnect),2);
-                        iFace = find(lFace);
-                end
-                if length(iFace)==1
-                    NewRange.Type = 'point';
-                    NewRange.Range = [iFace 1];
-                else
-                    NewRange.Type = 'range';
-                    NewRange.Range = {iFace};
+                    switch OldRange.Type
+                        case 'point'
+                            iLocation = OldRange.Range(1);
+                            if strcmp(OldLoc,'NODE')
+                                MatchLevel = 1;
+                            else
+                                MatchLevel = 2;
+                            end
+                        case 'range'
+                            iLocation = OldRange.Range{1};
+                            MatchLevel = 3;
+                    end
+                    if strcmp(OldLoc,'EDGE')
+                        % find node numbers associated with the selected edges
+                        iEdge = iLocation;
+                        iNode = GRID.EdgeNodeConnect(iEdge,:);
+                        iNode = unique(iNode(:));
+                    else
+                        iNode = iLocation;
+                    end
+                    % find faces for which all nodes are selected
+                    switch MatchLevel
+                        case 1 % select first face matching one node
+                            lFace = any(ismember(GRID.FaceNodeConnect,iNode) & ~isnan(GRID.FaceNodeConnect),2);
+                            iFace = find(lFace);
+                            iFace = iFace(1);
+                        case 2 % select first face matching two nodes (one edge)
+                            lFace = sum(ismember(GRID.FaceNodeConnect,iNode) & ~isnan(GRID.FaceNodeConnect),2);
+                            iFace = find(lFace==2);
+                            iFace = iFace(1);
+                        case 3 % select all faces for which all nodes match
+                            lFace = all(ismember(GRID.FaceNodeConnect,iNode) | isnan(GRID.FaceNodeConnect),2);
+                            iFace = find(lFace);
+                    end
+                    if length(iFace)==1
+                        NewRange.Type = 'point';
+                        NewRange.Range = [iFace 1];
+                    else
+                        NewRange.Type = 'range';
+                        NewRange.Range = {iFace};
+                    end
                 end
             otherwise
                 error('Transition from %s to %s not yet implemented',OldLoc,NewLoc)
@@ -1682,3 +1674,149 @@ switch NewLoc
     otherwise
         error('Transition from %s to %s not yet implemented',OldLoc,NewLoc)
 end
+if strcmp(NewRange.Type,'pwline') && size(NewRange.Range,1)==1
+    NewRange.Range = NewRange.Range(:);
+end
+
+
+function DistanceState = init_distance(GRID,style,ilast)
+dist = [];
+switch GRID.Type
+    case 'ugrid'
+        switch GRID.ValLocation
+            case 'NODE'
+                SEG = GRID.EdgeNodeConnect;
+                %
+                X = GRID.X;
+                Y = GRID.Y;
+            case 'EDGE'
+                Edges = GRID.EdgeNodeConnect;
+                X = GRID.X(Edges);
+                Y = GRID.Y(Edges);
+                D = sqrt((X(:,1)-X(:,2)).^2 + (Y(:,1)-Y(:,2)).^2);
+                X = sum(X,2)/2;
+                Y = sum(Y,2)/2;
+                % determine neighboring edges
+                nedges = size(Edges,1);
+                nnodes = size(GRID.X,1);
+                NEdgesPerNode = accumarray(Edges(:),1,[nnodes 1]);
+                NConnPerNode = NEdgesPerNode.*(NEdgesPerNode-1)/2;
+                SEG = zeros(sum(NConnPerNode),2);
+                NodeEdge = [Edges(:) (mod(0:2*nedges-1,nedges)+1)'];
+                [sNodeEdge,I] = sort(NodeEdge(:,1));
+                NodeEdge = NodeEdge(I,:);
+                EdgeOffset = [0;cumsum(NEdgesPerNode(1:end-1))];
+                j = 0;
+                for i = 1:nnodes
+                    for e1 = 1:NEdgesPerNode(i)
+                        for e2 = e1+1:NEdgesPerNode(i)
+                            j = j+1;
+                            SEG(j,:) = NodeEdge(EdgeOffset(i)+[e1 e2],2);
+                        end
+                    end
+                end
+                % determine distance of edge centres
+                dist = sum(D(SEG),2)/2;
+            case 'FACE'
+                % determine Edge-Face relationship (code copy)
+                Faces = GRID.FaceNodeConnect;
+                missing = isnan(Faces);
+                NEdges = sum(~missing(:));
+                Edges = zeros(3,NEdges);
+                ie = 0;
+                for j = 1:size(Faces,2)
+                    for i = 1:size(Faces,1)
+                        if ~isnan(Faces(i,j))
+                            ie = ie+1;
+                            Edges(1,ie) = Faces(i,j);
+                            if j==size(Faces,2) || isnan(Faces(i,j+1))
+                                Edges(2,ie) = Faces(i,1);
+                            else
+                                Edges(2,ie) = Faces(i,j+1);
+                            end
+                            Edges(3,ie) = i;
+                        end
+                    end
+                end
+                Edges(1:2,:) = sort(Edges(1:2,:));
+                Edges = Edges';
+                %
+                [c,ia,ic]=unique(Edges(:,1:2),'rows');
+                SEG = zeros(size(c,1),2);
+                for i = 1:length(ic)
+                    if SEG(ic(i),1)==0
+                        j = 1;
+                    else
+                        j = 2;
+                    end
+                    SEG(ic(i),j) = Edges(i,3);
+                end
+                SEG(any(SEG==0,2),:) = [];
+                %
+                Faces(missing) = 1;
+                X = GRID.X(Faces);
+                Y = GRID.Y(Faces);
+                np = sum(~missing,2);
+                X(missing) = 0;
+                X = sum(X,2)./np;
+                Y(missing) = 0;
+                Y = sum(Y,2)./np;
+        end
+        %
+        Npnt = size(X,1);
+        %
+        XY = cat(3,X(SEG),Y(SEG));
+        xx = X(ilast);
+        yy = Y(ilast);
+        %
+        [dd,I]=sort((sum(XY(:,1,:),3)/2-xx).^2+(sum(XY(:,2,:),3)/2-yy).^2);
+    case 'structured'
+        switch GRID.ValLocation
+            case 'NODE'
+                I = reshape(1:numel(GRID.X),size(GRID.X));
+                SEGx = [I(1:end-1,:) I(2:end,:)];
+                SEGx = reshape(SEGx,[numel(SEGx)/2 2]);
+                SEGy = [I(:,1:end-1) I(:,2:end)];
+                SEGy = reshape(SEGy,[numel(SEGy)/2 2]);
+                Missing = isnan(GRID.X(1:end-1,1:end-1)) | ...
+                    isnan(GRID.X(2:end,1:end-1)) | ...
+                    isnan(GRID.X(1:end-1,2:end)) | ...
+                    isnan(GRID.X(2:end,2:end));
+                SEGd1= [I(1:end-1,1:end-1) I(2:end,2:end)];
+                SEGd1= reshape(SEGd1,[numel(SEGd1)/2 2]);
+                SEGd1(Missing,:)=[];
+                SEGd2= [I(2:end,1:end-1) I(1:end-1,2:end)];
+                SEGd2= reshape(SEGd2,[numel(SEGd2)/2 2]);
+                SEGd2(Missing,:)=[];
+                SEG = cat(1,SEGx,SEGy,SEGd1,SEGd2);
+                %
+                Nseg = size(SEG,1);
+                XY = [GRID.X(:) GRID.Y(:)];
+                Npnt = size(XY,1);
+                XY = reshape(XY(SEG,:),[Nseg 2 2]);
+                rm = any(isnan(XY(:,:,1)),2);
+                SEG(rm,:)=[];
+                XY(rm,:,:)=[];
+                [M,N]=ind2sub(size(GRID.X),SEG);
+                [m,n]=ind2sub(size(GRID.X),ilast);
+                [dd,I]=sort((sum(M,2)/2-m).^2+(sum(N,2)/2-n).^2);
+        end
+end
+SEG=SEG(I,:);
+XY=XY(I,:,:);
+if isempty(dist)
+    switch style
+        case 'least' % least number of segments
+            dist = repmat(1,size(XY,1),1);
+        case 'shortest' % shortest path
+            dist = sqrt(sum(diff(XY,1,2).^2,3));
+    end
+else
+    dist = dist(I);
+end
+%
+DistanceState=[];
+DistanceState.Npnt=Npnt;
+DistanceState.ilast=ilast;
+DistanceState.SEG=SEG;
+DistanceState.dist=dist;

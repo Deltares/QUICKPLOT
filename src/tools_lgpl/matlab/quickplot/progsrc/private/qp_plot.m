@@ -150,7 +150,7 @@ else
         [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'griddefdata',SubField{:},SubSelected{:});
     else
         switch Ops.presentationtype
-            case {'patches','patches with lines','patch centred vector','polygons','edge'}
+            case {'patches','patches with lines','patch centred vector','polygons'}%,'edge'}
                 [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'gridcelldata',SubField{:},SubSelected{:});
                 DataInCell=1;
             otherwise
@@ -306,6 +306,18 @@ if ~isempty(Ops.vectorcomponent)
         NVal=1;
     else
         VectorPlot=1;
+    end
+end
+
+if isfield(Ops,'operator') && ~strcmp(Ops.operator,'none')
+    flds = {'Val','XDamVal','YDamVal'};
+    for i = 1:length(flds)
+        fldi = flds{i};
+        if isfield(data,fldi)
+            for d = 1:numel(data)
+                data(d).(fldi) = feval(Ops.operator,data(d).(fldi));
+            end
+        end
     end
 end
 

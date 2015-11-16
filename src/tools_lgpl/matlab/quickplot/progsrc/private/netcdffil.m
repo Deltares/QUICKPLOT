@@ -349,12 +349,12 @@ if XYRead
         meshAttribs = {meshInfo.Attribute.Name};
         connect = strmatch('face_node_connectivity',meshAttribs,'exact');
         if ~isempty(connect)
-            iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name});
+            iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name},'exact');
             if isempty(iconnect)
                 error('Face_node_connectivity not found!')
             end
             [Ans.FaceNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
-            istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name});
+            istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name},'exact');
             if isempty(istart)
                 maxNode = max(Ans.FaceNodeConnect(:));
                 minNode = min(Ans.FaceNodeConnect(Ans.FaceNodeConnect>=0));
@@ -375,7 +375,7 @@ if XYRead
         connect = strmatch('edge_node_connectivity',meshAttribs,'exact');
         if strcmp(Ans.ValLocation,'EDGE') || ~isfield(Ans,'FaceNodeConnect') || (~DataRead && ~isempty(connect))
             % "~DataRead" is a hack to load EdgeNodeConnect if available for use in GridView
-            iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name});
+            iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name},'exact');
             if isempty(iconnect)
                 error('Edge_node_connectivity not found!')
             end
@@ -383,7 +383,7 @@ if XYRead
             Ans.EdgeNodeConnect(Ans.EdgeNodeConnect<0) = NaN;
         end
         if isfield(Ans,'EdgeNodeConnect')
-            istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name});
+            istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name},'exact');
             if isempty(istart)
                 maxNode = max(Ans.EdgeNodeConnect(:));
                 minNode = min(Ans.EdgeNodeConnect(Ans.EdgeNodeConnect>=0));
@@ -457,7 +457,7 @@ if XYRead
                 end
                 %
                 dims(end+1) = setdiff(CoordInfo.Dimension,dims(~cellfun('isempty',dims)));
-                id = strmatch(dims{end},{FI.Dimension.Name});
+                id = strmatch(dims{end},{FI.Dimension.Name},'exact');
                 dimvals{end+1} = 1:FI.Dimension(id).Length;
                 coordname{iCoord}=coordname{iCoord}(1);
             else
@@ -488,7 +488,7 @@ if XYRead
                     if ~isempty(underscore)
                         location = xcoord(underscore+1:end);
                         maskvar = ['mask_' location];
-                        actvarid = strmatch(maskvar,{FI.Dataset.Name}');
+                        actvarid = strmatch(maskvar,{FI.Dataset.Name},'exact');
                         ActiveInfo = FI.Dataset(actvarid);
                         if ~isempty(ActiveInfo)
                             [Active, status] = qp_netcdf_get(FI,ActiveInfo,Props.DimName,idx);
@@ -1020,7 +1020,7 @@ else
         %
         Out(end+1)=Insert;
         %
-        if strcmp(standard_name,'discharge') && iscell(Insert.varid)
+        if strcmp(standard_name,'discharge') %&& iscell(Insert.varid)
             Insert.Name = 'stream function'; % previously: discharge potential
             Insert.Geom = 'UGRID-NODE';
             Insert.varid = {'stream_function' Insert.varid};
@@ -1243,13 +1243,13 @@ else
         nval = Props.SubFld{d,2};
         newsubf = {};
         newVal = [];
-        for f = 1:length(subf)
-            subf_f = subf{f};
-            Val_f = Val(f,:);
+        for sf = 1:length(subf)
+            subf_f = subf{sf};
+            Val_f = Val(sf,:);
             if ~isempty(subf_f)
                 subf_f = [subf_f ', '];
             end
-            for v=1:Props.SubFld{d,2}
+            for v = 1:Props.SubFld{d,2}
                 if nval>1
                     newsubf{end+1}=sprintf('%s%s=%i',subf_f,Fld{d},v);
                 else
@@ -1266,6 +1266,9 @@ else
     end
     rec.Fld=Fld;
     rec.Val=Val;
+end
+if nargin>2 && f~=0
+    subf = subf(f);
 end
 % -----------------------------------------------------------------------------
 

@@ -128,6 +128,7 @@ nvars = length(nc.Dataset);
 % all coordinate (dimension) variables.
 %
 DimensionNames = {nc.Dimension.Name};
+DatasetNames = {nc.Dataset.Name};
 AuxCoordVars = {};
 for ivar = 1:nvars
     Info = nc.Dataset(ivar);
@@ -163,8 +164,58 @@ for ivar = 1:nvars
         Info.Coordinates = node_coords;
         Info.Mesh = {'ugrid' ivar -1};
         AuxCoordVars = union(AuxCoordVars,Info.Coordinates);
-    %elseif ~isempty(strmatch('locations',Attribs,'exact'))
-    %    Info.Type = 'ugrid_mesh';
+        %
+        nd = strmatch('node_dimension',Attribs,'exact');
+        if ~isempty(nd)
+            node_dim = Info.Attribute(nd).Value;
+        else
+            ndc = find(strcmp(node_coords{1},DatasetNames));
+            node_dim = nc.Dataset(ndc).Dimension{1};
+        end
+        %
+        ed  = strmatch('edge_dimension',Attribs,'exact');
+        ce  = strmatch('edge_coordinates',Attribs,'exact');
+        enc = strmatch('edge_node_connectivity',Attribs,'exact');
+        if ~isempty(ed)
+            edge_dim = Info.Attribute(ed).Value;
+        elseif ~isempty(ce)
+            edge_coords = multiline(Info.Attribute(ce).Value,' ','cellrow');
+            edc = find(strcmp(edge_coords{1},DatasetNames));
+            edge_dim = nc.Dataset(edc).Dimension{1};
+        elseif ~isempty(enc)
+            enc = find(strcmp(Info.Attribute(enc).Value,DatasetNames));
+            edge_dim = nc.Dataset(enc).Dimension; % 2 dimensional
+            edge_dim = edge_dim{1};
+        else
+            edge_dim = '';
+        end
+        %
+        fd  = strmatch('face_dimension',Attribs,'exact');
+        cf  = strmatch('face_coordinates',Attribs,'exact');
+        fnc = strmatch('face_node_connectivity',Attribs,'exact');
+        if ~isempty(fd)
+            face_dim = Info.Attribute(fd).Value;
+        elseif ~isempty(cf)
+            face_coords = multiline(Info.Attribute(cf).Value,' ','cellrow');
+            fcc = find(strcmp(face_coords{1},DatasetNames));
+            face_dim = nc.Dataset(fcc).Dimension{1};
+        else
+            fnc = find(strcmp(Info.Attribute(fnc).Value,DatasetNames));
+            face_dim = nc.Dataset(fnc).Dimension; % 2 dimensional
+            face_dim = face_dim{1};
+        end
+        %
+        id = strmatch(node_dim,DimensionNames,'exact');
+        nc.Dimension(id).Type = 'ugrid_node';
+        %
+        if ~isempty(edge_dim)
+            id = strmatch(edge_dim,DimensionNames,'exact');
+            nc.Dimension(id).Type = 'ugrid_edge';
+        end
+        %
+        id = strmatch(face_dim,DimensionNames,'exact');
+        nc.Dimension(id).Type = 'ugrid_face';
+        %
     end
     %
     j = strmatch('standard_name',Attribs,'exact');
@@ -300,6 +351,9 @@ for ivar = 1:nvars
                 %
                 % Vertical dimension
                 %
+                if isempty(idim) && length(Info.Dimid)==1 && strcmp(nc.Dimension(Info.Dimid+1).Type,'unknown')
+                    idim = Info.Dimid+1;
+                end
                 nc = setType(nc,ivar,idim,'z-coordinate');
                 continue
             case 'latitude'

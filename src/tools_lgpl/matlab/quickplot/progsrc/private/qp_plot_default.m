@@ -885,7 +885,7 @@ switch NVal
                     else                        
                         set(hNew,'color',Ops.colour)
                     end
-                    
+                    set(hNew,'linewidth',Ops.linewidth)
                 else
                     hNew=line(1,1,'xdata',[],'ydata',[]);
                 end
@@ -943,7 +943,7 @@ switch NVal
                     else
                         set(hNew,'color',Ops.colour)
                     end
-                    
+                    set(hNew,'linewidth',Ops.linewidth)
                     hNew(end+1)=line([minx maxx],[miny maxy],'linestyle','none','marker','none');
                 else
                     hNew=line(1,1,'xdata',[],'ydata',[]);

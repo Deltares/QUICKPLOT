@@ -1495,6 +1495,12 @@ switch cmd
             end
         end
         
+    case 'convertmn2m'
+        MW=UD.MainWin;
+        MN = get(MW.EditMN,'userdata');
+        d3d_qp('allm*',0)
+        d3d_qp('editm*',MN')
+        
     case 'convertmn2xy'
         MW=UD.MainWin;
         XY = qp_gridview('convertmn2xy',UD.GridView.Fig);
@@ -2024,7 +2030,7 @@ switch cmd
             'climmode','presenttype','vecscalem','vertscalem','thinfld', ...
             'linestyle','marker','threshdistr','horizontalalignment', ...
             'verticalalignment','exporttype','vectorcolour','dataunits', ...
-            'vectorstyle','angleconvention','axestimezone'}
+            'vectorstyle','angleconvention','axestimezone','operator'}
         % commands require an input string
         %
         % nothing to do except refreshing the options
@@ -3131,7 +3137,12 @@ switch cmd
                     case 'zcolour'
                         clr=get(ax,'zcolor');
                 end
+                clr0 = clr;
                 clr=uisetcolor(clr,sprintf('Specify the %s colour ...',cmd(1:end-6)));
+                if isequal(clr,clr0)
+                    % cancel pressed or just confirming what was already selected
+                    return
+                end
             end
         else
             clr=cmdargs{1};
@@ -3231,6 +3242,7 @@ switch cmd
                     set(ax,'xscale','linear')
                 end
                 set(ax,'xlim',xlm,xdr{:})
+                setappdata(ax,'xlimmode','manual')
             end
             if ischar(ylm)
                 set(ax,'ylimmode','auto',ydr{:})
@@ -3239,6 +3251,7 @@ switch cmd
                     set(ax,'yscale','linear')
                 end
                 set(ax,'ylim',ylm,ydr{:})
+                setappdata(ax,'ylimmode','manual')
             end
             if ~isempty(zlm)
                 if ischar(zlm)
@@ -3248,6 +3261,7 @@ switch cmd
                         set(ax,'zscale','linear')
                     end
                     set(ax,'zlim',zlm,zdr{:})
+                    setappdata(ax,'zlimmode','manual')
                 end
             end
             setaxesprops(ax)
@@ -4182,7 +4196,7 @@ switch cmd
         news = getvalstr(MWSelType);
         switch news
             case 'M range and N range'
-                set([MW.MN MW.EditMN MW.MN2XY],'visible','off')
+                set([MW.MN MW.EditMN MW.MN2XY MW.MN2M],'visible','off')
                 set([MW.XY MW.EditXY MW.LoadXY MW.SaveXY],'visible','off')
                 set([MW.M MW.AllM MW.EditM MW.MaxM],'visible','on')
                 set([MW.N MW.AllN MW.EditN MW.MaxN],'visible','on')
@@ -4191,11 +4205,19 @@ switch cmd
                 set([MW.N MW.AllN MW.EditN],'visible','off')
                 set([MW.XY MW.EditXY MW.LoadXY MW.SaveXY],'visible','off')
                 set([MW.MN MW.EditMN MW.MN2XY],'visible','on')
+                %
+                Props=get(MW.Field,'userdata');
+                fld=get(MW.Field,'value');
+                if ~isempty(Props) && isfield(Props,'DimFlag') && Props(fld).DimFlag(M_) && ~Props(fld).DimFlag(N_)
+                    set(MW.MN2M,'visible','on')
+                else
+                    set(MW.MN2M,'visible','off')
+                end
                 set([MW.MaxM MW.MaxN],'visible','on')
             case '(X,Y) point/path'
                 set([MW.M MW.AllM MW.EditM MW.MaxM],'visible','off')
                 set([MW.N MW.AllN MW.EditN MW.MaxN],'visible','off')
-                set([MW.MN MW.EditMN MW.MN2XY],'visible','off')
+                set([MW.MN MW.EditMN MW.MN2XY MW.MN2M],'visible','off')
                 set([MW.XY MW.EditXY MW.LoadXY MW.SaveXY],'visible','on')
             case 'K range'
                 set([MW.Z MW.EditZ],'visible','off')
@@ -4306,6 +4328,7 @@ switch cmd
         set(findobj(UOH,'tag','thindist=?'),'userdata',50,'string','50')
         set(findobj(UOH,'tag','colourvectors'),'value',0)
         set(findobj(UOH,'tag','colourdams'),'value',0)
+        set(findobj(UOH,'tag','operator'),'value',1)
         set(findobj(UOH,'tag','vectorcolour=?'),'value',1,'string',{' '})
         set(findobj(UOH,'tag','colclassify'),'value',0)
         set(findobj(UOH,'tag','thresholds=?'),'string','','userdata',[])
@@ -4468,6 +4491,8 @@ end
 
 function updateaxes(obj,evd)
 ax=get(obj,'currentaxes');
+setappdata(ax,'xlimmode','manual')
+setappdata(ax,'ylimmode','manual')
 if ~isempty(ax)
     basicaxestype=getappdata(ax,'BasicAxesType');
     if ischar(basicaxestype)
@@ -4498,6 +4523,9 @@ if strcmp(lat,'SecondY')
     set(ax2,'xlim',get(ax,'xlim'))
     setaxesprops(ax2)
 end
+mfig=findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
+UD=getappdata(mfig,'QPHandles');
+qp_plotmanager('refreshaxprop',UD)
 
 function clr = str2color(str)
 switch str

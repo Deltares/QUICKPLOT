@@ -85,6 +85,10 @@ end
 switch v_slice
     case 'MN'
         if isfield(data,'FaceNodeConnect') || isfield(data,'TRI') || isfield(data,'SEG')
+            multiTime = false;
+            if isfield(data,'Time') && length(data.Time)>1
+                multiTime = true;
+            end
             if isfield(data,'FaceNodeConnect')
                 switch data.ValLocation
                     case 'NODE'
@@ -123,6 +127,7 @@ switch v_slice
                 end
                 data = rmfield(data,'TRI');
                 data = rmfield(data,'XYZ');
+                multiTime = true;
             else % isfield(data,'SEG')
                 switch data.ValLocation
                     case 'NODE'
@@ -138,10 +143,6 @@ switch v_slice
                 end
             end
             Flds = {'Val','XComp','YComp','ZComp'};
-            multiTime = false;
-            if isfield(data,'Time') && length(data.Time)>1
-                multiTime = true;
-            end
             for i=1:length(Flds)
                 fld = Flds{i};
                 if isfield(data,fld)
