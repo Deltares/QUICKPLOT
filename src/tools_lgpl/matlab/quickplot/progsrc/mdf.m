@@ -61,7 +61,7 @@ function varargout = mdfclip(MDF1,varargin)
 % MDFCLIP(MDF,MMIN,MMAX,NMIN,NMAX
 % MDFCLIP(MDF,MLIM,NLIM)
 %
-mnkmax = inifile('geti',MDF1.mdf,'','MNKmax');
+mnkmax = propget(MDF1.mdf,'','MNKmax');
 switch nargin
     case 2
         % MDFCLIP(MDF,MASK)
@@ -144,7 +144,7 @@ for i = 1:length(domains)
     if isfield(MDF2,'dep')
         MDF2.dep = MDF2.dep(mmin:mmax,nmin:nmax);
         %
-        dpsopt = getstring(inifile('geti',MDF2.mdf,'','Dpsopt','DEFAULT'));
+        dpsopt = propget(MDF2.mdf,'','Dpsopt','DEFAULT');
         if strcmpi(dpsopt,'DP')
             MDF2.dep(cmask)=-999;
         else
@@ -155,14 +155,6 @@ for i = 1:length(domains)
     varargout{i} = MDF2;
 end
 
-
-function string = getstring(hashedstring)
-hashes = strfind(hashedstring,'#');
-if isempty(hashes)
-    string = deblank(hashedstring);
-else
-    string = deblank(hashedstring(hashes(1)+1:hashes(2)-1));
-end
 
 function [M2,N2] = rotate(M1,N1,MMAX)
 if nargin==2
@@ -176,6 +168,69 @@ if nargout<=1
     M2 = [M2 N2];
 end
 
+
+function varargout = fldrotateX(loc,varargin)
+for i=1:nargin-1
+    szA = size(varargin{i});
+    varargin{i} = reshape(varargin{i},szA(2:end));
+end
+[varargout{1:nargout}] = fldrotate(loc,varargin{:});
+for i=1:nargout
+    szA = size(varargout{i});
+    varargout{i} = reshape(varargout{i},[1 szA]);
+end
+
+
+function [U1,V1] = fldrotate(loc,U,V)
+szU = size(U);
+switch loc
+    case 'center'
+        if length(szU)>2
+            U1 = repmat(U(1),szU([2 1 3:end]));
+            for k = 1:prod(szU(3:end))
+                U1(:,:,k) = rot90(U(:,:,k),-1);
+            end
+        else
+            U1 = rot90(U,-1);
+        end
+    case 'corner'
+        szM = szU(1);
+        szN = szU(2);
+        if length(szU)>2
+            U1 = repmat(U(1),szU([2 1 3:end]));
+            U1(:,end,:) = -999;
+            U1(end,:,:) = -999;
+            for k = 1:prod(szU(3:end))
+                U1(1:end-1,1:end-1,k) = rot90(U(1:end-1,1:end-1,k),-1);
+            end
+        else
+            U1 = [rot90(U(1:end-1,1:end-1),-1) repmat(-999,szN-1,1); repmat(-999,1,szM)];
+        end
+    case 'edges'
+        if length(szU)>2
+            U1 = repmat(U(1),szU([2 1 3:end]));
+            V1 = repmat(V(1),szU([2 1 3:end]));
+            for k = 1:prod(szU(3:end))
+                U1(:,:,k) = rot90(V([end 1:end-1],:,k),-1);
+                V1(:,:,k) = rot90(U(:,:,k),-1);
+            end
+        else
+            U1 = rot90(V([end 1:end-1],:),-1);
+            V1 = rot90(U,-1);
+        end
+    case 'veloc'
+        if length(szU)>2
+            U1 = repmat(U(1),szU([2 1 3:end]));
+            V1 = repmat(V(1),szU([2 1 3:end]));
+            for k = 1:prod(szU(3:end))
+                U1(:,:,k) = rot90(V([end 1:end-1],:,k),-1);
+                V1(:,:,k) = rot90(-U(:,:,k),-1);
+            end
+        else
+            U1 = rot90(V([end 1:end-1],:),-1);
+            V1 = rot90(-U,-1);
+        end
+end
 
 function MDF2 = mdfrotate(MDF1,angle)
 if nargin>1
@@ -201,12 +256,12 @@ if nargin>1
 end
 MDF2 = MDF1;
 %
-mnkmax = inifile('geti',MDF2.mdf,'','MNKmax');
+mnkmax = propget(MDF2.mdf,'','MNKmax');
 MMAX = mnkmax(1);
 MDF2.mdf = inifile('seti',MDF2.mdf,'','MNKmax',mnkmax([2 1 3]));
 %
-ccofu = inifile('geti',MDF2.mdf,'','Ccofu');
-ccofv = inifile('geti',MDF2.mdf,'','Ccofv');
+ccofu = propget(MDF2.mdf,'','Ccofu');
+ccofv = propget(MDF2.mdf,'','Ccofv');
 MDF2.mdf = inifile('seti',MDF2.mdf,'','Ccofu',ccofv);
 MDF2.mdf = inifile('seti',MDF2.mdf,'','Ccofv',ccofu);
 %
@@ -215,49 +270,86 @@ MDF2.grd.Y = fliplr(MDF2.grd.Y');
 MDF2.grd.Enclosure = rotate(MDF2.grd.Enclosure,MMAX);
 %
 if isfield(MDF2,'dep')
-    dpsopt = inifile('geti',MDF2.mdf,'','Dpsopt');
+    dpsopt = propget(MDF2.mdf,'','Dpsopt');
     if strcmpi(dpsopt,'DP')
         % data in cell centres: dummy row along all sides
-        MDF2.dep = rot90(MDF2.dep,-1);
+        MDF2.dep = fldrotate('center',MDF2.dep);
     else
         % data at grid points: dummy row only at high M and N
-        szM = size(MDF2.dep,1);
-        szN = size(MDF2.dep,2);
-        MDF2.dep = [rot90(MDF2.dep(1:end-1,1:end-1),-1) repmat(-999,szN-1,1); repmat(-999,1,szM)];
+        MDF2.dep = fldrotate('corner',MDF2.dep);
     end
 end
 %
 if isfield(MDF2,'rgh')
     % data at velocity points
-    rghu = MDF2.rgh(1).Data;
-    rghv = MDF2.rgh(2).Data;
-    MDF2.rgh(1).Data = rot90(rghv([end 1:end-1],:),-1);
-    MDF2.rgh(2).Data = rot90(rghu,-1);
+    [MDF2.rgh(1).Data,MDF2.rgh(2).Data] = fldrotate('edges',MDF2.rgh(1).Data,MDF2.rgh(2).Data);
 end
 %
 if isfield(MDF2,'ini')
-    % water level: data at cell centres
-    MDF2.ini(1).Data = rot90(MDF2.ini(1).Data,-1);
-    % velocities: data at velocity points
-    for k = 1:mnkmax(3)
-       iu = 1+k;
-       iv = iu + mnkmax(3);
-       u = MDF2.ini(iu).Data;
-       v = MDF2.ini(iv).Data;
-       MDF2.ini(iu).Data = rot90(v([end 1:end-1],:),-1);
-       MDF2.ini(iv).Data = rot90(-u,-1);
+    if ~isfield(MDF2.ini,'FileType')
+        % plain binary restart file (flow only)
+        % 
+        % water level: data at cell centres
+        MDF2.ini(1).Data = fldrotate('center',MDF2.ini(1).Data);
+        % velocities: data at velocity points
+        for k = 1:mnkmax(3)
+            iu = 1+k;
+            iv = iu + mnkmax(3);
+            [MDF2.ini(iu).Data,MDF2.ini(iv).Data] = fldrotate('veloc',MDF2.ini(iu).Data,MDF2.ini(iv).Data);
+        end
+        % constituents and turbulent quantities: data at cell centres
+        for f = 2+2*mnkmax(3):length(MDF2.ini)-2
+            MDF2.ini(f).Data = fldrotate('center',MDF2.ini(f).Data);
+        end
+        % u/v mnldf: data at velocity points
+        iu = length(MDF2.ini)-1;
+        iv = length(MDF2.ini);
+        [MDF2.ini(iu).Data,MDF2.ini(iv).Data] = fldrotate('veloc',MDF2.ini(iu).Data,MDF2.ini(iv).Data);
+    else
+        % NEFIS map-file
+        oldsz = [MDF2.ini.Data.map_const.NMAX MDF2.ini.Data.map_const.MMAX];
+        newsz = oldsz([2 1]);
+        for i = 1:length(MDF2.ini.ElmDef)
+            if length(MDF2.ini.ElmDef(i).Size)>2 && isequal(MDF2.ini.ElmDef(i).Size(2:3),oldsz)
+                MDF2.ini.ElmDef(i).Size(2:3) = newsz;
+            end
+        end
+        %
+        MDF2.ini.Data.map_const.NMAX = newsz(1);
+        MDF2.ini.Data.map_const.MMAX = newsz(2);
+        %
+        for gc = fieldnames(MDF2.ini.Data)'
+            g = gc{1};
+            for ec = fieldnames(MDF2.ini.Data.(g))'
+                e = ec{1};
+                sz = size(MDF2.ini.Data.(g).(e));
+                if length(sz)>2 && isequal(sz(2:3),oldsz)
+                    switch e
+                        case {'XCOR','YCOR','DP0','CODB'} % DP0 only if not dpsopt=DP
+                            % data at cell corners
+                            MDF2.ini.Data.(g).(e) = fldrotateX('corner',MDF2.ini.Data.(g).(e));
+                        case {'KFU','KCU'}
+                            % data at cell edges
+                            e2 = strrep(e,'U','V');
+                            [MDF2.ini.Data.(g).(e),MDF2.ini.Data.(g).(e2)] = fldrotateX('edges',MDF2.ini.Data.(g).(e),MDF2.ini.Data.(g).(e2));
+                        case {'U1','TAUKSI','UMNLDF','SBUU','SSUU','SBUUA','SSUUA'}
+                            % data at cell edges - velocity components
+                            if strcmp(e,'TAUKSI')
+                                e2 = 'TAUETA';
+                            else
+                                e2 = strrep(e,'U','V');
+                            end
+                            [MDF2.ini.Data.(g).(e),MDF2.ini.Data.(g).(e2)] = fldrotateX('veloc',MDF2.ini.Data.(g).(e),MDF2.ini.Data.(g).(e2));
+                        case {'KFV','KCV','V1','TAUETA','VMNLDF','SBVV','SSVV','SBVVA','SSVVA'}
+                            % skip - treated with U component
+                        otherwise
+                            % data at cell centres
+                            MDF2.ini.Data.(g).(e) = fldrotateX('center',MDF2.ini.Data.(g).(e));
+                    end
+                end
+            end
+        end
     end
-    % constituents and turbulent quantities: data at cell centres
-    for f = 2+2*mnkmax(3):length(MDF2.ini)-2
-       MDF2.ini(f).Data = rot90(MDF2.ini(f).Data,-1);
-    end
-    % u/v mnldf: data at velocity points
-    iu = length(MDF2.ini)-1;
-    iv = length(MDF2.ini);
-    u = MDF2.ini(iu).Data;
-    v = MDF2.ini(iv).Data;
-    MDF2.ini(iu).Data = rot90(v([end 1:end-1],:),-1);
-    MDF2.ini(iv).Data = rot90(-u,-1);
 end
 %
 if isfield(MDF2,'dry')
@@ -306,7 +398,7 @@ end
 if isfield(MDF2,'morini') && isfield(MDF2.morini,'field')
     for f = 1:length(MDF2.morini.field)
         % all fields in cell centres
-        MDF2.morini.field(f).data = rot90(MDF2.morini.field(f).data,-1);
+        MDF2.morini.field(f).data = fldrotate('center',MDF2.morini.field(f).data);
     end
 end
 %
@@ -346,9 +438,18 @@ if isfield(MDF,'rgh')
 end
 %
 if isfield(MDF,'ini')
-    filename = ['tri-rst.' caseid];
-    trirst('write',fullfile(path,filename),MDF.ini);
-    MDF.mdf = inifile('seti',MDF.mdf,'','Restid',['#' caseid '#']);
+    if ~isfield(MDF.ini,'FileType')
+        % plain binary restart file (flow only)
+        filename = ['tri-rst.' caseid];
+        trirst('write',fullfile(path,filename),MDF.ini);
+        MDF.mdf = inifile('seti',MDF.mdf,'','Restid',['#' caseid '#']);
+    else
+        % NEFIS map-file
+        filename = ['trim-restart-for-' caseid];
+        TRIMnew = vs_ini(fullfile(path,[filename '.dat']),fullfile(path,[filename '.def']));
+        vs_copy(MDF.ini,TRIMnew);
+        MDF.mdf = inifile('seti',MDF.mdf,'','Restid',['#' filename '#']);
+    end
 end
 %
 if isfield(MDF,'dry')
@@ -437,21 +538,25 @@ filename = [caseid '.mdf'];
 inifile('write',fullfile(path,filename),MDF.mdf);
 
 
+function Val = propget(FILE,varargin)
+Val = rmhash(inifile('geti',FILE,varargin{:}));
+
+
 function MDF = mdfread(filename)
 MDF.mdf = inifile('open',filename);
 mdfpath = fileparts(filename);
 %
-mnkmax = inifile('geti',MDF.mdf,'','MNKmax');
-SUB1   = rmhash(inifile('geti',MDF.mdf,'','Sub1',''));
+mnkmax = propget(MDF.mdf,'','MNKmax');
+SUB1   = propget(MDF.mdf,'','Sub1','');
 salin  = ~isempty(strfind(lower(SUB1),'s'));
 tempa  = ~isempty(strfind(lower(SUB1),'t'));
 secfl  = ~isempty(strfind(lower(SUB1),'i'));
-SUB2   = rmhash(inifile('geti',MDF.mdf,'','Sub2',''));
+SUB2   = propget(MDF.mdf,'','Sub2','');
 consti = ~isempty(strfind(lower(SUB2),'c'));
 if consti
     consti = 0;
     for i = 1:99
-        Namc = inifile('geti',MDF.mdf,'',sprintf('Namc%i',i),'');
+        Namc = propget(MDF.mdf,'',sprintf('Namc%i',i),'');
         if isempty(Namc)
             break
         else
@@ -465,7 +570,7 @@ if mnkmax(3)>1
     %TODO: determine number of turbulent state variables
 end
 %
-grdname = inifile('geti',MDF.mdf,'','Filcco','');
+grdname = propget(MDF.mdf,'','Filcco','');
 grdname = rmhash(grdname);
 if ~isempty(grdname)
     grdname = relpath(mdfpath,grdname);
@@ -474,14 +579,14 @@ else
     error('Filcco is empty: grid in mdf file not yet supported.');
 end
 %
-depname = inifile('geti',MDF.mdf,'','Fildep','');
+depname = propget(MDF.mdf,'','Fildep','');
 depname = rmhash(depname);
 if ~isempty(depname)
     depname = relpath(mdfpath,depname);
     MDF.dep = wldep('read',depname,MDF.grd);
 end
 %
-rghname = inifile('geti',MDF.mdf,'','Filrgh','');
+rghname = propget(MDF.mdf,'','Filrgh','');
 rghname = rmhash(rghname);
 if ~isempty(rghname)
     rghname = relpath(mdfpath,rghname);
@@ -491,107 +596,155 @@ if ~isempty(rghname)
     end
 end
 %
-ininame = inifile('geti',MDF.mdf,'','Restid','');
+ininame = propget(MDF.mdf,'','Restid','');
 ininame = rmhash(ininame);
 if ~isempty(ininame)
-    ininame = relpath(mdfpath,['tri-rst.' ininame]);
-    MDF.ini = trirst('read',ininame,MDF.grd,'all');
-    nfields = length(MDF.ini);
-    % water level, velocity, constituents, turbulent quantities, u/v mnldf
-    nf_req  = 1 + 2*mnkmax(3) + lstsci*mnkmax(3) + nturb*(mnkmax(3)+1) + 2;
-    if nfields ~= nf_req
-        error('Number of fields in restart file (%i) does not match expect number of fields (%i)',nfields,nf_req)
+    idate = propget(MDF.mdf,'','Itdate');
+    idate = idate([1:4 6:7 9:10]);
+    %
+    tunit = propget(MDF.mdf,'','Tunit');
+    switch lower(tunit)
+        case 'w'
+            tunit = 7;
+        case 'd'
+            tunit = 1;
+        case 'h'
+            tunit = 1/24;
+        case 'm'
+            tunit = 1/1440;
+        case 's'
+            tunit = 1/86400;
+    end
+    itime = propget(MDF.mdf,'','TStart')*tunit;
+    rdate = datenum(idate,'yyyymmdd')+itime;
+    if itime>=1
+        itime = datestr(rdate,'HHMMSS');
+        idate = datestr(rdate,'yyyymmdd');
+    else
+        itime = datestr(itime,'HHMMSS');
+    end
+    %
+    % try tri-rst.restid.YYYYMMDD.HHMMSS
+    inicond = relpath(mdfpath,['tri-rst.' ininame '.' idate '.' itime]);
+    try
+        MDF.ini = trirst('read',inicond,MDF.grd,'all');
+    catch
+        %
+        % try tri-rst.restid
+        inicond = relpath(mdfpath,['tri-rst.' ininame]);
+        try
+            MDF.ini = trirst('read',inicond,MDF.grd,'all');
+        catch
+            %
+            % try restid as trim-dat/def
+            inicond = relpath(mdfpath,ininame);
+            MDF.ini = vs_use(inicond,'quiet');
+            %
+            times = qpread(MDF.ini,'water level','times');
+            iMAP  = find(times==rdate);
+            %
+            for ig = 1:length(MDF.ini.GrpDat)
+                g = MDF.ini.GrpDat(ig).Name;
+                g_ = strrep(g,'-','_');
+                if MDF.ini.GrpDat(ig).SizeDim>1
+                    MDF.ini.Data.(g_) = vs_let(MDF.ini,g,{iMAP},'*','quiet');
+                    MDF.ini.GrpDat(ig).SizeDim=1;
+                else
+                    MDF.ini.Data.(g_) = vs_let(MDF.ini,g,{1},'*','quiet');
+                end
+            end
+            %
+            MDF.ini.FileName = 'IN MEMORY';
+            MDF.ini.DatExt = '';
+            MDF.ini.DefExt = '';
+        end
+    end
+    %
+    if ~isfield(MDF.ini,'FileType')
+        % plain binary restart file (flow only)
+        nfields = length(MDF.ini);
+        % water level, velocity, constituents, turbulent quantities, u/v mnldf
+        nf_req  = 1 + 2*mnkmax(3) + lstsci*mnkmax(3) + nturb*(mnkmax(3)+1) + 2;
+        if nfields ~= nf_req
+            error('Number of fields in restart file (%i) does not match expect number of fields (%i)',nfields,nf_req)
+        end
     end
 end
 %
-dryname = inifile('geti',MDF.mdf,'','Fildry','');
-dryname = rmhash(dryname);
+dryname = propget(MDF.mdf,'','Fildry','');
 if ~isempty(dryname)
     dryname = relpath(mdfpath,dryname);
     MDF.dry = d3d_attrib('read',dryname);
 end
 %
-thdname = inifile('geti',MDF.mdf,'','Filtd','');
-thdname = rmhash(thdname);
+thdname = propget(MDF.mdf,'','Filtd','');
 if ~isempty(thdname)
     thdname = relpath(mdfpath,thdname);
     MDF.thd = d3d_attrib('read',thdname);
 end
 %
-wndname = inifile('geti',MDF.mdf,'','Filwnd','');
-wndname = rmhash(wndname);
+wndname = propget(MDF.mdf,'','Filwnd','');
 if ~isempty(wndname)
     warning('Support for Filwnd not yet implemented.')
 end
 %
-wndname = inifile('geti',MDF.mdf,'','Filwp','');
-wndname = rmhash(wndname);
+wndname = propget(MDF.mdf,'','Filwp','');
 if ~isempty(wndname)
     warning('Support for Filwp not yet implemented.')
 end
 %
-wndname = inifile('geti',MDF.mdf,'','Filwu','');
-wndname = rmhash(wndname);
+wndname = propget(MDF.mdf,'','Filwu','');
 if ~isempty(wndname)
     warning('Support for Filwu not yet implemented.')
 end
 %
-wndname = inifile('geti',MDF.mdf,'','Filwv','');
-wndname = rmhash(wndname);
+wndname = propget(MDF.mdf,'','Filwv','');
 if ~isempty(wndname)
     warning('Support for Filwv not yet implemented.')
 end
 %
-bndname = inifile('geti',MDF.mdf,'','Filbnd','');
-bndname = rmhash(bndname);
+bndname = propget(MDF.mdf,'','Filbnd','');
 if ~isempty(bndname)
     bndname = relpath(mdfpath,bndname);
     MDF.bnd = d3d_attrib('read',bndname);
     %
-    bctname = inifile('geti',MDF.mdf,'','FilbcT','');
-    bctname = rmhash(bctname);
+    bctname = propget(MDF.mdf,'','FilbcT','');
     if ~isempty(bctname)
         bctname = relpath(mdfpath,bctname);
         MDF.bct = bct_io('read',bctname);
     end
     %
-    bcaname = inifile('geti',MDF.mdf,'','Filana','');
-    bcaname = rmhash(bcaname);
+    bcaname = propget(MDF.mdf,'','Filana','');
     if ~isempty(bcaname)
         warning('Support for Filana not yet implemented.')
     end
     %
-    bchname = inifile('geti',MDF.mdf,'','FilbcH','');
-    bchname = rmhash(bchname);
+    bchname = propget(MDF.mdf,'','FilbcH','');
     if ~isempty(bchname)
         bchname = relpath(mdfpath,bchname);
         MDF.bch = bch_io('read',bchname);
     end
     %
-    bccname = inifile('geti',MDF.mdf,'','FilbcC','');
-    bccname = rmhash(bccname);
+    bccname = propget(MDF.mdf,'','FilbcC','');
     if ~isempty(bccname)
         bccname = relpath(mdfpath,bccname);
         MDF.bcc = bct_io('read',bccname);
     end
 end
 %
-sedname = inifile('geti',MDF.mdf,'','Filsed','');
-sedname = rmhash(sedname);
+sedname = propget(MDF.mdf,'','Filsed','');
 if ~isempty(sedname)
     sedname = relpath(mdfpath,sedname);
     MDF.sed = inifile('open',sedname);
 end
 %
-morname = inifile('geti',MDF.mdf,'','Filmor','');
-morname = rmhash(morname);
+morname = propget(MDF.mdf,'','Filmor','');
 if ~isempty(morname)
     morname = relpath(mdfpath,morname);
     MDF.mor = inifile('open',morname);
 end
 %
-morininame = inifile('geti',MDF.mor,'Underlayer','IniComp','');
-morininame = rmhash(morininame);
+morininame = propget(MDF.mor,'Underlayer','IniComp','');
 if ~isempty(morininame)
     morininame = relpath(mdfpath,morininame);
     MDF.morini.inb = inifile('open',morininame);
@@ -604,7 +757,7 @@ if ~isempty(morininame)
             Keys = inifile('keywords',MDF.morini.inb,c);
             for k = 1:length(Keys)
                 if ~strcmpi(Keys{k},'Type')
-                    val = rmhash(inifile('geti',MDF.morini.inb,c,k));
+                    val = propget(MDF.morini.inb,c,k);
                     if ischar(val)
                         f = f+1;
                         filename = relpath(mdfpath,val);
@@ -619,22 +772,19 @@ if ~isempty(morininame)
     end
 end
 %
-traname = inifile('geti',MDF.mdf,'','TraFrm','');
-traname = rmhash(traname);
+traname = propget(MDF.mdf,'','TraFrm','');
 if ~isempty(traname)
     traname = relpath(mdfpath,traname);
     MDF.tra = readtra(traname);
 end
 %
-staname = inifile('geti',MDF.mdf,'','Filsta','');
-staname = rmhash(staname);
+staname = propget(MDF.mdf,'','Filsta','');
 if ~isempty(staname)
     staname = relpath(mdfpath,staname);
     MDF.sta = d3d_attrib('read',staname);
 end
 %
-crsname = inifile('geti',MDF.mdf,'','Filcrs','');
-crsname = rmhash(crsname);
+crsname = propget(MDF.mdf,'','Filcrs','');
 if ~isempty(crsname)
     crsname = relpath(mdfpath,crsname);
     MDF.crs = d3d_attrib('read',crsname);
@@ -663,7 +813,10 @@ elseif ischar(str)
     hashes = strfind(str,'#');
     if length(hashes)>1
         str = str(hashes(1)+1:hashes(2)-1);
+    elseif length(hashes)==1
+        str = str(1:hashes(1)-1);
     end
+    str = deblank(str);
 end
 
 
