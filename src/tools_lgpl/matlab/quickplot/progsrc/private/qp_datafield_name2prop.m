@@ -51,8 +51,10 @@ if Id<0
     if isempty(IdAll)
         error('Unknown data field: %s.',Name)
     else
-        error(cat(2,sprintf('Datafield name ''%s'' not unique, matching:\n',Name), ...
-            sprintf('''%s'' ',Names{IdAll})));
+        message = cat(2,sprintf('Datafield name ''%s'' not unique, matching:\n',Name), ...
+            sprintf('''%s''\n',Names{IdAll}));
+        message(end)=[];
+        error(message)
     end
 end
 Prop = DataProps(Id);
