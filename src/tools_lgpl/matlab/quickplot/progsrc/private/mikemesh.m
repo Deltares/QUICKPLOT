@@ -55,6 +55,9 @@ S.FileType = 'MikeFM mesh';
 fid = fopen(FileName,'r');
 try
     nNodes=fscanf(fid,'%i');
+    if length(nNodes)>1 % e.g. 100079 1000 4875
+        nNodes = nNodes(3);
+    end
     S.Proj=fgetl(fid);
     Coords=fscanf(fid,'%f',[5 nNodes]);
     if ~isequal(Coords(1,:),1:nNodes)
