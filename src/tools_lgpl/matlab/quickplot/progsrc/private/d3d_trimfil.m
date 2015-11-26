@@ -767,7 +767,7 @@ else
 end
 %======================== SPECIFIC CODE ===================================
 % select active points ...
-act=vs_get(FI,'map-const','KCS',idx([M_ N_]),'quiet!');
+act=abs(vs_get(FI,'map-const','KCS',idx([M_ N_]),'quiet!'));
 switch Props.ReqLoc
     case 'd'
         %  act=vs_get(FI,'TEMPOUT','CODB',idx([M_ N_]),'quiet!');
