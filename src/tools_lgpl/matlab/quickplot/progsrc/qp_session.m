@@ -520,6 +520,11 @@ for fgi = length(S):-1:1
         end
         %
         for itm = length(S(fgi).axes(axi).items):-1:1
+            if isequal(S(fgi).axes(axi).items(itm).filename,'geodata')
+                d3d_qp('geodata',S(fgi).axes(axi).items(itm).name)
+                continue
+            end
+            %
             opened_files = file_and_domain(opened_files,S(fgi).axes(axi).items(itm));
             %
             if d3d_qp('selectfield',S(fgi).axes(axi).items(itm).name);
@@ -739,7 +744,7 @@ if iscell(fn)
         d3d_qp('openfile',fn{:})
         opened_files{end+1} = fn;
     end
-else % if ~strcmp(fn,'geodata')
+else
     if any(ismember(fn,opened_files))
         d3d_qp('selectfile',fn)
     else

@@ -112,20 +112,23 @@ switch cmd
         Ops = varargin{2};
         % hOld=varargin{3};
         %
-        switch Props.Subtype
+        switch Props.Name
             case GSHHS_types
-                type = gshhg('type','type',Props.Subtype);
+                type = gshhg('type','type',Props.Name);
                 %
                 if ~isfield(root,type)
                     root.(type) = search_file(type);
                 end
                 %
                 hNew = gshhg('plot','rootfolder',root.(type), ...
-                    'type',Props.Subtype, ...
+                    'type',Props.Name, ...
                     'parent',Parent, ...
                     'color','k');
             otherwise
-                [IMG,lon,lat] = wms('image',wms('tms',Props.Subtype),'',get(gca,'xlim'),get(gca,'ylim'));
+                if ~strncmpi(Props.Name,'wms/',4)
+                    error('Unknown geodata plot type: %s',Props.Name)
+                end
+                [IMG,lon,lat] = wms('image',wms('tms',Props.Name(5:end)),'',get(gca,'xlim'),get(gca,'ylim'));
                 hNew = surface(lon,lat,zeros(length(lat),length(lon)), ...
                     'cdata',IMG, ...
                     'facecolor','texturemap', ...

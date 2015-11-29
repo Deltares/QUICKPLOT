@@ -87,7 +87,7 @@ while i<=nargin-1
         case 'type'
             type = varargin{i+1};
             switch lower(type)
-                case {'s','shoreline','shorelines','shore','shores','gshhs','c','coastline','coastlines','coast','coasts','gshhc'}
+                case {'s','shoreline','shorelines','shore lines','shore','shores','gshhs','c','coastline','coastlines','coast','coasts','gshhc'}
                     type = 'GSHHS';
                 case {'r','river','rivers'}
                     type = 'river';

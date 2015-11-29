@@ -158,46 +158,57 @@ switch cmd
     case {'selectedfigure', 'selectedaxes', 'selecteditem'}
         outdata = qp_plotmanager(cmd,UD,logfile,logtype,cmdargs);
         
-    case 'geodata'
-        pos=get(gcbf,'position');
-        set(UD.PlotMngr.GeoDataMenu,'position',get(0,'pointerlocation')-pos(1:2),'visible','on')
-        
-    case {'geodata_gshhs','geodata_border','geodata_river','geodata_wms'}
-        pfig = qpsf;
-        parent = qpsa;
-        PS.FI.FileType = 'geodata';
-        PS.Domain = [];
-        subtype = cmd(9:end);
-        toback = 0;
-        switch subtype
-            case 'gshhs'
-                PS.Props.Name = 'shore lines';
-            case 'border'
-                PS.Props.Name = 'country and state borders';
-            case 'river'
-                PS.Props.Name = 'rivers';
-            case 'wms'
-                cmd = cmdfull;
-                subtype = cmd(13:end);
-                PS.Props.Name = subtype;
-                toback = 1;
+    case {'geodata','geodata_gshhs','geodata_border','geodata_river','geodata_wms'}
+        if length(cmd)>7
+            subtype = cmd(9:end);
+        elseif ~isempty(cmdargs)
+            subtype = cmdargs{1};
+        else
+            subtype = '';
         end
-        PS.Props.DimFlag = zeros(1,5);
-        PS.Props.NVal = -1;
-        PS.Props.Subtype = subtype;
-        PS.SubField = {};
-        PS.Selected = cell(1,5);
-        PS.Parent = parent;
-        PS.Handles = [];
-        PS.Stations = [];
-        PS.Ops.axestype = getappdata(parent,'AxesType');
-        PS.Ops.basicaxestype = getappdata(parent,'BasicAxesType');
-        [hNew,Error,Info]=qp_plot(PS);
-        set(UD.PlotMngr.FigList,'value',1,'string',listnames(pfig,'showType','no','showHandle','no','showTag','no'),'userdata',pfig);
-        set(UD.PlotMngr.ItList,'value',[]) % clear item selection such that new item will be selected
-        d3d_qp refreshfigs
-        if toback
-            d3d_qp moveitemtoback
+        if isempty(cmdargs) && isempty(subtype)
+            pos=get(gcbf,'position');
+            set(UD.PlotMngr.GeoDataMenu,'position',get(0,'pointerlocation')-pos(1:2),'visible','on')
+        else
+            pfig = qpsf;
+            parent = qpsa;
+            PS.FI.FileType = 'geodata';
+            PS.Domain = [];
+            toback = 0;
+            switch subtype
+                case {'gshhs','shore lines'}
+                    PS.Props.Name = 'shore lines';
+                case {'border','country and state borders'}
+                    PS.Props.Name = 'country and state borders';
+                case {'river','rivers'}
+                    PS.Props.Name = 'rivers';
+                otherwise
+                    if ~strncmp(subtype,'wms',3)
+                        error('Unknown geodata plot type: %s',subtype)
+                    elseif strncmp(subtype,'wms/',4)
+                        PS.Props.Name = subtype;
+                    else
+                        cmd = cmdfull;
+                        PS.Props.Name = ['wms/' cmd(13:end)];
+                    end
+                    toback = 1;
+            end
+            PS.Props.DimFlag = zeros(1,5);
+            PS.Props.NVal = -1;
+            PS.SubField = {};
+            PS.Selected = cell(1,5);
+            PS.Parent = parent;
+            PS.Handles = [];
+            PS.Stations = [];
+            PS.Ops.axestype = getappdata(parent,'AxesType');
+            PS.Ops.basicaxestype = getappdata(parent,'BasicAxesType');
+            [hNew,Error,Info]=qp_plot(PS);
+            set(UD.PlotMngr.FigList,'value',1,'string',listnames(pfig,'showType','no','showHandle','no','showTag','no'),'userdata',pfig);
+            set(UD.PlotMngr.ItList,'value',[]) % clear item selection such that new item will be selected
+            d3d_qp refreshfigs
+            if toback
+                d3d_qp moveitemtoback
+            end
         end
         
     case 'plotmanagerresize'
