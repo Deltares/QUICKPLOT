@@ -162,7 +162,6 @@ for ivar = 1:nvars
             node_coords = {};
         end
         Info.Coordinates = node_coords;
-        Info.Mesh = {'ugrid' ivar -1};
         AuxCoordVars = union(AuxCoordVars,Info.Coordinates);
         %
         nd = strmatch('node_dimension',Attribs,'exact');
@@ -204,6 +203,8 @@ for ivar = 1:nvars
             face_dim = nc.Dataset(fnc).Dimension; % 2 dimensional
             face_dim = face_dim{1};
         end
+        %
+        Info.Mesh = {'ugrid' ivar -1 node_dim edge_dim face_dim}; % vol_dim
         %
         id = strmatch(node_dim,DimensionNames,'exact');
         nc.Dimension(id).Type = 'ugrid_node';
