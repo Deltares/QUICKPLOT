@@ -60,6 +60,9 @@ for i = 1:length(S)
         args = parseargs(S{i});
         for p = 2:length(args)
             val = args{p};
+            if strcmp(key,'filename') && strcmp(val,'geodata')
+                continue
+            end
             [chk,k] = ismember(val,values{j});
             if ~chk
                 k = length(values{j})+1;
