@@ -69,7 +69,7 @@ switch cmd
         List  = get(PM.ShowList,'string');
         iList = get(PM.ShowList,'value');
         sList = List{iList};
-        List = {'Item(s)','Figure Properties','Axes Properties','Item Properties'};
+        List = {'Item(s)','Figure Properties','Axes Properties'};
         %
         fgprop_shw = [0 0 0 0];
         if NewSize(2)>MinSize(2)+fgprop_hght+axprop_hght % show figprop after redraw
@@ -116,7 +116,8 @@ switch cmd
         stretchhor = [0 0 NewSize(1)-PrevSize(1) 0];
         fgprop_shf = [0 -fgprop_hght 0 0];
         axprop_shf = [0 -axprop_hght 0 0];
-        stretchver = [0 0 0 NewSize(2)-PrevSize(2)-fgprop_hght-axprop_hght];
+        stretchver = [0 0 0 NewSize(2)-PrevSize(2)];
+        stretchitm = stretchver-[0 0 0 fgprop_hght+axprop_hght];
         stretch2   = stretchhor/2;
         shift2     = alignright/2;
         stretch5   = stretchhor/5;
@@ -139,7 +140,7 @@ switch cmd
         set(PM.ShowList,'string',List,'value',iList)
         %
         shiftcontrol(PM.ItTxt,aligntop+fgprop_shf+axprop_shf)
-        shiftcontrol(PM.ItList,stretchhor+stretchver)
+        shiftcontrol(PM.ItList,stretchhor+stretchitm)
         shiftcontrol(PM.ItUp,aligntop+alignright+fgprop_shf+axprop_shf)
         shiftcontrol(PM.ItDown,alignright)
         %
@@ -225,8 +226,10 @@ switch cmd
         shiftcontrol(PM.ZLabelAuto,aligntop+fgprop_shf+axprop_shw)
         shiftcontrol(PM.ZLabel,aligntop+5*stretch5+fgprop_shf+axprop_shw)
         %
-        shiftcontrol(PM.ItTxt2,aligntop+fgprop_shf+axprop_shf)
-        shiftcontrol(PM.ItList2,aligntop+stretchhor+fgprop_shf+axprop_shf)
+        shiftcontrol(PM.Options.Slider,alignright+stretchver)
+        for i = 1:length(PM.Options.Handles)
+            shiftcontrol(PM.Options.Handles(i),alignright+aligntop)
+        end
         %
         pos = get(PM.Separator,'position');
         pos(1) = pos(1)+NewSize(1)-PrevSize(1);
@@ -520,9 +523,6 @@ switch cmd
             set(UD.PlotMngr.DelIt,'enable','off');
             set(UD.PlotMngr.ItInfo,'enable','off');
             set(UD.PlotMngr.ItLink,'enable','off');
-            %
-            set(UD.PlotMngr.ItList2,'string',' ','value',1, ...
-                'enable','off','backgroundcolor',Inactive);
         else
             Ax = getAx(UD);
             if any(~ishandle(Ax))
@@ -581,9 +581,6 @@ switch cmd
                     set(UD.PlotMngr.DelIt,'enable','off');
                     set(UD.PlotMngr.ItInfo,'enable','off');
                     set(UD.PlotMngr.ItLink,'enable','off');
-                    %
-                    set(UD.PlotMngr.ItList2,'string',' ','value',1, ...
-                        'enable','off','backgroundcolor',Inactive);
                 else
                     prevseparator=0;
                     it=length(Items);
@@ -736,10 +733,6 @@ switch cmd
                     end
                     set(UD.PlotMngr.ItList,'string',Nms, ...
                         'userdata',{Tags Items},'value',val, ...
-                        'enable','on','backgroundcolor',Active);
-                    %
-                    set(UD.PlotMngr.ItList2,'string',Nms, ...
-                        'value',val(1), ...
                         'enable','on','backgroundcolor',Active);
                     %
                     % buttons should not be enabled if a separator is selected
