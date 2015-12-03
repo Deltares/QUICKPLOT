@@ -198,10 +198,18 @@ for ivar = 1:nvars
             face_coords = multiline(Info.Attribute(cf).Value,' ','cellrow');
             fcc = find(strcmp(face_coords{1},DatasetNames));
             face_dim = nc.Dataset(fcc).Dimension{1};
+        elseif ~isempty(fnc)
+            fncv = find(strcmp(Info.Attribute(fnc).Value,DatasetNames));
+            if isempty(fncv)
+                ui_message('error','The face_node_connectivity "%s" of %s is not available in the file.',Info.Attribute(fnc).Value,Info.Name)
+                face_dim = '';
+            else
+                face_dim = nc.Dataset(fncv).Dimension; % 2 dimensional
+                face_dim = face_dim{1};
+            end
         else
-            fnc = find(strcmp(Info.Attribute(fnc).Value,DatasetNames));
-            face_dim = nc.Dataset(fnc).Dimension; % 2 dimensional
-            face_dim = face_dim{1};
+            ui_message('error','No face_node_connectivity specified for mesh topology %s.',Info.Name)
+            face_dim = '';
         end
         %
         Info.Mesh = {'ugrid' ivar -1 node_dim edge_dim face_dim}; % vol_dim
@@ -214,8 +222,10 @@ for ivar = 1:nvars
             nc.Dimension(id).Type = 'ugrid_edge';
         end
         %
-        id = strmatch(face_dim,DimensionNames,'exact');
-        nc.Dimension(id).Type = 'ugrid_face';
+        if ~isempty(face_dim)
+            id = strmatch(face_dim,DimensionNames,'exact');
+            nc.Dimension(id).Type = 'ugrid_face';
+        end
         %
     end
     %

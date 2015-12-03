@@ -1,4 +1,4 @@
-function [Out1,Out2]=unibest(cmd,varargin),
+function [Out1,Out2]=unibest(cmd,varargin)
 %UNIBEST Read Unibest files.
 %
 %   Struct=UNIBEST('open','FileName')
@@ -53,19 +53,19 @@ switch cmd,
 end;
 
 
-function S=Local_open(filename,datafile);
+function S=Local_open(filename,datafile)
 
 S.Check='NotOK';
 S.FileType='Unibest';
 
-if (nargin==0) | strcmp(filename,'?'),
+if (nargin==0) || strcmp(filename,'?'),
     [fname,fpath]=uigetfile('*.fun','Select Unibest file');
     if ~ischar(fname),
         return;
     end;
     filename=fullfile(fpath,fname);
 end;
-if length(filename)>3 & isequal(lower(filename(end-3:end)),'.daf')
+if length(filename)>3 && isequal(lower(filename(end-3:end)),'.daf')
     filename(end-2:end)='fun';
 end
 S.FileName=filename;
@@ -78,6 +78,10 @@ end
 
 % read number of functions
 Line=fgetl(fid);
+if ~ischar(Line)
+    fclose(fid);
+    error('End of file before data starts')
+end
 [nfunc,nread,err,nexti]=sscanf(Line,'%i',1);
 if ~isempty(err)
     fclose(fid);
@@ -106,16 +110,16 @@ for i=1:nfunc
     LongNameNr=deblank(Line(7:36));
     stri=num2str(i);
     lstri=length(stri);
-    if length(LongNameNr)<lstri | ~isequal(LongNameNr(end-lstri+1:end),stri)
+    if length(LongNameNr)<lstri || ~isequal(LongNameNr(end-lstri+1:end),stri)
         fclose(fid);
         error('Number in line %i does not match %i:\n%s',i+10,i,Line)
     end
     LongName=LongNameNr(1:end-lstri);
-    while length(LongName)>0 & (isequal(LongName(end),'.') | isequal(LongName(end),' '))
+    while ~isempty(LongName) && (isequal(LongName(end),'.') || isequal(LongName(end),' '))
         LongName=LongName(1:end-1);
     end
     S.Quant.LongName{i}=LongName;
-    ShortName=deblank(Line(37:42));
+    %ShortName=deblank(Line(37:42));
     %if ~isequal(ShortName,S.Quant.ShortName{i})
     %   fclose(fid);
     %   error('Non-consistent short name in line %i:\n%s',i+10,Line)
@@ -146,7 +150,7 @@ if fid<0
 end
 S.DataFile=datafile;
 [nx,count]=fread(fid,1,'float32');
-if nx~=round(nx) | nx<0
+if nx~=round(nx) || nx<0
     fclose(fid);
     error('Number of points (%g) not valid.',nx)
 end
@@ -189,7 +193,7 @@ else
 end
 
 
-function [OTime,Data]=Local_read(S,Loc,Qnt,Time);
+function [OTime,Data]=Local_read(S,Loc,Qnt,Time)
 fid=fopen(S.DataFile,'r','l');
 NPnt=S.RecSize-1;
 %
@@ -210,7 +214,7 @@ end
 nqnt=length(qnt);
 %
 %--- times
-if isequal(Time,1:S.NTimes) | isequal(Time,0)
+if isequal(Time,1:S.NTimes) || isequal(Time,0)
     ntim=S.NTimes;
     tim=0;
 else
@@ -223,9 +227,9 @@ end
 if tim==0
     fseek(fid,2*S.RecSize*4,-1);
     OTime=fread(fid,[S.NTimes 1],'float32',4*(S.RecSize*S.NQuant-1));
-    if nqnt==0 | nloc==0
+    if nqnt==0 || nloc==0
         Data=zeros(nloc,nqnt,ntim);
-    elseif nqnt>1 & nloc>1
+    elseif nqnt>1 && nloc>1
         fseek(fid,(2*S.RecSize+1)*4,-1);
         Data=fread(fid,[NPnt S.NTimes*S.NQuant],sprintf('%i*float32',NPnt),4);
         Data=reshape(Data,NPnt,S.NQuant,S.NTimes);
@@ -252,8 +256,8 @@ else
         tim1=tim(ti);
         fseek(fid,(2+(tim1-1)*S.NQuant)*S.RecSize*4,-1);
         OTime(ti)=fread(fid,1,'float32');
-        if nqnt==0 | nloc==0
-        elseif nqnt>1 & nloc>1
+        if nqnt==0 || nloc==0
+        elseif nqnt>1 && nloc>1
             tmpData=fread(fid,[NPnt S.NQuant],sprintf('%i*float32',NPnt),4);
             Data(:,:,ti)=tmpData(loc,qnt);
         elseif nqnt>1

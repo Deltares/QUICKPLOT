@@ -351,24 +351,25 @@ if XYRead
         if ~isempty(connect)
             iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name},'exact');
             if isempty(iconnect)
-                error('Face_node_connectivity not found!')
-            end
-            [Ans.FaceNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
-            istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name},'exact');
-            if isempty(istart)
-                maxNode = max(Ans.FaceNodeConnect(:));
-                minNode = min(Ans.FaceNodeConnect(Ans.FaceNodeConnect>=0));
-                if minNode==1 && maxNode==length(Ans.X)
-                    start = 1;
-                    ui_message('warning','No start_index found on %s.\nDefault value is 0, but data suggests otherwise.\nUsing start_index=1.',meshInfo.Attribute(connect).Value)
-                else
-                    start = 0;
-                end
+                ui_message('error','Face_node_connectivity not found!')
             else
-                start = FI.Dataset(iconnect).Attribute(istart).Value;
+                [Ans.FaceNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
+                istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name},'exact');
+                if isempty(istart)
+                    maxNode = max(Ans.FaceNodeConnect(:));
+                    minNode = min(Ans.FaceNodeConnect(Ans.FaceNodeConnect>=0));
+                    if minNode==1 && maxNode==length(Ans.X)
+                        start = 1;
+                        ui_message('warning','No start_index found on %s.\nDefault value is 0, but data suggests otherwise.\nUsing start_index=1.',meshInfo.Attribute(connect).Value)
+                    else
+                        start = 0;
+                    end
+                else
+                    start = FI.Dataset(iconnect).Attribute(istart).Value;
+                end
+                Ans.FaceNodeConnect = Ans.FaceNodeConnect - start + 1;
+                Ans.FaceNodeConnect(Ans.FaceNodeConnect<1) = NaN;
             end
-            Ans.FaceNodeConnect = Ans.FaceNodeConnect - start + 1;
-            Ans.FaceNodeConnect(Ans.FaceNodeConnect<1) = NaN;
         end
         %
         Ans.ValLocation = Props.Geom(7:end);
