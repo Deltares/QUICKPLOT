@@ -692,5 +692,5 @@ set(MW.Add2Plot,'enable','off')
 %
 set(UD.Options.Handles,'enable','off','visible','off','backgroundcolor',UD.Inactive)
 UD.Options.Act(:)=false;
-update_option_positions(UD)
+update_option_positions(UD,'main')
 

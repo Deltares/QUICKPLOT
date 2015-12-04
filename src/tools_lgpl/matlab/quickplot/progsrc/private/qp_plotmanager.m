@@ -226,15 +226,16 @@ switch cmd
         shiftcontrol(PM.ZLabelAuto,aligntop+fgprop_shf+axprop_shw)
         shiftcontrol(PM.ZLabel,aligntop+5*stretch5+fgprop_shf+axprop_shw)
         %
-        shiftcontrol(PM.Options.Slider,alignright+stretchver)
-        for i = 1:length(PM.Options.Handles)
-            shiftcontrol(PM.Options.Handles(i),alignright+aligntop)
-        end
-        %
         pos = get(PM.Separator,'position');
         pos(1) = pos(1)+NewSize(1)-PrevSize(1);
         pos(4) = NewSize(2);
         set(PM.Separator,'position',pos)
+        %
+        shiftcontrol(PM.Options.Slider,alignright+stretchver)
+        for i = 1:length(PM.Options.Handles)
+            shiftcontrol(PM.Options.Handles(i),alignright)
+        end
+        update_option_positions(UD,'plmn',NewSize(2)-30+1)
         %
         % Store the new figure size for usage during next resize command
         %
@@ -248,7 +249,7 @@ switch cmd
             set(h,'userdata',UDplot);
             if ~isempty(h)
                 set(UD.PlotMngr.FigList,'value',1,'string',listnames(h,'showType','no','showHandle','no','showTag','no'),'userdata',h);
-                d3d_qp refreshfigs
+                qp_plotmanager refreshfigs
             end
             if logfile
                 writelog(logfile,logtype,cmd,createops{:});
@@ -270,19 +271,19 @@ switch cmd
             set(UD.PlotMngr.DelAx,'enable','off');
             UD.PlotMngr.CurrentAxes=[];
             setappdata(mfig,'QPHandles',UD)
-            d3d_qp refreshitems
-            d3d_qp refreshaxprop
+            qp_plotmanager refreshitems
+            qp_plotmanager refreshaxprop
         else 
             FigVal=get(UD.PlotMngr.FigList,'value');
             Fig=FigIDs(FigVal);
             if ~ishandle(Fig)
-                d3d_qp refreshfigs
+                qp_plotmanager refreshfigs
             else
                 [h,createops]=qp_createaxes(Fig,cmd(9:end),cmdargs{:});
                 if ~isempty(h)
                     set(UD.PlotMngr.AxList,'value',1,'string',listnames(h),'userdata',h);
-                    d3d_qp refreshaxes
-                    d3d_qp refreshfigprop
+                    qp_plotmanager refreshaxes
+                    qp_plotmanager refreshfigprop
                 end
             end
             if logfile && ~isempty(h)
@@ -330,7 +331,7 @@ switch cmd
                     %set(cbar,'deletefcn','qp_colorbar delete')
                     hName = listnames(h,'showtype','no','showhandle','no','showtag','no');
                     set(UD.PlotMngr.FigList,'value',1,'string',hName,'userdata',h);
-                    d3d_qp refreshfigs
+                    qp_plotmanager refreshfigs
                     if logfile
                         writelog(logfile,logtype,cmd,pf);
                     end
@@ -387,8 +388,8 @@ switch cmd
             set(UD.PlotMngr.ClsFig,'enable',enable);
             set(UD.PlotMngr.NewAx,'enable','on');
         end
-        d3d_qp refreshaxes
-        d3d_qp refreshfigprop
+        qp_plotmanager refreshaxes
+        qp_plotmanager refreshfigprop
         d3d_qp update_addtoplot
         
     case 'allfigures'
@@ -408,8 +409,8 @@ switch cmd
         set(UD.PlotMngr.FigList, ...
             'enable',figlistenable,'backgroundcolor',figlistcolour);
         set(UD.PlotMngr.ClsFig,'enable',figlistenable);
-        d3d_qp refreshaxes
-        d3d_qp refreshfigprop
+        qp_plotmanager refreshaxes
+        qp_plotmanager refreshfigprop
         
     case 'refreshaxes'
         FigIDs=get(UD.PlotMngr.FigList,'userdata');
@@ -429,7 +430,7 @@ switch cmd
                 Fig=FigIDs(FigVal);
             end
             if any(~ishandle(Fig))
-                d3d_qp refreshfigs
+                qp_plotmanager refreshfigs
             else
                 Axs=findall(Fig,'type','axes');
                 for i=length(Axs):-1:1
@@ -477,9 +478,9 @@ switch cmd
                 end
             end
         end
-        d3d_qp refreshitems
-        d3d_qp refreshaxprop
-        d3d_qp update_addtoplot
+        qp_plotmanager refreshitems
+        qp_plotmanager refreshaxprop
+        qp_plotmanager update_addtoplot
         
     case 'allaxes'
         if ~isempty(cmdargs)
@@ -498,9 +499,9 @@ switch cmd
         set(UD.PlotMngr.AxList, ...
             'enable',axlistenable,'backgroundcolor',axlistcolour);
         set(UD.PlotMngr.DelAx,'enable',axlistenable);
-        d3d_qp refreshitems
-        d3d_qp refreshaxprop
-        d3d_qp update_addtoplot
+        qp_plotmanager refreshitems
+        qp_plotmanager refreshaxprop
+        qp_plotmanager update_addtoplot
         
     case 'pmshowselect'
         ipane = get(UD.PlotMngr.ShowList,'value');
@@ -526,8 +527,8 @@ switch cmd
         else
             Ax = getAx(UD);
             if any(~ishandle(Ax))
-                d3d_qp refreshaxes
-                d3d_qp refreshfigprop
+                qp_plotmanager refreshaxes
+                qp_plotmanager refreshfigprop
             else
                 Items=allchild(Ax);
                 if iscell(Items)
@@ -747,7 +748,8 @@ switch cmd
                 end
             end
         end
-        qp_plotmanager('updatearrows',UD)
+        qp_plotmanager updatearrows
+        qp_plotmanager refreshitemprop
 
     case 'updatearrows'
         Ax = getAx(UD);
@@ -778,8 +780,8 @@ switch cmd
     case {'moveitemup','moveitemdown','moveitemtoback'}
         Ax = getAx(UD);
         if any(~ishandle(Ax))
-            d3d_qp refreshaxes
-            d3d_qp refreshfigprop
+            qp_plotmanager refreshaxes
+            qp_plotmanager refreshfigprop
         else
             pfig = get(Ax,'parent');
             ItInfo = get(UD.PlotMngr.ItList,'userdata');
@@ -844,14 +846,14 @@ switch cmd
                 ItVal = ItVal2;
             end
             %
-            d3d_qp refreshitems
+            qp_plotmanager refreshitems
         end
 
     case 'itemlist'
         Ax = getAx(UD);
         if any(~ishandle(Ax))
-            d3d_qp refreshaxes
-            d3d_qp refreshfigprop
+            qp_plotmanager refreshaxes
+            qp_plotmanager refreshfigprop
         else
             ItInfo=get(UD.PlotMngr.ItList,'userdata');
             ItVal=get(UD.PlotMngr.ItList,'value');
@@ -863,8 +865,8 @@ switch cmd
                 ItTag=ItTags{itVal};
                 hIt=findall(Ax,'tag',ItTag);
                 if isempty(hIt)
-                    d3d_qp refreshitems
-                    d3d_qp refreshaxprop
+                    qp_plotmanager refreshitems
+                    qp_plotmanager refreshaxprop
                     OK=0;
                     break
                 end
@@ -884,13 +886,14 @@ switch cmd
                 end
             end
         end
-        qp_plotmanager('updatearrows',UD)
+        qp_plotmanager updatearrows
+        qp_plotmanager refreshitemprop
         
     case 'iteminfo'
         Ax = getAx(UD);
         if any(~ishandle(Ax))
-            d3d_qp refreshaxes
-            d3d_qp refreshfigprop
+            qp_plotmanager refreshaxes
+            qp_plotmanager refreshfigprop
         else
             pfig=get(Ax,'parent');
             ItIDs=get(UD.PlotMngr.ItList,'userdata');
@@ -949,15 +952,15 @@ switch cmd
                 writelog(logfile,logtype,cmd);
             end
         end
-        d3d_qp refreshaxes
-        d3d_qp refreshfigprop
+        qp_plotmanager refreshaxes
+        qp_plotmanager refreshfigprop
         
     case 'deleteitems'
         Ax = getAx(UD);
         hItList = UD.PlotMngr.ItList;
         if any(~ishandle(Ax))
-            d3d_qp refreshaxes
-            d3d_qp refreshfigprop
+            qp_plotmanager refreshaxes
+            qp_plotmanager refreshfigprop
         else
             pfig=get(Ax,'parent');
             if iscell(pfig)
@@ -1003,15 +1006,15 @@ switch cmd
                 end
             end
             setaxesprops(Ax)
-            d3d_qp refreshitems
-            d3d_qp refreshaxprop
+            qp_plotmanager refreshitems
+            qp_plotmanager refreshaxprop
         end
         
     case 'linkitems'
         Ax = getAx(UD);
         if any(~ishandle(Ax))
-            d3d_qp refreshaxes
-            d3d_qp refreshfigprop
+            qp_plotmanager refreshaxes
+            qp_plotmanager refreshfigprop
         else
             pfig=get(Ax,'parent');
             if iscell(pfig)
@@ -1157,7 +1160,7 @@ switch cmd
                     % If name not found in list of figures, try once
                     % refreshing the list of figures.
                     %
-                    d3d_qp refreshfigs
+                    qp_plotmanager refreshfigs
                     FigureHandles=get(UD.PlotMngr.FigList,'userdata');
                     Names = get(FigureHandles,'name');
                     [iFg,iAll] = ustrcmpi(h,Names);
@@ -1202,7 +1205,7 @@ switch cmd
                     % If a handle not found in list of figures, try
                     % once refreshing the list of figures.
                     %
-                    d3d_qp refreshfigs
+                    qp_plotmanager refreshfigs
                     FigureHandles=get(UD.PlotMngr.FigList,'userdata');
                     iFg=find(ismember(FigureHandles,h));
                 end
@@ -1221,9 +1224,9 @@ switch cmd
             FigureHandles = get(UD.PlotMngr.FigList,'userdata');
             iFg = get(UD.PlotMngr.FigList,'value');
         end
-        d3d_qp refreshaxes
-        d3d_qp update_addtoplot
-        d3d_qp refreshfigprop
+        qp_plotmanager refreshaxes
+        qp_plotmanager update_addtoplot
+        qp_plotmanager refreshfigprop
         if logfile && iFg>0
             names = get(FigureHandles,'name');
             nr   = {};
@@ -1266,8 +1269,8 @@ switch cmd
                     % If tag not found in list of axes, try once refreshing the
                     % list of axes.
                     %
-                    d3d_qp refreshaxes
-                    d3d_qp refreshfigprop
+                    qp_plotmanager refreshaxes
+                    qp_plotmanager refreshfigprop
                     AxesHandles=get(UD.PlotMngr.AxList,'userdata');
                     Tags = get(AxesHandles,'tag');
                     [iAx,iAll] = ustrcmpi(h,Tags);
@@ -1325,9 +1328,9 @@ switch cmd
             AxesHandles=get(UD.PlotMngr.AxList,'userdata');
             iAx = get(UD.PlotMngr.AxList,'value');
         end
-        d3d_qp refreshaxes % this call triggers aksi refreshaxprop
+        qp_plotmanager refreshaxes % this call triggers also refreshaxprop
         d3d_qp update_addtoplot
-        %d3d_qp refreshaxprop
+        %qp_plotmanager refreshaxprop
         if logfile && iAx>0
             tags = get(AxesHandles,'tag');
             nr   = {};
@@ -1396,7 +1399,8 @@ switch cmd
         else
             get(gcbo,'tag')
         end
-        qp_plotmanager('updatearrows',UD)
+        qp_plotmanager updatearrows
+        qp_plotmanager refreshitemprop
         d3d_qp update_addtoplot
 
     case 'refreshfigprop'
@@ -1522,7 +1526,7 @@ switch cmd
             setappdata(na,'linkedaxestype','SecondY')
             setappdata(na,'linkedaxes',ax)
             setappdata(na,'NonDataObject',1)
-            d3d_qp refreshaxprop
+            qp_plotmanager refreshaxprop
         elseif strcmp(linkedax,'SecondY')
             switch cmd
                 case 'secondy'
@@ -1555,13 +1559,13 @@ switch cmd
                     rmappdata(ax,'linkedaxestype')
                     rmappdata(ax,'linkedaxes')
                     delete(na)
-                    d3d_qp refreshaxprop
+                    qp_plotmanager refreshaxprop
                 case 'secondy_right'
                     na = getappdata(ax,'linkedaxes');
                     rmappdata(ax,'linkedaxestype')
                     rmappdata(ax,'linkedaxes')
                     delete(na)
-                    d3d_qp refreshaxprop
+                    qp_plotmanager refreshaxprop
             end
         end
 
@@ -1840,6 +1844,24 @@ switch cmd
             set(PM.GeoData,'enable','off')
         end
 
+    case 'refreshitemprop'
+        It = getItem(UD);
+        hOptions = UD.PlotMngr.Options.Handles;
+        if isempty(It) || length(It)>1
+            % no item or multiple items selected - for the time being can't
+            % visualize options. Call qp_update_options with empty Ops to
+            % hide them all.
+            Ops = [];
+        else
+            ItData = get(It,'UserData');
+            Ops =  ItData.PlotState.Ops;
+        end
+        try
+            qp_update_options(hOptions,UD,Ops)
+            update_option_positions(UD,'plmn')
+        catch Ex
+            qp_error(sprintf('Catch in qp_plotmanager\\%s:',cmd),Ex)
+        end
 end
 
 function Ax = getAx(UD)
@@ -1851,6 +1873,20 @@ if get(UD.PlotMngr.FigAll,'value') || ...
     Ax=AxIDs;
 else
     Ax=AxIDs(AxVal);
+end
+
+function It = getItem(UD)
+ItData=get(UD.PlotMngr.ItList,'userdata');
+if ~iscell(ItData)
+    It = [];
+else
+    ItIDs=ItData{2};
+    ItVal=get(UD.PlotMngr.ItList,'value');
+    if isempty(ItIDs)
+        It=[];
+    else
+        It=ItIDs(ItVal);
+    end
 end
 
 function v = cget(handle,prop)

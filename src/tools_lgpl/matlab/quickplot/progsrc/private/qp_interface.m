@@ -71,7 +71,7 @@ if ischar(showUI)
     UD.MainWin.(['Max'  m]) = MaxDim;
     setappdata(mfig,'QPHandles',UD)
     %
-    update_option_positions(UD,fpos(4)-30+1)
+    update_option_positions(UD,'main',fpos(4)-30+1)
     %
     fig = {NameDim AllDim EditDim MaxDim};
     return
@@ -432,20 +432,6 @@ UD.MainWin=MW;
 % options ...
 %
 UD.Options = AddOptions(mfig,dims,offset,width,UD,true);
-
-G=findall(mfig,'type','uicontrol'); H=get(G,'position'); H=cat(1,H{:}); G=G(H(:,1)>=offset);
-G=setdiff(G,[UD.Options.Slider UD.Options.Dock]);
-p=get(G,'position'); p=cat(1,p{:});
-[ps,reorder]=sort(p(:,2),1,'descend');
-G = G(reorder);
-p = p(reorder,:);
-set(G,'visible','off')
-UD.Options.Handles=G;
-UD.Options.Act=logical(zeros(size(p(:,1))));
-UD.Options.ActPos=zeros(1,4);
-UD.Options.Top=p(1,2);
-p(:,2)=(p(:,2)-p(1,2))/25;
-UD.Options.Pos=p;
 %
 % ------ plot manager ...
 %
@@ -1742,7 +1728,23 @@ voffset=voffset-25;
 LocButton(mfig,[offset+60 voffset width-60 20],'exportdata','Export Data...',0, ...
     'press this button to export the data');
 %
-set(Options.Slider,'min',voffset-10,'max',0,'value',0,'enable','off')
+set(Options.Slider,'min',voffset-10,'max',0,'value',0,'enable','off','userdata',0)
 %
 items1 = allchild(mfig);
-Options.Handles = setdiff(items1,items0);
+H = setdiff(items1,items0);
+
+p = get(H,'position');
+p = cat(1,p{:});
+[ps,reorder] = sort(p(:,2),1,'descend');
+H = H(reorder);
+p = p(reorder,:);
+[f,i,Line] = unique(p(:,2));
+set(H,'visible','off')
+Options.Handles = H;
+Options.Line = Line;
+Options.Top = p(1,2);
+%
+Options.Act=logical(zeros(size(p(:,1))));
+Options.ActPos=zeros(1,4);
+p(:,2)=(p(:,2)-p(1,2))/25;
+Options.Pos=p;

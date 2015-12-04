@@ -1,4 +1,4 @@
-function update_option_positions(UD,newTop)
+function update_option_positions(UD,wndw,newTop)
 %UPDATE_OPTION_POSITIONS Update vertical position of plot option controls.
 
 %----- LGPL --------------------------------------------------------------------
@@ -31,52 +31,64 @@ function update_option_positions(UD,newTop)
 %   $HeadURL$
 %   $Id$
 
-if nargin>1
+switch wndw
+    case 'main'
+        Options = UD.Options;
+    case 'plmn'
+        Options = UD.PlotMngr.Options;
+end
+
+Act = ~strcmp(get(Options.Handles,'enable'),'off') | qp_settings('showinactiveopt');  % <- for debugging useful: show all options
+set(Options.Handles(~Act),'visible','off')
+ActHandles = Options.Handles(Act);
+P = get(ActHandles,{'position'});
+if isempty(P)
+    P = zeros(0,4);
+else
+    P = cat(1,P{:});
+end
+
+old_offset = get(Options.Slider,'userdata');
+if nargin>2
     %
     % called in case of a Plot Options Figure Resize or Dock Command
     %
-    P = UD.Options.ActPos;
-    P(:,2) = P(:,2)-P(:,4)+20+newTop-UD.Options.Top;
-    if isempty(P)
-        minP = 999;
-    else
-        minP = min(P(:,2));
-    end
-    UD.Options.Top = newTop;
+    P(:,2) = P(:,2)-Options.Top+newTop;
+    Options.Top = newTop;
 else
     %
     % called from qp_interface_update_options
     %
-    UD.Options.Act = ~strcmp(get(UD.Options.Handles,'enable'),'off') | qp_settings('showinactiveopt');  % <- for debugging useful: show all options
-    %set(UD.Options.Handles,'enable','on')
-    set(UD.Options.Handles(~UD.Options.Act),'visible','off');
-    P = UD.Options.Pos(UD.Options.Act,:);
-    if isempty(P)
-        minP=999;
-        %
-        % Fix needed for compiled code ...
-        %
-        P=zeros(0,4);
-    else
-        [f,i,j]=unique(P(:,2));
-        P(:,2)=UD.Options.Top-25*(j(1)-j);
-        minP=min(P(:,2));
+    if ~isempty(P)
+        [f,i,j]=unique(Options.Line(Act));
+        P(:,2)=Options.Top-25*(j(1)-j);
+        old_offset = 0;
     end
 end
 %
-if minP<10
-    offset=get(UD.Options.Slider,'value');
-    offset=min(max(offset,minP-10),0);
-    set(UD.Options.Slider,'min',minP-10,'max',0,'value',offset,'enable','on');
+if isempty(P)
+    minP = 999;
 else
-    offset=0;
-    set(UD.Options.Slider,'enable','off','value',0)
+    minP = min(P(:,2))+old_offset;
 end
 %
-P(:,2)=P(:,2)+P(:,4)-20;
-UD.Options.ActPos=P;
-P(:,2)=P(:,2)-offset;
-P=num2cell(P,2);
-set(UD.Options.Handles(UD.Options.Act)',{'position'},P,'visible','on');
+if minP<10
+    offset=get(Options.Slider,'value');
+    offset=min(max(offset,minP-10),0);
+    set(Options.Slider,'min',minP-10,'max',0,'value',offset,'enable','on','userdata',offset);
+else
+    offset=0;
+    set(Options.Slider,'enable','off','value',0,'userdata',0)
+end
 %
+P(:,2)=P(:,2)-offset+old_offset;
+P=num2cell(P,2);
+set(Options.Handles(Act)',{'position'},P,'visible','on');
+%
+switch wndw
+    case 'main'
+        UD.Options = Options;
+    case 'plmn'
+        UD.PlotMngr.Options = Options;
+end
 setappdata(UD.MainWin.Fig,'QPHandles',UD)

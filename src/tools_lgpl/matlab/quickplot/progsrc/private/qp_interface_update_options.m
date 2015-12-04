@@ -1556,4 +1556,4 @@ UD.State=Ops;
 
 %---- Show/hide options
 
-update_option_positions(UD)
+update_option_positions(UD,'main')

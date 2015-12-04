@@ -152,7 +152,7 @@ switch cmd
             'refreshaxprop','moveitemup','moveitemdown', ...
             'updatearrows', 'newaxes_oneplot', 'newaxes_matrix', ...
             'newaxes_specloc', 'secondy', 'secondy_left', ...
-            'secondy_right', 'moveitemtoback'}
+            'secondy_right', 'moveitemtoback','refreshitemprop'}
         qp_plotmanager(cmd,UD,logfile,logtype,cmdargs);
         
     case {'selectedfigure', 'selectedaxes', 'selecteditem'}
@@ -234,7 +234,7 @@ switch cmd
         end
         set(gcbf,'pos',pos)
         %
-        update_option_positions(UD,pos(4)-30+1)
+        update_option_positions(UD,'main',pos(4)-30+1)
         %
         spos = get(UD.Options.Slider,'position');
         spos(4) = pos(4)-15;
@@ -2258,13 +2258,22 @@ switch cmd
         end
         
     case 'optslider'
-        os=UD.Options.Slider;
+        os = gcbo;
+        switch os
+            case UD.Options.Slider
+                Options = UD.Options;
+            case UD.PlotMngr.Options.Slider
+                Options = UD.PlotMngr.Options;
+        end
+        UOH = Options.Handles;
         offset=get(os,'value');
-        act=UD.Options.Act;
-        p=UD.Options.ActPos;
-        p(:,2)=p(:,2)-offset;
-        p=num2cell(p,2);
-        set(UOH(act)',{'position'},p);
+        old_offset=get(os,'userdata');
+        p=get(UOH,{'position'});
+        for i = 1:length(p)
+            p{i}(2) = p{i}(2)-offset+old_offset;
+        end
+        set(UOH,{'position'},p)
+        set(os,'userdata',offset)
         
     case 'dock'
         switch get(UD.Options.Dock,'userdata')
@@ -2291,14 +2300,10 @@ switch cmd
                 %
                 A = allchild(ofig);
                 p = get(A,{'position'});
-                p = cat(1,p{:});
-                p(:,1) = p(:,1) - hshift;
-                p = num2cell(p,2);
+                for i = 1:length(p)
+                    p{i}(1) = p{i}(1) - hshift;
+                end
                 set(A,{'position'},p)
-                %
-                UD.Options.ActPos(:,1) = UD.Options.ActPos(:,1) - hshift;
-                UD.Options.Pos(:,1) = UD.Options.Pos(:,1) - hshift;
-                setappdata(mfig,'QPHandles',UD)
                 %
                 set(UD.Options.Dock, ...
                     'CData',qp_icon('dock','nan'), ...
@@ -2319,9 +2324,9 @@ switch cmd
                 %
                 A = allchild(ofig);
                 p = get(A,{'position'});
-                p = cat(1,p{:});
-                p(:,1) = p(:,1) + hshift;
-                p = num2cell(p,2);
+                for i = 1:length(p)
+                    p{i}(1) = p{i}(1) + hshift;
+                end
                 set(A,{'position'},p)
                 %
                 spos = get(UD.Options.Slider,'position');
@@ -2341,10 +2346,7 @@ switch cmd
                     'UserData',0)
                 set(mfig,'position',pos)
                 %
-                UD.Options.ActPos(:,1) = UD.Options.ActPos(:,1) + hshift;
-                UD.Options.Pos(:,1) = UD.Options.Pos(:,1) + hshift;
-                %
-                update_option_positions(UD,pos(4)-30+1)
+                update_option_positions(UD,'main',pos(4)-30+1)
         end
         
     case {'climmin','climmax','1vecunit','vscale','thinfact','thindist','fontsize','markersize','linewidth'}
