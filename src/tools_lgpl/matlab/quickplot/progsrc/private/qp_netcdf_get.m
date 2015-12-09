@@ -176,10 +176,15 @@ if ~isempty(Info.Attribute)
     missval = strmatch('_FillValue',Attribs,'exact');
     if ~isempty(missval)
         missval = Info.Attribute(missval).Value;
-        if missval>0
-            Data(Data>=missval)=NaN;
-        else
-            Data(Data<=missval)=NaN;
+        switch qp_settings('netcdf_use_fillvalue')
+            case 'exact_match'
+                Data(Data==missval)=NaN;
+            otherwise % 'valid_range'
+                if missval>0
+                    Data(Data>=missval)=NaN;
+                else
+                    Data(Data<=missval)=NaN;
+                end
         end
     else
         % NCL standard or general standard?

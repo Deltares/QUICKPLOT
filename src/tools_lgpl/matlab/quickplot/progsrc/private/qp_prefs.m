@@ -259,6 +259,12 @@ switch cmd
            filterstring(end)=[];
            qp_settings('filefilterselection',filterstring);
         end
+
+    case 'netcdf_use_fillvalue'
+        newval = get(gcbo,'value');
+        string = {'exact_match','valid_range'};
+        newval = string{newval};
+        qp_settings(cmd,newval);
         
     otherwise
         error('Unknown command in qp_settings: %s',cmd)

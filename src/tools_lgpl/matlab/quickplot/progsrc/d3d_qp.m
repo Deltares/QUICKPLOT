@@ -4395,9 +4395,9 @@ switch cmd
             'defaultaxescolor','boundingbox','v6zoombehavior', ...
             'organizationname','filefilterselection','colorbar_ratio', ...
             'showinactiveopt', 'defaultfigurepos','timezonehandling', ...
-            'enforcedtimezone'}
+            'enforcedtimezone', 'netcdf_use_fillvalue'}
         qp_prefs(UD,mfig,cmd,cmdargs);
-        
+
     case {'deltaresweb','deltaresweboss'}
         ops={};
         if matlabversionnumber>5
