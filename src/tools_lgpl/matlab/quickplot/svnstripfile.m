@@ -55,7 +55,7 @@ for i = 1:length(d)
         svnstripfile([basedir filesep d(i).name])
     else
         [p,f,e] = fileparts(d(i).name);
-        if ~strcmp(e,'.m') && ~strcmp(e,'.c') && ~strcmp(e,'.cpp')
+        if ~strcmp(e,'.m') && ~strcmp(e,'.c') && ~strcmp(e,'.cpp') && ~strcmp(e,'.ini')
             %
             % only process m, c and cpp files
             %
