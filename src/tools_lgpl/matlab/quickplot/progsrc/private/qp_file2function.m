@@ -98,6 +98,7 @@ F={'Delft3D-com'                'd3d_comfil'
     'SOBEK network'              'sobekfil'
     'SOBEK River network'        'sobekfil'
     'NetCDF'                     'netcdffil'
+    'HDF5'                       'hdffil'
     'SWAN spectral'              'swanfil'
     'TRITON'                     'nfs_tritonfil'
     'bil/hdr'                    'bilhdrfil'
@@ -109,6 +110,7 @@ F={'Delft3D-com'                'd3d_comfil'
     'Adcirc 14 mesh'             'flexmeshfil'
     'SHYFEM mesh'                'flexmeshfil'
     'GeoSystems mesh'            'flexmeshfil'
+    'Gmsh'                       'flexmeshfil'
     'diff'                       'difffil'
     'shipma'                     'shipmafil'
     'geodata'                    'geodatafil'
@@ -154,6 +156,7 @@ F={'Delft3D-com'                'd3d_comfil'
 %#function matlabfil
 %#function sobekfil
 %#function netcdffil
+%#function hdffil
 %#function swanfil
 %#function usrdeffil
 %#function nfs_tritonfil

@@ -35,6 +35,13 @@ mfig = findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
 UD=getappdata(mfig,'QPHandles');
 Inactive = UD.Inactive;
 Active = UD.Active;
+if nargin<3
+    logfile=0;
+    logtype=0;
+    cmdargs={};
+elseif nargin<5
+    cmdargs={};
+end
 
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 DimStr={'subfield ','timestep ','station ','M=','N=','K='};

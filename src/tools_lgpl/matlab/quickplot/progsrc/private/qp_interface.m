@@ -435,7 +435,7 @@ UD.Options = AddOptions(mfig,dims,offset,width,UD,true);
 %
 % ------ plot manager ...
 %
-panewidth = 0;
+%panewidth = 0;
 PMsize = [445 400]+[panewidth 0];
 PMsizeMin = [445 190]+[panewidth 0];
 pos=[qp_settings('PlotMngrPositionUL',screensize(1:2)+screensize(3:4)/2+PMsize/2) PMsize];

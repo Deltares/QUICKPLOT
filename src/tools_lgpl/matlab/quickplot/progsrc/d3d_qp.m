@@ -48,7 +48,7 @@ catch Ex
 end
 
 function outdata=d3d_qp_core(cmd,varargin)
-%VERSION = 2.26
+%VERSION = 2.30
 qpversionbase = 'v<VERSION>';
 qpcreationdate = '<CREATIONDATE>';
 %

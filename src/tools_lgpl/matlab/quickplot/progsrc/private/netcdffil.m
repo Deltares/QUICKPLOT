@@ -1030,7 +1030,7 @@ else
         %
         Out(end+1)=Insert;
         %
-        if strcmp(standard_name,'discharge') %&& iscell(Insert.varid)
+        if strcmp(standard_name,'discharge') && strcmp(Insert.Geom,'UGRID-EDGE')
             Insert.Name = 'stream function'; % previously: discharge potential
             Insert.Geom = 'UGRID-NODE';
             Insert.varid = {'stream_function' Insert.varid};

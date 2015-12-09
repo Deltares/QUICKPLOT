@@ -92,6 +92,7 @@ element(2,i) = {1};
 
 function FI=Local_open_file(filename)
 FI.FileName=filename;
+FI.FileType='Gmsh';
 fid=fopen(filename,'r');
 if fid<0
     error('Cannot open "%s".',filename)
@@ -106,7 +107,7 @@ try
     %
     % $MeshFormat
     FI.VersionNumber = 2.2;
-    FI.FileType = 'ASCII';
+    FI.Format = 'ASCII';
     FI.DataSize = 8;
     FI.ByteOrder = 'N/A';
     Line = deblank(Line);
@@ -136,19 +137,19 @@ try
         Line = fgetl(fid);
         Values = sscanf(Line,'%f %i %i');
         FI.VersionNumber = Values(1);
-        FI.FileType = Values(2);
+        FI.Format = Values(2);
         FI.DataSize = Values(3);
         if FI.VersionNumber~=1.4 && FI.VersionNumber~=2.2 && FI.VersionNumber~=3
             error('GMSH file version %g is not supported; only versions 1.4, 2.2 and 3 are supported.',FI.VersionNumber)
-        elseif FI.FileType~=0 && FI.FileType~=1
-            error('GMSH file type %i is not supported; only 0 (ASCII) and 1 (BINARY) are supported.',FI.FileType)
+        elseif FI.Format~=0 && FI.Format~=1
+            error('GMSH file type %i is not supported; only 0 (ASCII) and 1 (BINARY) are supported.',FI.Format)
         elseif FI.DataSize~=8
             error('GMSH data size %i is not supported; only sizeof(double)=8 is supported.',FI.DataSize)
-        elseif FI.FileType==0
-            FI.FileType = 'ASCII';
+        elseif FI.Format==0
+            FI.Format = 'ASCII';
             isbinary = false;
-        else % FI.FileType==1
-            FI.FileType = 'BINARY';
+        else % FI.Format==1
+            FI.Format = 'BINARY';
             isbinary = true;
             if FI.VersionNumber==1.4
                 FI.ByteOrder = 'n'; % unknown, so assume native

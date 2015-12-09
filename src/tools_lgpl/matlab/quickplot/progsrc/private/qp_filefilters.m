@@ -53,6 +53,7 @@ filtertbl={...
     '*.stu;*.pst'                                          'JSPost Files'                      'JSPost'             0
     '*.xyz'                                                'Sample Files'                      'samples'            0
     '*.nc'                                                 'NetCDF Files'                      'NetCDF'             0
+    '*.hdf;*.hdf5'                                         'HDF5 Files'                        'HDF5'               0
     '*.grib;*.grib1;*.grib2'                               'GRIB Files'                        'grib'               0
     'sds-*'                                                'Simona SDS Files'                  'waquasds'           0
     '*.his;*.map;*.plo;*.psf;*.lga'                        'Delwaq Binary Files'               'delwaqbin'          0

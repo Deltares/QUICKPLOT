@@ -534,14 +534,11 @@ if dic
         triangles = 1;
     end
     if triangles
-        if isfield(arg2,'Val')
-            arg2.Val = mean(arg2.Val(arg2.TRI),2);
-        end
-        if isfield(arg2,'XComp')
-            arg2.XComp = mean(arg2.XComp(arg2.TRI),2);
-        end
-        if isfield(arg2,'YComp')
-            arg2.YComp = mean(arg2.YComp(arg2.TRI),2);
+        for flc = {'Val','XComp','YComp','ZComp'}
+            fld = flc{1};
+            if isfield(arg2,fld)
+                arg2.(fld) = mean(arg2.(fld)(arg2.TRI),2);
+            end
         end
     end
 end

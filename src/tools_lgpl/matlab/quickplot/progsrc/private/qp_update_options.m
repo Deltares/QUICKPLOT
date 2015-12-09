@@ -49,10 +49,9 @@ end
 if isfield(Ops,'plotcoordinate')
     coords = {Ops.plotcoordinate,OTHER{:}};
     i = 1;
-    if length(coords)>1
-        set(findobj(OH,'tag','plotcoordinate'),'enable','on');
-        set(pd,'string',coords,'value',i,'enable','on','backgroundcolor',Active)
-    end
+    set(findobj(OH,'tag','plotcoordinate'),'enable','on');
+    pd=findobj(OH,'tag','plotcoordinate=?');
+    set(pd,'string',coords,'value',i,'enable','on','backgroundcolor',Active)
 end
 
 if isfield(Ops,'vectorcomponent')
@@ -95,12 +94,14 @@ end
 if isfield(Ops,'units')
     set(findobj(OH,'tag','dataunits'),'enable','on')
     dunit=findobj(OH,'tag','dataunits=?');
-    set(dunit,'enable','on','backgroundcolor',Active)
-    % set(dunit,'backgroundcolor','r') % needed to get next line working properly R2011b
-    % set(dunit,'backgroundcolor',Inactive)
-    % set(dunit,'enable','inactive')
-    % set(dunit,'string',user_units)
-    set(dunit,'string',Ops.units)
+    if strcmp(Ops.units,'**Hide**')
+        ival = 8;
+    else
+        ival = 7;
+        dunitset=findobj(OH,'tag','dataunits=!');
+        set(dunitset,'enable','on','backgroundcolor',Active,'string',Ops.units)
+    end
+    set(dunit,'enable','on','backgroundcolor',Active,'value',ival)
 end
 
 if isfield(Ops,'angleconvention')
@@ -221,8 +222,13 @@ if isfield(Ops,'colour')
 end
 
 if isfield(Ops,'facecolour')
-    clrh=findobj(OH,'tag','facecolour=?');
-    set(clrh,'enable','on','backgroundcolor',Ops.facecolour)
+    if ~ischar(Ops.facecolour)
+        clrh=findobj(OH,'tag','facecolour=?');
+        set(clrh,'enable','on','backgroundcolor',Ops.facecolour)
+    elseif strcmp(Ops.facecolour,'yes')
+        fpoly=findobj(OH,'tag','fillpolygons');
+        set(fpoly,'enable','on','value',1)
+    end
 end
 
 if isfield(Ops,'textboxfacecolour')
@@ -252,7 +258,7 @@ if isfield(Ops,'marker')
     set(mrk,'enable','on','backgroundcolor',Active,'string',mrkrs,'value',imrk)
 end
 
-if isfield(Ops,'markersize')
+if isfield(Ops,'markersize') && ~isequal(Ops.marker,'none')
     set(findobj(OH,'tag','markersize'),'enable','on')
     mrk=findobj(OH,'tag','markersize=?');
     set(mrk,'enable','on','backgroundcolor',Active,'string',num2str(Ops.markersize))
@@ -273,10 +279,16 @@ if isfield(Ops,'markerfillcolour') && ~ischar(Ops.markerfillcolour)
     set(mc,'enable','on','backgroundcolor',Ops.markerfillcolour)
 end
 
+if isfield(Ops,'presentationtype') && isfield(Ops,'thresholds') && ...
+        ismember(Ops.presentationtype,{'vector','patches','patches with lines','markers'})
+    cclass=findobj(OH,'tag','colclassify');
+    set(cclass,'enable','on','value',1)
+end
+
 if isfield(Ops,'thresholds')
+    c = Ops.thresholds;
     set(findobj(OH,'tag','thresholds'),'enable','on')
-    set(findobj(OH,'tag','thresholds=?'),'enable','on','backgroundcolor',Active)
-    %Ops.thresholds=get(findobj(OH,'tag','thresholds=?'),'userdata');
+    set(findobj(OH,'tag','thresholds=?'),'enable','on','backgroundcolor',Active,'string',vec2str(c,'noones','nobrackets'),'userdata',c)
 end
 
 if isfield(Ops,'thresholddistribution')
@@ -298,7 +310,7 @@ if isfield(Ops,'colourlimits')
         Min=get(findobj(OH,'tag','climmin=?'),'userdata');
         Max=get(findobj(OH,'tag','climmax=?'),'userdata');
     else
-        set(climmode,'enable','on','backgroundcolor',Active,'value',i)
+        set(climmode,'enable','on','backgroundcolor',Active,'value',1)
     end
 end
 
@@ -328,19 +340,26 @@ if isfield(Ops,'axestype')
 end
 
 if isfield(Ops,'clippingvalues')
+    c = Ops.clippingvalues;
     set(findobj(OH,'tag','clippingvals'),'enable','on')
-    set(findobj(OH,'tag','clippingvals=?'),'enable','on','backgroundcolor',Active)
-    %Ops.clippingvalues=get(findobj(OH,'tag','clippingvals=?'),'userdata');
+    set(findobj(OH,'tag','clippingvals=?'),'enable','on','backgroundcolor',Active,'string',clip2str(c),'userdata',c)
 end
 
 if isfield(Ops,'xclipping')
     set(findobj(OH,'tag','clippingvals'),'enable','on')
+    c = Ops.xclipping;
     set(findobj(OH,'tag','xclipping'),'enable','on')
-    set(findobj(OH,'tag','xclipping=?'),'enable','on','backgroundcolor',Active)
-    %Ops.xclipping=get(findobj(OH,'tag','xclipping=?'),'userdata');
+    set(findobj(OH,'tag','xclipping=?'),'enable','on','backgroundcolor',Active,'string',clip2str(c),'userdata',c)
+    c = Ops.yclipping;
     set(findobj(OH,'tag','yclipping'),'enable','on')
-    set(findobj(OH,'tag','yclipping=?'),'enable','on','backgroundcolor',Active)
-    %Ops.yclipping=get(findobj(OH,'tag','yclipping=?'),'userdata');
+    set(findobj(OH,'tag','yclipping=?'),'enable','on','backgroundcolor',Active,'string',clip2str(c),'userdata',c)
 end
 
 set(findall(OH,'enable','on'),'enable','inactive')
+
+function Str = clip2str(c)
+if isstruct(c)
+    Str=realset(c);
+else
+    Str=vec2str(c,'noones','nobrackets');
+end

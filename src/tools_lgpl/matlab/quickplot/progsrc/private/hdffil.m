@@ -1,5 +1,5 @@
-function varargout=flexmeshfil(FI,domain,field,cmd,varargin)
-%FLEXMESHFIL QP support for various unstructured mesh files.
+function varargout=hdffil(FI,domain,field,cmd,varargin)
+%HDFFIL QP support for HDF files.
 %   Domains                 = XXXFIL(FI,[],'domains')
 %   DataProps               = XXXFIL(FI,Domain)
 %   Size                    = XXXFIL(FI,Domain,DataFld,'size')
@@ -51,7 +51,11 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 if nargin<2
     error('Not enough input arguments')
-elseif nargin==2
+end
+
+OrigFI = FI;
+
+if nargin==2
     varargout={infile(FI,domain)};
     return
 elseif ischar(field)
@@ -88,7 +92,7 @@ switch cmd
         [varargout{1:2}]=gettimezone(FI,domain,Props);
         return
     case 'stations'
-        varargout={{}};
+        varargout={readsts(FI,Props,0)};
         return
     case 'subfields'
         varargout={getsubfields(FI,Props,varargin{:})};
@@ -97,110 +101,23 @@ switch cmd
         [XYRead,DataRead,DataInCell]=gridcelldata(cmd);
 end
 
-DimFlag=Props.DimFlag;
+Ans = [];
 
-% initialize and read indices ...
-idx={[] [] 0 [] []};
-fidx=find(DimFlag);
-
-idx(fidx(1:length(varargin)))=varargin;
-
-if isfield(Props,'ElmLayer')
-    Faces = FI.Faces(FI.ElmLyr==Props.ElmLayer,:);
-else
-    Faces = FI.Faces;
-end
-if ~isequal(idx{M_},0)
-    Faces = Faces(idx{M_},:);
-end
-i = Faces>0;
-%
-switch Props.Geom
-    case 'POLYG'
-        X = Faces;
-        Y = Faces;
-        X(i) = FI.NodeCoor(Faces(i),1);
-        Y(i) = FI.NodeCoor(Faces(i),2);
-        X(~i) = NaN;
-        Y(~i) = NaN;
-        X(:,end+1:end+2) = NaN;
-        Y(:,end+1:end+2) = NaN;
-        for i=1:size(X,1)
-            for j=1:size(X,2)
-                if isnan(X(i,j))
-                    X(i,j) = X(i,1);
-                    Y(i,j) = Y(i,1);
-                    break
-                end
-            end
-        end
-        X = X';
-        Y = Y';
-        Ans.X = X(:);
-        Ans.Y = Y(:);
-    case 'TRI'
-        Ans.TRI = Faces;
-        sz = size(FI.NodeCoor);
-        Ans.XYZ = reshape(FI.NodeCoor,[1 sz(1) 1 sz(2)]);
-        Ans.Val = FI.NodeCoor(:,3);
-    case 'UGRID-NODE'
-        Faces(Faces==0) = NaN;
-        Ans.FaceNodeConnect = Faces;
-        Ans.X = FI.NodeCoor(:,1);
-        Ans.Y = FI.NodeCoor(:,2);
-        Ans.Val = FI.NodeCoor(:,3);
-        Ans.ValLocation = 'NODE';
-end
-%
-varargout={Ans FI};
+varargout={Ans OrigFI};
 % -----------------------------------------------------------------------------
-
 
 % -----------------------------------------------------------------------------
 function Out=infile(FI,domain)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
-PropNames={'Name'                   'Units' 'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVal' 'SubFld' 'ClosedPoly'};
-DataProps={'mesh'                   ''     'POLYG' 'xy'    [0 0 6 0 0]  0            0      []         1
-           'value'                  ''     'TRI'   'xy'    [0 0 6 0 0]  0            1      []         1};
-if strcmp(FI.FileType,'Gmsh')
-    DataProps(1:2,:) = [];
-    Out=cell2struct(DataProps,PropNames,2);
-else
-    if size(FI.NodeCoor,2)<3
-        DataProps(2,:) = [];
-    end
-    Out=cell2struct(DataProps,PropNames,2);
-    if isfield(FI,'ElmLyr') && domain<=length(FI.Layers)
-        [Out.ElmLayer] = deal(FI.Layers(domain));
-    end
-    if size(FI.Faces,2)>3
-        Out(2).Geom = 'UGRID-NODE';
-    end
-end
+PropNames={'Name'                   'Units' 'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVal' 'SubFld' 'MNK' 'varid'  'DimName' 'hasCoords' 'VectorDef' 'ClosedPoly' 'UseGrid'};
+DataProps={'dummy field'            ''      ''     ''      [0 0 0 0 0]  0           0      []       0     []          {}          0         0          0          0};
+Out=cell2struct(DataProps,PropNames,2);
 % -----------------------------------------------------------------------------
+
 
 % -----------------------------------------------------------------------------
 function sz=getsize(FI,Props)
-T_=1; ST_=2; M_=3; N_=4; K_=5;
-sz=[0 0 0 0 0];
-if isfield(Props,'ElmLayer')
-    sz(M_) = sum(FI.ElmLyr==Props.ElmLayer);
-else
-    sz(M_) = size(FI.Faces,1);
-end
-% -----------------------------------------------------------------------------
-
-% -----------------------------------------------------------------------------
-function Domains=domains(FI)
-if isfield(FI,'ElmLyr')
-    nLyr = length(FI.Layers);
-    Domains = cell(1,nLyr+1);
-    for i = 1:nLyr
-        Domains{i} = sprintf('%i',FI.Layers(i));
-    end
-    Domains{end} = 'All';
-else
-    Domains = {};
-end
+ndims = length(Props.DimFlag);
+sz = zeros(1,ndims);
 % -----------------------------------------------------------------------------

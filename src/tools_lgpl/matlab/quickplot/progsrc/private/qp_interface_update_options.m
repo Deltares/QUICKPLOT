@@ -31,41 +31,139 @@ function [DomainNr,Props,subf,selected,stats,Ops]=qp_interface_update_options(mf
 %   $HeadURL$
 %   $Id$
 
+[DomainNr,Props,subf,selected,stats,vslice,hslice] = get_basics(mfig,UD.MainWin);
+[Ops,PlotType,EnablePlot,EnableLoad] = get_options(Props,selected,vslice,hslice,UD);
+
+%
+%---- Rename "Quick View" button to "Quick Animate" if appropriate
+%
+qv=findobj(mfig,'tag','quickview');
+set(qv,'string',['Quick ' PlotType],'enable',onoff(EnablePlot))
+setappdata(qv,'animate',strcmp(PlotType,'Animate'))
+set(findobj(mfig,'tag','loaddata'),'enable',onoff(EnableLoad))
+
+
+function [DomainNr,Props,subf,selected,stats,vslice,hslice]=get_basics(mfig,MW)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
-Inactive=UD.Inactive;
-Active=UD.Active;
+
+Handle_Domain=findobj(mfig,'tag','selectdomain');
+DomainNr=get(Handle_Domain,'value');
 
 datafields=findobj(mfig,'tag','selectfield');
-%
-fld=get(datafields,'value');
 Props=get(datafields,'userdata');
-Ops=[];
+subf = [];
+selected = [];
+stats =[];
+vslice=0;
+hslice=0;
 if isempty(Props)
-    DomainNr = [];
-    subf = [];
-    selected = [];
-    stats =[];
     return
 end
+
+fld=get(datafields,'value');
 Props=Props(fld);
-Units='';
-if isfield(Props,'Units')
-    Units=Props.Units;
+
+if strcmp(get(MW.SubFld,'enable'),'on')
+    subf={get(MW.SubFld,'value')};
+else
+    subf={};
 end
-[nval,nvalstr]=convertnval(Props.NVal);
 
 DimFlag=Props.DimFlag;
+selected=cell(size(DimFlag));
+if DimFlag(T_)
+    if get(MW.AllT,'value')
+        selected{T_}=0;
+    else
+        selected{T_}=get(MW.EditT,'userdata');
+    end
+end
+if DimFlag(ST_)
+    stats=get(MW.StList,'userdata');
+    alls=get(MW.AllS,'value');
+    if alls
+        selected{ST_}=0;
+    else
+        selected{ST_}=get(MW.EditS,'userdata');
+    end
+else
+    stats={};
+end
+
+if all(~DimFlag([M_ N_ K_]))
+else
+    switch getvalstr(MW.HSelType)
+        case 'M range and N range'
+            if DimFlag(M_)
+                if get(MW.AllM,'value')
+                    selected{M_}=0;
+                else
+                    selected{M_}=get(MW.EditM,'userdata');
+                end
+            end
+            %maxm=get(MW.MaxM,'userdata');
+            if DimFlag(N_)
+                if get(MW.AllN,'value')
+                    selected{N_}=0;
+                else
+                    selected{N_}=get(MW.EditN,'userdata');
+                end
+            end
+            %maxn=get(MW.MaxN,'userdata');
+        case '(M,N) point/path'
+            vslice=1;
+            selected{M_}={'MN' get(MW.EditMN,'userdata')};
+            if DimFlag(N_)
+                selected{N_}=0;
+            end
+        case '(X,Y) point/path'
+            vslice=1;
+            selected{M_}={'XY' get(MW.EditXY,'userdata')};
+            if DimFlag(N_)
+                selected{N_}=0;
+            end
+    end
+end
+
+switch getvalstr(MW.VSelType)
+    case {'K range'}
+        if DimFlag(K_)
+            if get(MW.AllK,'value')
+                selected{K_}=0;
+            else
+                selected{K_}=get(MW.EditK,'userdata');
+            end
+        end
+    case {'Z slice','dZ below surface','dZ above bed'}
+        hslice=1;
+end
+
+for m = 6:length(DimFlag)
+    if DimFlag(m)
+        DIM = sprintf('DIM%i',m);
+        if get(MW.(['All' DIM]),'value')
+            selected{m} = 0;
+        else
+            selected{m} = get(MW.(['Edit' DIM]),'userdata');
+        end
+    end
+end
+
+function [Ops,PlotType,EnablePlot,EnableLoad] = get_options(Props,selected,vslice,hslice,UD)
+T_=1; ST_=2; M_=3; N_=4; K_=5;
+Ops = [];
+PlotType='View';
+EnablePlot = false;
+EnableLoad = false;
+
+[nval,nvalstr]=convertnval(Props.NVal);
+DimFlag = Props.DimFlag;
 if isfield(Props,'Geom') && ~isempty(Props.Geom)
     geometry=Props.Geom;
     coordinates=Props.Coords;
 elseif nval<0
-    %if DimFlag(M_) && DimFlag(N_)
-    %    geometry='sQUAD';
-    %    coordinates='xy';
-    %else
     geometry='SELFPLOT';
     coordinates='';
-    %end
 else
     if DimFlag(M_) && DimFlag(N_)
         geometry='sQUAD';
@@ -86,113 +184,17 @@ else
         coordinates=cat(2,coordinates,'+z');
     end
 end
-triangles=isequal(geometry,'TRI') | isequal(geometry,'TRI+');
 
-selected=cell(size(DimFlag));
-MW=UD.MainWin;
-if strcmp(get(MW.SubFld,'enable'),'on')
-    subf={get(MW.SubFld,'value')};
-else
-    subf={};
-end
-if DimFlag(T_)
-    if get(MW.AllT,'value')
-        selected{T_}=0;
-    else
-        selected{T_}=get(MW.EditT,'userdata');
-    end
-end
-if DimFlag(ST_)
-    stats=get(MW.StList,'userdata');
-    alls=get(MW.AllS,'value');
-    if alls
-        selected{ST_}=0;
-    else
-        selected{ST_}=get(MW.EditS,'userdata');
-    end
-else
-    stats={};
+Units='';
+if isfield(Props,'Units')
+    Units=Props.Units;
 end
 
-allm=0;
-alln=0;
-vslice=0;
-hslice=0;
-if all(~DimFlag([M_ N_ K_]))
-else
-    switch getvalstr(MW.HSelType)
-        case 'M range and N range'
-            if DimFlag(M_)
-                allm=get(MW.AllM,'value');
-                if allm
-                    selected{M_}=0;
-                else
-                    selected{M_}=get(MW.EditM,'userdata');
-                end
-            else
-                allm=0;
-            end
-            %maxm=get(MW.MaxM,'userdata');
-            if DimFlag(N_)
-                alln=get(MW.AllN,'value');
-                if alln
-                    selected{N_}=0;
-                else
-                    selected{N_}=get(MW.EditN,'userdata');
-                end
-            else
-                alln=0;
-            end
-            %maxn=get(MW.MaxN,'userdata');
-        case '(M,N) point/path'
-            vslice=1;
-            selected{M_}={'MN' get(MW.EditMN,'userdata')};
-            if DimFlag(N_)
-                selected{N_}=0;
-            end
-        case '(X,Y) point/path'
-            vslice=1;
-            selected{M_}={'XY' get(MW.EditXY,'userdata')};
-            if DimFlag(N_)
-                selected{N_}=0;
-            end
-    end
-end
-
-allt=get(findobj(mfig,'tag','allt'),'value');
-maxt=get(findobj(mfig,'tag','max_t'),'userdata');
-
-switch getvalstr(MW.VSelType)
-    case {'K range'}
-        if DimFlag(K_)
-            if get(MW.AllK,'value')
-                selected{K_}=0;
-            else
-                selected{K_}=get(MW.EditK,'userdata');
-            end
-        end
-    case {'Z slice','dZ below surface','dZ above bed'}
-end
-
-for m = 6:length(DimFlag)
-    if DimFlag(m)
-        DIM = sprintf('DIM%i',m);
-        if get(MW.(['All' DIM]),'value')
-            selected{m} = 0;
-        else
-            selected{m} = get(MW.(['Edit' DIM]),'userdata');
-        end
-    end
-end
-set(setdiff(UD.Options.Handles,gcbo),'enable','off','backgroundcolor',Inactive)
 ask_for_thinningmode = 0;
 ask_for_thresholds   = 0;
 ask_for_numformat    = 0;
 ask_for_textprops    = 0;
 ask_for_angleconvention = 0;
-
-Handle_Domain=findobj(mfig,'tag','selectdomain');
-DomainNr=get(Handle_Domain,'value');
 
 for i=5:-1:1
     multiple(i) = (length(selected{i})>1) | isequal(selected{i},0);
@@ -219,6 +221,7 @@ markerflatfill=0;
 edgeflatcolour=0;
 lineproperties=0;
 
+triangles = 0;
 thindams = nval>0 & nval<1;
 MultipleColors = (nval>=1 & nval<4) | nval==6;
 %--------------------------------------------------------------------------
@@ -382,26 +385,35 @@ switch geometry
             end
         end
     case {'TRI','TRI+'}
-        if multiple(M_) && multiple(K_)
-            if vslice
+        triangles=1;
+        if vslice
+            if multiple(M_) && multiple(K_)
                 axestype={'X-Z'};
+            elseif multiple(M_)
+                if nval==0
+                    axestype={'X-Y'};
+                else
+                    axestype={'X-Val','X-Y'};
+                end
+            elseif multiple(K_)
+                axestype={'Val-Z'};
             else
-                axestype={'X-Y-Z'};
+                if multiple(T_)
+                    axestype={'Time-Val'};
+                else
+                    axestype={'X-Y'};
+                end
             end
+        elseif multiple(M_) && multiple(K_)
+            axestype={'X-Y-Z'};
         elseif multiple(M_)
-            if ~vslice || nval==0
-                axestype={'X-Y'};
-            else
-                axestype={'X-Val','X-Y'};
-            end
+            axestype={'X-Y'};
         elseif multiple(K_)
             axestype={'Val-Z'};
+        elseif multiple(T_)
+            axestype={'Time-Val'};
         else
-            if multiple(T_)
-                axestype={'Time-Val'};
-            else
-                axestype={'X-Y'};
-            end
+            axestype={'X-Y'};
         end
     case 'QUAD'
     case 'GEN2D'
@@ -420,6 +432,11 @@ end
 if isequal(axestype,{'noplot'})
     MultipleColors = 0;
 end
+
+Inactive=UD.Inactive;
+Active=UD.Active;
+
+set(setdiff(UD.Options.Handles,gcbo),'enable','off','backgroundcolor',Inactive)
 
 h_axtype=findobj(OH,'tag','axestype=?');
 if length(axestype)>1
@@ -1316,7 +1333,7 @@ end
 
 if isfield(Ops,'presentationtype')
     switch Ops.presentationtype
-        case {'vector','patches','patches with lines','markers'};
+        case {'vector','patches','patches with lines','markers'}
             if MultipleColors && Props.NVal~=6
                 cclass=findobj(OH,'tag','colclassify');
                 set(cclass,'enable','on')
@@ -1452,16 +1469,14 @@ if nval>=0
         ExpTypes{end+1}='csv file (time series)';
         ExpTypes{end+1}='Tekal file (time series)';
     end
-    if (allm && alln) && ~multiple(K_) && ~multiple(T_)
+    if (multiple(M_) && multiple(N_)) && ~multiple(K_) && ~multiple(T_)
         ExpTypes{end+1}='grid file';
         ExpTypes{end+1}='grid file (old format)';
     end
-    if (((allm || ~multiple(M_)) && ~multiple(N_)) || ...
-            ((alln || ~multiple(N_)) && ~multiple(M_))) && ...
-            ~multiple(K_) && ~multiple(T_) && nval==0
+    if sum(multiple)==1 && sum(multiple([M_ N_]))==1 && nval==0
         ExpTypes{end+1}='spline';
     end
-    if (allm && alln) && ~multiple(K_) && ~multiple(T_)
+    if (multiple(M_) && multiple(N_)) && ~multiple(K_) && ~multiple(T_)
         if nval>0
             ExpTypes{end+1}='QuickIn file';
         end
@@ -1485,7 +1500,8 @@ if nval>=0
         ExpTypes{end+1}='ARCview shape';
         ExpTypes{end+1}='landboundary file';
     end
-    if ((length(selected{T_})<11 && ~allt) || (maxt<11 && allt)) && nval>0 && (multiple(M_) || multiple(N_) || multiple(K_))
+    maxt = 100; % TODO maxt=get(findobj(mfig,'tag','max_t'),'userdata');
+    if ((length(selected{T_})<11 && ~isequal(selected{T_},0)) || (maxt<11 && isequal(selected{T_},0))) && nval>0 && (multiple(M_) || multiple(N_) || multiple(K_))
         ExpTypes{end+1}='Tekal file';
         ExpTypes{end+1}='Tecplot file';
     end
@@ -1528,26 +1544,11 @@ if ~isempty(ExpTypes)
 end
 %
 %-------- END OF PLOT OPTIONS -------------
-%
-%---- Set quick view or quick animate
-%
-
 if animate
-    viewstr='Quick Animate';
-else
-    viewstr='Quick View';
+    PlotType='Animate';
 end
-qv=findobj(mfig,'tag','quickview');
-set(qv,'string',viewstr)
-setappdata(qv,'animate',animate)
-if nval==-1
-    set(qv,'enable','on')
-    set(findobj(mfig,'tag','loaddata'),'enable','off')
-elseif strcmp(axestype,'noplot')
-    set(qv,'enable','off')
-else
-    set(qv,'enable','on')
-end
+EnablePlot = ~strcmp(axestype,'noplot');
+EnableLoad = nval~=-1;
 
 %---- Ops Version
 
@@ -1557,3 +1558,11 @@ UD.State=Ops;
 %---- Show/hide options
 
 update_option_positions(UD,'main')
+
+
+function str = onoff(bool)
+if bool
+    str = 'on';
+else
+    str = 'off';
+end

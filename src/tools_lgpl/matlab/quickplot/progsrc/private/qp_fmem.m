@@ -150,8 +150,10 @@ switch cmd
                     try_next='mikemesh';
                 case {'.shy'}
                     try_next='SHYFEM mesh';
-                case {'gem'}
+                case {'.gem'}
                     try_next='geomesh';
+                case {'.msh'}
+                    try_next='gmsh';
                 case {'.mat'}
                     try_next='matlab';
                 case {'.map'}
@@ -190,6 +192,8 @@ switch cmd
                     try_next='ArcInfoUngenerate';
                 case '.nc'
                     try_next='NetCDF';
+                case {'.hdf','.hdf5'}
+                    try_next='HDF5';
                 case {'.fun','.daf'}
                     try_next='unibest';
                 case {'.shx','.shp'}
@@ -386,6 +390,10 @@ switch cmd
                         %
                         FI = nc_interpret(FileName,Opt{:});
                         %nc_dump(FileName)
+                        FI.FileName = FI.Filename;
+                        Tp = try_next;
+                    case 'HDF5'
+                        FI = hdf5info(FileName);
                         FI.FileName = FI.Filename;
                         Tp = try_next;
                     case 'sobek1d'
@@ -665,6 +673,12 @@ switch cmd
                         if ~isempty(FI)
                             FI.Options=0;
                             FI.DomainName = 'Layer';
+                            Tp=FI.FileType;
+                        end
+                    case 'gmsh'
+                        FI=gmsh('open',FileName);
+                        if ~isempty(FI)
+                            FI.Options=0;
                             Tp=FI.FileType;
                         end
                     case 'tekal'
