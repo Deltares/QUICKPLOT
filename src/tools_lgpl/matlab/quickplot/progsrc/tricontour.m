@@ -55,7 +55,11 @@ function H=tricontour(tri,x,y,z,v,levels,color)
 %   $HeadURL$
 %   $Id$
 
-error(nargchk(5,7,nargin));
+if nargin<5
+    error('Not enough input arguments.')
+elseif nargin>7
+    error('Too many input arguments.')
+end
 getdata=0;
 if nargin==7
     if strcmp(color,'getdata')

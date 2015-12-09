@@ -216,7 +216,9 @@ end
 
 %% check and parse varargin
 
-error(nargchk(0, 4, length(varargin), 'struct'))
+if length(varargin)>4
+    error('Too many input arguments.')
+end
 if odd(length(varargin))
      error('SETPROPERTY:varargin',...
                         'Set onClassChange and onExtraField with the varargin, as keyword value pairs');

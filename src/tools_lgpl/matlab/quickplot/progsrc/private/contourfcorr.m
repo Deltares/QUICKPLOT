@@ -56,7 +56,11 @@ function [cout,H,CS] = contourfcorr(varargin)
 %   $HeadURL$
 %   $Id$
 
-error(nargchk(1,6,nargin));
+if nargin<1
+    error('Not enough input arguments.')
+elseif nargin>6
+    error('Too many input arguments.')
+end
 
 if ischar(varargin{1})
     style = varargin{1};
