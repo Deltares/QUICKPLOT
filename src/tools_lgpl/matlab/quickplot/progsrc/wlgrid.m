@@ -558,6 +558,8 @@ end
 % value coordinate
 Grd.X(Grd.X==Grd.MissingValue)=Grd.MissingValue+coord_eps;
 Grd.Y(Grd.Y==Grd.MissingValue)=Grd.MissingValue+coord_eps;
+%Grd.X(Grd.X==Grd.MissingValue)=NaN;
+%Grd.Y(Grd.Y==Grd.MissingValue)=NaN;
 Idx=isnan(Grd.X.*Grd.Y);                % change indicator of grid point exclusion
 Grd.X(Idx)=Grd.MissingValue;            % from NaN in Matlab to (0,0) in grid file.
 Grd.Y(Idx)=Grd.MissingValue;
