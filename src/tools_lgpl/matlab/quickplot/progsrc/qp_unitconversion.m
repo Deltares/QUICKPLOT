@@ -32,7 +32,7 @@ function varargout=qp_unitconversion(unit1,unit2,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2016 Stichting Deltares.                                     
+%   Copyright (C) 2011-2015 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -189,7 +189,7 @@ else
                         absval=[0 -offset];
                     end
                     fprintf('[quantity in %s] = %s%s\n',unit2,cf,xunit1);
-                    for f=sort([absval 1 2 50 100 [1 2 50 100]/convfactor-offset])
+                    for f=unique([absval 1 2 50 100 [1 2 50 100]/convfactor-offset])
                         fprintf('%10g %s = %10g %s\n',f,unit1,convfactor*(f+offset),unit2)
                     end
                 else
@@ -257,173 +257,206 @@ end
 
 
 function [factor,si]=factor2si(unit)
-[factor,si]=factor2si_multiply_divide(unit);
+[factor,si]=parse(unit);
 
 
-function [factor,si]=factor2si_multiply_divide(unit)
+function unit = powercheck(unit,k)
+if isequal(unit(k),'*') && k<length(unit) && isequal(unit(k+1),'*')
+    % two asteriks form a power operator instead of a multiplication operator.
+    unit(k+1) = [];
+    unit(k) = '^';
+end
+
+
+function [factor,si]=factor_combine(cmd,factor,si,factor1,si1,pwr)
+if nargin<6
+    pwr=1;
+end
+switch cmd
+    case '*'
+        factor(2)=factor(2)*(factor1(2)^pwr);
+        si=si+si1*pwr;
+    case '/'
+        factor(2)=factor(2)/(factor1(2)^pwr);
+        si=si-si1*pwr;
+end
+
+
+function [factor,si]=parse(unit)
+%fprintf('Parsing: %s\n',unit);
 factor=[0 1];
 si=zeros(1,8);
+unit=deblank2(unit);
 
 nob=0;
 prevcmd='*';
 ki=1;
 if isempty(unit)
-    k=0;
-else
-    k=1;
-    while k<=length(unit)
-        switch unit(k)
-            case '('
-                nob=nob+1;
-            case ')'
-                nob=nob-1;
-                if nob<0
-                    break
-                end
-            case {'*','/'}
-                if isequal(unit(k),'*') && k<length(unit) && isequal(unit(k+1),'*')
-                    % two asteriks form a power operator instead of a multiplication
-                    % operator.
-                    unit = unit([1:k k+2:end]);
-                    unit(k) = '^';
-                elseif nob==0
-                    [factor1,si1]=factor2si_power(unit(ki:k-1));
-                    if ischar(factor1)
-                        factor=factor1;
-                        return
-                    end
-                    if factor(1)~=0 || factor1(1)~=0
-                        error('multiplying offset')
-                    end
-                    switch prevcmd
-                        case '*'
-                            factor(2)=factor(2)*factor1(2);
-                            si=si+si1;
-                        case '/'
-                            factor(2)=factor(2)/factor1(2);
-                            si=si-si1;
-                    end
-                    prevcmd=unit(k);
-                    ki=k+1;
-                end
-            otherwise
-        end
-        if k==length(unit)
-            break
-        else
-            k=k+1;
-        end
-    end
+    return
 end
-if nob>0
-    factor=['no matching bracket found: ',unit(ki:k)];
-    return
-elseif nob<0
-    factor='closing bracket preceding opening bracket';
-    return
-else
-    [factor1,si1]=factor2si_power(unit(ki:k));
-    if ischar(factor1)
-        factor=factor1;
-        return
-    end
-    if ki==1
-        factor=factor1;
-        si=si1;
+k=1;
+while k<=length(unit)+1
+    if k<=length(unit)
+        unit = powercheck(unit,k);
+        unitk = unit(k);
     else
-        if factor(1)~=0 || factor1(1)~=0
-            error('multiplying offset')
-        end
-        switch prevcmd
-            case '*'
-                factor(2)=factor(2)*factor1(2);
-                si=si+si1;
-            case '/'
-                factor(2)=factor(2)/factor1(2);
-                si=si-si1;
-        end
+        unitk = '*';
     end
-end
-
-
-function [factor,si]=factor2si_power(unit)
-factor='unknown error';
-si='';
-
-nob=0;
-cmd='';
-for k=1:length(unit)
-    switch unit(k)
+    switch unitk
         case '('
+            if nob==0 && ~isempty(deblank(unit(ki:k-1)))
+                % implicitly insert a multiply before
+                [factor1,si1]=parse(unit(ki:k-1));
+                [factor,si]=factor_combine(prevcmd,factor,si,factor1,si1);
+                prevcmd='*';
+            end
             nob=nob+1;
+            if nob==1
+                ki = k;
+            end
         case ')'
             nob=nob-1;
-            if nob<0
+            if nob==0
+                [factor1,si1]=parse(unit(ki+1:k-1));
+                if k<length(unit)
+                    unit = powercheck(unit,k);
+                    unitk = unit(k);
+                end
+            elseif nob<0
                 break
             end
-        case '^'
+        case {'*','/',' '}
             if nob==0
-                cmd='^';
-                shift=1;
-                break
-            end
-        case {'¹','²','³'}
-            if nob==0
-                cmd='^';
-                shift=0;
-                break
+                if unitk==' '
+                    % SPACE ... The final frontier ...
+                    %
+                    % this could be just a space in a long unit name
+                    % or this could represent an implicit multiplication *
+                    %
+                    % since the long unit name might be something like
+                    % "minute of arc" or "degrees celsius" we need to first
+                    % check the long name before going down the wrong path
+                    % of interpreting the first part as a separate unit
+                    % "minute" or "degrees".
+                    %
+                    [unit,k,factor1,si1] = checkspace(unit,ki,k);
+                    if k<=length(unit)
+                        unitk = unit(k);
+                        if unitk~='/'
+                            unitk = '*';
+                        end
+                    else
+                        unitk = '*';
+                    end
+                else
+                    [factor1,si1] = findfirst(unit(ki:k-1));
+                end
+                if isequal(factor1,-1)
+                    error('Unable to interpret unit "%s"',unit(ki:k-1))
+                elseif factor(1)~=0 || factor1(1)~=0
+                    error('multiplying offset for %s', unit(ki:k-1))
+                end
+                [factor,si]=factor_combine(prevcmd,factor,si,factor1,si1);
+                prevcmd=unitk;
+                ki=k+1;
             end
         otherwise
+    end
+    k=k+1;
+end
+
+
+function [unit,k,factor,si] = checkspace(unit,ki,k)
+% We started parsing the "unit" at position ki. We encountered a space at
+% position k. Now determine whether this should be interpreted as just a
+% space in a long unit name or as an implicit multiplication *.
+for k2 = k+1:length(unit)
+    unit = powercheck(unit,k2);
+    switch unit(k2)
+        case {'*','/','(',')'}
+            k2 = k2-1;
+            break
     end
 end
-if nob>0
-    factor=['no matching bracket found: ',unit(1:k)];
+% tropical year light year2
+% tropical year light year^2
+%
+[factor,si,kb] = findfirst(unit(ki:k2));
+if isequal(si,-1)
+    error('Unable to interpret unit "%s"',unit(ki:k2))
+end
+k = ki-1+kb;
+
+
+function [factor,si,kb] = findfirst(unit)
+% Check which unit string is just a number.
+kp = length(unit);
+kb = kp+1;
+pow = str2double(unit);
+if ~isnan(pow)
+    factor = [0 pow];
+    si  = 0;
     return
-elseif nob<0
-    factor='closing bracket preceding opening bracket';
-    return
-elseif isequal(cmd,'^')
-    [factor,si]=factor2si_brackets(unit(1:k-1));
-    if ischar(factor)
-        return
-    end
-    switch unit(k+shift)
-        case '¹'
-            pow=1;
-        case '²'
-            pow=2;
-        case '³'
-            pow=3;
-        case '¼'
-            pow = 0.25;
-        case '½'
-            pow = 0.5;
-        case '¾'
-            pow = 0.75;
-        otherwise
-            pow=str2num(unit(k+shift:end));
-            if isempty(pow)
-                factor=sprintf('Invalid exponent ''%s''.',unit(k+shift:end));
-                return
+end
+% Check whether unit strings ends on a number.
+pow = [];
+switch unit(end)
+    case '¹'
+        pow = 1;
+        kp = kp-1;
+    case '²'
+        pow = 2;
+        kp = kp-1;
+    case '³'
+        pow = 3;
+        kp = kp-1;
+    case '¼'
+        pow = 0.25;
+        kp = kp-1;
+    case '½'
+        pow = 0.5;
+        kp = kp-1;
+    case '¾'
+        pow = 0.75;
+        kp = kp-1;
+    otherwise
+        number = ismember(unit,'1234567890');
+        if number(end)
+            if all(number)
+                kp = 0;
+            else
+                kp = max(find(~number));
             end
+            pow = str2double(unit(kp+1:end));
+        end
+end
+if ~isempty(pow)
+    if kp>0 && unit(kp)=='-'
+        kp = kp-1;
+        pow = -pow;
     end
+    if kp>1 && unit(kp)=='^'
+        kp = kp-1;
+    end
+else
+    kp = length(unit);
+end
+if kp==0
+    % shouldn't happen ... already checked at start of routine!
+else
+    [factor,si] = search_elem(unit(1:kp));
+end
+if isequal(si,-1)
+    spaces = find(unit==' ');
+    if ~isempty(spaces)
+        [factor,si,kb] = findfirst(deblank(unit(1:spaces(end))));
+    end
+elseif ~isempty(pow)
     if factor(1)~=0
-        error('power offset')
+        error('offset power')
     end
-    factor(2)=factor(2)^pow;
-    si=si*pow;
-else
-    [factor,si]=factor2si_brackets(unit(1:end));
-end
-
-
-function [factor,si]=factor2si_brackets(unit)
-factor='unknown error';
-si='';
-if isequal(unit(1),'(') && isequal(unit(end),')')
-    [factor,si]=factor2si_multiply_divide(unit(2:end-1));
-else
-    [factor,si]=search_elem(unit);
+    factor(2) = factor(2)^pow;
+    si = si*pow;
 end
 
 
@@ -498,53 +531,9 @@ if isempty(i)
             i=strmatch(unit,unittable{1},'exact');
         end
         if isempty(i)
-            unit = [pref unit];
-            %
-            % Check for space in unit string ...
-            %
-            for k=1:length(unit)
-                switch unit(k)
-                    case ' '
-                        [factor,si]=search_elem(unit(1:k-1));
-                        if ischar(factor)
-                            return
-                        end
-                        [factor1,si1]=search_elem(unit(k+1:end));
-                        if ischar(factor1)
-                            factor=factor1;
-                            return
-                        end
-                        if factor(1)~=0 || factor1(1)~=0
-                            error('multiplying offset')
-                        end
-                        factor(2)=factor(2)*factor1(2);
-                        si=si+si1;
-                        return
-                end
-            end
-            %
-            % Check for number at end of string ...
-            %
-            number = ismember(unit,'1234567890');
-            ki = max(find(~number));
-            if ki<length(unit)
-                if unit(ki)=='-'
-                    pow = str2num(unit(ki:end));
-                    [factor,si]=search_elem(unit(1:ki-1));
-                else
-                    pow = str2num(unit(ki+1:end));
-                    [factor,si]=search_elem(unit(1:ki));
-                end
-                if ischar(factor)
-                    return
-                elseif factor(1)~=0
-                    error('power offset')
-                end
-                factor(2)=factor(2)^pow;
-                si=si*pow;
-                return
-            end
-            factor=['Unit definition not found: ',unit];
+            % no match ...
+            factor = -1;
+            si = -1;
         else
             i=unittable{2}(i);
             factor=[0 unittable{3}(i,2)*prefix];
@@ -607,7 +596,11 @@ while anychange && any(~identified)
                 Names={Names};
             end
             if ischar(Def)
-                [factor,si]=factor2si(Def);
+                try
+                    [factor,si]=factor2si(Def);
+                catch
+                    factor = 'failed';
+                end
             else
                 factor(2)=Def;
                 si=zeros(1,8);
