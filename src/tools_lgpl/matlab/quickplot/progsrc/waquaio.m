@@ -192,7 +192,9 @@ elseif waqua('exists',sds,exper,'MESH01_GENERAL_DIMENSIONS')
     % 42: poscon
     dim.nmax=dimen(4);
     dim.mmax=dimen(3);
+    dim.npnt=dimen(3)*dimen(4);
     dim.spheric=dimen(11);
+    dim.sph_dupl=0;
     curvl = 1+2*min(1,dim.spheric);
 else
     dimen=waqua('readsds',sds,exper,'MESH01_SPECIFIC_IDIMEN');
@@ -1162,11 +1164,15 @@ if ~waqua('exists',sds,exper,'MESH_IDIMEN')
             x = x0+repmat(dx*(m-shft),length(n),1);
             y = y0+repmat(dy*(n'-shft),1,length(m));
             if strcmp(field,'zgrid')
-                x(:,[1 end]) = NaN;
-                y(:,[1 end]) = NaN;
+                x(:,m==dim.mmax | m==1) = NaN;
+                y(:,m==dim.mmax | m==1) = NaN;
+                x(n==dim.nmax | n==1,:) = NaN;
+                y(n==dim.nmax | n==1,:) = NaN;
             else
-                x(:,end) = NaN;
-                y(:,end) = NaN;
+                x(:,m==dim.mmax) = NaN;
+                y(:,m==dim.mmax) = NaN;
+                x(n==dim.nmax,:) = NaN;
+                y(n==dim.nmax,:) = NaN;
             end
             if dim.spheric==10
                 latsp = coords(8);%*1000*pi/180;
@@ -1176,8 +1182,8 @@ if ~waqua('exists',sds,exper,'MESH_IDIMEN')
             varargout = {x y};
         case {'wind','press'}
             [tstep,n,m]=local_argin(argin);
-            nm = reshape(1:dim.mmax*dim.nmax,dim.mmax,dim.nmax)';
-            nm = nm(n,m);
+            nmfull = reshape(1:dim.mmax*dim.nmax,dim.mmax,dim.nmax)';
+            nm = nmfull(n,m);
             %
             nmmax = dim.nmax*dim.mmax;
             switch field
@@ -1185,9 +1191,18 @@ if ~waqua('exists',sds,exper,'MESH_IDIMEN')
                     % waqua wind file: wind in x/y direction
                     windu = waqua('readsds',sds,exper,'SOLUTION_WIND',tstep,1:nmmax);
                     time = refdate+windu.SimTime/1440;
-                    windu = windu.Data(nm);
                     windv = waqua('readsds',sds,exper,'SOLUTION_WIND',tstep,nmmax+(1:nmmax));
-                    windv = windv.Data(nm);
+                    %
+                    mgd = waqua('readsds',sds,exper,'MESH01_GENERAL_DIMENSIONS');
+                    if mgd(8)==13
+                        % 13: staggered components at u/v points
+                        [windu,windv]=uv2xy(sds,exper,dim,n,m,nmfull,1,windu.Data,windv.Data,refdate);
+                    else
+                        % 11: collocated components at grid point
+                        windu = windu.Data(nm);
+                        windv = windv.Data(nm);
+                    end
+                    %
                     varargout = {windu windv time};
                 case 'press'
                     press = waqua('readsds',sds,exper,'SOLUTION_PRESS',tstep,1:nmmax);
@@ -1263,7 +1278,11 @@ switch field
         windv = waqua('readsds',sds,exper,'FORCINGS_SVWP_WINDV',tstep);
         windv = windv.Data(nm);
         %
-        [windu,windv]=uv2xy(sds,exper,dim,n,m,nm,1,windu,windv);
+        mgd = waqua('readsds',sds,exper,'MESH01_GENERAL_DIMENSIONS');
+        if mgd(8)==14 % 11: colocated components at grid point
+            % staggered components at u/v points
+            [windu,windv]=uv2xy(sds,exper,dim,n,m,nm,1,windu,windv,refdate);
+        end
         varargout = {windu windv time};
 
     case 'press'
@@ -1564,7 +1583,7 @@ switch field
         %
         switch field
             case {'xyveloc','xyudisch','wforce','wdir','wvec'}
-                [U,V]=uv2xy(sds,exper,dim,n,m,nmfull,k,U,V);
+                [U,V]=uv2xy(sds,exper,dim,n,m,nmfull,k,U,V,refdate);
                 %
                 if strcmp(field,'wvec')
                     tmp=waqua('readsds',sds,exper,'COEFF_FLOW_WAVES',tstep,2*npnt+(1:npnt));
@@ -1918,7 +1937,7 @@ function S = subscriptreshape(U,nm)
 S = reshape(U(nm),size(nm));
 
 
-function [UU,VV]=uv2xy(sds,exper,dim,n,m,nmfull,k,U,V)
+function [UU,VV]=uv2xy(sds,exper,dim,n,m,nmfull,k,U,V,refdate)
 % ALGORITHM COPIED FROM
 % simona\src\postproc\waqview\routines\velocity_zeta.F90
 %--------------
@@ -1926,35 +1945,25 @@ function [UU,VV]=uv2xy(sds,exper,dim,n,m,nmfull,k,U,V)
 % Extend index range to get all relevant geometry information ...
 %
 nm   = nmfull(n,m);
-n_   = [max(1,n(1)-1) n];
-m_   = [max(1,m(1)-1) m];
-nm_  = nmfull(n_,m_);
-ndm  = nmfull(max(1,n_-1),m_);
-nmd  = nmfull(n_,max(1,m_-1));
-ndmd = nmfull(max(1,n_-1),max(1,m_-1));
 %
 npnt = dim.npnt;
 num_k = length(k);
 sznm = size(nm);
 
 % get coordinates of corner points ...
-xh    = waqua('readsds',sds,exper,'MESH_CURVIL',0,(dim.sph_dupl*10+2)*npnt+(1:npnt));
-yh    = waqua('readsds',sds,exper,'MESH_CURVIL',0,(dim.sph_dupl*10+3)*npnt+(1:npnt));
-xh(1) = NaN;
-yh(1) = NaN;
-%
-x1 = 0.5*(xh(nmd)+xh(ndmd));
-y1 = 0.5*(yh(nmd)+yh(ndmd));
-x2 = 0.5*(xh(nm_)+xh(ndm));
-y2 = 0.5*(yh(nm_)+yh(ndm));
+[xh,yh] = waqua_get_spatial(sds,exper,'dgrid',dim,refdate,{n,m});
+x1 = 0.5*(xh([1 1:end-1],[1 1:end-1])+xh(:,[1 1:end-1]));
+y1 = 0.5*(yh([1 1:end-1],[1 1:end-1])+yh(:,[1 1:end-1]));
+x2 = 0.5*(xh([1 1:end-1],:)+xh(:,:));
+y2 = 0.5*(yh([1 1:end-1],:)+yh(:,:));
 dx = x2-x1;
 dy = y2-y1;
 if dim.spheric
     dx = dx.*cos((y1+y2)/2); % NOTE: lat/lon in radians in SIMONA
 end
 alf = atan2(dy,dx);
-cosalf = cos(alf(2:end,2:end));
-sinalf = sin(alf(2:end,2:end));
+cosalf = cos(alf);
+sinalf = sin(alf);
 %
 % Now generate the data for the range selected by the user ...
 %

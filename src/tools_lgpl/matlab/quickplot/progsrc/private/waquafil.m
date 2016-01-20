@@ -557,6 +557,27 @@ else
     error('Unknown SDS type: cannot locate grid dimension characteristics.')
 end
 %
+stagwflag = 11;
+if waqua('exists',FI,eName,'MESH01_GENERAL_DIMENSIONS')
+    mgd = waqua('read',FI,eName,'MESH01_GENERAL_DIMENSIONS');
+    stagwflag = mgd(8);
+end
+if stagwflag~=11 && stagwflag~=13
+    ui_message('warning','Unexpected value (%i) for MESH01_GENERAL_DIMENSIONS(8): 11 and 13 supported',stagwflag)
+    stagwflag = 11;
+end
+%
+% 0 = wind speed in the svwp file
+% 1 = wind stress in the svwp file
+% 2 = cumulative wind stress in the svwp file
+% 3 = cumulative wind stress in the svwp file, conversion to times in between.
+% 4 = external forces in the svwp file --> SOLUTION_EXTFORCE instead of SOLUTION_WIND
+istress = 0;
+if waqua('exists',FI,eName,'CONTROL_SVWP_ICWINA')
+    csi = waqua('read',FI,eName,'CONTROL_SVWP_ICWINA');
+    istress = csi(2);
+end
+%
 maxmin_quant = {'time','water level','velocity in m direction','velocity in n direction','velocity magnitude','salinity','temperature','constituent concentration','velocity in x direction','velocity in y direction'};
 maxmin_var = {'','SEP','UP','VP','MGN','SAL','TEMP','RP'};
 maxmin_qcons = 8;
@@ -589,6 +610,20 @@ for j=1:length(Out1)
         OutIn=[];
     else
         switch OutIn.Name
+            case {'wind','pressure'}
+                switch stagwflag
+                    case 11
+                        OutIn.Loc = 'd';
+                        OutIn.ReqLoc = 'd';
+                    case 13
+                        % WIND at u/v, PRESSURE at z - u/v to z averaging done in waquaio.m
+                    otherwise
+                        % caught above
+                end
+                if strcmp(OutIn.Name,'wind') && istress==1
+                    OutIn.Name = 'wind stress';
+                    OutIn.Units = 'N/m2';
+                end
             case 'horizontal velocity (station)'
                 if kflag
                     OutIn.DimFlag(K_)=0;
