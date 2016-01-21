@@ -431,7 +431,11 @@ for ivar = 1:nvars
             case {'Gregorian_year','Gregorian_years'}
                 dt = 365.2425     *24*3600;
             otherwise
-                f = qp_unitconversion(unit1,'Pa');
+                try
+                    f = qp_unitconversion(unit1,'Pa');
+                catch
+                    f = 'fail';
+                end
                 if ~ischar(f)
                     %
                     % dimension unit is compatible with pressure (Pa)
