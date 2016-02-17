@@ -479,7 +479,7 @@ for ivar = 1:nvars
                 TZshift = NaN;
             end
             nc.Dataset(ivar).Info.DT      = dt/86400;
-            if ~isempty(unit2) & isempty(refdate)
+            if ~isempty(unit2) && isempty(refdate)
                 nc.Dataset(ivar).Info.RefDate = unit;
             else
                 nc.Dataset(ivar).Info.RefDate = refdate;
@@ -568,7 +568,15 @@ for ivar = 1:nvars
             elseif isempty(j4)
                 ui_message('error','Invalid location type "%s"; ignoring mesh/location attributes on "%s".',Info.Attribute(j2).Value,Info.Name)
             else
-                Info.Mesh = {'ugrid' iUGrid(j3) j4};
+                topoDim   = nc.Dataset(iUGrid(j3)).Mesh{j4+4};
+                if isempty(strmatch(topoDim,Info.Dimension,'exact'))
+                    dims = sprintf('%s, ',Info.Dimension{:});
+                    ui_message('error','Variable "%s" points to UGRID mesh "%s" location "%s"\nbut the variable''s dimensions {%s}\ndon''t include the %s dimension "%s".\nIgnoring the mesh/location attributes.',...
+                        Info.Name, Info.Attribute(j1).Value, Info.Attribute(j2).Value, dims(1:end-2), Info.Attribute(j2).Value, topoDim)
+                else
+                    Info.Mesh = {'ugrid' iUGrid(j3) j4};
+                    Info.TSMNK(3) = strmatch(topoDim,DimensionNames,'exact')-1;
+                end
             end
         end
     end
@@ -675,8 +683,9 @@ for ivar = 1:nvars
         end
         Info.TSMNK(2) = statdim;
     end
+    %
     xName = '';
-    if ~isempty(Info.X)
+    if isnan(Info.TSMNK(3)) && ~isempty(Info.X)
         iDim = {nc.Dataset(Info.X).Dimid};
         iDim = unique(cat(2,iDim{cellfun('length',iDim)==1}));
         if length(Info.X)>1
@@ -754,7 +763,7 @@ for ivar = 1:nvars
             end
         end
     end
-    if ~isempty(Info.Y)
+    if ~isempty(Info.Y) % && ... ?
         iDim = {nc.Dataset(Info.Y).Dimid};
         iDim = unique(cat(2,iDim{cellfun('length',iDim)==1}));
         if length(Info.Y)>1

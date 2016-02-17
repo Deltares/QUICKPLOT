@@ -768,16 +768,31 @@ if XYRead
         Ans.Z = Z;
         %
         if isfield(Ans,'X')
+            % z coordinates may be defined at value locations or grid
+            % locations. Be careful when trying to synchronize dimensions!
             szZ = size(Z);
-            szX = ones(size(szZ));
-            szX(1:ndims(Ans.X)) = size(Ans.X);
-            if all(szZ>=szX)
-                rep = szZ./szX;
-                Ans.X = repmat(Ans.X,rep);
-                Ans.Y = repmat(Ans.Y,rep);
-            elseif all(szX>=szZ)
-                rep = szX./szZ;
-                Ans.Z = repmat(Ans.Z,rep);
+            szV = size(Ans.Val);
+            mismatch = szZ~=szV;
+            if any(mismatch)
+                % dimensions of Z that don't match the corresponding
+                % dimension of the values, should be adjusted to match the
+                % dimension of X.
+                szX = ones(size(szZ));
+                szX(1:ndims(Ans.X)) = size(Ans.X);
+                szX(~mismatch)=1;
+                szZ(~mismatch)=1;
+                if all(szZ==szX)
+                    % nothing to do
+                elseif all(szZ>=szX)
+                    rep = szZ./szX;
+                    Ans.X = repmat(Ans.X,rep);
+                    Ans.Y = repmat(Ans.Y,rep);
+                elseif all(szX>=szZ)
+                    rep = szX./szZ;
+                    Ans.Z = repmat(Ans.Z,rep);
+                else
+                    ui_message('error','Complex X/Z resize not yet implemented!')
+                end
             end
         end
     end
