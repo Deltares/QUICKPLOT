@@ -771,7 +771,11 @@ if XYRead
             % z coordinates may be defined at value locations or grid
             % locations. Be careful when trying to synchronize dimensions!
             szZ = size(Z);
-            szV = size(Ans.Val);
+            if isfield(Ans,'Val')
+                szV = size(Ans.Val);
+            elseif isfield(Ans,'XComp')
+                szV = size(Ans.XComp);
+            end
             mismatch = szZ~=szV;
             if any(mismatch)
                 % dimensions of Z that don't match the corresponding
