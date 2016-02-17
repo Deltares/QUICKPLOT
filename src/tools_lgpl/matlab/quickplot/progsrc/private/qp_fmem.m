@@ -364,10 +364,11 @@ switch cmd
                     case 'NetCDF'
                         [p,n,e]=fileparts(FileName);
                         Opt = {};
-                        if length(n)>8 && strcmp(n(end-3:end),'_map') ...
-                                && strcmp(n(end-8),'_') ...
-                                && all(ismember(n(end-7:end-4),'0123456789'))
-                            iOffset  = length(n)-8;
+                        uscore = find(n=='_');
+                        if length(uscore)>=2 ...
+                               && all(ismember(n(uscore(end-1)+1:uscore(end)-1),'0123456789'))
+                            iOffset  = uscore(end-1);
+                            nDigits  = uscore(end)-uscore(end-1)-1;
                             iPOffset = length(p)+1+iOffset;
                             FileName1 = FileName(1:iPOffset);
                             FileName2 = FileName(iPOffset+5:end);
@@ -379,12 +380,12 @@ switch cmd
                             Files(lFiles~=length([n e])) = [];
                             %
                             Files = char(Files);
-                            N = Files(:,iOffset+(1:4));
+                            N = Files(:,iOffset+(1:nDigits));
                             N(~all(ismember(N,'0':'9'),2),:) = [];
                             N = str2num(N)';
                             %
                             if isequal(sort(N),0:length(N)-1)
-                                Opt = {length(N) iPOffset};
+                                Opt = {length(N) iPOffset nDigits};
                             end
                         end
                         %

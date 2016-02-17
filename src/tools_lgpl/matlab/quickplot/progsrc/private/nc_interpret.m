@@ -1,4 +1,4 @@
-function nc = nc_interpret(nc,NumDomains,DomainOffset)
+function nc = nc_interpret(nc,NumDomains,DomainOffset,nDigits)
 %NC_INTERPRET  Interpret the netCDF data based on conventions.
 %    NC_OUT = NC_INTERPRET(NC_IN)
 %
@@ -44,11 +44,12 @@ if nargin>1
     nc1.Dimension = rmfield(nc1.Dimension,'Length');
     nc1.Dataset   = rmfield(nc1.Dataset,'Size');
     nc1 = rmfield(nc1,'Attribute');
+    domainFormat = ['%' num2str(nDigits) '.' num2str(nDigits) 'd'];
     %
     FileName2  = nc.Filename;
     Partitions = cell(1,NumDomains);
     for i = 1:NumDomains
-        FileName2(DomainOffset+(1:4)) = sprintf('%4.4d',i-1);
+        FileName2(DomainOffset+(1:nDigits)) = sprintf(domainFormat,i-1);
         nc2 = nc_info(FileName2);
         Partitions{i} = nc_interpret(nc2);
         nc2 = rmfield(nc2,'Filename');
@@ -66,7 +67,7 @@ if nargin>1
     if NumDomains>1
         nc.Partitions = Partitions;
         nc.DomainOffset = DomainOffset;
-        nc.Filename(DomainOffset+(1:4)) = '0000';
+        nc.Filename(DomainOffset+(1:nDigits)) = repmat('0',1,nDigits);
     end
 else
     nc.NumDomains = 1;
