@@ -1029,7 +1029,11 @@ if ~isempty(Units)
         dunit=findobj(OH,'tag','dataunits=!');
         set(dunit,'enable','inactive', ...
             'backgroundcolor',Inactive)
-        [conversion,SIunit]=qp_unitconversion(Units,user_units);
+        try
+            [conversion,SIunit]=qp_unitconversion(Units,user_units);
+        catch
+            SIunit = '';
+        end
         set(dunit,'string',SIunit)
         Ops.units=SIunit;
     end
