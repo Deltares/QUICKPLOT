@@ -42,4 +42,8 @@ qpversion=read_identification(sourcedir,'d3d_qp.m');
 T=now;
 make_quickplot(curdir,qpversion,T)
 make_ecoplot(curdir,qpversion,T)
-make_d3dmatlab(curdir,qpversion,T)
+c=computer;
+if c(end-1:end)=='64'
+   make_d3dmatlab(curdir,qpversion,T)
+end
+make_delwaq2raster(curdir,qpversion,T)
