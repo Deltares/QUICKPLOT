@@ -440,6 +440,13 @@ switch NVal
                     else
                         mask = isnan(data.Val);
                     end
+                    if size(data.Val,3)==1 && size(data.X,3)>1
+                        if size(data.X,3)==2
+                            data.X = mean(data.X,3);
+                            data.Y = mean(data.Y,3);
+                            data.Z = mean(data.Z,3);
+                        end
+                    end
                     switch Ops.plotcoordinate
                         case 'x coordinate'
                             data.X(mask)=NaN;
