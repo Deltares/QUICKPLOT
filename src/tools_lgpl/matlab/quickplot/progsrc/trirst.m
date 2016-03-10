@@ -109,6 +109,7 @@ if (4*prod(dim))~=T % If not a match ...
     fclose(fid);
     error('Specified size %ix%i=%i does not match\nrecord length %i or %i in file.',dim,prod(dim),T/4,Tb/4)
 end
+TRef = T;
 
 if nargin==2
     threeD=1;
@@ -133,6 +134,16 @@ while ReadMore>1
         Y=[];
     end
     for l=1:nlayer
+        %
+        % Assert that the block size is correct.
+        %
+        if T~=TRef
+            fclose(fid);
+            error('Size (%i) of record %i of quantity %i does not match expected size %i',T,l,i,TRef)
+        end
+        %
+        % Record size is correct, so read the data
+        %
         X=fread(fid,dim,'float32');
         if ~isequal(size(X),dim)
             fclose(fid);
@@ -149,7 +160,13 @@ while ReadMore>1
         else
             Y(i).Data=X;
         end
-        [T,ReadMore]=fread(fid,2,'int32');
+        [TMore,ReadMore]=fread(fid,2,'int32');
+        % TMore(1) should equal the previous block size and hence it should
+        % be equal to T. However, we need to verify whether the next block
+        % size TMore(2) is correct (if it exists). The actual check happens
+        % just before reading the block to have the correct context for the
+        % error message; here we just save the second value (if it exists).
+        T = TMore(2:end);
     end
     if isfinite(NRequested)
         varargout{i}=Y;

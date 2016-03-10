@@ -154,6 +154,10 @@ for ivar = 1:nvars
         j = strmatch('cf_type',Attribs,'exact');
     end
     if ~isempty(j) && strcmp(Info.Attribute(j).Value,'mesh_topology')
+        if isempty(strmatch('cf_role',Attribs,'exact'))
+           % if we didn't come here via the cf_role attribute ...
+           ui_message('error','This file uses incorrect attribute "cf_type" for specifying the mesh_topology role. Please update your data file.')
+        end
         % ugrid mesh
         Info.Type = 'ugrid_mesh';
         cn = strmatch('node_coordinates',Attribs,'exact');
@@ -216,16 +220,28 @@ for ivar = 1:nvars
         Info.Mesh = {'ugrid' ivar -1 node_dim edge_dim face_dim}; % vol_dim
         %
         id = strmatch(node_dim,DimensionNames,'exact');
-        nc.Dimension(id).Type = 'ugrid_node';
+        if isempty(id)
+            ui_message('error','The node dimension ''%s'' of UGRID mesh %s is not defined.',face_dim,Info.Name)
+        else
+            nc.Dimension(id).Type = 'ugrid_node';
+        end
         %
         if ~isempty(edge_dim)
             id = strmatch(edge_dim,DimensionNames,'exact');
-            nc.Dimension(id).Type = 'ugrid_edge';
+            if isempty(id)
+                ui_message('error','The edge dimension ''%s'' of UGRID mesh %s is not defined.',face_dim,Info.Name)
+            else
+                nc.Dimension(id).Type = 'ugrid_edge';
+            end
         end
         %
         if ~isempty(face_dim)
             id = strmatch(face_dim,DimensionNames,'exact');
-            nc.Dimension(id).Type = 'ugrid_face';
+            if isempty(id)
+                ui_message('error','The face dimension ''%s'' of UGRID mesh %s is not defined.',face_dim,Info.Name)
+            else
+                nc.Dimension(id).Type = 'ugrid_face';
+            end
         end
         %
     end

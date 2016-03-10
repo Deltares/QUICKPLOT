@@ -192,7 +192,7 @@ end
 if isfield(Ops,'thinningmode')
     set(findobj(OH,'tag','thinfld'),'enable','on');
     thinfld=findobj(OH,'tag','thinfld=?');
-    set(thinfld,Active,imatch(Choices,Ops,'thinningmode'),'enable','on','backgroundcolor',Active)
+    set(thinfld,imatch(Choices,Ops,'thinningmode'),'enable','on','backgroundcolor',Active)
 end
 
 if isfield(Ops,'thinningfactors')

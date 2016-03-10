@@ -100,7 +100,11 @@ switch NVal
                         hNew=thindam(data.X,data.Y,data.XDam,data.YDam,'parent',Parent);
                         set(hNew,Ops.LineParams{:});
                     end
-                elseif sum(size(data.X)>1)==2
+                elseif sum(size(data.X)>1)>=2
+                    if ndims(data.X)>2
+                        data.X = data.X(:,:,1);
+                        data.Y = data.Y(:,:,1);
+                    end
                     if FirstFrame
                         hNew=surface(data.X,data.Y,zeros(size(data.X)), ...
                             'cdata',[], ...
@@ -140,57 +144,62 @@ switch NVal
                 end
                 qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
             case {'X-Z'}
-                switch Ops.plotcoordinate
-                    case {'path distance','reverse path distance'}
-                        xx=data.X(:,:,1);
-                        if isfield(data,'Y')
-                            yy=data.Y(:,:,1);
-                        else
-                            yy=0*xx;
-                        end
-                        if strcmp(Ops.plotcoordinate,'reverse path distance')
-                            xx=flipud(fliplr(xx));
-                            yy=flipud(fliplr(yy));
-                        end
-                        if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
-                            x=pathdistance(xx,yy,'geographic');
-                        else
-                            x=pathdistance(xx,yy);
-                        end
-                        if strcmp(Ops.plotcoordinate,'reverse path distance')
-                            x=flipud(fliplr(x));
-                        end
-                        x = squeeze(reshape(repmat(x,[1 1 size(data.X,3)]),size(data.X)));
-                        y = squeeze(data.Z);
-                        z = zeros(size(y));
-                    case 'x coordinate'
-                        x = squeeze(data.X);
-                        y = squeeze(data.Z);
-                        z = zeros(size(y));
-                    case 'y coordinate'
-                        x = squeeze(data.Y);
-                        y = squeeze(data.Z);
-                        z = zeros(size(y));
-                    case '(x,y)'
-                        x = squeeze(data.X);
-                        y = squeeze(data.Y);
-                        z = squeeze(data.Z);
-                end
-                if FirstFrame
-                    hNew=surface(x,y,z, ...
-                        'cdata',[], ...
-                        'parent',Parent, ...
-                        'edgecolor',Ops.colour, ...
-                        'linewidth',Ops.linewidth, ...
-                        'linestyle',Ops.linestyle, ...
-                        'marker',Ops.marker, ...
-                        'markersize',Ops.markersize, ...
-                        'markeredgecolor',Ops.markercolour, ...
-                        'markerfacecolor',Ops.markerfillcolour, ...
-                        'facecolor','none');
-                else
-                    set(hNew,'xdata',x,'ydata',y,'zdata',z)
-                end
+                % dummy values
+                data.Val = repmat(NaN,size(data.Z)-[0 0 1]);
+                Ops.presentationtype = 'grid';
+                hNew = plotslice(hNew,Parent,data,Ops,multiple,DimFlag,Props,Thresholds);
+
+%                 switch Ops.plotcoordinate
+%                     case {'path distance','reverse path distance'}
+%                         xx=data.X(:,:,1);
+%                         if isfield(data,'Y')
+%                             yy=data.Y(:,:,1);
+%                         else
+%                             yy=0*xx;
+%                         end
+%                         if strcmp(Ops.plotcoordinate,'reverse path distance')
+%                             xx=flipud(fliplr(xx));
+%                             yy=flipud(fliplr(yy));
+%                         end
+%                         if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
+%                             x=pathdistance(xx,yy,'geographic');
+%                         else
+%                             x=pathdistance(xx,yy);
+%                         end
+%                         if strcmp(Ops.plotcoordinate,'reverse path distance')
+%                             x=flipud(fliplr(x));
+%                         end
+%                         x = squeeze(reshape(repmat(x,[1 1 size(data.X,3)]),size(data.X)));
+%                         y = squeeze(data.Z);
+%                         z = zeros(size(y));
+%                     case 'x coordinate'
+%                         x = squeeze(data.X);
+%                         y = squeeze(data.Z);
+%                         z = zeros(size(y));
+%                     case 'y coordinate'
+%                         x = squeeze(data.Y);
+%                         y = squeeze(data.Z);
+%                         z = zeros(size(y));
+%                     case '(x,y)'
+%                         x = squeeze(data.X);
+%                         y = squeeze(data.Y);
+%                         z = squeeze(data.Z);
+%                 end
+%                 if FirstFrame
+%                     hNew=surface(x,y,z, ...
+%                         'cdata',[], ...
+%                         'parent',Parent, ...
+%                         'edgecolor',Ops.colour, ...
+%                         'linewidth',Ops.linewidth, ...
+%                         'linestyle',Ops.linestyle, ...
+%                         'marker',Ops.marker, ...
+%                         'markersize',Ops.markersize, ...
+%                         'markeredgecolor',Ops.markercolour, ...
+%                         'markerfacecolor',Ops.markerfillcolour, ...
+%                         'facecolor','none');
+%                 else
+%                     set(hNew,'xdata',x,'ydata',y,'zdata',z)
+%                 end
                 qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
             case {'Val-Z'}
                 z=squeeze(data.Z);
@@ -293,88 +302,8 @@ switch NVal
                 if ~isfield(Ops,'plotcoordinate')
                     Ops.plotcoordinate = 'time';
                 end
-                if multiple(K_)
-                    data = qp_dimsqueeze(data,Ops.axestype,multiple,DimFlag,Props);
-                    Mask=repmat(min(data.Z,[],3)==max(data.Z,[],3),[1 1 size(data.Z,3)]);
-                    if isequal(size(Mask),size(data.X))
-                        data.X(Mask)=NaN;
-                    end
-                    switch Ops.plotcoordinate
-                        case {'path distance','reverse path distance'}
-                            x=data.X(:,:,1);
-                            if isfield(data,'Y')
-                                y=data.Y(:,:,1);
-                            else
-                                y=0*x;
-                            end
-                            if strcmp(Ops.plotcoordinate,'reverse path distance')
-                                x=flipud(fliplr(x));
-                                y=flipud(fliplr(y));
-                            end
-                            if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
-                                s=pathdistance(x,y,'geographic');
-                            else
-                                s=pathdistance(x,y);
-                            end
-                            if ~isequal(size(data.X),size(data.Val)) && ~isfield(data,'dX_tangential')
-                                ds=s(min(find(s>0)))/2;
-                                if ~isempty(ds)
-                                    s=s-ds;
-                                end
-                            end
-                            if strcmp(Ops.plotcoordinate,'reverse path distance')
-                                s=flipud(fliplr(s));
-                            end
-                            s=reshape(repmat(s,[1 1 size(data.X,3)]),size(data.X));
-                        case 'x coordinate'
-                            s=data.X;
-                        case 'y coordinate'
-                            s=data.Y;
-                        case 'time'
-                            s=repmat(data.Time,[1 size(data.X,3)]);
-                    end
-                    s=squeeze(s);
-                    data.X=squeeze(data.X);
-                    if isfield(data,'Y')
-                        data.Y=squeeze(data.Y);
-                    end
-                    data.Z=squeeze(data.Z);
-                    data.Val=squeeze(data.Val);
-                    %
-                    set(Parent,'NextPlot','add');
-                    if size(s,2)==1 && size(data.Z,2)~=1
-                        s = repmat(s,[1 size(data.Z,2)]);
-                    end
-                    switch Ops.presentationtype
-                        case {'patches','patches with lines'}
-                            if isfield(Props,'ThreeD')
-                                hNew=genfaces(hNew,Ops,Parent,data.Val,data.X,data.Y,data.Z);
-                            else
-                                hNew=genfaces(hNew,Ops,Parent,data.Val,s,data.Z);
-                            end
-                            
-                        case 'values'
-                            I=~isnan(data.Val);
-                            hNew=gentextfld(hNew,Ops,Parent,data.Val(I),s(I),data.Z(I));
-                            
-                        case 'continuous shades'
-                            hNew=gensurface(hNew,Ops,Parent,data.Val,s,data.Z,data.Val);
-                            
-                        case 'markers'
-                            hNew=genmarkers(hNew,Ops,Parent,data.Val,s,data.Z);
-                            
-                        case {'contour lines','coloured contour lines','contour patches','contour patches with lines'}
-                            if ~isequal(size(s),size(data.Val))
-                                [s,data.Z,data.Val]=face2surf(s,data.Z,data.Val);
-                            end
-                            data.Val(isnan(s) | isnan(data.Z))=NaN;
-                            ms=max(s(:));
-                            mz=max(data.Z(:));
-                            s(isnan(s))=ms;
-                            data.Z(isnan(data.Z))=mz;
-                            hNew=gencontour(hNew,Ops,Parent,s,data.Z,data.Val,Thresholds);
-                            
-                    end
+                if ~isempty(strfind(axestype,'Z')) && isfield(data,'Z')
+                    hNew = plotslice(hNew,Parent,data,Ops,multiple,DimFlag,Props,Thresholds);
                     if FirstFrame
                         set(Parent,'view',[0 90],'layer','top');
                         %set(get(Parent,'ylabel'),'string','elevation (m) \rightarrow')
@@ -1068,4 +997,88 @@ else
         set(Parent(i),'tag',sprintf('%s [%i]',tg,i))
         setappdata(Parent(i),'linkedaxes',Parent)
     end
+end
+
+
+function hNew = plotslice(hNew,Parent,data,Ops,multiple,DimFlag,Props,Thresholds)
+data = qp_dimsqueeze(data,Ops.basicaxestype,multiple,DimFlag,Props);
+Mask=repmat(min(data.Z,[],3)==max(data.Z,[],3),[1 1 size(data.Z,3)]);
+if isequal(size(Mask),size(data.X))
+    data.X(Mask)=NaN;
+end
+switch Ops.plotcoordinate
+    case {'path distance','reverse path distance'}
+        x=data.X(:,:,1);
+        if isfield(data,'Y')
+            y=data.Y(:,:,1);
+        else
+            y=0*x;
+        end
+        if strcmp(Ops.plotcoordinate,'reverse path distance')
+            x=flipud(fliplr(x));
+            y=flipud(fliplr(y));
+        end
+        if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
+            s=pathdistance(x,y,'geographic');
+        else
+            s=pathdistance(x,y);
+        end
+        if ~isequal(size(data.X),size(data.Val)) && ~isfield(data,'dX_tangential')
+            ds=s(min(find(s>0)))/2;
+            if ~isempty(ds)
+                s=s-ds;
+            end
+        end
+        if strcmp(Ops.plotcoordinate,'reverse path distance')
+            s=flipud(fliplr(s));
+        end
+        s=reshape(repmat(s,[1 1 size(data.X,3)]),size(data.X));
+    case 'x coordinate'
+        s=data.X;
+    case 'y coordinate'
+        s=data.Y;
+    case 'time'
+        s=repmat(data.Time,[1 size(data.X,3)]);
+end
+s=squeeze(s);
+data.X=squeeze(data.X);
+if isfield(data,'Y')
+    data.Y=squeeze(data.Y);
+end
+data.Z=squeeze(data.Z);
+data.Val=squeeze(data.Val);
+%
+set(Parent,'NextPlot','add');
+if size(s,2)==1 && size(data.Z,2)~=1
+    s = repmat(s,[1 size(data.Z,2)]);
+end
+switch Ops.presentationtype
+    case {'patches','patches with lines','grid'}
+        if isfield(Props,'ThreeD')
+            hNew=genfaces(hNew,Ops,Parent,data.Val,data.X,data.Y,data.Z);
+        else
+            hNew=genfaces(hNew,Ops,Parent,data.Val,s,data.Z);
+        end
+        
+    case 'values'
+        I=~isnan(data.Val);
+        hNew=gentextfld(hNew,Ops,Parent,data.Val(I),s(I),data.Z(I));
+        
+    case 'continuous shades'
+        hNew=gensurface(hNew,Ops,Parent,data.Val,s,data.Z,data.Val);
+        
+    case 'markers'
+        hNew=genmarkers(hNew,Ops,Parent,data.Val,s,data.Z);
+        
+    case {'contour lines','coloured contour lines','contour patches','contour patches with lines'}
+        if ~isequal(size(s),size(data.Val))
+            [s,data.Z,data.Val]=face2surf(s,data.Z,data.Val);
+        end
+        data.Val(isnan(s) | isnan(data.Z))=NaN;
+        ms=max(s(:));
+        mz=max(data.Z(:));
+        s(isnan(s))=ms;
+        data.Z(isnan(data.Z))=mz;
+        hNew=gencontour(hNew,Ops,Parent,s,data.Z,data.Val,Thresholds);
+        
 end

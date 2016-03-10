@@ -102,6 +102,8 @@ end
 
 if DataInCell==0.5 && strcmp(Props.ReqLoc,'z')
     DataInCell = 1;
+elseif strcmp(Props.Name,'grid')
+    DataInCell = 1;
 end
 
 DimFlag=Props.DimFlag;
@@ -1018,6 +1020,7 @@ FI = guarantee_options(FI);
 PropNames={'Name'                   'Units'   'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc'  'Loc3D' 'Group'          'Val1'    'Val2'  'SubFld' 'MNK' };
 DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'XCOR'    ''       []       0
     'hydrodynamic grid'                ''       [1 0 1 1 1]  0         0    ''        'z'   'z'       'i'     'map-series'     'S1'      ''       []       0
+    'grid'                             ''       [1 0 1 1 1]  0         0    ''        'z'   'z'       'i'     'map-series'     'S1'      ''       []       0
     'domain decomposition boundaries'  ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'KCS'     ''       []       0
     'open boundaries'                  ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'KCS'     ''       []       0
     'closed boundaries'                ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'KCS'     ''       []       0
@@ -1273,7 +1276,12 @@ for i=size(Out,1):-1:1
     if ~isempty(strmatch('---',Out(i).Name))
     elseif ~isstruct(Info) || any(Info.SizeDim==0)
         % remove references to non-stored data fields
-        Out(i)=[];
+        if strcmp(Out(i).Name,'grid') % S1 not available on file, so convert grid to 2D time-independent quantity.
+            Out(i).DimFlag(1) = 0;
+            Out(i).DimFlag(5) = 0;
+        else
+            Out(i)=[];
+        end
     elseif Out(i).NVal>1 && Out(i).NVal<4 && ~isstruct(Info2)
         % remove references to non-stored data fields
         Out(i)=[];

@@ -139,7 +139,7 @@ else
     end
     %
     if isempty(hOld)
-        if isempty(Ops.colourmap)
+        if isempty(Ops.colourmap) && ~strcmp(Ops.presentationtype,'grid')
             fv=fv(~isnan(cv) & cv~=0,:);
             hNew=patch('vertices',xv, ...
                 'faces',fv, ...
@@ -172,7 +172,7 @@ else
                     'facecolor',facecolor);
             end
         end
-        if strcmp(Ops.presentationtype,'patches with lines')
+        if strcmp(Ops.presentationtype,'patches with lines') || strcmp(Ops.presentationtype,'grid')
             if special_edges
                 ln = fv(:,[2 3 3])';
                 %
@@ -198,7 +198,7 @@ else
         end
     else
         hNew=hOld;
-        if isempty(Ops.colourmap)
+        if isempty(Ops.colourmap) && ~strcmp(Ops.presentationtype,'grid')
             fv=fv(~isnan(cv) & cv~=0,:);
             set(hNew,'vertices',xv, ...
                 'faces',fv)

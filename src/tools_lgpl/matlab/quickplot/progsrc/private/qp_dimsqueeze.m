@@ -38,7 +38,7 @@ switch axestype
     case 'X-Y'
         keepext([M_ N_]) = 1;
     case 'X-Z'
-        %keepext([M_||N_ K_]) = 1;
+        keepext(K_) = 1; % should also keep M_ or N_?
 end
 
 di=1+~multiple(T_);
