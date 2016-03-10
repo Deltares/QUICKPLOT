@@ -145,61 +145,14 @@ switch NVal
                 qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
             case {'X-Z'}
                 % dummy values
-                data.Val = repmat(NaN,size(data.Z)-[0 0 1]);
-                Ops.presentationtype = 'grid';
+                if ~isequal(size(data.Z),size(data.X))
+                    Ops.presentationtype = 'grid';
+                    data.Val = repmat(NaN,size(data.Z)-[0 0 1]);
+                else
+                    Ops.presentationtype = 'old grid';
+                    data.Val = repmat(NaN,size(data.Z));
+                end
                 hNew = plotslice(hNew,Parent,data,Ops,multiple,DimFlag,Props,Thresholds);
-
-%                 switch Ops.plotcoordinate
-%                     case {'path distance','reverse path distance'}
-%                         xx=data.X(:,:,1);
-%                         if isfield(data,'Y')
-%                             yy=data.Y(:,:,1);
-%                         else
-%                             yy=0*xx;
-%                         end
-%                         if strcmp(Ops.plotcoordinate,'reverse path distance')
-%                             xx=flipud(fliplr(xx));
-%                             yy=flipud(fliplr(yy));
-%                         end
-%                         if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
-%                             x=pathdistance(xx,yy,'geographic');
-%                         else
-%                             x=pathdistance(xx,yy);
-%                         end
-%                         if strcmp(Ops.plotcoordinate,'reverse path distance')
-%                             x=flipud(fliplr(x));
-%                         end
-%                         x = squeeze(reshape(repmat(x,[1 1 size(data.X,3)]),size(data.X)));
-%                         y = squeeze(data.Z);
-%                         z = zeros(size(y));
-%                     case 'x coordinate'
-%                         x = squeeze(data.X);
-%                         y = squeeze(data.Z);
-%                         z = zeros(size(y));
-%                     case 'y coordinate'
-%                         x = squeeze(data.Y);
-%                         y = squeeze(data.Z);
-%                         z = zeros(size(y));
-%                     case '(x,y)'
-%                         x = squeeze(data.X);
-%                         y = squeeze(data.Y);
-%                         z = squeeze(data.Z);
-%                 end
-%                 if FirstFrame
-%                     hNew=surface(x,y,z, ...
-%                         'cdata',[], ...
-%                         'parent',Parent, ...
-%                         'edgecolor',Ops.colour, ...
-%                         'linewidth',Ops.linewidth, ...
-%                         'linestyle',Ops.linestyle, ...
-%                         'marker',Ops.marker, ...
-%                         'markersize',Ops.markersize, ...
-%                         'markeredgecolor',Ops.markercolour, ...
-%                         'markerfacecolor',Ops.markerfillcolour, ...
-%                         'facecolor','none');
-%                 else
-%                     set(hNew,'xdata',x,'ydata',y,'zdata',z)
-%                 end
                 qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
             case {'Val-Z'}
                 z=squeeze(data.Z);
@@ -1006,6 +959,7 @@ Mask=repmat(min(data.Z,[],3)==max(data.Z,[],3),[1 1 size(data.Z,3)]);
 if isequal(size(Mask),size(data.X))
     data.X(Mask)=NaN;
 end
+
 switch Ops.plotcoordinate
     case {'path distance','reverse path distance'}
         x=data.X(:,:,1);
@@ -1060,6 +1014,23 @@ switch Ops.presentationtype
             hNew=genfaces(hNew,Ops,Parent,data.Val,s,data.Z);
         end
         
+    case 'old grid'
+        if isempty(hNew)
+            hNew=surface(s,data.Z,zeros(size(s)), ...
+                'cdata',[], ...
+                'parent',Parent, ...
+                'edgecolor',Ops.colour, ...
+                'linewidth',Ops.linewidth, ...
+                'linestyle',Ops.linestyle, ...
+                'marker',Ops.marker, ...
+                'markersize',Ops.markersize, ...
+                'markeredgecolor',Ops.markercolour, ...
+                'markerfacecolor',Ops.markerfillcolour, ...
+                'facecolor','none');
+        else
+            set(hNew,'xdata',s,'ydata',data.Z,'zdata',zeros(size(s)))
+        end
+
     case 'values'
         I=~isnan(data.Val);
         hNew=gentextfld(hNew,Ops,Parent,data.Val(I),s(I),data.Z(I));

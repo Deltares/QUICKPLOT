@@ -1020,7 +1020,7 @@ FI = guarantee_options(FI);
 PropNames={'Name'                   'Units'   'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc'  'Loc3D' 'Group'          'Val1'    'Val2'  'SubFld' 'MNK' };
 DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'XCOR'    ''       []       0
     'hydrodynamic grid'                ''       [1 0 1 1 1]  0         0    ''        'z'   'z'       'i'     'map-series'     'S1'      ''       []       0
-    'grid'                             ''       [1 0 1 1 1]  0         0    ''        'z'   'z'       'i'     'map-series'     'S1'      ''       []       0
+    'grid'                             ''       [1 0 1 1 1]  0         0    ''        'z'   'z'       ''      'map-series'     'S1'      ''       []       0
     'domain decomposition boundaries'  ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'KCS'     ''       []       0
     'open boundaries'                  ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'KCS'     ''       []       0
     'closed boundaries'                ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'KCS'     ''       []       0
@@ -1458,30 +1458,35 @@ if Props.DimFlag(M_) && Props.DimFlag(N_)
     Info=vs_disp(FI,'map-const','XCOR');
     sz([N_ M_])=Info.SizeDim;
 end
-if Props.NVal==0
-    Info=vs_disp(FI,'map-const','THICK');
-    sz(K_)=Info.SizeDim(1)+1;
-elseif Props.DimFlag(K_)
-    switch Props.Loc3D
-        case 'c'
-            if 0 % dummyMissingLayers
-                Info=vs_disp(FI,'map-const','THICK');
-                sz(K_)=Info.SizeDim;
-            else
+if Props.DimFlag(K_)
+    if Props.NVal==0
+        Info=vs_disp(FI,'map-const','THICK');
+        sz(K_)=Info.SizeDim(1);
+        if strcmp(Props.Loc3D,'i')
+            sz(K_)=sz(K_)+1;
+        end
+    else
+        switch Props.Loc3D
+            case 'c'
+                if 0 % dummyMissingLayers
+                    Info=vs_disp(FI,'map-const','THICK');
+                    sz(K_)=Info.SizeDim;
+                else
+                    Info=vs_disp(FI,Props.Group,Props.Val1);
+                    sz(K_)=Info.SizeDim(3);
+                end
+            case 'i'
+                if 0 % dummyMissingLayers
+                    Info=vs_disp(FI,'map-const','THICK');
+                    sz(K_)=Info.SizeDim+1;
+                else
+                    Info=vs_disp(FI,Props.Group,Props.Val1);
+                    sz(K_)=Info.SizeDim(3);
+                end
+            otherwise
                 Info=vs_disp(FI,Props.Group,Props.Val1);
                 sz(K_)=Info.SizeDim(3);
-            end
-        case 'i'
-            if 0 % dummyMissingLayers
-                Info=vs_disp(FI,'map-const','THICK');
-                sz(K_)=Info.SizeDim+1;
-            else
-                Info=vs_disp(FI,Props.Group,Props.Val1);
-                sz(K_)=Info.SizeDim(3);
-            end
-        otherwise
-            Info=vs_disp(FI,Props.Group,Props.Val1);
-            sz(K_)=Info.SizeDim(3);
+        end
     end
 end
 if Props.DimFlag(T_)
