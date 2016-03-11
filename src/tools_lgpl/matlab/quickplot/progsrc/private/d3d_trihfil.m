@@ -636,6 +636,9 @@ end
 if Props.NVal==0
 elseif Props.NVal==1 || Props.NVal==4
     Ans.Val=val1;
+    if strcmp(Props.Name,'temperature')
+        Ans.AbsoluteUnits = true;
+    end
 else
     Ans.XComp=val1;
     Ans.YComp=val2;

@@ -969,6 +969,9 @@ end
 switch Props.NVal
     case {1,5,6}
         Ans.Val=val1;
+        if strcmp(Props.Name,'temperature')
+            Ans.AbsoluteUnits = true;
+        end
     case 2
         if ThinDam==2
             Ans.XDam=~isnan(val1);

@@ -1,4 +1,4 @@
-function varargout=qp_unitconversion(unit1,unit2,varargin)
+function varargout=qp_unitconversion(varargin)
 %QP_UNITCONVERSION Convert unit strings.
 %   SystemList = QP_UNITCONVERSION('systems') returns the unit systems
 %   supported. Currently these are SI, CGS, FPS, IPS, NMM.
@@ -7,28 +7,36 @@ function varargout=qp_unitconversion(unit1,unit2,varargin)
 %   elementary unit strings. Unit strings may be combined of any
 %   combination of units. E.g. 'km/h', 'ft/s', 'N*s/kg'.
 %
-%   QP_UNITCONVERSION(UStr1,UStr2) displays a conversion table for
-%   transforming quantities expressed in UStr1 into UStr2 and vice versa.
+%   QP_UNITCONVERSION(UStr1,UStr2,UnitStyle) displays a conversion table
+%   for transforming quantities expressed in UStr1 into UStr2 and vice
+%   versa. The UnitStyle can be either 'absolute' or 'relative' (the latter
+%   being the default value). For temperatures (or quantities with an
+%   offset in their definition) you should use 'absolute' to convert actual
+%   temperatures and use 'relative' to convert temperature differences. In
+%   the latter case the offsets aren't used. The UnitStyle can be specified
+%   at any argument location, e.g. UnitStyle,UStr1,UStr2 is also allowed.
 %
-%   ConversionFactor = QP_UNITCONVERSION(UStr,UStr2) returns the factor
-%   needed for the conversion of quantities expressed in UStr1 into UStr2.
+%   C = QP_UNITCONVERSION(UStr,UStr2,UnitStyle) returns the conversion
+%   factor needed for the conversion of quantities expressed in UStr1 into
+%   UStr2. If UnitStyle equals 'absolute' and the unit contains an offset
+%   then C will be a 1x2 array. The conversion rule will in that case be
+%    [Q in UStr2] = C(1) * ([Q in UStr1] + C(2))
+%   That is, the second value is the offset. In all other cases C will be
+%   just the scalar conversion factor (no offset).
 %
-%   QP_UNITCONVERSION(UStr1,System) displays a conversion table for
-%   transforming quantities expressed in UStr1 into the equivalent in the
-%   selected unit system and vice versa.
+%   QP_UNITCONVERSION(UStr1,System,UnitStyle) displays a conversion table
+%   for transforming quantities expressed in UStr1 into the equivalent in
+%   the selected unit system and vice versa. The default System is SI.
 %
-%   [ConversionFactor,UStr2] = QP_UNITCONVERSION(UStr1,System) returns the
-%   factor needed for the conversion of quantities expressed in unit1 into
-%   the equivalent in the selected unit system and returns the unit string
-%   UStr2 in that system as well.
+%   [ConversionFactor,UStr2] = QP_UNITCONVERSION(UStr1,System,UnitStyle)
+%   returns the factor needed for the conversion of quantities expressed in
+%   unit1 into the equivalent in the selected unit system and returns the
+%   unit string UStr2 in that system as well.
 %
-%   DATA2 = QP_UNITCONVERSION(UStr1,UStr2,DATA1) converts the data provided by
-%   DATA1 in UStr1 unit into UStr2 units.
-%
-%   Note: The current support for temperature concerns relative
-%   temperatures only, i.e. 5 degrees celsius will be converted to 5
-%   degrees kelvin. This is correct for temperature differences but not for
-%   absolute temperatures.
+%   [DATAOUT1,DATAOUT2,...] = 
+%        QP_UNITCONVERSION(UStr1,UStr2,UnitStyle,DATAIN1,DATAIN2,...)
+%   converts the data provided by DATAIN1, DATAIN2, ... in UStr1 unit into
+%   UStr2 units.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -71,13 +79,35 @@ if nargout>0
     varargout=cell(1,nargout);
 end
 Out=[];
-if nargin==1
+
+absolute = false;
+arguments = varargin;
+for i=1:length(arguments)
+    if ischar(arguments{i})
+        switch lower(arguments{i})
+            case {'absolute'}
+                absolute = true;
+                arguments(i) = [];
+                break
+            case {'relative'}
+                absolute = false;
+                arguments(i) = [];
+                break
+        end
+    end 
+end
+
+unit1=arguments{1};
+if length(arguments)>1
+    unit2=arguments{2};
+else
     unit2='SI';
 end
 
 if isempty(unit1)
     unit1='-';
 end
+
 if nargin==1 && strcmpi(unit1,'systems')
     varargout={unitsystems};
 elseif nargin==1 && strcmpi(unit1,'units')
@@ -99,7 +129,7 @@ else
             factor1=[0 1];
             SI1=zeros(1,8);
         else
-            [factor1,SI1]=factor2si(unit1);
+            [factor1,SI1]=parse(unit1,absolute);
         end
         if ischar(factor1)
             Out=factor1;
@@ -128,7 +158,7 @@ else
                 factor2=[0 1];
                 if ~strcmp(unit2,'SI')
                     for i=1:length(Units)
-                        sifactor = search_elem(Units{i});
+                        sifactor = search_elem(Units{i},absolute);
                         factor2(2)=factor2(2)*sifactor(2)^SI2(i);
                     end
                 end
@@ -137,7 +167,7 @@ else
                     unit2='-';
                 end
             else
-                [factor2,SI2]=factor2si(unit2);
+                [factor2,SI2]=parse(unit2,absolute);
             end
             if ischar(factor2)
                 Out=factor2;
@@ -167,14 +197,13 @@ else
             if factor1(1)~=0 || factor2(1)~=0
                 offset=factor1(1)-factor2(1)/convfactor;
             end
-            if nargin<=2
+            if length(arguments)<=2
                 if nargout==0
                     cf='';
                     if convfactor~=1
                         cf=sprintf('%g ',convfactor);
                     end
                     xunit1=sprintf('[quantity in %s]',unit1);
-                    absval=[];
                     if offset~=0
                         sign='+';
                         dispoffset=offset;
@@ -186,19 +215,26 @@ else
                         if ~isempty(cf)
                             xunit1=['(' xunit1 ')'];
                         end
-                        absval=[0 -offset];
                     end
+                    %
+                    f1 = [0 1 2 50 100];
+                    f2 = [f1/convfactor-offset;f1];
+                    f1(2,:) = convfactor*(f1+offset);
                     fprintf('[quantity in %s] = %s%s\n',unit2,cf,xunit1);
-                    for f=unique([absval 1 2 50 100 [1 2 50 100]/convfactor-offset])
-                        fprintf('%10g %s = %10g %s\n',f,unit1,convfactor*(f+offset),unit2)
+                    for f = unique([f1 f2]','rows')'
+                        fprintf('%10g %s = %10g %s\n',f(1),unit1,f(2),unit2)
                     end
                 else
-                    varargout={convfactor unit2};
+                    if absolute && offset~=0
+                        varargout={[convfactor offset] unit2};
+                    else
+                        varargout={convfactor unit2};
+                    end
                 end
             else
-                for i=1:length(varargin)
-                    if isstruct(varargin{i})
-                        data=varargin{i};
+                for i=1:length(arguments)-2
+                    if isstruct(arguments{i+2})
+                        data=arguments{i+2};
                         flds={'Val','XComp','YComp','ZComp'};
                         for fldi=1:length(flds)
                             fld=flds{fldi};
@@ -212,7 +248,7 @@ else
                         [data(:).Units]=deal(unit2);
                         varargout{i}=data;
                     else
-                        varargout{i}=convfactor*(varargin{i}+offset);
+                        varargout{i}=convfactor*(arguments{i+2}+offset);
                     end
                 end
             end
@@ -256,10 +292,6 @@ if ~isempty(Str)
 end
 
 
-function [factor,si]=factor2si(unit)
-[factor,si]=parse(unit);
-
-
 function unit = powercheck(unit,k)
 if isequal(unit(k),'*') && k<length(unit) && isequal(unit(k+1),'*')
     % two asteriks form a power operator instead of a multiplication operator.
@@ -268,21 +300,23 @@ if isequal(unit(k),'*') && k<length(unit) && isequal(unit(k+1),'*')
 end
 
 
-function [factor,si]=factor_combine(cmd,factor,si,factor1,si1,pwr)
-if nargin<6
-    pwr=1;
-end
+function [factor,si]=factor_combine(cmd,factor,si,factor1,si1)
 switch cmd
     case '*'
-        factor(2)=factor(2)*(factor1(2)^pwr);
-        si=si+si1*pwr;
+        factor(1)=factor(1)*factor1(2)+factor(2)*factor1(1);
+        factor(2)=factor(2)*factor1(2);
+        si=si+si1;
     case '/'
-        factor(2)=factor(2)/(factor1(2)^pwr);
-        si=si-si1*pwr;
+        if factor1(1)~=0
+            error('Unable to divide by offset')
+        end
+        factor(1)=factor(1)/factor1(2);
+        factor(2)=factor(2)/factor1(2);
+        si=si-si1;
 end
 
 
-function [factor,si]=parse(unit)
+function [factor,si]=parse(unit,absolute)
 %fprintf('Parsing: %s\n',unit);
 factor=[0 1];
 si=zeros(1,8);
@@ -339,7 +373,7 @@ while k<=length(unit)+1
                     % of interpreting the first part as a separate unit
                     % "minute" or "degrees".
                     %
-                    [unit,k,factor1,si1] = checkspace(unit,ki,k);
+                    [unit,k,factor1,si1] = checkspace(unit,ki,k,absolute);
                     if k<=length(unit)
                         unitk = unit(k);
                         if unitk~='/'
@@ -349,14 +383,15 @@ while k<=length(unit)+1
                         unitk = '*';
                     end
                 else
-                    [factor1,si1] = findfirst(unit(ki:k-1));
+                    [factor1,si1] = findfirst(unit(ki:k-1),absolute);
                 end
                 if isequal(factor1,-1)
                     error('Unable to interpret unit "%s"',unit(ki:k-1))
-                elseif factor(1)~=0 || factor1(1)~=0
-                    error('multiplying offset for %s', unit(ki:k-1))
+                elseif factor(1)~=0 || (factor1(1)~=0 && any(si~=0))
+                    error('Cannot multiply units with offset for %s', unit(ki:k-1))
+                else
+                    [factor,si]=factor_combine(prevcmd,factor,si,factor1,si1);
                 end
-                [factor,si]=factor_combine(prevcmd,factor,si,factor1,si1);
                 prevcmd=unitk;
                 ki=k+1;
             end
@@ -366,7 +401,7 @@ while k<=length(unit)+1
 end
 
 
-function [unit,k,factor,si] = checkspace(unit,ki,k)
+function [unit,k,factor,si] = checkspace(unit,ki,k,absolute)
 % We started parsing the "unit" at position ki. We encountered a space at
 % position k. Now determine whether this should be interpreted as just a
 % space in a long unit name or as an implicit multiplication *.
@@ -381,14 +416,14 @@ end
 % tropical year light year2
 % tropical year light year^2
 %
-[factor,si,kb] = findfirst(unit(ki:k2));
+[factor,si,kb] = findfirst(unit(ki:k2),absolute);
 if isequal(si,-1)
     error('Unable to interpret unit "%s"',unit(ki:k2))
 end
 k = ki-1+kb;
 
 
-function [factor,si,kb] = findfirst(unit)
+function [factor,si,kb] = findfirst(unit,absolute)
 % Check which unit string is just a number.
 kp = length(unit);
 kb = kp+1;
@@ -444,12 +479,12 @@ end
 if kp==0
     % shouldn't happen ... already checked at start of routine!
 else
-    [factor,si] = search_elem(unit(1:kp));
+    [factor,si] = search_elem(unit(1:kp),absolute);
 end
 if isequal(si,-1)
     spaces = find(unit==' ');
     if ~isempty(spaces)
-        [factor,si,kb] = findfirst(deblank(unit(1:spaces(end))));
+        [factor,si,kb] = findfirst(deblank(unit(1:spaces(end))),absolute);
     end
 elseif ~isempty(pow)
     if factor(1)~=0
@@ -460,18 +495,24 @@ elseif ~isempty(pow)
 end
 
 
-function [factor,si]=search_elem(unit,newtable)
+function [factor,si]=search_elem(unit,absolute)
 persistent unittable
 factor=[0 1];
 si='';
-if nargin == 2
-    unittable = newtable;
+if isequal(unit,'newtable')
+    unittable = absolute;
     return
 elseif isequal(unit,'retrievetable')
     factor = unittable;
     return
 end
 i=strmatch(unit,unittable{1},'exact');
+absfound=absolute;
+if isempty(i) && length(unit)>5 && strcmpi(unit(end-4:end),' abs.')
+    absfound=1;
+    unit=unit(1:end-5);
+    i=strmatch(unit,unittable{1},'exact');
+end
 prefix=1;
 if isempty(i)
     [v,n,e]=sscanf(unit,'%f',2);
@@ -524,30 +565,20 @@ if isempty(i)
         if prefixfound
             i=strmatch(unit,unittable{1},'exact');
         end
-        absfound=0;
-        if isempty(i) && length(unit)>5 && strcmpi(unit(end-4:end),' abs.')
-            absfound=1;
-            unit=unit(1:end-5);
-            i=strmatch(unit,unittable{1},'exact');
-        end
         if isempty(i)
             % no match ...
             factor = -1;
             si = -1;
-        else
-            i=unittable{2}(i);
-            factor=[0 unittable{3}(i,2)*prefix];
-            if absfound
-                factor(1)=unittable{3}(i,1);
-            end
-            si=unittable{4}(i,:);
+            return
         end
     end
-else
-    i=unittable{2}(i);
-    factor=[0 unittable{3}(i,2)];
-    si=unittable{4}(i,:);
 end
+i=unittable{2}(i);
+factor=[0 unittable{3}(i,2)*prefix];
+if absfound
+    factor(1)=unittable{3}(i,1);
+end
+si=unittable{4}(i,:);
 
 
 function initialize_unittable
@@ -597,7 +628,7 @@ while anychange && any(~identified)
             end
             if ischar(Def)
                 try
-                    [factor,si]=factor2si(Def);
+                    [factor,si]=parse(Def,true);
                 catch
                     factor = 'failed';
                 end

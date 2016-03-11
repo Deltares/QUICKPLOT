@@ -566,6 +566,9 @@ if isequal(Props.FileInfo,'operator')
     if isfield(Ans,'Units')
         Ans=rmfield(Ans,'Units');
     end
+    if isfield(Ans,'AbsoluteUnits')
+        Ans=rmfield(Ans,'AbsoluteUnits');
+    end
 else
     for m_=1:5
         t=sel{m_};

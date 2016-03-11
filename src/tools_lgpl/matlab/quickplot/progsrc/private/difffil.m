@@ -119,6 +119,12 @@ if Props.NVal>0
             Ans = setfield(Ans,fld{i},v1);
         end
     end
+    %
+    % the unit of a difference quantity is never absolute
+    %
+    if isfield(Ans,'AbsoluteUnits')
+        Ans = rmfield(Ans,'AbsoluteUnits');
+    end
 end
 
 varargout={Ans FI};

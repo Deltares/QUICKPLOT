@@ -199,7 +199,11 @@ if isfield(Ops,'units')
             Units=Ops.units;
         end            
     elseif ~isempty(Ops.units) && ~isempty(Units)
-        dataX=qp_unitconversion(Units,Ops.units,data);
+        UnitStyle = 'relative';
+        if isfield(data,'AbsoluteUnits') && data.AbsoluteUnits
+            UnitStyle = 'absolute';
+        end
+        dataX=qp_unitconversion(Units,Ops.units,data,UnitStyle);
         if ~ischar(dataX)
             data=dataX;
             dataX=[];
