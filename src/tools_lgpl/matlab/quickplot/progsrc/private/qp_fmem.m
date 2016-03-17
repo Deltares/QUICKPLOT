@@ -140,6 +140,8 @@ switch cmd
             try_next='sobek1d';
         else
             switch lower(en)
+                case {'.bln'}
+                    try_next='surfer';
                 case {'.grd','.rgf'}
                     try_next='wlgrid';
                 case {'.n','.e','.node','.ele'}
