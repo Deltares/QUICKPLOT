@@ -344,9 +344,13 @@ switch geometry
             axestype={'X-Z'};
         end
     case {'POLYL','POLYG'}
-        axestype={'X-Y'};
-        if strcmp(geometry,'POLYG') && ~isfield(Props,'ClosedPoly')
-            Props.ClosedPoly = 2;
+        if multiple(T_) && ~multiple(M_) && ~multiple(K_)
+            axestype={'Time-Val'};
+        elseif ~multiple(T_)
+            axestype={'X-Y'};
+            if strcmp(geometry,'POLYG') && ~isfield(Props,'ClosedPoly')
+                Props.ClosedPoly = 2;
+            end
         end
     case {'sQUAD','sQUAD+'}
         if multiple(K_)
@@ -754,7 +758,7 @@ end
 %---- presentation type
 %
 extend2edge = 0;
-if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') || (strcmp(geometry,'POLYG') && nval~=2) % || (nval==0 & ~DimFlag(ST_))
+if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') || (strcmp(geometry,'POLYG') && nval~=2 && ~TimeDim) % || (nval==0 & ~DimFlag(ST_))
     switch nvalstr
         case 1.9
             PrsTps={'vector','edge'};
