@@ -269,6 +269,15 @@ for ivar = 1:nvars
         if Info.Rank==2
             if strcmp(Info.Dimension{1},Info.Name);
                 Info.Type = 'coordinate';
+            else
+                j = strmatch('cf_role',Attribs,'exact');
+                if ~isempty(j)
+                    if strcmp(Info.Attribute(j).Value,'timeseries_id') || ...
+                            strcmp(Info.Attribute(j).Value,'profile_id') || ...
+                            strcmp(Info.Attribute(j).Value,'trajectory_id')
+                        AuxCoordVars=union(AuxCoordVars,{Info.Name});
+                    end
+                end
             end
         end
     elseif Info.Rank==1
@@ -307,7 +316,11 @@ for i = 1:length(AuxCoordVars)
     for ivar = 1:nvars
         Info = nc.Dataset(ivar);
         if strcmp(Info.Name,AuxCoordVars{i})
-            AuxCoordVar_Dimens{i} = Info.Dimension;
+            if Info.Nctype==2 % character
+                AuxCoordVar_Dimens{i} = Info.Dimension(1:end-1);
+            else
+                AuxCoordVar_Dimens{i} = Info.Dimension;
+            end
             if strcmp(Info.Type,'unknown')
                 nc.Dataset(ivar).Type = 'auxiliary coordinate';
                 CoordVarDims = union(CoordVarDims,Info.Dimension);
