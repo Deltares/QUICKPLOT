@@ -309,7 +309,7 @@ else
             MessageOffset=[];
             set(findobj(fig,'tag','errorlist'),'string',errors);
         case 'clipboard'
-            i=get(findobj(fig,'tag','errorlist'),'value');
+            i=sort(get(findobj(fig,'tag','errorlist'),'value')); % always copy lines from top to bottom
             clipboard('copy',sprintf('%s\n',errors{i}))
         case 'saveas'
             [f,p]=uiputfile('*.txt','Save Message List As');
