@@ -429,7 +429,7 @@ if DataRead
         case {'thin dams','temporarily inactive velocity points','domain decomposition boundaries','open boundaries','closed boundaries'}
             Props.NVal=2;
             ThinDam=1;
-        case 'base level of sediment layer'
+        case {'sediment thickness','base level of sediment layer'}
             switch Props.Val1
                 case 'THLYR'
                     elidx{end+1}=0;
@@ -592,6 +592,10 @@ if DataRead
             if ~Chk
                 val3=[];
                 Props.NVal=2;
+            end
+        case 'sediment thickness'
+            if size(val1,4)>1
+                val1=sum(val1,4);
             end
         case 'base level of sediment layer'
             if size(val1,4)>1
@@ -1184,6 +1188,8 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''  
     'reduction factor due to limited sediment thickness' ...
     '-'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'FIXFAC'  ''       'sb1'    0
     'sediment thickness'               'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'DPSED'   ''       []       0
+    'sediment thickness'               'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'THLYR'   ''       []       0
+    'sediment thickness'               'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'DP_BEDLYR' ''       []       0
     'base level of sediment layer'     'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'DP_BEDLYR' ''       []       0
     'base level of sediment layer'     'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'THLYR'   ''       []       0
     'base level of sediment layer'     'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'DPSED'   ''       []       0
@@ -1428,10 +1434,13 @@ end
 for i=1:length(Out)
     switch Out(i).ReqLoc
         case 'd'
-            Out(i).UseGrid=1;
+            Out(i).UseGrid=3;%1;
+            Out(i).Geom='SGRID-NODE';
         case 'z'
-            Out(i).UseGrid=2;
+            Out(i).UseGrid=3;%2;
+            Out(i).Geom='SGRID-FACE';
     end
+    Out(i).Coords='xy';
 end
 % -------------------------------------------------------------------------
 
