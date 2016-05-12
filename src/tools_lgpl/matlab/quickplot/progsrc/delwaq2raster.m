@@ -71,6 +71,16 @@ function delwaq2raster(ini_file)
 %               the same settings). The names specified should either match
 %               the short DELWAQ name, or the expanded names as used by
 %               Delft3D-QUICKPLOT.
+%     layer:    number of the layer for which the data needs to be
+%               extracted from a 3D delwaq MAP file, for example
+%                 layer = 6
+%               to retrieve data for layer 6. Specify
+%                 layer = 'depth average'
+%               to compute the depth averaged values (this is the default).
+%               The depth averaging requires that LocalDepth variable is
+%               available on the delwaq MAP file.
+%     localdepth: specify the name of the variable to be used for the
+%               layer depth, by default this is: LocalDepth.
 %
 %   See also: DELWAQ, ARCGRID.
 
@@ -104,6 +114,8 @@ function delwaq2raster(ini_file)
 %   $HeadURL$
 %   $Id$
 
+LAYER_DEPTH_AVERAGE = -1001;
+
 if isstandalone
     fprintf(1,'--------------------------------------------------------------------------------\n');
     fprintf(1,'Delft3D-DELWAQ2RASTER conversion tool.\n');
@@ -115,6 +127,8 @@ if nargin==0
     fprintf(1,'Syntax: delwaq2raster <configuration.ini>\n');
     error('No configuration.ini file specified')
 end
+%
+fprintf(1,'Parsing input file ...\n');
 ini_info       = inifile('open',ini_file);
 %
 raster_reffile = inifile('get',ini_info,'general','raster');
@@ -124,6 +138,7 @@ flwfile        = inifile('get',ini_info,'general','flow',gridfile);
 method         = inifile('get',ini_info,'general','method');
 outdir         = inifile('get',ini_info,'general','outdir');
 %
+fprintf(1,'Reading template raster file(s) ...\n');
 raster_info    = qpfopen(raster_reffile);
 for f = {'qp_filetype','QP_FileType'}
     fs = f{1};
@@ -155,11 +170,15 @@ if yflip
     raster_yco = raster_yco(end:-1:1);
 end
 %
+fprintf(1,'Reading WAQ data file(s) ...\n');
 waq_info       = qpfopen(waqfile,gridfile);
+nLayers_WAQ    = waq_info.Grid.MNK(3);
+nSeg2D         = waq_info.DwqBin.NumSegm/nLayers_WAQ;
 dwq            = waq_info.DwqBin;
 waq_qnt        = qpread(waq_info);
 waq_qnt(strcmp('-------',{waq_qnt.Name}'))=[];
 %
+fprintf(1,'Reading FLOW data file(s) ...\n');
 [p,f,e] = fileparts(flwfile);
 ipar = strfind(f,'_par_')+5;
 if isempty(ipar)
@@ -204,36 +223,31 @@ else
 end
 %
 flw_qnt        = qpread(flw_info1);
-for i = length(flw_qnt):-1:1
-    idm = flw_qnt(i).varid;
-    if isempty(idm) || ~ismember('nFlowElem',flw_info1.Dataset(idm(1)+1).Dimension)
-        flw_qnt(i) = [];
+if isfield(flw_qnt,'varid')
+    for i = length(flw_qnt):-1:1
+        idm = flw_qnt(i).varid;
+        if isempty(idm) || ~ismember('nFlowElem',flw_info1.Dataset(idm(1)+1).Dimension)
+            flw_qnt(i) = [];
+        end
     end
+else
+    flw_qnt(:) = [];
 end
 %
-if waq_info.Grid.MNK(3)>1
-    ildp = filter_qnt('LocalDepth',waq_qnt,flw_qnt([]));
-    if ildp==0
-        error('Missing depth information (LocalDepth) on 3D delwaq MAP file selected.');
-    else
-        ildp = waq_qnt(ildp).Val1;
-    end
-    %
-    nLayers = waq_info.Grid.MNK(3);
-    nSeg2D  = waq_info.DwqBin.NumSegm/nLayers;
-end
-%
+fprintf(1,'Collecting data from [action] blocks ...\n');
 tstart         = inifile('get',ini_info,'general','tstart',1);
 tstop          = inifile('get',ini_info,'general','tstop' ,inf);
 ntstep         = inifile('get',ini_info,'general','ntstep',inf);
 ntskip         = inifile('get',ini_info,'general','skipstep',0);
+layer          = inifile('get',ini_info,'general','layer','depth average');
 %
 if exist(outdir,'dir')~=7
     error('Invalid output directory: %s',outdir)
 end
 %
 chp = inifile('chapters',ini_info);
-for ifld = 1:length(chp)
+nchp = length(chp);
+for ifld = 1:nchp
     switch chp{ifld,1}
         case 'general'
         case 'action'
@@ -246,12 +260,24 @@ for ifld = 1:length(chp)
             info.ntstep = inifile('get',ini_info,ifld,'ntstep',ntstep);
             info.tshift = inifile('get',ini_info,ifld,'tshift',NaN);
             info.ntskip = inifile('get',ini_info,ifld,'skipstep',ntskip);
+            info.layer  = inifile('get',ini_info,ifld,'layer',layer);
+            info.ldepth = inifile('get',ini_info,ifld,'localdepth','LocalDepth');
+            if ischar(info.layer)
+                switch info.layer
+                    case 'depth average'
+                        info.layer = LAYER_DEPTH_AVERAGE;
+                    otherwise
+                        error('Unknown layer "%s"',info.layer);
+                end
+            end
             chp{ifld,4} = info;
         otherwise
-            error('Unknown chapter encountered: %s',chp{ifld,1})
+            fprintf(1,'  Skipping [%s] block\n',chp{ifld,1});
+            %error('Unknown chapter encountered: %s',chp{ifld,1})
     end
 end
 %
+fprintf(1,'Identifying quantities to be processed ...\n');
 qnts = cat(1,chp{:,2});
 iqnt = cat(1,chp{:,3});
 if any(iqnt==0)
@@ -264,8 +290,9 @@ if any(iqnt==0)
     error('%s\n',err,qnts{:})
 end
 %
+fprintf(1,'Checking time information ...\n');
 ndatasets = 0;
-for ifld = 1:size(chp,1)
+for ifld = 1:nchp
     if ~isempty(chp{ifld,3})
         nq = length(chp{ifld,3});
         info = chp{ifld,4};
@@ -338,6 +365,33 @@ for ifld = 1:size(chp,1)
     end
 end
 %
+fprintf(1,'Checking layer information ...\n');
+for ifld = 1:nchp
+    iqnt = chp{ifld,3};
+    if isempty(iqnt)
+        continue
+    end
+    info = chp{ifld,4};
+    if any(iqnt)>0
+        % delwaq quantities
+        if info.layer>nLayers_WAQ
+            error('In block %i you request non-existing layer %i of a %i layer model; please correct.',ifld,info.layer,nLayers_WAQ)
+        end
+        if nLayers_WAQ==1
+            info.layer = 1;
+        end
+        if info.layer == LAYER_DEPTH_AVERAGE
+            ildp = filter_qnt(info.ldepth,waq_qnt,[]);
+            if ildp==0
+                error('Missing depth information (%s) on WAQ map file to compute depth average quantities.',info.ldepth);
+            end
+            info.ildp = waq_qnt(ildp).Val1;
+        end
+    end
+    chp{ifld,4} = info;
+end
+%
+fprintf(1,'Segment number mapping ...\n');
 G = qpread(waq_info, 'segment number', 'gridcell');
 if size(G.X,2)>1
 else
@@ -360,6 +414,7 @@ else
     G.CellVal = G.Val(G.CellIdx);
 end
 %
+fprintf(1,'Determining spatial mapping ...\n');
 switch method
     case 'center'
         min_area = 0;
@@ -504,17 +559,17 @@ end
 % process data sets
 %
 idataset  = 0;
+fprintf(1,'Processing data sets ...\n');
 h = lcwaitbar(0,'Processing data sets ...');
-nfld = size(chp,1);
-for ifld = 1:nfld
+for ifld = 1:nchp
     %
     % get data
     %
-    tmop = chp{ifld,1}; % time_operator
     qstr = chp{ifld,2};
     if isempty(qstr)
         continue
     end
+    tmop = chp{ifld,1}; % time_operator
     iqnt = chp{ifld,3};
     info = chp{ifld,4};
     %
@@ -569,35 +624,41 @@ for ifld = 1:nfld
             if any(iwaq)
                 [t,DATA_t] = delwaq('read',dwq,idwq,0,it);
                 iMissing = DATA_t==-999;
-                if waq_info.Grid.MNK(3)>1
-                    % 3D quantity --> perform depth averaging
-                    %
-                    % Determine segment thickness
-                    %
-                    [t,LDP_t] = delwaq('read',dwq,ildp,0,it);
-                    LDP_t(LDP_t==-999) = 0;
-                    LDP_t = reshape(LDP_t,[nSeg2D nLayers]);
-                    LDP_t(:,2:end) = diff(LDP_t,1,2);
-                    %
-                    % Determine total waterdepth (set to 1 if 0 to avoid
-                    % division by zero).
-                    %
-                    TDP_t = sum(LDP_t,2);
-                    zeroDepth = TDP_t==0;
-                    TDP_t(zeroDepth) = 1;
-                    %
-                    % Assuming that missing data value occurs in all layers
-                    % such that depth average is equal to missing data
-                    % value again. Will it be so exactly?
-                    %
-                    for iq = size(DATA_t,1):-1:1
-                        DATA2D_t(iq,:)   = (sum(reshape(DATA_t(iq,:)  .*LDP_t(:)',size(LDP_t)),2)./TDP_t).';
-                        iMissing2D(iq,:) = (sum(reshape(iMissing(iq,:).*LDP_t(:)',size(LDP_t)),2)./TDP_t).'>0;
-                        iMissing2D(iq,zeroDepth) = true;
+                if nLayers_WAQ>1
+                    % 3D quantity
+                    if info.layer == LAYER_DEPTH_AVERAGE
+                        %
+                        % Determine segment thickness
+                        %
+                        [t,LDP_t] = delwaq('read',dwq,info.ildp,0,it);
+                        LDP_t(LDP_t==-999) = 0;
+                        LDP_t = reshape(LDP_t,[nSeg2D nLayers_WAQ]);
+                        LDP_t(:,2:end) = diff(LDP_t,1,2);
+                        %
+                        % Determine total waterdepth (set to 1 if 0 to avoid
+                        % division by zero).
+                        %
+                        TDP_t = sum(LDP_t,2);
+                        zeroDepth = TDP_t==0;
+                        TDP_t(zeroDepth) = 1;
+                        %
+                        % Assuming that missing data value occurs in all layers
+                        % such that depth average is equal to missing data
+                        % value again. Will it be so exactly?
+                        %
+                        for iq = size(DATA_t,1):-1:1
+                            DATA2D_t(iq,:)   = (sum(reshape(DATA_t(iq,:)  .*LDP_t(:)',size(LDP_t)),2)./TDP_t).';
+                            iMissing2D(iq,:) = (sum(reshape(iMissing(iq,:).*LDP_t(:)',size(LDP_t)),2)./TDP_t).'>0;
+                            iMissing2D(iq,zeroDepth) = true;
+                        end
+                        %
+                        DATA_t   = DATA2D_t;
+                        iMissing = iMissing2D;
+                    else
+                        slice    = (info.layer-1)*nSeg2D + (1:nSeg2D);
+                        DATA_t   = DATA_t(:,slice);
+                        iMissing = iMissing(:,slice);
                     end
-                    %
-                    DATA_t   = DATA2D_t;
-                    iMissing = iMissing2D;
                 else
                     % 2D quantity
                 end
@@ -694,6 +755,8 @@ for ifld = 1:nfld
     %
 end
 delete(h)
+fprintf(1,'Finished.\n');
+
 
 function x=lcwaitbar(varargin)
 persistent alpha
@@ -717,8 +780,10 @@ selqnt = unique(selqnt);
 [mem,idx2]=ismember(selqnt,{waq_qnt.ShortName}');
 iselqnt=max(idx1,idx2);
 %
-[mem,idx3]=ismember(selqnt,{flw_qnt.Name}');
-iselqnt(idx3>0)=-idx3(idx3>0);
+if ~isempty(flw_qnt)
+    [mem,idx3]=ismember(selqnt,{flw_qnt.Name}');
+    iselqnt(idx3>0)=-idx3(idx3>0);
+end
 
 function [area,lidx] = inside_raster_poly(x,y,raster_xcc,raster_ycc)
 col = find(min(x)<raster_xcc & max(x)>raster_xcc);
@@ -736,9 +801,16 @@ lidx = lidx(chk);
 function [area,lidx] = intersect_raster_poly(x,y,raster_xco,raster_yco)
 col = find(min(x)<raster_xco(2:end) & max(x)>raster_xco(1:end-1));
 ncol = length(col);
-col = col(1):col(end)+1;
 row = find(min(y)<raster_yco(2:end) & max(y)>raster_yco(1:end-1));
 nrow = length(row);
+%
+if ncol==0 || nrow==0
+    area = [];
+    lidx = [];
+    return
+end
+%
+col = col(1):col(end)+1;
 row = row(1):row(end)+1;
 nrowt = length(raster_yco)-1;
 %
@@ -757,7 +829,7 @@ for n = row(1:end-1)
     for m = col(1:end-1)
         in = n-row(1)+1;
         im = m-col(1)+1;
-        area(in,im) = intersect_cell_poly((x-raster_xco(m))/dx(m),(y-raster_yco(n))/dx(n))*dx(m)*dy(n);
+        area(in,im) = intersect_cell_poly((x-raster_xco(m))/dx(m),(y-raster_yco(n))/dy(n))*dx(m)*dy(n);
         lidx(in,im) = n + (m-1)*nrowt;
     end
 end
