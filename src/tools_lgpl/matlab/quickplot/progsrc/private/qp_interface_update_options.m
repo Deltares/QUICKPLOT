@@ -352,7 +352,7 @@ switch geometry
                 Props.ClosedPoly = 2;
             end
         end
-    case {'sQUAD','sQUAD+'}
+    case {'sQUAD','sQUAD+','SGRID-FACE'}
         if multiple(K_)
             if multiple(M_) && multiple(N_) && ~vslice
                 axestype={'X-Y-Z'};
