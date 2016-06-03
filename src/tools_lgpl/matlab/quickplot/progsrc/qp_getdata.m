@@ -483,8 +483,7 @@ catch Ex
     if ~isempty(calltype)
         calltype = ['/' calltype];
     end
-    stacklist = stack2str(Ex.stack,'d3d_qp_core');
-    ui_message('error',{sprintf('Caught in qp_getdata%s:',calltype),Ex.message,stacklist{:}})
+    qp_error(sprintf('Caught in qp_getdata%s:',calltype),Ex)
 end
 
 
