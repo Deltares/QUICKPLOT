@@ -1063,7 +1063,7 @@ IUD.PlotState.FI=FileInfo;
 IUD.PlotState.Handles=hNew;
 IUD.XInfo=[];
 if isfield(data,'XInfo')
-    IUD.XInfo=data.XInfo;
+    IUD.XInfo=data(1).XInfo;
 end
 if ~isempty(Thresholds)
     IUD.XInfo.Thresholds=Thresholds;
