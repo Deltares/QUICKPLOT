@@ -35,7 +35,7 @@ function [Equal,Msg]=filesequal(File1,File2,varargin)
 %   $HeadURL$
 %   $Id$
 
-Equal = logical(0);
+Equal = false;
 Msg='';
 i=1;
 skip=0;
@@ -78,7 +78,7 @@ if ~Equal
 end
 fseek(fid1,skip,-1);
 fseek(fid2,skip,-1);
-while ~feof(fid1) & ~feof(fid2) & Equal
+while ~feof(fid1) && ~feof(fid2) && Equal
     kb1   = fread(fid1,[1 1000],'*uchar');
     kb2   = fread(fid2,[1 1000],'*uchar');
     Equal = isequal(kb1,kb2);
