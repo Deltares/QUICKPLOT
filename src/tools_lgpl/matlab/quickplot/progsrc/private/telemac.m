@@ -164,18 +164,17 @@ if NVar2>0
 end
 
 Struct.Offset=ftell(fid);
-
-if Struct.IParam(1)==0
-    % Not encountered yet (every thing in one record)
-elseif Struct.IParam(1)==1
-    Struct.RecordSize=12+NVar1*(Struct.Discr(1).NPnts+2)*4;
-    if NVar2>0
-        Struct.RecordSize=Struct.RecordSize+NVar2*(Struct.Discr(2).NPnts+2)*4;
-    end
-    fread(fid,[1 1],'int32');
-    Struct.Times=fread(fid,[1 inf],'float32',Struct.RecordSize-4)/3600/24;
+Struct.RecordSize=12+NVar1*(Struct.Discr(1).NPnts+2)*4;
+if NVar2>0
+    Struct.RecordSize=Struct.RecordSize+NVar2*(Struct.Discr(2).NPnts+2)*4;
 end
+
+% Struct.IParam(1)==0 one block
+% Struct.IParam(1)==1 multiple blocks
+fread(fid,[1 1],'int32');
+Struct.Times=fread(fid,[1 inf],'float32',Struct.RecordSize-4)/3600/24;
 Struct.NTimes=length(Struct.Times);
+carsh
 
 fseek(fid,0,1);
 FileSize=ftell(fid);
