@@ -174,7 +174,6 @@ end
 fread(fid,[1 1],'int32');
 Struct.Times=fread(fid,[1 inf],'float32',Struct.RecordSize-4)/3600/24;
 Struct.NTimes=length(Struct.Times);
-carsh
 
 fseek(fid,0,1);
 FileSize=ftell(fid);
