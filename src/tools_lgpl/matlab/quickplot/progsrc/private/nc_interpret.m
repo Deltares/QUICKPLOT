@@ -221,7 +221,7 @@ for ivar = 1:nvars
         %
         id = strmatch(node_dim,DimensionNames,'exact');
         if isempty(id)
-            ui_message('error','The node dimension ''%s'' of UGRID mesh %s is not defined.',face_dim,Info.Name)
+            ui_message('error','The node dimension ''%s'' of UGRID mesh %s does not exist as NetCDF dimension in the file.',face_dim,Info.Name)
         else
             nc.Dimension(id).Type = 'ugrid_node';
         end
@@ -229,7 +229,7 @@ for ivar = 1:nvars
         if ~isempty(edge_dim)
             id = strmatch(edge_dim,DimensionNames,'exact');
             if isempty(id)
-                ui_message('error','The edge dimension ''%s'' of UGRID mesh %s is not defined.',face_dim,Info.Name)
+                ui_message('error','The edge dimension ''%s'' of UGRID mesh %s does not exist as NetCDF dimension in the file.',face_dim,Info.Name)
             else
                 nc.Dimension(id).Type = 'ugrid_edge';
             end
@@ -238,7 +238,7 @@ for ivar = 1:nvars
         if ~isempty(face_dim)
             id = strmatch(face_dim,DimensionNames,'exact');
             if isempty(id)
-                ui_message('error','The face dimension ''%s'' of UGRID mesh %s is not defined.',face_dim,Info.Name)
+                ui_message('error','The face dimension ''%s'' of UGRID mesh %s does not exist as NetCDF dimension in the file.',face_dim,Info.Name)
             else
                 nc.Dimension(id).Type = 'ugrid_face';
             end
