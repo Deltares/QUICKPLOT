@@ -84,6 +84,14 @@ function tick(varargin)
 %     * Language Select the language used for names of months and
 %                days: English, Dutch, German, French, Italian, or
 %                Spanish (default: English)
+%     * SkipNLabels
+%                Specifies the number of ticks without labels in between
+%                ticks with labels: integer (default: 0). The default
+%                settings generates a label for every tick. If you specify
+%                N then non-blank labels will be generated for ticks
+%                1:(N+1):end.
+%     * FirstLabel
+%                Special format specification for the first tick.
 %
 %   Examples:
 %     ax=subplot(2,2,1);
@@ -100,7 +108,7 @@ function tick(varargin)
 %
 %     ax=subplot(2,2,4);
 %     set(ax,'xlim',now+[0 7]);
-%     tick(gca,'x','date','%2w %D')
+%     tick(gca,'x','date','%2w %D','firstlabel','%D %3O %Y')
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -134,6 +142,8 @@ function tick(varargin)
 
 DecSep='.';
 Language='English';
+SkipNLabels=0;
+FirstLabel=0;
 
 INP=varargin;
 i=1;
@@ -145,6 +155,12 @@ while i<length(INP)
                 INP([i i+1])=[];
             case 'language'
                 Language=INP{i+1};
+                INP([i i+1])=[];
+            case 'skipnlabels'
+                SkipNLabels=INP{i+1};
+                INP([i i+1])=[];
+            case 'firstlabel'
+                FirstLabel=INP{i+1};
                 INP([i i+1])=[];
             otherwise
                 i=i+1;
@@ -251,11 +267,11 @@ for i=1:length(ax)
     if strcmp(frmt,'autodate')
         [dummytck,frmt]=Local_datetick(handle,ax(i));
     end
-    Local_tick(handle,ax(i),tck,frmt,scaling,DecSep,Language)
+    Local_tick(handle,ax(i),tck,frmt,scaling,DecSep,Language,SkipNLabels,FirstLabel)
 end
 
 
-function Local_tick(handle,ax,tck,Frmt,scaling,DecSep,Language)
+function Local_tick(handle,ax,tck,Frmt,scaling,DecSep,Language,SkipNLabels,FirstLabel)
 frmt=lower(Frmt);
 switch frmt
     case 'none'
@@ -272,7 +288,7 @@ switch frmt
     otherwise
         if strncmp(frmt,'date:',5)
             % Set axis tick labels
-            labels = Local_datestr(tck,Frmt(6:end),Language);
+            labels = Local_datestr(tck,Frmt(6:end),Language,FirstLabel);
             set(handle,[ax,'tick'],tck,[ax,'ticklabel'],labels)
         else
             tckL=cell(1,length(tck));
@@ -305,9 +321,16 @@ switch frmt
             set(handle,[ax 'tick'],tck,[ax 'ticklabel'],tckL);
         end
 end
+if strcmp(get(handle,[ax 'ticklabelmode']),'manual')
+    tckL = get(handle,[ax 'ticklabel']);
+    noLabel = true(1,length(tckL));
+    noLabel(1:(SkipNLabels+1):end) = false;
+    tckL(noLabel)={''};
+    set(handle,[ax 'ticklabel'],tckL)
+end
 
 
-function Strs = Local_datestr(ticks,frmt,Language)
+function Strs = Local_datestr(ticks,frmt,Language,FirstLabel)
 ticks=ticks(:);
 
 perc=strfind(frmt,'%');
@@ -427,6 +450,9 @@ Len(Len==0)=[];     % remove zeros
 
 if isempty(Frmt)
     [Strs{1:length(ticks)}]=deal(frmt);
+    if nargin>3
+        Strs(1) = Local_datestr(ticks(1),FirstLabel,Language);
+    end
     return
 end
 
@@ -538,6 +564,10 @@ Strs=cell(length(TickSep),1);
 for k=1:length(TickSep)
     Strs{k}=TmpStr(Start(k):End(k));
 end
+if nargin>3
+    Strs(1) = Local_datestr(ticks(1),FirstLabel,Language);
+end
+Strs
 
 
 function [ticks,format]=Local_datetick(handle,ax)
@@ -551,6 +581,8 @@ end
 [ticks,format] = bestscale(lim);
 if ~limmanual && length(ticks)>1
     set(handle,[ax 'lim'],[min(lim(1),min(ticks)) max(lim(2),max(ticks))]);
+else
+    ticks = ticks(ticks>=lim(1) & ticks<=lim(2));
 end
 
 
