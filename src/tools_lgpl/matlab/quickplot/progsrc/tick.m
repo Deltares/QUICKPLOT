@@ -567,7 +567,6 @@ end
 if nargin>3
     Strs(1) = Local_datestr(ticks(1),FirstLabel,Language);
 end
-Strs
 
 
 function [ticks,format]=Local_datetick(handle,ax)
