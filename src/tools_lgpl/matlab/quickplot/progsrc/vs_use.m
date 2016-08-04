@@ -173,6 +173,18 @@ if isempty(data_file) & isempty(def_file)
          case {'.dat','.def'}
             data_file = [filename transfercase(file_ext,'.dat')];
             def_file = [filename transfercase(file_ext,'.def')];
+         case {'.wdi','.wdo'}
+            data_file = [filename file_ext];
+            def_file = [filename transfercase(file_ext,'.wdf')];
+         case {'.wdf'}
+            wdi_file = [filename transfercase(file_ext,'.wdi')];
+            wdo_file = [filename transfercase(file_ext,'.wdo')];
+            if exist(wdi_file,'file') & ~exist(wdo_file,'file')
+               data_file = wdi_file;
+            else
+               data_file = wdo_file;
+            end
+            def_file = [filename transfercase(file_ext,'.wdf')];
          case '' % backward compatibility with *.mat files of *.dat,*.def combinations
             data_file = [filename '.dat'];
             def_file = [filename '.def'];

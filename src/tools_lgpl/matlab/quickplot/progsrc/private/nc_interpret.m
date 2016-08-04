@@ -438,7 +438,7 @@ for ivar = 1:nvars
                 %
                 nc = setType(nc,ivar,idim,'z-coordinate');
                 continue
-            case {'millisecond','milliseconds','millisec','millisecs','ms'}
+            case {'millisecond','milliseconds','millisec','millisecs','msec','ms'}
                 dt = 0.001;
             case {'second','seconds','sec','secs','s'}
                 dt = 1;
@@ -448,7 +448,9 @@ for ivar = 1:nvars
                 dt = 3600;
             case {'day','days','d'}
                 dt = 86400; % 24*3600
-            case {'month','months'}
+            case {'week'}
+                dt = 7*86400;
+            case {'month','months','mon'}
                 dt = 365.242198781*24*3600/12;
             case {'year','years','yr','yrs'}
                 dt = 365.242198781*24*3600;
@@ -483,7 +485,7 @@ for ivar = 1:nvars
             if ~isequal(nc.Dataset(ivar).Type,'time')
                 nc = setType(nc,ivar,idim,'aux-time');
             end
-            refdate = sscanf(unit2,' since %d-%d-%d %d:%d:%f %d:%d',[1 8]);
+            refdate = sscanf(unit2,' since %d-%d-%d%*1[ T]%d:%d:%f %d:%d',[1 8]);
             if length(refdate)>=6
                 if length(refdate)==8
                     TZshift = refdate(7) + sign(refdate(7))*refdate(8)/60;
@@ -698,19 +700,32 @@ for ivar = 1:nvars
         end
     end
     if ~isempty(Info.Station)
-        %
-        % Assumption: station is always unique and coordinate dimension.
-        %
-        statdim = intersect(Info.Dimid,nc.Dataset(Info.Station).Dimid(1));
-        if length(Info.Station)>1 || length(statdim)>2
+        if length(Info.Station)>1
             Names = {nc.Dataset(Info.Station).Name};
+            for is = 1:length(Names)
+                isInfo = nc.Dataset(Info.Station(is));
+                dims = sprintf('%s, ',isInfo.Dimension{:});
+                Names{is} = [isInfo.Datatype ' :: ' Names{is} ' (' dims(1:end-2) ')'];
+            end
+            %
+            % rather than always using the first one, we may keep track of
+            % the ones being used and then preferentially select one that
+            % has been used before (only necessary if the order in which we
+            % find them is not consistent). Implement if necessary. What if
+            % both variables v1 and v2 would do and variable X points to v1
+            % and Y points to v2, so both have been used by the time
+            % variable Z is processed. Then we still need to select the
+            % either one.
+            %
             ui_message('error', ...
-                {sprintf('Problem detecting station coordinate for "%s".',Info.Name) ...
-                'Any one of the following variables seems to be valid' ...
+                [{sprintf('Problem detecting station coordinate for "%s".',Info.Name) ...
+                'Any one of the following variables seems to be valid'} ...
                 Names{:} ...
-                'Using the first one.'})
+                {'Using the first one.'}])
             Info.Station = Info.Station(1);
         end
+        %
+        statdim = intersect(Info.Dimid,nc.Dataset(Info.Station).Dimid(1));
         Info.TSMNK(2) = statdim;
     end
     %

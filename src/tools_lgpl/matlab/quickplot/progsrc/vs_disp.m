@@ -352,7 +352,7 @@ for i=iList
     if short
         fprintf(fid,'%s(',leftstr(VS.GrpDat(i).Name,16));
     else
-        fprintf(fid,'Groupname:%s Dimensions:(',leftstr(VS.GrpDat(i).Name,16));
+        fprintf(fid,'Group Name:%s Dimensions:(',leftstr(VS.GrpDat(i).Name,16));
     end
     fprintf(fid,'%i',VS.GrpDat(i).SizeDim(1));
     if length(VS.GrpDat(i).SizeDim)>1

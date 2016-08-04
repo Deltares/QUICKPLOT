@@ -125,6 +125,12 @@ elseif isstruct(vs_disp(vs,'RAY01','XRAY-01'))
    filetype='TRITON';
 elseif isstruct(vs_disp(vs,'GRID_coor','X_coor'))
    filetype='Pharos';
+elseif isstruct(vs_disp(vs,'WANDA',[]))
+    if any(strncmp(vs_disp(vs,[]),'OUTP_',5))
+        filetype='WANDA-output';
+    else
+        filetype='WANDA-input';
+    end
 elseif isstruct(vs_disp(vs,'WAVNT','NTWAV')) % communication file by swan ...
    filetype='Delft3D-com';
 elseif isstruct(vs_disp(vs,'CURTIM','TIMCUR')) % communication file by swan ...
