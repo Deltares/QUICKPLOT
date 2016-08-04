@@ -653,7 +653,7 @@ varargout={Ans FI};
 function Out=infile(FI,domain)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
-TRB='turbines';
+TRB='turbines'; BAR='barriers';
 PropNames={'Name'            'Units'   'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc'  'Loc3D' 'Group'          'Val1'     'Val2'    'SubFld' 'MNK'};
 DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     ''       'z'   'z'       ''      'his-series'     'XYSTAT'   ''  []       0
     'location tidal turbines'   ''       [1 3 0 0 0]  0         4     ''       TRB   'z'       ''      'his-const'      'XYTURBINES'   ''     []       0
@@ -705,6 +705,8 @@ DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     '' 
     'instantaneous discharge'   'm^3/s'  [1 5 0 0 0]  0         1     ''       ''    ''        ''      'his-series'     'CTR'      ''         []       0
     'cumulative discharge'      'm^3'    [1 5 0 0 0]  0         1     ''       ''    ''        ''      'his-series'     'FLTR'     ''         []       0
     'concentration'             ''       [1 5 0 0 0]  0         1     ''       ''    ''        ''      'his-dis-series' 'RINT'     ''         []       0
+    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    'barrier height'            'm'      [1 5 0 0 0]  0         1     ''       BAR   ''        ''      'his-series'     'ZBAR'     ''         []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'advective transport'       ''       [1 5 0 0 0]  0         1     ''       ''    ''        ''      'his-series'     'ATR'      ''         []       0
     'dispersive transport'      ''       [1 5 0 0 0]  0         1     ''       ''    ''        ''      'his-series'     'DTR'      ''         []       0
@@ -898,6 +900,7 @@ for i=size(Out,1):-1:1
                     Out(i)=[];
                 end
             case {'LINK_SUM','MORFAC','RINT'}
+            case {'ZBAR'}
             otherwise
                 % point
                 if NSt==0
@@ -1096,6 +1099,10 @@ if Props.DimFlag(ST_)
             % discharges
             Info=vs_disp(FI,'his-dis-series',Props.Val1);
             sz(ST_)=Info.SizeDim(1);
+        case {'ZBAR'}
+            % barriers
+            Info=vs_disp(FI,'his-const','NAMBAR');
+            sz(ST_)=Info.SizeDim(1);
         case {'FLTR','CTR'}
             % cross-section and discharges
             [sz(ST_),Chk]=vs_get(FI,'his-const','NTRUV','quiet');
@@ -1190,6 +1197,8 @@ switch Props.Val1
         end
     case {'RINT','ZQ_SUM','ZQ'}
         [S,Chk]=vs_get(FI,'his-dis-const','DISCHARGES','quiet');
+    case {'ZBAR'}
+        [S,Chk]=vs_get(FI,'his-const','NAMBAR','quiet');
     case {'FLTR','CTR'}
         [NSt,Chk]=vs_get(FI,'his-const','NTRUV','quiet');
         if (NSt==0)

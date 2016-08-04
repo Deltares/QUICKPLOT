@@ -426,7 +426,7 @@ elseif DimFlag(M_) && DimFlag(N_)
         if ~isempty(val2)
             val2(~act)=NaN;
         end
-        if XYRead % not for DataInCell !
+        if XYRead && ~DataInCell
             x(~act)=NaN;
             y(~act)=NaN;
         end
@@ -588,45 +588,55 @@ switch FI.FileType
                                 if ~isempty(Fourier)
                                     Quant = deblank2(FI.Field(i).Comments{Fourier}(31:end));
                                     DP{10}=1;
-                                    if FI.Field(i).Size(2)==13
-                                        %
-                                        % Vector quantity (amplitudes and phases)
-                                        %
-                                        DP{11}={5,7,6,8};
-                                    else
-                                        %
-                                        % Scalar quantity (amplitude and phase)
-                                        %
-                                        DP{11}={5,6};
+                                    switch FI.Field(i).Size(2)
+                                        case 13
+                                            %
+                                            % Vector quantity (amplitudes and phases)
+                                            %
+                                            DP{11}={5,7,6,8};
+                                        case 12
+                                            %
+                                            % Vector quantity (minimum or maximum) - component wise and magnitude 
+                                            %
+                                            DP{11}={5,6,7};
+                                        otherwise
+                                            %
+                                            % Scalar quantity (amplitude and phase)
+                                            %
+                                            DP{11}={5,6};
                                     end
                                     DP{4}=[0 0 1 1 0];
                                     DP{5}=1;
                                     Freq = strmatch('* Frequency [degrees/hour]   :',FI.Field(i).Comments);
-                                    if ~isempty(strmatch('* column    7 : Maximum value',FI.Field(i).Comments))
+                                    if length(FI.Field(i).ColLabels)>=7 && strcmp(FI.Field(i).ColLabels(7),'Maximum value')
                                         DP{1}=sprintf('%s, maximum',Quant);
                                         %
-                                        % amplitude(s) only
+                                        % use amplitude column only - scalar quantity
                                         %
-                                        DP{11}=DP{11}(1:length(DP{11})/2);
-                                    elseif ~isempty(strmatch('* column    7 : Minimum value',FI.Field(i).Comments))
+                                        DP{11}=DP{11}(1);
+                                    elseif length(FI.Field(i).ColLabels)>=7 && strcmp(FI.Field(i).ColLabels(7),'Minimum value')
                                         DP{1}=sprintf('%s, minimum',Quant);
                                         %
-                                        % amplitude(s) only
+                                        % use amplitude column only - scalar quantity
                                         %
-                                        DP{11}=DP{11}(1:length(DP{11})/2);
+                                        DP{11}=DP{11}(1);
+                                    elseif length(FI.Field(i).ColLabels)>=9 && strcmp(FI.Field(i).ColLabels(9),'Maximum magnitude')
+                                        DP{1}=sprintf('%s, maximum',Quant);
+                                    elseif length(FI.Field(i).ColLabels)>=9 && strcmp(FI.Field(i).ColLabels(9),'Minimum magnitude')
+                                        DP{1}=sprintf('%s, minimum',Quant);
                                     elseif ~isempty(Freq)
                                         Freq = sscanf(FI.Field(i).Comments{Freq}(31:end),'%f',1);
                                         if Freq==0
                                             DP{1}=sprintf('%s, mean',Quant);
                                             %
-                                            % amplitude(s) only
+                                            % use amplitude column(s) only
                                             %
                                             DP{11}=DP{11}(1:length(DP{11})/2);
                                             %
                                             if length(DP{11})==2
                                                 DP{6} = 2;
                                                 DP{10}=[];
-                                                DP{11} = {cat(2,DP{11}{:})};
+                                                DP{11} = {cat(2,DP{11}{:})}; % put the two amplitudes into a cell array to match the correct subfields switch
                                             end
                                         else
                                             DP{1}=sprintf('%s, %g deg/hr',Quant,Freq);
@@ -794,9 +804,13 @@ if isempty(Props.SubFld)
 end
 switch length(Props.Select)
     case 1
-        subf={'amplitude'};
+        %subf={'amplitude'};
+        return
     case 2
         subf={'amplitude','phase'};
+    case 3
+        right_part = fliplr(strtok(fliplr(Props.Name)));
+        subf={['u component ' right_part],['v component ' right_part],['magnitude ' right_part]};
     case 4
         if Props.NVal==-1
             subf={'ellipsephase','ellipsephasevec','ellipse','cross'};

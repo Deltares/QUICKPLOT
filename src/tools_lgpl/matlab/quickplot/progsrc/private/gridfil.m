@@ -395,7 +395,7 @@ if Props.File~=0
             ReqCode=tmpData.RoughnessIDs(Props.SubFld);
             records=tmpData.Records(tmpData.Records(:,5)==ReqCode,:);
             val{1}=val{1}+sparse(records(:,2),records(:,1),records(:,6),size(val{1},1),size(val{1},2));
-        case {'cross-sections'}
+        case {'cross-sections','barriers'}
             ThinDam=1;
             val{1}=zeros(size(FI.X));
             val{2}=zeros(size(FI.X));
@@ -899,9 +899,10 @@ if ~isempty(Attribs)
                     DataProps(l,:)={Str ...
                         'sQUAD' 'xy'  [0 0 1 1 0]  0       0    ''        'd'   'd'      ''      i      Types(bndTyp)   };
                 end
-            case {'cross-sections'}
+            case {'cross-sections','barriers'}
+                type=Attribs(i).FileType;
                 l=l+1;
-                Str=sprintf('cross-sections (%s)',AttribName);
+                Str=sprintf('%s (%s)',type,AttribName);
                 DataProps(l,:)={...
                     Str 'sQUAD' 'xy'  [0 0 1 1 0]  0       0    ''        'd'   'd'      ''      i      1   };
             case 'bagmap'

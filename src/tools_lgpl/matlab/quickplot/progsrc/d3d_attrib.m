@@ -92,13 +92,12 @@ end
 function Types = Local_supported_types
 Types = {'openboundary', 'rigidsheet', '3dgate', 'weir', 'weir-waqua', ...
     'thindam', 'thindam-waqua', 'drypoint', 'cross-sections', ...
-    'discharge stations', 'observation points'};
+    'discharge stations', 'observation points', 'barriers'};
 
 
 function Out = Local_read_attrib(filename,filetype)
-% U        4   144     4   144     1.0  100.0 1
 if (nargin==0) || strcmp(filename,'?')
-    [fname,fpath]=uigetfile('*.*','Select weir file');
+    [fname,fpath]=uigetfile('*.*','Select attribute file');
     if ~ischar(fname)
         return
     end
@@ -345,6 +344,32 @@ for tpC = types
                 end
                 fclose(fid);
                 Out.Name=Name;
+                Out.MNMN=MNMN;
+            case 'barriers'
+                fid=fopen(filename,'r');
+                i=0;
+                while 1
+                    Line=fgetl(fid);
+                    if ~ischar(Line)
+                        break
+                    end
+                    Line=deblank2(Line);
+                    if isempty(Line)
+                        % skip empty lines
+                        continue
+                    elseif Line(1)=='*'
+                        % skip comments
+                        continue
+                    end
+                    i=i+1;
+                    Name{i,1}=Line(1:20);
+                    [v,n,err,j]=sscanf(Line(21:end),'%[uUvV] %i %i %i %i',[1 5]);
+                    U(i)=upper(v(1))=='U';
+                    MNMN(i,1:4)=v(1,2:5);
+                end
+                fclose(fid);
+                Out.Name=Name;
+                Out.U   =U;
                 Out.MNMN=MNMN;
             case 'observation points'
                 fid=fopen(filename,'r');

@@ -100,9 +100,11 @@ end
 % Grid enclosure file
 fid=fopen(filename);
 err=[];
+ln = 0;
 if fid>0
     try
         while 1
+            ln = ln+1;
             line=fgetl(fid);
             if ~ischar(line)
                 break
@@ -112,17 +114,33 @@ if fid>0
             % TK : X returned empty on comgrid scaloost model waqua,
             %      remove the delimiters
             %
+            org_line = line;
             for i_lim = 1: length(delimiters)
                 line(line == delimiters{i_lim}) = ' ';
             end
             
-            X=sscanf(line,'%i');
+            [X,nX,errX] = sscanf(line,'%i');
             
-            if length(X)>=2
+            if nX==0
+                % empty line
+            elseif nX ~= round(nX/2)*2
+                error('Every enclosure line should contain a pair of numbers; check line %i:\n%s',ln,org_line)
+            elseif nX ==2
+                % normal line
+                Enc = [Enc; X];
+            elseif ~isempty(errX)
+                % Multiple coordinate pairs on a single line are accepted
+                % for WAQUA but then no other text on the line is allowed.
+                % Otherwise, we would interpret a thin dam file containing
+                % lines like
+                %       8      4      8      2 U
+                % also an enclosure file.
+                error('Error reading data from line %i:\n%s',ln,org_line)
+            elseif nX>2
                 %
                 % Multiple coordinate pairs on 1 single line ==> reshape
                 %
-                X = reshape(X,2,size(X,1)/2)';
+                X = reshape(X,2,nX/2)';
                 
                 Enc=[Enc; X];
             end
