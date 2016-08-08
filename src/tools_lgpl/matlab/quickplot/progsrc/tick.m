@@ -293,24 +293,42 @@ switch frmt
         else
             tckL=cell(1,length(tck));
             if ~strcmp(DecSep,'.')
-                Frmt=strrep(Frmt,'.','..?'); % This may also change %3.4f into %3..?4f, which is invalid
-                % Why the question mark in the above expression?
-                % Answer: to make the new string separable for otherwise .. would result in ....
-                %         and strfind('....','..') returns [1 2 3]
-                iperc=strfind(Frmt,'%');
-                iperc=setdiff(setdiff(iperc,iperc+1),iperc-1); % double %% means just %
-                for i=fliplr(iperc) % I expect just one, but let's generalize
-                    k=i+1;
-                    while k<length(Frmt) && ismember(Frmt(k),'-0123456789')
-                        k=k+1;
-                    end
-                    if k<length(Frmt) && isequal(Frmt(k),'.')
-                        Frmt(k+1:k+2)=[]; % remove following .?
-                    end
+                if ischar(FirstLabel)
+                    Frmts = {Frmt FirstLabel};
+                else
+                    Frmts = {Frmt};
                 end
+                for l = 1:length(Frmts)
+                    Frmt = Frmts{l};
+                    Frmt=strrep(Frmt,'.','..?'); % This may also change %3.4f into %3..?4f, which is invalid
+                    % Why the question mark in the above expression?
+                    % Answer: to make the new string separable for otherwise .. would result in ....
+                    %         and strfind('....','..') returns [1 2 3]
+                    iperc=strfind(Frmt,'%');
+                    iperc=setdiff(setdiff(iperc,iperc+1),iperc-1); % double %% means just %
+                    for i=fliplr(iperc) % I expect just one, but let's generalize
+                        k=i+1;
+                        while k<length(Frmt) && ismember(Frmt(k),'-0123456789')
+                            k=k+1;
+                        end
+                        if k<length(Frmt) && isequal(Frmt(k),'.')
+                            Frmt(k+1:k+2)=[]; % remove following .?
+                        end
+                    end
+                    %
+                    Frmts{l} = Frmt;
+                end
+                if ischar(FirstLabel)
+                    FirstLabel = Frmts{2};
+                end
+                Frmt = Frmts{1};
             end
             for i=1:length(tck)
-                tckL{i}=sprintf(Frmt,tck(i)*scaling);
+                if i==1 && ischar(FirstLabel)
+                    tckL{i}=sprintf(FirstLabel,tck(i)*scaling);
+                else
+                    tckL{i}=sprintf(Frmt,tck(i)*scaling);
+                end
                 if ~strcmp(DecSep,'.')
                     k=strfind(tckL{i},'..?');
                     tckL{i}=strrep(tckL{i},'.',DecSep);
@@ -450,7 +468,7 @@ Len(Len==0)=[];     % remove zeros
 
 if isempty(Frmt)
     [Strs{1:length(ticks)}]=deal(frmt);
-    if nargin>3
+    if nargin>3 && ischar(FirstLabel)
         Strs(1) = Local_datestr(ticks(1),FirstLabel,Language);
     end
     return
@@ -564,7 +582,7 @@ Strs=cell(length(TickSep),1);
 for k=1:length(TickSep)
     Strs{k}=TmpStr(Start(k):End(k));
 end
-if nargin>3
+if nargin>3 && ischar(FirstLabel)
     Strs(1) = Local_datestr(ticks(1),FirstLabel,Language);
 end
 
