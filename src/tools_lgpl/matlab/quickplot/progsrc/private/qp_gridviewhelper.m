@@ -50,7 +50,7 @@ if ~iscell(UseGrid) || (~isequal(UseGrid(1:3),UseGridNew(1:3)) && UseGridNew{2}>
     %
     % read grid
     [Chk,GRID]=qp_getdata(Info,DomainNr,Props(i_grd),'grid');
-    GRID.ValLocation = NewLoc;
+    [GRID.ValLocation] = deal(NewLoc);
     %
     % push grid to gridview (which triggers update)
     % TODO: Change selection?

@@ -1228,7 +1228,10 @@ gridcol = qp_settings('gridviewgridcolor')/255;
 off = 'off';
 %
 if isfield(GRID,'FaceNodeConnect') % unstructured
-    GRID.Type = 'ugrid';
+    [GRID.Type] = deal('ugrid');
+    if length(GRID)>1
+        error('Multi-grid model not yet supported by Grid View.')
+    end
     if isfield(GRID,'EdgeNodeConnect')
         eConnect = GRID.EdgeNodeConnect;
     else
