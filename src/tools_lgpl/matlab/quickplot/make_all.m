@@ -36,6 +36,9 @@ function make_all
 %   $HeadURL$
 %   $Id$
 
+if ~license('checkout','compiler')
+    error('Compiler license currently not available.')
+end
 curdir = pwd;
 sourcedir=[curdir,filesep,'progsrc'];
 qpversion=read_identification(sourcedir,'d3d_qp.m');
