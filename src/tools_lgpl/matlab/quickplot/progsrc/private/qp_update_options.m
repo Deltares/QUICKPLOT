@@ -223,9 +223,14 @@ if isfield(Ops,'facecolour')
     end
 end
 
-if isfield(Ops,'textboxfacecolour')
-    hTextbox=findobj(OH,'tag','textbox=?');
-    set(hTextbox,'enable','on','enable','on','backgroundcolor',Ops.textboxfacecolour)
+if isfield(Ops,'fontsize')
+    if isfield(Ops,'textboxfacecolour') && ~isequal(Ops.textboxfacecolour,'none')
+        set(findobj(OH,'tag','textbox=?'),'enable','on','value',1)
+        hTextbox=findobj(OH,'tag','textboxfacecolour=?');
+        set(hTextbox,'enable','on','backgroundcolor',Ops.textboxfacecolour)
+    else
+        set(findobj(OH,'tag','textbox=?'),'enable','on','value',0)
+    end
 end
 
 if isfield(Ops,'linestyle')
@@ -352,11 +357,18 @@ end
 
 function settings = imatch(Choices,Ops,fld)
 settings.string = Choices.(fld);
-settings.value = ustrcmpi(Ops.(fld),settings.string);
+if ~ischar(Ops.(fld))
+    settings.value = 1;
+else
+    settings.value = ustrcmpi(Ops.(fld),settings.string);
+end
 
 
 function Choices = makechoices(Choices,Ops,fld)
 OTHER = {'other option 1','other option 2','other option 3'};
 if isfield(Ops,fld)
     Choices.(fld) = [{Ops.(fld)} OTHER];
+    if ~ischar(Choices.(fld){1})
+        Choices.(fld){1} = '<non-string object>';
+    end
 end
