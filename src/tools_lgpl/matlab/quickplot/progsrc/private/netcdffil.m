@@ -366,6 +366,13 @@ if XYRead
                     end
                 else
                     start = FI.Dataset(iconnect).Attribute(istart).Value;
+                    maxNode = max(Ans.FaceNodeConnect(:));
+                    minNode = min(Ans.FaceNodeConnect(Ans.FaceNodeConnect>=0));
+                    if minNode-start+1<1
+                        error('File specifies start_index %g, but lowest node index in file is %g.',start,minNode)
+                    elseif maxNode-start+1>length(Ans.X)
+                        error('File specifies start_index %g and the largest node index in file is %g, but the number of nodes is only %g.',start,maxNode,length(Ans.X))
+                    end
                 end
                 Ans.FaceNodeConnect = Ans.FaceNodeConnect - start + 1;
                 Ans.FaceNodeConnect(Ans.FaceNodeConnect<1) = NaN;
