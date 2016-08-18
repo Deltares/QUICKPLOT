@@ -91,7 +91,15 @@ else
     Info=[];
     if ~isempty(X) && isstruct(X{1})
         tp = qp_gettype(X{1});
-        if ~strcmp(tp,'unknown file type')
+        if strcmp(tp,'unknown file type')
+            % the second argument should then be of type DataFld
+            if  ~isfield(X,'Name') || ~isfield(X,'Units') || ~isfield(X,'DimFlag') || ~isfield(X,'NVal')
+                % This isn't a DataFld structure, so there is something
+                % wrong. Most likely the filetype cannot be identified
+                % because the structure didn't come from qpfopen.
+                error('Unable to identify filetype associated with the first argument.')
+            end
+        else
             Info=X{1};
             X=X(2:end);
         end
@@ -104,7 +112,7 @@ else
         %
         Info=vs_use('lastread');
         if isempty(Info)
-            error('No data file specified or data file not recognized.');
+            error('No data file specified or data file not recognized.')
         end
     end
 end

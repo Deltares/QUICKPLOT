@@ -5,7 +5,7 @@ function delwaq2raster(ini_file)
 %   files for use with for instance the HABITAT module. The INIFILE
 %   should contain the following elements:
 %
-%   Block [general] containing keywords:
+%   A block [general] containing keywords:
 %     raster :  name of reference raster file (determining raster
 %               dimensions and raster file format). Currently, supports
 %               bil/hdr pairs and asc files. Output files will use the same
@@ -37,7 +37,7 @@ function delwaq2raster(ini_file)
 %               actually included in the operation (not used for operation
 %               ident). See next block for details.
 %
-%     One or more [action] blocks containing the following keywords:
+%   One or more [action] blocks containing the following keywords:
 %     time_op:  name of operation in time. The tool supports the following
 %               operations:
 %               max, mean, min, std, and ident (default)
@@ -81,6 +81,16 @@ function delwaq2raster(ini_file)
 %               available on the delwaq MAP file.
 %     localdepth: specify the name of the variable to be used for the
 %               layer depth, by default this is: LocalDepth.
+%
+%   One or more [<VarName>] blocks in which <VarName> matches the name of a
+%   variable specified in the "include" item of an [action] block. The
+%   following keywords are supported in such blocks:
+%     lowerbound: minimum value to be used for the variable; the maximum of
+%               the value and the lower bound will be used in the analysis.
+%               The default lowerbound is -Inf, i.e. no limit applied.
+%     upperbound: minimum value to be used for the variable; the minimum of
+%               the value and the upper bound will be used in the analysis.
+%               The default upperbound is Inf, i.e. no limit applied.
 %
 %   See also: DELWAQ, ARCGRID.
 
@@ -180,33 +190,18 @@ waq_qnt(strcmp('-------',{waq_qnt.Name}'))=[];
 %
 fprintf(1,'Reading FLOW data file(s) ...\n');
 [p,f,e] = fileparts(flwfile);
-ipar = strfind(f,'_par_')+5;
-if isempty(ipar)
+flw_info1      = qpfopen(flwfile);
+if flw_info1.NumDomains==1
     % regular simulation
-    flw_info       = qpfopen(flwfile);
-    flw_info1      = flw_info;
+    flw_info = flw_info1;
 else
     % MPI parallel simulation
-    d = dir(fullfile(p,[f(1:ipar-1) '*' f(ipar+4:end) e]));
-    d = {d.name};
-    npart = length(d);
-    %
-    d2 = cell(1,npart);
-    for i = 1:npart
-        d2{i} = sprintf('%s%04i%s',f(1:ipar-1),i-1,[f(ipar+4:end) e]);
-    end
-    %
-    if ~isequal(d,d2)
-        err = cat(2,'Flow data seems to consist of multiple files. The following files were found:',d,'but expected:',d2);
-        for i = [1+(1:npart) npart+2+(1:npart)]
-            err{i} = ['  ' err{i}];
-        end
-        error('%s\n',err{:})
-    end
-    %
-    flw_info = cell(length(d),2);
-    for i = 1:length(d)
-        INFO = qpfopen(fullfile(p,d{i}));
+    flw_info = cell(flw_info1.NumDomains,3);
+    for i = 1:flw_info1.NumDomains
+        INFO = flw_info1.Partitions{i};
+        INFO.FileName = INFO.Filename; % for qpread
+        INFO.QP_FileType = 'NetCDF';   % for qpread
+        %
         FEGN = nc_varget(INFO.FileName,'FlowElemGlobalNr'); % nFlowElem
         FED  = nc_varget(INFO.FileName,'FlowElemDomain');   % nFlowElem
         %
@@ -247,10 +242,13 @@ end
 %
 chp = inifile('chapters',ini_info);
 nchp = length(chp);
+blockprocessed = false(1,nchp);
 for ifld = 1:nchp
     switch chp{ifld,1}
         case 'general'
+            blockprocessed(ifld) = true;
         case 'action'
+            blockprocessed(ifld) = true;
             chp{ifld,1} = inifile('get',ini_info,ifld,'time_op','ident');
             chp{ifld,2} = inifile('get',ini_info,ifld,'include',{});
             [chp{ifld,3},chp{ifld,2}] = filter_qnt(chp{ifld,2},waq_qnt,flw_qnt);
@@ -272,8 +270,7 @@ for ifld = 1:nchp
             end
             chp{ifld,4} = info;
         otherwise
-            fprintf(1,'  Skipping [%s] block\n',chp{ifld,1});
-            %error('Unknown chapter encountered: %s',chp{ifld,1})
+            %fprintf(1,'  Skipping [%s] block\n',chp{ifld,1});
     end
 end
 %
@@ -288,6 +285,42 @@ if any(iqnt==0)
         err = 'Unable to locate the following quantities in the data file(s)';
     end
     error('%s\n',err,qnts{:})
+end
+[uqnts,idum,iuqnt] = unique(qnts);
+offset = 0;
+for ifld = 1:nchp
+    nq = length(chp{ifld,2});
+    chp{ifld,2} = iuqnt(offset+(1:nq));
+    offset = offset + nq;
+end
+%
+fprintf(1,'Processing [<quantity name>] blocks ...\n');
+nqnts = length(uqnts);
+[qntprp(1:nqnts).lowerbound] = deal(-inf);
+[qntprp(:).upperbound] = deal(inf);
+for iq = 1:nqnts
+    ifld = find(strcmp(uqnts{iq},chp(:,1)));
+    if ~isempty(ifld) % assuming one block
+        blockprocessed(ifld) = true;
+        qntprp(iq).lowerbound = inifile('get',ini_info,ifld,'lowerbound',-inf);
+        qntprp(iq).upperbound = inifile('get',ini_info,ifld,'upperbound',inf);
+        if qntprp(iq).lowerbound~=-inf && qntprp(iq).upperbound~=inf
+            fprintf(1,'  %s clipped to range [%g,%g]\n',uqnts{iq},qntprp(iq).lowerbound,qntprp(iq).upperbound);
+        elseif qntprp(iq).lowerbound~=-inf
+            fprintf(1,'  %s clipped to %g or larger\n',uqnts{iq},qntprp(iq).lowerbound);
+        elseif qntprp(iq).upperbound~=inf
+            fprintf(1,'  %s clipped to %g or smaller\n',uqnts{iq},qntprp(iq).upperbound);
+        end
+    end
+end
+%
+if any(~blockprocessed)
+    fprintf(1,'The following blocks in have been skipped ....\n');
+    for ifld = 1:nchp
+        if ~blockprocessed(ifld)
+            fprintf(1,'  Block %i: [%s]\n',ifld,chp{ifld,1});
+        end
+    end
 end
 %
 fprintf(1,'Checking time information ...\n');
@@ -308,13 +341,13 @@ for ifld = 1:nchp
             for it = 1:size(AllTimes,2)
                 if isequal(AllTimes{1,it},times)
                     % add elem
-                    AllTimes{2,it}(end+1,1) = chp{ifld,2}(i);
+                    AllTimes{2,it}(end+1,1) = uqnts(chp{ifld,2}(i));
                     match=1;
                 end
             end
             if ~match
                 AllTimes{1,end+1} = times;
-                AllTimes{2,end} = chp{ifld,2}(i);
+                AllTimes{2,end} = uqnts(chp{ifld,2}(i));
             end
         end
         if size(AllTimes,2)>1
@@ -565,13 +598,16 @@ for ifld = 1:nchp
     %
     % get data
     %
-    qstr = chp{ifld,2};
-    if isempty(qstr)
+    iuq = chp{ifld,2};
+    if isempty(iuq)
         continue
     end
+    qstr = uqnts(iuq);
     tmop = chp{ifld,1}; % time_operator
     iqnt = chp{ifld,3};
     info = chp{ifld,4};
+    %
+    nq = length(iqnt);
     %
     iwaq = iqnt>0;
     iflw = find(~iwaq);
@@ -615,6 +651,11 @@ for ifld = 1:nchp
             otherwise
                 DATA  = 0;
                 DATA2 = 0;
+        end
+        %
+        fprintf(1,'  time selection "%s":\n',tmopstr);
+        for i = 1:nq
+            fprintf(1,'    quantity "%s"\n',qstr{i});
         end
         %
         for it = itstart:itstep:itstop
@@ -690,6 +731,13 @@ for ifld = 1:nchp
                     DATA_t(iflw(i),:) = val;
                 end
             end
+            %
+            for i = 1:nq
+                mask = isnan(DATA_t(i,:));
+                DATA_t(i,:) = min(max(qntprp(iuq(i)).lowerbound,DATA_t(i,:)),qntprp(iuq(i)).upperbound);
+                DATA_t(i,mask) = NaN;
+            end
+            %
             switch tmop
                 case 'ident'
                     DATA   = DATA_t;
@@ -723,7 +771,7 @@ for ifld = 1:nchp
             end
             %
             if it==itstop || strcmp(tmop,'ident')
-                for i = 1:length(iqnt)
+                for i = 1:nq
                     data = accumarray(Wght(:,2),Wght(:,1).*DATA(i,Wght(:,3))',[prod(raster_sz) 1]);
                     wght = accumarray(Wght(:,2),Wght(:,1),[prod(raster_sz) 1]);
                     if min_area>0
