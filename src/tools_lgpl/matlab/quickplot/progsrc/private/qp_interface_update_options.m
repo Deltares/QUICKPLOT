@@ -1510,7 +1510,10 @@ if nval>=0
         ExpTypes{end+1}='ARCview shape';
         ExpTypes{end+1}='landboundary file';
     end
-    maxt = 100; % TODO maxt=get(findobj(mfig,'tag','max_t'),'userdata');
+    maxt = get(findobj(UD.MainWin.Fig,'tag','max_t'),'userdata');
+    if ~isnumeric(maxt) || ~isequal(size(maxt),[1 1]) || maxt<=0
+        maxt = inf;
+    end
     if ((length(selected{T_})<11 && ~isequal(selected{T_},0)) || (maxt<11 && isequal(selected{T_},0))) && nval>0 && (multiple(M_) || multiple(N_) || multiple(K_))
         ExpTypes{end+1}='Tekal file';
         ExpTypes{end+1}='Tecplot file';

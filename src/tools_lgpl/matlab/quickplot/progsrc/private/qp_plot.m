@@ -858,6 +858,7 @@ else
         Param.compat7={'v6'};
     end
 
+    hNew = hOld;
     for d = length(data):-1:1
         do=min(length(hOld),d);
         plotargs={hOld{do},Parent,Param,data(d),Ops,Props};
