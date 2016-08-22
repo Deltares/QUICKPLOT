@@ -468,6 +468,8 @@ try
                               % matching DPI for default size: 53, 54, 56, 57 61, 62, 64, 65, 66, 69
                               args={'skip',256};
                               showfig=1;
+                           case '.asc'
+                              args={'skip',71};
                            case '.mat'
                               args={'skip',128};
                            case '.dbf'
