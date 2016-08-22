@@ -75,11 +75,11 @@ if nargin<2
     T=now;
 end
 qpversion = deblank(sscanf(qpversion,'%[^(]')); % strip off the 32/64 bit flag (the toolbox is platform independent)
-disp(['Delft3D-MATLAB interface version: ' qpversion]);
+fprintf('\nBuilding Delft3D-MATLAB interface version %s (all platforms)\n\n',qpversion);
 TStr=datestr(T);
-disp(['Current date and time           : ' TStr]);
+fprintf('Current date and time           : %s\n',TStr);
 
-disp(['Creating ',tdir,' directory ...']);
+fprintf('Creating %s directory ...\n',tdir);
 if ~exist(tdir,'dir')
     [success,message] = mkdir(tdir);
     if ~success
@@ -88,22 +88,22 @@ if ~exist(tdir,'dir')
     end
 end
 
-disp('Copying files ...');
+fprintf('Copying files ...\n');
 exportsrc(sourcedir,targetdir)
 
-disp('Modifying files ...');
+fprintf('Modifying files ...\n');
 fstrrep([targetdir,filesep,'d3d_qp.m'],'<VERSION>',qpversion)
 fstrrep([targetdir,filesep,'d3d_qp.m'],'<CREATIONDATE>',TStr)
 fstrrep([targetdir,filesep,'Contents.m'],'<VERSION>',qpversion)
 fstrrep([targetdir,filesep,'Contents.m'],'<CREATIONDATE>',TStr)
 
-disp('Stripping files ...');
+fprintf('Stripping files ...\n');
 svnstripfile(targetdir)
 
-%disp('Pcoding files ...');
+%fprintf('Pcoding files ...\n');
 %pmfile('dir',targetdir,targetdir,'-verbose')
 
-disp('Cleaning up directory ...');
+fprintf('Cleaning up directory ...\n');
 cd(tdir)
 X={ '*.asv'
     '*.bak'
@@ -112,12 +112,12 @@ X={ '*.asv'
     'compileonly'};
 cleanup(X)
 
-disp('Removing unneeded subdirectories ...');
+fprintf('Removing unneeded subdirectories ...\n');
 X={'org'};
 cleanup(X)
 
 cd ..
-disp('Finished.');
+fprintf('Finished.\n');
 
 
 function exportsrc(sourcedir,targetdir)
