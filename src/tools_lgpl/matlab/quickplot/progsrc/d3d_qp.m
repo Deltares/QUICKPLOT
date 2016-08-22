@@ -2576,6 +2576,7 @@ switch cmd
         %
         if 0
             box
+            delwaq2raster
             grid
             camlight
             lighting phong;
