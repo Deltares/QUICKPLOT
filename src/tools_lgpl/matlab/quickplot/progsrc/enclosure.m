@@ -103,6 +103,8 @@ err=[];
 ln = 0;
 if fid>0
     try
+        Enc = NaN(1000,2); % avoid extending array for every line
+        iP  = 0;
         while 1
             ln = ln+1;
             line=fgetl(fid);
@@ -127,7 +129,11 @@ if fid>0
                 error('Every enclosure line should contain a pair of numbers; check line %i:\n%s',ln,org_line)
             elseif nX ==2
                 % normal line
-                Enc = [Enc; X];
+                if size(Enc,1)<iP+1
+                    Enc = [Enc;NaN(size(Enc))]; % avoid extending array for every line
+                end
+                Enc(iP+1,:) = X';
+                iP = iP+1;
             elseif ~isempty(errX)
                 % Multiple coordinate pairs on a single line are accepted
                 % for WAQUA but then no other text on the line is allowed.
@@ -140,11 +146,17 @@ if fid>0
                 %
                 % Multiple coordinate pairs on 1 single line ==> reshape
                 %
-                X = reshape(X,2,nX/2)';
-                
-                Enc=[Enc; X];
+                nX = nX/2;
+                if size(Enc,1)<iP+nX
+                    Enc = [Enc;NaN(size(Enc))]; % avoid extending array for every line
+                end
+                X = reshape(X,2,nX)';
+                Enc(iP+1:iP+nX,:) = X;
+                iP = IP+nX;
             end
         end
+        %
+        Enc = Enc(1:iP,:); % avoid extending array for every line
     catch err
     end
     fclose(fid);
