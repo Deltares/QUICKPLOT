@@ -191,7 +191,7 @@ waq_qnt(strcmp('-------',{waq_qnt.Name}'))=[];
 fprintf(1,'Reading FLOW data file(s) ...\n');
 [p,f,e] = fileparts(flwfile);
 flw_info1      = qpfopen(flwfile);
-if flw_info1.NumDomains==1
+if ~isfield(flw_info1,'NumDomains') || flw_info1.NumDomains==1
     % regular simulation
     flw_info = flw_info1;
 else

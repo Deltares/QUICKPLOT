@@ -235,12 +235,14 @@ switch cmd
         %try opening the file ...
         userasked=0;
         usertrytp='';
+        ASCII = verifyascii(FileName);
         while isempty(FI)
             %ui_message('','Trying %s ...\n',trytp);
             %pause
             try
                 switch try_next
                     case 'qpsession'
+                        asciicheck(ASCII,try_next)
                         PAR.X=[];
                         PAR = rmfield(PAR,'X');
                         qp_session('rebuild',FileName,PAR);
@@ -322,6 +324,7 @@ switch cmd
                             FI=[];
                         end
                     case 'WaterML2'
+                        asciicheck(ASCII,try_next)
                         FI=waterml2('open',FileName);
                         Tp=FI.FileType;
                     case 'ecomsed-binary'
@@ -520,6 +523,7 @@ switch cmd
                             end
                         end
                     case 'arcgrid'
+                        asciicheck(ASCII,try_next)
                         FI=arcgrid('open',FileName);
                         if ~isempty(FI)
                             if ~isfield(FI,'Check')
@@ -535,6 +539,7 @@ switch cmd
                         FI=surfer('open',FileName);
                         Tp=FI.FileType;
                     case 'asciiwind'
+                        asciicheck(ASCII,try_next)
                         FI=asciiwind('open',FileName);
                         if ~isfield(FI,'Check')
                             FI=[];
@@ -654,18 +659,21 @@ switch cmd
                             Tp=FI.FileType;
                         end
                     case 'adcircmesh'
+                        asciicheck(ASCII,try_next)
                         FI=adcircmesh('open',FileName);
                         if ~isempty(FI)
                             FI.Options=0;
                             Tp=FI.FileType;
                         end
                     case 'mikemesh'
+                        asciicheck(ASCII,try_next)
                         FI=mikemesh('open',FileName);
                         if ~isempty(FI)
                             FI.Options=0;
                             Tp=FI.FileType;
                         end
                     case 'SHYFEM mesh'
+                        asciicheck(ASCII,try_next)
                         FI=shyfemmesh('open',FileName);
                         if ~isempty(FI)
                             FI.Options=0;
@@ -685,6 +693,7 @@ switch cmd
                             Tp=FI.FileType;
                         end
                     case 'tekal'
+                        asciicheck(ASCII,try_next)
                         FI=tekal('open',FileName);
                         if ~isempty(FI)
                             if ~isfield(FI,'Check')
@@ -795,6 +804,7 @@ switch cmd
                             Tp=FI.FileType;
                         end
                     case 'SWAN spectral'
+                        asciicheck(ASCII,try_next)
                         FI=readswan(FileName);
                         if ~isempty(FI)
                             if ~isfield(FI,'Check')
@@ -806,11 +816,13 @@ switch cmd
                             end
                         end
                     case 'DelwaqTimFile'
+                        asciicheck(ASCII,try_next)
                         FI=delwaqtimfile(FileName);
                         if ~isempty(FI)
                             Tp=FI.FileType;
                         end
                     case 'morf'
+                        asciicheck(ASCII,try_next)
                         FI=morf('read',FileName);
                         if ~isempty(FI)
                             Tp='MorfTree';
@@ -821,6 +833,7 @@ switch cmd
                             Tp='AukePC';
                         end
                     case 'bct'
+                        asciicheck(ASCII,try_next)
                         FI=bct_io('read',FileName);
                         if ~isempty(FI)
                             if ~isfield(FI,'Check') || strcmp(FI.Check,'NotOK')
@@ -948,6 +961,7 @@ switch cmd
                             end
                         end
                     case 'samples'
+                        asciicheck(ASCII,try_next)
                         XYZ=samples('read',FileName,'struct');
                         if isempty(XYZ)
                             FI=[];
@@ -958,6 +972,7 @@ switch cmd
                             FI=[];
                         end
                     case 'BNA File'
+                        asciicheck(ASCII,try_next)
                         FI=bna('open',FileName);
                         if ~isempty(FI)
                             if ~isfield(FI,'Check')
@@ -969,6 +984,7 @@ switch cmd
                             end
                         end
                     case 'ArcInfoUngenerate'
+                        asciicheck(ASCII,try_next)
                         FI=ai_ungen('open',FileName);
                         if ~isempty(FI)
                             if ~isfield(FI,'Check')
@@ -991,6 +1007,7 @@ switch cmd
                             end
                         end
                     case 'NOOS time series'
+                        asciicheck(ASCII,try_next)
                         FI=noosfile('open',FileName);
                         Tp=try_next;
                     case 'shipma'
@@ -999,6 +1016,7 @@ switch cmd
                         FI.DomainName = 'Proj/Case';
                         FI.Options=1;
                     case 'unibest'
+                        asciicheck(ASCII,try_next) % only the .fun file is ascii, but unibest assumes that you have selected the .fun file.
                         FI=unibest('open',FileName);
                         if ~isempty(FI)
                             if ~isfield(FI,'Check')
@@ -1067,3 +1085,26 @@ if isempty(FI)
     lasttp=[];
 end
 qp_settings('LastFileType',lasttp)
+
+
+function ASCII = verifyascii(arg)
+if ischar(arg)
+    fid = fopen(arg,'r');
+    pos = -1;
+else
+    fid = arg;
+    pos = ftell(fid);
+end
+S = fread(fid,[1 100],'char');
+ASCII = ~any(S~=10 & S~=13 & S<32);
+if pos>=0
+    fseek(fid,pos,-1);
+else
+    fclose(fid);
+end
+
+
+function asciicheck(ASCII,filetype)
+if ~ASCII
+    error('%s should be an ASCII file. Reading unexpected characters.',filetype)
+end
