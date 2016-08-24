@@ -236,6 +236,8 @@ while ~feof(fid)
         case {11,21} % pointz, pointm
             % x,y,z or x,y,m
             fread(fid,3,'float64');
+            TNPnt=TNPnt+1;
+            TNPrt=TNPrt+1;
         case {13,15,23,25} % polylinez, polygonz, polylinem, polygonm
             % box, NPrt, NPnt, {iprt}, {x,y} zrange, {z} or mrange, {m}
             fread(fid,4,'float64');
