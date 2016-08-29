@@ -329,7 +329,7 @@ while changed
                 % opposite direction and parts must be separated by NaNs
                 if all(inpolygon(xy2(:,1),xy2(:,2),xy1{part}(:,1),xy1{part}(:,2)));
                     % inside this part
-                    xy1{part} = [xy1{part};xy2]; % should be: [xy1{part};NaN NaN;xy2]; for inpolygon, but shape(write) doesn't like this
+                    xy1{part} = [xy1{part};NaN NaN;xy2];
                     % process next hole
                     continue
                 end
