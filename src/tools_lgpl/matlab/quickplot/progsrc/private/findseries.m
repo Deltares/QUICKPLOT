@@ -1,10 +1,23 @@
-function bs=findseries(bool);
+function bs=findseries(bool)
 %FINDSERIES  Find series of nonzero elements.
-%   I=FINDSERIES(X) returns an Nx2 array of
-%   pairs of indices referring to the start
-%   and end of series of nonzero elements.
-%   First column of I: start index.
-%   Second column of I: end index.
+%   I = FINDSERIES(X) returns an Nx2 array of pairs of indices referring to
+%   the start and end of series of nonzero elements. The first column of I
+%   contains the start index. The second column of I contains the end
+%   index.
+%
+%   Example
+%      X = [0 0 0 1 2 3 0 0 0 1 2 3 4 5 0];
+%      I = findseries(X)
+%
+%   returns
+%
+%      I =
+%           4     6
+%          10    14
+%
+%   since X contains non-zero values at indices 4 thru 6 and 10 thru 14.
+%
+%   See also FIND.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -36,8 +49,11 @@ function bs=findseries(bool);
 %   $HeadURL$
 %   $Id$
 
-ibool=find(bool(:));
-if isempty(ibool), bs=zeros(0,2); return; end
-istart=ibool(cat(2,1,find(diff(ibool')>1)+1));
-iend=ibool(cat(2,find(diff(ibool')>1),length(ibool)));
-bs=[istart iend];
+ibool = find(bool(:));
+if isempty(ibool)
+    bs = zeros(0,2);
+    return
+end
+istart = ibool(cat(2,1,find(diff(ibool')>1)+1));
+iend = ibool(cat(2,find(diff(ibool')>1),length(ibool)));
+bs = [istart iend];

@@ -311,7 +311,7 @@ switch T.SubType
     case 'circle'
         nel=length(T.Seg)*(NPointPerCircle+2);
     case 'donut'
-        nel=length(T.Seg)*(2*(NPointPerCircle+1)+1);
+        nel=length(T.Seg)*2*(NPointPerCircle+2);
 end
 T.TotalNPnt=nel-1;
 
@@ -348,6 +348,7 @@ for i=1:length(T.Seg)
             Coord=[Coord(1)+Coord(3)*sina Coord(2)+Coord(3)*cosa];
         case 'donut'
             Coord=[Coord(1)+Coord(4)*sina Coord(2)+Coord(4)*cosa
+                NaN NaN
                 Coord(1)+Coord(3)*sina Coord(2)+Coord(3)*cosa];
     end
     t1=size(Coord,1);

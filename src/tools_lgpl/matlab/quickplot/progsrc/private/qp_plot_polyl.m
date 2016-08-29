@@ -73,34 +73,8 @@ switch NVal
             else
                 bs=[1 length(vNaN)];
             end
-            hNew=zeros(1,size(bs,1));
-            for i=1:size(bs,1)
-                if data.X(bs(i,1))==data.X(bs(i,2)) && ...
-                        data.Y(bs(i,1))==data.Y(bs(i,2))
-                    % this patch should not influence color scaling.
-                    % however, the default "1" cdata will do so
-                    % we cannot set the cdata to [] immediately
-                    % so, we change it after having set all color options
-                    hNew(i)=patch(data.X(bs(i,1):bs(i,2)), ...
-                        data.Y(bs(i,1):bs(i,2)), ...
-                        1, ...
-                        'edgecolor',Ops.colour, ...
-                        'facecolor',Ops.facecolour, ...
-                        'linestyle',Ops.linestyle, ...
-                        'linewidth',Ops.linewidth, ...
-                        'marker',Ops.marker, ...
-                        'markersize',Ops.markersize, ...
-                        'markeredgecolor',Ops.markercolour, ...
-                        'markerfacecolor',Ops.markerfillcolour, ...
-                        'cdata',[], ...
-                        'parent',Parent);
-                else
-                    hNew(i)=line(data.X(bs(i,1):bs(i,2)), ...
-                        data.Y(bs(i,1):bs(i,2)), ...
-                        'parent',Parent, ...
-                        Ops.LineParams{:});
-                end
-            end
+            hNew = plot_polygons([data.X data.Y],bs,[],Parent,Ops);
+            %
             set(Parent,'layer','top')
         end
         qp_title(Parent,TStr,'quantity',Quant,'unit',Units,'time',TStr)
@@ -111,89 +85,12 @@ switch NVal
         vNaN=isnan(data.Val);
         if any(vNaN)
             bs=findseries(~vNaN);
+        elseif isempty(vNaN)
+            bs=zeros(0,2);
         else
             bs=[1 length(vNaN)];
         end
-        %
-        fill = ~strcmp(Ops.facecolour,'none');
-        if fill
-            i = data.X(bs(:,1))==data.X(bs(:,2)) & ...
-                data.Y(bs(:,1))==data.Y(bs(:,2));
-            bf = bs(i,:);
-            bs = bs(~i,:);
-        else
-            bf = zeros(0,2);
-        end
-        %
-        % Determine patch sizes
-        %
-        len_bf = bf(:,2)-bf(:,1);
-        LEN_BF = unique(len_bf);
-        lines_to_do = ~isempty(bs);
-        %
-        % Now create objects
-        %
-        %Ops.markerfillcolour = 'none';
-        hNew = zeros(length(LEN_BF)+1,1);
-        for i=1:length(LEN_BF)
-            LBF = LEN_BF(i);
-            if LBF > 0
-                nbf = sum(len_bf==LBF);
-                xyd = repmat(NaN,LBF*nbf,2);
-                cl = repmat(NaN,LBF*nbf,1);
-                %
-                k = 1;
-                for j=1:length(len_bf)
-                    if len_bf(j)==LBF
-                        range = bf(j,1):bf(j,2)-1;
-                        trange = (k-1)*LBF+(1:LBF);
-                        xyd(trange,1)=data.X(range);
-                        if lines_to_do
-                            data.X(bf(j,1):bf(j,2)) = NaN;
-                        end
-                        xyd(trange,2)=data.Y(range);
-                        cl(trange,1)=data.Val(range(1));
-                        k=k+1;
-                    end
-                end
-                %
-                hNew(i)=patch('vertices',xyd, ...
-                    'faces',reshape(1:LBF*nbf,[LBF nbf])', ...
-                    'facevertexcdata',cl, ...
-                    'edgecolor','flat', ...
-                    'facecolor','flat', ...
-                    'linestyle',Ops.linestyle, ...
-                    'linewidth',Ops.linewidth, ...
-                    'marker',Ops.marker, ...
-                    'markersize',Ops.markersize, ...
-                    'markeredgecolor',Ops.markercolour, ...
-                    'markerfacecolor',Ops.markerfillcolour, ...
-                    'parent',Parent);
-            end %  LBF > 0
-        end
-        %
-        if lines_to_do
-            gap2 = isnan(data.X) & [1;isnan(data.X(1:end-1))];
-            data.X(gap2,:)=[];
-            data.X(end+1)=NaN;
-            data.Y(gap2,:)=[];
-            data.Y(end+1)=NaN;
-            data.Val(gap2,:)=[];
-            data.Val(end+1)=NaN;
-            %
-            hNew(length(LEN_BF)+1)=patch(data.X,data.Y,data.Val, ...
-                'edgecolor','flat', ...
-                'facecolor','none', ...
-                'linestyle',Ops.linestyle, ...
-                'linewidth',Ops.linewidth, ...
-                'marker',Ops.marker, ...
-                'markersize',Ops.markersize, ...
-                'markeredgecolor',Ops.markercolour, ...
-                'markerfacecolor',Ops.markerfillcolour, ...
-                'parent',Parent);
-        else
-            hNew = hNew(1:end-1);
-        end
+        hNew = plot_polygons([data.X data.Y],bs,data.Val(bs(:,1)),Parent,Ops);
         %
         set(Parent,'layer','top')
         if strcmp(Ops.colourbar,'none')
@@ -221,3 +118,162 @@ switch NVal
                 end
         end
 end
+
+
+function hNew = plot_polygons(XY,bs,val,Parent,Ops)
+if ~isempty(val)
+    uval = unique(val);
+    nval = length(uval);
+    for i = nval:-1:1
+        hNew{i} = plot_polygons_one_value(XY,bs(val==uval(i),:),uval(i),Parent,Ops);
+    end
+    hNew = cat(1,hNew{:});
+else
+    hNew = plot_polygons_one_value(XY,bs,[],Parent,Ops);
+end
+
+
+function hNew = plot_polygons_one_value(XY,bs,val,Parent,Ops)
+nseg = size(bs,1);
+ln = bs(:,2)-bs(:,1)+1;
+%
+polygons = false(nseg,1);
+for i = 1:nseg
+    if all(XY(bs(i,1),:)==XY(bs(i,2),:))
+        % this is a polyGON
+        polygons(i) = true;
+    end
+end
+% one NaN separator needed per contour except for the last one
+ln_polygons  = max(0,sum(ln(polygons)+1)-1);
+ln_polylines = max(0,sum(ln(~polygons)+1)-1);
+%
+xy_polygons  = NaN(ln_polygons,2);
+xy_polylines = NaN(ln_polylines,2);
+ofgon = 0;
+oflin = 0;
+%
+for i = 1:nseg
+    xy = XY(bs(i,1):bs(i,2),:);
+    if polygons(i)
+        xy_polygons(ofgon+(1:ln(i)),:)  = xy;
+        ofgon = ofgon + ln(i) + 1;
+    else
+        xy_polylines(oflin+(1:ln(i)),:) = xy;
+        oflin = oflin + ln(i) + 1;
+    end
+end
+%
+if ln_polylines + ln_polygons > 0
+    % ... && (~strcmp(Ops.linestyle,'none') || ~strcmp(Ops.marker,'none'))
+    % outline using a NaN separated line for multiple parts and
+    % holes
+    if isempty(val)
+        hNewL = line([xy_polygons(:,1);NaN;xy_polylines(:,1)], ...
+            [xy_polygons(:,2);NaN;xy_polylines(:,2)], ...
+            'parent',Parent, ...
+            Ops.LineParams{:});
+    else
+        hNewL = patch([xy_polygons(:,1);NaN;xy_polylines(:,1);NaN], ...
+            [xy_polygons(:,2);NaN;xy_polylines(:,2);NaN], ...
+            repmat(val,ln_polylines + ln_polygons + 2,1), ...
+            'edgecolor','flat', ...
+            'facecolor','none', ...
+            'linestyle',Ops.linestyle, ...
+            'linewidth',Ops.linewidth, ...
+            'marker',Ops.marker, ...
+            'markersize',Ops.markersize, ...
+            'markeredgecolor',Ops.markercolour, ...
+            'markerfacecolor',Ops.markerfillcolour, ...
+            'parent',Parent);
+    end
+else
+    hNewL = [];
+end
+hNewP = [];
+if ln_polygons>0
+    % the patch command doesn't support
+    % * multiple parts, and
+    % * holes
+    % using NaN separated arrays. It is possible to create holes by
+    % connecting the outer contour with the contour of the hole and
+    % returning back to the outer contour along the same line. One can do
+    % the same for polygons with multiple parts but this doesn't work that
+    % well; sometimes a thin connecting line remains (even without coloring
+    % the contours). So, we first need to identify which contour marks an
+    % outer contour and which contour represents a hole.
+    %
+    nansep = find(isnan(xy_polygons(:,1)));
+    BP = [[0;nansep] [nansep;size(xy_polygons,1)+1]];
+    BPln = BP(:,2)-BP(:,1)-1;
+    np = size(BP,1);
+    inside = false(np);
+    for i = 1:np
+        for j = i+1:np
+            inside(i,j) = all(inpolygon(xy_polygons(BP(i,1)+1:BP(i,2)-1,1),xy_polygons(BP(i,1)+1:BP(i,2)-1,2),xy_polygons(BP(j,1)+1:BP(j,2)-1,1),xy_polygons(BP(j,1)+1:BP(j,2)-1,2)));
+            inside(j,i) = all(inpolygon(xy_polygons(BP(j,1)+1:BP(j,2)-1,1),xy_polygons(BP(j,1)+1:BP(j,2)-1,2),xy_polygons(BP(i,1)+1:BP(i,2)-1,1),xy_polygons(BP(i,1)+1:BP(i,2)-1,2)));
+        end
+    end
+    %
+    % determine contour type: 0 = outer contour, 1 = inner contour (hole)
+    type = mod(sum(inside,2),2);
+    hNewP = zeros(np,1);
+    for ip = 1:np
+        % skip inner contours
+        if type(ip)==1
+            continue
+        end
+        %
+        ipmask = inside(ip,:);
+        ipmask(ip) = true;
+        ipx = [ip;find(none(xor(inside,repmat(ipmask,np,1)),2))];
+        %
+        xyr = NaN(sum(BPln(ipx)+1)-1,2);
+        or = 0;
+        for i = ipx'
+            xyr(or+(1:BPln(i)),:) = xy_polygons(BP(i,1)+1:BP(i,2)-1,:);
+            or = or + BPln(i)+1;
+        end
+        bp = cumsum(BPln(ipx)+1);
+        %
+        for i = 1:length(bp)-1
+            % find the shortest distance between the first contour
+            % and the second one.
+            d1min = inf;
+            for i2 = bp(i)+1:bp(i+1)-1
+                [d1,i1] = min( (xyr(1:bp(i)-1,1)-xyr(i2,1)).^2 + (xyr(1:bp(i)-1,2)-xyr(i2,2)).^2);
+                if d1<d1min
+                    d1min = d1;
+                    i1min = i1;
+                    i2min = i2;
+                end
+            end
+            % merge the first and second contour along the line
+            % between the two points with shortest distance.
+            xyr(1:bp(i+1)-1,:) = xyr([i1min:bp(i)-1 2:i1min i2min:bp(i+1)-1 bp(i)+2:i2min i1min],:);
+            % the merged contour is now contour one, continue to
+            % merge it with the contour of the next hole.
+        end
+        %
+        % if the color is given then this patch should not influence color
+        % scaling. However, the default "1" cdata will do so; we need to set it
+        % to []. Unfortunately, we cannot set the cdata to [] immediately since
+        % this will result in an error since the facecolor is flat by default.
+        % so, we change it after having set facecolor to something else.
+        facecolor = Ops.facecolour;
+        if strcmp(facecolor,'yes')
+            facecolor = 'flat';
+        end
+        hNewP(i) = patch(xyr(:,1), ...
+            xyr(:,2), ...
+            1, ...
+            'edgecolor','k', ...
+            'facecolor',facecolor, ...
+            'linestyle','none', ...
+            'marker','none', ...
+            'cdata',val, ...
+            'parent',Parent);
+    end
+    hNewP(hNewP==0,:) = [];
+end
+hNew = [hNewL;hNewP];
