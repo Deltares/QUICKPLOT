@@ -208,11 +208,32 @@ if ln_polygons>0
     BPln = BP(:,2)-BP(:,1)-1;
     np = size(BP,1);
     inside = false(np);
-    for i = 1:np
-        for j = i+1:np
-            inside(i,j) = all(inpolygon(xy_polygons(BP(i,1)+1:BP(i,2)-1,1),xy_polygons(BP(i,1)+1:BP(i,2)-1,2),xy_polygons(BP(j,1)+1:BP(j,2)-1,1),xy_polygons(BP(j,1)+1:BP(j,2)-1,2)));
-            inside(j,i) = all(inpolygon(xy_polygons(BP(j,1)+1:BP(j,2)-1,1),xy_polygons(BP(j,1)+1:BP(j,2)-1,2),xy_polygons(BP(i,1)+1:BP(i,2)-1,1),xy_polygons(BP(i,1)+1:BP(i,2)-1,2)));
-        end
+    inside_check = 'sequential';
+    switch inside_check
+        case 'never'
+            % default matrix inside is valid
+        case 'sequential'
+            % check only for polygons inside the previous ones back to the
+            % latest outer one
+            i1 = 1; % latest outer
+            for j = 2:np
+                is_inside = false;
+                for i = i1:j-1
+                    inside(j,i) = all(inpolygon(xy_polygons(BP(j,1)+1:BP(j,2)-1,1),xy_polygons(BP(j,1)+1:BP(j,2)-1,2),xy_polygons(BP(i,1)+1:BP(i,2)-1,1),xy_polygons(BP(i,1)+1:BP(i,2)-1,2)));
+                    is_inside = is_inside | inside(j,i);
+                end
+                if ~is_inside
+                    i1 = j;
+                end
+            end
+        case 'always'
+            % check any combination
+            for i = 1:np
+                for j = i+1:np
+                    inside(i,j) = all(inpolygon(xy_polygons(BP(i,1)+1:BP(i,2)-1,1),xy_polygons(BP(i,1)+1:BP(i,2)-1,2),xy_polygons(BP(j,1)+1:BP(j,2)-1,1),xy_polygons(BP(j,1)+1:BP(j,2)-1,2)));
+                    inside(j,i) = all(inpolygon(xy_polygons(BP(j,1)+1:BP(j,2)-1,1),xy_polygons(BP(j,1)+1:BP(j,2)-1,2),xy_polygons(BP(i,1)+1:BP(i,2)-1,1),xy_polygons(BP(i,1)+1:BP(i,2)-1,2)));
+                end
+            end
     end
     %
     % determine contour type: 0 = outer contour, 1 = inner contour (hole)
@@ -224,9 +245,9 @@ if ln_polygons>0
             continue
         end
         %
-        ipmask = inside(ip,:);
-        ipmask(ip) = true;
-        ipx = [ip;find(none(xor(inside,repmat(ipmask,np,1)),2))];
+        inrank = sum(inside(ip,:));
+        inhere = find(inside(:,ip));
+        ipx = [ip;inhere(sum(inside(inhere,:),2)==inrank+1)];
         %
         xyr = NaN(sum(BPln(ipx)+1)-1,2);
         or = 0;

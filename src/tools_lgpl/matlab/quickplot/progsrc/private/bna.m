@@ -3,12 +3,14 @@ function varargout=bna(cmd,varargin)
 %   FILEINFO = BNA('open',FILENAME) opens the specified file, reads its
 %   contents and returns a structure describing the data.
 %
-%   [X,Y] = BNA('read',FILEINFO) returns the X and Y data of all lines in
-%   the file. If instead of the FILEINFO structure -- as obtained from a
-%   BNA('open',...) call -- a file name is provided then the indicated file
-%   is first opened. If only one output argument is requested then a Nx2
-%   array is returned with X data in the first column and Y data in the
-%   second column.
+%   [X,Y] = BNA('read',FILEINFO,IDX) returns the X and Y data of the
+%   objects specified by the indices IDX from the file. If instead of the
+%   FILEINFO structure -- as obtained from a BNA('open',...) call -- a file
+%   name is provided then the indicated file is first opened. If only one
+%   output argument is requested then a Nx2 array is returned with X data
+%   in the first column and Y data in the second column. If IDX isn't
+%   specified or equal to ':' then the coordinates of all objects are
+%   returned.
 %
 %   BNA('write',FILENAME,X,Y) writes the (X,Y) coordinates as line segments
 %   to the indicated file. X and Y should either be vectors of equal length
@@ -141,20 +143,33 @@ nel=nel-1;
 T.TotalNPnt=nel;
 
 function Data=Local_read_file(varargin)
-if nargin==1 && isstruct(varargin{1})
-    T=varargin{1};
+if nargin==0
+    T=Local_open_file;
 else
-    T=Local_open_file(varargin{:});
+    if isstruct(varargin{1})
+        T=varargin{1};
+    else
+        T=Local_open_file(varargin{1});
+    end
+end
+if nargin<=1 || isequal(varargin{2},':')
+    objects = 1:length(T.Seg);
+else
+    objects = varargin{2};
 end
 
-nel=T.TotalNPnt;
-
-Data=repmat(NaN,nel,2);
-offset=0;
-for i=1:length(T.Seg)
+nel = 0;
+for i = objects
     t1=size(T.Seg(i).Coord,1);
-    Data(offset+(1:t1),:)=T.Seg(i).Coord;
-    offset=offset+t1+1;
+    nel = nel+t1+1;
+end
+
+Data = NaN(nel,2);
+offset = 0;
+for i = objects
+    t1 = size(T.Seg(i).Coord,1);
+    Data(offset+(1:t1),:) = T.Seg(i).Coord;
+    offset = offset+t1+1;
 end
 
 
