@@ -40,17 +40,17 @@ function [Out1,Out2]=unibest(cmd,varargin)
 %   $HeadURL$
 %   $Id$
 
-switch cmd,
-    case 'open',
-        if nargout>1,
+switch cmd
+    case 'open'
+        if nargout>1
             error('Too many output arguments.')
-        end;
+        end
         Out1=Local_open(varargin{:});
-    case 'read',
+    case 'read'
         [Out1,Out2]=Local_read(varargin{:});
-    otherwise,
+    otherwise
         error('Unknown command: %s.',cmd)
-end;
+end
 
 
 function S=Local_open(filename,datafile)
@@ -58,17 +58,21 @@ function S=Local_open(filename,datafile)
 S.Check='NotOK';
 S.FileType='Unibest';
 
-if (nargin==0) || strcmp(filename,'?'),
+if (nargin==0) || strcmp(filename,'?')
     [fname,fpath]=uigetfile('*.fun','Select Unibest file');
-    if ~ischar(fname),
-        return;
-    end;
+    if ~ischar(fname)
+        return
+    end
     filename=fullfile(fpath,fname);
-end;
+end
 if length(filename)>3 && isequal(lower(filename(end-3:end)),'.daf')
     filename(end-2:end)='fun';
 end
 S.FileName=filename;
+
+if ~verifyascii(filename)
+    error('Unibest .fun-file should be an ASCII file. Reading unexpected characters.')
+end
 
 fid=fopen(filename,'rt');
 % skip first 8 lines (backward compatible)
@@ -281,3 +285,20 @@ fclose(fid);
 % rounding to the nearest hour would be the same).
 %
 OTime=round(OTime*24*60)/24/60;
+
+
+function ASCII = verifyascii(arg)
+if ischar(arg)
+    fid = fopen(arg,'r');
+    pos = -1;
+else
+    fid = arg;
+    pos = ftell(fid);
+end
+S = fread(fid,[1 100],'char');
+ASCII = ~any(S~=9 & S~=10 & S~=13 & S<32); % TAB,LF,CR allowed
+if pos>=0
+    fseek(fid,pos,-1);
+else
+    fclose(fid);
+end

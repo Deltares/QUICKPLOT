@@ -1016,7 +1016,6 @@ switch cmd
                         FI.DomainName = 'Proj/Case';
                         FI.Options=1;
                     case 'unibest'
-                        asciicheck(ASCII,try_next) % only the .fun file is ascii, but unibest assumes that you have selected the .fun file.
                         FI=unibest('open',FileName);
                         if ~isempty(FI)
                             if ~isfield(FI,'Check')
@@ -1096,7 +1095,7 @@ else
     pos = ftell(fid);
 end
 S = fread(fid,[1 100],'char');
-ASCII = ~any(S~=10 & S~=13 & S<32);
+ASCII = ~any(S~=9 & S~=10 & S~=13 & S<32); % TAB,LF,CR allowed
 if pos>=0
     fseek(fid,pos,-1);
 else
