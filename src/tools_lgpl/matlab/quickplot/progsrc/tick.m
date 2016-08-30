@@ -276,6 +276,7 @@ frmt=lower(Frmt);
 switch frmt
     case 'none'
         set(handle,[ax 'tick'],[],[ax 'ticklabel'],[]);
+        return
     case 'auto'
         set(handle,[ax 'tickmode'],'auto',[ax 'ticklabelmode'],'auto');
     case 'autolabel'
@@ -341,6 +342,9 @@ switch frmt
 end
 if strcmp(get(handle,[ax 'ticklabelmode']),'manual')
     tckL = get(handle,[ax 'ticklabel']);
+    if ischar(tckL)
+        tckL = cellstr(tckL);
+    end
     noLabel = true(1,length(tckL));
     noLabel(1:(SkipNLabels+1):end) = false;
     tckL(noLabel)={''};
