@@ -49,14 +49,46 @@ NVal       = Param.NVal;
 DimFlag=Props.DimFlag;
 Thresholds=Ops.Thresholds;
 
+if isfield(data,'XY') && iscell(data.XY)
+    if NVal~=1
+        len = cellfun('length',data.XY);
+        tlen = sum(len+1)-1;
+        XY = NaN(tlen,2);
+        offset = 0;
+        for i = 1:length(data.XY)
+            XY(offset+(1:len(i)),:) = data.XY{i};
+            offset = offset+len(i)+1;
+        end
+        data.XY = XY;
+    end
+else
+    if ~isfield(data,'XY')
+        data.XY = [data.X data.Y];
+        data = rmfield(data,{'X','Y'});
+    end
+    if NVal==1
+        breaks = none(isnan(data.XY),2);
+        % could use mat2cell below, but this would keep all the singleton NaNs
+        PolyStartEnd = findseries(breaks);
+        XY = cell(1,length(PolyStartEnd));
+        for i = 1:length(PolyStartEnd)
+            XY{i} = data.XY(PolyStartEnd(i,1):PolyStartEnd(i,2),:);
+        end
+        data.XY = XY;
+        if isfield(data,'Val')
+            data.Val = data.Val(PolyStartEnd(:,1));
+        end
+    end
+end
+%
 switch NVal
     case 0
         if strcmp(Ops.facecolour,'none')
             if ishandle(hNew)
-                set(hNew,'xdata',data.X, ...
-                         'ydata',data.Y);
+                set(hNew,'xdata',data.XY(:,1), ...
+                         'ydata',data.XY(:,2));
             else
-                hNew=line(data.X,data.Y, ...
+                hNew=line(data.XY(:,1),data.XY(:,2), ...
                     'parent',Parent, ...
                     Ops.LineParams{:});
                 set(Parent,'layer','top')
@@ -65,15 +97,7 @@ switch NVal
             if ~FirstFrame
                 delete(hNew)
             end
-            vNaN=isnan(data.X);
-            if any(vNaN)
-                bs=findseries(~vNaN);
-            elseif isempty(vNaN)
-                bs=zeros(0,2);
-            else
-                bs=[1 length(vNaN)];
-            end
-            hNew = plot_polygons([data.X data.Y],bs,[],Parent,Ops);
+            hNew = plot_polygons(data.XY,[],Parent,Ops);
             %
             set(Parent,'layer','top')
         end
@@ -82,15 +106,7 @@ switch NVal
         if ~FirstFrame
             delete(hNew)
         end
-        vNaN=isnan(data.Val);
-        if any(vNaN)
-            bs=findseries(~vNaN);
-        elseif isempty(vNaN)
-            bs=zeros(0,2);
-        else
-            bs=[1 length(vNaN)];
-        end
-        hNew = plot_polygons([data.X data.Y],bs,data.Val(bs(:,1)),Parent,Ops);
+        hNew = plot_polygons(data.XY,data.Val,Parent,Ops);
         %
         set(Parent,'layer','top')
         if strcmp(Ops.colourbar,'none')
@@ -105,106 +121,87 @@ switch NVal
     case 4
         switch Ops.presentationtype
             case {'markers'}
-                if isfield(data,'XY')
-                    hNew=genmarkers(hNew,Ops,Parent,[],data.XY(:,1),data.XY(:,2));
-                else
-                    hNew=genmarkers(hNew,Ops,Parent,[],data.X,data.Y);
-                end
+                hNew=genmarkers(hNew,Ops,Parent,[],data.XY(:,1),data.XY(:,2));
             case {'labels'}
-                if isfield(data,'XY')
-                    hNew=genmarkers(hNew,Ops,Parent,[],data.XY(:,1),data.XY(:,2));
-                else
-                    hNew=gentextfld(hNew,Ops,Parent,data.Val,data.X,data.Y);
-                end
+                hNew=genmarkers(hNew,Ops,Parent,[],data.XY(:,1),data.XY(:,2));
         end
 end
 
 
-function hNew = plot_polygons(XY,bs,val,Parent,Ops)
-if ~isempty(val)
-    uval = unique(val);
-    nval = length(uval);
-    for i = nval:-1:1
-        hNew{i} = plot_polygons_one_value(XY,bs(val==uval(i),:),uval(i),Parent,Ops);
-    end
-    hNew = cat(1,hNew{:});
+function hNew = plot_polygons(XY,val,Parent,Ops)
+hNewL = plot_polygons_outline(XY,val,Parent,Ops);
+if strcmp(Ops.facecolour,'none')
+    hNew = hNewL;
 else
-    hNew = plot_polygons_one_value(XY,bs,[],Parent,Ops);
+    [XY,val] = process_polygons_parts(XY,val);
+    hNewP = plot_polygons_fill(XY,val,Parent,Ops);
+    hNew = [hNewL;hNewP];
+end
+
+function hNew = plot_polygons_outline(XY,val,Parent,Ops)
+len = cellfun('length',XY);
+tlen = sum(len+1);
+X = NaN(tlen,1);
+Y = NaN(tlen,1);
+hasval = ~isempty(val);
+if hasval
+    V = NaN(tlen,1);
+end
+offset = 0;
+for i = 1:length(XY)
+    range = offset+(1:len(i));
+    X(range) = XY{i}(:,1);
+    Y(range) = XY{i}(:,2);
+    if hasval
+        V(range) = val(i);
+    end
+    offset = offset+len(i)+1;
+end
+%
+if hasval
+    hNew = patch(X,Y,V, ...
+        'edgecolor','flat', ...
+        'facecolor','none', ...
+        'linestyle',Ops.linestyle, ...
+        'linewidth',Ops.linewidth, ...
+        'marker',Ops.marker, ...
+        'markersize',Ops.markersize, ...
+        'markeredgecolor',Ops.markercolour, ...
+        'markerfacecolor',Ops.markerfillcolour, ...
+        'parent',Parent);
+else
+    hNew = line(X,Y, ...
+        'parent',Parent, ...
+        Ops.LineParams{:});
 end
 
 
-function hNew = plot_polygons_one_value(XY,bs,val,Parent,Ops)
-nseg = size(bs,1);
-ln = bs(:,2)-bs(:,1)+1;
-%
-polygons = false(nseg,1);
-for i = 1:nseg
-    if all(XY(bs(i,1),:)==XY(bs(i,2),:))
-        % this is a polyGON
-        polygons(i) = true;
-    end
+function [XY,V] = process_polygons_parts(XY,V)
+% An object (a single cell of XY) may contains multiple contour parts
+% separated by NaNs. The first contour part marks an outer contour. The
+% other contour parts mark either inner contour (a contour of a hole) or
+% another outer contour (a contour of another region, or the contour of an
+% island inside a hole). The outer contour is merged with the contour of
+% its holes while other outer contours result in additional entries in XY.
+% If present and non-empty, the V array with values will be extended in
+% case we add new cells to XY.
+hasval = false;
+if nargin>1 && ~isempty(V)
+    hasval = true;
 end
-% one NaN separator needed per contour except for the last one
-ln_polygons  = max(0,sum(ln(polygons)+1)-1);
-ln_polylines = max(0,sum(ln(~polygons)+1)-1);
-%
-xy_polygons  = NaN(ln_polygons,2);
-xy_polylines = NaN(ln_polylines,2);
-ofgon = 0;
-oflin = 0;
-%
-for i = 1:nseg
-    xy = XY(bs(i,1):bs(i,2),:);
-    if polygons(i)
-        xy_polygons(ofgon+(1:ln(i)),:)  = xy;
-        ofgon = ofgon + ln(i) + 1;
-    else
-        xy_polylines(oflin+(1:ln(i)),:) = xy;
-        oflin = oflin + ln(i) + 1;
-    end
+inew = 0;
+XYnew = cell(1,1000);
+if hasval
+    Vnew = zeros(1,1000);
 end
-%
-if ln_polylines + ln_polygons > 0
-    % ... && (~strcmp(Ops.linestyle,'none') || ~strcmp(Ops.marker,'none'))
-    % outline using a NaN separated line for multiple parts and
-    % holes
-    if isempty(val)
-        hNewL = line([xy_polygons(:,1);NaN;xy_polylines(:,1)], ...
-            [xy_polygons(:,2);NaN;xy_polylines(:,2)], ...
-            'parent',Parent, ...
-            Ops.LineParams{:});
-    else
-        hNewL = patch([xy_polygons(:,1);NaN;xy_polylines(:,1);NaN], ...
-            [xy_polygons(:,2);NaN;xy_polylines(:,2);NaN], ...
-            repmat(val,ln_polylines + ln_polygons + 2,1), ...
-            'edgecolor','flat', ...
-            'facecolor','none', ...
-            'linestyle',Ops.linestyle, ...
-            'linewidth',Ops.linewidth, ...
-            'marker',Ops.marker, ...
-            'markersize',Ops.markersize, ...
-            'markeredgecolor',Ops.markercolour, ...
-            'markerfacecolor',Ops.markerfillcolour, ...
-            'parent',Parent);
-    end
-else
-    hNewL = [];
-end
-hNewP = [];
-if ln_polygons>0
-    % the patch command doesn't support
-    % * multiple parts, and
-    % * holes
-    % using NaN separated arrays. It is possible to create holes by
-    % connecting the outer contour with the contour of the hole and
-    % returning back to the outer contour along the same line. One can do
-    % the same for polygons with multiple parts but this doesn't work that
-    % well; sometimes a thin connecting line remains (even without coloring
-    % the contours). So, we first need to identify which contour marks an
-    % outer contour and which contour represents a hole.
+for iobj = 1:length(XY)
+    xy = XY{iobj};
     %
-    nansep = find(isnan(xy_polygons(:,1)));
-    BP = [[0;nansep] [nansep;size(xy_polygons,1)+1]];
+    nansep = find(isnan(xy(:,1)));
+    if isempty(nansep)
+        continue
+    end
+    BP = [[0;nansep] [nansep;size(xy,1)+1]];
     BPln = BP(:,2)-BP(:,1)-1;
     np = size(BP,1);
     inside = false(np);
@@ -219,7 +216,7 @@ if ln_polygons>0
             for j = 2:np
                 is_inside = false;
                 for i = i1:j-1
-                    inside(j,i) = all(inpolygon(xy_polygons(BP(j,1)+1:BP(j,2)-1,1),xy_polygons(BP(j,1)+1:BP(j,2)-1,2),xy_polygons(BP(i,1)+1:BP(i,2)-1,1),xy_polygons(BP(i,1)+1:BP(i,2)-1,2)));
+                    inside(j,i) = all(inpolygon(xy(BP(j,1)+1:BP(j,2)-1,1),xy(BP(j,1)+1:BP(j,2)-1,2),xy(BP(i,1)+1:BP(i,2)-1,1),xy(BP(i,1)+1:BP(i,2)-1,2)));
                     is_inside = is_inside | inside(j,i);
                 end
                 if ~is_inside
@@ -230,20 +227,16 @@ if ln_polygons>0
             % check any combination
             for i = 1:np
                 for j = i+1:np
-                    inside(i,j) = all(inpolygon(xy_polygons(BP(i,1)+1:BP(i,2)-1,1),xy_polygons(BP(i,1)+1:BP(i,2)-1,2),xy_polygons(BP(j,1)+1:BP(j,2)-1,1),xy_polygons(BP(j,1)+1:BP(j,2)-1,2)));
-                    inside(j,i) = all(inpolygon(xy_polygons(BP(j,1)+1:BP(j,2)-1,1),xy_polygons(BP(j,1)+1:BP(j,2)-1,2),xy_polygons(BP(i,1)+1:BP(i,2)-1,1),xy_polygons(BP(i,1)+1:BP(i,2)-1,2)));
+                    inside(i,j) = all(inpolygon(xy(BP(i,1)+1:BP(i,2)-1,1),xy(BP(i,1)+1:BP(i,2)-1,2),xy(BP(j,1)+1:BP(j,2)-1,1),xy(BP(j,1)+1:BP(j,2)-1,2)));
+                    inside(j,i) = all(inpolygon(xy(BP(j,1)+1:BP(j,2)-1,1),xy(BP(j,1)+1:BP(j,2)-1,2),xy(BP(i,1)+1:BP(i,2)-1,1),xy(BP(i,1)+1:BP(i,2)-1,2)));
                 end
             end
     end
     %
     % determine contour type: 0 = outer contour, 1 = inner contour (hole)
     type = mod(sum(inside,2),2);
-    hNewP = zeros(np,1);
-    for ip = 1:np
-        % skip inner contours
-        if type(ip)==1
-            continue
-        end
+    first = true;
+    for ip = find(type==0)' % loop over outer contours
         %
         inrank = sum(inside(ip,:));
         inhere = find(inside(:,ip));
@@ -252,7 +245,7 @@ if ln_polygons>0
         xyr = NaN(sum(BPln(ipx)+1)-1,2);
         or = 0;
         for i = ipx'
-            xyr(or+(1:BPln(i)),:) = xy_polygons(BP(i,1)+1:BP(i,2)-1,:);
+            xyr(or+(1:BPln(i)),:) = xy(BP(i,1)+1:BP(i,2)-1,:);
             or = or + BPln(i)+1;
         end
         bp = cumsum(BPln(ipx)+1);
@@ -276,25 +269,72 @@ if ln_polygons>0
             % merge it with the contour of the next hole.
         end
         %
-        % if the color is given then this patch should not influence color
-        % scaling. However, the default "1" cdata will do so; we need to set it
-        % to []. Unfortunately, we cannot set the cdata to [] immediately since
-        % this will result in an error since the facecolor is flat by default.
-        % so, we change it after having set facecolor to something else.
-        facecolor = Ops.facecolour;
-        if strcmp(facecolor,'yes')
-            facecolor = 'flat';
+        if first
+            XY{iobj} = xyr;
+            first = false;
+        else
+            if inew==length(XYnew)
+                XYnew{2*inew} = [];
+                if hasval
+                    Vnew(2*inew) = 0;
+                end
+            end
+            inew = inew+1;
+            XYnew{inew} = xyr;
+            if hasval
+                Vnew(inew) = V(ipol);
+            end
         end
-        hNewP(i) = patch(xyr(:,1), ...
-            xyr(:,2), ...
-            1, ...
-            'edgecolor','k', ...
-            'facecolor',facecolor, ...
-            'linestyle','none', ...
-            'marker','none', ...
-            'cdata',val, ...
-            'parent',Parent);
     end
-    hNewP(hNewP==0,:) = [];
 end
-hNew = [hNewL;hNewP];
+XY = [XY XYnew(1:inew)];
+if hasval
+    if size(V,2)==1
+        V = [V;Vnew(1:inew)'];
+    else
+        V = [V Vnew(1:inew)];
+    end
+end
+
+
+function hNew = plot_polygons_fill(XY,V,Parent,Ops)
+hasval = ~isempty(V);
+nnodes = cellfun('size',XY,1);
+unodes = unique(nnodes);
+hNew = zeros(length(unodes),1);
+for i = 1:length(unodes)
+    n = unodes(i);
+    nr = n-1; % number of nodes without duplication of first node
+    %
+    poly_n = find(nnodes==n);
+    npoly = length(poly_n);
+    tvertex = nr*npoly;
+    %
+    XYvertex = NaN(tvertex,2);
+    if hasval
+        Vpatch = NaN(npoly,1);
+    else
+        Vpatch = [];
+    end
+    offset = 0;
+    for ip = 1:npoly
+        XYvertex(offset+(1:nr),:) = XY{poly_n(ip)}(1:nr,:);
+        offset = offset+nr;
+        if hasval
+            Vpatch(ip) = V(ip);
+        end
+    end
+    %
+    facecolor = Ops.facecolour;
+    if strcmp(facecolor,'yes')
+        facecolor = 'flat';
+    end
+    hNew(i) = patch('vertices',XYvertex, ...
+        'faces',reshape(1:tvertex,[nr npoly])', ...
+        'facevertexcdata',Vpatch, ...
+        'edgecolor','k', ...
+        'facecolor',facecolor, ...
+        'linestyle','none', ...
+        'marker','none', ...
+        'parent',Parent);
+end

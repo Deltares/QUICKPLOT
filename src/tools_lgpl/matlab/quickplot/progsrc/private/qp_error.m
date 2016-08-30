@@ -40,5 +40,15 @@ message = Ex.message;
 if isequal(message(1:min(20,end)),'Error using <a href=')
     newline = find(message==char(10));
     message = message(newline(1)+1:end);
+elseif isequal(message(1:min(15,end)),'Error: <a href=')
+    file = sscanf(message,'%*[^(](''%[^'']'',%i',[1 inf]);
+    line = file(end);
+    file = char(file(1:end-1));
+    [p,f,e] = fileparts(file);
+    stackline = stack2str(cell2struct({file,f,line},{'file','name','line'},2));
+    stacklist = [stackline;stacklist];
+    %
+    newline = find(message==char(10));
+    message = message(newline(1)+5:end);
 end
 ui_message('error',{msg,message,stacklist{:}})
