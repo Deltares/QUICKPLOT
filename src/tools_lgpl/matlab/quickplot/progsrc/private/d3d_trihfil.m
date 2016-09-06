@@ -670,6 +670,7 @@ DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     '' 
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'wind speed'                'm/s'    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZWNDSPD'  ''         []       0
     'wind direction'            'deg'    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZWNDDIR'  ''         []       0
+    'wind drag coefficient'     '-'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZWNDCD'   ''         []       0
     'air pressure'              'Pa'     [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'PATM'     ''         []       0
     'precipitation rate'        'mm/h'   [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZPRECP'   ''         []       0
     'evaporation rate'          'mm/h'   [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZEVAP'    ''         []       0
