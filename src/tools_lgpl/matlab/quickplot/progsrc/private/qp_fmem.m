@@ -235,7 +235,11 @@ switch cmd
         %try opening the file ...
         userasked=0;
         usertrytp='';
-        ASCII = verifyascii(FileName);
+        if DoDS
+            ASCII = false;
+        else
+            ASCII = verifyascii(FileName);
+        end
         while isempty(FI)
             %ui_message('','Trying %s ...\n',trytp);
             %pause

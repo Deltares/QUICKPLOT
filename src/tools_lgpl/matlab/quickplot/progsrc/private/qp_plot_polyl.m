@@ -66,12 +66,12 @@ else
         data.XY = [data.X data.Y];
         data = rmfield(data,{'X','Y'});
     end
-    if NVal==1
+    if ~strcmp(Ops.facecolour,'none')
         breaks = none(isnan(data.XY),2);
         % could use mat2cell below, but this would keep all the singleton NaNs
         PolyStartEnd = findseries(breaks);
-        XY = cell(1,length(PolyStartEnd));
-        for i = 1:length(PolyStartEnd)
+        XY = cell(1,size(PolyStartEnd,1));
+        for i = 1:size(PolyStartEnd,1)
             XY{i} = data.XY(PolyStartEnd(i,1):PolyStartEnd(i,2),:);
         end
         data.XY = XY;
