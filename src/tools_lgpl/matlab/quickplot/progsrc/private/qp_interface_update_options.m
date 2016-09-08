@@ -345,7 +345,11 @@ switch geometry
         end
     case {'POLYL','POLYG'}
         if multiple(T_) && ~multiple(M_) && ~multiple(K_)
-            axestype={'Time-Val'};
+            if nval==0
+                axestype={'X-Y'};
+            else
+                axestype={'Time-Val'};
+            end
         elseif ~multiple(T_)
             axestype={'X-Y'};
             if strcmp(geometry,'POLYG') && ~isfield(Props,'ClosedPoly')

@@ -66,7 +66,7 @@ else
         data.XY = [data.X data.Y];
         data = rmfield(data,{'X','Y'});
     end
-    if ~strcmp(Ops.facecolour,'none')
+    if ~strcmp(Ops.facecolour,'none') || isfield(data,'Val')
         breaks = none(isnan(data.XY),2);
         % could use mat2cell below, but this would keep all the singleton NaNs
         PolyStartEnd = findseries(breaks);
@@ -199,6 +199,9 @@ for iobj = 1:length(XY)
     %
     nansep = find(isnan(xy(:,1)));
     if isempty(nansep)
+        if ~isequal(xy(1,:),xy(end,:))
+            XY{iobj} = zeros(0,2);
+        end
         continue
     end
     BP = [[0;nansep] [nansep;size(xy,1)+1]];
@@ -304,6 +307,9 @@ unodes = unique(nnodes);
 hNew = zeros(length(unodes),1);
 for i = 1:length(unodes)
     n = unodes(i);
+    if n==0
+        continue
+    end
     nr = n-1; % number of nodes without duplication of first node
     %
     poly_n = find(nnodes==n);
@@ -321,7 +327,7 @@ for i = 1:length(unodes)
         XYvertex(offset+(1:nr),:) = XY{poly_n(ip)}(1:nr,:);
         offset = offset+nr;
         if hasval
-            Vpatch(ip) = V(ip);
+            Vpatch(ip) = V(poly_n(ip));
         end
     end
     %

@@ -205,8 +205,8 @@ if Props.NVal==0
             x0(3,:) = NaN;
             y0 = y0';
             y0(3,:) = NaN;
-            Ans.X = x0;
-            Ans.Y = y0;
+            Ans.X = x0(:);
+            Ans.Y = y0(:);
         case 'realized ship track'
             Ans.X = squeeze(val1(1,1,:));
             Ans.Y = squeeze(val1(2,1,:));
