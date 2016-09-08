@@ -216,6 +216,8 @@ if DataRead && Props.NVal>0
                 Psi = Psi - min(Psi);
                 %
                 Ans.Val = Psi(idx{3});
+            case {'node_index','edge_index','face_index'}
+                Ans.Val = idx{3}(:);
             otherwise
                 error('Special case "%s" not yet implemented.',Props.varid{1})
         end
@@ -1056,6 +1058,26 @@ else
         %
         Out(end+1)=Insert;
         %
+        if ~isempty(Info.Mesh) && isequal(Info.Mesh{3},-1)
+            Nm = Insert.Name;
+            %
+            Insert.Name = [Nm ' - node indices'];
+            Insert.NVal = 1;
+            Insert.varid = {'node_index' Insert.varid};
+            Out(end+1) = Insert;
+            %
+            Insert.Name = [Nm ' - edge indices'];
+            Insert.Geom = 'UGRID-EDGE';
+            Insert.varid{1} = 'edge_index';
+            Out(end+1) = Insert;
+            %
+            Insert.Name = [Nm ' - face indices'];
+            Insert.Geom = 'UGRID-FACE';
+            Insert.DataInCell = 1;
+            Insert.varid{1} = 'face_index';
+            Out(end+1) = Insert;
+        end
+        %
         if strcmp(standard_name,'discharge') && strcmp(Insert.Geom,'UGRID-EDGE')
             Insert.Name = 'stream function'; % previously: discharge potential
             Insert.Geom = 'UGRID-NODE';
@@ -1229,7 +1251,7 @@ for loop = 1:2
                 varid = get_varid(Out(i));
                 thisMesh = FI.Dataset(varid+1).Mesh;
                 if loop == 1
-                    if thisMesh{3} == -1
+                    if thisMesh{3} == -1 && Out(i).NVal == 0
                         Meshes(end+1,:) = [thisMesh{2} i];
                     end
                 else % loop == 2
@@ -1324,6 +1346,15 @@ if iscell(Props.varid)
             % get the node dimension
             dimNodes = FI.Dataset(XVar).TSMNK(3)+1;
             sz(3) = FI.Dimension(dimNodes).Length;
+        case 'node_index'
+            Info = FI.Dataset(Props.varid{2}+1);
+            sz(3) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{4})).Length;
+        case 'edge_index'
+            Info = FI.Dataset(Props.varid{2}+1);
+            sz(3) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{5})).Length;
+        case 'face_index'
+            Info = FI.Dataset(Props.varid{2}+1);
+            sz(3) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{6})).Length;
         otherwise
             error('Size function not yet implemented for special case "%s"',Props.varid{1})
     end

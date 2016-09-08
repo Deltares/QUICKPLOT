@@ -116,7 +116,7 @@ end
 %
 % Update grid view
 %
-if isfield(Props(fld),'UseGrid') && ~isempty(Props(fld).UseGrid) && Props(fld).UseGrid>0
+if isfield(Props,'UseGrid') && ~isempty(Props(fld).UseGrid) && Props(fld).UseGrid>0
     %
     % Gridview information: update grid view when shown
     %
