@@ -61,6 +61,7 @@ slog=['..',fs,'logfiles',fs];
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %
 Hpb=progressbar('cancel','delete(gcbf)','pause','on');
+t_init = now;
 pHpb=get(Hpb,'position');
 ssz=qp_getscreen;
 set(Hpb,'position',[ssz(1)+10 ssz(2)+ssz(4)-pHpb(4)-30 pHpb(3) pHpb(4)])
@@ -115,10 +116,35 @@ try
    %
    [sorteddirnames,I]=sort(upper({d.name}));
    d=d(I);
+   [d.dt] = deal(NaN);
    %
-   pbfrac=1/max(1,length(d));
+   sumt = 0;
+   numt = 0;
    for i=1:length(d)
-      progressbar((i-1)*pbfrac,Hpb,'title',d(i).name);
+       timid = fopen(fullfile(val_dir,d(i).name,'reference','timing.txt'));
+       if timid>0
+           [dt2,cnt] = fscanf(timid,'%f',1);
+           if cnt==1
+               d(i).dt = dt2;
+               sumt = sumt + dt2;
+               numt = numt + 1;
+           end
+           fclose(timid);
+       end
+   end
+   %
+   if numt>0
+       avg_dt = sumt/numt;
+   else
+       avg_dt = 4; % estimate of average time based on 440 test cases
+   end
+   case_dt = [d.dt];
+   case_dt(isnan(case_dt)) = avg_dt;
+   acc_dt = (now-t_init)*86400;
+   tot_dt = max(1,acc_dt + sum(case_dt)); % at least a second
+   %
+   for i=1:length(d)
+      progressbar(acc_dt/tot_dt,Hpb,'title',d(i).name);
       ui_message('',['Case: ',d(i).name])
       NTested=NTested+1;
       DiffFound=0;
@@ -148,6 +174,7 @@ try
          if localexist(CaseInfo)
             CaseInfo=inifile('open',CaseInfo);
             logid2=fopen(logname,'w');
+            dt2_old = d(i).dt;
             t2 = writeheader(logid2,d(i).name);
             %
             % check for log files to run ...
@@ -305,8 +332,8 @@ try
                   '<td bgcolor=AAAAFF><b>Data field</b></td><td bgcolor=AAAAFF><b>Read</b></td><td bgcolor=AAAAFF><b>Compare</b></td></tr>');
                datacheck=inifile('get',CaseInfo,'datacheck','default',1);
                P=Props{dmx};
-               for p=1:length(P)
-                  if progressbar((i-1+p/NT)*pbfrac,Hpb)<0
+               for p=1:NP
+                  if progressbar((acc_dt+case_dt(i)*(p-1)/NT)/tot_dt,Hpb)<0
                      fprintf(logid2,'</table>\n');
                      UserInterrupt=1;
                      error('User interrupt');
@@ -438,8 +465,8 @@ try
             else
                lgcolor='00AA00';
                lgresult='PASSED';
-               for lg=1:length(logs)
-                  if progressbar((i-1+(NP+lg)/NT)*pbfrac,Hpb)<0
+               for lg=1:NL
+                  if progressbar((acc_dt+case_dt(i)*(NP+lg-1)/NT)/tot_dt,Hpb)<0
                      UserInterrupt=1;
                      error('User interrupt');
                   end
@@ -556,12 +583,19 @@ try
          if ~isempty(CrashMsg)
             fprintf(logid2,'<font color=FF0000><b>%s</b></font><br>\n',CrashMsg);
          end
-         dt2 = writefooter(logid2,t2);
+         [dt2,dt2_str] = writefooter(logid2,t2,dt2_old);
          fprintf(logid2,'</body>');
          fclose(logid2);
+         %
+         if isnan(dt2_old)
+             timid = fopen('../reference/timing.txt','w');
+             fprintf(timid,'%5.1f',dt2);
+             fclose(timid);
+         end
       elseif ~isempty(CrashMsg)
           result = [result CrashMsg];
           dt2 = (now-t2)*86400;
+          dt2_str = duration(dt2);
       end
       CaseFailed = ~isempty(strmatch('FAILED',frresult)) | ~isempty(strmatch('FAILED',lgresult)) | ~isempty(strmatch('FAILED',result));
       NFailed=NFailed + double(CaseFailed);
@@ -572,14 +606,15 @@ try
          UserInterrupt=1;
       end
       if ~isempty(result)
-         fprintf(logid,'<tr><td>%s</td><td colspan=2><font color=%s><b>%s</b></font></td><td><a href="%s/%s">Click</a></td><td>%s</td></tr>\n',d(i).name,color,result,d(i).name,logname,duration(dt2));
+         fprintf(logid,'<tr><td>%s</td><td colspan=2><font color=%s><b>%s</b></font></td><td><a href="%s/%s">Click</a></td><td>%s</td></tr>\n',d(i).name,color,result,d(i).name,logname,dt2_str);
       else
-         fprintf(logid,'<tr><td>%s</td><td><font color=%s><b>%s</b></font></td><td><font color=%s><b>%s</b></font></td><td><a href="%s/%s">Click</a></td><td>%s</td></tr>\n',d(i).name,frcolor,frresult,lgcolor,lgresult,d(i).name,logname,duration(dt2));
+         fprintf(logid,'<tr><td>%s</td><td><font color=%s><b>%s</b></font></td><td><font color=%s><b>%s</b></font></td><td><a href="%s/%s">Click</a></td><td>%s</td></tr>\n',d(i).name,frcolor,frresult,lgcolor,lgresult,d(i).name,logname,dt2_str);
       end
       flush(logid);
       if UserInterrupt
          break
       end
+      acc_dt = acc_dt + case_dt(i);
    end
 catch
    if logid>0
@@ -593,7 +628,7 @@ end
 cd(currdir)
 if logid>0
    fprintf(logid,'</table>\n');
-   writefooter(logid,t1);
+   writefooter(logid,t1,NaN);
    fprintf(logid,'</body>');
    fclose(logid);
 end
@@ -637,12 +672,19 @@ flush(logid)
 t = datenum(c);
 
 
-function dt = writefooter(logid,t0)
+function [dt,dt_str] = writefooter(logid,t0,dt_old)
 fprintf(logid,'<table bgcolor=CCCCFF><tr><td colspan=2 bgcolor=AAAAFF><b>End of validation report</b></td></tr>\n');
 c = clock;
 fprintf(logid,'<tr><td>Date:</td><td>%4.4i-%2.2i-%2.2i %2.2i:%2.2i:%02.0f</td></tr>\n',c);
 dt = (datenum(c)-t0)*86400;
-fprintf(logid,'<tr><td>Duration:</td><td>%s</td></tr>\n',duration(dt));
+if isnan(dt_old) || (dt-dt_old)<max(0.2,min(dt,dt_old)/30)
+    dt_str = duration(dt);
+elseif dt>dt_old
+    dt_str = ['<font color=FF0000>' duration(dt) '</font> previously: ' duration(dt_old)];
+else
+    dt_str = ['<font color=00AA00>' duration(dt) '</font> previously: ' duration(dt_old)];
+end
+fprintf(logid,'<tr><td>Duration:</td><td>%s</td></tr>\n',dt_str);
 fprintf(logid,'</table><br>\n');
 flush(logid)
 
