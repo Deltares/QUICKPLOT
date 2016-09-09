@@ -50,7 +50,9 @@ DimFlag=Props.DimFlag;
 Thresholds=Ops.Thresholds;
 
 if isfield(data,'XY') && iscell(data.XY)
-    if NVal~=1
+    if ~strcmp(Ops.facecolour,'none') || isfield(data,'Val')
+        % no change
+    else
         len = cellfun('length',data.XY);
         tlen = sum(len+1)-1;
         XY = NaN(tlen,2);

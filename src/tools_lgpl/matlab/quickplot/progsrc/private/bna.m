@@ -3,6 +3,14 @@ function varargout=bna(cmd,varargin)
 %   FILEINFO = BNA('open',FILENAME) opens the specified file, reads its
 %   contents and returns a structure describing the data.
 %
+%   XY = BNA('readc',FILEINFO,IDX) reads the objects listed by IDX from
+%   the file given by FILEINFO. It returns a cell array XY in which every
+%   entry XY{I} is an Nx2 matrix containing N pairs of X,Y coordinates
+%   representing object I. If instead of the FILEINFO structure -- as
+%   obtained from a BNA('open',...) call -- a file name is provided then
+%   the indicated file is first opened. If IDX isn't specified or equal to
+%   ':' then the coordinates of all objects are returned.
+%
 %   [X,Y] = BNA('read',FILEINFO,IDX) returns the X and Y data of the
 %   objects specified by the indices IDX from the file. If instead of the
 %   FILEINFO structure -- as obtained from a BNA('open',...) call -- a file
@@ -64,8 +72,10 @@ switch cmd
     case 'open'
         Out=Local_open_file(varargin{:});
         varargout{1}=Out;
+    case 'readc'
+        varargout{1}=Local_read_file('cell',varargin{:});
     case 'read'
-        Out=Local_read_file(varargin{:});
+        Out=Local_read_file('array',varargin{:});
         if nargout==1
             varargout{1}=Out;
         elseif nargout>1
@@ -142,8 +152,8 @@ end
 nel=nel-1;
 T.TotalNPnt=nel;
 
-function Data=Local_read_file(varargin)
-if nargin==0
+function Data=Local_read_file(tp,varargin)
+if nargin==1
     T=Local_open_file;
 else
     if isstruct(varargin{1})
@@ -152,24 +162,34 @@ else
         T=Local_open_file(varargin{1});
     end
 end
-if nargin<=1 || isequal(varargin{2},':')
+if nargin<=2 || isequal(varargin{2},':')
     objects = 1:length(T.Seg);
 else
     objects = varargin{2};
 end
 
-nel = 0;
-for i = objects
-    t1=size(T.Seg(i).Coord,1);
-    nel = nel+t1+1;
+cellData = strcmp(tp,'cell');
+if cellData
+    Data = cell(1,length(objects));
+else
+    nel = 0;
+    for i = objects
+        t1=size(T.Seg(i).Coord,1);
+        nel = nel+t1+1;
+    end
+    offset = 0;
+    Data = NaN(nel,2);
 end
 
-Data = NaN(nel,2);
-offset = 0;
-for i = objects
-    t1 = size(T.Seg(i).Coord,1);
-    Data(offset+(1:t1),:) = T.Seg(i).Coord;
-    offset = offset+t1+1;
+for i = 1:length(objects)
+    Coord = T.Seg(objects(i)).Coord;
+    if cellData
+        Data{i} = Coord;
+    else
+        t1 = size(Coord,1);
+        Data(offset+(1:t1),:) = Coord;
+        offset = offset+t1+1;
+    end
 end
 
 

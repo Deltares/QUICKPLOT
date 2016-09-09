@@ -178,6 +178,7 @@ if max(idx{T_})>sz(T_)
     error('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_))
 end
 
+xy='dummy';
 x='dummy';
 y='dummy';
 z='dummy';
@@ -239,9 +240,11 @@ switch FI.FileType
     case 'AutoCAD DXF'
         Data=FI.Lines(1:2,:)';
     case 'BNA File'
-        Data=bna('read',FI);
+        already_selected = 1;
+        Data=bna('readc',FI,idx{M_});
     case 'ArcInfoUngenerate'
-        Data=ai_ungen('read',FI);
+        already_selected = 1;
+        Data=ai_ungen('readc',FI,idx{M_});
     case 'ESRI-Shape'
         already_selected = 1;
         if strcmp(Props.Geom,'PNT')
@@ -343,12 +346,16 @@ if XYRead
         end
     elseif DimFlag(M_)
         if already_selected
-            x=Data(:,1);
-            if strcmp(Props.Coords,'xy')
-                y=Data(:,2);
-            end
-            if size(Data,2)==3
-                z=Data(:,3);
+            if iscell(Data)
+                xy=Data;
+            else
+                x=Data(:,1);
+                if strcmp(Props.Coords,'xy')
+                    y=Data(:,2);
+                end
+                if size(Data,2)==3
+                    z=Data(:,3);
+                end
             end
         else
             x=Data(idx{M_},1);
@@ -456,6 +463,9 @@ end
 
 % generate output ...
 if XYRead
+    if ~ischar(xy)
+        Ans.XY = xy;
+    end
     if ~ischar(x)
         Ans.X=x;
     end
@@ -886,7 +896,7 @@ switch FI.FileType
             end
         end
     case {'BNA File','ArcInfoUngenerate'}
-        sz(M_)=FI.TotalNPnt;
+        sz(M_)=length(FI.Seg);
     case {'AutoCAD DXF'}
         sz(M_)=size(FI.Lines,2);
     case {'ESRI-Shape'}
