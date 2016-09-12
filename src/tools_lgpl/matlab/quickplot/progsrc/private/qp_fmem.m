@@ -140,6 +140,8 @@ switch cmd
             try_next='sobek1d';
         else
             switch lower(en)
+                case {'.mdf',',mdw','.md1d','.mdu'}
+                    try_next='md*-file';
                 case {'.bln'}
                     try_next='surfer';
                 case {'.grd','.rgf'}
@@ -245,6 +247,10 @@ switch cmd
             %pause
             try
                 switch try_next
+                    case 'md*-file'
+                        asciicheck(ASCII,try_next)
+                        FI=mdf('read',FileName);
+                        Tp=FI.FileType;
                     case 'qpsession'
                         asciicheck(ASCII,try_next)
                         PAR.X=[];

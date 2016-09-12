@@ -118,6 +118,12 @@ try
    d=d(I);
    [d.dt] = deal(NaN);
    %
+   % Start up the QuickPlot interface such that this time is not included
+   % in the timing of the first testcase. Hide the plot manager because
+   % this dialog affects the timing.
+   %
+   d3d_qp('hideplotmngr');
+   %
    sumt = 0;
    numt = 0;
    for i=1:length(d)

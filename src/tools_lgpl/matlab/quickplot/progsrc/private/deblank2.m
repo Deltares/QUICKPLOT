@@ -55,7 +55,7 @@ else
     for i=1:length(s1)
         sloc=s{i};
         % remove trailing blanks
-        [r,c] = find(sloc ~= ' ' & sloc ~= 0);
+        [r,c] = find(sloc ~= ' ' & sloc ~= char(9) & sloc ~= 0);
         if isempty(c)
             s1{i} = sloc([]);
         else

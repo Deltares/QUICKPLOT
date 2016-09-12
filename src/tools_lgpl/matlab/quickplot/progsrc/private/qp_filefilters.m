@@ -42,12 +42,14 @@ function filtertbl = qp_filefilters(filters)
 filtertbl={...
     '*.dat;*.ada;*.hda'                                    'Delft3D Output Files'              'nefis'              0
     '*.grd;*.rgf'                                          'Delft3D Grid Files'                'wlgrid'             0
+    '*.mdf;*.mdu;*.md1d;*.mdw'                             'Delft3D Simulation Files'          'md*-file'           0
     '*.mesh'                                               'Mike Flexible Mesh Files'          'mikemesh'           0
     '*.14'                                                 'Adcirc Mesh Files'                 'adcircmesh'         0
     '*.shy'                                                'SHYFEM Mesh Files'                 'SHYFEM mesh'        0
     '*.mesh;*.node;*.ele;*.n;*.e'                          'EasyMesh and Triangle Mesh Files'  'nodelemesh'         0
     '*.gem'                                                'GeoSystems Mesh Files'             'geomesh'            0
     '*.bct;*.bcc;*.bcb'                                    'Delft3D-FLOW Bound. Cond. Files'   'bct'                0
+    'bagdpt*.*'                                            'Delft3D-MOR Ascii Dredging Output' 'bagdpt'             0
     '*.am?;*.spw;*.wnd'                                    'Delft3D/SOBEK Meteo Files'         'asciiwind'          0
     'gcmplt.*;gcmtsr.*'                                    'ECOMSED Binary Files'              'ecomsed-binary'     0
     '*.stu;*.pst'                                          'JSPost Files'                      'JSPost'             0

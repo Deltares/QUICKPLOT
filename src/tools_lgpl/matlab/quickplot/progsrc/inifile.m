@@ -17,6 +17,9 @@ function varargout=inifile(cmd,varargin)
 %   ListOfKeywords=INIFILE('keywords',Info,Chapter)
 %   Retrieve list of Keywords in specified Chapter (cell array of strings).
 %
+%   BOOL = INIFILE('exist',Info,Chapter,Keyword)
+%   Check whether a Chapter/Keyword exists in the the Info data set.
+%
 %   Val=INIFILE('get',Info,Chapter,Keyword,Default)
 %   Retrieve Chapter/Keyword from the Info data set. The Default value is
 %   optional. If the Chapter ID is '*', the Keyword is searched for in
@@ -74,6 +77,29 @@ switch lcmd
         S=chapfile(lcmd,varargin{:});
     case {'keywords','keywordsi'}
         S=chapkeys(lcmd,varargin{:});
+    case {'exists','existsi'}
+        try
+            if nargin==3
+                % only Chapter
+                if strcmp(lcmd,'exists')
+                    lcmd = 'keywords';
+                else
+                    lcmd = 'keywordsi';
+                end
+                A=chapkeys(lcmd,varargin{:});
+            else
+                % Chapter/Keyword pair
+                if strcmp(lcmd,'exists')
+                    lcmd = 'get';
+                else
+                    lcmd = 'geti';
+                end
+                A=getfield(lcmd,varargin{:});
+            end
+            S=true;
+        catch
+            S=false;
+        end
     case {'get','getstring','geti','getstringi'}
         S=getfield(lcmd,varargin{:});
     case {'set','seti'}

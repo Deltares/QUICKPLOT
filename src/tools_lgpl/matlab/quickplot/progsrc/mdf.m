@@ -44,7 +44,7 @@ function varargout = mdf(cmd,varargin)
 
 switch lower(cmd)
     case 'read'
-        varargout{1} = mdfread(varargin{:});
+        varargout{1} = masterread(varargin{:});
     case 'rotate'
         varargout{1} = mdfrotate(varargin{:});
     case 'clip'
@@ -542,21 +542,101 @@ function Val = propget(FILE,varargin)
 Val = rmhash(inifile('geti',FILE,varargin{:}));
 
 
-function MDF = mdfread(filename)
-MDF.mdf = inifile('open',filename);
-mdfpath = fileparts(filename);
+function MFile = masterread(filename)
+master = inifile('open',filename);
+master_path = fileparts(filename);
 %
-mnkmax = propget(MDF.mdf,'','MNKmax');
-SUB1   = propget(MDF.mdf,'','Sub1','');
+UNSPECIFIED = 'UNSPECIFIED';
+Program = inifile('geti',master,'model','Program',UNSPECIFIED);
+if isequal(Program,UNSPECIFIED)
+    if inifile('existsi',master,'WaveFileInformation')
+        MFile.FileType = 'Delft3D D-Wave';
+        MFile.mdw = master;
+        MFile = mdwread(MFile,master_path);
+    elseif inifile('existsi',master,'General','fileType')
+        MFile.FileType = 'Delft3D D-Flow1D';
+        MFile.md1d = master;
+        MFile = md1dread(MFile,master_path);
+    elseif inifile('existsi',master,'','MNKmax')
+        MFile.FileType = 'Delft3D D-Flow2D3D';
+        MFile.mdf = master;
+        MFile = mdfread(MFile,master_path);
+    else
+        error('Unable to determine type of simulation for %s',filename)
+    end
+else
+    switch Program
+        case 'D-Flow FM'
+            MFile.FileType = 'Delft3D D-Flow FM';
+            MFile.mdu = master;
+            MFile = mduread(MFile,master_path);
+        otherwise
+            error('Unknown program type %s in %s',Program,filename)
+    end
+end
+
+
+function MF = md1dread(MF,md_path)
+ntwname = propget(MF.md1d,'Files','networkFile');
+if ~isempty(ntwname)
+    ntwname = relpath(md_path,ntwname);
+    MF.ntw = inifile('open',ntwname);
+else
+    error('Unable to locate networkFile keyword in [Files] chapter.');
+end
+%
+
+
+function MF = mduread(MF,md_path)
+mshname = propget(MF.mdu,'geometry','NetFile');
+if ~isempty(mshname)
+    mshname = relpath(md_path,mshname);
+    MF.mesh.nc_file = nc_interpret(mshname);
+    MF.mesh.nc_file.FileType = 'NetCDF';
+    Q = qpread(MF.mesh.nc_file);
+    MF.mesh.quant = Q(1);
+else
+    error('Unable to locate NetFile keyword in [geometry] chapter.');
+end
+%
+
+
+function MF = mdwread(MF,md_path)
+grdname = inifile('geti',MF.mdw,'Domain','Grid');
+if ~isempty(grdname)
+    if iscell(grdname)
+        numDomains = length(grdname);
+        for idom = 1:numDomains
+            grdname_loc = relpath(md_path,grdname{idom});
+            [f,p,e] = fileparts(grdname_loc);
+            MF.domain(idom).name = p;
+            MF.domain(idom).grd  = wlgrid('read',grdname_loc);
+        end
+    else
+        % numDomains = 1;
+        idom = 1;
+        grdname_loc = relpath(md_path,grdname);
+        [f,p,e] = fileparts(grdname_loc);
+        MF.domain(idom).name = p;
+        MF.domain(idom).grd = wlgrid('read',grdname_loc);
+    end
+else
+    error('Unable to locate Grid keyword in [Domain] chapter.');
+end
+
+
+function MF = mdfread(MF,md_path)
+mnkmax = propget(MF.mdf,'','MNKmax');
+SUB1   = propget(MF.mdf,'','Sub1','');
 salin  = ~isempty(strfind(lower(SUB1),'s'));
 tempa  = ~isempty(strfind(lower(SUB1),'t'));
 secfl  = ~isempty(strfind(lower(SUB1),'i'));
-SUB2   = propget(MDF.mdf,'','Sub2','');
+SUB2   = propget(MF.mdf,'','Sub2','');
 consti = ~isempty(strfind(lower(SUB2),'c'));
 if consti
     consti = 0;
     for i = 1:99
-        Namc = propget(MDF.mdf,'',sprintf('Namc%i',i),'');
+        Namc = propget(MF.mdf,'',sprintf('Namc%i',i),'');
         if isempty(Namc)
             break
         else
@@ -570,39 +650,35 @@ if mnkmax(3)>1
     %TODO: determine number of turbulent state variables
 end
 %
-grdname = propget(MDF.mdf,'','Filcco','');
-grdname = rmhash(grdname);
+grdname = propget(MF.mdf,'','Filcco','');
 if ~isempty(grdname)
-    grdname = relpath(mdfpath,grdname);
-    MDF.grd = wlgrid('read',grdname);
+    grdname = relpath(md_path,grdname);
+    MF.grd = wlgrid('read',grdname);
 else
     error('Filcco is empty: grid in mdf file not yet supported.');
 end
 %
-depname = propget(MDF.mdf,'','Fildep','');
-depname = rmhash(depname);
+depname = propget(MF.mdf,'','Fildep','');
 if ~isempty(depname)
-    depname = relpath(mdfpath,depname);
-    MDF.dep = wldep('read',depname,MDF.grd);
+    depname = relpath(md_path,depname);
+    MF.dep = wldep('read',depname,MF.grd);
 end
 %
-rghname = propget(MDF.mdf,'','Filrgh','');
-rghname = rmhash(rghname);
+rghname = propget(MF.mdf,'','Filrgh','');
 if ~isempty(rghname)
-    rghname = relpath(mdfpath,rghname);
-    MDF.rgh = wldep('read',rghname,MDF.grd,'multiple');
-    if length(MDF.rgh)~=2
+    rghname = relpath(md_path,rghname);
+    MF.rgh = wldep('read',rghname,MF.grd,'multiple');
+    if length(MF.rgh)~=2
         error('Unexpected length of roughness file');
     end
 end
 %
-ininame = propget(MDF.mdf,'','Restid','');
-ininame = rmhash(ininame);
+ininame = propget(MF.mdf,'','Restid','');
 if ~isempty(ininame)
-    idate = propget(MDF.mdf,'','Itdate');
+    idate = propget(MF.mdf,'','Itdate');
     idate = idate([1:4 6:7 9:10]);
     %
-    tunit = propget(MDF.mdf,'','Tunit');
+    tunit = propget(MF.mdf,'','Tunit');
     switch lower(tunit)
         case 'w'
             tunit = 7;
@@ -615,7 +691,7 @@ if ~isempty(ininame)
         case 's'
             tunit = 1/86400;
     end
-    itime = propget(MDF.mdf,'','TStart')*tunit;
+    itime = propget(MF.mdf,'','TStart')*tunit;
     rdate = datenum(idate,'yyyymmdd')+itime;
     if itime>=1
         itime = datestr(rdate,'HHMMSS');
@@ -625,44 +701,44 @@ if ~isempty(ininame)
     end
     %
     % try tri-rst.restid.YYYYMMDD.HHMMSS
-    inicond = relpath(mdfpath,['tri-rst.' ininame '.' idate '.' itime]);
+    inicond = relpath(md_path,['tri-rst.' ininame '.' idate '.' itime]);
     try
-        MDF.ini = trirst('read',inicond,MDF.grd,'all');
+        MF.ini = trirst('read',inicond,MF.grd,'all');
     catch
         %
         % try tri-rst.restid
-        inicond = relpath(mdfpath,['tri-rst.' ininame]);
+        inicond = relpath(md_path,['tri-rst.' ininame]);
         try
-            MDF.ini = trirst('read',inicond,MDF.grd,'all');
+            MF.ini = trirst('read',inicond,MF.grd,'all');
         catch
             %
             % try restid as trim-dat/def
-            inicond = relpath(mdfpath,ininame);
-            MDF.ini = vs_use(inicond,'quiet');
+            inicond = relpath(md_path,ininame);
+            MF.ini = vs_use(inicond,'quiet');
             %
-            times = qpread(MDF.ini,'water level','times');
+            times = qpread(MF.ini,'water level','times');
             iMAP  = find(times==rdate);
             %
-            for ig = 1:length(MDF.ini.GrpDat)
-                g = MDF.ini.GrpDat(ig).Name;
+            for ig = 1:length(MF.ini.GrpDat)
+                g = MF.ini.GrpDat(ig).Name;
                 g_ = strrep(g,'-','_');
-                if MDF.ini.GrpDat(ig).SizeDim>1
-                    MDF.ini.Data.(g_) = vs_let(MDF.ini,g,{iMAP},'*','quiet');
-                    MDF.ini.GrpDat(ig).SizeDim=1;
+                if MF.ini.GrpDat(ig).SizeDim>1
+                    MF.ini.Data.(g_) = vs_let(MF.ini,g,{iMAP},'*','quiet');
+                    MF.ini.GrpDat(ig).SizeDim=1;
                 else
-                    MDF.ini.Data.(g_) = vs_let(MDF.ini,g,{1},'*','quiet');
+                    MF.ini.Data.(g_) = vs_let(MF.ini,g,{1},'*','quiet');
                 end
             end
             %
-            MDF.ini.FileName = 'IN MEMORY';
-            MDF.ini.DatExt = '';
-            MDF.ini.DefExt = '';
+            MF.ini.FileName = 'IN MEMORY';
+            MF.ini.DatExt = '';
+            MF.ini.DefExt = '';
         end
     end
     %
-    if ~isfield(MDF.ini,'FileType')
+    if ~isfield(MF.ini,'FileType')
         % plain binary restart file (flow only)
-        nfields = length(MDF.ini);
+        nfields = length(MF.ini);
         % water level, velocity, constituents, turbulent quantities, u/v mnldf
         nf_req  = 1 + 2*mnkmax(3) + lstsci*mnkmax(3) + nturb*(mnkmax(3)+1) + 2;
         if nfields ~= nf_req
@@ -671,100 +747,102 @@ if ~isempty(ininame)
     end
 end
 %
-dryname = propget(MDF.mdf,'','Fildry','');
+dryname = propget(MF.mdf,'','Fildry','');
 if ~isempty(dryname)
-    dryname = relpath(mdfpath,dryname);
-    MDF.dry = d3d_attrib('read',dryname);
+    dryname = relpath(md_path,dryname);
+    MF.dry = d3d_attrib('read',dryname);
 end
 %
-thdname = propget(MDF.mdf,'','Filtd','');
+thdname = propget(MF.mdf,'','Filtd','');
 if ~isempty(thdname)
-    thdname = relpath(mdfpath,thdname);
-    MDF.thd = d3d_attrib('read',thdname);
+    thdname = relpath(md_path,thdname);
+    MF.thd = d3d_attrib('read',thdname);
 end
 %
-wndname = propget(MDF.mdf,'','Filwnd','');
+wndname = propget(MF.mdf,'','Filwnd','');
 if ~isempty(wndname)
     warning('Support for Filwnd not yet implemented.')
 end
 %
-wndname = propget(MDF.mdf,'','Filwp','');
+wndname = propget(MF.mdf,'','Filwp','');
 if ~isempty(wndname)
     warning('Support for Filwp not yet implemented.')
 end
 %
-wndname = propget(MDF.mdf,'','Filwu','');
+wndname = propget(MF.mdf,'','Filwu','');
 if ~isempty(wndname)
     warning('Support for Filwu not yet implemented.')
 end
 %
-wndname = propget(MDF.mdf,'','Filwv','');
+wndname = propget(MF.mdf,'','Filwv','');
 if ~isempty(wndname)
     warning('Support for Filwv not yet implemented.')
 end
 %
-bndname = propget(MDF.mdf,'','Filbnd','');
+bndname = propget(MF.mdf,'','Filbnd','');
 if ~isempty(bndname)
-    bndname = relpath(mdfpath,bndname);
-    MDF.bnd = d3d_attrib('read',bndname);
+    bndname = relpath(md_path,bndname);
+    MF.bnd = d3d_attrib('read',bndname);
     %
-    bctname = propget(MDF.mdf,'','FilbcT','');
+    bctname = propget(MF.mdf,'','FilbcT','');
     if ~isempty(bctname)
-        bctname = relpath(mdfpath,bctname);
-        MDF.bct = bct_io('read',bctname);
+        bctname = relpath(md_path,bctname);
+        MF.bct = bct_io('read',bctname);
     end
     %
-    bcaname = propget(MDF.mdf,'','Filana','');
+    bcaname = propget(MF.mdf,'','Filana','');
     if ~isempty(bcaname)
         warning('Support for Filana not yet implemented.')
     end
     %
-    bchname = propget(MDF.mdf,'','FilbcH','');
+    bchname = propget(MF.mdf,'','FilbcH','');
     if ~isempty(bchname)
-        bchname = relpath(mdfpath,bchname);
-        MDF.bch = bch_io('read',bchname);
+        bchname = relpath(md_path,bchname);
+        MF.bch = bch_io('read',bchname);
     end
     %
-    bccname = propget(MDF.mdf,'','FilbcC','');
+    bccname = propget(MF.mdf,'','FilbcC','');
     if ~isempty(bccname)
-        bccname = relpath(mdfpath,bccname);
-        MDF.bcc = bct_io('read',bccname);
+        bccname = relpath(md_path,bccname);
+        MF.bcc = bct_io('read',bccname);
     end
 end
 %
-sedname = propget(MDF.mdf,'','Filsed','');
+sedname = propget(MF.mdf,'','Filsed','');
 if ~isempty(sedname)
-    sedname = relpath(mdfpath,sedname);
-    MDF.sed = inifile('open',sedname);
+    sedname = relpath(md_path,sedname);
+    MF.sed = inifile('open',sedname);
 end
 %
-morname = propget(MDF.mdf,'','Filmor','');
+morname = propget(MF.mdf,'','Filmor','');
 if ~isempty(morname)
-    morname = relpath(mdfpath,morname);
-    MDF.mor = inifile('open',morname);
+    morname = relpath(md_path,morname);
+    MF.mor = inifile('open',morname);
 end
 %
-morininame = propget(MDF.mor,'Underlayer','IniComp','');
-if ~isempty(morininame)
-    morininame = relpath(mdfpath,morininame);
-    MDF.morini.inb = inifile('open',morininame);
-    Chaps = inifile('chapters',MDF.morini.inb);
-    f = 0;
-    l = 0;
-    for c = 1:length(Chaps)
-        if strcmpi(Chaps{c},'layer')
-            l = l+1;
-            Keys = inifile('keywords',MDF.morini.inb,c);
-            for k = 1:length(Keys)
-                if ~strcmpi(Keys{k},'Type')
-                    val = propget(MDF.morini.inb,c,k);
-                    if ischar(val)
-                        f = f+1;
-                        filename = relpath(mdfpath,val);
-                        MDF.morini.field(f).chp  = c;
-                        MDF.morini.field(f).lyr  = l;
-                        MDF.morini.field(f).key  = k;
-                        MDF.morini.field(f).data = wldep('read',filename,MDF.grd);
+if isfield(MF,'mor')
+    morininame = propget(MF.mor,'Underlayer','IniComp','');
+    if ~isempty(morininame)
+        morininame = relpath(md_path,morininame);
+        MF.morini.inb = inifile('open',morininame);
+        Chaps = inifile('chapters',MF.morini.inb);
+        f = 0;
+        l = 0;
+        for c = 1:length(Chaps)
+            if strcmpi(Chaps{c},'layer')
+                l = l+1;
+                Keys = inifile('keywords',MF.morini.inb,c);
+                for k = 1:length(Keys)
+                    if ~strcmpi(Keys{k},'Type')
+                        val = propget(MF.morini.inb,c,k);
+                        if ischar(val)
+                            f = f+1;
+                            filename = relpath(md_path,val);
+                            MF.morini.field(f).chp  = c;
+                            MF.morini.field(f).lyr  = l;
+                            MF.morini.field(f).key  = k;
+                            MF.morini.field(f).data = wldep('read',filename,MF.grd);
+                        end
                     end
                 end
             end
@@ -772,22 +850,22 @@ if ~isempty(morininame)
     end
 end
 %
-traname = propget(MDF.mdf,'','TraFrm','');
+traname = propget(MF.mdf,'','TraFrm','');
 if ~isempty(traname)
-    traname = relpath(mdfpath,traname);
-    MDF.tra = readtra(traname);
+    traname = relpath(md_path,traname);
+    MF.tra = readtra(traname);
 end
 %
-staname = propget(MDF.mdf,'','Filsta','');
+staname = propget(MF.mdf,'','Filsta','');
 if ~isempty(staname)
-    staname = relpath(mdfpath,staname);
-    MDF.sta = d3d_attrib('read',staname);
+    staname = relpath(md_path,staname);
+    MF.sta = d3d_attrib('read',staname);
 end
 %
-crsname = propget(MDF.mdf,'','Filcrs','');
+crsname = propget(MF.mdf,'','Filcrs','');
 if ~isempty(crsname)
-    crsname = relpath(mdfpath,crsname);
-    MDF.crs = d3d_attrib('read',crsname);
+    crsname = relpath(md_path,crsname);
+    MF.crs = d3d_attrib('read',crsname);
 end
 
 
@@ -812,7 +890,12 @@ if iscell(str)
 elseif ischar(str)
     hashes = strfind(str,'#');
     if length(hashes)>1
-        str = str(hashes(1)+1:hashes(2)-1);
+        str1 = deblank(str(1:hashes(1)-1));
+        if isempty(str1)
+            str = str(hashes(1)+1:hashes(2)-1);
+        else
+            str = str1;
+        end
     elseif length(hashes)==1
         str = str(1:hashes(1)-1);
     end
