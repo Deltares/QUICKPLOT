@@ -467,8 +467,8 @@ if Props.File~=0
     end
 else
     switch(Props.Name)
-        case {'nm index','nm index (DD simulation)'}
-            if strcmp(Props.Name,'nm index (DD simulation)')
+        case {'nm cell index','nm cell index (DD simulation)','nm node index','nm node index (DD simulation)'}
+            if length(Props.Name)>14 && strcmp(Props.Name(end-14:end),'(DD simulation)')
                 ddb = 1;
             else
                 ddb = 0;
@@ -489,7 +489,7 @@ else
             full = reshape(nmlb:nmub,[nub-nlb+1 mub-mlb+1]);
             full = permute(full(1+ddb:end-ddb,3+ddb:end-2-ddb),[3 2 1]); % permute M and N and add 1 as time dimension in front
             val{1}=full(1,elidx{:});
-        case '(m,n) indices'
+        case {'(m,n) cell indices','(m,n) node indices'}
             val{1}=cell(1, length(elidx{1}), length(elidx{2}));
             for m = 1:length(elidx{1})
                 for n = 1:length(elidx{2})
@@ -720,9 +720,13 @@ PropNames={'Name'                    'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVa
 DataProps={'morphologic grid'        'sQUAD' 'xy'    [0 0 1 1 0]  0          0     ''        'd'   'd'      ''      0      0
     'hydrodynamic grid'               'sQUAD' 'xy'    [0 0 1 1 0]  0          0     ''        'z'   'z'      'i'     0      0
     '-------'                         ''      ''      [0 0 0 0 0]  0          0     ''        ''    ''       ''      0      0
-    '(m,n) indices'                   'sQUAD' 'xy'    [0 0 1 1 0]  1          4     ''        'z'   'z'      'i'     0      0
-    'nm index'                        'sQUAD' 'xy'    [0 0 1 1 0]  1          1     ''        'z'   'z'      'i'     0      0
-    'nm index (DD simulation)'        'sQUAD' 'xy'    [0 0 1 1 0]  1          1     ''        'z'   'z'      'i'     0      0   };
+    '(m,n) node indices'              'sQUAD' 'xy'    [0 0 1 1 0]  0          4     ''        'd'   'd'      'i'     0      0
+    'nm node index'                   'sQUAD' 'xy'    [0 0 1 1 0]  0          1     ''        'd'   'd'      'i'     0      0
+    'nm node index (DD simulation)'   'sQUAD' 'xy'    [0 0 1 1 0]  0          1     ''        'd'   'd'      'i'     0      0
+    '-------'                         ''      ''      [0 0 0 0 0]  0          0     ''        ''    ''       ''      0      0
+    '(m,n) cell indices'              'sQUAD' 'xy'    [0 0 1 1 0]  1          4     ''        'z'   'z'      'i'     0      0
+    'nm cell index'                   'sQUAD' 'xy'    [0 0 1 1 0]  1          1     ''        'z'   'z'      'i'     0      0
+    'nm cell index (DD simulation)'   'sQUAD' 'xy'    [0 0 1 1 0]  1          1     ''        'z'   'z'      'i'     0      0   };
 
 %======================== SPECIFIC CODE DIMENSIONS ============================
 Attribs = qp_option(FI,'AttribFiles');

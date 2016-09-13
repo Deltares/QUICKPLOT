@@ -585,6 +585,46 @@ else
     error('Unable to locate networkFile keyword in [Files] chapter.');
 end
 %
+crsname = propget(MF.md1d,'Files','crossLocFile');
+if ~isempty(crsname)
+    crsname = relpath(md_path,crsname);
+    MF.crsLoc = inifile('open',crsname);
+else
+    error('Unable to locate crossLocFile keyword in [Files] chapter.');
+end
+%
+bndname = propget(MF.md1d,'Files','boundLocFile');
+if ~isempty(bndname)
+    bndname = relpath(md_path,bndname);
+    MF.bndLoc = inifile('open',bndname);
+else
+    error('Unable to locate boundLocFile keyword in [Files] chapter.');
+end
+%
+% crsname = propget(MF.md1d,'Files','crossDefFile');
+% if ~isempty(crsname)
+%     crsname = relpath(md_path,crsname);
+%     MF.crsDef = inifile('open',crsname);
+% else
+%     error('Unable to locate crossDefFile keyword in [Files] chapter.');
+% end
+%
+strname = propget(MF.md1d,'Files','structureFile');
+if ~isempty(strname)
+    strname = relpath(md_path,strname);
+    MF.struct = inifile('open',strname);
+else
+    error('Unable to locate structureFile keyword in [Files] chapter.');
+end
+%
+obsname = propget(MF.md1d,'Files','obsPointsFile');
+if ~isempty(obsname)
+    obsname = relpath(md_path,obsname);
+    MF.obs = inifile('open',obsname);
+else
+    error('Unable to locate obsPointsFile keyword in [Files] chapter.');
+end
+%
 
 
 function MF = mduread(MF,md_path)

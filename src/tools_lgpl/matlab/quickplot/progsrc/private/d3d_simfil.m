@@ -126,7 +126,15 @@ for i=1:length(sz)
     end
 end
 
-switch [FI.FileType(9:end) ':' Props.Name]
+Name = [FI.FileType(9:end) ':' Props.Name];
+if strcmp(Name,'D-Flow1D:water level boundary points') || ...
+        strcmp(Name,'D-Flow1D:discharge boundary points') || ...
+        strncmp(Name,'D-Flow1D:boundary points',24)
+    Name = 'D-Flow1D:boundary points';
+elseif strncmp(Name,'D-Flow1D:structure points',25)
+    Name = 'D-Flow1D:structure points';
+end
+switch Name
     case 'D-Flow1D:network'
         G = inifile('geti',FI.ntw,'Branch','geometry');
         G = G(idx{M_});
@@ -140,6 +148,15 @@ switch [FI.FileType(9:end) ':' Props.Name]
         Ans.X = [X{idx{M_}}];
         Ans.Y = [Y{idx{M_}}];
         Ans.Val = inifile('geti',FI.ntw,'Node','id');
+    case 'D-Flow1D:cross section locations'
+        cId = inifile('geti',FI.crsLoc,'CrossSection','id');
+        bId = inifile('geti',FI.crsLoc,'CrossSection','branchid');
+        bCh = inifile('geti',FI.crsLoc,'CrossSection','chainage');
+        %
+        bId = bId(idx{M_});
+        bCh = bCh(idx{M_});
+        [Ans.X,Ans.Y] = branch_idchain2xy(FI.ntw,bId,bCh);
+        Ans.Val = cId(idx{M_});
     case 'D-Flow1D:grid points'
         gpCnt = inifile('geti',FI.ntw,'Branch','gridPointsCount');
         gpX = inifile('geti',FI.ntw,'Branch','gridPointX');
@@ -171,6 +188,35 @@ switch [FI.FileType(9:end) ':' Props.Name]
                 Ans.Val(iAns) = gpi(im);
             end
         end
+    case 'D-Flow1D:boundary points'
+        F=inifile('geti',FI.bndLoc,'Boundary','type');
+        BT = [F{:}];
+        BT = find(BT==Props.varid);
+        %
+        F=inifile('geti',FI.bndLoc,'Boundary','nodeId');
+        BI = F(BT(idx{M_}));
+        %
+        NI = inifile('geti',FI.ntw,'Node','id');
+        ni = find(ismember(NI,BI));
+        ni = ni(idx{M_});
+        x = inifile('geti',FI.ntw,'Node','x');
+        y = inifile('geti',FI.ntw,'Node','y');
+        Ans.X   = [x{ni}]';
+        Ans.Y   = [y{ni}]';
+        Ans.Val = NI(ni);
+    case 'D-Flow1D:structure points'
+        ST = inifile('geti',FI.struct,'Structure','type');
+        ST = find(strcmp(ST,Props.varid));
+        %
+        sId = inifile('geti',FI.struct,'Structure','id');
+        bId = inifile('geti',FI.struct,'Structure','branchid');
+        bCh = inifile('geti',FI.struct,'Structure','chainage');
+        %
+        iM = ST(idx{M_});
+        bId = bId(iM);
+        bCh = bCh(iM);
+        [Ans.X,Ans.Y] = branch_idchain2xy(FI.ntw,bId,bCh);
+        Ans.Val = sId(iM);
     case 'D-Flow2D3D:grid'
         nM = length(idx{M_});
         nN = length(idx{N_});
@@ -241,7 +287,16 @@ switch FI.FileType
         Out(1).Coords = 'xy';
         Out(1).DimFlag(M_) = 1;
         %
-        Out(2:3) = Out(1);
+        F=inifile('geti',FI.bndLoc,'Boundary','type');
+        BT=[F{:}];
+        uBT=unique(BT);
+        nBT=length(uBT);
+        %
+        ST=inifile('geti',FI.struct,'Structure','type');
+        uST=unique(ST);
+        nST=length(uST);
+        %
+        Out(2:4+nBT+nST) = Out(1);
         Out(2).Name = 'nodes';
         Out(2).Geom = 'PNT';
         Out(2).NVal = 4;
@@ -249,6 +304,38 @@ switch FI.FileType
         Out(3).Name = 'grid points';
         Out(3).Geom = 'PNT';
         Out(3).NVal = 4;
+        %
+        Out(4).Name = 'cross section locations';
+        Out(4).Geom = 'PNT';
+        Out(4).NVal = 4;
+        %
+        for i = 1:nBT
+            switch uBT(i)
+                case 1
+                    Name = 'water level boundary points';
+                case 2
+                    Name = 'discharge boundary points';
+                otherwise
+                    Name = sprintf('boundary points - type %i',uBT(i));
+            end
+            Out(4+i).Name = Name;
+            Out(4+i).Geom = 'PNT';
+            Out(4+i).NVal = 4;
+            Out(4+i).varid = uBT(i);
+        end
+        %
+        for i = 1:nST
+            switch uST{i}
+                case 'universalWeir'
+                    Name = 'universal weir';
+                otherwise
+                    Name = uST{i};
+            end
+            Out(4+nBT+i).Name = ['structure points - ' Name];
+            Out(4+nBT+i).Geom = 'PNT';
+            Out(4+nBT+i).NVal = 4;
+            Out(4+nBT+i).varid = uST{i};
+        end
     case 'Delft3D D-Flow2D3D'
         Out(1).Name = 'grid';
         Out(1).Geom = 'sQUAD';
@@ -288,6 +375,18 @@ switch FI.FileType
             case 'grid points'
                 F=inifile('geti',FI.ntw,'Branch','gridPointsCount');
                 sz(M_) = sum([F{:}]);
+            case 'cross section locations'
+                F=inifile('geti',FI.crsLoc,'CrossSection','branchid');
+                sz(M_) = length(F);
+            otherwise
+                if ~isempty(strfind(Props.Name,'boundary points'))
+                    F=inifile('geti',FI.bndLoc,'Boundary','type');
+                    BT = [F{:}];
+                    sz(M_) = sum(BT==Props.varid);
+                elseif strncmp(Props.Name,'structure points',16)
+                    ST=inifile('geti',FI.struct,'Structure','type');
+                    sz(M_)=sum(strcmp(Props.varid,ST));
+                end
         end
     case 'Delft3D D-Flow2D3D'
         MNK = inifile('geti',FI.mdf,'*','MNKmax');
@@ -302,3 +401,26 @@ switch FI.FileType
         % no generic default dimension code
 end
 % -----------------------------------------------------------------------------
+
+
+function [x,y] = branch_idchain2xy(NTWini,bId,bCh)
+nPnt = length(bId);
+x = NaN(nPnt,1);
+y = NaN(nPnt,1);
+%
+[uBId,ia,ic] = unique(bId);
+G = inifile('geti',NTWini,'Branch','geometry');
+GId = inifile('geti',NTWini,'Branch','id');
+for i = 1:length(uBId)
+    Branch = uBId(i);
+    iBranch = ustrcmpi(Branch,GId);
+    if iBranch>0
+        XY   = geom2xy(G{iBranch});
+        d    = pathdistance(XY(:,1),XY(:,2));
+        iOut = ic==i;
+        cCS  = [bCh{iOut}];
+        xyCS = interp1(d,XY,cCS);
+        x(iOut) = xyCS(:,1);
+        y(iOut) = xyCS(:,2);
+    end
+end
