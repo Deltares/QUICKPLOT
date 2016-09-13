@@ -683,7 +683,7 @@ fprintf(logid,'<table bgcolor=CCCCFF><tr><td colspan=2 bgcolor=AAAAFF><b>End of 
 c = clock;
 fprintf(logid,'<tr><td>Date:</td><td>%4.4i-%2.2i-%2.2i %2.2i:%2.2i:%02.0f</td></tr>\n',c);
 dt = (datenum(c)-t0)*86400;
-if isnan(dt_old) || (dt-dt_old)<max(0.2,min(dt,dt_old)/30)
+if isnan(dt_old) || abs(dt-dt_old)<max(0.2,min(dt,dt_old)/30)
     dt_str = duration(dt);
 elseif dt>dt_old
     dt_str = ['<font color=FF0000>' duration(dt) '</font> previously: ' duration(dt_old)];

@@ -135,7 +135,7 @@ Line={};
 while ~feof(fid)
     L = fgetl(fid);
     if ischar(L)
-        nLine=deblank2(L);
+        nLine=strtrim(L);
         if ~isempty(nLine)
             Line{end+1}=nLine;
         end
@@ -152,7 +152,7 @@ for i=1:length(Line)
         end
         eq=strfind(ln,'=');
         if ~isempty(eq)
-            SF={deblank2(ln(1:eq(1)-1)) deblank2(ln(eq(1)+1:end))};
+            SF={strtrim(ln(1:eq(1)-1)) strtrim(ln(eq(1)+1:end))};
         else
             SF={'' ln};
         end

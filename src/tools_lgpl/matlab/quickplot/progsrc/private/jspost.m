@@ -110,7 +110,7 @@ if ~ischar(TimeUnit)
     fclose(fpst);
     error('Error reading STU header.')
 end
-TimeUnit=deblank2(TimeUnit);
+TimeUnit=strtrim(TimeUnit);
 
 Str=S.Header{2}(41:end);
 [S.T0,S.TStep] = delwaqt0(Str);
@@ -132,7 +132,7 @@ for i=1:NPar
         fclose(fpst);
         error('Error reading name of parameter %i.',i)
     end
-    S.SubsName{i}=deblank2(Line);
+    S.SubsName{i}=strtrim(Line);
 end
 
 for i=1:NSeg
@@ -142,7 +142,7 @@ for i=1:NSeg
         fclose(fpst);
         error('Error reading name of segment %i.',i)
     end
-    S.SegmentName{i}=deblank2(Line);
+    S.SegmentName{i}=strtrim(Line);
 end
 
 if ~isempty(fscanf(fstu,' %c')) | ~feof(fstu)

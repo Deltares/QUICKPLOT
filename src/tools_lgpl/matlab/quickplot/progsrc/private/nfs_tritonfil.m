@@ -424,7 +424,7 @@ for ig=1:length(UniGroups)
                     % Set unit ...
                     %
                     if ~isempty(Info.ElmUnits)
-                        Out(end).Units = deblank2(Info.ElmUnits(2:end-1));
+                        Out(end).Units = strtrim(Info.ElmUnits(2:end-1));
                     else
                         Out(end).Units = '';
                     end

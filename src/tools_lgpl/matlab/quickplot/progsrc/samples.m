@@ -148,7 +148,7 @@ if simplexyz
                     if length(j1) == npar && length(j2) == npar
                         xyz.ParamUnits = repmat({''},1,npar);
                         for j = 1:npar
-                            xyz.ParamUnits{j} = deblank2(xyz.Header{i}(j1(j)+1:j2(j)-1));
+                            xyz.ParamUnits{j} = strtrim(xyz.Header{i}(j1(j)+1:j2(j)-1));
                         end
                         par = textscan(xyz.Header{i-1}(2:end),'%s');
                         xyz.Params = par{1};
@@ -164,7 +164,7 @@ else % readtype always forced to 'struct'
         xyz.Header={};
         while ischar(Line) && ~isempty(Line) && (Line(1)=='*' || Line(1)=='#')
             skiplines=skiplines+1;
-            xyz.Header{skiplines} = deblank2(Line(2:end));
+            xyz.Header{skiplines} = strtrim(Line(2:end));
             Line=fgetl(fid);
         end
         if ~ischar(Line)

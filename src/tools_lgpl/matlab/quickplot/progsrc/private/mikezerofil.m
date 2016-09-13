@@ -305,7 +305,7 @@ end
 if ~isempty(FI.Item)
     for i=1:length(FI.Item)
         Out(i)=Out(1);
-        Out(i).Name=deblank2(FI.Item(i).Name);
+        Out(i).Name=strtrim(FI.Item(i).Name);
         Out(i).Index=i;
     end
 else

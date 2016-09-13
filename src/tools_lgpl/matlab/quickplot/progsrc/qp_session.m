@@ -107,9 +107,9 @@ fid = fopen(filename,'r');
 Str = getline(fid);
 Expand = 0;
 while ~isempty(Str)
-    if strcmpi(deblank2(Str),'Expand')
+    if strcmpi(strtrim(Str),'Expand')
         Expand = 1;
-    elseif strcmpi(deblank2(Str),'EndExpand')
+    elseif strcmpi(strtrim(Str),'EndExpand')
         Expand = 0;
     elseif Expand
         args = parseargs(Str);

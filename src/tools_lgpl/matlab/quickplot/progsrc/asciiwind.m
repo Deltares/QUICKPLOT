@@ -622,7 +622,7 @@ if isempty(eq)
     value = Line;
 else
     keyw = lower(deblank(Line(1:eq-1)));
-    value = deblank2(Line(eq+1:end));
+    value = strtrim(Line(eq+1:end));
 end
 
 

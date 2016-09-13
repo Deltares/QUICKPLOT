@@ -990,7 +990,7 @@ end
 for i=1:length(Out)
     if isequal(Out(i).Units,'*')
         Info = vs_disp(FI,Out(i).Group,Out(i).Val1);
-        eUnit = deblank2(Info.ElmUnits(2:end-1));
+        eUnit = strtrim(Info.ElmUnits(2:end-1));
         switch lower(eUnit)
             case 'm3'
                 eUnit = 'm^3';

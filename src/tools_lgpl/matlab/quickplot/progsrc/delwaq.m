@@ -263,7 +263,7 @@ try
             ~all(ismember(SubsNames(:),char([0 32:126 160:255])))
         error('Invalid substance names.');
     end
-    S.SubsName=deblank2(cellstr(SubsNames));
+    S.SubsName=strtrim(cellstr(SubsNames));
     %
     % In case of an unformatted file, verify dimensions.
     %

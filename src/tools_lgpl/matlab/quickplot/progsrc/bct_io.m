@@ -299,7 +299,7 @@ for i = 1:length(Info.Table)
        nperc = 1;
     end
     if nperc==1
-       fmt = [repmat([' ',deblank2(fmt)],1,nval),'\n'];
+       fmt = [repmat([' ',strtrim(fmt)],1,nval),'\n'];
        fmt = fmt(2:end);
     elseif nperc==nval
        fmt = [Info.Table(i).Format,'\n'];

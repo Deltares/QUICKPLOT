@@ -93,15 +93,15 @@ while ~feof(fid)
     header = 1;
     while header && ~feof(fid)
         loc = ftell(fid);
-        line = deblank2(fgetl(fid));
+        line = strtrim(fgetl(fid));
         if isempty(line)
             % skip empty lines?
         elseif line(1)=='#'
             anyheader = 1;
             [keyw,n,err,j]=sscanf(line(2:end),'%[^:=]%1[:=]',2);
             if n==2 % keyword line
-                val = deblank2(line(j+1:end));
-                switch lower(deblank2(keyw(1:end-1)))
+                val = strtrim(line(j+1:end));
+                switch lower(strtrim(keyw(1:end-1)))
                     case 'location'
                         Series(i).location = val;
                     case 'position'

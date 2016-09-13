@@ -320,7 +320,7 @@ function [factor,si]=parse(unit,absolute)
 %fprintf('Parsing: %s\n',unit);
 factor=[0 1];
 si=zeros(1,8);
-unit=deblank2(unit);
+unit=strtrim(unit);
 
 nob=0;
 prevcmd='*';

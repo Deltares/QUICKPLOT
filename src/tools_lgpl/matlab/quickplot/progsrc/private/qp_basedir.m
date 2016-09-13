@@ -96,7 +96,7 @@ if strcmp(c(1:2),'PC')
    [status, result] = system('set PATH');
    eql = strfind(result,'=');
    col = strfind(result,';');
-   dd = deblank2(result(eql(1)+1:col(1)-1));
+   dd = strtrim(result(eql(1)+1:col(1)-1));
 else % Unix
    % call a mex file
    dd = fileparts(exepath);

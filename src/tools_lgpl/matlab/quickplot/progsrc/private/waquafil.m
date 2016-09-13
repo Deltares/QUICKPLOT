@@ -728,13 +728,13 @@ for j=1:length(Out1)
                     end
                     for s=1:length(Subs)-1
                         OutIn.WaqIO=[nm Subs{s}];
-                        OutIn.Name=[deblank2(lower(Subs{s})) ct];
+                        OutIn.Name=[strtrim(lower(Subs{s})) ct];
                         OutIn.Exper=eName;
                         i=i+1;
                         Out(i)=OutIn;
                     end
                     OutIn.WaqIO=[nm Subs{end}];
-                    OutIn.Name=[deblank2(lower(Subs{end})) ct];
+                    OutIn.Name=[strtrim(lower(Subs{end})) ct];
                 end
             case {'velocity (barrier)','flow-through height (barrier)','energy loss (barrier)'}
                 dimen=waqua('readsds',FI,eName,'MESH_IDIMEN');

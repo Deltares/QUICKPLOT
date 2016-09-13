@@ -596,7 +596,7 @@ switch FI.FileType
                                 Fourier = strmatch('* Results fourier analysis on:',FI.Field(i).Comments);
                                 Elliptic = strmatch('* Elliptic parameters of',FI.Field(i).Comments);
                                 if ~isempty(Fourier)
-                                    Quant = deblank2(FI.Field(i).Comments{Fourier}(31:end));
+                                    Quant = strtrim(FI.Field(i).Comments{Fourier}(31:end));
                                     DP{10}=1;
                                     switch FI.Field(i).Size(2)
                                         case 13
@@ -655,7 +655,7 @@ switch FI.FileType
                                         DP{1}=sprintf('%s',FI.Field(i).Name);
                                     end
                                 elseif ~isempty(Elliptic)
-                                    Quant = deblank2(FI.Field(i).Comments{Elliptic}(32:end));
+                                    Quant = strtrim(FI.Field(i).Comments{Elliptic}(32:end));
                                     DP{10}=2;
                                     DP{11}={5,6,7,8};
                                     DP{4}=[0 0 1 1 0];

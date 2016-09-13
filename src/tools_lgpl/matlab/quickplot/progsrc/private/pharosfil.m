@@ -448,7 +448,7 @@ for i=1:length(Grps)
                 end
                 eunit='';
                 if ~isempty(Info.ElmUnits)
-                    eunit=deblank2(Info.ElmUnits);
+                    eunit=strtrim(Info.ElmUnits);
                     if isequal(eunit([1 end]),'[]')
                         eunit=eunit(2:end-1);
                     end

@@ -178,10 +178,10 @@ try
         else
             EqualSign = strfind(line,'=');
             if ~isempty(EqualSign)
-                keyword = deblank2(line(1:EqualSign(1)-1));
+                keyword = strtrim(line(1:EqualSign(1)-1));
                 switch keyword
                     case 'Coordinate System'
-                        GRID.CoordinateSystem=deblank2(line(EqualSign(1)+1:end));
+                        GRID.CoordinateSystem=strtrim(line(EqualSign(1)+1:end));
                     case 'Missing Value'
                         GRID.MissingValue=str2double(line(EqualSign(1)+1:end));
                 end

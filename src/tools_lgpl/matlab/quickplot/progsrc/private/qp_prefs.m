@@ -37,7 +37,7 @@ switch cmd
         
     case 'organizationname'
         orgn=findobj(gcbf,'tag','organizationname');
-        name=deblank2(get(orgn,'string'));
+        name=strtrim(get(orgn,'string'));
         qp_settings('organizationname',name);
         
     case 'timezonehandling'

@@ -353,7 +353,7 @@ for tpC = types
                     if ~ischar(Line)
                         break
                     end
-                    Line=deblank2(Line);
+                    Line=strtrim(Line);
                     if isempty(Line)
                         % skip empty lines
                         continue

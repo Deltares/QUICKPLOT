@@ -67,7 +67,6 @@
 %   asciiload                   - A compiler compatible version of LOAD -ASCII.
 %   avi                         - MATLAB AVI interface.
 %   clockwise                   - Determines polygon orientation.
-%   deblank2                    - Remove leading and trailing blanks.
 %   exepath                     - MEX file to determine path of deployed mode.
 %   filesequal                  - Determines whether the contents of two files is the same.
 %   findseries                  - Find series of nonzero elements.

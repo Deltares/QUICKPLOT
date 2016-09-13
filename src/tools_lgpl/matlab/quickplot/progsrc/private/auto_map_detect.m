@@ -79,9 +79,9 @@ for i=1:length(Grps)
                 else
                     ediscr=Info.ElmDescription;
                 end
-                eunit=deblank2(Info.ElmUnits);
+                eunit=strtrim(Info.ElmUnits);
                 if ~isempty(eunit) && eunit(1)=='[' && eunit(end)==']'
-                    eunit = deblank2(eunit(2:end-1));
+                    eunit = strtrim(eunit(2:end-1));
                 end
                 switch eunit
                     case '-'

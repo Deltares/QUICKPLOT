@@ -150,14 +150,14 @@ while ~TableLine
         fclose(fid);
         error('No table record found in file: %s',filename)
     else
-        TableLine = ~isempty(strmatch('tab',lower(deblank2(Line))));
+        TableLine = ~isempty(strmatch('tab',lower(strtrim(Line))));
     end
 end
 %
-Line = deblank2(Line);
+Line = strtrim(Line);
 while ~isempty(strmatch(Line(end-1:end),{' _',' &'},'exact'))
     Line2 = fgetl(fid);
-    Line2 = deblank2(Line2);
+    Line2 = strtrim(Line2);
     Line = [Line(1:end-1) Line2];
 end
 quotes=strfind(Line,'''');

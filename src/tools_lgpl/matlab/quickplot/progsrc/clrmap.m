@@ -218,7 +218,7 @@ while 1
             error('Multiple NAME records.')
         end
         NAME=1;
-        S.Name=deblank2(Str(6:end));
+        S.Name=strtrim(Str(6:end));
     elseif strmatch('SPACE=',Str)
         if SPACE==1
             fclose(fid);

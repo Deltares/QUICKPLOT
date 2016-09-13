@@ -130,7 +130,7 @@ for i=1:nfunc
     %end
     unitopen=strfind(Line(38:end),'(')+37;
     unitclose=strfind(Line(38:end),')')+37;
-    Units=deblank2(Line(unitopen:unitclose));
+    Units=strtrim(Line(unitopen:unitclose));
     S.Quant.Units{i}=Units(2:end-1);
 
     %[X,nread]=sscanf(Line(52:end),'%f');

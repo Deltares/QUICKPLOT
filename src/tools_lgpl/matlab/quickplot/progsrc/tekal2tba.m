@@ -102,7 +102,7 @@ for t = 1:nfld
         per = sscanf(C{i},'%*[^A]Analysed period%*[^:]: %f, %f',[1 2]);
         tz  = sscanf(C{i},'%*[^T]Time zone%*[^:]: %100c',1);
         qnt = sscanf(C{i},'%*[^>]>>%[^<]<<',1);
-        qnt = deblank2(qnt);
+        qnt = strtrim(qnt);
         %
         if ~isempty(cmp)
             component(t).Name = cmp;
