@@ -126,7 +126,6 @@ FI.Data=S;
 
 
 function FI=readfile(filename)
-S=cell(0,2);
 fid=fopen(filename,'r');
 if fid<0
     error('Error opening %s.',filename)
@@ -142,23 +141,52 @@ while ~feof(fid)
     end
 end
 fclose(fid);
-for i=1:length(Line)
-    ln=Line{i};
+ichp = 0;
+% preallocate space for 1000 chapters
+S = cell(1000,2);
+for i = 1:length(Line)
+    ln = Line{i};
     if ln(1)=='['
-        S(end+1,1:2)={ln(2:end-1) cell(0,2)};
-    else
-        if isempty(S)
-            S(end+1,1:2)={'' cell(0,2)};
+        % remove unused preallocated key fields
+        if ichp>0
+            S{ichp,2} = S{ichp,2}(1:ikey,:);
         end
-        eq=strfind(ln,'=');
+        % if we reach the preallocated chapter array length, double its length
+        if ichp==size(S,1)
+            S{2*ichp,1} = [];
+        end
+        % create a new chapter and preallocate array space for keys
+        ichp = ichp+1;
+        S(ichp,1:2) = {ln(2:end-1) cell(1000,2)};
+        ikey = 0;
+    else
+        % if we find lines before a chapter, add a dumy chapter
+        if ichp==0
+            ichp = ichp+1;
+            S(ichp,1:2) = {'' cell(1000,2)};
+            ikey = 0;
+        end
+        % process the key
+        eq = strfind(ln,'=');
         if ~isempty(eq)
             SF={strtrim(ln(1:eq(1)-1)) strtrim(ln(eq(1)+1:end))};
         else
             SF={'' ln};
         end
-        S{end,2}(end+1,1:2)=SF;
+        % if we reach the preallocated key array length, double its length
+        if ikey==size(S{ichp,2},1)
+            S{ichp,2}(2*ikey,1) = [];
+        end
+        ikey = ikey+1;
+        S{ichp,2}(ikey,1:2)=SF;
     end
 end
+% remove any superfluous preallocated cells for keys and chapters
+if ichp>0
+    S{ichp,2} = S{ichp,2}(1:ikey,:);
+end
+S = S(1:ichp,:);
+%
 FI.FileName=filename;
 FI.FileType='INI file';
 FI.Data=S;
