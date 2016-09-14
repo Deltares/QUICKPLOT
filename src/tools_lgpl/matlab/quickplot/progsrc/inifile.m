@@ -175,7 +175,7 @@ for i = 1:length(Line)
         end
         % if we reach the preallocated key array length, double its length
         if ikey==size(S{ichp,2},1)
-            S{ichp,2}(2*ikey,1) = [];
+            S{ichp,2}{2*ikey,1} = [];
         end
         ikey = ikey+1;
         S{ichp,2}(ikey,1:2)=SF;
