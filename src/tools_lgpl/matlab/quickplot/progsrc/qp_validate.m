@@ -217,7 +217,9 @@ try
             FileName2=inifile('get',CaseInfo,'*','FileName2','');
             if isempty(FileName2)
                FileName2={};
+               fprintf(logid2,'Opening ''%s''<br>\n',FileName);
             else
+               fprintf(logid2,'Opening ''%s'' with ''%s''<br>\n',FileName,FileName2);
                FileName2={[sdata,FileName2]};
             end
             if length(FileName)<7 || ~isequal(lower(FileName(1:7)),'http://')

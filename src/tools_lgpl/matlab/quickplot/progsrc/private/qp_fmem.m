@@ -126,17 +126,21 @@ switch cmd
         try_next='nefis';
         [pn,fn,en]=fileparts(FileName);
         
+        fn_ = lower(fn);
+        fen_ = lower([fn en]);
         if DoDS
             try_next='NetCDF';
-        elseif strmatch('sds-',lower(fn))
+        elseif strncmp('sds-',fn_,4)
             try_next='waquasds';
-        elseif strmatch('morf',lower(fn))
+        elseif strncmp('morf',fn_,4)
             try_next='morf';
-        elseif strmatch('bagdpt',lower(fn))
+        elseif strncmp('bagdpt',fn_,6)
             try_next='bagdpt';
-        elseif strcmp('gcmplt',lower(fn)) || strcmp('gcmtsr',lower(fn))
+        elseif strncmp('fourier',fn_,7)
+            try_next='tekal';
+        elseif strcmp('gcmplt',fn_) || strcmp('gcmtsr',fn_)
             try_next='ecomsed-binary';
-        elseif strcmp('network.ntw',lower([fn en])) || strcmp('deptop.1',lower([fn en]))
+        elseif strcmp('network.ntw',fen_) || strcmp('deptop.1',fen_)
             try_next='sobek1d';
         else
             switch lower(en)
@@ -216,6 +220,12 @@ switch cmd
                     try_next='NOOS time series';
                 case {'.wml'}
                     try_next='WaterML2';
+                otherwise
+                    if strncmp('hot',fn_,3)
+                        try_next='SWAN spectral';
+                    else
+                        try_next='nefis';
+                    end
             end
         end
         FileName = absfullfile(FileName);
