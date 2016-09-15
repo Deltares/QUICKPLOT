@@ -1186,8 +1186,8 @@ try
         PointerList(4,:)=fread(fidat,[1 256],AddressType);
         if vs_debug
             fprintf(vs_debug,'Pointer list 4 at offset %u:\n',Offset+AddressBytes);
-            fprintf(vs_debug,[repmat(' %7u',[1 10]) '\n'],PointerList(4,:));
-            fprintf(vs_debug,'\n\n');
+            printPointers(vs_debug,PointerList(4,:),Nil)
+            fprintf(vs_debug,'\n');
         end
     end
     for VarDimCnt=1:VarDimCntMax
@@ -1211,14 +1211,18 @@ try
                     LastVD(bt1)=Nil;       % make sure that PointerList(bt-2) is reloaded
                     if vs_debug
                         fprintf(vs_debug,'Pointer list %i at offset %u:\n',bt1,PointerList(bt,VDByte(bt)+1));
-                        fprintf(vs_debug,[repmat(' %7u',[1 10]) '\n'],PointerList(bt1,:));
-                        fprintf(vs_debug,'\n\n');
+                        printPointers(vs_debug,PointerList(bt1,:),Nil)
+                        fprintf(vs_debug,'\n');
                     end
                 end
             end
             Offset=PointerList(1,VDByte(1)+1);
             if vs_debug
-                fprintf(vs_debug,'The offset of datagroup %i is %u.\n',VDIndex(VarDimCnt),Offset);
+                if Offset==Nil
+                    fprintf(vs_debug,'The offset of datagroup %i is -1.\n',VDIndex(VarDimCnt));
+                else
+                    fprintf(vs_debug,'The offset of datagroup %i is %u.\n',VDIndex(VarDimCnt),Offset);
+                end
             end
         end
         if GroupOptimized
@@ -1232,6 +1236,9 @@ try
         if VD & (Offset==Nil)
             % reading from a pointer that has not been set is not possible
             % zeros and blanks returned by default
+            if vs_debug
+                fprintf(vs_debug,'  No data to read.\n');
+            end
         else
             if GroupOptimized
                 status=0;
@@ -1548,6 +1555,21 @@ switch id
 end
 if vs_debug
     fprintf(vs_debug,Str);
+end
+
+function printPointers(vs_debug,PointerList,Nil)
+for i=0:25
+    if i==25
+        nAddresses=6;
+    else
+        nAddresses=10;
+    end
+    sc  = repmat({'       -1'},1,nAddresses);
+    HTline = PointerList(i*10+(1:nAddresses));
+    sc(HTline~=Nil) = {' %8u'};
+    sc{nAddresses+1} = '\n';
+    LineFormat = strcat(sc{:});
+    fprintf(vs_debug,LineFormat,HTline(HTline~=Nil));
 end
 
 function Ind = subcript2ind(Siz,Sub)
