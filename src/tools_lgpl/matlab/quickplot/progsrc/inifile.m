@@ -130,34 +130,32 @@ fid=fopen(filename,'r');
 if fid<0
     error('Error opening %s.',filename)
 end
-Line={};
-while ~feof(fid)
-    L = fgetl(fid);
-    if ischar(L)
-        nLine=strtrim(L);
-        if ~isempty(nLine)
-            Line{end+1}=nLine;
-        end
-    end
-end
+WholeFile = fread(fid,[1 inf],'uchar=>char');
 fclose(fid);
+Line = strsplit(WholeFile,{char(10) char(13)});
+Line(cellfun('isempty',Line))=[];
+%
 ichp = 0;
 % preallocate space for 1000 chapters
-S = cell(1000,2);
+PreAllocChap = 1000;
+S = cell(PreAllocChap,2);
 for i = 1:length(Line)
     ln = Line{i};
     if ln(1)=='['
         % remove unused preallocated key fields
         if ichp>0
-            S{ichp,2} = S{ichp,2}(1:ikey,:);
+            S{ichp,2} = strtrim(K(1:ikey,:));
         end
         % if we reach the preallocated chapter array length, double its length
-        if ichp==size(S,1)
-            S{2*ichp,1} = [];
+        if ichp==PreAllocChap
+            PreAllocChap = 2*PreAllocChap;
+            S{PreAllocChap,1} = [];
         end
         % create a new chapter and preallocate array space for keys
         ichp = ichp+1;
-        S(ichp,1:2) = {ln(2:end-1) cell(1000,2)};
+        PreAllocKey = 1000;
+        K = cell(PreAllocKey,2);
+        S{ichp,1} = ln(2:end-1);
         ikey = 0;
     else
         % if we find lines before a chapter, add a dumy chapter
@@ -166,24 +164,26 @@ for i = 1:length(Line)
             S(ichp,1:2) = {'' cell(1000,2)};
             ikey = 0;
         end
+        % if we reach the preallocated key array length, double its length
+        if ikey==PreAllocKey
+            PreAllocKey = 2*PreAllocKey;
+            S{ichp,2}{PreAllocKey,1} = [];
+        end
+        ikey = ikey+1;
         % process the key
         eq = strfind(ln,'=');
         if ~isempty(eq)
-            SF={strtrim(ln(1:eq(1)-1)) strtrim(ln(eq(1)+1:end))};
+            K{ikey,1} = ln(1:eq(1)-1);
+            K{ikey,2} = ln(eq(1)+1:end);
         else
-            SF={'' ln};
+            K{ikey,1} = '';
+            K{ikey,2} = ln;
         end
-        % if we reach the preallocated key array length, double its length
-        if ikey==size(S{ichp,2},1)
-            S{ichp,2}{2*ikey,1} = [];
-        end
-        ikey = ikey+1;
-        S{ichp,2}(ikey,1:2)=SF;
     end
 end
 % remove any superfluous preallocated cells for keys and chapters
 if ichp>0
-    S{ichp,2} = S{ichp,2}(1:ikey,:);
+    S{ichp,2} = strtrim(K(1:ikey,:));
 end
 S = S(1:ichp,:);
 %
