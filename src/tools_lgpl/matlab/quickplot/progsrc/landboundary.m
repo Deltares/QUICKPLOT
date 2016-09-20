@@ -77,13 +77,17 @@ if nargin==0
     return
 end
 switch cmd
+    case 'readc'
+        varargout{1}=Local_read_file('cell',varargin{:});
     case 'read'
-        Out=Local_read_file(varargin{:});
+        Out=Local_read_file('plain',varargin{:});
         if nargout==1
             varargout{1}=Out;
         elseif nargout>1
-            varargout{1}=Out(:,1);
-            varargout{2}=Out(:,2);
+            for i = 1:nargout-1
+                varargout{i}=Out(:,i);
+            end
+            varargout{nargout}=Out(:,nargout:end);
         end
     case 'write'
         Out=Local_write_file(varargin{:});
@@ -95,10 +99,15 @@ switch cmd
 end
 
 
-function Data=Local_read_file(filename,varargin)
-Data=zeros(0,2);
+function Data=Local_read_file(type,filename,varargin)
+switch type
+    case 'cell'
+        Data=cell(0,1);
+    case 'plain'
+        Data=zeros(0,2);
+end
 if nargin==0
-    [fn,fp]=uigetfile('*.ldb');
+    [fn,fp]=uigetfile('*.ldb;*.pli;*.pliz');
     if ~ischar(fn)
         return
     end
@@ -115,20 +124,33 @@ T=tekal('open',filename,'loaddata',varargin{:});
 lasterr('')
 try
     if isempty(T.Field)
-        Data = zeros(0,2);
+        switch type
+            case 'cell'
+                Data = cell(0,1);
+            case 'plain'
+                Data = zeros(0,2);
+        end
     else
         Sz=cat(1,T.Field.Size);
         if ~all(Sz(:,2)==Sz(1,2))
             error('The number of columns in the files is not constant.')
         end
-        Sz=[sum(Sz(:,1))+size(Sz,1)-1 Sz(1,2)];
-        offset=0;
-        Data=repmat(NaN,Sz);
-        for i=1:length(T.Field)
-            Data(offset+(1:T.Field(i).Size(1)),:)=tekal('read',T,i);
-            offset=offset+T.Field(i).Size(1)+1;
+        switch type
+            case 'cell'
+                Data = {T.Field.Data}';
+                for i = 1:length(Data)
+                    Data{i}( (Data{i}(:,1)==999.999) & (Data{i}(:,2)==999.999) ,:)=NaN;
+                end
+            case 'plain'
+                Sz=[sum(Sz(:,1))+size(Sz,1)-1 Sz(1,2)];
+                offset=0;
+                Data=NaN(Sz);
+                for i=1:length(T.Field)
+                    Data(offset+(1:T.Field(i).Size(1)),:)=tekal('read',T,i);
+                    offset=offset+T.Field(i).Size(1)+1;
+                end
+                Data( (Data(:,1)==999.999) & (Data(:,2)==999.999) ,:)=NaN;
         end
-        Data( (Data(:,1)==999.999) & (Data(:,2)==999.999) ,:)=NaN;
     end
 catch
     fprintf(1,'ERROR: Error extracting landboundary from tekal file:\n%s\n',lasterr);

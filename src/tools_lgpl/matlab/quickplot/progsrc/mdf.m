@@ -601,13 +601,13 @@ else
     error('Unable to locate boundLocFile keyword in [Files] chapter.');
 end
 %
-% crsname = propget(MF.md1d,'Files','crossDefFile');
-% if ~isempty(crsname)
-%     crsname = relpath(md_path,crsname);
-%     MF.crsDef = inifile('open',crsname);
-% else
-%     error('Unable to locate crossDefFile keyword in [Files] chapter.');
-% end
+crsname = propget(MF.md1d,'Files','crossDefFile');
+if ~isempty(crsname)
+    crsname = relpath(md_path,crsname);
+    MF.crsDef = inifile('open',crsname);
+else
+    error('Unable to locate crossDefFile keyword in [Files] chapter.');
+end
 %
 strname = propget(MF.md1d,'Files','structureFile');
 if ~isempty(strname)

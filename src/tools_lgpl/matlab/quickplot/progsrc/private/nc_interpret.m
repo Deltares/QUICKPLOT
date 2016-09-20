@@ -579,6 +579,8 @@ iUGrid = strcmp({nc.Dataset.Type}','ugrid_mesh');
 UGrid  = {nc.Dataset(iUGrid).Name};
 iUGrid = find(iUGrid);
 varNames = {nc.Dataset.Name};
+ugridLoc = {'node','edge','face','volume'};
+auto_ugrid = cell(4,nvars);
 for ivar = 1:nvars
     Info = nc.Dataset(ivar);
     if ~isempty(Info.Attribute)
@@ -587,7 +589,7 @@ for ivar = 1:nvars
         j2 = strmatch('location',Attr,'exact');
         if ~isempty(j1) && ~isempty(j2)
             j3 = strmatch(Info.Attribute(j1).Value,UGrid,'exact');
-            j4 = strmatch(Info.Attribute(j2).Value,{'node','edge','face','volume'},'exact')-1;
+            j4 = strmatch(Info.Attribute(j2).Value,ugridLoc,'exact')-1;
             %if strcmp(Info.Attribute(j2).Value,'poly')
             %    j4 = 2;
             %end
@@ -609,6 +611,20 @@ for ivar = 1:nvars
                     Info.Mesh = {'ugrid' iUGrid(j3) j4};
                     Info.TSMNK(3) = strmatch(topoDim,DimensionNames,'exact')-1;
                 end
+            end
+        end
+    end
+    %
+    % auto detect UGRID dimensions
+    %
+    if isempty(Info.Mesh) && ~isempty(iUGrid)
+        for u = iUGrid'
+            [udim,ia,ib] = intersect(Info.Dimension,nc.Dataset(u).Mesh(4:end));
+            if ~isempty(udim)
+                Info.Mesh = {'ugrid' u ib-1};
+                Info.TSMNK(3) = strmatch(udim,DimensionNames,'exact')-1;
+                auto_ugrid(:,ivar) = {Info.Name, udim{1}, nc.Dataset(u).Name, ugridLoc{ib}}';
+                break
             end
         end
     end
@@ -896,6 +912,25 @@ for ivar = 1:nvars
     %end
     %
     nc.Dataset(ivar) = Info;
+end
+%
+auto_ugrid(:,cellfun('isempty',auto_ugrid(1,:))) = [];
+if ~isempty(auto_ugrid)
+    message = {'Missing UGRID attributed automatically added for:'};
+    [ugrids,dummy,iugrids] = unique(auto_ugrid(3,:));
+    for iu = 1:length(ugrids)
+        thisgrid = auto_ugrid(:,iugrids==iu);
+        [ulocs,dummy,iulocs] = unique(thisgrid(4,:));
+        %
+        for il = 1:length(ulocs)
+            thisloc = thisgrid(:,iulocs==il);
+            message{end+1} = ['  variables: ' sprintf('%s, ',thisloc{1,:})];
+            message{end}(end-1:end) = [];
+            message{end} = [message{end} ' (common UGRID dimension: ' thisloc{2,1} ')'];
+            message{end+1} = sprintf('    attributes: mesh="%s", location="%s"',thisloc{3,1},thisloc{4,1});
+        end
+    end
+    ui_message('warning',message)
 end
 
 function nc = setType(nc,ivar,idim,value)

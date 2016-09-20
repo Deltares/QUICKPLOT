@@ -110,11 +110,25 @@ switch lower(cmd)
         else
             Out=Local_read_file(varargin{:});
         end
+    case 'resample'
+        Out=Local_resample(varargin{:});
     case 'write'
         Out=Local_write_file(varargin{:});
     otherwise
         error('Unknown command: %s',var2str(cmd))
 end
+
+function FileInfo=Local_resample(FileInfo,varargin)
+distance = varargin{1};
+Data = tekal('read',FileInfo);
+for i = 1:length(Data)
+    d = pathdistance(Data{i}(:,1),Data{i}(:,2));
+    n = max(1,round(d(end)/distance));
+    di = d(end)*(0:n)/n;
+    FileInfo.Field(i).Data = interp1(d,Data{i},di);
+    FileInfo.Field(i).Size = size(FileInfo.Field(i).Data);
+end
+
 
 function FileInfo=Local_open_file(varargin)
 FileInfo.Check='NotOK';
@@ -346,7 +360,11 @@ end
 
 function Data=Local_read_file(FileInfo,var)
 % check whether the data has been read
-if ischar(var)
+if nargin<2 || strcmp(var,':') || isequal(var,0)
+    % no var argument, 0 and ':' --> in all these cases select all fields
+    % to read
+    var=1:length(FileInfo.Field);
+elseif ischar(var)
     Fields={FileInfo.Field.Name};
     varnr=ustrcmpi(var,Fields);
     if varnr<0
@@ -357,42 +375,48 @@ if ischar(var)
         var=varnr;
     end
 end
-if length(var)~=1 || var==0
-    if var==0
-        var=1:length(FileInfo.Field);
-    end
-    for v=1:length(var)
-        Data{v}=Local_read_file(FileInfo,var(v));
-    end
-    return
-end
-if isfield(FileInfo.Field(var),'Data') && ~isempty(FileInfo.Field(var).Data)
-    Data=FileInfo.Field(var).Data;
-else %if ~isnan(FileInfo.Field(var).Offset)
-    fid=fopen(FileInfo.FileName);
-    fseek(fid,FileInfo.Field(var).Offset,-1);
-    if length(FileInfo.Field(var).Size)>1
-        dim=FileInfo.Field(var).Size([2 1]);
-    else
-        dim=FileInfo.Field(var).Size;
-    end
-    switch FileInfo.Field(var).DataTp
-        case 'annotation'
-            Data = read_annotation(fid,dim);
-            fclose(fid);
-        otherwise %'numeric' % all numerics; use fscanf
-            %Data=fscanf(fid,'%f',dim);
-            Data = read_numeric(fid,dim,0,var);
-            fclose(fid);
-
-            % replace 999999 by Not-a-Numbers
-            Data(Data(:)==999999)=NaN;
-
-            % reshape to match Size
-            if length(FileInfo.Field(var).Size)>2
-                Data=reshape(Data,[FileInfo.Field(var).Size(3:end) FileInfo.Field(var).Size(2)]);
+Data = cell(1,length(var));
+fid = -1;
+try
+    for i = 1:length(var)
+        v = var(i);
+        if isfield(FileInfo.Field(v),'Data') && ~isempty(FileInfo.Field(v).Data)
+            Data{i} = FileInfo.Field(v).Data;
+        else
+            if fid<0
+                fid=fopen(FileInfo.FileName);
             end
+            fseek(fid,FileInfo.Field(v).Offset,-1);
+            if length(FileInfo.Field(v).Size)>1
+                dim=FileInfo.Field(v).Size([2 1]);
+            else
+                dim=FileInfo.Field(v).Size;
+            end
+            switch FileInfo.Field(v).DataTp
+                case 'annotation'
+                    data = read_annotation(fid,dim);
+                otherwise %'numeric' % all numerics; use fscanf
+                    %Data=fscanf(fid,'%f',dim);
+                    data = read_numeric(fid,dim,0,v);
+                    
+                    % replace 999999 by Not-a-Numbers
+                    data(data(:)==999999)=NaN;
+                    
+                    % reshape to match Size
+                    if length(FileInfo.Field(v).Size)>2
+                        data = reshape(data,[FileInfo.Field(v).Size(3:end) FileInfo.Field(v).Size(2)]);
+                    end
+            end
+            Data{i} = data;
+        end
     end
+catch
+end
+if fid>0
+    fclose(fid);
+end
+if length(var)==1
+    Data = Data{1};
 end
 
 
