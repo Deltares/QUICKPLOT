@@ -285,7 +285,7 @@ if isempty(Times) && ~single
         ndigits=ndigits+1;
     end
     digits=n(length(n)-ndigits+1:end);
-    if ~isempty(digits) && all(abs(digits)>47 && abs(digits)<58)
+    if ~isempty(digits) && all(abs(digits)>47 & abs(digits)<58)
         Structure.FileBase=[p filesep n(1:end-ndigits)];
         Structure.NDigits=ndigits;
         [Times,FileNr]=getfiletimes(Structure.FileBase,'',Structure.Extension,time_in_file);
