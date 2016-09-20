@@ -161,7 +161,9 @@ for i = 1:length(Line)
         % if we find lines before a chapter, add a dumy chapter
         if ichp==0
             ichp = ichp+1;
-            S(ichp,1:2) = {'' cell(1000,2)};
+            PreAllocKey = 1000;
+            K = cell(PreAllocKey,2);
+            S{ichp,1} = '';
             ikey = 0;
         end
         % if we reach the preallocated key array length, double its length
