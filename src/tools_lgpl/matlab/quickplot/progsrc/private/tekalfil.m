@@ -217,10 +217,12 @@ switch FI.FileType
             Data = cat(1,Data{:});
         elseif isfield(FI,'combinelines') && FI.combinelines % LDB
             Data=tekal('read',FI,0);
-            for i=1:length(Data)-1
-                Data{i}(end+1,:)=NaN;
+            if iscell(Data) % if there is more than one block
+                for i=1:length(Data)-1
+                    Data{i}(end+1,:)=NaN;
+                end
+                Data=cat(1,Data{:});
             end
-            Data=cat(1,Data{:});
             blck=1;
         else
             if isempty(blck)

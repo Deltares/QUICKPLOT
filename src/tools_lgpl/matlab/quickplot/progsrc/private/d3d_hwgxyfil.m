@@ -158,8 +158,13 @@ if XYRead
     if DimFlag(M_) & DimFlag(N_)
         %    [x,Chk]=vs_get(FI,'map-series',{t},'XP',idx([M_ N_]),'quiet');
         %    [y,Chk]=vs_get(FI,'map-series',{t},'YP',idx([M_ N_]),'quiet');
-        [x,Chk]=vs_get(FI,'map-series',{idx{T_}(1)},'XP',idx([M_ N_]),'quiet');
-        [y,Chk]=vs_get(FI,'map-series',{idx{T_}(1)},'YP',idx([M_ N_]),'quiet');
+        if DimFlag(T_)
+            tgrid = idx{T_}(1);
+        else
+            tgrid = 1;
+        end
+        [x,Chk]=vs_get(FI,'map-series',{tgrid},'XP',idx([M_ N_]),'quiet');
+        [y,Chk]=vs_get(FI,'map-series',{tgrid},'YP',idx([M_ N_]),'quiet');
         x((x==0) & (y==0)) = NaN;
         x((x==-999) & (y==-999)) = NaN;
         y(isnan(x))=NaN;

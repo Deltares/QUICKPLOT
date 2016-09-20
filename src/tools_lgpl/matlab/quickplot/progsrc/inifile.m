@@ -132,7 +132,8 @@ if fid<0
 end
 WholeFile = fread(fid,[1 inf],'uchar=>char');
 fclose(fid);
-Line = strsplit(WholeFile,{char(10) char(13)});
+Line = strsplit(WholeFile,{char(10) char(13)}); % {'\n' '\r'}
+Line = strtrim(Line);
 Line(cellfun('isempty',Line))=[];
 %
 ichp = 0;
