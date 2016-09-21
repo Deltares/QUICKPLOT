@@ -130,9 +130,9 @@ fid=fopen(filename,'r');
 if fid<0
     error('Error opening %s.',filename)
 end
-WholeFile = fread(fid,[1 inf],'uchar=>char');
+Line = textscan(fid,'%s','delimiter','\n','whitespace','');
+Line = Line{1};
 fclose(fid);
-Line = strsplit(WholeFile,{char(10) char(13)}); % {'\n' '\r'}
 Line = strtrim(Line);
 Line(cellfun('isempty',Line))=[];
 %
@@ -170,7 +170,7 @@ for i = 1:length(Line)
         % if we reach the preallocated key array length, double its length
         if ikey==PreAllocKey
             PreAllocKey = 2*PreAllocKey;
-            S{ichp,2}{PreAllocKey,1} = [];
+            K{PreAllocKey,1} = [];
         end
         ikey = ikey+1;
         % process the key
