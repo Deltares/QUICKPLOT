@@ -181,6 +181,7 @@ else
     Attribs = {};
 end
 %
+XYneeded = false;
 removeTime   = 0;
 activeloaded = 0;
 if DataRead && Props.NVal>0
@@ -272,6 +273,7 @@ if DataRead && Props.NVal>0
             Ans.NormalComp = Ans.XComp;
             Ans.TangentialComp = Ans.YComp;
             % rotation at end of function
+            XYneeded = true;
         otherwise
             % no rotation
     end
@@ -322,7 +324,7 @@ if ~isnan(npolpnt)
     end
 end
 
-if XYRead
+if XYRead || XYneeded
     npolpnt = 0;
     if strncmp(Props.Geom,'UGRID',5)
         %ugrid
@@ -861,6 +863,12 @@ if isfield(Ans,'NormalComp')
         Ans = rmfield(Ans,'XComp');
         Ans = rmfield(Ans,'YComp');
     end
+end
+
+if XYneeded && ~XYRead
+    f = {'X','Y','FaceNodeConnect','EdgeNodeConnect'};
+    f(~isfield(Ans,f)) = [];
+    Ans = rmfield(Ans,f);
 end
 
 % read time ...

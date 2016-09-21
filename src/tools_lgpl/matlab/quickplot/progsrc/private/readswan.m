@@ -136,7 +136,7 @@ while ischar(Line)
                 if isfield(S,'Directions')
                     S.Spectrum = cell(NQuant,NLoc);
                 else
-                    S.Spectrum = cell(1,NLoc);
+                    S.Spectrum = cell(NLoc,1);
                 end
                 %
             case 'FACTOR'
