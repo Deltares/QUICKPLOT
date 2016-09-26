@@ -7,34 +7,34 @@ function varargout=qp_unitconversion(varargin)
 %   elementary unit strings. Unit strings may be combined of any
 %   combination of units. E.g. 'km/h', 'ft/s', 'N*s/kg'.
 %
-%   QP_UNITCONVERSION(UStr1,UStr2,UnitStyle) displays a conversion table
+%   QP_UNITCONVERSION(UStr1,UStr2,TempType) displays a conversion table
 %   for transforming quantities expressed in UStr1 into UStr2 and vice
-%   versa. The UnitStyle can be either 'absolute' or 'relative' (the latter
-%   being the default value). For temperatures (or quantities with an
-%   offset in their definition) you should use 'absolute' to convert actual
-%   temperatures and use 'relative' to convert temperature differences. In
-%   the latter case the offsets aren't used. The UnitStyle can be specified
-%   at any argument location, e.g. UnitStyle,UStr1,UStr2 is also allowed.
+%   versa. The TempType can be either 'absolute' or 'relative' (the latter
+%   being the default value). For temperatures you should use 'absolute' to
+%   convert actual temperatures and use 'relative' to convert temperature
+%   differences. In the latter case the offsets aren't used. The TempType
+%   can be specified at any argument location, e.g. TempType,UStr1,UStr2 is
+%   also allowed.
 %
-%   C = QP_UNITCONVERSION(UStr,UStr2,UnitStyle) returns the conversion
+%   C = QP_UNITCONVERSION(UStr,UStr2,TempType) returns the conversion
 %   factor needed for the conversion of quantities expressed in UStr1 into
-%   UStr2. If UnitStyle equals 'absolute' and the unit contains an offset
+%   UStr2. If TempType equals 'absolute' and the unit contains an offset
 %   then C will be a 1x2 array. The conversion rule will in that case be
 %    [Q in UStr2] = C(1) * ([Q in UStr1] + C(2))
 %   That is, the second value is the offset. In all other cases C will be
 %   just the scalar conversion factor (no offset).
 %
-%   QP_UNITCONVERSION(UStr1,System,UnitStyle) displays a conversion table
+%   QP_UNITCONVERSION(UStr1,System,TempType) displays a conversion table
 %   for transforming quantities expressed in UStr1 into the equivalent in
 %   the selected unit system and vice versa. The default System is SI.
 %
-%   [ConversionFactor,UStr2] = QP_UNITCONVERSION(UStr1,System,UnitStyle)
+%   [ConversionFactor,UStr2] = QP_UNITCONVERSION(UStr1,System,TempType)
 %   returns the factor needed for the conversion of quantities expressed in
 %   unit1 into the equivalent in the selected unit system and returns the
 %   unit string UStr2 in that system as well.
 %
 %   [DATAOUT1,DATAOUT2,...] = 
-%        QP_UNITCONVERSION(UStr1,UStr2,UnitStyle,DATAIN1,DATAIN2,...)
+%        QP_UNITCONVERSION(UStr1,UStr2,TempType,DATAIN1,DATAIN2,...)
 %   converts the data provided by DATAIN1, DATAIN2, ... in UStr1 unit into
 %   UStr2 units.
 
@@ -75,22 +75,27 @@ if isempty(unittableread)
 end
 
 unitsystems={'SI','CGS','FPS','IPS','NMM'};
+PhysQuant ={'length','time','electric_current','mass','luminous_intensity','amount_of_substance','temperature','angle'};
 if nargout>0
     varargout=cell(1,nargout);
 end
 Out=[];
 
-absolute = false;
+TempType = RELATIVE;
 arguments = varargin;
 for i=1:length(arguments)
     if ischar(arguments{i})
         switch lower(arguments{i})
             case {'absolute'}
-                absolute = true;
+                TempType = ABSOLUTE;
                 arguments(i) = [];
                 break
             case {'relative'}
-                absolute = false;
+                TempType = RELATIVE;
+                arguments(i) = [];
+                break
+            case {'unspecified'}
+                TempType = UNSPECIFIED;
                 arguments(i) = [];
                 break
         end
@@ -121,6 +126,7 @@ else
         if nargin<=2
             varargout{1}=convfactor(2); % maintain temporarily backward compatibility
             varargout{2}=unit2;
+            varargout{3}=zeros(1,8);
         else
             varargout=varargin;
         end
@@ -129,7 +135,7 @@ else
             factor1=[0 1];
             SI1=zeros(1,8);
         else
-            [factor1,SI1]=parse(unit1,absolute);
+            [factor1,SI1]=parse(unit1,TempType);
         end
         if ischar(factor1)
             Out=factor1;
@@ -140,25 +146,25 @@ else
                 SI2=zeros(1,8);
             elseif ~isempty(strmatch(unit2,unitsystems,'exact'))
                 SI2=SI1;
-                SIUnits={'m','s','A','kg','cd','mol','degK','deg'};
+                SIUnits={'m','s','A','kg','cd','mol','K','deg'};
                 switch unit2
                     case 'SI'
                         Units=SIUnits;
                     case 'CGS'
-                        Units={'cm','s','A','g','cd','mol','degK','deg'};
+                        Units={'cm','s','A','g','cd','mol','K','deg'};
                     case 'FPS'
-                        Units={'ft','s','A','lb','cd','mol','degK','deg'};
+                        Units={'ft','s','A','lb','cd','mol','K','deg'};
                     case 'IPS'
-                        Units={'in','s','A','lb','cd','mol','degK','deg'};
+                        Units={'in','s','A','lb','cd','mol','K','deg'};
                     case 'NMM'
-                        Units={'mm','s','A','g','cd','mol','degK','deg'};
+                        Units={'mm','s','A','g','cd','mol','K','deg'};
                     otherwise
                         error('Unit system %s not yet implemented.',unit2)
                 end
                 factor2=[0 1];
                 if ~strcmp(unit2,'SI')
                     for i=1:length(Units)
-                        sifactor = search_elem(Units{i},absolute);
+                        sifactor = search_elem(Units{i},TempType);
                         factor2(2)=factor2(2)*sifactor(2)^SI2(i);
                     end
                 end
@@ -167,7 +173,7 @@ else
                     unit2='-';
                 end
             else
-                [factor2,SI2]=parse(unit2,absolute);
+                [factor2,SI2]=parse(unit2,TempType);
             end
             if ischar(factor2)
                 Out=factor2;
@@ -225,10 +231,10 @@ else
                         fprintf('%10g %s = %10g %s\n',f(1),unit1,f(2),unit2)
                     end
                 else
-                    if absolute && offset~=0
-                        varargout={[convfactor offset] unit2};
+                    if TempType==ABSOLUTE && offset~=0
+                        varargout={[convfactor offset] unit2 SI2};
                     else
-                        varargout={convfactor unit2};
+                        varargout={convfactor unit2 SI2};
                     end
                 end
             else
@@ -255,11 +261,15 @@ else
         end
     end
 end
+if nargout>2
+    SI = [PhysQuant;num2cell(varargout{3})];
+    varargout{3} = struct(SI{:});
+end
 
 
 function Str=dispunit(SI,Units)
 if nargin==1
-    Units={'m','s','A','kg','cd','mol','degK','deg'};
+    Units={'m','s','A','kg','cd','mol','K','deg'};
 end
 Str='';
 if all(SI==0)
@@ -300,26 +310,26 @@ if isequal(unit(k),'*') && k<length(unit) && isequal(unit(k+1),'*')
 end
 
 
-function [factor,si]=factor_combine(cmd,factor,si,factor1,si1)
+function [factor1,si1]=factor_combine(cmd,factor1,si1,factor2,si2)
 switch cmd
     case '*'
-        factor(1)=factor(1)*factor1(2)+factor(2)*factor1(1);
-        factor(2)=factor(2)*factor1(2);
-        si=si+si1;
+        factor1(1)=factor1(1)*factor2(2)+factor1(2)*factor2(1);
+        factor1(2)=factor1(2)*factor2(2);
+        si1=si1+si2;
     case '/'
-        if factor1(1)~=0
+        if factor2(1)~=0
             error('Unable to divide by offset')
         end
-        factor(1)=factor(1)/factor1(2);
-        factor(2)=factor(2)/factor1(2);
-        si=si-si1;
+        factor1(1)=factor1(1)/factor2(2);
+        factor1(2)=factor1(2)/factor2(2);
+        si1=si1-si2;
 end
 
 
-function [factor,si]=parse(unit,absolute)
+function [factor1,si1]=parse(unit,TempType)
 %fprintf('Parsing: %s\n',unit);
-factor=[0 1];
-si=zeros(1,8);
+factor1=[0 1];
+si1=zeros(1,8);
 unit=strtrim(unit);
 
 nob=0;
@@ -340,8 +350,8 @@ while k<=length(unit)+1
         case '('
             if nob==0 && ~isempty(deblank(unit(ki:k-1)))
                 % implicitly insert a multiply before
-                [factor1,si1]=parse(unit(ki:k-1));
-                [factor,si]=factor_combine(prevcmd,factor,si,factor1,si1);
+                [factor2,si2]=parse(unit(ki:k-1));
+                [factor1,si1]=factor_combine(prevcmd,factor1,si1,factor2,si2);
                 prevcmd='*';
             end
             nob=nob+1;
@@ -351,7 +361,7 @@ while k<=length(unit)+1
         case ')'
             nob=nob-1;
             if nob==0
-                [factor1,si1]=parse(unit(ki+1:k-1));
+                [factor2,si2]=parse(unit(ki+1:k-1));
                 if k<length(unit)
                     unit = powercheck(unit,k);
                     unitk = unit(k);
@@ -373,7 +383,7 @@ while k<=length(unit)+1
                     % of interpreting the first part as a separate unit
                     % "minute" or "degrees".
                     %
-                    [unit,k,factor1,si1] = checkspace(unit,ki,k,absolute);
+                    [unit,k,factor2,si2] = checkspace(unit,ki,k,TempType);
                     if k<=length(unit)
                         unitk = unit(k);
                         if unitk~='/'
@@ -383,14 +393,14 @@ while k<=length(unit)+1
                         unitk = '*';
                     end
                 else
-                    [factor1,si1] = findfirst(unit(ki:k-1),absolute);
+                    [factor2,si2] = findfirst(unit(ki:k-1),TempType);
                 end
-                if isequal(factor1,-1)
+                if isequal(factor2,-1)
                     error('Unable to interpret unit "%s"',unit(ki:k-1))
-                elseif factor(1)~=0 || (factor1(1)~=0 && any(si~=0))
+                elseif factor1(1)~=0 || (factor2(1)~=0 && any(si1~=0))
                     error('Cannot multiply units with offset for %s', unit(ki:k-1))
                 else
-                    [factor,si]=factor_combine(prevcmd,factor,si,factor1,si1);
+                    [factor1,si1]=factor_combine(prevcmd,factor1,si1,factor2,si2);
                 end
                 prevcmd=unitk;
                 ki=k+1;
@@ -401,7 +411,7 @@ while k<=length(unit)+1
 end
 
 
-function [unit,k,factor,si] = checkspace(unit,ki,k,absolute)
+function [unit,k,factor1,si1] = checkspace(unit,ki,k,TempType)
 % We started parsing the "unit" at position ki. We encountered a space at
 % position k. Now determine whether this should be interpreted as just a
 % space in a long unit name or as an implicit multiplication *.
@@ -416,14 +426,14 @@ end
 % tropical year light year2
 % tropical year light year^2
 %
-[factor,si,kb] = findfirst(unit(ki:k2),absolute);
-if isequal(si,-1)
+[factor1,si1,kb] = findfirst(unit(ki:k2),TempType);
+if isequal(si1,-1)
     error('Unable to interpret unit "%s"',unit(ki:k2))
 end
 k = ki-1+kb;
 
 
-function [factor,si,kb] = findfirst(unit,absolute)
+function [factor,si,kb] = findfirst(unit,TempType)
 % Check which unit string is just a number.
 kp = length(unit);
 kb = kp+1;
@@ -479,12 +489,12 @@ end
 if kp==0
     % shouldn't happen ... already checked at start of routine!
 else
-    [factor,si] = search_elem(unit(1:kp),absolute);
+    [factor,si] = search_elem(unit(1:kp),TempType);
 end
 if isequal(si,-1)
     spaces = find(unit==' ');
     if ~isempty(spaces)
-        [factor,si,kb] = findfirst(deblank(unit(1:spaces(end))),absolute);
+        [factor,si,kb] = findfirst(deblank(unit(1:spaces(end))),TempType);
     end
 elseif ~isempty(pow)
     if factor(1)~=0
@@ -495,21 +505,21 @@ elseif ~isempty(pow)
 end
 
 
-function [factor,si]=search_elem(unit,absolute)
+function [factor,si]=search_elem(unit,TempType)
 persistent unittable
 factor=[0 1];
 si='';
 if isequal(unit,'newtable')
-    unittable = absolute;
+    unittable = TempType;
     return
 elseif isequal(unit,'retrievetable')
     factor = unittable;
     return
 end
 i=strmatch(unit,unittable{1},'exact');
-absfound=absolute;
-if isempty(i) && length(unit)>5 && strcmpi(unit(end-4:end),' abs.')
-    absfound=1;
+LocalTempType = TempType;
+if isempty(i) && length(unit)>5 && strcmpi(unit(end-4:end),' abs.') % this is more generic than temperature ...
+    LocalTempType = ABSOLUTE;
     unit=unit(1:end-5);
     i=strmatch(unit,unittable{1},'exact');
 end
@@ -575,8 +585,10 @@ if isempty(i)
 end
 i=unittable{2}(i);
 factor=[0 unittable{3}(i,2)*prefix];
-if absfound
+if LocalTempType==ABSOLUTE
     factor(1)=unittable{3}(i,1);
+elseif LocalTempType==UNSPECIFIED && unittable{3}(i,1)~=0
+    error('Unable to convert unit because its unknown whether "%s" should be interpreted relative or absolute.',unit)
 end
 si=unittable{4}(i,:);
 
@@ -705,7 +717,17 @@ table={'m'   [0 1]          [1 0 0 0 0 0 0 0]
     'lb'     [0 0.45359237] [0 0 0 1 0 0 0 0]
     'cd'     [0 1]          [0 0 0 0 1 0 0 0]
     'mol'    [0 1]          [0 0 0 0 0 1 0 0]
-    'degK'   [0 1]          [0 0 0 0 0 0 1 0]
+    'K'      [0 1]          [0 0 0 0 0 0 1 0]
     'deg'    [0 1]          [0 0 0 0 0 0 0 1]
     'radian' [0 180/pi]     [0 0 0 0 0 0 0 1]};
 table={table(:,1) (1:size(table,1))' cat(1,table{:,2}) cat(1,table{:,3})};
+
+
+function v = RELATIVE
+v = -1;
+
+function v = ABSOLUTE
+v = 1;
+
+function v = UNSPECIFIED
+v = 0;

@@ -41,10 +41,10 @@ else
     blank=isnan(Val(:));
 end
 if zcoord
-    blank=isnan(X(:))|isnan(Y(:))|isnan(Z(:));
+    blank=blank|isnan(X(:))|isnan(Y(:))|isnan(Z(:));
     Z=Z(~blank); Z=Z(:);
 else
-    blank=isnan(X(:))|isnan(Y(:));
+    blank=blank|isnan(X(:))|isnan(Y(:));
 end
 X=X(~blank); X=X(:);
 Y=Y(~blank); Y=Y(:);

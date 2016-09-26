@@ -485,19 +485,24 @@ for ivar = 1:nvars
             if ~isequal(nc.Dataset(ivar).Type,'time')
                 nc = setType(nc,ivar,idim,'aux-time');
             end
+            % even though there is a space between the time and the time
+            % zone, this line supports the case in which a + or - of the
+            % time zone is directly attached to the time.
             refdate = sscanf(unit2,' since %d-%d-%d%*1[ T]%d:%d:%f %d:%d',[1 8]);
+            if length(refdate)==1
+                % possibly basic (condensed) format
+                refdate = sscanf(unit2,' since %4d%2d%2d%*1[ T]%2d%2d%f %d:%d',[1 8]);
+            end
             if length(refdate)>=6
                 if length(refdate)==8
+                    % offset HH:MM
                     TZshift = refdate(7) + sign(refdate(7))*refdate(8)/60;
                 elseif length(refdate)==7
-                    % this is actually not correct: report this and continue
+                    % offset HH or HHMM
                     TZshift = refdate(7);
-                    TZformat = 'HH';
                     if abs(TZshift)>24
                         TZshift = fix(TZshift/100)+rem(TZshift,100)/60;
-                        TZformat = 'HHMM';
                     end
-                    ui_message('error','Time zone format invalid in "%s", expecting HH:MM instead of %s',unit,TZformat)
                 else
                     TZshift = 0;
                 end

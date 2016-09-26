@@ -578,5 +578,16 @@ if isstruct(arg2)
             Units='';
         end
         [arg2.Units]=deal(Units);
+        try
+            [conversion,SIunit,dimensions]=qp_unitconversion(Units,'relative');
+            if dimensions.temperature~=0
+                if isfield(Props,'TemperatureType')
+                    TempType = Props.TemperatureType;
+                else
+                    TempType = 'unspecified';
+                end
+                [arg2.TemperatureType] = deal(TempType);
+            end
+        end
     end
 end

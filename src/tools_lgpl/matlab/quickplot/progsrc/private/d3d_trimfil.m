@@ -973,9 +973,6 @@ end
 switch Props.NVal
     case {1,5,6}
         Ans.Val=val1;
-        if strcmp(Props.Name,'temperature')
-            Ans.AbsoluteUnits = true;
-        end
     case 2
         if ThinDam==2
             Ans.XDam=~isnan(val1);
@@ -1450,6 +1447,9 @@ for i=1:length(Out)
     end
     Out(i).Coords='xy';
 end
+
+[Out.TemperatureType] = deal('unspecified');
+[Out(strcmp({Out.Name},'temperature')).TemperatureType] = deal('absolute');
 % -------------------------------------------------------------------------
 
 

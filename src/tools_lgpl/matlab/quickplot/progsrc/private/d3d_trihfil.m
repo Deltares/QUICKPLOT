@@ -1016,6 +1016,9 @@ else
     end
     Out=insstruct(Out,i,Ins);
 end
+
+[Out.TemperatureType] = deal('unspecified');
+[Out(strcmp({Out.Name},'temperature')).TemperatureType] = deal('absolute');
 % -----------------------------------------------------------------------------
 
 

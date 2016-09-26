@@ -199,11 +199,16 @@ if isfield(Ops,'units')
             Units=Ops.units;
         end            
     elseif ~isempty(Ops.units) && ~isempty(Units)
-        UnitStyle = 'relative';
-        if isfield(data,'AbsoluteUnits') && data.AbsoluteUnits
-            UnitStyle = 'absolute';
+        if isfield(data,'TemperatureType')
+            if data.TemperatureType
+                TempType = 'absolute';
+            else
+                TempType = 'relative';
+            end
+        else
+            TempType = 'unspecified';
         end
-        dataX=qp_unitconversion(Units,Ops.units,data,UnitStyle);
+        dataX=qp_unitconversion(Units,Ops.units,data,TempType);
         if ~ischar(dataX)
             data=dataX;
             dataX=[];

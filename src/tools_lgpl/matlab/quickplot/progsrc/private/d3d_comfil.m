@@ -1006,6 +1006,9 @@ for i=1:length(Out)
             Out(i).UseGrid=2;
     end
 end
+
+[Out.TemperatureType] = deal('unspecified');
+[Out(strcmp({Out.Name},'temperature')).TemperatureType] = deal('absolute');
 % -----------------------------------------------------------------------------
 
 % -----------------------------------------------------------------------------

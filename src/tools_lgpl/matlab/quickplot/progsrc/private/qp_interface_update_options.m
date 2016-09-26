@@ -1005,6 +1005,46 @@ if ~isempty(Units)
         'backgroundcolor',Active)
     system=get(dunit,'value');
     systems=get(dunit,'string');
+    try
+        [conversion,SIunit,dimensions]=qp_unitconversion(Units,'relative');
+    catch
+        conversion = 'failed';
+    end
+    if ischar(conversion) || (dimensions.temperature~=0 && (~isfield(Props,'TemperatureType') || strcmp(Props.TemperatureType,'unspecified')))
+        % If conversion attempt fails.
+        % Temperature unit, but unknown whether it's an absolute temperature
+        % or a relative temperature (e.g. a temperature difference).
+        % We can't do any conversion, so show only the options "As in file" and "Hide".
+        if system==length(systems)
+            system = 2;
+        else
+            system = 1;
+        end
+        set(dunit,'value',system,'string',systems([1 end]))
+    elseif dimensions.temperature~=0 && (dimensions.temperature~=1 || sum(cell2mat(struct2cell(dimensions))~=0)>1) && isfield(Props,'TemperatureType') && strcmp(Props.TemperatureType,'absolute')
+        % Absolute temperature (with offset) can only be converted if it is
+        % just a simple temperature and not multiplied by something else.
+        % Actually the dimensionality check isn't enough also A*T can't be
+        % converted when A is an unknown dimensionless constant since we
+        % wouldn't be able to determine both A and T from the product A*T
+        % and hence we can't convert T.
+        if system==length(systems)
+            system = 2;
+        else
+            system = 1;
+        end
+        set(dunit,'value',system,'string',systems([1 end]))
+    else
+        % Simple absolute temperature, or relative temperature mixed with
+        % other dimensions, or no temperature involved at all.
+        if length(systems)==2
+            systems = cat(2,{'As in file'},qp_unitconversion('systems'),{'Other','Hide'});
+            if system==2
+                system = length(systems);
+            end
+            set(dunit,'string',systems,'value',system)
+        end
+    end
     if system==1
         % As in file
         qp_settings('UnitSystem',systems{system})
