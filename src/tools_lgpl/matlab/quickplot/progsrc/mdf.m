@@ -601,6 +601,14 @@ else
     error('Unable to locate boundLocFile keyword in [Files] chapter.');
 end
 %
+bndname = propget(MF.md1d,'Files','latDischargeLocFile');
+if ~isempty(bndname)
+    bndname = relpath(md_path,bndname);
+    MF.latLoc = inifile('open',bndname);
+else
+    error('Unable to locate latDischargeLocFile keyword in [Files] chapter.');
+end
+%
 crsname = propget(MF.md1d,'Files','crossDefFile');
 if ~isempty(crsname)
     crsname = relpath(md_path,crsname);
@@ -609,10 +617,22 @@ else
     error('Unable to locate crossDefFile keyword in [Files] chapter.');
 end
 %
+CT=inifile('geti',MF.crsDef,'Definition','type');
+CID=inifile('geti',MF.crsDef,'Definition','id');
+CDF=inifile('geti',MF.crsLoc,'CrossSection','definition');
+[lDF,iDF]=ismember(CDF,CID);
+if ~all(lDF)
+    missingDF = unique(CDF(~lDF));
+    error('Missing cross section definitions: %s',sprintf('%s ',missingDF{:}))
+else
+    % copy CrossSection type to CrossSection location data structure
+    MF.crsLoc=inifile('set',MF.crsLoc,'CrossSection','type',CT(iDF));
+end
+%
 strname = propget(MF.md1d,'Files','structureFile');
 if ~isempty(strname)
     strname = relpath(md_path,strname);
-    MF.struct = inifile('open',strname);
+    MF.strucLoc = inifile('open',strname);
 else
     error('Unable to locate structureFile keyword in [Files] chapter.');
 end

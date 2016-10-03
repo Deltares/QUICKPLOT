@@ -1111,7 +1111,7 @@ for i=1:length(hNewVec)
         cp = get(a,'cameraposition');
         if cp(3)<Level
             cp(3) = 1.1*Level;
-            set(a,'cameraposition',cp)
+            set(a,'cameraposition',cp,'cameraupvector',get(a,'cameraupvector'))
         end
     end
     %set(a,'zlim',limits(a,'zlim')+[-1 +1])

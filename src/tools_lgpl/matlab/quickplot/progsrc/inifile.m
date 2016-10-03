@@ -12,7 +12,10 @@ function varargout=inifile(cmd,varargin)
 %   without asking.
 %
 %   ListOfChapters=INIFILE('chapters',Info)
-%   Retrieve list of Chapters (cell array of strings).
+%   Retrieve list of Chapter names (cell array of strings).
+%
+%   IndexChapter=INIFILE('chapters',Info,Chapter)
+%   Retrieve the chapter indices that match the specified chapter name.
 %
 %   ListOfKeywords=INIFILE('keywords',Info,Chapter)
 %   Retrieve list of Keywords in specified Chapter (cell array of strings).
@@ -68,15 +71,14 @@ function varargout=inifile(cmd,varargin)
 %   $HeadURL$
 %   $Id$
 
-S=[];
 lcmd = lower(cmd);
 switch lcmd
     case 'open'
-        S=readfile(varargin{:});
+        varargout{1} = readfile(varargin{:});
     case {'chapters','chaptersi'}
-        S=chapfile(lcmd,varargin{:});
+        varargout{1} = chapfile(lcmd,varargin{:});
     case {'keywords','keywordsi'}
-        S=chapkeys(lcmd,varargin{:});
+        varargout{1} = chapkeys(lcmd,varargin{:});
     case {'exists','existsi'}
         try
             if nargin==3
@@ -96,25 +98,22 @@ switch lcmd
                 end
                 A=getfield(lcmd,varargin{:});
             end
-            S=true;
+            varargout{1} = true;
         catch
-            S=false;
+            varargout{1} = false;
         end
     case {'get','getstring','geti','getstringi'}
-        S=getfield(lcmd,varargin{:});
+        [varargout{1:max(nargout,1)}] = getfield(lcmd,varargin{:});
     case {'set','seti'}
-        S=setfield(lcmd,varargin{:});
+        varargout{1} = setfield(lcmd,varargin{:});
     case {'delete','remove','deletei','removei'}
-        S=setfield(lcmd,varargin{:},[]);
+        varargout{1} = setfield(lcmd,varargin{:},[]);
     case 'write'
         writefile(varargin{:});
     case 'new'
-        S=newfile;
+        varargout{1} = newfile;
     otherwise
         error('Unknown command: %s',cmd)
-end
-if nargout>0
-    varargout={S};
 end
 
 
@@ -239,10 +238,16 @@ end
 fclose(fid);
 
 
-function Chapters = chapfile(cmd,FI)
+function Chapters = chapfile(cmd,FI,grpS)
 CaseInsensitive = cmd(end)=='i';
 Chapters = FI.Data(:,1);
-if CaseInsensitive
+if nargin>2
+    if CaseInsensitive
+        Chapters = find(strcmpi(Chapters,grpS));
+    else
+        Chapters = find(strcmp(Chapters,grpS));
+    end
+elseif CaseInsensitive
     Chapters = lower(Chapters);
 end
 
@@ -277,7 +282,7 @@ if CaseInsensitive
 end
 
 
-function val=getfield(cmd,FI,grpS,keyS,def)
+function [val,iGRP]=getfield(cmd,FI,grpS,keyS,def)
 S = FI.Data;
 CaseInsensitive = cmd(end)=='i';
 if CaseInsensitive
@@ -301,13 +306,24 @@ else
     grp = [];
 end
 if isempty(grp)
-    if nargin>=4
+    if nargin>=5
         val = def;
         return
     end
     error('Chapter ''%s'' does not exist',var2str(grpS))
 end
 Keywords = cat(1,S{grp,2});
+if nargout>1
+    iGRP = zeros(length(Keywords),1);
+    o = 0;
+    for i = 1:length(grp)
+        nKeyw = size(S{grp(i),2},1);
+        iGRP(o+(1:nKeyw)) = grp(i);
+        o = o+nKeyw;
+    end
+else
+    iGRP = [];
+end
 if ischar(keyS)
     keyS = deblank(keyS);
     if CaseInsensitive
@@ -338,19 +354,23 @@ elseif ~isempty(key)
         for i=1:length(val)
             [lni,n,err,SF2i]=sscanf(val{i},'%f',[1 inf]);
             if isempty(err) && SF2i>length(val{i})
-                val{i}=lni;
+                val{i} = lni;
             end
         end
     end
 else
     error('Keyword ''%s'' not found in Chapter ''%s''.',keyS,grpS)
 end
+if ~isempty(iGRP)
+    iGRP = iGRP(key);
+end
+
 
 
 function FI=setfield(cmd,FI,grpS,keyS,val)
 S = FI.Data;
 CaseInsensitive = cmd(end)=='i';
-if nargin<5
+if nargin<4
     error('Not enough input arguments.')
 end
 if ischar(grpS)
@@ -377,71 +397,67 @@ if isempty(grp)
     S(end+1,1:2)={grpS cell(0,2)};
     grp=size(S,1);
 end
-ingrp=zeros(size(grp));
 if ischar(keyS)
     keyS = deblank(keyS);
+end
+if nargin>4
+    DeleteKey = isempty(val) && isnumeric(val);
+    iv = 0;
     for i=1:length(grp)
         Keywords=S{grp(i),2};
-        if CaseInsensitive
+        if isnumeric(keyS)
+            key = keyS;
+        elseif CaseInsensitive
             key = strcmpi(keyS,Keywords(:,1));
         else
             key = strcmp(keyS,Keywords(:,1));
         end
         if any(key)
+            % key exists
             ingrp(i)=1;
-        end
-    end
-else
-    ingrp(grp)=1;
-    if length(grp)>1
-        error('Keyword indexing not supported for multiple chapters at once.')
-    end
-end
-if ~any(ingrp)
-    if isempty(val) && ~ischar(val)
-        return
-    end
-    if length(grp)==1
-        S{grp,2}(end+1,1:2)={keyS val};
-    else
-        error('Cannot add key to multiple chapters at once.')
-    end
-else
-    if sum(ingrp)>1
-        %
-        % Key found in multiple chapters: which one to change?
-        %
-        if isempty(val) && ~ischar(val)
-            error('Cannot remove key from multiple chapters at once.')
-        end
-        error('Cannot set value of key in multiple chapters at once.')
-    else
-        %
-        % Key found in one chapter (may still occur multiple times).
-        % Get key index if key is specified using string.
-        %
-        if ischar(keyS)
-            grp = grp(ingrp~=0);
-            Keywords=S{grp,2};
-            if CaseInsensitive
-                key = strcmpi(keyS,Keywords(:,1));
-            else
-                key = strcmp(keyS,Keywords(:,1));
-            end
-            key = find(key);
-        else
-            key = keyS;
-        end
-        if ~isempty(key)
-            if isempty(val) && ~ischar(val)
+            if DeleteKey
                 S{grp,2}(key,:)=[];
+            elseif iscell(val)
+                % assign different value per record
+                key=find(key);
+                iv = iv+1;
+                if iv<=length(val)
+                    S{grp,2}{key(1),2}=val{iv};
+                    if length(key)>1
+                        S{grp,2}(key(2:end),:)=[];
+                    end
+                end
             else
+                % assign same value to all records
+                key=find(key);
                 S{grp,2}{key(1),2}=val;
                 if length(key)>1
                     S{grp,2}(key(2:end),:)=[];
                 end
             end
+        else
+            % key doesn't exist
+            if DeleteKey
+                % nothing to do
+            elseif iscell(val)
+                % assign different value per record
+                iv = iv+1;
+                if iv<=length(val)
+                    S{grp(i),2}(end+1,1:2)={keyS val{iv}};
+                end
+            else
+                % assign same value to all records
+                S{grp(i),2}(end+1,1:2)={keyS val};
+            end
         end
     end
+    %
+    if iscell(val) && iv~=numel(val)
+        error('Mismatch between the number of matching chapters (%i) and number of values given (%i)',iv,numel(val))
+    end
+elseif isempty(keyS) && isnumeric(keyS)
+    S(grp,:) = [];
+else
+    error('Missing key value pair')
 end
 FI.Data=S;

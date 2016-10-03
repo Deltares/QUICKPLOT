@@ -1288,7 +1288,10 @@ end
 if ismember(geometry,{'PNT'}) && ~multiple(T_) && nval>=0
     Ops.linestyle='none';
     Ops.linewidth=0.5;
-    if ~isfield(Ops,'presentationtype') || ~strcmp(Ops.presentationtype,'values')
+    if ~isfield(Ops,'presentationtype')
+        usesmarker = 1;
+        forcemarker = 1;
+    elseif ~ask_for_textprops
         usesmarker = 1;
         forcemarker = 1;
     end

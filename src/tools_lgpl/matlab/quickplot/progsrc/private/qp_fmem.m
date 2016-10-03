@@ -261,6 +261,10 @@ switch cmd
                         asciicheck(ASCII,try_next)
                         FI=mdf('read',FileName);
                         Tp=FI.FileType;
+                        switch Tp
+                            case 'Delft3D D-Flow1D'
+                                FI.Options=1;
+                        end
                     case 'qpsession'
                         asciicheck(ASCII,try_next)
                         PAR.X=[];

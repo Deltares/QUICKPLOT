@@ -94,7 +94,11 @@ if Chk && ~isempty(SubF)
     if strcmp(get(MW.SubFld,'enable'),'on')
         pnames=get(MW.SubFld,'string');
         sf=get(MW.SubFld,'value');
-        pname=pnames{sf};
+        if iscell(pnames)
+            pname=pnames{sf};
+        elseif ischar(pnames)
+            pname=strtrim(pnames(sf,:));
+        end
         sf=ustrcmpi(pname,SubF); % first check equality and longer names
         if sf<0 % no matches
             sf=ustrcmpi(SubF,pname); % check (equality and) shorter names
