@@ -1,4 +1,4 @@
-function lim=limits(ax,limtype);
+function lim=limits(ax,limtype)
 %LIMITS Determine real x,y,z,c limits.
 %   Lim=LIMITS(Axes,LimType)
 %   returns the real limits of the objects

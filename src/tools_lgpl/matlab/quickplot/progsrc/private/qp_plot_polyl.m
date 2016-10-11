@@ -83,6 +83,19 @@ else
     end
 end
 %
+if isfield(Ops,'presentationtype') && ...
+        (strcmp(Ops.presentationtype,'markers') ...
+        || strcmp(Ops.presentationtype,'labels'))
+    if iscell(data.XY)
+        XY = zeros(length(data.XY),2);
+        for i = 1:length(data.XY)
+            d = pathdistance(data.XY{i}(:,1),data.XY{i}(:,2));
+            uNode = d~=[NaN;d(1:end-1)];
+            XY(i,:) = interp1(d(uNode),data.XY{i}(uNode,1:2),d(end)/2);
+        end
+        data.XY = XY;
+    end
+end
 switch NVal
     case 0
         if strcmp(Ops.facecolour,'none')
@@ -125,7 +138,7 @@ switch NVal
             case {'markers'}
                 hNew=genmarkers(hNew,Ops,Parent,[],data.XY(:,1),data.XY(:,2));
             case {'labels'}
-                hNew=genmarkers(hNew,Ops,Parent,[],data.XY(:,1),data.XY(:,2));
+                hNew=gentextfld(hNew,Ops,Parent,data.Val,data.XY(:,1),data.XY(:,2));
         end
 end
 

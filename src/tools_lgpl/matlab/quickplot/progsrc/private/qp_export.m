@@ -416,31 +416,40 @@ for f=1:ntim
                     boxfile('write',filename,expdata.Data);
             end
         case {'tekal file','spline','landboundary file'}
-            expdata=zeros([size(data.X) nVar]);
-            dims(1:ndims(data.X))={':'};
-            cmnt={};
-            for i=1:nVar
-                cmnt{i}=sprintf('column %i = %s',i,vars{i});
+            cmnt = cell(nVar,1);
+            for i = 1:nVar
+                cmnt{i} = sprintf('column %i = %s',i,vars{i});
             end
-            locflds=cat(2,crds,flds);
-            for fld=1:length(locflds)
-                expdata(dims{:},fld)=getfield(data,locflds{fld});
-            end
-            switch expType
-                case 'spline'
-                    expdata=squeeze(expdata);
-                    %
-                    % the following line initially made sense when skipping
-                    % over small gaps in grid lines, but it doesn't work in
-                    % the cases of (a) big gaps in grid lines and (b) lines
-                    % from shape files.
-                    %
-                    %expdata(any(isnan(expdata),2),:)=[];
-                case 'landboundary file'
-                    expdata=squeeze(expdata);
-                    expdata(any(isnan(expdata),2),:)=999.999;
-                otherwise
-                    expdata(isnan(expdata))=-999;
+            if isfield(data,'XDam')
+                [x,y] = thindam(data.X,data.Y,data.XDam,data.YDam);
+                expdata = [x y];
+            elseif numel(data.X)~=length(data.X)
+                td = ones(size(data.X));
+                [x,y] = thindam(data.X,data.Y,td,td);
+                expdata = [x y];
+            else
+                expdata=zeros([size(data.X) nVar]);
+                dims(1:ndims(data.X))={':'};
+                locflds=cat(2,crds,flds);
+                for fld=1:length(locflds)
+                    expdata(dims{:},fld)=getfield(data,locflds{fld});
+                end
+                switch expType
+                    case 'spline'
+                        expdata=squeeze(expdata);
+                        %
+                        % the following line initially made sense when skipping
+                        % over small gaps in grid lines, but it doesn't work in
+                        % the cases of (a) big gaps in grid lines and (b) lines
+                        % from shape files.
+                        %
+                        %expdata(any(isnan(expdata),2),:)=[];
+                    case 'landboundary file'
+                        expdata=squeeze(expdata);
+                        expdata(any(isnan(expdata),2),:)=999.999;
+                    otherwise
+                        expdata(isnan(expdata))=-999;
+                end
             end
             if isfield(data,'Time') && ~isempty(data.Time) && ~isnan(data.Time)
                 cmnt={sprintf('time     = %s',datestr(data.Time,0)),cmnt{:}};

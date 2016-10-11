@@ -263,6 +263,9 @@ switch FI.FileType
             if iscell(val1)
                 % cell array of strings
                 val1(miss)={''};
+            elseif ischar(val1)
+                % array of characters
+                val1(miss)=' ';
             else
                 val1(miss)=NaN;
             end

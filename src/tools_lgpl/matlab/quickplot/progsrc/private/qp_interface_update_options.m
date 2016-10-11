@@ -1553,6 +1553,9 @@ if nval>=0
         if ~isfield(Ops,'presentationtype') || ~isequal(Ops.presentationtype,'continuous shades')
             ExpTypes{end+1}='ARCview shape';
         end
+        if strcmp(geometry,'sQUAD') && nval==0
+            ExpTypes{end+1}='landboundary file';
+        end
     elseif strcmp(geometry,'POLYL') || strcmp(geometry,'POLYG')
         ExpTypes{end+1}='ARCview shape';
         ExpTypes{end+1}='landboundary file';
