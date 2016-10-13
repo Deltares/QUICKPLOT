@@ -1134,9 +1134,9 @@ end
 %                 5: normal and tangential (on ugrid edge)
 VecStdNameTable = {
     'sea_water_speed',               'direction_of_sea_water_velocity',4,'sea_water_velocity'
-    'sea_ice_speed',                 'direction_of_sea_ice_speed',     4,'sea_water_velocity'
+    'sea_ice_speed',                 'direction_of_sea_ice_speed',     4,'sea_ice_velocity'
     'wind_speed',                    'wind_to_direction',              4,'air_velocity'
-    'eastward_sea_water_velocity',   'northward_sea_water_velocity',   0,'velocity'
+    'eastward_sea_water_velocity',   'northward_sea_water_velocity',   0,'sea_water_velocity'
     'eastward_sea_ice_velocity',     'northward_sea_ice_velocity',     0,'sea_ice_velocity'
     'eastward_wind_shear',           'northward_wind_shear',           0,'wind_shear'
     'surface_downward_eastward_wind','surface_downward_northward_wind',0,'surface_downward_wind'
