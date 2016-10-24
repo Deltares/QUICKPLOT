@@ -193,7 +193,11 @@ if DataRead && Props.NVal>0
                 [Discharge, status] = qp_netcdf_get(FI,ivar,Props.DimName,edge_idx);
                 %
                 meshInfo    = FI.Dataset(Info.Mesh{2});
-                meshAttribs = {meshInfo.Attribute.Name};
+                if isempty(meshInfo.Attribute)
+                    meshAttribs = {};
+                else
+                    meshAttribs = {meshInfo.Attribute.Name};
+                end
                 connect     = strmatch('edge_node_connectivity',meshAttribs,'exact');
                 [EdgeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
                 EdgeConnect(EdgeConnect<0) = NaN;
@@ -350,7 +354,11 @@ if XYRead || XYneeded
             end
         end
         %
-        meshAttribs = {meshInfo.Attribute.Name};
+        if isempty(meshInfo.Attribute)
+            meshAttribs = {};
+        else
+            meshAttribs = {meshInfo.Attribute.Name};
+        end
         connect = strmatch('face_node_connectivity',meshAttribs,'exact');
         if ~isempty(connect)
             iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name},'exact');
@@ -358,7 +366,11 @@ if XYRead || XYneeded
                 ui_message('error','Face_node_connectivity not found!')
             else
                 [Ans.FaceNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
-                istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name},'exact');
+                if isempty(FI.Dataset(iconnect).Attribute)
+                    istart = [];
+                else
+                    istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name},'exact');
+                end
                 if isempty(istart)
                     maxNode = max(Ans.FaceNodeConnect(:));
                     minNode = min(Ans.FaceNodeConnect(Ans.FaceNodeConnect>=0));
@@ -395,7 +407,11 @@ if XYRead || XYneeded
             Ans.EdgeNodeConnect(Ans.EdgeNodeConnect<0) = NaN;
         end
         if isfield(Ans,'EdgeNodeConnect')
-            istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name},'exact');
+            if isempty(FI.Dataset(iconnect).Attribute)
+                istart = [];
+            else
+                istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name},'exact');
+            end
             if isempty(istart)
                 maxNode = max(Ans.EdgeNodeConnect(:));
                 minNode = min(Ans.EdgeNodeConnect(Ans.EdgeNodeConnect>=0));
@@ -589,7 +605,11 @@ if XYRead || XYneeded
         vdimid = Info.Z;
         CoordInfo = FI.Dataset(vdimid);
         %
-        Attribs = {CoordInfo.Attribute.Name};
+        if isempty(CoordInfo.Attribute)
+            Attribs = {};
+        else
+            Attribs = {CoordInfo.Attribute.Name};
+        end
         j=strmatch('formula_terms',Attribs,'exact');
         formula = '';
         if ~isempty(j)

@@ -818,7 +818,11 @@ for ivar = 1:nvars
         %
         % If X coordinates have been defined, check whether bounds have been given.
         %
-        coordAttribs = {nc.Dataset(Info.X).Attribute.Name}';
+        if isempty(nc.Dataset(Info.X).Attribute)
+            coordAttribs = {};
+        else
+            coordAttribs = {nc.Dataset(Info.X).Attribute.Name}';
+        end
         j = strmatch('bounds',coordAttribs,'exact');
         if ~isempty(j)
             Info.XBounds = strmatch(nc.Dataset(Info.X).Attribute(j).Value,varNames);
@@ -881,7 +885,11 @@ for ivar = 1:nvars
         %
         % If Y coordinates have been defined, check whether bounds have been given.
         %
-        coordAttribs = {nc.Dataset(Info.Y).Attribute.Name}';
+        if isempty(nc.Dataset(Info.Y).Attribute)
+            coordAttribs = {};
+        else
+            coordAttribs = {nc.Dataset(Info.Y).Attribute.Name}';
+        end
         j = strmatch('bounds',coordAttribs,'exact');
         if ~isempty(j)
             Info.YBounds = strmatch(nc.Dataset(Info.Y).Attribute(j).Value,varNames);
