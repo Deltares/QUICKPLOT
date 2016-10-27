@@ -286,7 +286,9 @@ switch FI.FileType(9:end)
                     otherwise
                         % only for debug purposes ...
                 end
-                Ans.LocationName = FI.(Props.varid{1}).SegmentName(idx{M_});
+                if ~isequal(idx{M_},0)
+                    Ans.LocationName = FI.(Props.varid{1}).SegmentName(idx{M_});
+                end
         end
     case 'D-Flow2D3D'
         switch Props.Name
