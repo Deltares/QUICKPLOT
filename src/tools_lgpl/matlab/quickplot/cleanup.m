@@ -1,9 +1,13 @@
 function cleanup(X)
 %CLEANUP  removes files and directories
-%   CLEANUP(X)
-%   X is a cell array of files and/or directories
-%   for instance:
-%   X={'*.bak' 'subdir'}
+%   CLEANUP(X) removes the files and directories listed in the cell string X.
+%
+%   Example: remove all "*.bak" files and the subdirectory "subdir".
+%
+%      X={'*.bak' 'subdir'}
+%      cleanup(X)
+%
+%   See also: DELETE.
 
 %----- LGPL --------------------------------------------------------------------
 %
