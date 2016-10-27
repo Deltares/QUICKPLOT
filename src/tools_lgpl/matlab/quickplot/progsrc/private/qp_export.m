@@ -423,7 +423,7 @@ for f=1:ntim
             if isfield(data,'XDam')
                 [x,y] = thindam(data.X,data.Y,data.XDam,data.YDam);
                 expdata = [x y];
-            elseif numel(data.X)~=length(data.X)
+            elseif nVar==2
                 td = ones(size(data.X));
                 [x,y] = thindam(data.X,data.Y,td,td);
                 expdata = [x y];

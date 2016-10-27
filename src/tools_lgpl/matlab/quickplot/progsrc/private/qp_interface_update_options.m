@@ -519,7 +519,7 @@ if nval==-1 || (nval>=0 && nval<1)
 end
 if ~isempty(strfind(axestype,'Time'))
     animate = 0;
-elseif ~multiple(M_) && ~multiple (N_) && ~multiple(K_) && strcmp(axestype,'X-Y') && nval==0
+elseif ~multiple(M_) && ~multiple (N_) && ~multiple(K_) && strcmp(axestype,'X-Y')
     animate = 0;
 elseif strcmp(axestype,'Distance-Val')
     animate = 0;

@@ -71,7 +71,7 @@ switch presentationtype
         hNew=gentextfld(hNew,Ops,Parent,Val(I),X(I),Y(I));
         
     case 'continuous shades'
-        if size(X,2)==1
+        if size(X,1)==1 || size(X,2)==1
             XY = [X(:) Y(:);NaN NaN];
             SEG = 1:size(XY,1);
             Val = [Val(:);NaN];
