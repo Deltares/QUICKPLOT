@@ -48,7 +48,9 @@ if nargin==2
         pos = 1;
     end
 elseif nargin==1
-    if isequal(size(ref),[1 4])
+    if isequal(ref,'pointer')
+        pos = [get(0,'pointerlocation') 1 1];
+    elseif isequal(size(ref),[1 4])
         pos = ref;
     elseif isequal(size(ref),[1 1]) && ishandle(ref) && strcmp(get(ref,'type'),'figure')
         pos = getpixels(ref,'position');
@@ -60,12 +62,12 @@ else
     qpf = findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
     if ~isempty(gcbf)
         pos = getpixels(gcbf,'position');
-    elseif ~isempty(gcf)
-        pos = getpixels(gcf,'position');
     elseif ~isempty(qpf)
         pos = getpixels(qpf,'position');
+    elseif ~isempty(gcf)
+        pos = getpixels(gcf,'position');
     else
-        pos = 1;
+        pos = [get(0,'pointerlocation') 1 1];
     end
 end
 %
