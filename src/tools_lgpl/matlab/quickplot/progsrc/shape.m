@@ -469,13 +469,12 @@ switch datatype
                     fread(fid,NrSize(2)-2,'int16');
             end
         end
-        if TNPnt>0 && TNPnt<size(Out,1)
-            Out(TNPnt:end,:)=[];
-            Obj(TNPnt:end,:)=[];
-        end
-    case 'patches'
     otherwise
-end
+    end
+    if TNPnt>0 && TNPnt<size(Out,1)
+        Out(TNPnt+1:end,:)=[];
+        Obj(TNPnt+1:end,:)=[];
+    end
 try
     fclose(fid);
 end

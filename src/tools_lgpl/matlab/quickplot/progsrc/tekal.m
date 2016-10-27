@@ -121,11 +121,16 @@ end
 function FileInfo=Local_resample(FileInfo,varargin)
 distance = varargin{1};
 Data = tekal('read',FileInfo);
+if ~iscell(Data)
+    Data = {Data};
+end
 for i = 1:length(Data)
     d = pathdistance(Data{i}(:,1),Data{i}(:,2));
+    keep = true(size(d));
+    keep(diff(d)==0) = false;
     n = max(1,round(d(end)/distance));
     di = d(end)*(0:n)/n;
-    FileInfo.Field(i).Data = interp1(d,Data{i},di);
+    FileInfo.Field(i).Data = interp1(d(keep),Data{i}(keep,:),di);
     FileInfo.Field(i).Size = size(FileInfo.Field(i).Data);
 end
 

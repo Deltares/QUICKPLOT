@@ -519,7 +519,7 @@ if nval==-1 || (nval>=0 && nval<1)
 end
 if ~isempty(strfind(axestype,'Time'))
     animate = 0;
-elseif ~multiple(M_) && ~multiple (N_) && ~multiple(K_) && strcmp(axestype,'X-Y')
+elseif ~multiple(M_) && ~multiple (N_) && ~multiple(K_) && strcmp(axestype,'X-Y') && nval==0
     animate = 0;
 elseif strcmp(axestype,'Distance-Val')
     animate = 0;
@@ -811,7 +811,7 @@ if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'stri
                                 case {'SEG','SEG-NODE'}
                                     PrsTps={'continuous shades';'markers';'values'};
                                 case {'POLYL'}
-                                    PrsTps={'polylines'};
+                                    PrsTps={'polylines','values'};
                                 case {'UGRID-EDGE'}
                                     PrsTps={'markers';'values';'edge'};
                                 otherwise
@@ -883,7 +883,7 @@ if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'stri
             %
             ask_for_numformat=1;
             ask_for_thinningmode=1;
-            if strcmp(geometry,'POLYG')
+            if strcmp(geometry,'POLYG') || strcmp(geometry,'POLYL')
                 geometry='PNT';
             end
         case {'contour lines','coloured contour lines','contour patches','contour patches with lines'}
@@ -913,7 +913,7 @@ if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'stri
                     %
                     ask_for_thinningmode=1;
             end
-            if strcmp(geometry,'POLYG')
+            if strcmp(geometry,'POLYG') || strcmp(geometry,'POLYL')
                 geometry='PNT';
             end
         case 'patches'
@@ -924,6 +924,9 @@ if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'stri
         case 'labels'
             ask_for_textprops=1;
             SingleColor=1;
+            if strcmp(geometry,'POLYG') || strcmp(geometry,'POLYL')
+                geometry='PNT';
+            end
         case 'polygons'
             lineproperties=1;
         case 'polylines'

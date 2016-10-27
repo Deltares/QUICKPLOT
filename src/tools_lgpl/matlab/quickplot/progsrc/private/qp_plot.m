@@ -558,6 +558,16 @@ end
 stn='';
 if any(cellfun('isclass',Selected,'cell'))
     stn='';
+elseif isfield(data,'LocationName') && length(data)==1
+    if ischar(data.LocationName)
+        stn = data.LocationName;
+    elseif iscell(data.LocationName)
+        if length(data.LocationName)==1
+            stn = data.LocationName{1};
+        else
+            stn = '<multiple>';
+        end
+    end
 elseif length(Selected{ST_})>1 || isequal(Selected{ST_},0)
     stn='<multiple>';
 elseif ~isempty(stats)

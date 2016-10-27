@@ -263,7 +263,23 @@ switch cmd
                         Tp=FI.FileType;
                         switch Tp
                             case 'Delft3D D-Flow1D'
-                                FI.Options=1;
+                                [p,f,e]=fileparts(FI.md1d.FileName);
+                                % by default the output is located in a subdirectory "output"
+                                % relative to the folder of the input files
+                                po = absfullfile(p,'output');
+                                d = dir(fullfile(po,'*.his'));
+                                if isempty(d)
+                                    % if the files are not there assume that they have been moved
+                                    % to another folder by DeltaShell. If the md1d-file is located
+                                    % in ...\FileWriters then the associated model output files are
+                                    % located in ...\work, so relative to the md1d file in: ..\work.
+                                    po = absfullfile(p,'..','work');
+                                    d = dir(fullfile(po,'*.his'));
+                                end
+                                for i = 1:length(d)
+                                    [fp,f,e] = fileparts(d(i).name);
+                                    FI.(f) = delwaq('open',fullfile(po,d(i).name));
+                                end
                         end
                     case 'qpsession'
                         asciicheck(ASCII,try_next)
@@ -731,13 +747,16 @@ switch cmd
                                 [pn,fn,ex]=fileparts(FI.FileName);
                                 FI.can_be_ldb=1;
                                 FI.combinelines=0;
+                                ncol = [2 3];
                                 for i=1:length(FI.Field)
                                     if length(FI.Field(i).Size)~=2
                                         FI.can_be_ldb=0;
-                                    elseif FI.Field(i).Size(2)~=2
+                                    elseif ~ismember(FI.Field(i).Size(2),ncol)
                                         FI.can_be_ldb=0;
                                     elseif ~strcmp(FI.Field(i).DataTp,'numeric')
                                         FI.can_be_ldb=0;
+                                    else
+                                        ncol = FI.Field(i).Size(2);
                                     end
                                     if ~FI.can_be_ldb
                                         break
@@ -745,7 +764,7 @@ switch cmd
                                 end
                                 can_be_kub=0;
                                 switch lower(ex)
-                                    case {'.ldb','.pol'}
+                                    case {'.ldb','.pol','.pli','.pliz'}
                                         if FI.can_be_ldb
                                             FI.combinelines=1;
                                         end

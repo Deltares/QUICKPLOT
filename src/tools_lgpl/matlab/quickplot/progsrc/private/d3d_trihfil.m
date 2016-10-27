@@ -1000,6 +1000,15 @@ for i=1:length(Out)
                 eUnit = 'kg';
             case 'kg/s'
                 eUnit = 'kg/s';
+            case ''
+                Info = vs_disp(FI,Out(i).Group,'SBTR');
+                eUnit = strtrim(Info.ElmUnits(2:end-1));
+                switch lower(eUnit)
+                    case 'm3/s'
+                        eUnit = 'm^3';
+                    case 'kg/s'
+                        eUnit = 'kg';
+                end
         end
         Out(i).Units = eUnit;
     end

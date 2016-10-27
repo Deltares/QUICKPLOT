@@ -255,11 +255,14 @@ switch FI.FileType
             [Data,Obj]=shape('read',FI,idx{M_},'lines');
         end
         if Props.NVal>0
-            val1=dbase('read',FI.dBase,0,Props.Select);
+            val1=dbase('read',FI.dBase,idx{M_},Props.Select);
             val1=val1{1};
-            miss=isnan(Obj);
-            Obj(miss)=1;
-            val1=val1(Obj);
+            % miss=isnan(Obj);
+            % expand val1 array to match size of Obj/Data.
+            [lia,idxM] = ismember(Obj,idx{M_});
+            miss = ~lia;
+            idxM(miss) = 1;
+            val1 = val1(idxM);
             if iscell(val1)
                 % cell array of strings
                 val1(miss)={''};
@@ -388,7 +391,9 @@ if ~ischar(z)
 end
 
 % return data ...
-if Ann
+if Props.NVal==0
+    % no data
+elseif Ann
     if Props.DimFlag(ST_)
         val1=Data{2}(idx{ST_});
     else
@@ -449,7 +454,11 @@ elseif DimFlag(M_)
     switch FI.FileType
         case 'tekal'
             if ~already_selected
-                val1=Data(idx{M_},idx{ST_}+1);
+                if isempty(idx{ST_}) % polygon case
+                    val1=Data(idx{M_},3);
+                else
+                    val1=Data(idx{M_},idx{ST_}+1);
+                end
             end
         otherwise
             if isempty(val1)
@@ -549,7 +558,20 @@ switch FI.FileType
                 DataProps(2+i,end) = {i};
             end
         elseif isfield(FI,'combinelines') && FI.combinelines
-            DataProps={'line'              'POLYL' 'xy'    [0 0 1 0 0]   0           0       0       0       1          []      {}  };
+            if FI.Field(1).Size(2)==3 % pliz-file
+                DataProps={'line'              'POLYL' 'xy'    [0 0 1 0 0]   0           0       0       0       1          []      {}
+                           'column 3'          'POLYL' 'xy'    [0 0 1 0 0]   0           1       0       0       0          []      {}  };
+                if ~isempty(FI.Field(1).ColLabels{3})
+                    DataProps{2,1} = FI.Field(1).ColLabels{3};
+                else
+                    [p,f,e]=fileparts(FI.FileName);
+                    if strcmpi(e,'.pliz')
+                        DataProps{2,1} = 'elevation';
+                    end
+                end
+            else
+                DataProps={'line'              'POLYL' 'xy'    [0 0 1 0 0]   0           0       0       0       1          []      {}  };
+            end
         else
             [p,f,e]=fileparts(FI.FileName);
             for i=1:length(FI.Field)

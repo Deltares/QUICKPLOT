@@ -78,13 +78,27 @@ else
         end
         data.XY = XY;
         if isfield(data,'Val')
-            data.Val = data.Val(PolyStartEnd(:,1));
+            VL = cell(1,size(PolyStartEnd,1));
+            for i = 1:size(PolyStartEnd,1)
+                VL{i} = data.Val(PolyStartEnd(i,1):PolyStartEnd(i,2));
+                % check if all values are equal (doesn't work for NaN ...)
+                if all(VL{i}==VL{i}(1)) || all(isnan(VL{i}))
+                    VL{i} = VL{i}(1);
+                end
+            end
+            % if all polylines have constant value, then convert cell to
+            % simple vector
+            if all(cellfun('length',VL)==1)
+                VL = cat(2,VL{:});
+            end
+            data.Val = VL;
         end
     end
 end
 %
 if isfield(Ops,'presentationtype') && ...
         (strcmp(Ops.presentationtype,'markers') ...
+        || strcmp(Ops.presentationtype,'values') ...
         || strcmp(Ops.presentationtype,'labels'))
     if iscell(data.XY)
         XY = zeros(length(data.XY),2);
@@ -118,16 +132,21 @@ switch NVal
         end
         qp_title(Parent,TStr,'quantity',Quant,'unit',Units,'time',TStr)
     case 1
-        if ~FirstFrame
-            delete(hNew)
-        end
-        hNew = plot_polygons(data.XY,data.Val,Parent,Ops);
-        %
-        set(Parent,'layer','top')
-        if strcmp(Ops.colourbar,'none')
-            qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
-        else
-            qp_title(Parent,{TStr},'quantity',Quant,'unit',Units,'time',TStr)
+        switch Ops.presentationtype
+            case {'values'}
+                hNew=gentextfld(hNew,Ops,Parent,data.Val,data.XY(:,1),data.XY(:,2));
+            otherwise
+                if ~FirstFrame
+                    delete(hNew)
+                end
+                hNew = plot_polygons(data.XY,data.Val,Parent,Ops);
+                %
+                set(Parent,'layer','top')
+                if strcmp(Ops.colourbar,'none')
+                    qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                else
+                    qp_title(Parent,{TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                end
         end
     case {2,3}
         if multiple(M_) % network
@@ -168,14 +187,20 @@ for i = 1:length(XY)
     X(range) = XY{i}(:,1);
     Y(range) = XY{i}(:,2);
     if hasval
-        V(range) = val(i);
+        if iscell(val)
+            % could be vector of same length or single value which will be
+            % expanded automatically.
+            V(range) = val{i}(:);
+        else
+            V(range) = val(i);
+        end
     end
     offset = offset+len(i)+1;
 end
 %
 if hasval
     hNew = patch(X,Y,V, ...
-        'edgecolor','flat', ...
+        'edgecolor','interp', ...
         'facecolor','none', ...
         'linestyle',Ops.linestyle, ...
         'linewidth',Ops.linewidth, ...
@@ -342,7 +367,11 @@ for i = 1:length(unodes)
         XYvertex(offset+(1:nr),:) = XY{poly_n(ip)}(1:nr,:);
         offset = offset+nr;
         if hasval
-            Vpatch(ip) = V(poly_n(ip));
+            if iscell(V)
+                Vpatch(ip) = V{poly_n(ip)};
+            else
+                Vpatch(ip) = V(poly_n(ip));
+            end
         end
     end
     %

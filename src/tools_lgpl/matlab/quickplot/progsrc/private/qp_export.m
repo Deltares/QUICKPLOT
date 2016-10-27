@@ -605,7 +605,15 @@ for f=1:ntim
                             % make sure that polygons are stored clockwise ...
                             %
                             if ~any(isnan(fv(1,:))) && clockwise(data(d).X(fv(1,:)),data(d).Y(fv(1,:)))<0
-                                fv=fliplr(fv);
+                                % a simple fv=fliplr(fv) only works if all
+                                % patches have the same number of corner
+                                % nodes, so no fill NaNs. To be generic we
+                                % have to loop:
+                                nv = size(fv,2)-sum(isnan(fv),2);
+                                for i = 1:size(fv,1)
+                                    % first nv indices should not be NaN
+                                    fv(i,1:nv(i)) = fv(i,nv(i):-1:1);
+                                end
                             end
                             shapewrite(filename,xv,fv,cv{:})
                         else

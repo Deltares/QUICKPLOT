@@ -233,7 +233,7 @@ switch FI.FileType(9:end)
                 Ans.Val = sId(iM);
             otherwise
                 switch Props.varid{1}
-                    case 'calcpnt'
+                    case {'calcdim','calcpnt','nodes_cr'}
                         FI = check_gpXY(FI);
                         % first N1 points are internal nodes
                         X = inifile('geti',FI.ntw,'Node','x');
@@ -249,14 +249,16 @@ switch FI.FileType(9:end)
                         nodXY = nodXY(~NisB,:);
                         %
                         Ans.X = cat(1,nodXY(:,1),igpXY(:,1),bndXY(:,1));
+                        Ans.X = Ans.X(idx{M_});
                         Ans.Y = cat(1,nodXY(:,2),igpXY(:,2),bndXY(:,2));
+                        Ans.Y = Ans.Y(idx{M_});
                         [time,data] = delwaq('read',FI.(Props.varid{1}),Props.varid{2},idx{M_},idx{T_});
                         Ans.Time = time;
                         Ans.Val = permute(data,[3 2 1]);
                     case 'qlat'
                         FI = check_latXY(FI);
-                        Ans.X = FI.latXY(:,1);
-                        Ans.Y = FI.latXY(:,2);
+                        Ans.X = FI.latXY(idx{M_},1);
+                        Ans.Y = FI.latXY(idx{M_},2);
                         %
                         [time,data] = delwaq('read',FI.(Props.varid{1}),Props.varid{2},idx{M_},idx{T_});
                         Ans.Time = time;
@@ -265,18 +267,18 @@ switch FI.FileType(9:end)
                         [time,data] = delwaq('read',FI.(Props.varid{1}),Props.varid{2},idx_subf,idx{T_});
                         Ans.Time = time;
                         Ans.Val = permute(data,[3 2 1]);
-                    case {'reachseg','rsegsub'}
+                    case {'reachdim','flowanal','reachseg','reach_cr','rsegsub'}
                         FI = check_reachXY(FI);
-                        Ans.X = FI.reachXY(:,1);
-                        Ans.Y = FI.reachXY(:,2);
+                        Ans.X = FI.reachXY(idx{M_},1);
+                        Ans.Y = FI.reachXY(idx{M_},2);
                         %
                         [time,data] = delwaq('read',FI.(Props.varid{1}),Props.varid{2},idx{M_},idx{T_});
                         Ans.Time = time;
                         Ans.Val = permute(data,[3 2 1]);
-                    case 'struc'
+                    case {'strucdim','struc','struc_cr'}
                         FI = check_strucXY(FI);
-                        Ans.X = FI.strucXY(:,1);
-                        Ans.Y = FI.strucXY(:,2);
+                        Ans.X = FI.strucXY(idx{M_},1);
+                        Ans.Y = FI.strucXY(idx{M_},2);
                         %
                         [time,data] = delwaq('read',FI.(Props.varid{1}),Props.varid{2},idx{M_},idx{T_});
                         Ans.Time = time;
@@ -284,6 +286,7 @@ switch FI.FileType(9:end)
                     otherwise
                         % only for debug purposes ...
                 end
+                Ans.LocationName = FI.(Props.varid{1}).SegmentName(idx{M_});
         end
     case 'D-Flow2D3D'
         switch Props.Name
@@ -329,7 +332,7 @@ varargout={Ans FI};
 function XY = geom2xy(G)
 p = strfind(G,'(');
 GeomType = G(1:p-1);
-if strcmp(GeomType,'LINESTRING')
+if strncmp(GeomType,'LINESTRING',10)
     xy = sscanf(G(p+1:end),'%f');
     switch length(xy)
         case 2
@@ -387,7 +390,13 @@ switch FI.FileType
         end
         %
         nFLD = 0;
-        flds = {'calcpnt','qlat','qwb','reachseg','rsegsub','struc'};
+        flds = {'calcdim','calcpnt', ...
+            'reachdim','flowanal','reachseg','rsegsub', ...
+            'strucdim','struc', ...
+            'qlat', ...
+            'qwb', ...
+            'measstat', ...
+            'nodes_cr','reach_cr','struc_cr'};
         for i = 1:length(flds)
             if isfield(FI,flds{i})
                 nFLD = nFLD+1+length(FI.(flds{i}).SubsName);
@@ -453,7 +462,7 @@ switch FI.FileType
         if hasLAT
             Out(nFLD+1).Name = 'lateral discharges';
             Out(nFLD+1).Geom = 'PNT';
-            Out(nFLD+i).Coords = 'xy';
+            Out(nFLD+1).Coords = 'xy';
             Out(nFLD+1).NVal = 4;
             Out(nFLD+1).DimFlag(M_) = 1;
             nFLD = nFLD+1;
@@ -602,6 +611,9 @@ for i = 1:length(uBId)
     if iBranch>0
         XY   = geom2xy(G{iBranch});
         d    = pathdistance(XY(:,1),XY(:,2));
+        db   = diff(d)==0;
+        d(db)    = [];
+        XY(db,:) = [];
         iOut = ic==i;
         cCS  = [bCh{iOut}];
         xyCS = interp1(d,XY,cCS);
@@ -683,46 +695,3 @@ if ~isfield(FI,'strucXY')
     FI.strucXY = branch_idchain2xy(FI.ntw,bId,bCh);
 end
 % -----------------------------------------------------------------------------
-
-% -----------------------------------------------------------------------------
-function [NewFI,cmdargs]=options(FI,mfig,cmd,varargin)
-NewFI=FI;
-cmd=lower(cmd);
-cmdargs={};
-switch cmd
-    case 'initialize'
-        OK=optfig(mfig);
-    case 'loaddata'
-        [p,f,e]=fileparts(FI.md1d.FileName);
-        % assume that md1d file is located in ...\FileWriters and that the
-        % associated model output files are located in ...\work, so
-        % relative to the md1d file in: ..\work.
-        p = absfullfile(p,'..','work');
-        d = dir(fullfile(p,'*.his'));
-        for i = 1:length(d)
-            [fp,f,e] = fileparts(d(i).name);
-            NewFI.(f) = delwaq('open',fullfile(p,d(i).name));
-        end
-    otherwise
-
-end
-% -----------------------------------------------------------------------------
-
-% -----------------------------------------------------------------------------
-function OK=optfig(h0)
-Inactive=get(0,'defaultuicontrolbackground');
-FigPos=get(h0,'position');
-FigPos(3:4) = getappdata(h0,'DefaultFileOptionsSize');
-set(h0,'position',FigPos)
-
-voffset=FigPos(4)-30;
-width=FigPos(3)-20;
-h2 = uicontrol('Parent',h0, ...
-    'Style','pushbutton', ...
-    'BackgroundColor',Inactive, ...
-    'Callback','d3d_qp fileoptions loaddata', ...
-    'Horizontalalignment','left', ...
-    'Position',[11 voffset width 18], ...
-    'String','Load Data', ...
-    'Tag','loaddata');
-OK=1;
