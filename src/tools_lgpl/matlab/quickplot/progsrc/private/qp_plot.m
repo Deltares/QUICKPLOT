@@ -269,7 +269,9 @@ if NVal==0.6 || NVal==0.9
     % 0.9 = coloured thindam
     NVal=0.5;
 elseif  NVal==1.9 
-    if isequal(Ops.presentationtype,'edge')
+    if isequal(Ops.presentationtype,'edge') || ...
+             isequal(Ops.presentationtype,'edge m') || ...
+              isequal(Ops.presentationtype,'edge n')
         % 1.9 = coloured thindam or vector perpendicular to thindam
         NVal=0.5;
     else

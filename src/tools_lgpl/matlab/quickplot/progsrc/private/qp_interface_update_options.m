@@ -356,7 +356,7 @@ switch geometry
                 Props.ClosedPoly = 2;
             end
         end
-    case {'sQUAD','sQUAD+','SGRID-FACE','SGRID-NODE'}
+    case {'sQUAD','sQUAD+','SGRID-FACE','SGRID-EDGE','SGRID-NODE'}
         if multiple(K_)
             if multiple(M_) && multiple(N_) && ~vslice
                 axestype={'X-Y-Z'};
@@ -764,8 +764,12 @@ end
 extend2edge = 0;
 if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') || (strcmp(geometry,'POLYG') && nval~=2 && ~TimeDim) % || (nval==0 & ~DimFlag(ST_))
     switch nvalstr
-        case 1.9
-            PrsTps={'vector','edge'};
+        case 1.9 % EDGE
+            if strcmp(geometry,'SGRID-EDGE')
+                PrsTps={'vector','edge','edge M','edge N'};
+            else
+                PrsTps={'vector','edge'};
+            end
         case 'strings'
             if multiple(T_)
                 PrsTps={'tracks'}; % {'labels';'tracks'};
@@ -935,7 +939,7 @@ if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'stri
             lineproperties=1;
         case 'grid with numbers'
             ask_for_textprops=1;
-        case 'edge'
+        case {'edge','edge m','edge n'}
             thindams=1;
             lineproperties=1;
             nval=0.9;

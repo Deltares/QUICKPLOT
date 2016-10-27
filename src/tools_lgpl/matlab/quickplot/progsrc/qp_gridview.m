@@ -167,7 +167,7 @@ switch cmd
         if ~isfield(xx,'Type')
             xx.Type='none';
             xx.Range=[];
-        elseif strcmp(GRID.Type,'structured') && size(xx.Range,2)==1
+        elseif strcmp(GRID.Type,'sgrid') && size(xx.Range,2)==1
             [I,J]=ind2sub(size(GRID.X),xx.Range);
             xx.Range = [I J];
         end
@@ -918,7 +918,7 @@ switch selection.Type
 
     case 'point'
         switch GRID.Type
-            case 'structured'
+            case 'sgrid'
                 switch GRID.ValLocation
                     case 'NODE'
                         set(SelectedPatch,'vertices',[],'faces',[])
@@ -926,8 +926,15 @@ switch selection.Type
                         set(SelectedPoint, ...
                             'xdata',GRID.X(Range(1),Range(2)), ...
                             'ydata',GRID.Y(Range(1),Range(2)))
+                        set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
                     case 'EDGE'
                     case 'FACE'
+                        set(SelectedPatch,'vertices',[],'faces',[])
+                        set(SelectedLine,'xdata',[],'ydata',[])
+                        set(SelectedPoint,'xdata',[],'ydata',[])
+                        set(SelectedGrid,'xdata',GRID.X(Range(1)-1:Range(1),Range(2)-1:Range(2)), ...
+                                         'ydata',GRID.Y(Range(1)-1:Range(1),Range(2)-1:Range(2)), ...
+                                         'zdata',zeros(2,2))
                 end
             otherwise
                 i = Range(1);
@@ -938,6 +945,7 @@ switch selection.Type
                         set(SelectedPoint, ...
                             'xdata',GRID.X(i), ...
                             'ydata',GRID.Y(i))
+                        set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
                     case 'EDGE'
                         j = GRID.EdgeNodeConnect(i,:);
                         set(SelectedPatch,'vertices',[],'faces',[])
@@ -945,23 +953,25 @@ switch selection.Type
                         set(SelectedLine, ...
                             'xdata',GRID.X(j), ...
                             'ydata',GRID.Y(j))
+                        set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
                     case 'FACE'
                         set(SelectedPatch,'vertices',[GRID.X GRID.Y],'faces',GRID.FaceNodeConnect(i,:))
                         set(SelectedLine,'xdata',[],'ydata',[])
                         set(SelectedPoint,'xdata',[],'ydata',[])
+                        set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
                 end
         end
-        set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
 
     case {'range','wholegrid'}
         if strcmp(selection.Type,'wholegrid')
             switch GRID.Type
-                case 'structured'
+                case 'sgrid'
                     switch GRID.ValLocation
                         case 'NODE'
                             Range = {1:size(GRID.X,1),1:size(GRID.X,2)};
                         case 'EDGE'
                         case 'FACE'
+                            Range = {1:size(GRID.X,1),1:size(GRID.X,2)};
                     end
                 case 'ugrid'
                     switch GRID.ValLocation
@@ -981,7 +991,7 @@ switch selection.Type
             Range={min(Range(1:2)):max(Range(1:2)) min(Range(3:4)):max(Range(3:4))};
         end
         switch GRID.Type
-            case 'structured'
+            case 'sgrid'
                 switch GRID.ValLocation
                     case 'NODE'
                         im = Range{1};
@@ -1013,6 +1023,27 @@ switch selection.Type
                                 'ydata',GRID.Y(im,in), ...
                                 'zdata',zeros(length(im),length(in)))
                         end
+                    case 'FACE'
+                        im = Range{1};
+                        if im(1)>1
+                            im = [im(1)-1 im];
+                        end
+                        if length(Range)>=2
+                            in = Range{2};
+                            if in(1)>1
+                                in = [in(1)-1 in];
+                            end
+                        else
+                            in = 1;
+                        end
+                        %
+                        set(SelectedPoint,'xdata',[],'ydata',[])
+                        set(SelectedLine,'xdata',[],'ydata',[])
+                        set(SelectedPatch,'vertices',[],'faces',[])
+                        set(SelectedGrid, ...
+                            'xdata',GRID.X(im,in), ...
+                            'ydata',GRID.Y(im,in), ...
+                            'zdata',zeros(length(im),length(in)))
                 end
             case 'ugrid'
                 switch GRID.ValLocation
@@ -1149,33 +1180,68 @@ switch selection.Type
         set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
 
     case 'line'
-        if ~isfinite(Range(4))
-            % [i0 0 j0 inf]
-            set(SelectedPoint,'xdata',[],'ydata',[])
-            set(SelectedLine, ...
-                'xdata',GRID.X(Range(1),:), ...
-                'ydata',GRID.Y(Range(1),:))
-        else
-            % [i0 inf j0 0]
-            set(SelectedPoint,'xdata',[],'ydata',[])
-            set(SelectedLine, ...
-                'xdata',GRID.X(:,Range(3)), ...
-                'ydata',GRID.Y(:,Range(3)))
+        switch GRID.ValLocation
+            case 'NODE'
+                if ~isfinite(Range(4))
+                    % [i0 0 j0 inf]
+                    set(SelectedPoint,'xdata',[],'ydata',[])
+                    set(SelectedLine, ...
+                        'xdata',GRID.X(Range(1),:), ...
+                        'ydata',GRID.Y(Range(1),:))
+                else
+                    % [i0 inf j0 0]
+                    set(SelectedPoint,'xdata',[],'ydata',[])
+                    set(SelectedLine, ...
+                        'xdata',GRID.X(:,Range(3)), ...
+                        'ydata',GRID.Y(:,Range(3)))
+                end
+                set(SelectedPatch,'vertices',[],'faces',[])
+                set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
+            case 'FACE'
+                if ~isfinite(Range(4))
+                    % [i0 0 j0 inf]
+                    im = Range(1)-[1 0];
+                    in = 1:size(GRID.X,2);
+                else
+                    % [i0 inf j0 0]
+                    im = 1:size(GRID.X,1);
+                    in = Range(3)-[1 0];
+                end
+                set(SelectedGrid, ...
+                    'xdata',GRID.X(im,in), ...
+                    'ydata',GRID.Y(im,in), ...
+                    'zdata',zeros(length(im),length(in)))
         end
-        set(SelectedPatch,'vertices',[],'faces',[])
-        set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
 
     case 'pwline'
         switch GRID.Type
-            case {'structured','ugrid'}
-                if size(Range,2)==1
-                    ind = Range;
-                else
-                    RNG=piecewise(Range,size(GRID.X));
-                    i0 = RNG(:,1);
-                    j0 = RNG(:,2);
-                    ind=sub2ind(size(GRID.X),i0,j0);
+            case 'sgrid'
+                RNG=piecewise(Range,size(GRID.X));
+                i0 = RNG(:,1);
+                j0 = RNG(:,2);
+                ind=sub2ind(size(GRID.X),i0,j0);
+                switch GRID.ValLocation
+                    case 'NODE'
+                        if length(ind)==1
+                            set(SelectedLine,'xdata',[],'ydata',[])
+                            set(SelectedPoint, ...
+                                'xdata',GRID.X(ind), ...
+                                'ydata',GRID.Y(ind))
+                        else
+                            set(SelectedPoint,'xdata',[],'ydata',[])
+                            set(SelectedLine, ...
+                                'xdata',GRID.X(ind), ...
+                                'ydata',GRID.Y(ind))
+                        end
+                        set(SelectedPatch,'vertices',[],'faces',[])
+                    case 'EDGE'
+                    case 'FACE'
+                        set(SelectedPoint,'xdata',[],'ydata',[])
+                        set(SelectedLine,'xdata',[],'ydata',[])
+                        set(SelectedPatch,'vertices',[GRID.X(:) GRID.Y(:)],'faces',[ind ind-1 [ind-1 ind]-size(GRID.X,1)])
                 end
+            case 'ugrid'
+                ind = Range;
                 switch GRID.ValLocation
                     case 'NODE'
                         if length(ind)==1
@@ -1257,7 +1323,7 @@ if isfield(GRID,'FaceNodeConnect') % unstructured
         off = 'on';
     end
 elseif ~isempty(GRID.X) % structured
-    GRID.Type = 'structured';
+    GRID.Type = 'sgrid';
     GRID.X = GRID.X(:,:,1);
     GRID.Y = GRID.Y(:,:,1);
     if qp_settings('gridviewshowindices')
@@ -1299,7 +1365,7 @@ selectMenu = findall(F,'label','&Select');
 set(selectMenu,'enable',off)
 set(findall(selectMenu),'enable',off)
 set(findall(F,'type','uipushtool'),'enable',off)
-if strcmp(GRID.Type,'structured')
+if strcmp(GRID.Type,'sgrid')
     set(findall(F,'tag','gridviewarbrect'),'enable','off')
     set(findall(F,'tag','gridviewarbarea'),'enable','off')
 else
@@ -1342,7 +1408,7 @@ pnt = get(get(G,'parent'),'currentpoint');
 pnt = pnt(1,1:2);
 switch GRID.ValLocation
     case 'NODE'
-        if isfield(GRID,'X')
+        if isfield(GRID,'X') % ugrid and sgrid
             dist = (pnt(1)-GRID.X).^2+(pnt(2)-GRID.Y).^2;
             mdist = min(dist(:));
             [i,j] = find(dist==mdist);
@@ -1364,7 +1430,16 @@ switch GRID.ValLocation
         [dm,i]=min(d);
         j = 1;
     case 'FACE'
-        Faces = GRID.FaceNodeConnect;
+        if strcmp(GRID.Type,'ugrid')
+            Faces = GRID.FaceNodeConnect;
+        else
+            Faces = repmat(NaN,[size(GRID.X) 4]);
+            Faces(:,:,1) = reshape(1:numel(GRID.X),size(GRID.X));
+            Faces(2:end,2:end,2) = Faces(1:end-1,2:end,1);
+            Faces(2:end,2:end,3) = Faces(1:end-1,1:end-1,1);
+            Faces(2:end,2:end,4) = Faces(2:end,1:end-1,1);            
+            Faces = reshape(Faces,[numel(GRID.X) 4]);
+        end
         missing = isnan(Faces);
         Faces(missing) = 1;
         X = GRID.X(Faces);
@@ -1400,7 +1475,11 @@ switch GRID.ValLocation
             i = find(dist==mdist);
             i = i(1);
         end
-        j = 1;
+        if strcmp(GRID.Type,'sgrid')
+            [i,j]=ind2sub(size(GRID.X),i);
+        else
+            j = 1;
+        end
     otherwise
         i = 1;
         j = 1;
@@ -1408,7 +1487,7 @@ end
 %
 trackxy(gcbf,pnt)
 MN=findobj(gcbf,'tag','MNcoord');
-if strcmp(GRID.Type,'structured')
+if strcmp(GRID.Type,'sgrid')
     set(MN,'string',sprintf('m,n: %i,%i',i,j))
     %
     if nargout==1
@@ -1419,6 +1498,7 @@ else
 end
 
 function normalstate(F)
+zoom(F,'off')
 set(F,'WindowButtonDownFcn','')
 set(F,'WindowButtonMotionFcn','')
 set(F,'WindowButtonUpFcn','')
@@ -1442,7 +1522,25 @@ set(F,'WindowButtonMotionFcn','qp_gridview trackcoord')
 qp_gridview execcallback
 %qp_gridview('setrange',F,GRID.Selected)
 
+
 function [NewRange,RangeMax] = switchrange(GRID,OldLoc,OldRange,NewLoc)
+switch GRID.Type
+    case 'ugrid'
+        [NewRange,RangeMax] = switchrange_ugrid(GRID,OldLoc,OldRange,NewLoc);
+    case 'sgrid'
+        [NewRange,RangeMax] = switchrange_sgrid(GRID,OldLoc,OldRange,NewLoc);
+end
+
+function [NewRange,RangeMax] = switchrange_sgrid(GRID,OldLoc,OldRange,NewLoc)
+switch NewLoc
+    case 'NODE'
+        RangeMax = size(GRID.X)-1; % Delft3D specific?
+    case 'FACE'
+        RangeMax = size(GRID.X)-1; % Delft3D specific!
+end
+NewRange = OldRange;
+
+function [NewRange,RangeMax] = switchrange_ugrid(GRID,OldLoc,OldRange,NewLoc)
 switch NewLoc
     case 'NODE'
         RangeMax = length(GRID.X);
@@ -1773,7 +1871,7 @@ switch GRID.Type
         yy = Y(ilast);
         %
         [dd,I]=sort((sum(XY(:,1,:),3)/2-xx).^2+(sum(XY(:,2,:),3)/2-yy).^2);
-    case 'structured'
+    case 'sgrid'
         switch GRID.ValLocation
             case 'NODE'
                 I = reshape(1:numel(GRID.X),size(GRID.X));

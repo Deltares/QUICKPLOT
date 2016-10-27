@@ -87,6 +87,11 @@ switch NVal
                     if ~FirstFrame
                         delete(hNew)
                     end
+                    if strcmp(Ops.presentationtype,'edge m')
+                        data.XDamVal(:) = NaN;
+                    elseif strcmp(Ops.presentationtype,'edge n')
+                        data.YDamVal(:) = NaN;
+                    end
                     if isfield(data,'XDamVal') && Ops.colourdams
                         hNew=thindam(data.X,data.Y,data.XDam,data.YDam,'color',data.XDamVal,data.YDamVal,'parent',Parent);
                         set(hNew,'linewidth',Ops.linewidth, ...
