@@ -899,11 +899,13 @@ end
 Ans.Time=T;
 
 % Work around stupid DeltaShell files that write lat/lon, but actually store metric coordinates.
-ds = strcmp('FileVersion_DeltaShell',{FI.Attribute.Name});
-if any(ds) && isfield(Ans,'XUnits') && strcmp(Ans.XUnits,'deg')
-    if min(Ans.X(:))<-360 || max(Ans.X(:))>360
-        Ans.XUnits = 'm';
-        Ans.YUnits = 'm';
+if ~isempty(FI.Attribute)
+    ds = strcmp('FileVersion_DeltaShell',{FI.Attribute.Name});
+    if any(ds) && isfield(Ans,'XUnits') && strcmp(Ans.XUnits,'deg')
+        if min(Ans.X(:))<-360 || max(Ans.X(:))>360
+            Ans.XUnits = 'm';
+            Ans.YUnits = 'm';
+        end
     end
 end
 

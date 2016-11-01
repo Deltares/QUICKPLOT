@@ -905,6 +905,7 @@ else
                 [hNew{d},Thresholds,Param,Parent]=qp_plot_default(plotargs{:});
                 PlotState.Parent=Parent;
         end
+        hNew{d} = hNew{d}(:);
     end
     for d = length(data)+1:length(hNew)
         delete(hNew{d});
