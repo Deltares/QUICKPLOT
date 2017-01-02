@@ -620,7 +620,11 @@ for dir = 1:3
         if ischar(fac) %distance unit not compatible with m
             % conversion not possible
         elseif fac==1
-            % conversion not needed
+            % conversion not needed, but unit may not be 'm'
+            % set unit string such that following routines work optimally
+            for d = length(data):-1:1
+                data(d).([X 'Units']) = 'm';
+            end
         elseif isfield(data,X)
             for d = length(data):-1:1
                 data(d).(X) = data(d).(X)*fac;

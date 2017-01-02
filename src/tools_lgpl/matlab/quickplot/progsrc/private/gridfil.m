@@ -412,17 +412,31 @@ if Props.File~=0
             val{2}=zeros(size(FI.X));
             for i=1:length(tmpData.Name)
                 if strcmp(tmpData.BndType(i),Props.Fld)
-                    if tmpData.MN(i,2)~=tmpData.MN(i,4)
+                    if tmpData.MN(i,2)~=tmpData.MN(i,4) && tmpData.MN(i,1)==tmpData.MN(i,3)
                         val{1}(tmpData.MN(i,1),min(tmpData.MN(i,[2 4])):max(tmpData.MN(i,[2 4])))=1;
                         if tmpData.MN(i,1)>1
                             val{1}(tmpData.MN(i,1)-1,min(tmpData.MN(i,[2 4])):max(tmpData.MN(i,[2 4])))=1;
                         end
-                    elseif tmpData.MN(i,1)~=tmpData.MN(i,3)
+                    elseif tmpData.MN(i,1)~=tmpData.MN(i,3) && tmpData.MN(i,2)==tmpData.MN(i,4)
                         val{2}(min(tmpData.MN(i,[1 3])):max(tmpData.MN(i,[1 3])),tmpData.MN(i,2))=1;
                         if tmpData.MN(i,2)>1
                             val{2}(min(tmpData.MN(i,[1 3])):max(tmpData.MN(i,[1 3])),tmpData.MN(i,2)-1)=1;
                         end
-                    else
+                    elseif tmpData.MN(i,1)~=tmpData.MN(i,3) && tmpData.MN(i,2)~=tmpData.MN(i,4) % diagonal water level boundary
+                        dMN = tmpData.MN(i,[3 4]) - tmpData.MN(i,[1 2]);
+                        DM  = abs(dMN(1));
+                        dMN = sign(dMN);
+                        for j = 0:DM
+                            val{1}(tmpData.MN(i,1)+dMN(1)*j,tmpData.MN(i,2)+dMN(2)*j)=1;
+                            val{2}(tmpData.MN(i,1)+dMN(1)*j,tmpData.MN(i,2)+dMN(2)*j)=1;
+                            if tmpData.MN(i,1)+dMN(1)*j>1
+                                val{1}(tmpData.MN(i,1)+dMN(1)*j-1,tmpData.MN(i,2)+dMN(2)*j)=1;
+                            end
+                            if tmpData.MN(i,2)+dMN(2)*j>1
+                                val{2}(tmpData.MN(i,1)+dMN(1)*j,tmpData.MN(i,2)+dMN(2)*j-1)=1;
+                            end
+                        end
+                    else % single point
                         val{1}(tmpData.MN(i,1),tmpData.MN(i,2))=1;
                         if tmpData.MN(i,1)>1
                             val{1}(tmpData.MN(i,1)-1,tmpData.MN(i,2))=1;
@@ -900,8 +914,12 @@ if ~isempty(Attribs)
                             name = Types(bndTyp);
                     end
                     Str=sprintf('%s boundaries (%s)',name,AttribName);
+                    Str2=sprintf('%s boundary (%s)',name,AttribName);
                     DataProps(l,:)={Str ...
                         'sQUAD' 'xy'  [0 0 1 1 0]  0       0    ''        'd'   'd'      ''      i      Types(bndTyp)   };
+                    l=l+1;
+                    DataProps(l,:)={Str2 ...
+                        'sQUAD' 'xy'  [0 1 0 0 0]  0       0    ''        'd'   'd'      ''      i      Types(bndTyp)   };
                 end
             case {'cross-sections','barriers'}
                 type=Attribs(i).FileType;
@@ -995,6 +1013,8 @@ else
             sz(M_)=size(Attrib.MN,1);
         case {'discharge stations'}
             sz(M_)=size(Attrib.MNK,1);
+        case {'openboundary'}
+            sz(ST_)=sum(Attrib.BndType==Props.Fld);
     end
 end
 if Props.DimFlag(K_)
