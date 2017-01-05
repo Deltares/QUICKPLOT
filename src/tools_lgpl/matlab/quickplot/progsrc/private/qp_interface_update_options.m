@@ -1095,10 +1095,29 @@ if ~isempty(Units)
         Ops.units=SIunit;
     end
 end
+if isfield(Ops,'units')
+    Units = Ops.units;
+end
 
 if ask_for_angleconvention
     pd=findobj(OH,'tag','angleconvention=?');
     conventions=get(pd,'string');
+    if strcmp(Units,'radians') || strcmp(Units,'radian') || strcmp(Units,'**Hide**')
+        % ignoring the possibility that the user selects a strange unit like "milliradians"
+        if isempty(strfind(conventions{1},'Pi'))
+            % Units is radians, but conventions contains ranges in degrees
+            conventions = strrep(strrep(conventions,'180','Pi'),'360','2Pi');
+            set(pd,'string',conventions)
+        end
+        % for communication within QuickPlot we always use degrees
+        conventions = strrep(strrep(conventions,'2Pi','360'),'Pi','180');
+    else
+        if ~isempty(strfind(conventions{1},'Pi'))
+            % Units is degrees, but conventions contains ranges in radians
+            conventions = strrep(strrep(conventions,'2Pi','360'),'Pi','180');
+            set(pd,'string',conventions)
+        end
+    end
     i=get(pd,'value');
     Ops.angleconvention=conventions{i};
     %

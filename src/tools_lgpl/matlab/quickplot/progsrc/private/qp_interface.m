@@ -1450,7 +1450,7 @@ qp_tooltip(hl,'Specify the units to be used for plotting/exporting')
 %
 voffset=voffset-50;
 h1 = LocTextPopup_pair(mfig,'Angle Convention','angleconvention',[offset voffset width 20],'Select nautical or Cartesian');
-AngConv={'Nautical', 'Nautical Positive', 'Cartesian', 'Cartesian Positive'};
+AngConv={'Nautical To [-180 to 180]', 'Nautical To [0 to 360]', 'Nautical From [-180 to 180]', 'Nautical From [0 to 360]','Cartesian To [-180 to 180]', 'Cartesian To [0 to 360]','Cartesian From [-180 to 180]', 'Cartesian From [0 to 360]'};
 set(h1(2),'string',AngConv)
 %
 % ------ plot coordinate ...

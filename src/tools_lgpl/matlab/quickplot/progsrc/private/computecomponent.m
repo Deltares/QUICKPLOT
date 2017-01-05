@@ -163,13 +163,16 @@ for d=1:length(data)
             else
                 sf = qp_unitconversion('radians',Ops.units);
             end
-            switch Ops.angleconvention
-                case {'Nautical','Nautical Positive'}
-                    data(d).Val=sf*atan2(data(d).XComp,data(d).YComp); % Nautical convention
-                otherwise
-                    data(d).Val=sf*atan2(data(d).YComp,data(d).XComp); % Cartesian convention
+            if strncmpi(Ops.angleconvention,'Nautical To',10)
+                    data(d).Val=sf*atan2(data(d).XComp,data(d).YComp);
+            elseif strncmpi(Ops.angleconvention,'Nautical From',12)
+                    data(d).Val=-sf*atan2(data(d).XComp,data(d).YComp);
+            elseif strncmpi(Ops.angleconvention,'Cartesian To',12)
+                    data(d).Val=sf*atan2(data(d).YComp,data(d).XComp);
+            elseif strncmpi(Ops.angleconvention,'Cartesian From',14)
+                    data(d).Val=-sf*atan2(data(d).YComp,data(d).XComp);
             end
-            if strfind(Ops.angleconvention,'Positive')
+            if strfind(Ops.angleconvention,'[0 to')
                 neg = data(d).Val<0;
                 data(d).Val(neg) = data(d).Val(neg)+2*pi*sf;
             end

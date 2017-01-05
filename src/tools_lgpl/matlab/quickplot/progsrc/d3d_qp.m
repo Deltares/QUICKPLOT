@@ -2054,6 +2054,13 @@ switch cmd
             trigger={};
             if ~isempty(cmdargs)
                 i=ustrcmpi(cmdargs{1},modes);
+                if i<0 && strcmp(cmd,'angleconvention')
+                    ibracket = strfind(cmdargs{1},'[');
+                    if ~isempty(ibracket)
+                        newmode = cmdargs{1}(1:ibracket(1)+1);
+                        i=ustrcmpi(newmode,modes);
+                    end
+                end
                 if i<0
                     if strcmp(cmd,'exporttype') && strcmp(cmdargs{1},'mat file')
                         %
@@ -2064,7 +2071,7 @@ switch cmd
                         if i<0
                             error('Invalid %s: %s',cmd,cmdargs{1})
                         else
-                            set(modelist,'value',i);
+                            set(modelist,'value',i)
                         end
                     elseif strcmp(cmd,'dataunits')
                         %
@@ -2074,6 +2081,20 @@ switch cmd
                         set(modelist,'value',find(strcmp('Other',modes)))
                         modelist=findobj(UOH,'tag',[cmd '=!']);
                         set(modelist,'string',cmdargs{1})
+                    elseif strcmp(cmd,'angleconvention')
+                        switch lower(cmdargs{1})
+                            case 'nautical'
+                                i=ustrcmpi('Nautical To [-',modes);
+                            case 'nautical positive'
+                                i=ustrcmpi('Nautical To [0',modes);
+                            case 'cartesian'
+                                i=ustrcmpi('Cartesian To [-',modes);
+                            case 'cartesian positive'
+                                i=ustrcmpi('Cartesian To [0',modes);
+                            otherwise
+                                error('Invalid %s: %s',cmd,cmdargs{1})
+                        end
+                        set(modelist,'value',i)
                     else
                         error('Invalid %s: %s',cmd,cmdargs{1})
                     end
