@@ -339,6 +339,8 @@ else
             end
             NL=length(Msg);
             set(findobj(fig,'tag','errorlist'),'string',errors,'value',length(errors)+1-(1:NL));
+        case 'getall'
+            H = errors;
     end
 end
 UD.errors=errors;
