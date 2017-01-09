@@ -482,9 +482,17 @@ try
                   fprintf(logid2,'<hr>\nRunning log file: %s<br>\n',logf);
                   d3d_qp('reset');
                   d1=dir; d1={d1.name};
+                  m1=ui_message('getall');
                   d3d_qp('run',[slog,logf]);
                   d2=dir; d2={d2.name};
+                  m2=ui_message('getall');
                   checkfs=setdiff(d2,d1);
+                  if length(m2)>length(m1)
+                      diffm=m2(length(m1)+2:length(m2));
+                      for mi = 1:length(diffm)
+                          fprintf(logid2,[logf ': <font color=FF0000>' diffm{mi} '</font><br>']);
+                      end
+                  end    
                   if isempty(checkfs)
                      fprintf(logid2,'No file to check.');
                      lgcolor='FF0000';
