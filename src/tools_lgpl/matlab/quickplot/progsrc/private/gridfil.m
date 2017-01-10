@@ -89,7 +89,7 @@ switch cmd
         [varargout{1:2}]=gettimezone(FI,domain,Props);
         return
     case 'stations'
-        varargout={{}};
+        varargout={readsts(FI,Props,varargin{:})};
         return
     case 'subfields'
         varargout={getsubfields(FI,Props,varargin{:})};
@@ -165,6 +165,7 @@ end
 % read grid ...
 x=[];
 y=[];
+xy=[];
 z=[];
 dataongrid = DimFlag(M_) & DimFlag(N_);
 if XYRead
@@ -232,27 +233,27 @@ if Props.File~=0
     Fld=abs(Props.Fld);
     Attribs = qp_option(FI,'AttribFiles');
     filetp=Attribs(Props.File).FileType;
-    tmpData=qp_unwrapfi(Attribs(Props.File));
+    Attrib=qp_unwrapfi(Attribs(Props.File));
     switch filetp
         case {'wldep','wlfdep','trirst','boxfile'}
-            if isfield(tmpData,'Dpsopt') && ~isempty(tmpData.Dpsopt)
-                Dpsopt=tmpData.Dpsopt;
+            if isfield(Attrib,'Dpsopt') && ~isempty(Attrib.Dpsopt)
+                Dpsopt=Attrib.Dpsopt;
             else
                 Dpsopt='max';
             end
             if ~isempty(strmatch('velocity',Props.Name))
-                val{1}=tmpData.Data{Fld(1)};
-                val{2}=tmpData.Data{Fld(2)};
+                val{1}=Attrib.Data{Fld(1)};
+                val{2}=Attrib.Data{Fld(2)};
             elseif ~isempty(strmatch('horizontal velocity',Props.Name))
                 k=length(Fld)/2;
-                val{1}=cat(3,tmpData.Data{Fld(1:k)});
-                val{2}=cat(3,tmpData.Data{Fld(k+(1:k))});
+                val{1}=cat(3,Attrib.Data{Fld(1:k)});
+                val{2}=cat(3,Attrib.Data{Fld(k+(1:k))});
             else
-                val{1}=cat(3,tmpData.Data{Fld});
+                val{1}=cat(3,Attrib.Data{Fld});
             end
             for iv=1:length(val)
-                if isfield(tmpData,'DOrder')
-                    switch tmpData.DOrder
+                if isfield(Attrib,'DOrder')
+                    switch Attrib.DOrder
                         case 1
                             sz=size(val{iv}); sz(1:2)=sz([2 1]);
                             val{iv}=reshape(val{iv},sz);
@@ -284,22 +285,22 @@ if Props.File~=0
                 end
             end
         case 'SWAN-output'
-            val{1}=tmpData.Data(:,:,Props.Fld(1));
+            val{1}=Attrib.Data(:,:,Props.Fld(1));
             if length(Props.Fld)==2
-                val{2}=tmpData.Data(:,:,Props.Fld(2));
+                val{2}=Attrib.Data(:,:,Props.Fld(2));
             end
         case {'fls','FLS-inc'}
-            if isfield(tmpData,'Times')
-                T = tmpData.Times(idx{T_});
+            if isfield(Attrib,'Times')
+                T = Attrib.Times(idx{T_});
             else
                 T = idx{T_}/60;
             end
-            [val{1},Fls]=incremental('read',tmpData,Fld,T);
+            [val{1},Fls]=incremental('read',Attrib,Fld,T);
             val{1}(val{1}==0)=NaN;
             Attribs(Props.File) = qp_wrapfi(Fls,Attribs(Props.File));
             FI=qp_option(FI,'AttribFiles',Attribs);
         case 'bagmap'
-            val{1}=bagmap('read',tmpData,idx{T_},Props.Fld);
+            val{1}=bagmap('read',Attrib,idx{T_},Props.Fld);
         case {'weir','weir-waqua','thindam','thindam-waqua','enclosure','3dgate'}
             ThinDam=1;
             bedsigncorrection=-1;
@@ -313,21 +314,21 @@ if Props.File~=0
             %val{2}=val{1}; resulteert in 4 keer dezelfde matrix in de gecompileerde versie,
             %er wordt dus geen goed onderscheid gemaakt tussen de verschillende kopieen!
             DamVal=0;
-            if isfield(tmpData,'CHARu')
-                DamVal=size(tmpData.CHARu,2)>=3;
+            if isfield(Attrib,'CHARu')
+                DamVal=size(Attrib.CHARu,2)>=3;
             end
             if DamVal
                 Props.NVal=2;
                 val{3}=zeros(size(FI.X));
                 val{4}=zeros(size(FI.X));
             end
-            if isfield(tmpData,'MNu')
-                MNu=tmpData.MNu;
-            elseif isfield(tmpData,'MNKu')
-                MNKu=tmpData.MNKu;
+            if isfield(Attrib,'MNu')
+                MNu=Attrib.MNu;
+            elseif isfield(Attrib,'MNKu')
+                MNKu=Attrib.MNKu;
                 MNu=MNKu(MNKu(:,5)<=idx{K_} & MNKu(:,6)>=idx{K_},1:4);
             else
-                [MNu,MNv]=enclosure('thindam',tmpData.Data);
+                [MNu,MNv]=enclosure('thindam',Attrib.Data);
             end
             if ~isempty(MNu)
                 MNu(:,[3 4])=MNu(:,[3 4])-MNu(:,[1 2]);
@@ -352,13 +353,13 @@ if Props.File~=0
                 val{1}(sub2ind(size(val{1}),M,N))=1;
                 %      val{1}(:)=0;
                 if DamVal
-                    val{3}(sub2ind(size(val{1}),M,N))=bedsigncorrection*tmpData.CHARu(Indu,weirheight);
+                    val{3}(sub2ind(size(val{1}),M,N))=bedsigncorrection*Attrib.CHARu(Indu,weirheight);
                 end
             end
-            if isfield(tmpData,'MNv')
-                MNv=tmpData.MNv;
-            elseif isfield(tmpData,'MNKv')
-                MNKv=tmpData.MNKv;
+            if isfield(Attrib,'MNv')
+                MNv=Attrib.MNv;
+            elseif isfield(Attrib,'MNKv')
+                MNKv=Attrib.MNKv;
                 MNv=MNKv(MNKv(:,5)<=idx{K_} & MNKv(:,6)>=idx{K_},1:4);
             else
                 % MNv already defined above
@@ -382,7 +383,7 @@ if Props.File~=0
                 val{2}(sub2ind(size(val{2}),M,N))=1;
                 %      val{2}(:)=0;
                 if DamVal
-                    val{4}(sub2ind(size(val{2}),M,N))=bedsigncorrection*tmpData.CHARv(Indv,weirheight);
+                    val{4}(sub2ind(size(val{2}),M,N))=bedsigncorrection*Attrib.CHARv(Indv,weirheight);
                 end
             end
             if DimFlag(K_)
@@ -392,58 +393,133 @@ if Props.File~=0
             end
         case {'trtarea'}
             val{1}=zeros(size(FI.X));
-            ReqCode=tmpData.RoughnessIDs(Props.SubFld);
-            records=tmpData.Records(tmpData.Records(:,5)==ReqCode,:);
+            ReqCode=Attrib.RoughnessIDs(Props.SubFld);
+            records=Attrib.Records(Attrib.Records(:,5)==ReqCode,:);
             val{1}=val{1}+sparse(records(:,2),records(:,1),records(:,6),size(val{1},1),size(val{1},2));
         case {'cross-sections','barriers'}
             ThinDam=1;
             val{1}=zeros(size(FI.X));
             val{2}=zeros(size(FI.X));
-            for i=1:size(tmpData.MNMN,1)
-                if tmpData.MNMN(i,1)==tmpData.MNMN(i,3)
-                    val{1}(tmpData.MNMN(i,1),min(tmpData.MNMN(i,[2 4])):max(tmpData.MNMN(i,[2 4])))=1;
+            for i=1:size(Attrib.MNMN,1)
+                if Attrib.MNMN(i,1)==Attrib.MNMN(i,3)
+                    val{1}(Attrib.MNMN(i,1),min(Attrib.MNMN(i,[2 4])):max(Attrib.MNMN(i,[2 4])))=1;
                 else
-                    val{2}(min(tmpData.MNMN(i,[1 3])):max(tmpData.MNMN(i,[1 3])),tmpData.MNMN(i,2))=1;
+                    val{2}(min(Attrib.MNMN(i,[1 3])):max(Attrib.MNMN(i,[1 3])),Attrib.MNMN(i,2))=1;
                 end
             end
         case {'openboundary'}
-            ThinDam=1;
-            val{1}=zeros(size(FI.X));
-            val{2}=zeros(size(FI.X));
-            for i=1:length(tmpData.Name)
-                if strcmp(tmpData.BndType(i),Props.Fld)
-                    if tmpData.MN(i,2)~=tmpData.MN(i,4) && tmpData.MN(i,1)==tmpData.MN(i,3)
-                        val{1}(tmpData.MN(i,1),min(tmpData.MN(i,[2 4])):max(tmpData.MN(i,[2 4])))=1;
-                        if tmpData.MN(i,1)>1
-                            val{1}(tmpData.MN(i,1)-1,min(tmpData.MN(i,[2 4])):max(tmpData.MN(i,[2 4])))=1;
+            if strcmp(Props.Geom,'POLYL')
+                j=find(Attrib.BndType==Props.Fld);
+                i=j(idx{ST_});
+                %
+                MN = Attrib.MN;
+                if MN(i,2)~=MN(i,4) && MN(i,1)==MN(i,3)
+                    m = MN(i,1);
+                    n = max(min(MN(i,[2 4]))-1,1):max(MN(i,[2 4]));
+                    xy = {[FI.X(m,n)' FI.Y(m,n)']};
+                    if any(isnan(xy{1}(:))) && m>1
+                        xy = {[FI.X(m-1,n)' FI.Y(m-1,n)']};
+                    end
+                elseif MN(i,1)~=MN(i,3) && MN(i,2)==MN(i,4)
+                    m = max(min(MN(i,[1 3]))-1,1):max(MN(i,[1 3]));
+                    n = MN(i,2);
+                    xy = {[FI.X(m,n) FI.Y(m,n)]};
+                    if any(isnan(xy{1}(:))) && n>1
+                        xy = {[FI.X(m,n-1) FI.Y(m,n-1)]};
+                    end
+                elseif MN(i,1)~=MN(i,3) && MN(i,2)~=MN(i,4) % diagonal water level boundary
+                    dMN = MN(i,[3 4]) - MN(i,[1 2]);
+                    DM  = abs(dMN(1));
+                    dMN = sign(dMN);
+                    %
+                    % number of water level boundary points = DM+1
+                    % number of grid points representing boundary = 2*(DM+1)+1
+                    %
+                    xy = NaN(2*(DM+1)+1,2);
+                    dMN0 = [0 0];
+                    dMN0(dMN>0) = -1;
+                    j1 = 1;
+                    m = MN(i,1)+dMN0(1);
+                    n = MN(i,2)+dMN0(2);
+                    for j = 0:DM
+                        xy(j1,:) = [FI.X(m,n) FI.Y(m,n)];
+                        %
+                        m = m+dMN(1);
+                        xy(j1+1,:) = [FI.X(m,n) FI.Y(m,n)];
+                        if any(isnan(xy(j1+1,:)))
+                            xy(j1+1,:) = [FI.X(m-dMN(1),n+dMN(2)) FI.Y(m-dMN(1),n+dMN(2))];
                         end
-                    elseif tmpData.MN(i,1)~=tmpData.MN(i,3) && tmpData.MN(i,2)==tmpData.MN(i,4)
-                        val{2}(min(tmpData.MN(i,[1 3])):max(tmpData.MN(i,[1 3])),tmpData.MN(i,2))=1;
-                        if tmpData.MN(i,2)>1
-                            val{2}(min(tmpData.MN(i,[1 3])):max(tmpData.MN(i,[1 3])),tmpData.MN(i,2)-1)=1;
+                        n = n+dMN(2);
+                        j1= j1+2;
+                        if j==DM
+                            xy(j1,:) = [FI.X(m,n) FI.Y(m,n)];
                         end
-                    elseif tmpData.MN(i,1)~=tmpData.MN(i,3) && tmpData.MN(i,2)~=tmpData.MN(i,4) % diagonal water level boundary
-                        dMN = tmpData.MN(i,[3 4]) - tmpData.MN(i,[1 2]);
-                        DM  = abs(dMN(1));
-                        dMN = sign(dMN);
-                        for j = 0:DM
-                            val{1}(tmpData.MN(i,1)+dMN(1)*j,tmpData.MN(i,2)+dMN(2)*j)=1;
-                            val{2}(tmpData.MN(i,1)+dMN(1)*j,tmpData.MN(i,2)+dMN(2)*j)=1;
-                            if tmpData.MN(i,1)+dMN(1)*j>1
-                                val{1}(tmpData.MN(i,1)+dMN(1)*j-1,tmpData.MN(i,2)+dMN(2)*j)=1;
+                    end
+                    xy = {xy};
+                else % single point
+                    if MN(i,1)>1
+                        m = MN(i,1)+(-1:0);
+                        n = MN(i,2);
+                        xy = {[FI.X(m,n) FI.Y(m,n)]};
+                    else
+                        xy = {[NaN NaN]};
+                    end
+                    if any(isnan(xy{1}(:))) && MN(i,2)>1
+                        m = MN(i,1);
+                        n = MN(i,2)+(-1:0);
+                        xy = {[FI.X(m,n)' FI.Y(m,n)']};
+                    end
+                    if any(isnan(xy{1}(:))) && MN(i,1)>1 && MN(i,2)>1
+                        m = MN(i,1)+(-1:0);
+                        n = MN(i,2)-1;
+                        xy = {[FI.X(m,n) FI.Y(m,n)]};
+                    end
+                    if any(isnan(xy{1}(:))) && MN(i,1)>1 && MN(i,2)>1
+                        m = MN(i,1)-1;
+                        n = MN(i,2)+(-1:0);
+                        xy = {[FI.X(m,n)' FI.Y(m,n)']};
+                    end
+                end
+            else
+                ThinDam=1;
+                val{1}=zeros(size(FI.X));
+                val{2}=zeros(size(FI.X));
+                for i=1:length(Attrib.Name)
+                    if strcmp(Attrib.BndType(i),Props.Fld)
+                        MN = Attrib.MN;
+                        if MN(i,2)~=MN(i,4) && MN(i,1)==MN(i,3)
+                            val{1}(MN(i,1),min(MN(i,[2 4])):max(MN(i,[2 4])))=1;
+                            if MN(i,1)>1
+                                val{1}(MN(i,1)-1,min(MN(i,[2 4])):max(MN(i,[2 4])))=1;
                             end
-                            if tmpData.MN(i,2)+dMN(2)*j>1
-                                val{2}(tmpData.MN(i,1)+dMN(1)*j,tmpData.MN(i,2)+dMN(2)*j-1)=1;
+                        elseif MN(i,1)~=MN(i,3) && MN(i,2)==MN(i,4)
+                            val{2}(min(MN(i,[1 3])):max(MN(i,[1 3])),MN(i,2))=1;
+                            if MN(i,2)>1
+                                val{2}(min(MN(i,[1 3])):max(MN(i,[1 3])),MN(i,2)-1)=1;
                             end
-                        end
-                    else % single point
-                        val{1}(tmpData.MN(i,1),tmpData.MN(i,2))=1;
-                        if tmpData.MN(i,1)>1
-                            val{1}(tmpData.MN(i,1)-1,tmpData.MN(i,2))=1;
-                        end
-                        val{2}(tmpData.MN(i,1),tmpData.MN(i,2))=1;
-                        if tmpData.MN(i,2)>1
-                            val{2}(tmpData.MN(i,1),tmpData.MN(i,2)-1)=1;
+                        elseif MN(i,1)~=MN(i,3) && MN(i,2)~=MN(i,4) % diagonal water level boundary
+                            dMN = MN(i,[3 4]) - MN(i,[1 2]);
+                            DM  = abs(dMN(1));
+                            dMN = sign(dMN);
+                            for j = 0:DM
+                                val{1}(MN(i,1)+dMN(1)*j,MN(i,2)+dMN(2)*j)=1;
+                                val{2}(MN(i,1)+dMN(1)*j,MN(i,2)+dMN(2)*j)=1;
+                                if MN(i,1)+dMN(1)*j>1
+                                    val{1}(MN(i,1)+dMN(1)*j-1,MN(i,2)+dMN(2)*j)=1;
+                                end
+                                if MN(i,2)+dMN(2)*j>1
+                                    val{2}(MN(i,1)+dMN(1)*j,MN(i,2)+dMN(2)*j-1)=1;
+                                end
+                            end
+                        else % single point
+                            val{1}(MN(i,1),MN(i,2))=1;
+                            if MN(i,1)>1
+                                val{1}(MN(i,1)-1,MN(i,2))=1;
+                            end
+                            val{2}(MN(i,1),MN(i,2))=1;
+                            if MN(i,2)>1
+                                val{2}(MN(i,1),MN(i,2)-1)=1;
+                            end
                         end
                     end
                 end
@@ -451,25 +527,25 @@ if Props.File~=0
         case {'observation points','discharge stations'}
             switch filetp
                 case 'observation points'
-                    MN=tmpData.MN(idx{M_},:);
+                    MN=Attrib.MN(idx{M_},:);
                 case 'discharge stations'
                     switch Props.Fld
                         case 1
-                            MN=tmpData.MNK(idx{M_},[1 2]);
+                            MN=Attrib.MNK(idx{M_},[1 2]);
                         case 2
-                            MN=tmpData.MNK_out(idx{M_},[1 2]);
+                            MN=Attrib.MNK_out(idx{M_},[1 2]);
                     end
             end
             linidx=sub2ind(size(FI.X),MN(:,1),MN(:,2));
             [x,y]=gridinterp(0,0,'z',FI.X,FI.Y);
             x=x(linidx);
             y=y(linidx);
-            val{1}=tmpData.Name; % (idx{M_}) indexing done after this switch statement
+            val{1}=Attrib.Name; % (idx{M_}) indexing done after this switch statement
         case {'drypoint'}
             val{1}=zeros(size(FI.X));
-            for i=1:size(tmpData.MN,1)
-                i1 = tmpData.MN(i,[1 3]);
-                i2 = tmpData.MN(i,[2 4]);
+            for i=1:size(Attrib.MN,1)
+                i1 = Attrib.MN(i,[1 3]);
+                i2 = Attrib.MN(i,[2 4]);
                 val{1}(min(i1):max(i1),min(i2):max(i2))=1;
             end
         otherwise
@@ -681,10 +757,14 @@ end
 
 % generate output ...
 if XYRead
-    Ans.X=x;
-    Ans.Y=y;
-    Ans.XUnits='m';
-    Ans.YUnits='m';
+    if ~isempty(xy)
+        Ans.XY = xy;
+    else
+        Ans.X=x;
+        Ans.Y=y;
+        Ans.XUnits='m';
+        Ans.YUnits='m';
+    end
     if isfield(FI,'CoordinateSystem') && isequal(lower(FI.CoordinateSystem),'spherical')
         Ans.XUnits='deg';
         Ans.YUnits='deg';
@@ -919,7 +999,7 @@ if ~isempty(Attribs)
                         'sQUAD' 'xy'  [0 0 1 1 0]  0       0    ''        'd'   'd'      ''      i      Types(bndTyp)   };
                     l=l+1;
                     DataProps(l,:)={Str2 ...
-                        'sQUAD' 'xy'  [0 1 0 0 0]  0       0    ''        'd'   'd'      ''      i      Types(bndTyp)   };
+                        'POLYL' 'xy'  [0 3 0 0 0]  0       0    ''        'd'   'd'      ''      i      Types(bndTyp)   };
                 end
             case {'cross-sections','barriers'}
                 type=Attribs(i).FileType;
@@ -1081,6 +1161,23 @@ if Props.File>0
     end
 else
     T=t(:);
+end
+% -----------------------------------------------------------------------------
+
+% -----------------------------------------------------------------------------
+function S=readsts(FI,Props,t)
+if Props.File<=0
+    S = {};
+    return
+end
+Attribs = qp_option(FI,'AttribFiles');
+Attrib = qp_unwrapfi(Attribs(Props.File));
+switch Attrib.FileType
+    case {'openboundary'}
+        S = Attrib.Name(Attrib.BndType==Props.Fld);
+end
+if nargin>2
+    S=S(t);
 end
 % -----------------------------------------------------------------------------
 
