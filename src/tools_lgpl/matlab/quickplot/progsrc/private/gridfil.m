@@ -170,8 +170,15 @@ z=[];
 dataongrid = DimFlag(M_) & DimFlag(N_);
 if XYRead
     if dataongrid
-        x=FI.X(idx{[M_ N_]});
-        y=FI.Y(idx{[M_ N_]});
+        x=FI.X;
+        y=FI.Y;
+        %
+        if strcmp(Props.Name,'clipped grid')
+            [x,y]=enclosure('apply',FI.Enclosure,x,y);
+        end
+        %
+        x=x(idx{[M_ N_]});
+        y=y(idx{[M_ N_]});
         if idx{M_}(1)==idx{M_}(2)
             x(1,:)=NaN;
             y(1,:)=NaN;
@@ -230,10 +237,16 @@ val={};
 ThinDam=0;
 Dpsopt='mean';
 if Props.File~=0
-    Fld=abs(Props.Fld);
-    Attribs = qp_option(FI,'AttribFiles');
-    filetp=Attribs(Props.File).FileType;
-    Attrib=qp_unwrapfi(Attribs(Props.File));
+    if Props.File==-1
+        Attrib.Data = FI.Enclosure;
+        Attrib.FileType = 'enclosure';
+        Attrib.QP_Options = [];
+    else
+        Fld=abs(Props.Fld);
+        Attribs = qp_option(FI,'AttribFiles');
+        Attrib=qp_unwrapfi(Attribs(Props.File));
+    end
+    filetp=Attrib.FileType;
     switch filetp
         case {'wldep','wlfdep','trirst','boxfile'}
             if isfield(Attrib,'Dpsopt') && ~isempty(Attrib.Dpsopt)
@@ -397,22 +410,36 @@ if Props.File~=0
             records=Attrib.Records(Attrib.Records(:,5)==ReqCode,:);
             val{1}=val{1}+sparse(records(:,2),records(:,1),records(:,6),size(val{1},1),size(val{1},2));
         case {'cross-sections','barriers'}
-            ThinDam=1;
-            val{1}=zeros(size(FI.X));
-            val{2}=zeros(size(FI.X));
-            for i=1:size(Attrib.MNMN,1)
-                if Attrib.MNMN(i,1)==Attrib.MNMN(i,3)
-                    val{1}(Attrib.MNMN(i,1),min(Attrib.MNMN(i,[2 4])):max(Attrib.MNMN(i,[2 4])))=1;
+            MN = Attrib.MNMN;
+            if strcmp(Props.Geom,'POLYL')
+                i=idx{ST_};
+                if MN(i,1)==MN(i,3)
+                    m = MN(i,1);
+                    n = min(MN(i,[2 4]))-1:max(MN(i,[2 4]));
+                    xy = {[FI.X(m,n)' FI.Y(m,n)']};
                 else
-                    val{2}(min(Attrib.MNMN(i,[1 3])):max(Attrib.MNMN(i,[1 3])),Attrib.MNMN(i,2))=1;
+                    m = min(MN(i,[1 3]))-1:max(MN(i,[1 3]));
+                    n = MN(i,2);
+                    xy = {[FI.X(m,n) FI.Y(m,n)]};
+                end
+            else
+                ThinDam=1;
+                val{1}=zeros(size(FI.X));
+                val{2}=zeros(size(FI.X));
+                for i=1:size(MN,1)
+                    if MN(i,1)==MN(i,3)
+                        val{1}(MN(i,1),min(MN(i,[2 4])):max(MN(i,[2 4])))=1;
+                    else
+                        val{2}(min(MN(i,[1 3])):max(MN(i,[1 3])),MN(i,2))=1;
+                    end
                 end
             end
         case {'openboundary'}
+            MN = Attrib.MN;
             if strcmp(Props.Geom,'POLYL')
                 j=find(Attrib.BndType==Props.Fld);
                 i=j(idx{ST_});
                 %
-                MN = Attrib.MN;
                 if MN(i,2)~=MN(i,4) && MN(i,1)==MN(i,3)
                     m = MN(i,1);
                     n = max(min(MN(i,[2 4]))-1,1):max(MN(i,[2 4]));
@@ -486,7 +513,6 @@ if Props.File~=0
                 val{2}=zeros(size(FI.X));
                 for i=1:length(Attrib.Name)
                     if strcmp(Attrib.BndType(i),Props.Fld)
-                        MN = Attrib.MN;
                         if MN(i,2)~=MN(i,4) && MN(i,1)==MN(i,3)
                             val{1}(MN(i,1),min(MN(i,[2 4])):max(MN(i,[2 4])))=1;
                             if MN(i,1)>1
@@ -808,11 +834,15 @@ varargout={Ans FI};
 
 % -----------------------------------------------------------------------------
 function Out=infile(FI,domain)
-
+%Str=sprintf('%s (%s)',Attribs(i).FileType,AttribName);
+[p,f]=fileparts(FI.FileName);
+Str = sprintf('enclosure (%s.enc)',f);
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'                    'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc' 'Loc3D' 'File' 'Fld'};
-DataProps={'morphologic grid'        'sQUAD' 'xy'    [0 0 1 1 0]  0          0     ''        'd'   'd'      ''      0      0
+DataProps={'morphologic grid'         'sQUAD' 'xy'    [0 0 1 1 0]  0          0     ''        'd'   'd'      ''      0      0
     'hydrodynamic grid'               'sQUAD' 'xy'    [0 0 1 1 0]  0          0     ''        'z'   'z'      'i'     0      0
+    Str                               'sQUAD' 'xy'    [0 0 1 1 0]  0          0     ''        'd'   'd'      ''     -1      1
+    'clipped grid'                    'sQUAD' 'xy'    [0 0 1 1 0]  0          0     ''        'd'   'd'      ''      0      0
     '-------'                         ''      ''      [0 0 0 0 0]  0          0     ''        ''    ''       ''      0      0
     '(m,n) node indices'              'sQUAD' 'xy'    [0 0 1 1 0]  0          4     ''        'd'   'd'      'i'     0      0
     'nm node index'                   'sQUAD' 'xy'    [0 0 1 1 0]  0          1     ''        'd'   'd'      'i'     0      0
@@ -999,14 +1029,18 @@ if ~isempty(Attribs)
                         'sQUAD' 'xy'  [0 0 1 1 0]  0       0    ''        'd'   'd'      ''      i      Types(bndTyp)   };
                     l=l+1;
                     DataProps(l,:)={Str2 ...
-                        'POLYL' 'xy'  [0 3 0 0 0]  0       0    ''        'd'   'd'      ''      i      Types(bndTyp)   };
+                        'POLYL' 'xy'  [0 5 0 0 0]  0       0    ''        'd'   'd'      ''      i      Types(bndTyp)   };
                 end
             case {'cross-sections','barriers'}
                 type=Attribs(i).FileType;
                 l=l+1;
                 Str=sprintf('%s (%s)',type,AttribName);
-                DataProps(l,:)={...
-                    Str 'sQUAD' 'xy'  [0 0 1 1 0]  0       0    ''        'd'   'd'      ''      i      1   };
+                Str2=sprintf('%s (%s)',type(1:end-1),AttribName);
+                DataProps(l,:)={Str ...
+                    'sQUAD' 'xy'  [0 0 1 1 0]  0       0    ''        'd'   'd'      ''      i      1   };
+                l=l+1;
+                DataProps(l,:)={Str2 ...
+                    'POLYL' 'xy'  [0 5 0 0 0]  0       0    ''        'd'   'd'      ''      i      1   };
             case 'bagmap'
                 switch Attrib.Quantity
                     case 'results dredging volumes'
@@ -1037,7 +1071,7 @@ if ~isempty(Attribs)
             case 'enclosure'
                 l=l+1;
                 Str=sprintf('%s (%s)',Attribs(i).FileType,AttribName);
-                DataProps(l,:)={Str      'sQUAD'     'xy' [1 0 1 1 0]  0          0      ''        'd'   'd'      ''      i      1   };
+                DataProps(l,:)={Str      'sQUAD'     'xy' [0 0 1 1 0]  0          0      ''        'd'   'd'      ''      i      1   };
             otherwise
         end
     end
@@ -1056,14 +1090,13 @@ function subf=getsubfields(FI,Props,f)
 subf={};
 if Props.File>0
     Attribs = qp_option(FI,'AttribFiles');
-    FID=Attribs(Props.File);
-    switch FID.FileType
+    Attrib=qp_unwrapfi(Attribs(Props.File));
+    switch Attrib.FileType
         case 'trtarea'
-            FID=FID.Data;
-            nrid=length(FID.RoughnessIDs);
+            nrid=length(Attrib.RoughnessIDs);
             subf=cell(nrid,1);
             for i=1:nrid
-                subf{i}=sprintf('roughness code %i',FID.RoughnessIDs(i));
+                subf{i}=sprintf('roughness code %i',Attrib.RoughnessIDs(i));
             end
         otherwise
             % default no subfields
@@ -1095,6 +1128,8 @@ else
             sz(M_)=size(Attrib.MNK,1);
         case {'openboundary'}
             sz(ST_)=sum(Attrib.BndType==Props.Fld);
+        case {'cross-sections','barriers'}
+            sz(ST_)=length(Attrib.Name);
     end
 end
 if Props.DimFlag(K_)
@@ -1175,6 +1210,8 @@ Attrib = qp_unwrapfi(Attribs(Props.File));
 switch Attrib.FileType
     case {'openboundary'}
         S = Attrib.Name(Attrib.BndType==Props.Fld);
+    case {'cross-sections','barriers'}
+        S = Attrib.Name;
 end
 if nargin>2
     S=S(t);
