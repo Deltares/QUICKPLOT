@@ -165,7 +165,8 @@ if ~ischar(cmd)
     UD.StructName=StructName;
     UD.Index=[];
     UD.H=H;
-    set(fig,'visible','on','userdata',UD);
+    set(fig,'userdata',UD)
+    set(fig,'visible','on')
     if isempty(UD.Struct)
         Str='  ';
     else
