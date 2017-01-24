@@ -490,11 +490,11 @@ end
 
 
 function browse_tree(h,event)
-if isempty(event)
+if isstruct(event) && isfield(event,'Key')
+    key = event.Key;
+else
     % mouse
     key = get(get(h,'Parent'),'selectiontype');
-else
-    key = event.Key;
 end
 UD=get(get(h,'parent'),'userdata');
 H=UD.H;
