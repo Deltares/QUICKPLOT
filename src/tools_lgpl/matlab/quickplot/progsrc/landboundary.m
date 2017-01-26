@@ -106,7 +106,7 @@ switch type
     case 'plain'
         Data=zeros(0,2);
 end
-if nargin==0
+if nargin<2
     [fn,fp]=uigetfile('*.ldb;*.pli;*.pliz');
     if ~ischar(fn)
         return
