@@ -185,6 +185,9 @@ if exist([S.FileBase '.shx'])
     S.Idx=2*fread(fidx,[2 inf],'int32'); % offset stored in words (16 bit)
     fclose(fidx);
     S.IndexExt='.shx';
+else
+    NShapeMax = 1024;
+    S.Idx = zeros(1,NShapeMax);
 end
 
 while ~feof(fid)
@@ -208,6 +211,10 @@ while ~feof(fid)
     ShapeTp=fread(fid,1,'int32');
     NShapes=NShapes+1;
     if ~Index
+        if NShapes>NShapeMax
+            NShapeMax = 2*NShapeMax;
+            S.Idx(1,NShapeMax) =  0;
+        end
         S.Idx(NShapes)=ftell(fid)-12;
     end
     switch ShapeTp
@@ -279,6 +286,9 @@ S.NShapes=NShapes;
 S.NPrt=TNPrt;
 S.NPnt=TNPnt;
 S.Check='OK';
+if ~Index
+    S.Idx = S.Idx(1:NShapes);
+end
 
 if ~exist([S.FileBase '.dbf'])
     return

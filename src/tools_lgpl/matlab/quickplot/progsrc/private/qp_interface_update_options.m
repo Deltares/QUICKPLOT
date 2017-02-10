@@ -766,9 +766,9 @@ if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'stri
     switch nvalstr
         case 1.9 % EDGE
             if strcmp(geometry,'SGRID-EDGE')
-                PrsTps={'vector','edge','edge M','edge N'};
+                PrsTps={'vector';'edge';'edge M';'edge N'};
             else
-                PrsTps={'vector','edge'};
+                PrsTps={'vector';'edge';'values'};
             end
         case 'strings'
             switch geometry
@@ -790,7 +790,7 @@ if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'stri
                 case {'POLYG'}
                     PrsTps={'polygons'};
                 otherwise
-                    PrsTps={'grid','grid with numbers'};
+                    PrsTps={'grid';'grid with numbers'};
             end
         otherwise
             if nval==6
@@ -1535,7 +1535,7 @@ Ops.axestype=axestype;
 %---- clipping values
 %
 
-if (nval==1 || isfield(Ops,'vectorcolour') || isfield(Ops,'colourdams')) && (lineproperties || TimeSpatial==2)
+if (nval==1 || isfield(Ops,'vectorcolour') || isfield(Ops,'colourdams') || (isfield(Ops,'presentationtype') && strcmp(Ops.presentationtype,'values'))) && (lineproperties || TimeSpatial==2)
     set(findobj(OH,'tag','clippingvals'),'enable','on')
     set(findobj(OH,'tag','clippingvals=?'),'enable','on','backgroundcolor',Active)
     Ops.clippingvalues=get(findobj(OH,'tag','clippingvals=?'),'userdata');

@@ -2950,14 +2950,31 @@ grps = {'map-series','map-info-series', ...
     'map-sed-series','map-infsed-serie','map-sedgs-series', ...
     'map-rol-series','map-infrol-serie', ...
     'map-trit-series','map-inftri-serie'};
+%
+% The average group for sediment transport rates may be time-varying or not.
+%
+agrps = {'map-avg-series' 'map-infavg-serie'};
+Info_agrps = vs_disp(FI,agrps{1},[]);
+if ~isstruct(Info_agrps)
+    agrps = {};
+elseif Info_agrps.SizeDim>1
+    grps = [grps agrps];
+    agrps = {};
+end
+%
+% Remove any groups that are not in the file.
+%
 grps(2,:) = {{t}};
-for i=length(grps):-1:1
+for i=size(grps,2):-1:1
     if ~isstruct(vs_disp(FI,grps{1,i},[]))
         grps(:,i) = [];
     end
 end
+%
+% Create the new file.
+%
 NFS2 = vs_ini([pf '.dat'],[pf '.def']);
-vs_copy(FI,NFS2,'*',[],'map-const','map-version',grps{:},'progressbar');
+vs_copy(FI,NFS2,'*',[],'map-const','map-version',grps{:},agrps{:},'progressbar');
 
 % -------------------------------------------------------------------------
 function OK=optfig(h0)

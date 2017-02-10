@@ -92,7 +92,19 @@ switch NVal
                     elseif strcmp(Ops.presentationtype,'edge n')
                         data.YDamVal(:) = NaN;
                     end
-                    if isfield(data,'XDamVal') && Ops.colourdams
+                    if strcmp(Ops.presentationtype,'values')
+                        xx = (data.X(:,1:end-1) + data.X(:,2:end))/2;
+                        yy = (data.Y(:,1:end-1) + data.Y(:,2:end))/2;
+                        vv = data.XDamVal(:,2:end);
+                        hNew = qp_scalarfield(Parent,[],Ops.presentationtype,'QUAD',xx,yy,[],vv,Ops);
+                        %
+                        xx = (data.X(1:end-1,:) + data.X(2:end,:))/2;
+                        yy = (data.Y(1:end-1,:) + data.Y(2:end,:))/2;
+                        vv = data.YDamVal(2:end,:);
+                        hNew2 = qp_scalarfield(Parent,[],Ops.presentationtype,'QUAD',xx,yy,[],vv,Ops);
+                        %
+                        hNew = cat(2,hNew,hNew2);
+                    elseif isfield(data,'XDamVal') && Ops.colourdams
                         hNew=thindam(data.X,data.Y,data.XDam,data.YDam,'color',data.XDamVal,data.YDamVal,'parent',Parent);
                         set(hNew,'linewidth',Ops.linewidth, ...
                             'linestyle',Ops.linestyle, ...

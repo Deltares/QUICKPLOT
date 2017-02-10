@@ -490,7 +490,7 @@ try
                   if length(m2)>length(m1)
                       diffm=m2(length(m1)+2:length(m2));
                       for mi = 1:length(diffm)
-                          fprintf(logid2,[logf ': <font color=FF0000>' diffm{mi} '</font><br>']);
+                          fprintf(logid2,'%s',[logf ': <font color=FF0000>' diffm{mi} '</font><br>']);
                       end
                   end    
                   if isempty(checkfs)

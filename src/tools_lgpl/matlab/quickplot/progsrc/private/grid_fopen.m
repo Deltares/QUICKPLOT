@@ -95,7 +95,7 @@ else
             try_next='wldep';
         case {'.inc'}
             try_next='fls';
-        case {'.bnd','.thd','.wr','.obs','.crs','.src','.dry'}
+        case {'.bnd','.thd','.wr','.obs','.crs','.src','.dry','.ppl','.rgs'}
             try_next='attrib';
         case '.enc'
             try_next='enclosure';

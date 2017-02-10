@@ -415,25 +415,27 @@ function Out=infile(FI,domain)
 
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'                   'Units'   'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc'  'Loc3D' 'Group'          'Val1'     'Val2'    'SubFld' 'MNK'};
-DataProps={'wave grid'                 ''       [0 0 1 1 0]  0         0     ''       'd'   'd'       ''      'map-series'     'XP'       'YP'       []       0
+DataProps={'wave grid'          ''       [0 0 1 1 0]  0         0     ''       'd'   'd'       ''      'map-series'     'XP'       'YP'       []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'wind velocity'             'm/s'    [1 0 1 1 0]  1         2     'x'      'd'   'd'       ''      'WIND'           'WINDU'    'WINDV'    []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'hsig wave height'          'm'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'HSIGN'    ''         []       0
     'hsig wave vector (mean direction)' ...
-    'm'      [1 0 1 1 0]  1         2     'm'      'd'   'd'       ''      'map-series'     'HSIGN'    'DIR'      []       0
+                                'm'      [1 0 1 1 0]  1         2     'm'      'd'   'd'       ''      'map-series'     'HSIGN'    'DIR'      []       0
     'hsig wave vector (peak direction)' ...
-    'm'      [1 0 1 1 0]  1         2     'm'      'd'   'd'       ''      'map-series'     'HSIGN'    'PDIR'     []       0
+                                'm'      [1 0 1 1 0]  1         2     'm'      'd'   'd'       ''      'map-series'     'HSIGN'    'PDIR'     []       0
     'difference in significant wave height (last iterations)' ...
-    'm'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'DHSIGN'   ''         []       0
-    'mean absolute wave period T_{m-1,0}' 's'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'TMM10'    ''         []       0
+                                'm'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'DHSIGN'   ''         []       0
+    'mean absolute wave period T_{m-1,0}' ....
+                                's'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'TMM10'    ''         []       0
     'mean absolute zero-crossing period T_{m02}' ...
-    's'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'TM02'     ''         []       0
+                                's'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'TM02'     ''         []       0
     'mean wave period T_{m01}'  's'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'PERIOD'   ''         []       0
+    'peak wave period'          's'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'TP'       ''         []       0
     'relative peak wave period' 's'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'RTP'      ''         []       0
     'smoothed peak period'      's'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'TPS'      ''         []       0
     'difference in mean wave period (last iterations)' ...
-    's'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'DRTM01'      ''         []       0
+                                's'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'DRTM01'   ''         []       0
     'mean wave steepness'       '-'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'STEEPW'   ''         []       0
     'mean wave length'          'm'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'WLENGTH'  ''         []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
@@ -449,7 +451,7 @@ DataProps={'wave grid'                 ''       [0 0 1 1 0]  0         0     '' 
     'wave induced force'        'N/m^2'  [1 0 1 1 0]  1         2     'x'      'd'   'd'       ''      'map-series'     'FX'       'FY'       []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'orbital velocity near bottom' ...
-    'm/s'    [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'UBOT'     ''         []       0
+                                'm/s'    [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'UBOT'     ''         []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0};
 
 %============================= AUTODETECTION ==================================

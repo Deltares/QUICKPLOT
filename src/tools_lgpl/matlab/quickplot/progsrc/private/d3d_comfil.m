@@ -47,8 +47,6 @@ function varargout=d3d_comfil(FI,domain,field,cmd,varargin)
 %   $Id$
 
 %========================= GENERAL CODE =======================================
-T_=1; ST_=2; M_=3; N_=4; K_=5;
-
 if nargin<2
     error('Not enough input arguments')
 elseif nargin==2
@@ -96,6 +94,30 @@ switch cmd
     otherwise
         [XYRead,DataRead,DataInCell]=gridcelldata(cmd);
 end
+if isfield(FI,'Partitions')
+    if domain<=FI.Partitions{1}
+        [Ans,FI.NEFIS(domain)] = get_single_partition(FI.NEFIS(domain),1,Props,XYRead,DataRead,DataInCell,varargin);
+    else
+        for d = FI.Partitions{1}:-1:1
+            [Ans(d),FI.NEFIS(d)] = get_single_partition(FI.NEFIS(d),1,Props,XYRead,DataRead,DataInCell,varargin);
+        end
+    end
+else
+    [Ans,FI] = get_single_partition(FI,domain,Props,XYRead,DataRead,DataInCell,varargin);
+end
+varargout{2} = FI;
+varargout{1} = Ans;
+
+function Domains = domains(FI)
+if isfield(FI,'Partitions')
+    Domains = multiline(sprintf('partition %3.3d-',1:FI.Partitions{1}),'-','cell');
+    Domains{end} = 'all partitions';
+else
+    Domains = {};
+end
+
+function [Ans,FI] = get_single_partition(FI,domain,Props,XYRead,DataRead,DataInCell,var_arg_in)
+T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 DimFlag=Props.DimFlag;
 idx={[] [] 0 0 0};
@@ -104,11 +126,11 @@ fidx=find(DimFlag);
 subf=getsubfields(FI,Props);
 if isempty(subf)
     % initialize and read indices ...
-    idx(fidx(1:length(varargin)))=varargin;
+    idx(fidx(1:length(var_arg_in)))=var_arg_in;
 else
     % initialize and read indices ...
-    Props.SubFld=cat(2,varargin{1},Props.SubFld);
-    idx(fidx(1:(length(varargin)-1)))=varargin(2:end);
+    Props.SubFld=cat(2,var_arg_in{1},Props.SubFld);
+    idx(fidx(1:(length(var_arg_in)-1)))=var_arg_in(2:end);
 end
 
 % select appropriate timestep ...
@@ -772,8 +794,6 @@ end
 [T,Tsc]=readtim(FI,Props,idx{T_});
 Ans.Time=T;
 Ans.XInfo.Tscale=Tsc;
-
-varargout={Ans FI};
 % -----------------------------------------------------------------------------
 
 
@@ -794,6 +814,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0     '' 
     'wind velocity'             'm/s'    [1 0 1 1 0]  1         2     'x'      'z'   'z'       ''      'WIND'           'WINDU'   'WINDV'  []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''        ''       []       0
     'hrms wave height'          'm'      [1 0 1 1 0]  1         1     ''       'z'   'z'       ''      'WAVTIM'         'HRMS'    ''       []       0
+%   'wave direction'            'deg'    [1 0 1 1 0]  1         1     ''       'z'   'z'       ''      'WAVTIM'         'DIR'     ''       []       0
     'hrms wave vector'          'm'      [1 0 1 1 0]  1         2     'm'      'z'   'z'       ''      'WAVTIM'         'HRMS'    'DIR'    []       0
     'tp wave period'            's'      [1 0 1 1 0]  1         1     ''       'z'   'z'       ''      'WAVTIM'         'TP'      ''       []       0
     'smoothed peak wave period' 's'      [1 0 1 1 0]  1         1     ''       'z'   'z'       ''      'WAVTIM'         'TPS'     ''       []       0

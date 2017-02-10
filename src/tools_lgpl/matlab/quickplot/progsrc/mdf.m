@@ -357,17 +357,35 @@ if isfield(MDF2,'dry')
     MDF2.dry.MN(:,3:4) = rotate(MDF2.dry.MN(:,3:4),MMAX);
 end
 %
-if isfield(MDF2,'thd')
-    MDF2.thd.MNu(:,1:2) = rotate(MDF2.thd.MNu(:,1:2),MMAX);
-    MDF2.thd.MNu(:,3:4) = rotate(MDF2.thd.MNu(:,3:4),MMAX);
-    MDF2.thd.MNv(:,1:2) = rotate(MDF2.thd.MNv(:,1:2),MMAX);
-    MDF2.thd.MNv(:,3:4) = rotate(MDF2.thd.MNv(:,3:4),MMAX);
-    TMP_MN = MDF2.thd.MNu;
-    TMP_CHAR = MDF2.thd.CHARu;
-    MDF2.thd.MNu = MDF2.thd.MNv;
-    MDF2.thd.CHARu = MDF2.thd.CHARv;
-    MDF2.thd.MNv = TMP_MN;
-    MDF2.thd.CHARv = TMP_CHAR;
+for fldc = {'thd','bar','gat','cdw','w2d','lwl','ppl','rgs'}
+    fld = fldc{1};
+    if isfield(MDF2,fld)
+        FLD = MDF2.(fld);
+        %
+        if isfield(FLD,'MNu')
+            MNu = 'MNu';
+            MNv = 'MNv';
+        else
+            MNu = 'MNKu';
+            MNv = 'MNKv';
+        end
+        FLD.(MNu)(:,1:2) = rotate(FLD.(MNu)(:,1:2),MMAX);
+        FLD.(MNu)(:,3:4) = rotate(FLD.(MNu)(:,3:4),MMAX);
+        FLD.(MNv)(:,1:2) = rotate(FLD.(MNv)(:,1:2),MMAX);
+        FLD.(MNv)(:,3:4) = rotate(FLD.(MNv)(:,3:4),MMAX);
+        TMP_MN = FLD.(MNu);
+        TMP_CHAR = FLD.CHARu;
+        FLD.(MNu) = FLD.(MNv);
+        FLD.CHARu = FLD.CHARv;
+        FLD.(MNv) = TMP_MN;
+        FLD.CHARv = TMP_CHAR;
+        %
+        MDF2.(fld) = FLD;
+    end
+end
+%
+if isfield(MDF2,'fls')
+    MDF2.fls = fldrotate('center',MDF2.fls);
 end
 %
 if isfield(MDF2,'bnd')
@@ -532,6 +550,31 @@ if isfield(MDF,'crs')
     filename = [caseid '.crs'];
     d3d_attrib('write',fullfile(path,filename),MDF.crs);
     MDF.mdf = inifile('seti',MDF.mdf,'','Filcrs',['#' filename '#']);
+end
+%
+keys = {'Filbar' 'bar' 'bar'
+    'Filgat' 'gat' 'gat'
+    'Filcdw' 'cdw' 'cdw'
+    'Fil2dw' 'w2d' '2dw'
+    'Fillwl' 'lwl' 'lwl'
+    'Filppl' 'ppl' 'ppl'
+    'Filrgs' 'rgs' 'rgs'};
+for i = 1:size(keys,1)
+    key = keys{i,1};
+    fld = keys{i,2};
+    ext = keys{i,3};
+    %
+    if isfield(MDF,fld)
+        filename = [caseid '.' ext];
+        d3d_attrib('write',fullfile(path,filename),MDF.(fld));
+        MDF.mdf = inifile('seti',MDF.mdf,'',key,['#' filename '#']);
+    end
+end
+%
+if isfield(MDF,'fls')
+    filename = [caseid '.fls'];
+    wldep('write',fullfile(path,filename),'',MDF.fls);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Filfls',['#' filename '#']);
 end
 %
 filename = [caseid '.mdf'];
@@ -926,6 +969,29 @@ crsname = propget(MF.mdf,'','Filcrs','');
 if ~isempty(crsname)
     crsname = relpath(md_path,crsname);
     MF.crs = d3d_attrib('read',crsname);
+end
+%
+keys = {'Filbar' 'bar'
+    'Filgat' 'gat'
+    'Filcdw' 'cdw'
+    'Fil2dw' 'w2d'
+    'Fillwl' 'lwl'
+    'Filppl' 'ppl'
+    'Filrgs' 'rgs'};
+for i = 1:size(keys,1)
+    key = keys{i,1};
+    fld = keys{i,2};
+    fldname = propget(MF.mdf,'',key,'');
+    if ~isempty(fldname)
+        fldname = relpath(md_path,fldname);
+        MF.(fld) = d3d_attrib('read',fldname);
+    end
+end
+%
+flsname = propget(MF.mdf,'','Filfls','');
+if ~isempty(flsname)
+    flsname = relpath(md_path,flsname);
+    MF.fls = wldep('read',flsname,MF.grd);
 end
 
 

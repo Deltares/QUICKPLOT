@@ -1,13 +1,32 @@
-function d0=pathdistance(varargin)
+function d0 = pathdistance(varargin)
 %PATHDISTANCE Computes the distance along a path.
-%   Computes the distance along the path from the first
-%   point for every point on the path.
+%   Computes the distance along the path from the first point for every
+%   point on the path.
 %
-%   Distance=PATHDISTANCE(XCoord,YCoord,ZCoord)
-%   Distance=PATHDISTANCE(XCoord,YCoord)
-%   Distance=PATHDISTANCE(Coord)
+%   Distance = PATHDISTANCE(Coord) computes the distance in a linear space.
 %
-%   NaNs are skipped in the computation of the path length.
+%   Distance = PATHDISTANCE(XCoord,YCoord) computes the distance in a
+%   two-dimensional Cartesian space.
+%
+%   Distance = PATHDISTANCE(XCoord,YCoord,ZCoord) computes the distance in
+%   three-dimensional Cartesian space.
+%
+%   Distance = PATHDISTANCE(Longitude,Latitude,'Geographic') computes the
+%   distances over the spherical earth.
+%
+%   Distance = PATHDISTANCE(Longitude,Latitude,ZCoord,'Geographic')
+%   computes the distances as
+%   SQRT(spherical earth distance^2 + vertical distance^2)
+%
+%   NaNs are skipped in the computation of the path length, that is, the
+%   vector Distance will contain a NaN for the each NaN included in the
+%   coordinate vector(s), but the accumulated distance will include the
+%   distance between the last point before and the first point after the
+%   gap.
+%
+%   Example:
+%      PATHDISTANCE([1 2 NaN 2 3],[0 0 NaN 1.5 1.5])
+%      returns [0 1 NaN 2.5 3.5]
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               

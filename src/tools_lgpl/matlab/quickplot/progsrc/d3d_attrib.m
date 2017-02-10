@@ -178,7 +178,7 @@ for tpC = types
                 Out.Profile = Profile;
                 Out.AstrSta1 = AComp1;
                 Out.AstrSta2 = AComp2;
-            case 'rigidsheet'
+            case 'rigidsheet' % or porous plate
                 fid=fopen(filename,'r');
                 [Data,N]=fscanf(fid,' %[uUvV] %i %i %i %i %i %i %f',[8 inf]);
                 erryes=~feof(fid);

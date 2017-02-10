@@ -314,7 +314,7 @@ if Props.File~=0
             FI=qp_option(FI,'AttribFiles',Attribs);
         case 'bagmap'
             val{1}=bagmap('read',Attrib,idx{T_},Props.Fld);
-        case {'weir','weir-waqua','thindam','thindam-waqua','enclosure','3dgate'}
+        case {'weir','weir-waqua','thindam','thindam-waqua','enclosure','3dgate','rigidsheet'}
             ThinDam=1;
             bedsigncorrection=-1;
             weirheight=2;
@@ -400,7 +400,7 @@ if Props.File~=0
                 end
             end
             if DimFlag(K_)
-                DimFlag(K_)=0;
+                %DimFlag(K_)=0;
                 idx{K_}=[];
                 elidx(K_-2)=[];
             end
@@ -982,6 +982,10 @@ if ~isempty(Attribs)
                 l=l+1;
                 Str=sprintf('3D gate (%s)',AttribName);
                 DataProps(l,:)={Str       'sQUAD' 'xy'   [0 0 1 1 5]  0        0      ''        'd'   'd'      ''      i      1   };
+            case {'rigidsheet'}
+                l=l+1;
+                Str=sprintf('Sheet or plate (%s)',AttribName);
+                DataProps(l,:)={Str       'sQUAD' 'xy'   [0 0 1 1 5]  0        0      ''        'd'   'd'      ''      i      1   };
             case {'observation points'}
                 l=l+1;
                 Str=sprintf('observation points (%s)',AttribName);
@@ -1133,8 +1137,8 @@ else
     end
 end
 if Props.DimFlag(K_)
-    if ~isempty(strmatch('3D',Props.Name))
-        sz(K_)=Attrib.NLyr;
+    if isfield(Attrib,'KMax')
+        sz(K_)=Attrib.KMax;
     else
         sz(K_)=length(Props.Fld)/Props.NVal;
     end
@@ -1416,27 +1420,7 @@ switch cmd
                 set(Handle_SelectFile,'tooltip',Attribs(NrInList).Name)
             end
         end
-        if isempty(Attribs) || ~strcmp(Attribs(NrInList).FileType,'trirst')
-            set(findobj(mfig,'tag','rstunix'),'enable','off')
-            set(findobj(mfig,'tag','rstpc'),'enable','off')
-            set(findobj(mfig,'tag','rstascii'),'enable','off')
-            if isempty(Attribs) || ~strcmp(Attribs(NrInList).FileType,'3dgate')
-                set(findobj(mfig,'tag','nlyr'),'enable','off','backgroundcolor',Inactive,'string','')
-                set(findobj(mfig,'tag','nlyrtxt'),'enable','off')
-            else
-                set(findobj(mfig,'tag','nlyr'),'enable','on','backgroundcolor',Active,'string','')
-                set(findobj(mfig,'tag','nlyrtxt'),'enable','on')
-                NewFI=options(NewFI,mfig,'nlyr',NaN);
-            end
-            set(findobj(mfig,'tag','nelyr'),'enable','off','backgroundcolor',Inactive,'string','')
-            set(findobj(mfig,'tag','nelyrtxt'),'enable','off')
-            set(findobj(mfig,'tag','nsubs'),'enable','off','backgroundcolor',Inactive,'string','')
-            set(findobj(mfig,'tag','nsubstxt'),'enable','off')
-            set(findobj(mfig,'tag','nturb'),'enable','off','backgroundcolor',Inactive,'string','')
-            set(findobj(mfig,'tag','nturbtxt'),'enable','off')
-            set(findobj(mfig,'tag','nfld'),'enable','off','backgroundcolor',Inactive,'string','')
-            set(findobj(mfig,'tag','nfldtxt'),'enable','off')
-        else
+        if ~isempty(Attribs) && strcmp(Attribs(NrInList).FileType,'trirst')
             Attrib = qp_unwrapfi(Attribs(NrInList));
             set(findobj(mfig,'tag','nelyr'),'enable','on','backgroundcolor',Active,'string','')
             set(findobj(mfig,'tag','nelyrtxt'),'enable','on')
@@ -1459,6 +1443,26 @@ switch cmd
                 set(findobj(mfig,'tag','nturbtxt'),'enable','off')
                 NewFI.Data(NrInList).Data.NTurb=0;
             end
+        else
+            set(findobj(mfig,'tag','rstunix'),'enable','off')
+            set(findobj(mfig,'tag','rstpc'),'enable','off')
+            set(findobj(mfig,'tag','rstascii'),'enable','off')
+            if ~isempty(Attribs) && strcmp(Attribs(NrInList).FileType,'3dgate')
+                set(findobj(mfig,'tag','nlyr'),'enable','on','backgroundcolor',Active,'string','')
+                set(findobj(mfig,'tag','nlyrtxt'),'enable','on')
+                NewFI=options(NewFI,mfig,'nlyr',NaN);
+            else
+                set(findobj(mfig,'tag','nlyr'),'enable','off','backgroundcolor',Inactive,'string','')
+                set(findobj(mfig,'tag','nlyrtxt'),'enable','off')
+            end
+            set(findobj(mfig,'tag','nelyr'),'enable','off','backgroundcolor',Inactive,'string','')
+            set(findobj(mfig,'tag','nelyrtxt'),'enable','off')
+            set(findobj(mfig,'tag','nsubs'),'enable','off','backgroundcolor',Inactive,'string','')
+            set(findobj(mfig,'tag','nsubstxt'),'enable','off')
+            set(findobj(mfig,'tag','nturb'),'enable','off','backgroundcolor',Inactive,'string','')
+            set(findobj(mfig,'tag','nturbtxt'),'enable','off')
+            set(findobj(mfig,'tag','nfld'),'enable','off','backgroundcolor',Inactive,'string','')
+            set(findobj(mfig,'tag','nfldtxt'),'enable','off')
         end
         %
         if isempty(Attribs) || (~strcmp(Attribs(NrInList).FileType,'wldep') && ...
