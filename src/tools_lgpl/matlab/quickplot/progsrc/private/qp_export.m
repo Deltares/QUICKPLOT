@@ -77,6 +77,8 @@ switch expType
     case {'grid file','grid file (old format)'}
         % assumptions: 2D, one timestep
         ext='grd';
+    case {'netcdf file'}
+        ext='nc';
     case {'quickin file','morsys field file','delft3d-mor field file','box file','simona box file'}
         % assumptions: 2D, one timestep
         % morsys field file: NVal=1
@@ -397,6 +399,8 @@ for f=1:ntim
                 case 'grid file (old format)'
                     wlgrid('writeold',filename,G);
             end
+        case {'netcdf file'}
+            export_netcdf(filename,data)
         case {'quickin file','morsys field file','delft3d-mor field file','box file','simona box file'}
             for fld=1:length(flds)
                 Temp=getfield(data,flds{fld});
@@ -833,4 +837,84 @@ for f=1:ntim
             end
             save(filename,'data',saveops{:});
     end
+end
+
+function export_netcdf(filename,data)
+mode = netcdf.getConstant('NETCDF4');
+mode = bitor(mode,netcdf.getConstant('CLASSIC_MODEL'));
+ncid = netcdf.create(filename,mode);
+ui_message('warning','The netCDF export option is still under development.')
+try
+    for g = 1:length(data)
+        if length(data)>1
+            prefix = sprintf('DATA%i_',g);
+        else
+            prefix = '';
+        end
+        DATA = data(g);
+        %
+        if isfield(DATA,'FaceNodeConnect')
+            % save as UGRID
+            nNodes = [prefix 'nNodes'];
+            nFaces = [prefix 'nFaces'];
+            maxNodesPerFace = [prefix 'maxNodesPerFace'];
+            dim_nNodes = netcdf.defDim(ncid,nNodes,length(DATA.X));
+            dim_nFaces = netcdf.defDim(ncid,nFaces,size(DATA.FaceNodeConnect,1));
+            dim_maxNodesPerFace = netcdf.defDim(ncid,maxNodesPerFace,size(DATA.FaceNodeConnect,2));
+            %
+            X = [prefix 'X'];
+            var_X = netcdf.defVar(ncid,X,'double',dim_nNodes);
+            if isfield(DATA,'XUnits') && strcmp(DATA.XUnits,'deg')
+                netcdf.putAtt(ncid,var_X,'standard_name','longitude')
+                netcdf.putAtt(ncid,var_X,'units','degrees_east')
+            else
+                netcdf.putAtt(ncid,var_X,'standard_name','projection_x_coordinate')
+                if isfield(DATA,'XUnits') && ~isempty(DATA.XUnits)
+                    netcdf.putAtt(ncid,var_X,'units',DATA.XUnits)
+                end
+            end
+            %
+            Y = [prefix 'Y'];
+            var_Y = netcdf.defVar(ncid,Y,'double',dim_nNodes);
+            if isfield(DATA,'YUnits') && strcmp(DATA.YUnits,'deg')
+                netcdf.putAtt(ncid,var_Y,'standard_name','latitude');
+                netcdf.putAtt(ncid,var_Y,'units','degrees_north')
+            else
+                netcdf.putAtt(ncid,var_Y,'standard_name','projection_y_coordinate')
+                if isfield(DATA,'YUnits') && ~isempty(DATA.YUnits)
+                    netcdf.putAtt(ncid,var_Y,'units',DATA.YUnits)
+                end
+            end
+            %
+            FaceNodeConnect = [prefix 'FaceNodeConnect'];
+            var_FaceNodeConnect = netcdf.defVar(ncid,FaceNodeConnect,'int',[dim_maxNodesPerFace dim_nFaces]);
+            netcdf.defVarFill(ncid,var_FaceNodeConnect,false,-999);
+            netcdf.putAtt(ncid,var_FaceNodeConnect,'cf_role','face_node_connectivity')
+            netcdf.putAtt(ncid,var_FaceNodeConnect,'start_index',1)
+            %
+            Mesh = [prefix 'Mesh'];
+            var_Mesh = netcdf.defVar(ncid,Mesh,'int',[]);
+            netcdf.putAtt(ncid,var_Mesh,'cf_role','mesh_topology')
+            netcdf.putAtt(ncid,var_Mesh,'node_coordinates',[X ' ' Y])
+            netcdf.putAtt(ncid,var_Mesh,'face_node_connectivity',FaceNodeConnect)
+            netcdf.putAtt(ncid,var_Mesh,'node_dimension',nNodes)
+            netcdf.putAtt(ncid,var_Mesh,'face_dimension',nFaces)
+            %
+            netcdf.endDef(ncid)
+            %
+            netcdf.putVar(ncid,var_X,DATA.X)
+            netcdf.putVar(ncid,var_Y,DATA.Y)
+            netcdf.putVar(ncid,var_FaceNodeConnect,DATA.FaceNodeConnect')
+        else
+            error('Exporting this data set to netCDF not yet supported')
+        end
+    end
+    netcdf.close(ncid)
+catch Exception1
+    try
+        netcdf.close(ncid)
+    catch
+        % ignore or append
+    end
+    rethrow(Exception1)
 end

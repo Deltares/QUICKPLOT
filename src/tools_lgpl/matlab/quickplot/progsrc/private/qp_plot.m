@@ -542,7 +542,7 @@ end
 
 if Props.NVal==6
     Ops.Thresholds = 0.5:1:length(data(1).Classes);
-elseif isfield(Ops,'thresholds') && ~strcmp(Ops.thresholds,'none')
+elseif isfield(Ops,'thresholds') && ~strcmp(Ops.thresholds,'none') && ~isequal(Ops.thresholds,[])
     miv = inf;
     mv  = -inf;
     for d = 1:length(data)
@@ -607,7 +607,7 @@ end
 TStr='';
 if isfield(data,'Time') && length(data(1).Time)==1
     TStr = qp_time2str(data(1).Time,DimFlag(T_));
-    if ~isnan(Ops.axestimezone_shift)
+    if isfield(Ops,'axestimezone_shift') && ~isnan(Ops.axestimezone_shift)
         TStr = [TStr ' (' Ops.axestimezone_str ')'];
     end
 end
@@ -932,7 +932,7 @@ if isfield(Ops,'basicaxestype') && ~isempty(Ops.basicaxestype) && length(Parent)
         switch axestype{d}
             case 'Time'
                 dimension{d} = 'time';
-                if isnan(Ops.axestimezone_shift)
+                if ~isfield(Ops,'axestimezone_shift') || isnan(Ops.axestimezone_shift)
                     unit{d} = '';
                 else
                     unit{d} = Ops.axestimezone_str;

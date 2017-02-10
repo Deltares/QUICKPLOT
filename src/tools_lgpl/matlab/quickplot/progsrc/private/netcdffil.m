@@ -1124,16 +1124,20 @@ else
             Insert.varid = {'node_index' Insert.varid};
             Out(end+1) = Insert;
             %
-            Insert.Name = [Nm ' - edge indices'];
-            Insert.Geom = 'UGRID-EDGE';
-            Insert.varid{1} = 'edge_index';
-            Out(end+1) = Insert;
+            if ~isempty(Info.Mesh{5})
+                Insert.Name = [Nm ' - edge indices'];
+                Insert.Geom = 'UGRID-EDGE';
+                Insert.varid{1} = 'edge_index';
+                Out(end+1) = Insert;
+            end
             %
-            Insert.Name = [Nm ' - face indices'];
-            Insert.Geom = 'UGRID-FACE';
-            Insert.DataInCell = 1;
-            Insert.varid{1} = 'face_index';
-            Out(end+1) = Insert;
+            if length(Info.Mesh)>=6 && ~isempty(Info.Mesh{6})
+                Insert.Name = [Nm ' - face indices'];
+                Insert.Geom = 'UGRID-FACE';
+                Insert.DataInCell = 1;
+                Insert.varid{1} = 'face_index';
+                Out(end+1) = Insert;
+            end
         end
         %
         if strcmp(standard_name,'discharge') && strcmp(Insert.Geom,'UGRID-EDGE')

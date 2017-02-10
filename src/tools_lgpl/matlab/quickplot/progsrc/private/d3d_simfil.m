@@ -307,6 +307,43 @@ switch FI.FileType(9:end)
                 end
                 Ans.X(1:nM,1:nN) = FI.grd.X(idx{M_},idx{N_});
                 Ans.Y(1:nM,1:nN) = FI.grd.Y(idx{M_},idx{N_});
+            case 'bed levels'
+                F = FI.grd;
+                F.X(end+1,:) = NaN;
+                F.Y(end+1,:) = NaN;
+                F.X(:,end+1) = NaN;
+                F.Y(:,end+1) = NaN;
+                F.QP_Options.AttribFiles.Data = {FI.dep};
+                F.QP_Options.AttribFiles.FileType = 'wldep';
+                F.QP_Options.AttribFiles.QP_Options.Dpsopt = 'TODO';
+                F.QP_Options.AttribFiles.QP_Options.DOrder = 2;
+                F.QP_Options.AttribFiles.QP_Options.DataLocation = 'TODO';
+                %
+                Props.VecType    = '';
+                Props.Loc        = 'd';
+                Props.ReqLoc     = 'd';
+                Props.Loc3D      = '';
+                Props.File       = 1;
+                Props.Fld        = -1;
+                Props.UseGrid    = 1;
+                Ans = gridfil(F,idom,Props,'griddata',idx{M_},idx{N_});
+            case 'thin dams'
+                F = FI.grd;
+                F.X(end+1,:) = NaN;
+                F.Y(end+1,:) = NaN;
+                F.X(:,end+1) = NaN;
+                F.Y(:,end+1) = NaN;
+                F.QP_Options.AttribFiles = FI.thd;
+                F.QP_Options.AttribFiles.FileType = 'thindam';
+                %
+                Props.VecType    = '';
+                Props.Loc        = 'd';
+                Props.ReqLoc     = 'd';
+                Props.Loc3D      = '';
+                Props.File       = 1;
+                Props.Fld        = 1;
+                Props.UseGrid    = 1;
+                Ans = gridfil(F,idom,Props,'griddata',idx{M_},idx{N_});
             otherwise
                 Ans = [];
         end
@@ -508,10 +545,122 @@ switch FI.FileType
             end
         end
     case 'Delft3D D-Flow2D3D'
-        Out(1).Name = 'grid';
-        Out(1).Geom = 'sQUAD';
-        Out(1).Coords = 'xy';
-        Out(1).DimFlag([M_ N_]) = 1;
+        flds = {'grd','-','dep','thd','dry','-','bnd','bct','-','sta','crs'};
+        %
+        nfld = 0;
+        for i = 1:length(flds)
+            if isequal(flds{i},'-')
+                nfld = nfld+1;
+            elseif isfield(FI,flds{i})
+                switch flds{i}
+                    case 'bnd'
+                        nfld = nfld+length(unique(FI.bnd.BndType));
+                    case 'bct'
+                        nfld = nfld+length(FI.bct.Table);
+                    otherwise
+                        nfld = nfld+1;
+                end
+            end
+        end
+        %
+        Out(1:nfld) = Out(1);
+        %
+        ifld = 0;
+        for i = 1:length(flds)
+            if isequal(flds{i},'-')
+                ifld = ifld+1;
+            elseif isfield(FI,flds{i})
+                ifld = ifld+1;
+                switch flds{i}
+                    case 'grd'
+                        Out(ifld).Name = 'grid';
+                        Out(ifld).Geom = 'sQUAD';
+                        Out(ifld).Coords = 'xy';
+                        Out(ifld).DimFlag([M_ N_]) = 1;
+                    case 'dep'
+                        Out(ifld).Name = 'bed levels';
+                        Out(ifld).Geom = 'sQUAD';
+                        Out(ifld).Coords = 'xy';
+                        Out(ifld).DimFlag([M_ N_]) = 1;
+                        Out(ifld).NVal = 1;
+                        dpsopt = rmhash(inifile('geti',FI.mdf,'*','Dpsopt','#MEAN#'));
+                        if strcmpi(dpsopt,'DP')
+                            Out(ifld).DataInCell = 1;
+                        end
+                    case 'thd'
+                        Out(ifld).Name = 'thin dams';
+                        Out(ifld).Geom = 'sQUAD';
+                        Out(ifld).Coords = 'xy';
+                        Out(ifld).DimFlag([M_ N_]) = 1;
+                    case 'dry'
+                        Out(ifld).Name = 'dry points';
+                        Out(ifld).Geom = 'sQUAD';
+                        Out(ifld).Coords = 'xy';
+                        Out(ifld).DimFlag([M_ N_]) = 1;
+                        Out(ifld).NVal = 1;
+                    case 'bnd'
+                        ifld = ifld-1;
+                        %
+                        bTypes = unique(FI.bnd.BndType);
+                        for ib = 1:length(bTypes)
+                            ifld = ifld+1;
+                            bType = bTypes(ib);
+                            switch bType
+                                case 'Z'
+                                    bType = 'water level';
+                                    bTyp2 = 'water elevation (z)';
+                                case 'C'
+                                    bType = 'current';
+                                    bTyp2 = 'current         (c)';
+                                case 'Q'
+                                    bType = 'discharge';
+                                    bTyp2 = 'flux/discharge  (q)';
+                                case 'R'
+                                    bType = 'Riemann';
+                                    bTyp2 = 'riemann         (r)';
+                                case 'T'
+                                    bType = 'total discharge';
+                                    bTyp2 = 'total discharge (t)';
+                                case 'N'
+                                    bType = 'Neumann';
+                                    bTyp2 = 'neumann         (n)';
+                            end
+                            Out(ifld).Name = [bType ' open boundaries'];
+                            Out(ifld).Geom = 'POLYL';
+                            Out(ifld).Coords = 'xy';
+                            Out(ifld).DimFlag(ST_) = 1;
+                            Out(ifld).NVal = 4;
+                            %
+                            for ib2 = 1:length(FI.bct.Table)
+                                bType2 = FI.bct.Table(ib2).Parameter(2).Name(1:19);
+                                if ~strcmp(bType2,bTyp2)
+                                    continue
+                                end
+                                %
+                                ifld = ifld+1;
+                                Out(ifld).Name = [bType ' time series at ' FI.bct.Table(ib2).Location];
+                                Out(ifld).Geom = 'PNT';
+                                Out(ifld).DimFlag([ST_ T_]) = 1;
+                                Out(ifld).NVal = 1;
+                            end
+                        end
+                    case 'bct'
+                        % skip treated above
+                    case 'sta'
+                        Out(ifld).Name = 'observation points';
+                        Out(ifld).Geom = 'PNT';
+                        Out(ifld).Coords = 'xy';
+                        Out(ifld).DimFlag(M_) = 1;
+                        Out(ifld).NVal = 4;
+                    case 'crs'
+                        Out(ifld).Name = 'cross sections';
+                        Out(ifld).Geom = 'POLYL';
+                        Out(ifld).Coords = 'xy';
+                        Out(ifld).DimFlag(M_) = 1;
+                        Out(ifld).NVal = 4;
+                end
+            end
+        end
     case 'Delft3D D-Flow FM'
         Out(1).Name = 'mesh';
         Out(1).Geom = 'UGRID-NODE';
@@ -697,3 +846,23 @@ if ~isfield(FI,'strucXY')
     FI.strucXY = branch_idchain2xy(FI.ntw,bId,bCh);
 end
 % -----------------------------------------------------------------------------
+
+function str = rmhash(str)
+if iscell(str)
+    for i = 1:length(str)
+        str{i} = rmhash(str{i});
+    end
+elseif ischar(str)
+    hashes = strfind(str,'#');
+    if length(hashes)>1
+        str1 = deblank(str(1:hashes(1)-1));
+        if isempty(str1)
+            str = str(hashes(1)+1:hashes(2)-1);
+        else
+            str = str1;
+        end
+    elseif length(hashes)==1
+        str = str(1:hashes(1)-1);
+    end
+    str = deblank(str);
+end

@@ -771,10 +771,17 @@ if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'stri
                 PrsTps={'vector','edge'};
             end
         case 'strings'
-            if multiple(T_)
-                PrsTps={'tracks'}; % {'labels';'tracks'};
-            else
-                PrsTps={'labels';'markers'};
+            switch geometry
+                case {'POLYG'}
+                    PrsTps={'polygons';'labels';'markers'};
+                case {'POLYL'}
+                    PrsTps={'polylines';'labels';'markers'};
+                otherwise
+                    if multiple(T_)
+                        PrsTps={'tracks'}; % {'labels';'tracks'};
+                    else
+                        PrsTps={'labels';'markers'};
+                    end
             end
         case 'boolean'
             PrsTps={'patches'};
@@ -1555,6 +1562,9 @@ if nval>=0
     if (multiple(M_) && multiple(N_)) && ~multiple(K_) && ~multiple(T_)
         ExpTypes{end+1}='grid file';
         ExpTypes{end+1}='grid file (old format)';
+    end
+    if strncmp(geometry,'UGRID',5) && multiple(M_) && ~multiple(K_) && ~multiple(T_)
+        ExpTypes{end+1}='netCDF file';
     end
     if sum(multiple)==1 && sum(multiple([M_ N_]))==1 && nval==0
         ExpTypes{end+1}='spline';
