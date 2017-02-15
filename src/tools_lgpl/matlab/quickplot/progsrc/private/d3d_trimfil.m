@@ -744,8 +744,8 @@ if DataRead
     switch Props.Name
         case {'velocity in depth averaged flow direction','velocity normal to depth averaged flow direction'}
             if zlayermodel
-                sz=size(val1);
-                dav1=zeros(sz(1:3));
+                szv1=size(val1);
+                dav1=zeros(szv1(1:3));
                 dav2=dav1;
                 %division by water depth h is not necessary to determine direction ...
                 %h=dav1;
@@ -757,8 +757,8 @@ if DataRead
                 %dav1=dav1./h; dav2=dav2./h;
             else
                 thk=vs_let(FI,'map-const','THICK','quiet!');
-                sz=size(val1);
-                dav1=zeros(sz(1:3));
+                szv1=size(val1);
+                dav1=zeros(szv1(1:3));
                 dav2=dav1;
                 for k=1:length(thk)
                     dav1=dav1+val1(:,:,:,k)*thk(k);
@@ -785,17 +785,22 @@ else
 end
 %======================== SPECIFIC CODE ===================================
 % select active points ...
-act=abs(vs_get(FI,'map-const','KCS',idx([M_ N_]),'quiet!'));
+idx1 = idx;
+idx1{M_}(end+1) = min(idx1{M_}(end)+1,sz(M_));
+idx1{N_}(end+1) = min(idx1{N_}(end)+1,sz(N_));
+act=abs(vs_get(FI,'map-const','KCS',idx1([M_ N_]),'quiet!'));
 switch Props.ReqLoc
     case 'd'
         %  act=vs_get(FI,'TEMPOUT','CODB',idx([M_ N_]),'quiet!');
-        act=conv2(double(act==1),[1 1;1 1],'same')>0;
+        act=conv2(double(act==1),[1 1;1 1],'valid')>0;
         gridact=act;
     otherwise % 'z', always if DataInCell
         if DataInCell
             %gridact=vs_get(FI,'TEMPOUT','CODB',idx([M_ N_]),'quiet!');
-            gridact=conv2(double(act==1),[1 1;1 1],'same')>0;
+            gridact=conv2(double(act==1),[1 1;1 1],'valid')>0;
+            act=act(1:end-1,1:end-1);
         else
+            act=act(1:end-1,1:end-1);
             gridact=act;
         end
 end

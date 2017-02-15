@@ -578,8 +578,8 @@ else
    yw=(ycor([1 1:end-1],[1 1:end-1])+ycor(:,[1 1:end-1])+ycor([1 1:end-1],:)+ycor)/4;
    xcor=xcor(ind);
    ycor=ycor(ind);
-   xwi=xw(ind_S1);
-   ywi=yw(ind_S1);
+   xwi=reshape(xw(ind_S1),size(ind_S1));
+   ywi=reshape(yw(ind_S1),size(ind_S1));
    if ~isempty(xwi)
       I=isnan(xwi(:,1));
       xwi(I,1)=mean(xcor(I,:),2);

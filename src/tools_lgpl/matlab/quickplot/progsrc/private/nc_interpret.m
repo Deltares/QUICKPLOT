@@ -866,11 +866,13 @@ for ivar = 1:nvars
             % if there are multiple vertical coordinates and some have been
             % specified in the file, then keep only those.
             if any(Info.Z>0)
-                iZ = iZ(Info.Z>0);
+                Info.Z = Info.Z(Info.Z>0);
+                iZ = Info.Z;
             end
             % if there are still multiple vertical coordinates then select
-            % the first one
-            if length(iZ)>1
+            % the first one - warn about it if we are not doing this by
+            % means of automatic detection
+            if length(iZ)>1 && Info.Z(1)>0
                 Names = {nc.Dataset(iZ).Name};
                 ui_message('error', ...
                     [{sprintf('Problem detecting vertical coordinate for "%s".',Info.Name) ...

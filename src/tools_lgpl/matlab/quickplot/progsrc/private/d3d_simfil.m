@@ -631,17 +631,19 @@ switch FI.FileType
                             Out(ifld).DimFlag(ST_) = 1;
                             Out(ifld).NVal = 4;
                             %
-                            for ib2 = 1:length(FI.bct.Table)
-                                bType2 = FI.bct.Table(ib2).Parameter(2).Name(1:19);
-                                if ~strcmp(bType2,bTyp2)
-                                    continue
+                            if strcmp(FI.bnd(ib).Forcing,'T')
+                                for ib2 = 1:length(FI.bct.Table)
+                                    bType2 = FI.bct.Table(ib2).Parameter(2).Name(1:19);
+                                    if ~strcmp(bType2,bTyp2)
+                                        continue
+                                    end
+                                    %
+                                    ifld = ifld+1;
+                                    Out(ifld).Name = [bType ' time series at ' FI.bct.Table(ib2).Location];
+                                    Out(ifld).Geom = 'PNT';
+                                    Out(ifld).DimFlag([ST_ T_]) = 1;
+                                    Out(ifld).NVal = 1;
                                 end
-                                %
-                                ifld = ifld+1;
-                                Out(ifld).Name = [bType ' time series at ' FI.bct.Table(ib2).Location];
-                                Out(ifld).Geom = 'PNT';
-                                Out(ifld).DimFlag([ST_ T_]) = 1;
-                                Out(ifld).NVal = 1;
                             end
                         end
                     case 'bct'

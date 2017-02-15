@@ -543,7 +543,7 @@ end
 
 if Props.NVal==6
     Ops.Thresholds = 0.5:1:length(data(1).Classes);
-elseif isfield(Ops,'thresholds') && ~strcmp(Ops.thresholds,'none') && ~isequal(Ops.thresholds,[])
+elseif isfield(Ops,'thresholds') && ~strcmp(Ops.thresholds,'none')
     miv = inf;
     mv  = -inf;
     for d = 1:length(data)
