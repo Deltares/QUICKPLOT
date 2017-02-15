@@ -457,7 +457,15 @@ if XYRead || XYneeded
         for iCoord = 1:length(coordname)
             vdim = getfield(Info,coordname{iCoord});
             if isempty(vdim)
-                continue
+                if length(Props.varid)>1
+                    Info2 = FI.Dataset(Props.varid(2)+1);
+                    vdim = getfield(Info2,coordname{iCoord});
+                    if ~isempty(vdim)
+                        Info = Info2;
+                    else
+                        continue
+                    end
+                end
             end
             CoordInfo = FI.Dataset(vdim);
             if isempty(CoordInfo.Attribute)
@@ -806,6 +814,8 @@ if XYRead || XYneeded
                 szV = size(Ans.Val);
             elseif isfield(Ans,'XComp')
                 szV = size(Ans.XComp);
+            else
+                szV = NaN*szZ;
             end
             mismatch = szZ~=szV;
             if any(mismatch)
@@ -960,6 +970,8 @@ Dummy.Name='-------';
 %     end
 % end
 %
+nmesh  = 0;
+meshes = cell(0,2);
 if nvars==0
     Out = Out([]);
 else
@@ -1069,6 +1081,7 @@ else
         end
         %
         if ~isempty(Info.Mesh)
+            nmesh = nmesh+1;
             Insert.Geom = 'UGRID';
             Insert.Coords = 'xy';
             Insert.hasCoords=1;
@@ -1096,6 +1109,17 @@ else
             end
         elseif ~isempty(Info.X) && ~isempty(Info.Y)
             Insert.hasCoords=1;
+            mesh = [Info.X Info.Y];
+            found = false;
+            for m = 1:size(meshes,1)
+                if isequal(meshes{m,2},mesh)
+                    found = true;
+                    break
+                end
+            end
+            if ~found
+                meshes(end+1,:) = {size(Out,1)+1 mesh};
+            end
             if ~isempty(Info.XBounds) && ~isempty(Info.YBounds)
                 Insert.Geom = 'POLYG';
                 Insert.ClosedPoly = 1;
@@ -1114,6 +1138,10 @@ else
         %
         Insert.varid = Info.Varid;
         %
+        if ~isempty(Info.Mesh) && isequal(Info.Mesh{3},-1)
+            Insert.varid = {'node_index' Insert.varid};
+        end
+        %
         Out(end+1)=Insert;
         %
         if ~isempty(Info.Mesh) && isequal(Info.Mesh{3},-1)
@@ -1121,7 +1149,7 @@ else
             %
             Insert.Name = [Nm ' - node indices'];
             Insert.NVal = 1;
-            Insert.varid = {'node_index' Insert.varid};
+            Insert.varid{1} = 'node_index';
             Out(end+1) = Insert;
             %
             if ~isempty(Info.Mesh{5})
@@ -1150,7 +1178,48 @@ else
     end
     Out(1)=[];
 end
-
+nOut = length(Out);
+for m = size(meshes,1):-1:1
+    mo = nOut + m;
+    Out(mo)=Out(meshes{m,1});
+    crd = meshes{m,2};
+    XInfo = FI.Dataset(crd(1));
+    YInfo = FI.Dataset(crd(2));
+    %
+    if nmesh==0 && size(meshes,1)==1
+        name = 'grid';
+    else
+        xname = XInfo.Name;
+        yname = YInfo.Name;
+        name = ['grid (' xname ,', ', yname ')'];
+    end
+    Out(mo).Name = name;
+    Out(mo).Units = '';
+    Out(mo).NVal = 0;
+    Out(mo).varid = crd-1;
+    %
+    Out(mo).DimName = cell(1,5);
+    Out(mo).DimFlag = ~isnan(XInfo.TSMNK) | ~isnan(YInfo.TSMNK);
+    for d = 1:length(XInfo.TSMNK)
+        if ~isnan(XInfo.TSMNK(d))
+            Out(mo).DimName{d} = FI.Dimension(XInfo.TSMNK(d)+1).Name;
+        elseif ~isnan(YInfo.TSMNK(d))
+            Out(mo).DimName{d} = FI.Dimension(YInfo.TSMNK(d)+1).Name;
+        end
+    end
+    if Out(mo).DimFlag(M_) && Out(mo).DimFlag(N_)
+        Out(mo).Geom = '';
+    else
+        Out(mo).Geom = 'PNT';
+    end
+    Out(mo).hasCoords   = 1;
+    if isempty(XInfo.XBounds)
+        Out(mo).ClosedPoly = 0;
+    else
+        Out(mo).Geom = 'POLYG';
+        Out(mo).ClosedPoly = 1;
+    end
+end
 %
 % detect vector quantities
 %
@@ -1285,14 +1354,6 @@ for i = length(OutCoords)+(1:length(OutNoCoords))
 end
 %
 for i = 1:length(Out)
-   if strcmp(Out(i).Geom,'PNT')
-      Out(i).Name = [Out(i).Name ' (points)'];
-   elseif strncmp(Out(i).Geom,'UGRID',5)
-      %Out(i).Name = [Out(i).Name ' (' lower(Out(i).Geom) ')'];
-   end
-end
-%
-for i = 1:length(Out)
     if iscell(Out(i).varid)
         %TODO
     elseif ~isempty(Out(i).varid)
@@ -1303,6 +1364,14 @@ for i = 1:length(Out)
             end
         end
     end
+end
+%
+for i = 1:length(Out)
+   if strcmp(Out(i).Geom,'PNT')
+      Out(i).Name = [Out(i).Name ' (points)'];
+   elseif strncmp(Out(i).Geom,'UGRID',5)
+      %Out(i).Name = [Out(i).Name ' (' lower(Out(i).Geom) ')'];
+   end
 end
 %
 Meshes = zeros(0,2);
@@ -1421,10 +1490,12 @@ if iscell(Props.varid)
             error('Size function not yet implemented for special case "%s"',Props.varid{1})
     end
 elseif ~isempty(Props.varid)
-    Info=FI.Dataset(Props.varid(1)+1);
-    for d_ = 1:ndims
-        if Props.DimFlag(d_)
-            sz(d_) = FI.Dimension(Info.TSMNK(d_)+1).Length;
+    for q = 1:length(Props.varid)
+        Info=FI.Dataset(Props.varid(q)+1);
+        for d_ = 1:ndims
+            if Props.DimFlag(d_) && Info.TSMNK(d_)>=0
+                sz(d_) = FI.Dimension(Info.TSMNK(d_)+1).Length;
+            end
         end
     end
 end

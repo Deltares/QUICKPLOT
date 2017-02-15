@@ -1049,11 +1049,16 @@ switch selection.Type
                 switch GRID.ValLocation
                     case 'NODE'
                         ip    = Range{1};
-                        lface = all(ismember(GRID.FaceNodeConnect,ip) | isnan(GRID.FaceNodeConnect),2);
-                        ip    = ip(~ismember(ip,GRID.FaceNodeConnect(lface,:)));
+                        if isfield(GRID,'FaceNodeConnect')
+                            lface = all(ismember(GRID.FaceNodeConnect,ip) | isnan(GRID.FaceNodeConnect),2);
+                            ip    = ip(~ismember(ip,GRID.FaceNodeConnect(lface,:)));
+                            CNECT = GRID.FaceNodeConnect(lface,:);
+                        else
+                            lface = [];
+                            CNECT = [];
+                        end
                         ledge = all(ismember(GRID.EdgeNodeConnect,ip),2);
                         ip    = ip(~ismember(ip,GRID.EdgeNodeConnect(ledge,:)));
-                        CNECT = GRID.FaceNodeConnect(lface,:);
                         set(SelectedPoint, ...
                             'xdata',GRID.X(ip), ...
                             'ydata',GRID.Y(ip))
@@ -1293,7 +1298,7 @@ delete(Go)
 gridcol = qp_settings('gridviewgridcolor')/255;
 off = 'off';
 %
-if isfield(GRID,'FaceNodeConnect') % unstructured
+if isfield(GRID,'FaceNodeConnect') || isfield(GRID,'EdgeNodeConnect') % unstructured 1D or 2D (... or 3D)
     [GRID.Type] = deal('ugrid');
     if length(GRID)>1
         error('Multi-grid model not yet supported by Grid View.')

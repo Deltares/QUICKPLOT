@@ -50,6 +50,7 @@ currdir=pwd;
 logid=-1;
 logname='validation_log.html';
 sc={'<font color=FF0000>Failed</font> (open <a href="reference">reference folder</a>)','<font color=00AA00>Successful</font>'};
+sc3={'<font color=FF0000>Failed</font> (open <a href="reference">reference folder</a>)','<font color=00AA00>Successful</font> (open <a href="reference">reference folder</a>)','<font color=00AA00>Successful</font>'};
 AnyFail=0;
 NTested=0;
 NFailed=0;
@@ -264,12 +265,13 @@ try
                   else
                      PrevProps=cmpFile.Data;
                   end
-                  DiffFound=vardiff(Props,PrevProps)>1;
+                  DiffFound = vardiff(Props,PrevProps)>1;
                   fprintf(logid2,'Comparing new and old fields:<br>\n');
                   if DiffFound
+                     DiffMessage = 1; % Failed
                      localsave(WrkFile,Props,saveops);
                      if length(Props)~=length(PrevProps)
-                        fprintf(logid2,'Number of domains differs.<br>\n')
+                        fprintf(logid2,'Number of domains differs.<br>\n');
                         fprintf(logid2,'Reference data set contains %i domains.<br>\n',length(PrevProps));
                         fprintf(logid2,'New data set contains %i domains.<br>\n',length(Props));
                      else
@@ -310,14 +312,18 @@ try
                            drawnow
                         end
                         if JustAddedData
-                           DiffFound=0;
+                           DiffMessage = 2; % Successful but still option to open reference folder
+                           DiffFound = 0;
                            if strcmp(frcolor,'00AA00')
                               frcolor='000000';
                            end
                         end
                      end
+                  else
+                     fprintf(logid2,'No differences.<br>\n');
+                     DiffMessage = 3; % Successful
                   end
-                  fprintf(logid2,'Conclusion: %s<br>\n',sc{2-DiffFound});
+                  fprintf(logid2,'Conclusion: %s<br>\n',sc3{DiffMessage});
                else
                   localsave(RefFile,Props,saveops);
                end

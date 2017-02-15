@@ -1,4 +1,4 @@
-function nc = nc_interpret(nc,NumDomains,DomainOffset,nDigits)
+function nc = nc_interpret(nc,NumPartitions,PartNr_StrOffset,nDigits,Part1)
 %NC_INTERPRET  Interpret the netCDF data based on conventions.
 %    NC_OUT = NC_INTERPRET(NC_IN)
 %
@@ -44,12 +44,12 @@ if nargin>1
     nc1.Dimension = rmfield(nc1.Dimension,'Length');
     nc1.Dataset   = rmfield(nc1.Dataset,'Size');
     nc1 = rmfield(nc1,'Attribute');
-    domainFormat = ['%' num2str(nDigits) '.' num2str(nDigits) 'd'];
+    partNrFormat = ['%' num2str(nDigits) '.' num2str(nDigits) 'd'];
     %
     FileName2  = nc.Filename;
-    Partitions = cell(1,NumDomains);
-    for i = 1:NumDomains
-        FileName2(DomainOffset+(1:nDigits)) = sprintf(domainFormat,i-1);
+    Partitions = cell(1,NumPartitions);
+    for i = 1:NumPartitions
+        FileName2(PartNr_StrOffset+(1:nDigits)) = sprintf(partNrFormat,i+Part1-1);
         nc2 = nc_info(FileName2);
         Partitions{i} = nc_interpret(nc2);
         nc2 = rmfield(nc2,'Filename');
@@ -58,16 +58,16 @@ if nargin>1
         nc2 = rmfield(nc2,'Attribute');
         %
         if vardiff(nc1,nc2)>1
-            NumDomains = 1;
+            NumPartitions = 1;
             break
         end
     end
     %
-    nc.NumDomains   = NumDomains;
-    if NumDomains>1
+    nc.NumDomains   = NumPartitions;
+    if NumPartitions>1
         nc.Partitions = Partitions;
-        nc.DomainOffset = DomainOffset;
-        nc.Filename(DomainOffset+(1:nDigits)) = repmat('0',1,nDigits);
+        nc.DomainOffset = PartNr_StrOffset;
+        nc.Filename(PartNr_StrOffset+(1:nDigits)) = sprintf(partNrFormat,Part1);
     end
 else
     nc.NumDomains = 1;
@@ -108,7 +108,7 @@ nvars = length(nc.Dataset);
 [nc.Dataset(1:nvars).Type       ] = deal('unknown');
 [nc.Dataset(1:nvars).Mesh       ] = deal([]);
 [nc.Dataset(1:nvars).Coordinates] = deal({});
-[nc.Dataset(1:nvars).MagicCoord ] = deal(0);
+[nc.Dataset(1:nvars).AutoCoords ] = deal({});
 [nc.Dataset(1:nvars).X          ] = deal([]);
 [nc.Dataset(1:nvars).XBounds    ] = deal([]);
 [nc.Dataset(1:nvars).Y          ] = deal([]);
@@ -128,9 +128,9 @@ nvars = length(nc.Dataset);
 % variables listed by the coordinates attributes. At the same time, mark
 % all coordinate (dimension) variables.
 %
-DimensionNames = {nc.Dimension.Name};
-DatasetNames = {nc.Dataset.Name};
-AuxCoordVars = {};
+dimNames = {nc.Dimension.Name};
+varNames = {nc.Dataset.Name};
+%AuxCoordVars = {};
 for ivar = 1:nvars
     Info = nc.Dataset(ivar);
     if isfield(Info.Attribute,'Name')
@@ -144,7 +144,7 @@ for ivar = 1:nvars
         nc.Dataset(ivar).Dimid = zeros(size(Info.Dimension));
         nc.Dataset(ivar).Rank = length(Info.Dimension);
         for idim = 1:length(Info.Dimension)
-            nc.Dataset(ivar).Dimid(idim) = strmatch(Info.Dimension{idim},DimensionNames,'exact')-1;
+            nc.Dataset(ivar).Dimid(idim) = strmatch(Info.Dimension{idim},dimNames,'exact')-1;
         end
         Info = nc.Dataset(ivar);
     end
@@ -152,98 +152,12 @@ for ivar = 1:nvars
     j = strmatch('cf_role',Attribs,'exact');
     if isempty(j) % hack to support my coding error in FM
         j = strmatch('cf_type',Attribs,'exact');
+        if ~isempty(j) && strcmp(Info.Attribute(j).Value,'mesh_topology')
+            ui_message('error','This file uses incorrect attribute "cf_type" for specifying the mesh_topology role. Please update your data file.')
+        end
     end
     if ~isempty(j) && strcmp(Info.Attribute(j).Value,'mesh_topology')
-        if isempty(strmatch('cf_role',Attribs,'exact'))
-           % if we didn't come here via the cf_role attribute ...
-           ui_message('error','This file uses incorrect attribute "cf_type" for specifying the mesh_topology role. Please update your data file.')
-        end
-        % ugrid mesh
-        Info.Type = 'ugrid_mesh';
-        cn = strmatch('node_coordinates',Attribs,'exact');
-        if ~isempty(cn)
-            node_coords = multiline(Info.Attribute(cn).Value,' ','cellrow');
-        else
-            node_coords = {};
-        end
-        Info.Coordinates = node_coords;
-        AuxCoordVars = union(AuxCoordVars,Info.Coordinates);
-        %
-        nd = strmatch('node_dimension',Attribs,'exact');
-        if ~isempty(nd)
-            node_dim = Info.Attribute(nd).Value;
-        else
-            ndc = find(strcmp(node_coords{1},DatasetNames));
-            node_dim = nc.Dataset(ndc).Dimension{1};
-        end
-        %
-        ed  = strmatch('edge_dimension',Attribs,'exact');
-        ce  = strmatch('edge_coordinates',Attribs,'exact');
-        enc = strmatch('edge_node_connectivity',Attribs,'exact');
-        if ~isempty(ed)
-            edge_dim = Info.Attribute(ed).Value;
-        elseif ~isempty(ce)
-            edge_coords = multiline(Info.Attribute(ce).Value,' ','cellrow');
-            edc = find(strcmp(edge_coords{1},DatasetNames));
-            edge_dim = nc.Dataset(edc).Dimension{1};
-        elseif ~isempty(enc)
-            enc = find(strcmp(Info.Attribute(enc).Value,DatasetNames));
-            edge_dim = nc.Dataset(enc).Dimension; % 2 dimensional
-            edge_dim = edge_dim{1};
-        else
-            edge_dim = '';
-        end
-        %
-        fd  = strmatch('face_dimension',Attribs,'exact');
-        cf  = strmatch('face_coordinates',Attribs,'exact');
-        fnc = strmatch('face_node_connectivity',Attribs,'exact');
-        if ~isempty(fd)
-            face_dim = Info.Attribute(fd).Value;
-        elseif ~isempty(cf)
-            face_coords = multiline(Info.Attribute(cf).Value,' ','cellrow');
-            fcc = find(strcmp(face_coords{1},DatasetNames));
-            face_dim = nc.Dataset(fcc).Dimension{1};
-        elseif ~isempty(fnc)
-            fncv = find(strcmp(Info.Attribute(fnc).Value,DatasetNames));
-            if isempty(fncv)
-                ui_message('error','The face_node_connectivity "%s" of %s is not available in the file.',Info.Attribute(fnc).Value,Info.Name)
-                face_dim = '';
-            else
-                face_dim = nc.Dataset(fncv).Dimension; % 2 dimensional
-                face_dim = face_dim{1};
-            end
-        else
-            ui_message('error','No face_node_connectivity specified for mesh topology %s.',Info.Name)
-            face_dim = '';
-        end
-        %
-        Info.Mesh = {'ugrid' ivar -1 node_dim edge_dim face_dim}; % vol_dim
-        %
-        id = strmatch(node_dim,DimensionNames,'exact');
-        if isempty(id)
-            ui_message('error','The node dimension ''%s'' of UGRID mesh %s does not exist as NetCDF dimension in the file.',face_dim,Info.Name)
-        else
-            nc.Dimension(id).Type = 'ugrid_node';
-        end
-        %
-        if ~isempty(edge_dim)
-            id = strmatch(edge_dim,DimensionNames,'exact');
-            if isempty(id)
-                ui_message('error','The edge dimension ''%s'' of UGRID mesh %s does not exist as NetCDF dimension in the file.',face_dim,Info.Name)
-            else
-                nc.Dimension(id).Type = 'ugrid_edge';
-            end
-        end
-        %
-        if ~isempty(face_dim)
-            id = strmatch(face_dim,DimensionNames,'exact');
-            if isempty(id)
-                ui_message('error','The face dimension ''%s'' of UGRID mesh %s does not exist as NetCDF dimension in the file.',face_dim,Info.Name)
-            else
-                nc.Dimension(id).Type = 'ugrid_face';
-            end
-        end
-        %
+        [nc,Info] = parse_ugrid_mesh(nc,varNames,dimNames,ivar,Info,Attribs);
     end
     %
     j = strmatch('standard_name',Attribs,'exact');
@@ -275,7 +189,7 @@ for ivar = 1:nvars
                     if strcmp(Info.Attribute(j).Value,'timeseries_id') || ...
                             strcmp(Info.Attribute(j).Value,'profile_id') || ...
                             strcmp(Info.Attribute(j).Value,'trajectory_id')
-                        AuxCoordVars=union(AuxCoordVars,{Info.Name});
+                        %AuxCoordVars=union(AuxCoordVars,{Info.Name});
                     end
                 end
             end
@@ -284,7 +198,7 @@ for ivar = 1:nvars
         if strcmp(Info.Dimension{1},Info.Name);
             Info.Type = 'coordinate';
         elseif strcmp(Info.StdName,'latitude') || strcmp(Info.StdName,'longitude')
-            AuxCoordVars=union(AuxCoordVars,{Info.Name});
+            %AuxCoordVars=union(AuxCoordVars,{Info.Name});
         end
     end
     %
@@ -294,73 +208,45 @@ for ivar = 1:nvars
         % read coordinate names
         %
         coordstr = Info.Attribute(coords).Value;
-        %
-        Info.Coordinates = multiline(coordstr,' ','cellrow');
-        AuxCoordVars=union(AuxCoordVars,Info.Coordinates);
+        Info.Coordinates = multiline(coordstr,' ','output','cellrow','empty','skip');
     end
     %
     nc.Dataset(ivar) = Info;
 end
 
-iCoordDim = strmatch('coordinate',{nc.Dataset.Type});
-CoordDims = {nc.Dataset(iCoordDim).Name};
-CoordVarDims = {};
-
 %
-% Mark auxiliary coordinate variables.
-% Collect coordinates per variable.
-% Collect coordinate dimensions used by auxiliary variables.
+% Detect bounds variables (We don't want bounds directly listed as
+% coordinate variable.
 %
-AuxCoordVar_Dimens = cell(size(AuxCoordVars));
-for i = 1:length(AuxCoordVars)
-    for ivar = 1:nvars
-        Info = nc.Dataset(ivar);
-        if strcmp(Info.Name,AuxCoordVars{i})
-            if Info.Nctype==2 % character
-                AuxCoordVar_Dimens{i} = Info.Dimension(1:end-1);
-            else
-                AuxCoordVar_Dimens{i} = Info.Dimension;
-            end
-            if strcmp(Info.Type,'unknown')
-                nc.Dataset(ivar).Type = 'auxiliary coordinate';
-                CoordVarDims = union(CoordVarDims,Info.Dimension);
-            end
+boundVars = cell(1,nvars);
+for ivar = 1:nvars
+    Info = nc.Dataset(ivar);
+    %
+    if isfield(Info.Attribute,'Name')
+        Attribs = {Info.Attribute.Name};
+        j = strmatch('bounds',Attribs,'exact');
+        if ~isempty(j)
+            boundVars{ivar} = Info.Attribute(j).Value;
         end
     end
 end
+boundVars(cellfun('isempty',boundVars)) = [];
 
 %
-% If the Coordinates attribute has not been specified, then try identifying
-% coordinates based on dimensions shared with variables that could act as
-% coordinates, such as latitude and longitude variables. In this case we
-% set the MagicCoord flag.
+% Try to (auto) detect type (auxiliary) coordinate variables.
 %
 for ivar = 1:nvars
     Info = nc.Dataset(ivar);
-    if isempty(Info.Coordinates)
-        nc.Dataset(ivar).MagicCoord = 1;
-        for i = 1:length(AuxCoordVars)
-            if iscell(AuxCoordVar_Dimens{i}) && all(ismember(AuxCoordVar_Dimens{i},Info.Dimension))
-                Info.Coordinates = [Info.Coordinates AuxCoordVars(i)];
-            end
-        end
-    end
-    nc.Dataset(ivar).Coordinates = ...
-        union(Info.Coordinates,intersect(Info.Dimension,CoordDims));
-end
-
-%
-% Try to detect type of (auxiliary) coordinate variables.
-%
-for ivar = 1:nvars
-    Info = nc.Dataset(ivar);
-    %if strcmp(Info.Type,'unknown')
-    %    continue
-    %else
     if strcmp(Info.Type,'coordinate')
         idim = Info.Dimid+1;
-    else % auxiliary coordinate
+    else
         idim = [];
+    end
+    %
+    if strmatch(Info.Name,boundVars,'exact')
+        % bounds variables should not be marked as (auxiliary) coordinate
+        % variables.
+        continue
     end
     %
     if isfield(Info.Attribute,'Name')
@@ -371,7 +257,7 @@ for ivar = 1:nvars
     %
     % character variables are labels
     %
-    if Info.Nctype == 2
+    if Info.Nctype == 2 && length(Info.Dimension)==2
         nc = setType(nc,ivar,idim,'label');
         continue
     end
@@ -479,12 +365,8 @@ for ivar = 1:nvars
                 dt = [];
         end
         if ~isempty(dt)
+            % quantity with time unit
             %
-            % time dimension
-            %
-            if ~isequal(nc.Dataset(ivar).Type,'time')
-                nc = setType(nc,ivar,idim,'aux-time');
-            end
             % even though there is a space between the time and the time
             % zone, this line supports the case in which a + or - of the
             % time zone is directly attached to the time.
@@ -515,6 +397,13 @@ for ivar = 1:nvars
                 refdate = [];
                 TZshift = NaN;
             end
+            %
+            % time quantity "since" --> time dimension
+            %
+            if ~isempty(refdate) && ~isequal(nc.Dataset(ivar).Type,'time') && length(nc.Dataset(ivar).Dimension)==1
+                nc = setType(nc,ivar,idim,'aux-time');
+            end
+            %
             nc.Dataset(ivar).Info.DT      = dt/86400;
             if ~isempty(unit2) && isempty(refdate)
                 nc.Dataset(ivar).Info.RefDate = unit;
@@ -577,29 +466,82 @@ for ivar = 1:nvars
     end
 end
 
+iCoords = ~strcmp({nc.Dataset.Type},'unknown');
+AuxCoordVars = varNames(iCoords);
+
+%
+% Mark auxiliary coordinate variables.
+% Collect coordinates per variable.
+% Collect coordinate dimensions used by auxiliary variables.
+%
+AuxCoordVar_Dimens = cell(size(AuxCoordVars));
+for i = 1:length(AuxCoordVars)
+    for ivar = 1:nvars
+        Info = nc.Dataset(ivar);
+        if strcmp(Info.Name,AuxCoordVars{i})
+            if Info.Nctype==2 % character
+                AuxCoordVar_Dimens{i} = Info.Dimension(1:end-1);
+            else
+                AuxCoordVar_Dimens{i} = Info.Dimension;
+            end
+        end
+    end
+end
+
+%
+% Identify (auxiliary) coordinates based on dimensions shared with
+% variables marked above as some kind of coordinate, such as latitude and
+% longitude variables. If we identify some coordinates not yet listed by
+% the coordinates attribute, then add them to the AutoCoords list.
+%
+for ivar = 1:nvars
+    Info = nc.Dataset(ivar);
+    %
+    iSelect = false(size(AuxCoordVars));
+    for i = 1:length(AuxCoordVars)
+        if iscell(AuxCoordVar_Dimens{i}) && all(ismember(AuxCoordVar_Dimens{i},Info.Dimension))
+            iSelect(i) = true;
+        end
+    end
+    AutoCoords = AuxCoordVars(iSelect);
+    AutoCoords = setdiff(AutoCoords,Info.Coordinates);
+    %
+    if ~isempty(AutoCoords)
+        nc.Dataset(ivar).AutoCoords = union(AutoCoords,Info.AutoCoords);
+    end
+end
+
 %
 % Try to detect x/y/z/time coordinates.
 %
 iUGrid = strcmp({nc.Dataset.Type}','ugrid_mesh');
 UGrid  = {nc.Dataset(iUGrid).Name};
 iUGrid = find(iUGrid);
-varNames = {nc.Dataset.Name};
 ugridLoc = {'node','edge','face','volume'};
-auto_ugrid = cell(4,nvars);
 for ivar = 1:nvars
     Info = nc.Dataset(ivar);
     if ~isempty(Info.Attribute)
-        Attr = {Info.Attribute.Name};
-        j1 = strmatch('mesh',Attr,'exact');
-        j2 = strmatch('location',Attr,'exact');
+        Attribs = {Info.Attribute.Name};
+        j1 = strmatch('mesh',Attribs,'exact');
+        j2 = strmatch('location',Attribs,'exact');
         if ~isempty(j1) && ~isempty(j2)
             j3 = strmatch(Info.Attribute(j1).Value,UGrid,'exact');
+            if isempty(j3)
+                v3 = strmatch(Info.Attribute(j1).Value,varNames,'exact');
+                nc = parse_ugrid_mesh(nc,varNames,dimNames,v3);
+                %
+                iUGrid = strcmp({nc.Dataset.Type}','ugrid_mesh');
+                UGrid  = {nc.Dataset(iUGrid).Name};
+                iUGrid = find(iUGrid);
+                %
+                j3 = strmatch(Info.Attribute(j1).Value,UGrid,'exact');
+            end
             j4 = strmatch(Info.Attribute(j2).Value,ugridLoc,'exact')-1;
             %if strcmp(Info.Attribute(j2).Value,'poly')
             %    j4 = 2;
             %end
             if isempty(j3)
-                if any(strcmp(Info.Attribute(j1).Value,{nc.Dataset.Name}))
+                if any(strcmp(Info.Attribute(j1).Value,varNames))
                     ui_message('error','Variable "%s" does not comply to UGRID conventions for a mesh.\nIgnoring mesh/location attributes on "%s".',Info.Attribute(j1).Value,Info.Name)
                 else
                     ui_message('error','Cannot find mesh "%s"; ignoring mesh/location attributes on "%s".',Info.Attribute(j1).Value,Info.Name)
@@ -614,63 +556,59 @@ for ivar = 1:nvars
                         Info.Name, Info.Attribute(j1).Value, Info.Attribute(j2).Value, dims(1:end-2), Info.Attribute(j2).Value, topoDim)
                 else
                     Info.Mesh = {'ugrid' iUGrid(j3) j4};
-                    Info.TSMNK(3) = strmatch(topoDim,DimensionNames,'exact')-1;
+                    Info.TSMNK(3) = strmatch(topoDim,dimNames,'exact')-1;
                 end
             end
         end
     end
     %
-    % auto detect UGRID dimensions
-    %
-    if isempty(Info.Mesh) && ~isempty(iUGrid)
-        for u = iUGrid'
-            [udim,ia,ib] = intersect(Info.Dimension,nc.Dataset(u).Mesh(4:end));
-            if ~isempty(udim)
-                Info.Mesh = {'ugrid' u ib-1};
-                Info.TSMNK(3) = strmatch(udim,DimensionNames,'exact')-1;
-                auto_ugrid(:,ivar) = {Info.Name, udim{1}, nc.Dataset(u).Name, ugridLoc{ib}}';
-                break
+    for ctp = {{'Coordinates' 1},{'AutoCoords' -1}}
+        % use negative indices for automatic coordinates such that we can
+        % distinguish them later and give preference to coordinates
+        % specified in the file.
+        crdField  = Info.(ctp{1}{1});
+        Factor    = ctp{1}{2};
+        %
+        [coords,ia,ib]=intersect(crdField,varNames);
+        for icvar1 = 1:length(ib)
+            icvar  = ib(icvar1);
+            sicvar = Factor*icvar;
+            %
+            vDims  = Info.Dimension;
+            cvDims = nc.Dataset(icvar).Dimension;
+            if nc.Dataset(icvar).Nctype==2
+                % in case of a character array, leave out the last dimension
+                % (string length)
+                nmDims = setdiff(cvDims(1:end-1),vDims);
+            else
+                nmDims = setdiff(cvDims,vDims);
             end
-        end
-    end
-    %
-    [coords,ia,ib]=intersect(Info.Coordinates,varNames);
-    for icvar1 = 1:length(ib)
-        icvar = ib(icvar1);
-        vDims = Info.Dimension;
-        cvDims = nc.Dataset(icvar).Dimension;
-        if nc.Dataset(icvar).Nctype==2
-            % in case of a character array, leave out the last dimension
-            % (string length)
-            nmDims = setdiff(cvDims(1:end-1),vDims);
-        else
-            nmDims = setdiff(cvDims,vDims);
-        end
-        if ~isempty(nmDims) && ~strcmp(Info.Type,'ugrid_mesh')
-            vDimsStr = sprintf('%s, ',vDims{:});
-            cvDimsStr = sprintf('%s, ',cvDims{:});
-            Msg = sprintf(['Dimensions of variable and auxiliary coordinate do not match.\n', ...
+            if ~isempty(nmDims) && ~strcmp(Info.Type,'ugrid_mesh')
+                vDimsStr = sprintf('%s, ',vDims{:});
+                cvDimsStr = sprintf('%s, ',cvDims{:});
+                Msg = sprintf(['Dimensions of variable and auxiliary coordinate do not match.\n', ...
                     'Variable %s: %s\nCoordinate %s: %s\nSkipping auxiliary coordinate.'], ...
-                Info.Name, vDimsStr(1:end-2), ...
-                nc.Dataset(icvar).Name, cvDimsStr(1:end-2));
-            ui_message('error',Msg)
-            continue
-        end
-        switch nc.Dataset(icvar).Type
-            case {'longitude','x-coordinate'}
-                Info.X = [Info.X icvar];
-            case {'latitude','y-coordinate'}
-                Info.Y = [Info.Y icvar];
-            case 'z-coordinate'
-                Info.Z = [Info.Z icvar];
-            case 'time'
-                Info.Time = [Info.Time icvar];
-            case 'aux-time'
-                Info.AuxTime = [Info.AuxTime icvar];
-            case 'label'
-                Info.Station = [Info.Station icvar];
-            otherwise
-                Info.SubField = [Info.SubField icvar];
+                    Info.Name, vDimsStr(1:end-2), ...
+                    nc.Dataset(icvar).Name, cvDimsStr(1:end-2));
+                ui_message('error',Msg)
+                continue
+            end
+            switch nc.Dataset(icvar).Type
+                case {'longitude','x-coordinate'}
+                    Info.X = [Info.X sicvar];
+                case {'latitude','y-coordinate'}
+                    Info.Y = [Info.Y sicvar];
+                case 'z-coordinate'
+                    Info.Z = [Info.Z sicvar];
+                case 'time'
+                    Info.Time = [Info.Time sicvar];
+                case 'aux-time'
+                    Info.AuxTime = [Info.AuxTime sicvar];
+                case 'label'
+                    Info.Station = [Info.Station sicvar];
+                otherwise
+                    Info.SubField = [Info.SubField sicvar];
+            end
         end
     end
     %
@@ -682,49 +620,27 @@ for ivar = 1:nvars
         Info.AuxTime = [];
     end
     if ~isempty(Info.Time)
+        iTime = abs(Info.Time);
         %
         % Assumption: time is always unique and coordinate dimension.
         %
-        if length(Info.Time)>1 || length(nc.Dataset(Info.Time).Dimid)>1
+        if length(iTime)>1 || length(nc.Dataset(iTime).Dimid)>1
             ui_message('error','Unsupported case encountered: multiple time coordinates encountered.')
-            Info.Time = Info.Time(1);
         end
+        Info.Time = iTime(1);
+        %
         if ~isempty(nc.Dataset(Info.Time).Dimid)
             Info.TSMNK(1) = nc.Dataset(Info.Time).Dimid;
         end
     end
-    if ~isempty(Info.Z)
-        %
-        % Assumption: vertical coordinate is always unique and coordinate dimension.
-        %
-        if length(Info.Z)>1
-            ui_message('error','Unsupported case encountered: multiple vertical coordinates encountered.')
-            Info.Z = Info.Z(1);
-        end
-        ZDims = nc.Dataset(Info.Z).Dimid;
-        ZDims = setdiff(ZDims,Info.TSMNK);
-        if length(ZDims)>1
-            % Z coordinate is multidimensional variable; try to determine
-            % z dimension by excluding any assigned dimension ...
-            ZDims = setdiff(ZDims,Info.TSMNK );
-            % ... and dimensions associated to X and Y coordinates
-            % (assuming that those ain't have a vertical dimension).
-            for ix = 1:length(Info.X)
-                ZDims = setdiff(ZDims,nc.Dataset(Info.X(ix)).Dimid);
-            end
-            for iy = 1:length(Info.Y)
-                ZDims = setdiff(ZDims,nc.Dataset(Info.Y(iy)).Dimid);
-            end
-        end
-        if length(ZDims)==1
-           Info.TSMNK(5) = ZDims;
-        end
-    end
+    %
     if ~isempty(Info.Station)
+        iStation = abs(Info.Station);
+        %
         if length(Info.Station)>1
-            Names = {nc.Dataset(Info.Station).Name};
+            Names = {nc.Dataset(iStation).Name};
             for is = 1:length(Names)
-                isInfo = nc.Dataset(Info.Station(is));
+                isInfo = nc.Dataset(iStation(is));
                 dims = sprintf('%s, ',isInfo.Dimension{:});
                 Names{is} = [isInfo.Datatype ' :: ' Names{is} ' (' dims(1:end-2) ')'];
             end
@@ -741,22 +657,24 @@ for ivar = 1:nvars
             ui_message('error', ...
                 [{sprintf('Problem detecting station coordinate for "%s".',Info.Name) ...
                 'Any one of the following variables seems to be valid'} ...
-                Names{:} ...
+                Names ...
                 {'Using the first one.'}])
-            Info.Station = Info.Station(1);
         end
+        Info.Station = iStation(1);
         %
         statdim = intersect(Info.Dimid,nc.Dataset(Info.Station).Dimid(1));
         Info.TSMNK(2) = statdim;
     end
     %
     xName = '';
-    if isnan(Info.TSMNK(3)) && ~isempty(Info.X)
-        iDim = {nc.Dataset(Info.X).Dimid};
+    if  ~isempty(Info.X)
+        iX = abs(Info.X);
+        %
+        iDim = {nc.Dataset(iX).Dimid};
         iDim = unique(cat(2,iDim{cellfun('length',iDim)==1}));
-        if length(Info.X)>1
-            xType = {nc.Dataset(Info.X).Type};
-            xCoord = {nc.Dataset(Info.X).Name};
+        if length(iX)>1
+            xType = {nc.Dataset(iX).Type};
+            xCoord = {nc.Dataset(iX).Name};
             iLon = ismember(xType,'longitude');
             iAux = ismember(xCoord,AuxCoordVars);
             if any(iAux & iLon)
@@ -767,33 +685,44 @@ for ivar = 1:nvars
                 Info.X = Info.X(iAux);
             end
         end
+        iX = abs(Info.X);
         %
-        % Assumption: x coordinate is now unique.
-        %
-        if length(Info.X)>1
+        if length(iX)>1
             %
-            % If not, then restrict to the variable(s) with the most
-            % dimensions. This is based on the assumption that a N
-            % dimensional longitude is probably more informative than an M
-            % dimensional "average" longitude when N>M.
+            % If there are multiple x/longitude coordinates, then restrict
+            % to the variable(s) with the most dimensions. This is based on
+            % the assumption that an N dimensional longitude is probably
+            % more informative than an M dimensional "average" longitude
+            % when N>M.
             %
-            ncdims = cellfun('length',{nc.Dataset(Info.X).Dimid});
+            ncdims = cellfun('length',{nc.Dataset(iX).Dimid});
             Info.X = Info.X(ncdims==max(ncdims));
         end
-        if length(Info.X)>1
-            %
-            % Still not unique, so just choose the first one.
-            %
-            if ~Info.MagicCoord % Don't show warning if we are doing this based on guess work.
-                Names = {nc.Dataset(Info.X).Name};
-                ui_message('error', ...
-                    {sprintf('Problem detecting x/longitude coordinate for "%s".',Info.Name) ...
-                    'Any one of the following variables seems to be valid' ...
-                    Names{:} ...
-                    'Using the first one.'})
+        iX = abs(Info.X);
+        %
+        if length(iX)>1
+            % if there are multiple x/longitude coordinates and some
+            % have been specified in the file, then keep only those.
+            if any(Info.X>0)
+                Info.X = Info.X(Info.X>0);
+                iX = Info.X;
             end
-            Info.X = Info.X(1);
+            % if there are still multiple x/longitude coordinates then
+            % select the first one
+            if length(iX)>1 && Info.X(1)>0
+                % show the error message only if we are struggling with
+                % coordinates that have explicitly been indicated in the
+                % file
+                Names = {nc.Dataset(iX).Name};
+                ui_message('error', ...
+                    [{sprintf('Problem detecting x/longitude coordinate for "%s".',Info.Name) ...
+                    'Any one of the following variables seems to be valid'} ...
+                    Names ...
+                    {'Using the first one.'}])
+            end
         end
+        Info.X = iX(1);
+        %
         xName = nc.Dataset(Info.X).Name;
         iDims = setdiff(nc.Dataset(Info.X).Dimid,Info.TSMNK);
         iDim = intersect(iDim,iDims);
@@ -833,12 +762,14 @@ for ivar = 1:nvars
             end
         end
     end
-    if ~isempty(Info.Y) % && ... ?
-        iDim = {nc.Dataset(Info.Y).Dimid};
+    if ~isempty(Info.Y)
+        iY = abs(Info.Y);
+        %
+        iDim = {nc.Dataset(iY).Dimid};
         iDim = unique(cat(2,iDim{cellfun('length',iDim)==1}));
-        if length(Info.Y)>1
-            yType = {nc.Dataset(Info.Y).Type};
-            yCoord = {nc.Dataset(Info.Y).Name};
+        if length(iY)>1
+            yType = {nc.Dataset(iY).Type};
+            yCoord = {nc.Dataset(iY).Name};
             iLat = ismember(yType,'latitude');
             iAux = ismember(yCoord,AuxCoordVars);
             if any(iAux & iLat)
@@ -849,11 +780,10 @@ for ivar = 1:nvars
                 Info.Y = Info.Y(iAux);
             end
         end
+        iY = abs(Info.Y);
         %
-        % Assumption: y coordinate is now unique.
-        %
-        if length(Info.Y)>1
-            Names = {nc.Dataset(Info.Y).Name};
+        if length(iY)>1
+            Names = {nc.Dataset(iY).Name};
             if ~isempty(xName)
                 yName = strrep(strrep(xName,'longitude','latitude'),'LONGITUDE','LATITUDE');
                 if isequal(xName,yName)
@@ -865,16 +795,27 @@ for ivar = 1:nvars
             end
             yName = strcmp(yName,Names);
             if sum(yName)==1
-                Info.Y = Info.Y(yName);
+                iY = iY(yName);
             else
-                ui_message('error', ...
-                    {sprintf('Problem detecting y/latitude coordinate for "%s".',Info.Name) ...
-                    'Any one of the following variables seems to be valid' ...
-                    Names{:} ...
-                    'Using the first one.'})
-                Info.Y = Info.Y(1);
+                % if there are multiple y/latitude coordinates and some
+                % have been specified in the file, then keep only those.
+                if any(Info.Y>0)
+                    iY = iY(Info.Y>0);
+                end
+                % if there are still multiple y/latitude coordinates then
+                % select the first one
+                if length(iY)>1
+                    Names = {nc.Dataset(iY).Name};
+                    ui_message('error', ...
+                        [{sprintf('Problem detecting y/latitude coordinate for "%s".',Info.Name) ...
+                        'Any one of the following variables seems to be valid'} ...
+                        Names ...
+                        {'Using the first one.'}])
+                end
             end
         end
+        Info.Y = iY(1);
+        %
         iDims = setdiff(nc.Dataset(Info.Y).Dimid,Info.TSMNK);
         iDim = intersect(iDim,iDims);
         if ~isempty(iDim)
@@ -898,6 +839,65 @@ for ivar = 1:nvars
             else
                 nc.Dataset(Info.YBounds).Type = nc.Dataset(Info.Y).Type;
             end
+        end
+    end
+    %
+    % if there are Z variables that match a sofar unmatched dimension then
+    % we prefer such vertical coordinates over Z variables that don't.
+    %
+    zAddsDims = true(size(Info.Z));
+    for z = length(Info.Z):-1:1
+        if Info.Z(z)<0
+            ZDims = nc.Dataset(-Info.Z(z)).Dimid;
+            ZDims = setdiff(ZDims,Info.TSMNK);
+            if isempty(ZDims)
+                zAddsDims(z) = false;
+            end
+        end
+    end
+    if any(zAddsDims)
+        Info.Z(~zAddsDims) = [];
+    end
+    %
+    if ~isempty(Info.Z)
+        iZ = abs(Info.Z);
+        %
+        if length(iZ)>1
+            % if there are multiple vertical coordinates and some have been
+            % specified in the file, then keep only those.
+            if any(Info.Z>0)
+                iZ = iZ(Info.Z>0);
+            end
+            % if there are still multiple vertical coordinates then select
+            % the first one
+            if length(iZ)>1
+                Names = {nc.Dataset(iZ).Name};
+                ui_message('error', ...
+                    [{sprintf('Problem detecting vertical coordinate for "%s".',Info.Name) ...
+                    'Any one of the following variables seems to be valid'} ...
+                    Names ...
+                    {'Using the first one.'}])
+            end
+        end
+        Info.Z = iZ(1);
+        %
+        ZDims = nc.Dataset(Info.Z).Dimid;
+        ZDims = setdiff(ZDims,Info.TSMNK);
+        if length(ZDims)>1
+            % Z coordinate is multidimensional variable; try to determine
+            % z dimension by excluding any assigned dimension ...
+            ZDims = setdiff(ZDims,Info.TSMNK );
+            % ... and dimensions associated to X and Y coordinates
+            % (assuming that those ain't have a vertical dimension).
+            for ix = 1:length(Info.X)
+                ZDims = setdiff(ZDims,nc.Dataset(Info.X(ix)).Dimid);
+            end
+            for iy = 1:length(Info.Y)
+                ZDims = setdiff(ZDims,nc.Dataset(Info.Y(iy)).Dimid);
+            end
+        end
+        if length(ZDims)==1
+           Info.TSMNK(5) = ZDims;
         end
     end
     %
@@ -925,6 +925,25 @@ for ivar = 1:nvars
     %end
     %
     nc.Dataset(ivar) = Info;
+end
+%
+% auto detect UGRID dimensions
+%
+auto_ugrid = cell(4,nvars);
+for ivar = 1:nvars
+    Info = nc.Dataset(ivar);
+    if isempty(Info.Mesh) && ~isempty(iUGrid)
+        for u = iUGrid'
+            [udim,ia,ib] = intersect(Info.Dimension,nc.Dataset(u).Mesh(4:end));
+            if ~isempty(udim)
+                Info.Mesh = {'ugrid' u ib-1};
+                Info.TSMNK(3) = strmatch(udim,dimNames,'exact')-1;
+                auto_ugrid(:,ivar) = {Info.Name, udim{1}, nc.Dataset(u).Name, ugridLoc{ib}}';
+                break
+            end
+        end
+        nc.Dataset(ivar) = Info;
+    end
 end
 %
 auto_ugrid(:,cellfun('isempty',auto_ugrid(1,:))) = [];
@@ -1056,3 +1075,124 @@ NAVO_codes={
     206,'lati','Time Dependent Latitude','latitude'
     207,'loni','Time Dependent Longitude','longitude'
     208,'ship_speed','Ship Speed',''};
+
+
+function [nc,Info] = parse_ugrid_mesh(nc,varNames,dimNames,ivar,Info,Attribs)
+if nargin<5
+    Info = nc.Dataset(ivar);
+    Attribs = {Info.Attribute.Name};
+end
+% ugrid mesh
+Info.Type = 'ugrid_mesh';
+%
+j = strmatch('cf_role',Attribs,'exact');
+if isempty(j) || ~strcmp(Info.Attribute(j).Value,'mesh_topology')
+    ui_message('error','Attribute ''cf_role'' should be set to ''mesh_topology'' for UGRID mesh variable %s.',Info.Name)
+end
+%
+tpd = strmatch('topology_dimension',Attribs,'exact');
+if isempty(tpd)
+    ui_message('error','Missing attribute ''topology_dimension'' for UGRID mesh variable %s.',Info.Name)
+    tpd = -1;
+else
+    tpd = Info.Attribute(tpd).Value;
+end
+%
+cn = strmatch('node_coordinates',Attribs,'exact');
+if ~isempty(cn)
+    node_coords = multiline(Info.Attribute(cn).Value,' ','cellrow');
+else
+    node_coords = {};
+end
+Info.Coordinates = node_coords;
+%AuxCoordVars = union(AuxCoordVars,Info.Coordinates);
+%
+nd = strmatch('node_dimension',Attribs,'exact');
+if ~isempty(nd)
+    node_dim = Info.Attribute(nd).Value;
+else
+    ndc = find(strcmp(node_coords{1},varNames));
+    node_dim = nc.Dataset(ndc).Dimension{1};
+end
+%
+ed  = strmatch('edge_dimension',Attribs,'exact');
+ce  = strmatch('edge_coordinates',Attribs,'exact');
+enc = strmatch('edge_node_connectivity',Attribs,'exact');
+if ~isempty(ed)
+    edge_dim = Info.Attribute(ed).Value;
+elseif ~isempty(ce)
+    edge_coords = multiline(Info.Attribute(ce).Value,' ','cellrow');
+    edc = find(strcmp(edge_coords{1},varNames));
+    edge_dim = nc.Dataset(edc).Dimension{1};
+elseif ~isempty(enc)
+    enc = find(strcmp(Info.Attribute(enc).Value,varNames));
+    edge_dim = nc.Dataset(enc).Dimension; % 2 dimensional
+    edge_dim = edge_dim{1};
+else
+    edge_dim = '';
+end
+%
+fd  = strmatch('face_dimension',Attribs,'exact');
+cf  = strmatch('face_coordinates',Attribs,'exact');
+fnc = strmatch('face_node_connectivity',Attribs,'exact');
+if ~isempty(fd)
+    face_dim = Info.Attribute(fd).Value;
+elseif ~isempty(cf)
+    face_coords = multiline(Info.Attribute(cf).Value,' ','cellrow');
+    fcc = find(strcmp(face_coords{1},varNames));
+    face_dim = nc.Dataset(fcc).Dimension{1};
+elseif ~isempty(fnc)
+    fncv = find(strcmp(Info.Attribute(fnc).Value,varNames));
+    if isempty(fncv)
+        ui_message('error','The face_node_connectivity "%s" of %s is not available in the file.',Info.Attribute(fnc).Value,Info.Name)
+        face_dim = '';
+    else
+        face_dim = nc.Dataset(fncv).Dimension; % 2 dimensional
+        face_dim = face_dim{1};
+    end
+else
+    if tpd==2
+        ui_message('error','No face_node_connectivity specified for mesh topology %s.',Info.Name)
+    end
+    face_dim = '';
+end
+%
+if tpd<0
+    if ~isempty(face_dim)
+        % tpd = 2;
+    elseif ~isempty(edge_dim)
+        % tpd = 1;
+    else
+        ui_message('error','Unable to detect dimensionality of mesh %s.',Info.Name)
+    end
+end
+%
+Info.Mesh = {'ugrid' ivar -1 node_dim edge_dim face_dim}; % vol_dim
+%
+id = strmatch(node_dim,dimNames,'exact');
+if isempty(id)
+    ui_message('error','The node dimension ''%s'' of UGRID mesh %s does not exist as NetCDF dimension in the file.',face_dim,Info.Name)
+else
+    nc.Dimension(id).Type = 'ugrid_node';
+end
+%
+if ~isempty(edge_dim)
+    id = strmatch(edge_dim,dimNames,'exact');
+    if isempty(id)
+        ui_message('error','The edge dimension ''%s'' of UGRID mesh %s does not exist as NetCDF dimension in the file.',face_dim,Info.Name)
+    else
+        nc.Dimension(id).Type = 'ugrid_edge';
+    end
+end
+%
+if ~isempty(face_dim)
+    id = strmatch(face_dim,dimNames,'exact');
+    if isempty(id)
+        ui_message('error','The face dimension ''%s'' of UGRID mesh %s does not exist as NetCDF dimension in the file.',face_dim,Info.Name)
+    else
+        nc.Dimension(id).Type = 'ugrid_face';
+    end
+end
+if nargout<2
+    nc.Dataset(ivar) = Info;
+end
