@@ -96,6 +96,10 @@ switch cmd
     case 'subfields'
         varargout={getsubfields(FI,Props,varargin{:})};
         return
+    case 'plot'
+        hNew = plotthis(FI,Props,varargin{:});
+        varargout={hNew FI};
+        return
     otherwise
         [XYRead,DataRead,DataInCell]=gridcelldata(cmd);
 end
@@ -145,13 +149,11 @@ if any(DimFlag==7)
     end
 end
 
-%================== NEFIS SPECIFIC CODE ===================================
 if DimFlag(M_)&& DimFlag(N_)
     sz([M_ N_])=sz([N_ M_]);
     idx([M_ N_])=idx([N_ M_]);
 end
 
-%========================= GENERAL CODE ===================================
 allidx=zeros(size(sz));
 ind=cell(1,5);
 ind{2}=1;
@@ -180,6 +182,7 @@ end
 x=[];
 y=[];
 z=[];
+Ans=[];
 Info=vs_disp(FI,'map-const','ZK');
 zlayermodel=0;
 if isstruct(Info)
@@ -189,7 +192,7 @@ computeDZ=0;
 switch Props.Name
     case {'relative hydrostatic pressure','relative total pressure','total pressure','hydrostatic pressure'}
         computeDZ=1;
-    case {'depth averaged velocity','staggered depth averaged velocities','d.a. velocity fluctuations','velocity in depth averaged flow direction','velocity normal to depth averaged flow direction','head','froude number'}
+    case {'depth averaged velocity','staggered depth averaged velocities','d.a. velocity fluctuations','velocity in depth averaged flow direction','velocity normal to depth averaged flow direction','head','froude number','time-aver. depth-aver. velocity'}
         if zlayermodel, computeDZ=1; end
 end
 XYRead = XYRead & ~strcmp(Props.Loc,'NA');
@@ -201,7 +204,6 @@ coord_spherical = (isstruct(Info) && isequal(Info.ElmUnits,'[  DEG  ]')) || (ok 
 
 if XYRead || compute_unitvalue || computeDZ
 
-    %======================== SPECIFIC CODE ===============================
     if DimFlag(M_) && DimFlag(N_)
         x=vs_get(FI,'map-const','XCOR',idx([M_ N_]),'quiet!');
         y=vs_get(FI,'map-const','YCOR',idx([M_ N_]),'quiet!');
@@ -384,7 +386,6 @@ if XYRead || compute_unitvalue || computeDZ
         y=repmat(y,[1 1 1 length(cthk)]);
     end
 
-    %========================= GENERAL CODE ===============================
     % grid interpolation ...
     if compute_unitvalue
         if coord_spherical
@@ -394,11 +395,18 @@ if XYRead || compute_unitvalue || computeDZ
         gvv = sqrt(diff(x(1,:,[1 1:end],1),1,3).^2 + diff(y(1,:,[1 1:end],1),1,3).^2);
     end
     [x,y]=gridinterp(DataInCell,DimFlag(K_),Props.ReqLoc,x,y);
+    %
+    if ~DataInCell && Props.NVal==2 && isstruct(vs_disp(FI,'map-series','Ndry_GRS')) && length(idx{T_})==1 % if not length(idx{:})==1 I have more than 1 time step and kfscc in function xy_cutcell becomes a cell.
+        [x,y] = xy_cutcell(squeeze(x),squeeze(y),FI,idx);
+        if (DimFlag(K_))
+            x = reshape(x,1,size(x,1),size(x,2));
+            y = reshape(y,1,size(y,1),size(y,2));
+        end
+    end
 end
 
 % load data ...
 if DataRead
-    %================== NEFIS SPECIFIC CODE ===============================
     elidx=idx(2:end);
     ThinDam=0;
     DepthInZeta=0;
@@ -410,12 +418,15 @@ if DataRead
         case {'relative hydrostatic pressure','relative total pressure','total pressure','hydrostatic pressure'}
             selectK = elidx{4};
             elidx{4}=0;
-        case {'depth averaged velocity','staggered depth averaged velocities','d.a. velocity fluctuations'}
+        case {'depth averaged velocity','staggered depth averaged velocities','d.a. velocity fluctuations','time-aver. depth-aver. velocity'}
             Info=vs_disp(FI,Props.Group,Props.Val1);
             Flag3D=isequal(size(Info.SizeDim),[1 3]);
             if Flag3D
                 elidx{end+1}=0;
             end
+        case {'depth averaged concentration','time-aver. depth-aver. concentr.'}
+            Flag3D = 1;
+            elidx{end+1}=0;
         case {'froude number','head'}
             Info=vs_disp(FI,Props.Group,Props.Val1);
             Flag3D=isequal(size(Info.SizeDim),[1 3]);
@@ -458,7 +469,6 @@ if DataRead
             elidx(end+1)={Props.SubFld}; % last dimension automatically dropped after reading
         end
     end
-
     if ~DimFlag(T_)
         idx{T_} = 1;
     end
@@ -466,12 +476,48 @@ if DataRead
     if (Props.NVal==0) || DepthInZeta
         val1=[];
     else
-        val1=vs_let(FI,Props.Group,idx(T_),Props.Val1,elidx,'quiet!');
+        if strcmp('time-aver. depth-aver. velocity',Props.Name) || strcmp('time-averaged bed',Props.Name) || strcmp('time-av. bed minus cr.sect.aver.',Props.Name) || strcmp('time-averaged water depth',Props.Name)  || strcmp('time-aver. depth-aver. concentr.',Props.Name) 
+            val1=vs_let(FI,Props.Group,{0},Props.Val1,elidx,'quiet!'); %load all data
+            Nsteps = size(val1,1);    
+            useFFTforFINDINGrange = 1; %0: uses a prescribed value of steps NstAV before and after to do the average 1: I use the fft to find the dominant frequency
+            mm=40; %to be changed any time
+            nn=12; %to be changed any time
+            multiplier = 1; %I use multiplier*NstAV values before and after
+            if useFFTforFINDINGrange  
+                Fs = 1; %sampling frequency
+                curve = val1(1:Nsteps,nn,mm);  %double check if first index is mm or first is nn
+                curve = curve - mean(curve);
+                xdft = fft(curve,Nsteps);
+                maxAmp = max(abs(xdft));                
+                freq = [0:Nsteps-1].*(Fs/Nsteps); %This is your total freq-axis
+                freqsYouCareAbout = freq(freq < Fs/2);  %You only care about either the pos or neg frequencies, since they are redundant for a real signal.
+                xdftYouCareAbout = abs(xdft(1:round(Nsteps/2))); %Take the absolute magnitude.
+                [maxVal, index] = max(xdftYouCareAbout); %maxVal is your (un-normalized) maximum amplitude
+                maxFreq = freqsYouCareAbout(index); % This is the frequency of your dominant signal.
+                maxT = 1/maxFreq;
+                NstAV = int32(maxT/2);%half period before and half after
+            else
+                NstAV = 10; % I average using NstAV time steps before and NstAV after
+            end            
+            Time_num = cell2mat(idx(T_));
+            meanArray = mean(val1(max(Time_num-NstAV,1):min(Time_num+NstAV,Nsteps),:,:,:),1);
+            val1 = meanArray;
+        else
+            val1=vs_let(FI,Props.Group,idx(T_),Props.Val1,elidx,'quiet!');
+        end
     end
     if isempty(Props.Val2)
         val2=[];
     else
-        val2=vs_let(FI,Props.Group,idx(T_),Props.Val2,elidx,'quiet!');
+        if strmatch('time-aver. depth-aver. velocity',Props.Name)
+            val2=vs_let(FI,Props.Group,{0},Props.Val2,elidx,'quiet!'); %load all data
+            Nsteps = size(val2,1);
+            %Note: NstAV here is the one computed (or prescribed) for the x component
+            meanArray =  mean(val2(max(Time_num-NstAV,1):min(Time_num+NstAV,Nsteps),:,:,:),1);
+            val2 = meanArray;
+        else
+            val2=vs_let(FI,Props.Group,idx(T_),Props.Val2,elidx,'quiet!');
+        end
     end
     val3=[];
 
@@ -491,6 +537,11 @@ if DataRead
         end
     end
     switch Props.Name
+        case 'high and low bed levels'
+            val1=-val1;
+            val2=-val2;
+            val3=vs_let(FI,Props.Group,idx(T_),'kfs_cc',elidx,'quiet!');
+            Props.NVal=3;
         case 'total transport'
             val1r=vs_let(FI,Props.Group,idx(T_),'SBUU',elidx,'quiet!');
             val1=val1+val1r;
@@ -602,6 +653,8 @@ if DataRead
                 val1=sum(val1,4);
             end
             val1=-val1+readdps(FI,idx,0);
+        case {'high bed level','low bed level'}
+            val1 = -val1;
         case {'initial bed level','bed level in water level points'}
             if DepthInZeta %strcmp(Props.Val1,'DPSED') || DataInCell
                 val1=readdps(FI,idx,strcmp(Props.Name,'initial bed level'));
@@ -612,7 +665,7 @@ if DataRead
             val1(val1==999)=NaN;
         case {'cum. erosion/sedimentation','cumulative mass error'}
             [FI,val1] = eros_sed(FI,Props.Name,idx);
-        case {'depth averaged velocity','staggered depth averaged velocities','d.a. velocity fluctuations','froude number','head'}
+        case {'depth averaged velocity','staggered depth averaged velocities','d.a. velocity fluctuations','froude number','head','time-aver. depth-aver. velocity'}
             if Flag3D
                 if zlayermodel
                     val1(val1==-999)=0;
@@ -657,6 +710,23 @@ if DataRead
                     end
                     val3(val3==0)=inf;
             end
+        case {'depth averaged concentration','time-aver. depth-aver. concentr.'}
+            if Flag3D
+                if zlayermodel
+                    val1(val1==-999)=0;
+                    val1=val1.*dz;
+                    h=sum(dz,4);
+                    val1(h==0)=0; h(h==0)=1;
+                    val1=sum(val1,4); val1=val1./h;
+                else
+                    thk=vs_let(FI,'map-const','THICK','quiet!');
+                    for k=1:length(thk)
+                        val1(:,:,:,k)=val1(:,:,:,k)*thk(k);
+                    end
+                    val1=sum(val1,4);
+                end
+                elidx(end)=[]; % don't read K_ in case of U/VMNLDF
+            end
         case 'water depth'
             dp=readdps(FI,idx);
             if size(dp,1)==1,
@@ -696,16 +766,35 @@ if DataRead
             val2(val2==0)=NaN;
         end
         if 0 && isstruct(vs_disp(FI,'map-series','KFU'))
-            kfu=vs_let(FI,Props.Group,idx(T_),'KFU',elidx,'quiet!');
-            kfv=vs_let(FI,Props.Group,idx(T_),'KFV',elidx,'quiet!');
-            szv1 = size(val1);
-            szv1(end+1) = 1;
-            val1 = reshape(val1,[prod(szv1(1:3)) szv1(4:end)]);
-            val2 = reshape(val2,[prod(szv1(1:3)) szv1(4:end)]);
-            val1(kfu==0,:) = NaN;
-            val2(kfv==0,:) = NaN;
-            val1 = reshape(val1,szv1);
-            val2 = reshape(val2,szv1);
+            if size(elidx,2) ==3 %added because in 3D it wanted a cell with 2 components not 3. 
+                elidx2D = elidx;
+                elidx2D(end)=[]; 
+            else
+                elidx2D = elidx;
+            end
+            kfu=vs_let(FI,'map-series',idx(T_),'KFU',elidx2D,'quiet!');
+            kfv=vs_let(FI,'map-series',idx(T_),'KFV',elidx2D,'quiet!');
+            % remove the following lines when kfu/kfv correct
+            if isstruct(vs_disp(FI,'map-series','aguu'))
+                aguu=vs_let(FI,Props.Group,idx(T_),'aguu',elidx2D,'quiet!');
+                agvv=vs_let(FI,Props.Group,idx(T_),'agvv',elidx2D,'quiet!');
+                kfsc=vs_let(FI,Props.Group,idx(T_),'kfs_cc',elidx2D,'quiet!');
+                kfu = kfu; %| (aguu>0 & kfsc>=0);
+                kfv = kfv; %| (agvv>0 & kfsc>=0);
+            end
+            % remove until here
+            if size(elidx,2)==3 & length(elidx{3})~=1 % maybe there is a better way to do this. For section of 3D velocity field the old version was setting to NaN only
+                                        % the velocity point in the upper layer
+                for k=1:size(val1,ndims(val1))
+                    kfu_3d(:,:,:,k) = kfu(:,:,:);
+                    kfv_3d(:,:,:,k) = kfv(:,:,:);
+                end
+            else
+                kfu_3d = kfu;
+                kfv_3d = kfv;
+            end
+            val1(kfu_3d==0) = NaN;
+            val2(kfv_3d==0) = NaN;
         end
         [val1,val2]=uv2cen(val1,val2);
     end
@@ -783,7 +872,7 @@ if DataRead
 else
     Props.NVal=0;
 end
-%======================== SPECIFIC CODE ===================================
+
 % select active points ...
 idx1 = idx;
 idx1{M_}(end+1) = min(idx1{M_}(end)+1,sz(M_));
@@ -804,8 +893,6 @@ switch Props.ReqLoc
             gridact=act;
         end
 end
-
-%========================= GENERAL CODE ===================================
 
 if XYRead
     if DimFlag(K_)
@@ -888,7 +975,6 @@ if 1%~all(allidx(DimMask & DimFlag))
     end
 end
 
-%================== NEFIS SPECIFIC CODE ===================================
 % permute n and m dimensions into m and n if necessary
 if DimFlag(M_) && DimFlag(N_)
     perm=[2 1 3];
@@ -914,7 +1000,6 @@ if DimFlag(M_) && DimFlag(N_)
             val3=permute(val3,[1 1+perm]);
     end
 end
-%========================= GENERAL CODE ===================================
 
 % reshape if a single timestep is selected ...
 if DimFlag(ST_)
@@ -975,6 +1060,108 @@ if XYRead
         Ans.ZUnits='m';
     end
 end
+if strcmp(Props.Name,'high and low bed levels')
+    x1 = cat(3,x(1:end-1,1:end-1),x(2:end,1:end-1),x(2:end,2:end),x(1:end-1,2:end),x(1:end-1,1:end-1),x(1:end-1,1:end-1));
+    y1 = cat(3,y(1:end-1,1:end-1),y(2:end,1:end-1),y(2:end,2:end),y(1:end-1,2:end),y(1:end-1,1:end-1),y(1:end-1,1:end-1));
+    x1 = permute(x1,[3 2 1]);
+    y1 = permute(y1,[3 2 1]);
+    val1 = permute(val1,[3 2 1]);
+    val2 = permute(val2,[3 2 1]);
+    val3 = permute(val3,[3 2 1]);
+    ok = none(isnan(x1) | isnan(y1),1) & abs(val3)>1;
+    x1(6,:) = NaN;
+    y1(6,:) = NaN;
+    v = repmat(val2,[6 1 1]);
+    v(6,:) = NaN;
+    x = x1(:,ok);
+    y = y1(:,ok);
+    v  = v(:,ok);
+    x = x(:);
+    y = y(:);
+    v = v(:);
+    %
+    Time = idx(T_);
+    idxN = idx{M_}(ind{1});
+    idxM = idx{N_}(ind{2});
+    xpoly = vs_get(FI,'map-series',Time,'INTx_GRS',{0 idxN idxM},'quiet');
+    ypoly = vs_get(FI,'map-series',Time,'INTy_GRS',{0 idxN idxM},'quiet');
+    ndryp = vs_get(FI,'map-series',Time,'Ndry_GRS',{idxN idxM},'quiet');
+    icut = abs(val3)<=1;
+    xpoly = xpoly(:,icut);
+    ypoly = ypoly(:,icut);
+    ndryp = ndryp(icut);
+    for i = 1:size(xpoly,2)
+        xpoly(ndryp(i)+1,i)   = xpoly(1,i);
+        ypoly(ndryp(i)+1,i)   = ypoly(1,i);
+        xpoly(ndryp(i)+2:7,i) = NaN;
+        ypoly(ndryp(i)+2:7,i) = NaN;
+    end
+    v2 = val1(icut)';
+    v2 = repmat(v2,[7 1]);
+    x = [x;xpoly(:)];
+    y = [y;ypoly(:)];
+    v = [v;v2(:)];
+    x1 = x1(:,icut);
+    y1 = y1(:,icut);
+    xcomp = repmat(NaN,size(xpoly));
+    ycomp = repmat(NaN,size(ypoly));
+    for i = 1:size(xpoly,2)
+        % xpoly,ypoly --> clockwise or counterclockwise
+        np = ndryp(i);
+        if clockwise(xpoly(1:np,i),ypoly(1:np,i))<0
+            xpoly(1:np,i) = xpoly(np:-1:1,i);
+            ypoly(1:np,i) = ypoly(np:-1:1,i);
+        end
+        % xpoly,ypoly --> clockwise
+        % x1,y1 --> counterclockwise
+        %
+        % first point is boundary point
+        xcomp(1,i) = xpoly(1,i);
+        ycomp(1,i) = ypoly(1,i);
+        % determine first corner point in common
+        % first check if first point is a corner point
+        j = 1;
+        while j<5 && (x1(j,i)~=xpoly(1,i) || y1(j,i)~=ypoly(1,i))
+            j = j+1;
+        end
+        if j==5
+            % first point is not a corner point
+            % second point is always a corner point, now find it
+            j = 1;
+            while x1(j,i)~=xpoly(2,i) || y1(j,i)~=ypoly(2,i)
+                j = j+1;
+            end
+        end
+        % loop through the corners x1,y1 of the cell in counterclockwise
+        % and add them to the xcomp,ycomp array
+        for k = 1:4
+            jk = mod(j+k-1,4)+1;
+            % until we find a corner point that is again in coFon
+            if (x1(jk,i)==xpoly(np,i) && y1(jk,i)==ypoly(np,i)) || ...
+                    (x1(jk,i)==xpoly(np-1,i) && y1(jk,i)==ypoly(np-1,i))
+                break
+            end
+            xcomp(k+1,i) = x1(jk,i);
+            ycomp(k+1,i) = y1(jk,i);
+        end
+        % now add last point (also boundary point)
+        xcomp(k+1,i) = xpoly(np,i);
+        ycomp(k+1,i) = ypoly(np,i);
+        % and close the polygon
+        xcomp(k+2,i) = xpoly(1,i);
+        ycomp(k+2,i) = ypoly(1,i);
+    end
+    v2 = val2(icut)';
+    v2 = repmat(v2,[7 1]);
+    x = [x;xcomp(:)];
+    y = [y;ycomp(:)];
+    v = [v;v2(:)];
+    %
+    Ans.X=x;
+    Ans.Y=y;
+    Ans.Val=v;
+    Props.NVal = 0;
+end
 switch Props.NVal
     case {1,5,6}
         Ans.Val=val1;
@@ -1026,186 +1213,225 @@ if domain>1
 end
 FI = guarantee_options(FI);
 %======================== SPECIFIC CODE ===================================
-PropNames={'Name'                   'Units'   'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc'  'Loc3D' 'Group'          'Val1'    'Val2'  'SubFld' 'MNK' };
-DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'XCOR'    ''       []       0
-    'hydrodynamic grid'                ''       [1 0 1 1 1]  0         0    ''        'z'   'z'       'i'     'map-series'     'S1'      ''       []       0
-    'grid'                             ''       [1 0 1 1 1]  0         0    ''        'z'   'z'       ''      'map-series'     'S1'      ''       []       0
-    'domain decomposition boundaries'  ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'KCS'     ''       []       0
-    'open boundaries'                  ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'KCS'     ''       []       0
-    'closed boundaries'                ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'KCS'     ''       []       0
-    'thin dams'                        ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-const'      'KCU'     'KCV'    []       0
+PropNames={'Name'                   'Units'   'DimFlag' 'DataInCell' 'NVal' 'Geom'  'Coords' 'VecType' 'Loc' 'ReqLoc'  'Loc3D' 'Group'          'Val1'    'Val2'  'SubFld' 'MNK' };
+DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-const'      'XCOR'    ''       []       0
+    'hydrodynamic grid'                ''       [1 0 1 1 1]  0         0    'sQUAD' 'xy'     ''        'z'   'z'       'i'     'map-series'     'S1'      ''       []       0
+    'grid'                             ''       [1 0 1 1 1]  0         0    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'S1'      ''       []       0
+    'domain decomposition boundaries'  ''       [0 0 1 1 0]  0         0    'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-const'      'KCS'     ''       []       0
+    'open boundaries'                  ''       [0 0 1 1 0]  0         0    'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-const'      'KCS'     ''       []       0
+    'closed boundaries'                ''       [0 0 1 1 0]  0         0    'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-const'      'KCS'     ''       []       0
+    'thin dams'                        ''       [0 0 1 1 0]  0         0    'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-const'      'KCU'     'KCV'    []       0
     'temporarily inactive water level points' ...
-    ''       [1 0 1 1 0]  2         5    ''        'z'   'z'       ''      'map-series'     'KFU'     ''       []       0
+                                       ''       [1 0 1 1 0]  2         5    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'KFU'     ''       []       0
     'temporarily inactive velocity points' ...
-    ''       [1 0 1 1 0]  0         0    ''        'd'   'd'       ''      'map-series'     'KFU'     'KFV'    []       0
+                                       ''       [1 0 1 1 0]  0         0    'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-series'     'KFU'     'KFV'    []       0
     'top active layer at water level point (kfsmax)' ...
-                                       ''       [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'KFSMAX'  ''       []       0
+                                       ''       [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'KFSMAX'  ''       []       0
     'top active layer at velocity points (kfu/vmax)' ...
-                                       ''       [1 0 1 1 0]  1         0.9  ''        'd'   'd'       ''      'map-series'     'KFUMAX'  'KFVMAX' []       0
+                                       ''       [1 0 1 1 0]  1         0.9  'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-series'     'KFUMAX'  'KFVMAX' []       0
     'bottom active layer at water level point (kfsmin)' ...
-                                       ''       [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'KFSMIN'  ''       []       0
+                                       ''       [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'KFSMIN'  ''       []       0
     'bottom active layer at velocity points (kfu/vmin)' ...
-                                       ''       [1 0 1 1 0]  1         0.9  ''        'd'   'd'       ''      'map-series'     'KFUMIN'  'KFVMIN' []       0
-    'parallel partition numbers'       ''       [0 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-const'      'PPARTITION'  ''       []       0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
-    'air pressure'                     'N/m^2'  [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'PATM'    ''       []       0
-    'air temperature'                  '°C'     [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'AIRTEM'  ''       []       0
-    'cloud coverage'                   '%'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'CLOUDS'  ''       []       0
-    'relative air humidity'            '%'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'AIRHUM'  ''       []       0
-    'wind speed'                       'm/s'    [1 0 1 1 0]  1         2    'x'       'z'   'z'       ''      'map-series'     'WINDU'   'WINDV'  []       0
-    'precipitation rate'               'mm/h'   [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'PRECIP'  ''       []       0
-    'evaporation rate'                 'mm/h'   [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'EVAP'    ''       []       0
-    'evaporation heat flux'            'W/m^2'  [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'QEVA'    ''       []       0
-    'heat flux of forced convection'   'W/m^2'  [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'QCO'     ''       []       0
-    'nett back radiation'              'W/m^2'  [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'QBL'     ''       []       0
-    'nett solar radiation'             'W/m^2'  [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'QIN'     ''       []       0
-    'total nett heat flux'             'W/m^2'  [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'QNET'    ''       []       0
-    'free convection of sensible heat' 'W/m^2'  [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'HFREE'   ''       []       0
-    'free convection of latent heat'   'W/m^2'  [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'EFREE'   ''       []       0
-    'computed minus derived heat flux' 'W/m^2'  [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'QMIS'    ''       []       0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
-    'wave height'                      'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-trit-series' 'WAVE_HEIGHT' ''  []       0
-    'significant wave height'          'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-rol-series'  'HS'     ''       []       0
-    'wave vector'                      'm'      [1 0 1 1 0]  1         2    'm'       'z'   'z'       ''      'map-trit-series' 'WAVE_HEIGHT' 'DIR' []     0
-    'orbital velocity amplitude'       'm/s'    [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-trit-series' 'UORB'   ''       []       0
-    'wave period'                      's'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-trit-series' 'PERIOD' ''       []       0
-    'wave length'                      'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-trit-series' 'WAVE_LENGTH' ''  []       0
-    'short-wave energy'                'J/m^2'  [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-rol-series' 'EWAVE1'  ''       []       0
-    'roller energy'                    'J/m^2'  [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-rol-series' 'EROLL1'  ''       []       0
+                                       ''       [1 0 1 1 0]  1         0.9  'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-series'     'KFUMIN'  'KFVMIN' []       0
+    'parallel partition numbers'       ''       [0 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-const'      'PPARTITION'  ''       []       0
+    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    'air pressure'                     'N/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'PATM'    ''       []       0
+    'air temperature'                  '°C'     [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'AIRTEM'  ''       []       0
+    'cloud coverage'                   '%'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'CLOUDS'  ''       []       0
+    'relative air humidity'            '%'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'AIRHUM'  ''       []       0
+    'wind speed'                       'm/s'    [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'x'       'z'   'z'       ''      'map-series'     'WINDU'   'WINDV'  []       0
+    'precipitation rate'               'mm/h'   [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'PRECIP'  ''       []       0
+    'evaporation rate'                 'mm/h'   [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'EVAP'    ''       []       0
+    'evaporation heat flux'            'W/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'QEVA'    ''       []       0
+    'heat flux of forced convection'   'W/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'QCO'     ''       []       0
+    'nett back radiation'              'W/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'QBL'     ''       []       0
+    'nett solar radiation'             'W/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'QIN'     ''       []       0
+    'total nett heat flux'             'W/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'QNET'    ''       []       0
+    'free convection of sensible heat' 'W/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'HFREE'   ''       []       0
+    'free convection of latent heat'   'W/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'EFREE'   ''       []       0
+    'computed minus derived heat flux' 'W/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'QMIS'    ''       []       0
+    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''                 ''        ''       []       0    
+    'fraction high ground'             ''       [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'poros'   ''       []       0    
+    'high bed level'                   'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'dpH'     ''       []       0
+    'low bed level'                    'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'dpL'     ''       []       0
+    'high and low bed levels'          'm'      [1 0 1 1 0]  2         1    'POLYG' 'xy'     ''        'z'   'z'       ''      'map-series'       'dpH'     'dpL'    []       0
+    'type of cut cell'                 ''       [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'kfs_cc'  ''       []       0
+    'cut cell patches'                 ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'INTx_GRS' 'INTy_GRS' []    0
+    'cut cell patches with line'       ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'INTx_GRS' 'INTy_GRS' []    0
+    'cut cell patches only line'       ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'INTx_GRS' 'INTy_GRS' []    0    
+   %'reconstructed bankline'           ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'kfs_cc'  ''       []       0
+    'ghost u-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPu1'   ''       []       0
+    'ghost v-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPv1'   ''       []       0
+    'ghost s-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPs1'   ''       []       0
+    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''                 ''        ''       []       0    
+    'fraction high ground'             ''       [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'poros'   ''       []       0    
+    'high bed level'                   'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'dpH'     ''       []       0
+    'low bed level'                    'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'dpL'     ''       []       0
+    'high and low bed levels'          'm'      [1 0 1 1 0]  2         1    'POLYG' 'xy'     ''        'z'   'z'       ''      'map-series'       'dpH'     'dpL'    []       0
+    'type of cut cell'                 ''       [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'kfs_cc'  ''       []       0
+    'cut cell patches'                 ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'INTx_GRS' 'INTy_GRS' []    0
+    'cut cell patches with line'       ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'INTx_GRS' 'INTy_GRS' []    0
+    'cut cell patches only line'       ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'INTx_GRS' 'INTy_GRS' []    0    
+    %'reconstructed bankline'           ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'kfs_cc'  ''       []       0
+    'ghost u-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPu1'   ''       []       0
+    'ghost v-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPv1'   ''       []       0
+    'ghost s-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPs1'   ''       []       0
+    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''                 ''        ''       []       0    
+    'fraction high ground'             ''       [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'poros'   ''       []       0    
+    'high bed level'                   'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'dpH'     ''       []       0
+    'low bed level'                    'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'dpL'     ''       []       0
+    'high and low bed levels'          'm'      [1 0 1 1 0]  2         1    'POLYG' 'xy'     ''        'z'   'z'       ''      'map-series'       'dpH'     'dpL'    []       0
+    'type of cut cell'                 ''       [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'kfs_cc'  ''       []       0
+    'cut cell patches'                 ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'INTx_GRS' 'INTy_GRS' []    0
+    'cut cell patches with line'       ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'INTx_GRS' 'INTy_GRS' []    0
+    'cut cell patches only line'       ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'INTx_GRS' 'INTy_GRS' []    0    
+    %'reconstructed bankline'           ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'kfs_cc'  ''       []       0
+    'ghost u-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPu1'   ''       []       0
+    'ghost v-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPv1'   ''       []       0
+    'ghost s-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPs1'   ''       []       0
+    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    'wave height'                      'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-trit-series' 'WAVE_HEIGHT' ''  []       0
+    'significant wave height'          'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-rol-series'  'HS'     ''       []       0
+    'wave vector'                      'm'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'm'       'z'   'z'       ''      'map-trit-series' 'WAVE_HEIGHT' 'DIR' []     0
+    'orbital velocity amplitude'       'm/s'    [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-trit-series' 'UORB'   ''       []       0
+    'wave period'                      's'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-trit-series' 'PERIOD' ''       []       0
+    'wave length'                      'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-trit-series' 'WAVE_LENGTH' ''  []       0
+    'short-wave energy'                'J/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-rol-series' 'EWAVE1'  ''       []       0
+    'roller energy'                    'J/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-rol-series' 'EROLL1'  ''       []       0
     'transport velocity of roller energy' ...
-    'm/s'    [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-rol-series' 'QXKR'    'QYKR'   []       0
+                                       'm/s'    [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-rol-series' 'QXKR'    'QYKR'   []       0
     'transport velocity of wave energy' ...
-    'm/s'    [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-rol-series' 'QXKW'    'QYKW'   []       0
-    'wave force'                       'N/m^2'  [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-rol-series' 'FXW'     'FYW'    []       0
-    'wave force'                       'N/m^2'  [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-trit-series' 'WAVE_FORCE_X' 'WAVE_FORCE_Y' []      0
-    'roller force'                     'N/m^2'  [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-rol-series' 'WSU'     'WSV'    []       0
-    'roller force'                     'N/m^2'  [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-trit-series' 'ROLLER_FORCE_X' 'ROLLER_FORCE_Y'  [] 0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
-    'water level (when dry: bed level)' 'm'     [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'S1'      ''       []       0
-    'water level'                      'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'S1'      ''       []       0
-    'water depth'                      'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'S1'      ''       []       0
-    'depth averaged velocity'          'm/s'    [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-series'     'U1'      'V1'     []       1
-    'staggered depth averaged velocities' 'm/s' [1 0 1 1 0]  1         1.9  ''        'd'   'd'       ''      'map-series'     'U1'      'V1'     []       2
-    'horizontal velocity'              'm/s'    [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'U1'      'V1'     []       1
-    'staggered horizontal velocity'    'm/s'    [1 0 1 1 5]  1         1.9  ''        'd'   'd'       'c'     'map-series'     'U1'      'V1'     []       1
-    'velocity'                         'm/s'    [1 0 1 1 1]  1         3    'u'       'u'   'z'       'c'     'map-series'     'U1'      'V1'     []       1
-    'vertical velocity'                'm/s'    [1 0 1 1 1]  1         1    ''        'w'   'z'       'c'     'map-series'     'WPHY'    ''       []       0
+                                       'm/s'    [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-rol-series' 'QXKW'    'QYKW'   []       0
+    'wave force'                       'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-rol-series' 'FXW'     'FYW'    []       0
+    'wave force'                       'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-trit-series' 'WAVE_FORCE_X' 'WAVE_FORCE_Y' []      0
+    'roller force'                     'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-rol-series' 'WSU'     'WSV'    []       0
+    'roller force'                     'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-trit-series' 'ROLLER_FORCE_X' 'ROLLER_FORCE_Y'  [] 0
+    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    'water level (when dry: bed level)' 'm'     [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'S1'      ''       []       0
+    'water level'                      'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'S1'      ''       []       0
+    'water depth'                      'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'S1'      ''       []       0
+    'depth averaged velocity'          'm/s'    [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-series'     'U1'      'V1'     []       1
+    'staggered depth averaged velocities' 'm/s' [1 0 1 1 0]  1         1.9  'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-series'     'U1'      'V1'     []       2
+    'horizontal velocity'              'm/s'    [1 0 1 1 1]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'U1'      'V1'     []       1
+    'staggered horizontal velocity'    'm/s'    [1 0 1 1 5]  1         1.9  'sQUAD' 'xy'     ''        'd'   'd'       'c'     'map-series'     'U1'      'V1'     []       1
+    'velocity'                         'm/s'    [1 0 1 1 1]  1         3    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'U1'      'V1'     []       1
+    'vertical velocity'                'm/s'    [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'w'   'z'       'c'     'map-series'     'WPHY'    ''       []       0
     'velocity in depth averaged flow direction' ...
-    'm/s'    [1 0 1 1 1]  1         1    'u'       'u'   'z'       'c'     'map-series'     'U1'      'V1'     []       0
+                                       'm/s'    [1 0 1 1 1]  1         1    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'U1'      'V1'     []       0
     'velocity normal to depth averaged flow direction' ...
-    'm/s'    [1 0 1 1 1]  1         1    'u'       'u'   'z'       'c'     'map-series'     'U1'      'V1'     []       0
-    'filtered depth averaged velocity' 'm/s'    [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-series'     'UMNLDF'  'VMNLDF' []       1
-    'd.a. velocity fluctuations'       'm/s'    [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-series'     'UMNLDF'  'VMNLDF' []       1
-    'froude number'                    '-'      [1 0 1 1 0]  1         1    'u'       'u'   'z'       ''      'map-series'     'U1'      'V1'     []       0
-    'head'                             'm'      [1 0 1 1 0]  1         1    'u'       'u'   'z'       ''      'map-series'     'U1'      'V1'     []       0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
-    'acceleration (GLM coordinates)'   'm/s^2'  [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'MOM_DUDT'        'MOM_DVDT'        []       1
-    'acc. due to density'              'm/s^2'  [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'MOM_UDENSITY'    'MOM_VDENSITY'    []       1
-    'acc. due to flow resistance'      'm/s^2'  [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'MOM_URESISTANCE' 'MOM_VRESISTANCE' []       1
-    'acc. due to coriolis'             'm/s^2'  [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'MOM_UCORIOLIS'   'MOM_VCORIOLIS'   []       1
-    'acc. due to viscosity'            'm/s^2'  [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'MOM_UVISCO'      'MOM_VVISCO'      []       1
-    'acc. due to hydrostatic pressure' 'm/s^2'  [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-series'     'MOM_UPRESSURE'   'MOM_VPRESSURE'   []       1
-    'acc. due to tide gen. forces'     'm/s^2'  [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-series'     'MOM_UTIDEGEN'    'MOM_VTIDEGEN'    []       1
-    'acc. due to wind force (top layer)' 'm/s^2' [1 0 1 1 0] 1         2    'u'       'u'   'z'       ''      'map-series'     'MOM_UWINDFORCE'  'MOM_VWINDFORCE'  []       1
-    'acc. due to bed shear (bottom layer)' 'm/s^2' [1 0 1 1 0] 1       2    'u'       'u'   'z'       ''      'map-series'     'MOM_UBEDSHEAR'   'MOM_VBEDSHEAR'   []       1
-    'acc. due to waves'                'm/s^2'  [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'MOM_UWAVES'      'MOM_VWAVES'      []       1
-    'acc. due to streamw. momentum transp.' 'm/s^2' [1 0 1 1 1] 1      2    'u'       'u'   'z'       'c'     'map-series'     'MOM_UDUDX'       'MOM_VDVDY'       []       1
-    'acc. due to lateral momentum transp.'  'm/s^2' [1 0 1 1 1] 1      2    'u'       'u'   'z'       'c'     'map-series'     'MOM_VDUDY'       'MOM_UDVDX'       []       1
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
-    'density'                          'kg/m^3' [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'RHO'     ''       []       0
-    'hydrostatic pressure'             'Pa'     [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'RHO'     ''       []       0
-    'non-hydrostatic pressure'         'Pa'     [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'HYDPRES' ''       []       0
-    'total pressure'                   'Pa'     [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'RHO'     'HYDPRES' []      0
-    'relative hydrostatic pressure'    'Pa'     [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'RHO'     ''       []       0
-    'relative total pressure'          'Pa'     [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'RHO'     'HYDPRES' []      0
-    'concentration'                    'kg/m^3' [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-sedgs-series' 'RZED1' ''       's'      0
-    '--constituents'                   ''       [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'R1'      ''       []       0
-    '--constituents flux staggered'    ''       [1 0 1 1 1]  1         1.9  ''        'd'   'd'       'c'     'map-series'     'R1FLX_UU' 'R1FLX_VV' []    2
-    '--constituents unit flux'         ''       [1 0 1 1 1]  1         2    'u'       'u'   'z'       'c'     'map-series'     'R1FLX_UU' 'R1FLX_VV' []    0
-    '--constituents cumulative flux staggered' '' [1 0 1 1 1] 1        1.9  ''        'd'   'd'       'c'     'map-series'     'R1FLX_UUC' 'R1FLX_VVC' []  2
-    '--constituents cumulative unit flux'      '' [1 0 1 1 1] 1        2    'u'       'u'   'z'       'c'     'map-series'     'R1FLX_UUC' 'R1FLX_VVC' []  0
-    '--turbquant'                      ''       [1 0 1 1 1]  1         1    ''        'z'   'z'       'i'     'map-series'     'RTUR1'   ''       []       0
-    'vertical eddy viscosity'          'm^2/s'  [1 0 1 1 1]  1         1    ''        'z'   'z'       'i'     'map-series'     'VICWW'   ''       []       0
-    'vertical eddy diffusivity'        'm^2/s'  [1 0 1 1 1]  1         1    ''        'z'   'z'       'i'     'map-series'     'DICWW'   ''       []       0
-    'horizontal viscosity'             'm^2/s'  [1 0 1 1 1]  1         1    ''        'z'   'z'       'c'     'map-series'     'VICUV'   ''       []       0
-    'richardson number'                '-'      [1 0 1 1 1]  1         1    ''        'z'   'z'       'i'     'map-series'     'RICH'    ''       []       0
-    'vorticity'                        '1/s'    [1 0 1 1 5]  1         1    ''        'z'   'z'       'c'     'map-series'     'VORTIC'  ''       []       0
-    'enstrophy'                        '1/s^2'  [1 0 1 1 5]  1         1    ''        'z'   'z'       'c'     'map-series'     'ENSTRO'  ''       []       0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
-    'characteristic velocity'          'm/s'    [1 0 1 1 0]  1         2    'u'       'z'   'z'       ''      'map-sed-series' 'UUU'     'VVV'    []       1
-    'characteristic velocity magnitude' 'm/s'   [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'UMOD'    ''       []       0
+                                       'm/s'    [1 0 1 1 1]  1         1    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'U1'      'V1'     []       0
+    'filtered depth averaged velocity' 'm/s'    [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-series'     'UMNLDF'  'VMNLDF' []       1
+    'd.a. velocity fluctuations'       'm/s'    [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-series'     'UMNLDF'  'VMNLDF' []       1
+    'froude number'                    '-'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-series'     'U1'      'V1'     []       0
+    'head'                             'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-series'     'U1'      'V1'     []       0
+    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    'acceleration (GLM coordinates)'   'm/s^2'  [1 0 1 1 1]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'MOM_DUDT'        'MOM_DVDT'        []       1
+    'acc. due to density'              'm/s^2'  [1 0 1 1 1]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'MOM_UDENSITY'    'MOM_VDENSITY'    []       1
+    'acc. due to flow resistance'      'm/s^2'  [1 0 1 1 1]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'MOM_URESISTANCE' 'MOM_VRESISTANCE' []       1
+    'acc. due to coriolis'             'm/s^2'  [1 0 1 1 1]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'MOM_UCORIOLIS'   'MOM_VCORIOLIS'   []       1
+    'acc. due to viscosity'            'm/s^2'  [1 0 1 1 1]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'MOM_UVISCO'      'MOM_VVISCO'      []       1
+    'acc. due to hydrostatic pressure' 'm/s^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-series'     'MOM_UPRESSURE'   'MOM_VPRESSURE'   []       1
+    'acc. due to tide gen. forces'     'm/s^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-series'     'MOM_UTIDEGEN'    'MOM_VTIDEGEN'    []       1
+    'acc. due to wind force (top layer)' 'm/s^2' [1 0 1 1 0] 1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-series'     'MOM_UWINDFORCE'  'MOM_VWINDFORCE'  []       1
+    'acc. due to bed shear (bottom layer)' 'm/s^2' [1 0 1 1 0] 1       2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-series'     'MOM_UBEDSHEAR'   'MOM_VBEDSHEAR'   []       1
+    'acc. due to waves'                'm/s^2'  [1 0 1 1 1]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'MOM_UWAVES'      'MOM_VWAVES'      []       1
+    'acc. due to streamw. momentum transp.' 'm/s^2' [1 0 1 1 1] 1      2    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'MOM_UDUDX'       'MOM_VDVDY'       []       1
+    'acc. due to lateral momentum transp.'  'm/s^2' [1 0 1 1 1] 1      2    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'MOM_VDUDY'       'MOM_UDVDX'       []       1
+    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    'density'                          'kg/m^3' [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'c'     'map-series'     'RHO'     ''       []       0
+    'hydrostatic pressure'             'Pa'     [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'c'     'map-series'     'RHO'     ''       []       0
+    'non-hydrostatic pressure'         'Pa'     [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'c'     'map-series'     'HYDPRES' ''       []       0
+    'total pressure'                   'Pa'     [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'c'     'map-series'     'RHO'     'HYDPRES' []      0
+    'relative hydrostatic pressure'    'Pa'     [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'c'     'map-series'     'RHO'     ''       []       0
+    'relative total pressure'          'Pa'     [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'c'     'map-series'     'RHO'     'HYDPRES' []      0
+    'concentration'                    'kg/m^3' [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'c'     'map-sedgs-series' 'RZED1' ''       's'      0
+    '--constituents'                   ''       [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'c'     'map-series'     'R1'      ''       []       0
+    '--constituents flux staggered'    ''       [1 0 1 1 1]  1         1.9  'sQUAD' 'xy'     ''        'd'   'd'       'c'     'map-series'     'R1FLX_UU' 'R1FLX_VV' []    2
+    '--constituents unit flux'         ''       [1 0 1 1 1]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'R1FLX_UU' 'R1FLX_VV' []    0
+    '--constituents cumulative flux staggered' '' [1 0 1 1 1] 1        1.9  'sQUAD' 'xy'     ''        'd'   'd'       'c'     'map-series'     'R1FLX_UUC' 'R1FLX_VVC' []  2
+    '--constituents cumulative unit flux'      '' [1 0 1 1 1] 1        2    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'R1FLX_UUC' 'R1FLX_VVC' []  0
+    '--turbquant'                      ''       [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'i'     'map-series'     'RTUR1'   ''       []       0
+    'vertical eddy viscosity'          'm^2/s'  [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'i'     'map-series'     'VICWW'   ''       []       0
+    'vertical eddy diffusivity'        'm^2/s'  [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'i'     'map-series'     'DICWW'   ''       []       0
+    'horizontal viscosity'             'm^2/s'  [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'c'     'map-series'     'VICUV'   ''       []       0
+    'richardson number'                '-'      [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'i'     'map-series'     'RICH'    ''       []       0
+    'vorticity'                        '1/s'    [1 0 1 1 5]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'c'     'map-series'     'VORTIC'  ''       []       0
+    'enstrophy'                        '1/s^2'  [1 0 1 1 5]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'c'     'map-series'     'ENSTRO'  ''       []       0
+    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    'characteristic velocity'          'm/s'    [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'z'   'z'       ''      'map-sed-series' 'UUU'     'VVV'    []       1
+    'characteristic velocity magnitude' 'm/s'   [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'UMOD'    ''       []       0
     'height above bed for characteristic velocity' ...
-    'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'ZUMOD'   ''       []       0
-    'bed shear velocity magnitude'     'm/s'    [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'USTAR'   ''       []       0
-    'settling velocity'                'm/s'    [1 0 1 1 1]  1         1    ''        ''    'z'       'i'     'map-sedgs-series' 'WSS'   ''       's1'     0
-    'settling velocity'                'm/s'    [1 0 1 1 1]  1         1    ''        ''    'z'       'i'     'map-sed-series' 'WS'      ''       's1'     0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
-    'equilibrium concentration'        'kg/m^3' [1 0 1 1 1]  1         1    ''        ''    'z'       'c'     'map-sed-series' 'RSEDEQ'  ''       's1'     0
+                                       'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'ZUMOD'   ''       []       0
+    'bed shear velocity magnitude'     'm/s'    [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'USTAR'   ''       []       0
+    'settling velocity'                'm/s'    [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        ''    'z'       'i'     'map-sedgs-series' 'WSS'   ''       's1'     0
+    'settling velocity'                'm/s'    [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        ''    'z'       'i'     'map-sed-series' 'WS'      ''       's1'     0
+    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    'equilibrium concentration'        'kg/m^3' [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        ''    'z'       'c'     'map-sed-series' 'RSEDEQ'  ''       's1'     0
     'bed load transport due to currents (zeta point)' ...
-    '*'      [1 0 1 1 0]  1         2    'u'       'z'   'z'       ''      'map-sed-series' 'SBCU'    'SBCV'   'sb'     1
-    'bed load transport due to currents' '*'    [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SBCUU'   'SBCVV'  'sb'     1
-    'staggered bed load transp. due to currents' '*' [1 0 1 1 0] 1     1.9  ''        'd'   'd'       ''      'map-sed-series' 'SBCUU'   'SBCVV'  'sb'     2
+                                       '*'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'z'   'z'       ''      'map-sed-series' 'SBCU'    'SBCV'   'sb'     1
+    'bed load transport due to currents' '*'    [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-sed-series' 'SBCUU'   'SBCVV'  'sb'     1
+    'staggered bed load transp. due to currents' '*' [1 0 1 1 0] 1     1.9  'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-sed-series' 'SBCUU'   'SBCVV'  'sb'     2
     'bed load transport due to waves (zeta point)' ...
-    '*'      [1 0 1 1 0]  1         2    'u'       'z'   'z'       ''      'map-sed-series' 'SBWU'    'SBWV'   'sb'     1
-    'bed load transport due to waves'  '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SBWUU'   'SBWVV'  'sb'     1
-    'staggered bed load transp. due to waves' '*' [1 0 1 1 0] 1        1.9  ''        'd'   'd'       ''      'map-sed-series' 'SBWUU'   'SBWVV'  'sb'     2
+                                       '*'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'z'   'z'       ''      'map-sed-series' 'SBWU'    'SBWV'   'sb'     1
+    'bed load transport due to waves'  '*'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-sed-series' 'SBWUU'   'SBWVV'  'sb'     1
+    'staggered bed load transp. due to waves' '*' [1 0 1 1 0] 1        1.9  'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-sed-series' 'SBWUU'   'SBWVV'  'sb'     2
     'suspended transport due to waves (zeta point)' ...
-    '*'      [1 0 1 1 0]  1         2    'u'       'z'   'z'       ''      'map-sed-series' 'SSWU'    'SSWV'   'sb'     1
-    'suspended transport due to waves' '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SSWUU'   'SSWVV'  'sb'     1
-    'staggered suspended transp. due to waves' '*' [1 0 1 1 0] 1       1.9  ''        'd'   'd'       ''      'map-sed-series' 'SSWUU'   'SSWVV'  'sb'     2
-    'bed load transport'               '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SBUU'    'SBVV'   'sb'     1
-    'staggered bedload transport'      '*'      [1 0 1 1 0]  1         1.9  ''        'd'   'd'       ''      'map-sed-series' 'SBUU'    'SBVV'   'sb'     2
-    'near-bed transport correction'    '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SUCOR'   'SVCOR'  's'      1
-    'staggered near-bed transport correction' '*' [1 0 1 1 0]  1       1.9  ''        'd'   'd'       ''      'map-sed-series' 'SUCOR'   'SVCOR'  's'      2
-    'd.a. suspended transport'         '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SSUU'    'SSVV'   's'      1
-    'staggered d.a. suspended transport' '*'    [1 0 1 1 0]  1         1.9  ''        'd'   'd'       ''      'map-sed-series' 'SSUU'    'SSVV'   's'      2
-    'total transport'                  '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'SSUU'    'SSVV'   's'      1
-    'mean bed load transport'          '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-avg-series' 'SBUUA'   'SBVVA'  'sb'     1
-    'mean d.a. suspended transport'    '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-avg-series' 'SSUUA'   'SSVVA'  's'      1
-    'mean total transport'             '*'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-avg-series' 'SSUUA'   'SSVVA'  's'      1
+                                       '*'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'z'   'z'       ''      'map-sed-series' 'SSWU'    'SSWV'   'sb'     1
+    'suspended transport due to waves' '*'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-sed-series' 'SSWUU'   'SSWVV'  'sb'     1
+    'staggered suspended transp. due to waves' '*' [1 0 1 1 0] 1       1.9  'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-sed-series' 'SSWUU'   'SSWVV'  'sb'     2
+    'bed load transport'               '*'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-sed-series' 'SBUU'    'SBVV'   'sb'     1
+    'staggered bedload transport'      '*'      [1 0 1 1 0]  1         1.9  'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-sed-series' 'SBUU'    'SBVV'   'sb'     2
+    'near-bed transport correction'    '*'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-sed-series' 'SUCOR'   'SVCOR'  's'      1
+    'staggered near-bed transport correction' '*' [1 0 1 1 0]  1       1.9  'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-sed-series' 'SUCOR'   'SVCOR'  's'      2
+    'd.a. suspended transport'         '*'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-sed-series' 'SSUU'    'SSVV'   's'      1
+    'staggered d.a. suspended transport' '*'    [1 0 1 1 0]  1         1.9  'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-sed-series' 'SSUU'    'SSVV'   's'      2
+    'total transport'                  '*'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-sed-series' 'SSUU'    'SSVV'   's'      1
+    'mean bed load transport'          '*'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-avg-series' 'SBUUA'   'SBVVA'  'sb'     1
+    'mean d.a. suspended transport'    '*'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-avg-series' 'SSUUA'   'SSVVA'  's'      1
+    'mean total transport'             '*'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-avg-series' 'SSUUA'   'SSVVA'  's'      1
     'source term suspended sediment fractions' ...
-    'kg/m^3/s'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'SOURSE'  ''       's'      1
+                                      'kg/m^3/s' [1 0 1 1 0] 1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'SOURSE'  ''       's'      1
     'sink term suspended sediment fractions'   ...
-    '1/s'           [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'SINKSE'  ''       's'      1
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
-    'near bed reference concentration' 'kg/m^3' [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'RCA'     ''       's'      0
-    'bed shear stress'                 'N/m^2'  [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-series'     'TAUKSI'  'TAUETA' []       1
-    'staggered bed shear stress'       'N/m^2'  [1 0 1 1 0]  1         1.9  ''        'd'   'd'       ''      'map-series'     'TAUKSI'  'TAUETA' []       1
-    'maximum bed shear stress'         'N/m^2'  [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-series'     'TAUMAX'  ''       []       0
-    'excess bed shear ratio'           '-'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'TAURAT'  ''       'sb1'    0
-    'initial bed level'                'm'      [0 0 1 1 0]  1         1    ''        'd'   'd'       ''      'map-const'      'DP0'     ''       []       0
-    'bed level in water level points'  'm'      [1 0 1 1 0]  1         1    ''        'd'   'z'       ''      'map-const'      'DP0'     ''       []       0
-    'bed level in velocity points'     'm'      [1 0 1 1 0]  1         0.9  ''        'd'   'd'       ''      'map-const'      'DPU0'    'DPV0'   []       0
-    'bed slope'                        '-'      [1 0 1 1 0]  1         2    'u'       'u'   'z'       ''      'map-sed-series' 'DZDUU'   'DZDVV'  []       1
-    'cum. erosion/sedimentation'       'm'      [1 0 1 1 0]  1         1    ''        'd'   'z'       ''      'map-const'      'DP0'     ''       []       0
-    'morphological acceleration factor' '-'     [1 0 0 0 0]  0         1    ''        'NA'  ''        ''    'map-infsed-serie' 'MORFAC'  ''       []       0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
-    'available mass in fluff layer'    'kg/m^2' [1 0 1 1 0]  1         1    ''        ''    'z'       ''      'map-sed-series' 'MFLUFF'  ''       's'      0
-    'available mass of sediment'       'kg/m^2' [1 0 1 1 1]  1         1    ''        ''    'z'       'b'     'map-sed-series' 'MSED'    ''       'sb'     0
-    'available mass of sediment'       'kg/m^2' [1 0 1 1 0]  1         1    ''        ''    'z'       ''      'map-sed-series' 'BODSED'  ''       'sb'     0
-    'available mass of sediment'       'kg/m^2' [1 0 1 1 0]  1         1    ''        ''    'z'       ''      'map-mor-series' 'BODSED'  ''       'sb'     0
-    'sediment fraction in top layer'   '-'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'FRAC'    ''       'sb1'    0
-    'mud fraction in top layer'        '-'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'MUDFRAC' ''       []       0
-    'sediment fraction'                '-'      [1 0 1 1 1]  1         1    ''        'z'   'z'       'b'     'map-sed-series' 'LYRFRAC' ''       'sb1'    0
-    'cumulative mass error'            'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'LYRFRAC' ''       []       0
-    'Shepard deposit classification'   ''       [1 0 1 1 1]  1         6    ''        'z'   'z'       'b'     'map-sed-series' 'LYRFRAC' ''       []       0
-    'USDA deposit classification'      ''       [1 0 1 1 1]  1         6    ''        'z'   'z'       'b'     'map-sed-series' 'LYRFRAC' ''       []       0
-    'bed porosity'                     '-'      [1 0 1 1 1]  1         1    ''        'z'   'z'       'b'     'map-sed-series' 'EPSPOR'  ''       []       0
-    'maximum historical load'          'kg/m^2' [1 0 1 1 1]  1         1    ''        'z'   'z'       'b'     'map-sed-series' 'PRELOAD' ''       []       0
-    'arithmetic mean sediment diameter' 'm'     [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'DM'      ''       []       0
-    'geometric mean sediment diameter' 'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'DG'      ''       []       0
-    'hiding and exposure'              '-'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'HIDEXP'  ''       'sb1'    0
+                                       '1/s'    [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'SINKSE'  ''       's'      1
+    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    'near bed reference concentration' 'kg/m^3' [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'RCA'     ''       's'      0
+    'bed shear stress'                 'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-series'     'TAUKSI'  'TAUETA' []       1
+    'staggered bed shear stress'       'N/m^2'  [1 0 1 1 0]  1         1.9  'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-series'     'TAUKSI'  'TAUETA' []       1
+    'maximum bed shear stress'         'N/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'TAUMAX'  ''       []       0
+    'excess bed shear ratio'           '-'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'TAURAT'  ''       'sb1'    0
+    'initial bed level'                'm'      [0 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-const'      'DP0'     ''       []       0
+    'bed level in water level points'  'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'd'   'z'       ''      'map-const'      'DP0'     ''       []       0
+    'bed level in velocity points'     'm'      [1 0 1 1 0]  1         0.9  'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-const'      'DPU0'    'DPV0'   []       0
+    'bed slope'                        '-'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-sed-series' 'DZDUU'   'DZDVV'  []       1
+    'cum. erosion/sedimentation'       'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'd'   'z'       ''      'map-const'      'DP0'     ''       []       0
+    'morphological acceleration factor' '-'     [1 0 0 0 0]  0         1    ''      ''       ''        'NA'  ''        ''    'map-infsed-serie' 'MORFAC'  ''       []       0
+    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    'available mass in fluff layer'    'kg/m^2' [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        ''    'z'       ''      'map-sed-series' 'MFLUFF'  ''       's'      0
+    'available mass of sediment'       'kg/m^2' [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        ''    'z'       'b'     'map-sed-series' 'MSED'    ''       'sb'     0
+    'available mass of sediment'       'kg/m^2' [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        ''    'z'       ''      'map-sed-series' 'BODSED'  ''       'sb'     0
+    'available mass of sediment'       'kg/m^2' [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        ''    'z'       ''      'map-mor-series' 'BODSED'  ''       'sb'     0
+    'sediment fraction in top layer'   '-'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'FRAC'    ''       'sb1'    0
+    'mud fraction in top layer'        '-'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'MUDFRAC' ''       []       0
+    'sediment fraction'                '-'      [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'b'     'map-sed-series' 'LYRFRAC' ''       'sb1'    0
+    'cumulative mass error'            'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'LYRFRAC' ''       []       0
+    'Shepard deposit classification'   ''       [1 0 1 1 1]  1         6    'sQUAD' 'xy'     ''        'z'   'z'       'b'     'map-sed-series' 'LYRFRAC' ''       []       0
+    'USDA deposit classification'      ''       [1 0 1 1 1]  1         6    'sQUAD' 'xy'     ''        'z'   'z'       'b'     'map-sed-series' 'LYRFRAC' ''       []       0
+    'bed porosity'                     '-'      [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'b'     'map-sed-series' 'EPSPOR'  ''       []       0
+    'maximum historical load'          'kg/m^2' [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'b'     'map-sed-series' 'PRELOAD' ''       []       0
+    'arithmetic mean sediment diameter' 'm'     [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'DM'      ''       []       0
+    'geometric mean sediment diameter' 'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'DG'      ''       []       0
+    'hiding and exposure'              '-'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'HIDEXP'  ''       'sb1'    0
     'reduction factor due to limited sediment thickness' ...
-    '-'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'FIXFAC'  ''       'sb1'    0
-    'sediment thickness'               'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'DPSED'   ''       []       0
-    'sediment thickness'               'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'THLYR'   ''       []       0
-    'sediment thickness'               'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'DP_BEDLYR' ''       []       0
-    'base level of sediment layer'     'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'DP_BEDLYR' ''       []       0
-    'base level of sediment layer'     'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'THLYR'   ''       []       0
-    'base level of sediment layer'     'm'      [1 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-sed-series' 'DPSED'   ''       []       0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0
-    'grid cell surface area'           'm^2'    [0 0 1 1 0]  1         1    ''        'z'   'z'       ''      'map-const'      'XCOR'    ''       []       0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''               ''        ''       []       0};
+                                       '-'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'FIXFAC'  ''       'sb1'    0
+    'sediment thickness'               'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'DPSED'   ''       []       0
+    'sediment thickness'               'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'THLYR'   ''       []       0
+    'sediment thickness'               'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'DP_BEDLYR' ''       []       0
+    'base level of sediment layer'     'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'DP_BEDLYR' ''       []       0
+    'base level of sediment layer'     'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'THLYR'   ''       []       0
+    'base level of sediment layer'     'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'DPSED'   ''       []       0
+    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    'grid cell surface area'           'm^2'    [0 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-const'      'XCOR'    ''       []       0
+    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0};
 
 %============================= AUTODETECTION ==============================
 Info=vs_disp(FI,'map-const','XCOR');
@@ -1249,7 +1475,8 @@ elseif outputLayers
         'hydrostatic pressure'
         'total pressure'
         'relative hydrostatic pressure'
-        'relative total pressure'});
+        'relative total pressure'
+        'time-aver. depth-aver. velocity'});
     K_=5;
     for i=1:length(Out)
         if Out(i).DimFlag(K_) && any(strcmp(Out(i).Loc3D,{'i','c'}))
@@ -2044,7 +2271,8 @@ done = false;
 switch Q.Name
     case {'depth averaged velocity', ...
             'd.a. velocity fluctuations', ...
-            'head'}
+            'head',...
+            'time-aver. depth-aver. velocity'}
         eDims = {...
             DimSelection.N  DimSelection.MI 0
             DimSelection.NI DimSelection.M  0};
@@ -2275,7 +2503,8 @@ switch Q.Name
     case {'depth averaged velocity', ...
             'd.a. velocity fluctuations', ...
             'froude number', ...
-            'head'}
+            'head',...
+            'time-aver. depth-aver. velocity'}
         u = Data{1};
         v = Data{2};
         if zlayermodel
@@ -2353,7 +2582,7 @@ switch Q.Name
             gravity = 9.81;
         end
         switch Q.Name
-            case 'depth averaged velocity'
+            case {'depth averaged velocity','time-aver. depth-aver. velocity'}
                 Data = {u2d v2d};
             case 'd.a. velocity fluctuations'
                 [umean,Success]=vs_let(FI,Q.Group,gDims,'UMNLDF',eDims(1,1:2),'quiet');
@@ -3338,4 +3567,190 @@ elseif strcmp(method,'Shepard')
     % SAND-SILT-CLAY = 10
     ind = sand>.2 & silt >.2 & clay>.2;
     class(ind)=10;    
+end
+% -------------------------------------------------------------------------
+function hNew = plotthis(FI,Props,Parent,Ops,varargin)
+hNew = [];
+switch Props.Name
+    case {'cut cell patches','cut cell patches with line','cut cell patches only line'}
+        Time = varargin(1);
+        idxN = varargin(3);
+        idxM = varargin(2);
+        xpoly = vs_get(FI,'map-series',Time,'INTx_GRS',[{0} idxN idxM],'quiet!');
+        ypoly = vs_get(FI,'map-series',Time,'INTy_GRS',[{0} idxN idxM],'quiet!');
+        ndryp = vs_get(FI,'map-series',Time,'Ndry_GRS',[idxN idxM],'quiet!');
+        kfscc = vs_get(FI,'map-series',Time,'kfs_cc',[idxN idxM],'quiet!');
+        if ~isempty(ndryp)
+            icut = abs(kfscc)<=1;
+            ndryp = ndryp(icut);
+            xpoly = xpoly(:,icut);
+            ypoly = ypoly(:,icut);
+            for i = 1:length(ndryp)
+                if ndryp(i)==3
+                    xpoly(4:5,i) = xpoly(3,i);
+                    ypoly(4:5,i) = ypoly(3,i);
+                elseif ndryp(i)==4
+                    xpoly(5,i) = xpoly(4,i);
+                    ypoly(5,i) = ypoly(4,i);
+                end
+            end
+            c = get(Parent,'color');
+            if isequal(c,'none')
+                c = get(get(Parent,'parent'),'color');
+            end
+            switch Props.Name
+                case  'cut cell patches'
+                    hNew = patch(xpoly,ypoly,1,'parent',Parent,'facecolor',c,'linestyle','none','cdata',[]);
+                case   'cut cell patches with line'
+                    hNew = patch(xpoly,ypoly,1,'parent',Parent,'facecolor',c,'edgecolor',Ops.colour,'cdata',[]);
+                case   'cut cell patches only line'
+                    hNew = patch(xpoly,ypoly,1,'parent',Parent,'facecolor','none','linestyle','-','edgecolor',Ops.colour,'cdata',[]);
+            end
+        end
+    case {'ghost u-point reconstruction','ghost v-point reconstruction','ghost s-point reconstruction'}
+        p = [Props.Name(7) '1'];
+        Time = varargin(1);
+        idxN = varargin{3};
+        idxM = varargin{2};
+        %
+        plotTEXT = 0 % 0:NO TEXT;  1:GP  2:BI;  3:IP;  
+        %
+        nGHOST = vs_get(FI,'map-series',Time,['totGHOST' p],'quiet!');
+        points = {1:nGHOST};
+        mGP = vs_get(FI,'map-series',Time,['mGP' p],points,'quiet!');
+        nGP = vs_get(FI,'map-series',Time,['nGP' p],points,'quiet!');
+        xBI = vs_get(FI,'map-series',Time,['xBI' p],points,'quiet!');
+        yBI = vs_get(FI,'map-series',Time,['yBI' p],points,'quiet!');
+        mBI = vs_get(FI,'map-series',Time,['mBI' p],points,'quiet!');
+        nBI = vs_get(FI,'map-series',Time,['nBI' p],points,'quiet!');        
+        xIP = vs_get(FI,'map-series',Time,['xIP' p],points,'quiet!');
+        yIP = vs_get(FI,'map-series',Time,['yIP' p],points,'quiet!');
+        mIP = vs_get(FI,'map-series',Time,['mIP' p],points,'quiet!');
+        nIP = vs_get(FI,'map-series',Time,['nIP' p],points,'quiet!');
+        %
+        inside = (ismember(mGP,idxM) | idxM==0) & (ismember(nGP,idxN) | idxN==0);
+        mGP(~inside) = [];
+        nGP(~inside) = [];
+        xBI(~inside) = [];
+        yBI(~inside) = [];
+        xIP(~inside) = [];
+        yIP(~inside) = [];
+        mIP(~inside) = [];
+        nIP(~inside) = [];
+        %
+        xc=vs_get(FI,'map-const','XCOR','quiet!');
+        yc=vs_get(FI,'map-const','YCOR','quiet!');
+        nmax = size(xc,1);
+        nmax = nmax -1;
+        mmax = size(xc,2)-1;
+        % create xcor0, ycor0 (containing boundary cells and immaginary nodes), since s1 ghost can be outside the domain
+        xcor0(2:nmax+1,2:mmax+1) = xc(1:nmax,1:mmax);
+        ycor0(2:nmax+1,2:mmax+1) = yc(1:nmax,1:mmax);
+        xcor0(2:nmax+1,1) = xcor0(2:nmax+1,2) - (xcor0(2:nmax+1,3)-xcor0(2:nmax+1,2));
+        ycor0(2:nmax+1,1) = ycor0(2:nmax+1,2) - (ycor0(2:nmax+1,3)-ycor0(2:nmax+1,2)) ;
+        xcor0(2:nmax+1,mmax+2) = xcor0(2:nmax+1,mmax+1) + (xcor0(2:nmax+1,mmax+1)-xcor0(2:nmax+1,mmax)) ;
+        ycor0(2:nmax+1,mmax+2) = ycor0(2:nmax+1,mmax+1) + (ycor0(2:nmax+1,mmax+1)-ycor0(2:nmax+1,mmax))  ;
+        xcor0(1,2:mmax+1) = xcor0(2,2:mmax+1) - (xcor0(3,2:mmax+1) - xcor0(2,2:mmax+1));
+        ycor0(1,2:mmax+1) = ycor0(2,2:mmax+1) - (ycor0(3,2:mmax+1) - ycor0(2,2:mmax+1));
+        xcor0(nmax+2,2:mmax+1) = xcor0(nmax+1,2:mmax+1) +  (xcor0(nmax+1,2:mmax+1) - xcor0(nmax,2:mmax+1));
+        ycor0(nmax+2,2:mmax+1) = ycor0(nmax+1,2:mmax+1) +  (ycor0(nmax+1,2:mmax+1) - ycor0(nmax,2:mmax+1));
+        %4 corners points should never be needed since that cannot be a corner ghost cell
+        xcor0(1,1) = xcor0(2,1) - (xcor0(3,1) - xcor0(2,1));
+        ycor0(1,1) = ycor0(2,1) - (ycor0(3,1) - ycor0(2,1));
+        xcor0(nmax+2,1) = xcor0(nmax+2,2) - (xcor0(nmax+2,3) - xcor0(nmax+2,2));
+        ycor0(nmax+2,1) = ycor0(nmax+2,2) - (ycor0(nmax+2,3) - ycor0(nmax+2,2));
+        xcor0(1,mmax+2) = xcor0(1,mmax+2) + (xcor0(1,mmax+1) - xcor0(1,mmax));
+        ycor0(1,mmax+2) = ycor0(1,mmax+2) + (ycor0(1,mmax+1) - ycor0(1,mmax));
+        xcor0(nmax+2,mmax+2) = xcor0(nmax+2,mmax+1) + (xcor0(nmax+2,mmax+1) - xcor0(nmax+2,mmax));
+        ycor0(nmax+2,mmax+2) = ycor0(nmax+2,mmax+1) + (ycor0(nmax+2,mmax+1) - ycor0(nmax+2,mmax));
+        nmax0 = nmax+2;
+        lGP = sub2ind(size(xcor0),nGP,mGP);         
+        %
+        switch p
+            case 's1'
+                xGP = (xcor0(lGP)+xcor0(lGP+1)+xcor0(lGP+nmax0)+xcor0(lGP+nmax0+1))/4;
+                yGP = (ycor0(lGP)+ycor0(lGP+1)+ycor0(lGP+nmax0)+ycor0(lGP+nmax0+1))/4;                   
+            case 'u1'            
+                xGP = (xcor0(lGP+nmax0+1)+xcor0(lGP+nmax0))/2;
+                yGP = (ycor0(lGP+nmax0+1)+ycor0(lGP+nmax0))/2;
+            case 'v1'                      
+                xGP = (xcor0(lGP+1)+xcor0(lGP+nmax0+1))/2;
+                yGP = (ycor0(lGP+1)+ycor0(lGP+nmax0+1))/2;
+        end
+        %
+        x = [xGP xBI xIP xIP]';
+        y = [yGP yBI yIP yIP]';
+        x(4,:) = NaN;
+        y(4,:) = NaN;
+        if isempty(x)
+            hNew = [];
+        else
+            hNew(4) = line(x(:),y(:),'parent',Parent,'color','k','linestyle','-','marker','none','LineWidth' ,2);
+            hNew(3) = line(xGP,yGP,'parent',Parent,'markeredgecolor','k','markerfacecolor',[128 0 0]/255,'linestyle','none','marker','o','MarkerSize',5,'LineWidth' ,2);
+            hNew(2) = line(xBI,yBI,'parent',Parent,'markeredgecolor','k','markerfacecolor','w','linestyle','none','marker','o','MarkerSize',5,'LineWidth' ,2);
+            hNew(1) = line(xIP,yIP,'parent',Parent,'markeredgecolor','k','markerfacecolor','k','linestyle','none','marker','o','MarkerSize',5,'LineWidth' ,2);
+            if plotTEXT==1
+                for i = length(mIP):-1:1
+                    hNew(4+i) = text(xGP(i),yGP(i),sprintf('(%i,%i)',mGP(i),nGP(i)),'parent',Parent,'horizontalalignment','left','verticalalignment','bottom','clipping','on');
+                end
+            elseif plotTEXT==2
+                for i = length(mIP):-1:1
+                    hNew(4+i) = text(xBI(i),yBI(i),sprintf('(%i,%i)',mBI(i),nBI(i)),'parent',Parent,'horizontalalignment','left','verticalalignment','bottom','clipping','on');
+                end         
+            elseif plotTEXT==3
+                for i = length(mIP):-1:1
+                    hNew(4+i) = text(xIP(i),yIP(i),sprintf('(%i,%i)',mIP(i),nIP(i)),'parent',Parent,'horizontalalignment','left','verticalalignment','bottom','clipping','on');
+                end                       
+            end
+
+        end
+end
+
+
+function [x,y] = xy_cutcell(x,y,FI,idx)
+T_=1; ST_=2; N_=3; M_=4; K_=5;
+%
+xc=vs_get(FI,'map-const','XCOR',idx([N_ M_]),'quiet!');
+yc=vs_get(FI,'map-const','YCOR',idx([N_ M_]),'quiet!');
+area0 = repmat(NaN,size(xc));
+area0(2:end,2:end) = cellarea(xc,yc);
+%
+Time = idx(T_);
+xpoly = vs_get(FI,'map-series',Time,'INTx_GRS',[{0} idx([N_ M_])],'quiet!');
+ypoly = vs_get(FI,'map-series',Time,'INTy_GRS',[{0} idx([N_ M_])],'quiet!');
+ndryp = vs_get(FI,'map-series',Time,'Ndry_GRS',idx([N_ M_]),'quiet!');
+kfscc = vs_get(FI,'map-series',Time,'kfs_cc',idx([N_ M_]),'quiet!');
+%
+for m = 1:size(kfscc,2)
+    for n = 1:size(kfscc,1)
+        if kfscc(n,m) == 0
+            np = ndryp(n,m);
+            xp = xpoly(1:np,n,m);
+            yp = ypoly(1:np,n,m);
+            %
+            A0 = area0(n,m); % area of whole grid cell
+            A1 = 0; % area of high part
+            x1 = 0; % x coordinate of centroid of high part
+            y1 = 0; % y coordinate of centroid of high part
+            for i = 0:np-1
+                if i>0
+                    c = (xp(i)*yp(i+1)-xp(i+1)*yp(i));
+                    x1 = x1 + (xp(i)+xp(i+1))*c;
+                    y1 = y1 + (yp(i)+yp(i+1))*c;
+                else
+                    c = (xp(np)*yp(1)-xp(1)*yp(np));
+                    x1 = x1 + (xp(np)+xp(1))*c;
+                    y1 = y1 + (yp(np)+yp(1))*c;
+                end
+                A1 = A1 + c;
+            end
+            A1 = A1/2;
+            x1 = x1/(6*A1);
+            y1 = y1/(6*A1);
+            A1 = abs(A1);
+            %
+            x(n,m) = (x(n,m)*A0 - x1*A1)/(A0-A1);  %these gives rounding error for small cut cells 
+            y(n,m) = (y(n,m)*A0 - y1*A1)/(A0-A1);  %these gives rounding error for small cut cells 
+        end
+    end
 end

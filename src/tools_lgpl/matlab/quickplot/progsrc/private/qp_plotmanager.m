@@ -1888,7 +1888,7 @@ switch cmd
     case 'refreshitemprop'
         It = getItem(UD);
         hOptions = UD.PlotMngr.Options.Handles;
-        if isempty(It) || length(It)>1
+        if isempty(It) || length(It)>1 || ~ishandle(It)
             % no item or multiple items selected - for the time being can't
             % visualize options. Call qp_update_options with empty Ops to
             % hide them all.
@@ -1922,7 +1922,7 @@ if ~iscell(ItData)
     It = [];
 else
     ItIDs=ItData{2};
-    ItVal=get(UD.PlotMngr.ItList,'value');
+    ItVal=get(UD.PlotMngr.ItList,'value'); % <-- use ItData{1} - ItData{2} is invalid if animated or linked
     if isempty(ItIDs)
         It=[];
     else

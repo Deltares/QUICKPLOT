@@ -159,10 +159,12 @@ switch pflag
             sfn2 = char(fn2);
             [f1,i1] = sort(fn1);
             [f2,i2] = sort(fn2);
-            [ii,r1] = sort(i1);
+            [ii,r2] = sort(i2);
             for i = 1:length(fn1)
-               if ~strcmp(fn1{i},fn2{i})
-                  myfprintf(fid,['  %2i %s - %2i %s' br],i1(r1(i)),sfn1(i,:),i2(r1(i)),sfn2(i,:));
+               if strcmp(fn1{i},fn2{i})
+                  myfprintf(fid,['  %2i %s [same]' br],i,sfn1(i,:));
+               else
+                  myfprintf(fid,['  %2i %s - %2i %s' br],i,sfn1(i,:),i1(r2(i)),sfn2(i,:));
                end
             end
         end

@@ -429,13 +429,12 @@ switch FI.FileType
         end
         %
         nFLD = 0;
-        flds = {'calcdim','calcpnt', ...
-            'reachdim','flowanal','reachseg','rsegsub', ...
-            'strucdim','struc', ...
-            'qlat', ...
-            'qwb', ...
-            'measstat', ...
-            'nodes_cr','reach_cr','struc_cr'};
+        flds = {'calcdim','calcpnt', ... % calculation points
+            'reachdim','flowanal','reachseg','rsegsub', ... % reach segments
+            'strucdim','struc', ... % structures
+            'qlat', ... % lateral discharges
+            'qwb', ... % global water balance
+            'measstat', 'nodes_cr','reach_cr','struc_cr'}; % node, calculation point, reach segment, structure states just before crash
         for i = 1:length(flds)
             if isfield(FI,flds{i})
                 nFLD = nFLD+1+length(FI.(flds{i}).SubsName);
