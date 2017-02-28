@@ -59,7 +59,7 @@ switch cmd
         DoDS=0;
         if strcmp(cmd,'openurl')
             DoDS=1;
-        elseif length(filterspec)>7 && isequal(lower(filterspec(1:7)),'http://')
+        elseif length(filterspec)>8 && (isequal(lower(filterspec(1:7)),'http://') || isequal(lower(filterspec(1:8)),'https://'))
             DoDS=1;
         elseif isempty(targetdir) || exist(targetdir)~=7
             targetdir=pwd;
