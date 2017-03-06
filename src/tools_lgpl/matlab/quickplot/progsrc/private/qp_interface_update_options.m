@@ -825,6 +825,8 @@ if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'stri
                                     PrsTps={'polylines','values'};
                                 case {'UGRID-EDGE'}
                                     PrsTps={'markers';'values';'edge'};
+                                case {'UGRID-NODE'}
+                                    PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                                 otherwise
                                     PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                             end

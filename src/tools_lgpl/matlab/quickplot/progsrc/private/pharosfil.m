@@ -216,8 +216,8 @@ if XYRead
             if idx{M_}~=0
                 XYZ = XYZ(idx{M_},:);
             end
-            XYZ=reshape(XYZ,[1 size(XYZ,1) 1 2]);
-            Ans.XYZ=XYZ;
+            Ans.X = XYZ(:,1);
+            Ans.Y = XYZ(:,2);
             %
             ind=sum(INPELM(1:end-1).*INELEM(1:end-1));
             TRI=transpose(reshape(PointIndices(ind+(1:INPELM(end)*INELEM(end))),[INPELM(end) INELEM(end)]));
@@ -228,7 +228,8 @@ if XYRead
                 TRI = Translate(TRI);
                 TRI = TRI(all(TRI,2),:);
             end
-            Ans.TRI=TRI;
+            Ans.FaceNodeConnect=TRI;
+            Ans.ValLocation='NODE';
     end
 end
 
@@ -370,46 +371,46 @@ varargout={Ans FI};
 function Out=infile(FI,domain)
 
 %======================== SPECIFIC CODE =======================================
-PropNames={'Name'             'Units'  'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc' 'Group'      'Val1'           'Val2'      'UseGrid' 'SubFld'};
-DataProps={'grid'             ''       'TRI'  'xy'     [0 0 6 0 0]  0          0     ''        ''    ''       'GRID_coor'   'X_coor'         ''           1         ''
-    'open boundary'            ''       'SEG'  'xy'     [0 0 6 0 0]  0          0     ''        ''    ''       'GRID_adm'   'LELNR'          ''           2         ''
-    'transmission boundaries'  ''       'SEG'  'xy'     [0 0 6 0 0]  0          0     ''        ''    ''       'GRID_adm'   'LELNR'          ''           2         ''
-    'closed boundaries'        ''       'SEG'  'xy'     [0 0 6 0 0]  0          0     ''        ''    ''       'GRID_adm'   'LELNR'          ''           2         ''
-    '-------'                  ''       ''     ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''
-    'water level'              'm'      'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'H_depth'        ''           1         ''
-    'bed level'                'm'      'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'H_depth'        ''           1         ''
-    'water depth'              'm'      'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'H_depth'        ''           1         ''
-    'velocity'                 'm/s'    'TRI'  'xy'     [0 0 6 0 0]  0          2     ''        ''    ''       'CURRENT'    'Ux_veloc'       'Uy_veloc'   1         ''
-    %   'relative radiation freqency' '1/s' 'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'CURRENT'    'Omega_rel'      ''           1         ''
-    '-------'                  ''       ''     ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''
-    'relative breaking intensity' ''     'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'BREAKING'   'Gamma_b'        ''           1         'nfreq'
-    'weighted mean wave height dir.' 'm' 'TRI'  'xy'    [0 0 6 0 0]  0          1     ''        ''    ''       'HS_dir'     'HS_directional' ''           1         'md'
-    'wave height'              'm'      'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'POTENTIALS' 'PHI_r'          'PHI_i'      1         'nrun'
-    'wave height'              'm'      'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'PHIs_r'         'PHIs_i'     1         'sf'
-    'wave phase'               ''       'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'POTENTIALS' 'PHI_r'          'PHI_i'      1         'nrun'
-    'wave phase'               ''       'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'PHIs_r'         'PHIs_i'     1         'sf'
-    'wave image'               'm'      'TRI'  'xy'     [7 0 6 0 0]  0          1     ''        ''    ''       'POTENTIALS' 'PHI_r'          'PHI_i'      1         'nrun'
-    'wave image'               'm'      'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'PHIs_r'         'PHIs_i'     1         'sf'
-    'maximum velocity'         'm/s'    'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'UMAX'           ''           1         'sf'
+PropNames={'Name'             'Units'    'Geom'       'Coords' 'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc' 'Group'      'Val1'           'Val2'      'UseGrid' 'SubFld'};
+DataProps={'grid'             ''         'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          0     ''        ''    ''       'GRID_coor'   'X_coor'         ''           1         ''
+    'open boundary'            ''        'SEG'        'xy'     [0 0 6 0 0]  0          0     ''        ''    ''       'GRID_adm'   'LELNR'          ''           2         ''
+    'transmission boundaries'  ''        'SEG'        'xy'     [0 0 6 0 0]  0          0     ''        ''    ''       'GRID_adm'   'LELNR'          ''           2         ''
+    'closed boundaries'        ''        'SEG'        'xy'     [0 0 6 0 0]  0          0     ''        ''    ''       'GRID_adm'   'LELNR'          ''           2         ''
+    '-------'                  ''        ''           ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''
+    'water level'              'm'       'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'H_depth'        ''           1         ''
+    'bed level'                'm'       'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'H_depth'        ''           1         ''
+    'water depth'              'm'       'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'H_depth'        ''           1         ''
+    'velocity'                 'm/s'     'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          2     ''        ''    ''       'CURRENT'    'Ux_veloc'       'Uy_veloc'   1         ''
+    %'relative radiation freqency' '1/s' 'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'CURRENT'    'Omega_rel'      ''           1         ''
+    '-------'                  ''        ''           ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''
+    'relative breaking intensity' ''     'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'BREAKING'   'Gamma_b'        ''           1         'nfreq'
+    'weighted mean wave height dir.' 'm' 'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'HS_dir'     'HS_directional' ''           1         'md'
+    'wave height'              'm'       'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'POTENTIALS' 'PHI_r'          'PHI_i'      1         'nrun'
+    'wave height'              'm'       'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'PHIs_r'         'PHIs_i'     1         'sf'
+    'wave phase'               ''        'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'POTENTIALS' 'PHI_r'          'PHI_i'      1         'nrun'
+    'wave phase'               ''        'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'PHIs_r'         'PHIs_i'     1         'sf'
+    'wave image'               'm'       'UGRID-NODE' 'xy'     [7 0 6 0 0]  0          1     ''        ''    ''       'POTENTIALS' 'PHI_r'          'PHI_i'      1         'nrun'
+    'wave image'               'm'       'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'PHIs_r'         'PHIs_i'     1         'sf'
+    'maximum velocity'         'm/s'     'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'UMAX'           ''           1         'sf'
     'maximum velocity direction' ...
-    'radians' 'TRI' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'UDIR'           ''           1         'sf'
-    %   'maximum velocity'         'm/s'    'TRI'  'xy'     [0 0 6 0 0]  0          2     ''        ''    ''       'SEICH_res'  'UMAX'           'UDIR'       1         'sf'
-    'minimum velocity'         'm/s'    'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'UMIN'           ''           1         'sf'
-    '-------'                  ''       ''     ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''
-    'wave number'              ''       'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'K_wave'         ''           1         'nfreq'
-    'phase velocity'           'm/s'    'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'C_wave'         ''           1         'nfreq'
-    'group velocity'           'm/s'    'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'Cg_wave'        ''           1         'nfreq'
-    'potential (real part)'    ''       'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'POTENTIALS' 'PHI_r'          ''           1         'nrun'
-    'potential (imag part)'    ''       'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'POTENTIALS' 'PHI_i'          ''           1         'nrun'
-    'seiches potential (real part)' ''  'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'PHIs_r'         ''           1         'sf'
-    'seiches potential (imag part)' ''  'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'PHIs_i'         ''           1         'sf'
-    '-------'                  ''       ''     ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''
-    'weighted period Tm-1,0'   's'      'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SPECTRAL-PAR' 'TM10'         ''           1         ''
+                               'radians' 'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'UDIR'           ''           1         'sf'
+    %   'maximum velocity'     'm/s'     'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          2     ''        ''    ''       'SEICH_res'  'UMAX'           'UDIR'       1         'sf'
+    'minimum velocity'         'm/s'     'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'UMIN'           ''           1         'sf'
+    '-------'                  ''        ''           ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''
+    'wave number'              ''        'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'K_wave'         ''           1         'nfreq'
+    'phase velocity'           'm/s'     'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'C_wave'         ''           1         'nfreq'
+    'group velocity'           'm/s'     'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'Cg_wave'        ''           1         'nfreq'
+    'potential (real part)'    ''        'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'POTENTIALS' 'PHI_r'          ''           1         'nrun'
+    'potential (imag part)'    ''        'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'POTENTIALS' 'PHI_i'          ''           1         'nrun'
+    'seiches potential (real part)' ''   'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'PHIs_r'         ''           1         'sf'
+    'seiches potential (imag part)' ''   'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'PHIs_i'         ''           1         'sf'
+    '-------'                  ''        ''           ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''
+    'weighted period Tm-1,0'   's'       'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SPECTRAL-PAR' 'TM10'         ''           1         ''
     'wave number based on Tm-1,0' ...
-    ''       'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SPECTRAL-PAR' 'KTM10'        ''           1         ''
+                               ''        'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SPECTRAL-PAR' 'KTM10'        ''           1         ''
     'radial frequency based on Tm-1,0' ...
-    ''       'TRI'  'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SPECTRAL-PAR' 'OMEGATM10'    ''           1         ''
-    '-------'                  ''       ''     ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''};
+                               ''        'UGRID-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SPECTRAL-PAR' 'OMEGATM10'    ''           1         ''
+    '-------'                  ''        ''           ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''};
 %======================== SPECIFIC CODE DIMENSIONS ============================
 SkipGroup={};
 SkipElem={'RKN_roughness'};
@@ -458,7 +459,7 @@ for i=1:length(Grps)
                     subf='agd';
                 end
                 fld=fld+1;
-                DataProps(fld,:)={edescr            eunit  'TRI' 'xy' [0 0 6 0 0]  0          1     ''        ''    ''       Grps{i}      Elms{j}          ''           1         subf};
+                DataProps(fld,:)={edescr            eunit  'UGRID-NODE' 'xy' [0 0 6 0 0]  0          1     ''        ''    ''       Grps{i}      Elms{j}          ''           1         subf};
             end
         end
     end

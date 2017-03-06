@@ -148,6 +148,7 @@ for i=1:length(FI)
     DataProps{i,5}=FI(i).DimFlag;
     if isfield(FI(i).Props,'DataInCell')
         DataProps{i,6}=FI(i).Props.DataInCell;
+        DataProps{i,3}=FI(i).Geom;
     else
         DataProps{i,6}=0;
     end
@@ -155,6 +156,7 @@ for i=1:length(FI)
     DataProps{i,8}=i;
     if isfield(FI(i),'Tri') && ~isempty(FI(i).Tri)
         DataProps{i,9}=FI(i).Tri;
+        DataProps{i,3}='TRI';
     else
         DataProps{i,9}=0;
     end
@@ -250,20 +252,11 @@ if isequal(Props.FileInfo,'operator')
             [Ans2,FI]=getdata(P2,cmd2,sel);
             Props.Props.Data{2}=FI;
             if griduse~=1
-                if isfield(Ans2,'XYZ')
-                    Ans.XYZ=Ans2.XYZ;
-                end
-                if isfield(Ans2,'TRI')
-                    Ans.XYZ=Ans2.TRI;
-                end
-                if isfield(Ans2,'X')
-                    Ans.X=Ans2.X;
-                end
-                if isfield(Ans2,'Y')
-                    Ans.Y=Ans2.Y;
-                end
-                if isfield(Ans2,'Z')
-                    Ans.Z=Ans2.Z;
+                for c = {'FaceNodeConnect','ValueLocation','TRI','XYZ','X','Y','Z'}
+                    f = c{1};
+                    if isfield(Ans,f)
+                        Ans.(f) = Ans2.(f);
+                    end
                 end
             end
             if isfield(Ans,'Val')

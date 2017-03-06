@@ -150,6 +150,10 @@ switch v_slice
                     if multiTime
                         data.(fld) = Tmp(:,isel,:);
                     else
+                        if size(Tmp,1)==1
+                            szTmp = size(Tmp);
+                            Tmp = reshape(Tmp,szTmp([2:end 1]));
+                        end
                         data.(fld) = Tmp(isel,:);
                     end
                 end

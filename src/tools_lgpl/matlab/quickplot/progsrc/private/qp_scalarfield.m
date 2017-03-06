@@ -202,7 +202,7 @@ end
 function hNew = qp_scalarfield_ugrid(Parent,hNew,presentationtype,data,Ops)
 set(Parent,'NextPlot','add')
 unknown_ValLocation = 0;
-Val = data.Val;
+Val = data.Val(:);
 
 if isfield(data,'TRI')
     FaceNodeConnect = data.TRI;
@@ -216,7 +216,12 @@ switch data.ValLocation
     case 'NODE'
         switch presentationtype
             case {'patches','patches with lines'}
-                hNew=genfaces(hNew,Ops,Parent,Val,XYZ,TRI);
+                X = data.X;
+                Y = data.Y;
+                FNC = data.FaceNodeConnect;
+                Val = mean(Val(FNC),2);
+                % for genfaces we need to set dimension 2 to M, and dimension 4 to 2 (X or Y).
+                hNew=genfaces(hNew,Ops,Parent,Val,cat(4,X',Y'),FNC);
                 
             case 'values'
                 X = data.X;
