@@ -216,12 +216,26 @@ switch data.ValLocation
     case 'NODE'
         switch presentationtype
             case {'patches','patches with lines'}
-                X = data.X;
-                Y = data.Y;
-                FNC = data.FaceNodeConnect;
-                Val = mean(Val(FNC),2);
-                % for genfaces we need to set dimension 2 to M, and dimension 4 to 2 (X or Y).
-                hNew=genfaces(hNew,Ops,Parent,Val,cat(4,X',Y'),FNC);
+                XY = reshape([data.X data.Y],[1 length(data.X) 1 2]);
+                nNodes = sum(~isnan(FaceNodeConnect),2);
+                uNodes = unique(nNodes);
+                delete(hNew)
+                hNew = {};
+                %
+                % compute face values
+                %
+                Msk = isnan(FaceNodeConnect);
+                FaceNodeConnect(Msk) = 1;
+                Val = Val(FaceNodeConnect);
+                Val(Msk) = 0;
+                Val = sum(Val,2)./sum(~Msk,2);
+                %
+                for i = length(uNodes):-1:1
+                    I = nNodes == uNodes(i);
+                    hOld = [];
+                    hNew{i} = genfaces(hOld,Ops,Parent,Val(I),XY,FaceNodeConnect(I,1:uNodes(i)));
+                end
+                hNew = cat(2,hNew{:});
                 
             case 'values'
                 X = data.X;
