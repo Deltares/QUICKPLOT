@@ -859,11 +859,19 @@ try
                   fprintf(vs_debug,'WARNING: Multiple definitions of ELEMENT ''%s''.\n',Name);
                end
                fprintf(1,'WARNING:\nMultiple definitions of ELEMENT ''%s''.\n',Name);
-               j=1;
+               j=j(1);
             end
             VS.CelDef(i).Elm(k)=j;
+            kf = VS.CelDef(i).Elm(1:k-1)==VS.CelDef(i).Elm(k);
+            if any(kf)
+                kf = find(kf);
+                duplicate = sprintf(' WARNING: this element duplicates element %i of this cell.',kf(1));
+                fprintf(1,'WARNING:\nElement ''%s'' duplicated in cell ''%s''.\n',Name,VS.CelDef(i).Name);
+            else
+                duplicate = '';
+            end
             if vs_debug
-               fprintf(vs_debug,'Element %2i: %3i (%s)\n',k,j,Name);
+               fprintf(vs_debug,'Element %2i: %3i (%s)%s\n',k,j,Name,duplicate);
             end
          end
       end

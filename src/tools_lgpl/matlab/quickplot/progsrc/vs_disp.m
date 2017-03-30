@@ -249,6 +249,11 @@ else
                 Output=-1;
             end
             return
+        elseif length(jList)>1
+            if nargout==0
+                fprintf(fid,' [****] Element exists multiple times in group; selecting first one.\n');
+            end
+            jList = jList(1);
         end
     else
         if nargout==0

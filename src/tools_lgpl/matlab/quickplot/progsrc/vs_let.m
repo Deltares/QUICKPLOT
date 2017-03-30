@@ -248,6 +248,10 @@ if ~isequal(eName,eNameDefault)
             else
                 i=ElmsInCell(strmatch(eName,{VS.ElmDef(ElmsInCell).Name},'exact'));
                 if ~isempty(i)
+                    if length(i)>1
+                        ui_message('warning','Element %s occurs multiple times in group %s; reading first one.',eName,gName)
+                        i = i(1);
+                    end
                     if isempty(eIndex)
                         eIndex=num2cell(zeros(1,length(VS.ElmDef(i).Size)));
                     end
@@ -601,6 +605,9 @@ while ~AllCorrect
             j_new=[];
         else
             j_new=ElmsInCell(strmatch(eName,{VS.ElmDef(ElmsInCell).Name},'exact'));
+            if length(j_new)>1
+                j_new = j_new(1); % Element .. occurs multiple times in group .. message already given above, so just go ahead
+            end
         end
         if (~iscell(gIndex)) | ...
                 (~all(sort(size(gIndex))==[1 length(VS.GrpDat(i_new).SizeDim)]))
@@ -1431,6 +1438,24 @@ catch % end of catch
     error(lasterr) % error out
 end
 if jn>0
+    eNames= X(1,:);
+    uENames = unique(eNames);
+    if length(uENames)~=length(eNames)
+        % there is at least one duplicate element
+        for i = 1:length(uENames)
+            j = strmatch(uENames{i},X(1,:),'exact');
+            if length(j)>1
+                XX = cell(2,length(j));
+                XX(2,:) = X(2,j);
+                for k = 1:length(j)
+                    XX{1,k} = sprintf('Occurence_%i',k);
+                end
+                X{2,j(1)} = struct(XX{:});
+                %
+                X(:,j(2:end)) = [];
+            end
+        end
+    end
     X=struct(X{:});
 else
     X=X{2,1};
