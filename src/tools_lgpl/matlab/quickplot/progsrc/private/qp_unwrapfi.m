@@ -34,11 +34,14 @@ function [FI,Info]=qp_unwrapfi(Info)
 %   $Id$
 
 if isfield(Info,'QPF')
-    if Info.QPF==2
-        FI=qp_proxy('load',Info);
+    if Info.QPF == 2
+        FI = qp_proxy('load',Info);
+        if isfield(Info,'Data') && isfield(Info.Data,'QP_Options')
+            FI.QP_Options = Info.Data.QP_Options;
+        end
     else
-        FI=Info.Data;
+        FI = Info.Data;
     end
 else
-    FI=Info;
+    FI = Info;
 end

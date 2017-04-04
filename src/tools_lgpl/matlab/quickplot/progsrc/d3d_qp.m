@@ -333,7 +333,7 @@ switch cmd
             if strcmp(qp_settings('showversion','off'),'on')
                 set(mfig,'name',cat(2,'Delft3D-QUICKPLOT ',qpversion));
             end
-            if qp_settings('v6zoombehavior') && matlabversionnumber >= 7
+            if qp_settings('v6zoombehavior') && matlabversionnumber >= 7 && matlabversionnumber < 9
                 qp_prefs(UD,mfig,'v6zoomswitch','on')
             end
             if isstandalone
@@ -3904,7 +3904,14 @@ switch cmd
             switch cmd
                 case 'closefigure'
                     AllObj=findall(Fig);
-                    set(AllObj,'deletefcn','');
+                    for o = 1:length(AllObj)
+                        try
+                            set(AllObj(o),'deletefcn','');
+                        catch
+                            % Some objects (e.g. AnnotationPane) don't have
+                            % a deletefcn. Skip these.
+                        end
+                    end
                     delete(Fig);
                     if ~isempty(UD) % if quickplot is not active do not activate it ...
                         d3d_qp refreshfigs
@@ -4417,7 +4424,7 @@ switch cmd
             'defaultaxescolor','boundingbox','v6zoombehavior', ...
             'organizationname','filefilterselection','colorbar_ratio', ...
             'showinactiveopt', 'defaultfigurepos','timezonehandling', ...
-            'enforcedtimezone', 'netcdf_use_fillvalue'}
+            'enforcedtimezone', 'netcdf_use_fillvalue','export_max_ntimes'}
         qp_prefs(UD,mfig,cmd,cmdargs);
 
     case {'deltaresweb','deltaresweboss'}

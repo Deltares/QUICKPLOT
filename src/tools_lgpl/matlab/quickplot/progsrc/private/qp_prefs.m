@@ -190,7 +190,7 @@ switch cmd
             end
         end
 
-    case 'colorbar_ratio'
+    case {'colorbar_ratio','export_max_ntimes'}
         newval = round(str2double(get(gcbo,'string')));
         qp_settings(cmd,newval);
         set(gcbo,'string',num2str(newval))

@@ -120,6 +120,7 @@ Set.debugging                 = 0;
 Set.showinactiveopt           = 0;
 Set.stopruniferror            = 1;
 Set.timezone                  = 'Ignored';
+Set.export_max_ntimes         = 10;
 %
 Set.netcdf_use_fillvalue      = 'valid_range';
 %

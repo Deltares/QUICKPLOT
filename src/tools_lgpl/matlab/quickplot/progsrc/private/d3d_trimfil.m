@@ -165,7 +165,7 @@ for i=[M_ N_ K_]
         elseif ~isequal(idx{i},idx{i}(1):idx{i}(end))
             error('Only scalars or ranges allowed for index %i',i)
         end
-        if i~=K_
+        if i~=K_ && idx{i}(1)>1
             idx{i} = [max(1,idx{i}(1)-1) idx{i}];
             ind{i}=2:length(idx{i});
         else % i==K_

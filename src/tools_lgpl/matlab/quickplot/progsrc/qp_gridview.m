@@ -205,27 +205,24 @@ switch cmd
         else
             ij0=GRID.Selected.Range([1 3]);
         end
-        pnt=get(get(G,'parent'),'currentpoint');
-        pnt=pnt(1,1:2);
-        dist=(pnt(1)-GRID.X).^2+(pnt(2)-GRID.Y).^2;
         i0=ij0(1);
         j0=ij0(2);
-        midist=min(dist(i0,:));
-        mjdist=min(dist(:,j0));
+        %
+        [i,j]=trackpnt(gcbf);
+        midist=abs(i-i0);
+        mjdist=abs(j-j0);
         switch cmd
             case {'draglineup','draglinemotion'}
                 if midist<mjdist
-                    j1=find(dist(i0,:)==midist);
-                    j1=j1(1);
+                    j1=j;
                     i1=i0;
                 else
-                    i1=find(dist(:,j0)==mjdist);
-                    i1=i1(1);
+                    i1=i;
                     j1=j0;
                 end
                 localdrawsel(gcbf,'range',[i0 i1 j0 j1])
                 %---trackcoord start
-                trackxy(gcbf,pnt)
+                %trackxy(gcbf,pnt)
                 MN=findobj(gcbf,'tag','MNcoord');
                 set(MN,'string',sprintf('m,n: %i,%i',i1,j1))
                 %---trackcoord stop
@@ -236,7 +233,7 @@ switch cmd
                     localdrawsel(gcbf,'line',[i0 inf j0 0])
                 end
                 %---trackcoord start
-                trackxy(gcbf,pnt)
+                %trackxy(gcbf,pnt)
                 MN=findobj(gcbf,'tag','MNcoord');
                 set(MN,'string','m,n:')
                 %---trackcoord stop
@@ -253,46 +250,21 @@ switch cmd
             NFixed = 0;
         end
         %
-        pnt=get(get(G,'parent'),'currentpoint');
-        pnt=pnt(1,1:2);
-        dist=(pnt(1)-GRID.X).^2+(pnt(2)-GRID.Y).^2;
+        [i,j]=trackpnt(gcbf);
         if NFixed==0
-            mdist=min(dist(:));
-            [i,j]=find(dist==mdist);
-            i=i(1);
-            j=j(1);
             localdrawsel(gcbf,'pwline',[i j])
             switch cmd
                 case 'pwlinedown'
                     setappdata(G,'NFixed',1);
             end
             %---trackcoord start
-            trackxy(gcbf,pnt)
+            %trackxy(gcbf,pnt)
             MN=findobj(gcbf,'tag','MNcoord');
             set(MN,'string',sprintf('m,n: %i,%i',i,j))
             %---trackcoord stop
         else
             Range = GRID.Selected.Range;
-            i0=Range(NFixed,1);
-            j0=Range(NFixed,2);
-            %
-            midist=min(dist(i0,:));
-            mjdist=min(dist(:,j0));
-            [mddist,indrng,i1,j1]=NearDiag(dist,i0,j0);
-            if (mddist<midist) && (mddist<mjdist)
-                % Closest to the diagonal
-            elseif midist<mjdist
-                % Closest to grid line in second direction
-                i1=i0;
-                j1=find(dist(i0,:)==midist);
-                j1=j1(1);
-            else
-                % Closest to grid line in first direction
-                j1=j0;
-                i1=find(dist(:,j0)==mjdist);
-                i1=i1(1);
-            end
-            Range(NFixed+1,:) = [i1 j1];
+            Range(NFixed+1,:) = [i j];
             localdrawsel(gcbf,'pwline',Range)
             switch cmd
                 case {'pwlinedown'}
@@ -302,9 +274,9 @@ switch cmd
                     end
             end
             %---trackcoord start
-            trackxy(gcbf,pnt)
+            %trackxy(gcbf,pnt)
             MN=findobj(gcbf,'tag','MNcoord');
-            set(MN,'string',sprintf('m,n: %i,%i',i1,j1))
+            set(MN,'string',sprintf('m,n: %i,%i',i,j))
             %---trackcoord stop
         end
 
@@ -932,6 +904,7 @@ switch selection.Type
                         set(SelectedPatch,'vertices',[],'faces',[])
                         set(SelectedLine,'xdata',[],'ydata',[])
                         set(SelectedPoint,'xdata',[],'ydata',[])
+                        Range = max(Range,2);
                         set(SelectedGrid,'xdata',GRID.X(Range(1)-1:Range(1),Range(2)-1:Range(2)), ...
                                          'ydata',GRID.Y(Range(1)-1:Range(1),Range(2)-1:Range(2)), ...
                                          'zdata',zeros(2,2))
@@ -1373,6 +1346,7 @@ set(findall(F,'type','uipushtool'),'enable',off)
 if strcmp(GRID.Type,'sgrid')
     set(findall(F,'tag','gridviewarbrect'),'enable','off')
     set(findall(F,'tag','gridviewarbarea'),'enable','off')
+    set(findall(F,'tag','gridviewpath'),'enable','off') % currently path doesn't work for structured grid since it uses 1D indexing
 else
     set(findall(F,'tag','gridviewrange'),'enable','off')
     set(findall(F,'tag','gridviewpiecewise'),'enable','off')
@@ -1439,11 +1413,16 @@ switch GRID.ValLocation
             Faces = GRID.FaceNodeConnect;
         else
             Faces = repmat(NaN,[size(GRID.X) 4]);
-            Faces(:,:,1) = reshape(1:numel(GRID.X),size(GRID.X));
-            Faces(2:end,2:end,2) = Faces(1:end-1,2:end,1);
+            Faces(:,:,1)         = reshape(1:numel(GRID.X),size(GRID.X));
+            Faces(2:end,:,2)     = Faces(1:end-1,:,1);
             Faces(2:end,2:end,3) = Faces(1:end-1,1:end-1,1);
-            Faces(2:end,2:end,4) = Faces(2:end,1:end-1,1);            
+            Faces(:,2:end,4)     = Faces(:,1:end-1,1);
             Faces = reshape(Faces,[numel(GRID.X) 4]);
+            %
+            % completely remove cells that one missing node
+            %
+            missing = isnan(Faces);
+            Faces(any(missing,2),:) = NaN;
         end
         missing = isnan(Faces);
         Faces(missing) = 1;
@@ -1452,13 +1431,13 @@ switch GRID.ValLocation
         X(missing) = NaN;
         Y(missing) = NaN;
         inside = pnt(1)>=min(X,[],2) & pnt(1)<=max(X,[],2) & ...
-            pnt(2)>=min(Y,[],2) & pnt(2)<=max(Y,[],2);
+                 pnt(2)>=min(Y,[],2) & pnt(2)<=max(Y,[],2);
         i = 0;
         if any(inside)
             ipvec = find(inside)';
             for ip = ipvec
                 in = 1:sum(~missing(ip,:));
-                if inpolygon(pnt(1),pnt(2),X(ip,in),Y(ip,in))
+                if ~isempty(in) && inpolygon(pnt(1),pnt(2),X(ip,in),Y(ip,in))
                     i = ip;
                     break
                 end
@@ -1471,9 +1450,12 @@ switch GRID.ValLocation
             % closest to the current point.
             np = sum(~missing,2);
             X(missing) = 0;
-            X = sum(X,2)./np;
+            X = sum(X,2)./max(np,1);
             Y(missing) = 0;
-            Y = sum(Y,2)./np;
+            Y = sum(Y,2)./max(np,1);
+            %
+            X(np==0) = NaN;
+            Y(np==0) = NaN;
             %
             dist = (pnt(1)-X).^2+(pnt(2)-Y).^2;
             mdist = min(dist(:));
@@ -1539,11 +1521,53 @@ end
 function [NewRange,RangeMax] = switchrange_sgrid(GRID,OldLoc,OldRange,NewLoc)
 switch NewLoc
     case 'NODE'
-        RangeMax = size(GRID.X)-1; % Delft3D specific?
+        RangeMax = size(GRID.X);
     case 'FACE'
-        RangeMax = size(GRID.X)-1; % Delft3D specific!
+        RangeMax = size(GRID.X);
 end
 NewRange = OldRange;
+if strcmp(OldRange.Type,'genline')
+    return
+end
+%
+switch NewLoc
+    case 'NODE'
+        switch OldLoc
+            case 'FACE'
+                if strcmp(OldRange.Type,'range')
+                    if iscell(OldRange.Range)
+                        if OldRange.Range{1}(1)>1
+                            NewRange.Range{1} = [OldRange.Range{1}(1)-1 OldRange.Range{1}];
+                        end
+                        if OldRange.Range{2}(1)>1
+                            NewRange.Range{2} = [OldRange.Range{2}(1)-1 OldRange.Range{2}];
+                        end
+                    else
+                        NewRange.Range = [sort(NewRange.Range(1:2)) sort(NewRange.Range(3:4))];
+                        NewRange.Range([1 3]) = max(1,NewRange.Range([1 3])-1);
+                    end
+                end
+        end
+    case 'FACE'
+        switch OldLoc
+            case 'NODE'
+                if strcmp(OldRange.Type,'range')
+                    if iscell(OldRange.Range)
+                        if length(OldRange.Range{1})>1
+                            NewRange.Range{1} = OldRange.Range{1}(2:end);
+                        end
+                        if length(OldRange.Range{2})>1
+                            NewRange.Range{2} = OldRange.Range{2}(2:end);
+                        end
+                    else
+                        NewRange.Range = [sort(NewRange.Range(1:2)) sort(NewRange.Range(3:4))];
+                        NewRange.Range([1 3]) = NewRange.Range([1 3])+1;
+                    end
+                elseif strcmp(OldRange.Type,'pwline')
+                    NewRange.Range = max(OldRange.Range,2);
+                end
+        end
+end
 
 function [NewRange,RangeMax] = switchrange_ugrid(GRID,OldLoc,OldRange,NewLoc)
 switch NewLoc

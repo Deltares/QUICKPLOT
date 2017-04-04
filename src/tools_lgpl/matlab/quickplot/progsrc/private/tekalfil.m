@@ -180,6 +180,7 @@ end
 
 xy='dummy';
 x='dummy';
+xname='';
 y='dummy';
 z='dummy';
 val1=[];
@@ -369,6 +370,8 @@ if XYRead
             x=Data(idx{M_},1);
             if strcmp(Props.Coords,'xy')
                 y=Data(idx{M_},2);
+            elseif isempty(Props.Coords)
+                xname=FI.Field(blck).ColLabels{1};
             end
         end
     elseif DimFlag(ST_) && ~ischar(x)
@@ -482,6 +485,9 @@ if XYRead
     end
     if ~ischar(x)
         Ans.X=x;
+        if ~isempty(xname)
+            Ans.XName = xname;
+        end
     end
     if ~ischar(y)
         Ans.Y=y;

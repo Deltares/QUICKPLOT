@@ -833,6 +833,12 @@ if isfield(Ops,'plotcoordinate') && ~isempty(Ops.plotcoordinate)
             else
                 diststr = 'y coordinate';
             end
+        case 'coordinate'
+            if isfield(data,'XName')
+                diststr = data(1).XName;
+            else
+                diststr = 'coordinate';
+            end
     end
 end
 

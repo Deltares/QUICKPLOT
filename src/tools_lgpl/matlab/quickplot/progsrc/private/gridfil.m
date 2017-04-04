@@ -244,16 +244,12 @@ if Props.File~=0
     else
         Fld=abs(Props.Fld);
         Attribs = qp_option(FI,'AttribFiles');
-        Attrib=qp_unwrapfi(Attribs(Props.File));
+        Attrib = qp_unwrapfi(Attribs(Props.File));
     end
     filetp=Attrib.FileType;
     switch filetp
         case {'wldep','wlfdep','trirst','boxfile'}
-            if isfield(Attrib,'Dpsopt') && ~isempty(Attrib.Dpsopt)
-                Dpsopt=Attrib.Dpsopt;
-            else
-                Dpsopt='max';
-            end
+            Dpsopt=qp_option(Attrib,'Dpsopt','default','max');
             if ~isempty(strmatch('velocity',Props.Name))
                 val{1}=Attrib.Data{Fld(1)};
                 val{2}=Attrib.Data{Fld(2)};
@@ -1314,23 +1310,24 @@ switch cmd
     case {'rstpc','rstunix','rstascii'}
         Handle_SelectFile=findobj(mfig,'tag','selectfile');
         NrInList=get(Handle_SelectFile,'value');
+        Name  = Attribs(NrInList).Name;
         Attrib = qp_unwrapfi(Attribs(NrInList));
-        Slash=sort([strfind(Attrib.Name,'/') strfind(Attrib.Name,'\')]);
+        Slash=sort([strfind(Name,'/') strfind(Name,'\')]);
         if strcmp(cmd,'rstascii')
-            RstName = [Attrib.Name(1:max(Slash)) '*.ini'];
+            RstName = [Name(1:max(Slash)) '*.ini'];
         else
-            Dot=strfind(Attrib.Name,'.');
+            Dot=strfind(Name,'.');
             Dot(Dot<max(Slash)) = [];
             if isempty(Dot)
-                Dot=length(Attrib.Name);
+                Dot=length(Name);
             end
-            RstName = [Attrib.Name(1:Dot(1)) '*'];
+            RstName = [Name(1:Dot(1)) '*'];
         end
         [f,p]=uiputfile(RstName,'Save as ...');
         if ischar(f)
-            NLyr  = qp_option(Attrib(NrInList),'NLyr');
-            NSubs = qp_option(Attrib(NrInList),'NSubs');
-            NTurb = qp_option(Attrib(NrInList),'NTurb');
+            NLyr  = qp_option(Attrib,'NLyr');
+            NSubs = qp_option(Attrib,'NSubs');
+            NTurb = qp_option(Attrib,'NTurb');
             %
             h_nelyr = findobj(mfig,'tag','nelyr');
             NELyr = get(h_nelyr,'userdata');

@@ -579,7 +579,11 @@ if strfind(axestype,'Y')
     %    axestype = strrep(axestype,'Y',Props.NName);
     %end
 else
-    if isfield(Props,'MName') && ~isempty(Props.MName) && multiple(M_)
+    if ~ismember('y',coordinates) && ~ismember('x',coordinates)
+        coords={'coordinate'};
+    elseif ~ismember('y',coordinates)
+        coords={'path distance','reverse path distance','x coordinate'};
+    elseif isfield(Props,'MName') && ~isempty(Props.MName) && multiple(M_)
         %    axestype = strrep(axestype,'X',Props.MName);
         coords={'x coordinate'};
     elseif isfield(Props,'NName') && ~isempty(Props.NName)
@@ -604,6 +608,9 @@ if ismember(axestype,{'X-Val','X-Z','X-Time','Time-X'})
     if length(coords)>1
         set(findobj(OH,'tag','plotcoordinate'),'enable','on');
         set(pd,'string',coords,'value',i,'enable','on','backgroundcolor',Active)
+    else
+        set(findobj(OH,'tag','plotcoordinate'),'enable','off');
+        set(pd,'string',coords,'value',i,'enable','off','backgroundcolor',Inactive)
     end
     Ops.plotcoordinate=coords{i};
 elseif SpatialH==1
@@ -1566,7 +1573,8 @@ if nval>=0
         ExpTypes{end+1}='grid file (old format)';
     end
     if strncmp(geometry,'UGRID',5) && multiple(M_) && ~multiple(K_) && ~multiple(T_)
-        ExpTypes{end+1}='netCDF file';
+        ExpTypes{end+1}='netCDF3 file';
+        ExpTypes{end+1}='netCDF4 file';
     end
     if sum(multiple)==1 && sum(multiple([M_ N_]))==1 && nval==0
         ExpTypes{end+1}='spline';
@@ -1602,7 +1610,10 @@ if nval>=0
     if ~isnumeric(maxt) || ~isequal(size(maxt),[1 1]) || maxt<=0
         maxt = inf;
     end
-    if ((length(selected{T_})<11 && ~isequal(selected{T_},0)) || (maxt<11 && isequal(selected{T_},0))) && nval>0 && (multiple(M_) || multiple(N_) || multiple(K_))
+    %
+    maxTimeSteps = qp_settings('export_max_ntimes');
+    if ((length(selected{T_})<=maxTimeSteps && ~isequal(selected{T_},0)) || (maxt<=maxTimeSteps && isequal(selected{T_},0))) && nval>0 && (multiple(M_) || multiple(N_) || multiple(K_))
+        ExpTypes{end+1}='csv file';
         ExpTypes{end+1}='Tekal file';
         ExpTypes{end+1}='Tecplot file';
     end
