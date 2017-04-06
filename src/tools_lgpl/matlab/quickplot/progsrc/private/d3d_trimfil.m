@@ -165,9 +165,24 @@ for i=[M_ N_ K_]
         elseif ~isequal(idx{i},idx{i}(1):idx{i}(end))
             error('Only scalars or ranges allowed for index %i',i)
         end
-        if i~=K_ && idx{i}(1)>1
-            idx{i} = [max(1,idx{i}(1)-1) idx{i}];
-            ind{i}=2:length(idx{i});
+        if i~=K_
+            if length(idx{i})==1 && idx{i}(1)==1
+                idx{i} = [1 2];
+                ind{i} = 1;
+            elseif idx{i}(1)>1
+                idx{i} = [idx{i}(1)-1 idx{i}];
+                if DataInCell
+                    ind{i} = 2:length(idx{i});
+                else
+                    ind{i} = 1:length(idx{i});
+                end
+            else
+                if DataInCell
+                    ind{i} = 2:length(idx{i});
+                else
+                    ind{i} = 1:length(idx{i});
+                end
+            end
         else % i==K_
             ind{i}=1:length(idx{i});
         end
