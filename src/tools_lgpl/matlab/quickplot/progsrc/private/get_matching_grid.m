@@ -180,6 +180,10 @@ while 1
                         end
                     end
                     %
+                    x = 0;
+                    y = 0;
+                    xbounds = 0;
+                    ybounds = 0;
                     if any(AggrTable)
                         iAggr = find(AggrTable);
                         iAggr = iAggr(1);
@@ -189,108 +193,192 @@ while 1
                         else
                             GridSeg = min(max(table,[],2)); % should be recoded, because it could be any dimension
                         end
-                        CouldReadGridData = 1;
-                        xbounds = G.Dataset(iAggr).XBounds;
-                        ybounds = G.Dataset(iAggr).YBounds;
-                        x = G.Dataset(iAggr).X;
-                        y = G.Dataset(iAggr).Y;
+                        if ~isempty(G.Dataset(iAggr).Mesh)
+                            G.Mesh = G.Dataset(iAggr).Mesh;
+                            switch G.Mesh{1}
+                                case 'ugrid'
+                                    XDimensions = {G.Dataset(G.Mesh{2}).Mesh(4+G.Mesh{2})};
+                            end
+                        else
+                            xbounds = G.Dataset(iAggr).XBounds;
+                            ybounds = G.Dataset(iAggr).YBounds;
+                            x = G.Dataset(iAggr).X;
+                            y = G.Dataset(iAggr).Y;
+                            XDimensions = G.Dataset(x).Dimension;
+                        end
                         G.Aggregation = G.Dataset(iAggr).Name;
-                        G.AggregationDims = [G.Dataset(x).Dimension setdiff(G.Dataset(iAggr).Dimension,G.Dataset(x).Dimension)];
-                        %                   [G.Index, errmsg] = qp_netcdf_get(G,G.Aggregation,G.AggregationDims);
-                        %                   G.Index(isnan(G.Index))=0;
+                        G.AggregationDims = [XDimensions setdiff(G.Dataset(iAggr).Dimension,XDimensions)];
                         G.MNK=[GridSeg 1 MapSeg/GridSeg];
                         G.Index=(1:GridSeg)';
                     else
+                        % check for UGRID
                         C = cell(0,4);
                         for i=1:length(G.Dataset)
-                            for j=1:length(G.Dataset(i).Attribute)
-                                if strcmp(G.Dataset(i).Attribute(j).Name,'bounds')
-                                    C{end+1,1} = G.Dataset(i).Attribute(j).Value;
-                                    C{end,2} = G.Dataset(i).Name;
-                                    C{end,3} = G.Dataset(i).Dimension;
-                                    C{end,4} = G.Dataset(i).Size;
+                            if strcmp(G.Dataset(i).Type,'ugrid_mesh')
+                                nNodeDim = G.Dataset(i).Mesh{4};
+                                nNodes = G.Dimension(ustrcmpi(nNodeDim,{G.Dimension.Name})).Length;
+                                if length(G.Dataset(i).Mesh)>=6
+                                    nFaceDim = G.Dataset(i).Mesh{6};
+                                    nFaces = G.Dimension(ustrcmpi(nFaceDim,{G.Dimension.Name})).Length;
+                                else
+                                    nFaces = 0;
+                                end
+                                % check if nNodes or nFaces matches
+                                if round(MapSeg/nNodes)==MapSeg/nNodes
+                                    % possibly data at nodes
+                                    C{end+1,1} = i;
+                                    C{end,2} = 0; % nodes
+                                    C{end,3} = nNodeDim;
+                                    C{end,4} = nNodes;
+                                end
+                                if nFaces>0 && round(MapSeg/nFaces)==MapSeg/nFaces
+                                   % possibly data at faces
+                                    C{end+1,1} = i;
+                                    C{end,2} = 2; % faces
+                                    C{end,3} = nFaceDim;
+                                    C{end,4} = nFaces;
                                 end
                             end
                         end
                         %
                         if ~isempty(C)
-                            matching = 0;
-                            for i=1:size(C,1)
-                                if isequal(C{i,4},MapSeg)
-                                    matching = i;
-                                    break
+                            % data seems to match one or more UGRID meshes
+                            if size(C,1)>1
+                                % just select the first one ...
+                                C = C(1,:);
+                            end
+                            GridSeg = C{1,4};
+                            %
+                            Info = G.Dataset(C{1,1});
+                            Attribs = {Info.Attribute.Name};
+                            j = strmatch('standard_name',Attribs,'exact');
+                            if ~isempty(j)
+                                standard_name = Info.Attribute(j).Value;
+                            else
+                                standard_name = '';
+                            end
+                            j = strmatch('long_name',Attribs,'exact');
+                            if ~isempty(j) && ~isempty(Info.Attribute(j).Value)
+                                Name = Info.Attribute(j).Value;
+                            elseif ~isempty(standard_name)
+                                Name = standard_name;
+                            else
+                                Name = Info.Name;
+                            end
+                            switch C{1,2}
+                                case 0
+                                    Name = [Name ' - node indices'];
+                                case 1
+                                    Name = [Name ' - edge indices'];
+                                case 2
+                                    Name = [Name ' - face indices'];
+                            end
+                            %
+                            G.Mesh=[{'ugrid'} C(1,1:2) {Name}];
+                            G.MNK=[GridSeg 1 MapSeg/GridSeg];
+                            G.Index=(1:GridSeg)';
+                        else
+                            C = cell(0,4);
+                            for i=1:length(G.Dataset)
+                                for j=1:length(G.Dataset(i).Attribute)
+                                    if strcmp(G.Dataset(i).Attribute(j).Name,'bounds')
+                                        C{end+1,1} = G.Dataset(i).Attribute(j).Value;
+                                        C{end,2} = G.Dataset(i).Name;
+                                        C{end,3} = G.Dataset(i).Dimension;
+                                        C{end,4} = G.Dataset(i).Size;
+                                    end
                                 end
                             end
                             %
-                            if ~matching
+                            if ~isempty(C)
                                 matching = 0;
                                 for i=1:size(C,1)
-                                    K = MapSeg/C{i,4};
-                                    if isequal(K,round(K))
+                                    if isequal(C{i,4},MapSeg)
                                         matching = i;
                                         break
                                     end
                                 end
-                            end
-                            %
-                            if ~matching
-                                error('Unable to identify coordinate bounds variables for %i segments.',MapSeg)
-                            else
-                                segdim = C{matching,3};
-                                GridSeg = C{matching,4};
                                 %
-                                matching = false(size(C,1),1);
-                                for i=1:size(C,1)
-                                    matching(i) = isequal(C{i,3},segdim);
-                                end
-                                C = C(matching,:);
-                                %
-                                % locate x/longitude coordinate
-                                %
-                                ytype='';
-                                for i=1:size(C,1)
-                                    j=strmatch(C{i,2},{G.Dataset.Name},'exact');
-                                    switch G.Dataset(j).Type
-                                        case 'longitude'
-                                            ytype = 'latitude';
+                                if ~matching
+                                    matching = 0;
+                                    for i=1:size(C,1)
+                                        K = MapSeg/C{i,4};
+                                        if isequal(K,round(K))
+                                            matching = i;
                                             break
-                                        case 'x-coordinate'
-                                            ytype = 'y-coordinate';
-                                            break
+                                        end
                                     end
                                 end
-                                if isempty(ytype)
-                                    error('Unable to identify x-coordinate/longitude for segments')
+                                %
+                                if ~matching
+                                    error('Unable to identify coordinate bounds variables for %i segments.',MapSeg)
                                 else
-                                    x = j;
-                                    xbounds = strmatch(C{i,1},{G.Dataset.Name},'exact');
-                                end
-                                %
-                                % locate y/latitude coordinate
-                                %
-                                y=[];
-                                for i=1:size(C,1)
-                                    j=strmatch(C{i,2},{G.Dataset.Name},'exact');
-                                    switch G.Dataset(j).Type
-                                        case ytype
-                                            y = j;
-                                            ybounds = strmatch(C{i,1},{G.Dataset.Name},'exact');
+                                    segdim = C{matching,3};
+                                    GridSeg = C{matching,4};
+                                    %
+                                    matching = false(size(C,1),1);
+                                    for i=1:size(C,1)
+                                        matching(i) = isequal(C{i,3},segdim);
+                                    end
+                                    C = C(matching,:);
+                                    %
+                                    % locate x/longitude coordinate
+                                    %
+                                    ytype='';
+                                    for i=1:size(C,1)
+                                        j=strmatch(C{i,2},{G.Dataset.Name},'exact');
+                                        switch G.Dataset(j).Type
+                                            case 'longitude'
+                                                ytype = 'latitude';
+                                                break
+                                            case 'x-coordinate'
+                                                ytype = 'y-coordinate';
+                                                break
+                                        end
+                                    end
+                                    if isempty(ytype)
+                                        error('Unable to identify x-coordinate/longitude for segments')
+                                    else
+                                        x = j;
+                                        xbounds = strmatch(C{i,1},{G.Dataset.Name},'exact');
+                                    end
+                                    %
+                                    % locate y/latitude coordinate
+                                    %
+                                    y=[];
+                                    for i=1:size(C,1)
+                                        j=strmatch(C{i,2},{G.Dataset.Name},'exact');
+                                        switch G.Dataset(j).Type
+                                            case ytype
+                                                y = j;
+                                                ybounds = strmatch(C{i,1},{G.Dataset.Name},'exact');
+                                        end
+                                    end
+                                    if isempty(y)
+                                        error('Unable to identify %s for segments',ytype)
                                     end
                                 end
-                                if isempty(y)
-                                    error('Unable to identify %s for segments',ytype)
-                                end
-                                %
-                                CouldReadGridData = 1;
+                            else
+                                % no matching ... attribute table, UGRID, bounds variable
+                                error('No matching attribute table, ugrid mesh, or coordinate variable with bounds found.')
                             end
+                            G.MNK=[GridSeg 1 1];
+                            G.Index=(1:GridSeg)';
                         end
-                        G.MNK=[GridSeg 1 1];
-                        G.Index=(1:GridSeg)';
                     end
-                    G.BCoordinates = {G.Dataset(xbounds).Name G.Dataset(ybounds).Name};
-                    G.CCoordinates = {G.Dataset(x).Name G.Dataset(y).Name};
-                    XBoundsDimensions = G.Dataset(xbounds).Dimension;
-                    XDimensions = G.Dataset(x).Dimension;
+                    if xbounds~=0
+                        G.BCoordinates = {G.Dataset(xbounds).Name G.Dataset(ybounds).Name};
+                        XBoundsDimensions = G.Dataset(xbounds).Dimension;
+                    else
+                        XBoundsDimensions = {};
+                    end
+                    if x~=0
+                        G.CCoordinates = {G.Dataset(x).Name G.Dataset(y).Name};
+                        XDimensions = G.Dataset(x).Dimension;
+                    else
+                        XDimensions = C(1,3);
+                        x = G.Dataset(C{1,1}).X;
+                    end
                     G.CoordDims = [intersect(XDimensions,XBoundsDimensions) setdiff(XBoundsDimensions,XDimensions)];
                     G.FileType = 'netCDF';
                     %
@@ -305,6 +393,7 @@ while 1
                             end
                         end
                     end
+                    CouldReadGridData = 1;
                 catch Ex
                     if GetError
                         rethrow(Ex)
