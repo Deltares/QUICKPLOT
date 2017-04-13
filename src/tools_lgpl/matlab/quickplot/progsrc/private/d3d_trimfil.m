@@ -621,7 +621,9 @@ if DataRead
             xc=vs_get(FI,'map-const','XCOR',idx([M_ N_]),'quiet!');
             yc=vs_get(FI,'map-const','YCOR',idx([M_ N_]),'quiet!');
             val1(:) = NaN;
-            val1(1,ind{[M_ N_]}) = reshape(cellarea(xc,yc),[1 size(xc)-1]);
+            lidx{1} = 2:length(idx{M_});
+            lidx{2} = 2:length(idx{N_});
+            val1(1,lidx{:}) = reshape(cellarea(xc,yc),[1 size(xc)-1]);
         case {'water level','temporarily inactive water level points'}
             kfu=vs_let(FI,Props.Group,idx(T_),'KFU',elidx,'quiet!');
             kfv=vs_let(FI,Props.Group,idx(T_),'KFV',elidx,'quiet!');

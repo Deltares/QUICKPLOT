@@ -43,6 +43,8 @@ multi_time = isfield(data,'Time') && length(data(1).Time)>1;
 s = [];
 if ~isfield(Ops,'thinningmode')
     return
+elseif strcmpi(Ops.thinningmode,'none')
+    return
 end
 %
 if isfield(data,'TRI')
