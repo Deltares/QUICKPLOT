@@ -50,14 +50,44 @@ stn=Param.stn;
 DimFlag=Props.DimFlag;
 Thresholds=[];
 
+if isfield(data,'XYZ')
+    X = data.XYZ(1,:,1)';
+    Y = data.XYZ(1,:,2)';
+    if size(data.XYZ,4)>2
+        Z = data.XYZ(1,:,3)';
+    else
+        Z = [];
+    end
+elseif isfield(data,'XY')
+    X = data.XY(:,1)';
+    Y = data.XY(:,2)';
+    Z = [];
+else
+    if isfield(data,'X')
+        X = data.X;
+    else
+        X = [];
+    end
+    if isfield(data,'Y')
+        Y = data.Y;
+    else
+        Y = [];
+    end
+    if isfield(data,'Z')
+        Z = data.Z;
+    else
+        Z = [];
+    end
+end
+
 switch NVal
     case 0
         if strcmp(Ops.facecolour,'none')
             if ishandle(hNew)
-                set(hNew,'xdata',data.X, ...
-                    'ydata',data.Y);
+                set(hNew,'xdata',X, ...
+                    'ydata',Y);
             else
-                hNew=line(data.X,data.Y, ...
+                hNew=line(X,Y, ...
                     'parent',Parent, ...
                     Ops.LineParams{:});
                 set(Parent,'layer','top')
@@ -66,21 +96,20 @@ switch NVal
             if ~FirstFrame
                 delete(hNew)
             end
-            vNaN=isnan(data.X);
+            vNaN=isnan(X);
             if any(vNaN)
                 bs=findseries(~vNaN);
             else
                 bs=[1 length(vNaN)];
             end
             for i=1:size(bs,1)
-                if data.X(bs(i,1))==data.X(bs(i,2)) && ...
-                        data.Y(bs(i,1))==data.Y(bs(i,2))
+                if X(bs(i,1))==X(bs(i,2)) && Y(bs(i,1))==Y(bs(i,2))
                     % this patch should not influence color scaling.
                     % however, the default "1" cdata will do so
                     % we cannot set the cdata to [] immediately
                     % so, we change it after having set all color options
-                    hNew(i)=patch(data.X(bs(i,1):bs(i,2)), ...
-                        data.Y(bs(i,1):bs(i,2)), ...
+                    hNew(i)=patch(X(bs(i,1):bs(i,2)), ...
+                        Y(bs(i,1):bs(i,2)), ...
                         1, ...
                         'edgecolor',Ops.colour, ...
                         'facecolor',Ops.facecolour, ...
@@ -93,8 +122,8 @@ switch NVal
                         'cdata',[], ...
                         'parent',Parent);
                 else
-                    hNew(i)=line(data.X(bs(i,1):bs(i,2)), ...
-                        data.Y(bs(i,1):bs(i,2)), ...
+                    hNew(i)=line(X(bs(i,1):bs(i,2)), ...
+                        Y(bs(i,1):bs(i,2)), ...
                         'parent',Parent, ...
                         Ops.LineParams{:});
                 end
@@ -111,10 +140,10 @@ switch NVal
         %if multiple(T_)
             switch axestype
                 case {'Distance-Val','X-Val'}
-                    x = data.X;
+                    x = X;
                     xdate = 0;
                 otherwise
-                    x = data.Time;
+                    x = Time;
                     xdate = Props.DimFlag(T_)~=5;
             end
             if FirstFrame
@@ -136,10 +165,10 @@ switch NVal
         else
             switch Ops.presentationtype
                 case 'values'
-                    hNew=gentextfld(hNew,Ops,Parent,data.Val,data.X,data.Y);
+                    hNew=gentextfld(hNew,Ops,Parent,data.Val,X,Y);
                     
                 case 'markers'
-                    hNew=genmarkers(hNew,Ops,Parent,data.Val,data.X,data.Y);
+                    hNew=genmarkers(hNew,Ops,Parent,data.Val,X,Y);
                     
                 otherwise
                     if ~FirstFrame
@@ -157,26 +186,26 @@ switch NVal
                         to=bs(i,2);
                         ecol='flat';
                         fcol='none';
-                        if fill && data.X(from)==data.X(to) && ...
-                                data.Y(from)==data.Y(to)
+                        if fill && X(from)==X(to) && ...
+                                Y(from)==Y(to)
                             ecol='none';
                             fcol='flat';
                             vl=from;
                         elseif from>1
                             from=from-1;
-                            data.X(from)=NaN;
-                            data.Y(from)=NaN;
+                            X(from)=NaN;
+                            Y(from)=NaN;
                             data.Val(from)=NaN;
                             vl=from:to;
                         else
                             to=to+1;
-                            data.X(to)=NaN;
-                            data.Y(to)=NaN;
+                            X(to)=NaN;
+                            Y(to)=NaN;
                             data.Val(to)=NaN;
                             vl=from:to;
                         end
-                        hNew(i)=patch(data.X(from:to), ...
-                            data.Y(from:to), ...
+                        hNew(i)=patch(X(from:to), ...
+                            Y(from:to), ...
                             data.Val(vl), ...
                             'edgecolor',ecol, ...
                             'facecolor',fcol, ...
@@ -199,9 +228,5 @@ switch NVal
     case {2,3}
         [hNew,Thresholds,Param,Parent]=qp_plot_default(hNew,Parent,Param,data,Ops,Props);
     case 4
-        if isfield(data,'XY')
-            hNew=gentextfld(hNew,Ops,Parent,data.Val,data.XY(:,1),data.XY(:,2));
-        else
-            hNew=gentextfld(hNew,Ops,Parent,data.Val,data.X,data.Y);
-        end
+        hNew=gentextfld(hNew,Ops,Parent,Val,X,Y);
 end

@@ -886,10 +886,15 @@ switch NVal
                     ZUnits = '';
                 end
                 
+                if isfield(data,'Z')
+                    Z = data.Z;
+                elseif isfield(data,'XYZ')
+                    Z = data.XYZ(:,:,:,3);
+                end
                 Qc1 = [Quant ' comp.1'];
                 Qc2 = [Quant ' comp.2'];
                 ax=Parent(1);
-                hNew(1)=line(squeeze(data.XComp),squeeze(data.Z),'parent',ax);
+                hNew(1)=line(squeeze(data.XComp),squeeze(Z),'parent',ax);
                 setaxesprops(ax,'Val-Z',{Qc1 'elevation'},{Units ZUnits});
                 if ~isempty(stn)
                     qp_title(ax,stn,'quantity',Qc1,'unit',Units,'time',TStr)
@@ -897,9 +902,9 @@ switch NVal
                 
                 ax=Parent(2);
                 if isfield(data,'YComp')
-                    hNew(2)=line(squeeze(data.YComp),squeeze(data.Z),'parent',ax);
+                    hNew(2)=line(squeeze(data.YComp),squeeze(Z),'parent',ax);
                 else
-                    hNew(2)=line(squeeze(data.ZComp),squeeze(data.Z),'parent',ax);
+                    hNew(2)=line(squeeze(data.ZComp),squeeze(Z),'parent',ax);
                 end
                 setaxesprops(ax,'Val-Z',{Qc2 'elevation'},{Units ZUnits});
                 qp_title(ax,TStr,'quantity',Qc2,'unit',Units,'time',TStr)
