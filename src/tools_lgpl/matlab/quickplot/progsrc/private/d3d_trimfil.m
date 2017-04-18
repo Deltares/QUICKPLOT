@@ -171,11 +171,7 @@ for i=[M_ N_ K_]
                 ind{i} = 1;
             elseif idx{i}(1)>1
                 idx{i} = [idx{i}(1)-1 idx{i}];
-                if DataInCell
-                    ind{i} = 2:length(idx{i});
-                else
-                    ind{i} = 1:length(idx{i});
-                end
+                ind{i} = 2:length(idx{i});
             else
                 if DataInCell
                     ind{i} = 2:length(idx{i});

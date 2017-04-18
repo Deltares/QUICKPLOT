@@ -985,8 +985,10 @@ if (~DimFlag(T_) || (DimFlag(T_) && isequal(size(idx{T_}),[1 1]))) && ~strcmp(Pr
 end
 
 % generate output ...
-if XYRead && ~isempty(x)
+if XYRead
     switch Props.Geom
+        case {'UGRID-FACE','UGRID-EDGE','UGRID-NODE'}
+            % Ans already filled with geometry information
         case 'POLYG'
             if size(x,2)==2 % segments
                 x(:,end+1) = NaN;

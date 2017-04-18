@@ -111,7 +111,7 @@ end
 %
 State=setopt(State,'presentationtype','');
 State=setopt(State,'units','');
-State=setopt(State,'thinningmode','none');
+%State=setopt(State,'thinningmode','none');
 %State=setopt(State,'thresholds','none');
 %State=setopt(State,'thresholddistribution','linear');
 %State=setopt(State,'horizontalalignment','centre');

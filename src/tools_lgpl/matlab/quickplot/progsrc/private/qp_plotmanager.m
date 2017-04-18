@@ -630,9 +630,11 @@ switch cmd
                         out_of_options=0;
                         while length(it_same_name)>1 && ~strcmp(Nms{it},separator)
                             extrastr = repmat({''},1,length(Items));
+                            cancut = 0;
                             for itloc=it_same_name
                                 switch extend
                                     case 1
+                                        cancut = 1;
                                         if isfield(UserDatas{itloc}.PlotState.FI,'Name')
                                             extrastr{itloc}=UserDatas{itloc}.PlotState.FI.Name;
                                         end
@@ -704,36 +706,42 @@ switch cmd
                             if length(it_extra_same)<length(it_same_name)
                                 minstrlen = min(cellfun('length',extrastr(it_same_name)));
                                 %
-                                % look for first character different
-                                %
-                                c1diff = false;
-                                for i1 = 1:minstrlen
-                                    c1 = extrastr{it_same_name(1)}(i1);
-                                    for itloc=it_same_name
-                                        if extrastr{itloc}(i1)~=c1
-                                            c1diff = true;
+                                if cancut
+                                    %
+                                    % look for first character different
+                                    %
+                                    c1diff = false;
+                                    for i1 = 1:minstrlen
+                                        c1 = extrastr{it_same_name(1)}(i1);
+                                        for itloc=it_same_name
+                                            if extrastr{itloc}(i1)~=c1
+                                                c1diff = true;
+                                                break
+                                            end
+                                        end
+                                        if c1diff
                                             break
                                         end
                                     end
-                                    if c1diff
-                                        break
-                                    end
-                                end
-                                %
-                                % look for last character different
-                                %
-                                c2diff = false;
-                                for i2 = 0:minstrlen-1
-                                    c2 = extrastr{it_same_name(1)}(end-i2);
-                                    for itloc=it_same_name
-                                        if extrastr{itloc}(end-i2)~=c2
-                                            c2diff = true;
+                                    %
+                                    % look for last character different
+                                    %
+                                    c2diff = false;
+                                    for i2 = 0:minstrlen-1
+                                        c2 = extrastr{it_same_name(1)}(end-i2);
+                                        for itloc=it_same_name
+                                            if extrastr{itloc}(end-i2)~=c2
+                                                c2diff = true;
+                                                break
+                                            end
+                                        end
+                                        if c2diff
                                             break
                                         end
                                     end
-                                    if c2diff
-                                        break
-                                    end
+                                else
+                                    i1 = 1;
+                                    i2 = 0;
                                 end
                                 %
                                 for itloc=it_same_name

@@ -143,7 +143,7 @@ switch NVal
                     x = X;
                     xdate = 0;
                 otherwise
-                    x = Time;
+                    x = data.Time;
                     xdate = Props.DimFlag(T_)~=5;
             end
             if FirstFrame

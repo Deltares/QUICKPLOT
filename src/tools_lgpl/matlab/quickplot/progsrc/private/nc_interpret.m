@@ -949,7 +949,7 @@ for ivar = 1:nvars
 end
 %
 auto_ugrid(:,cellfun('isempty',auto_ugrid(1,:))) = [];
-if ~isempty(auto_ugrid)
+if 0 % ~isempty(auto_ugrid)
     message = {'Missing UGRID attributed automatically added for:'};
     [ugrids,dummy,iugrids] = unique(auto_ugrid(3,:));
     for iu = 1:length(ugrids)

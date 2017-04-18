@@ -43,14 +43,12 @@ multi_time = isfield(data,'Time') && length(data(1).Time)>1;
 s = [];
 if ~isfield(Ops,'thinningmode')
     return
-elseif strcmpi(Ops.thinningmode,'none')
-    return
 end
 %
 if isfield(data,'TRI')
     data = rmfield(data,'TRI');
 end
-
+%
 if isfield(data,'XYZ') && strcmp(Ops.thinningmode,'regrid')
     if length(data)>1
         error('The regrid thinning option hasn''t been implemented yet for multiple domains.')
@@ -84,7 +82,7 @@ if isfield(data,'XYZ') && strcmp(Ops.thinningmode,'regrid')
     data = rmfield(data,'XYZ');
     return
 end
-
+%
 if isfield(data,'XYZ')
     for d = 1:length(data)
         data(d).X=data(d).XYZ(:,:,:,1);
@@ -97,7 +95,13 @@ if isfield(data,'XYZ')
     end
     data = rmfield(data,'XYZ');
     slice2DV = false;
-elseif length(data)>1
+end
+%
+if strcmpi(Ops.thinningmode,'none')
+    return
+end
+
+if length(data)>1
     slice2DV = false;
 elseif ~multi_time && xor(size(data.X,1)>1,size(data.X,2)>1) && size(data.X,3)>1 && isfield(data,'Y')
     slice2DV = true;
