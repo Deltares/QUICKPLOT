@@ -63,12 +63,16 @@ switch presentationtype
         end
         
     case 'values'
-        I=~isnan(Val);
         if numel(X)==numel(Val)+1
             X = (X(1:end-1)+X(2:end))/2;
             Y = (Y(1:end-1)+Y(2:end))/2;
         end
-        hNew=gentextfld(hNew,Ops,Parent,Val(I),X(I),Y(I));
+        if Ops.clipnans
+            I=~isnan(Val);
+            hNew=gentextfld(hNew,Ops,Parent,Val(I),X(I),Y(I));
+        else
+            hNew=gentextfld(hNew,Ops,Parent,Val(:),X(:),Y(:));
+        end
         
     case 'continuous shades'
         if size(X,1)==1 || size(X,2)==1

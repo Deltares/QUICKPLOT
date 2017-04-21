@@ -2178,7 +2178,7 @@ switch cmd
             writelog(logfile,logtype,cmd,get(cb,'value'));
         end
         
-    case {'colbarhorz','climsymm','extend2edge'}
+    case {'colbarhorz','climsymm','extend2edge','clipnans'}
         % nothing do
         cb=findobj(UOH,'tag',cmd);
         if ~isempty(cmdargs)

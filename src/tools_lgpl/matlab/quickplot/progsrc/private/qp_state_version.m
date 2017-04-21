@@ -136,6 +136,9 @@ end
 if isfield(State,'marker')
     State=setopt(State,'markersize',6);
 end
+if strcmp(State.presentationtype,'values')
+    State=setopt(State,'clipnans',1);
+end
 
 
 function State=setopt(State,Field,Val)

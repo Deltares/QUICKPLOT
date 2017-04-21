@@ -1550,6 +1550,11 @@ if (nval==1 || isfield(Ops,'vectorcolour') || isfield(Ops,'colourdams') || (isfi
     Ops.clippingvalues=get(findobj(OH,'tag','clippingvals=?'),'userdata');
 end
 
+if isfield(Ops,'presentationtype') && strcmp(Ops.presentationtype,'values')
+    set(findobj(OH,'tag','clipnans'),'enable','on')
+    Ops.clipnans=get(findobj(OH,'tag','clipnans'),'value');
+end
+
 if (SpatialH==2)
     set(findobj(OH,'tag','clippingvals'),'enable','on')
     set(findobj(OH,'tag','xclipping'),'enable','on')

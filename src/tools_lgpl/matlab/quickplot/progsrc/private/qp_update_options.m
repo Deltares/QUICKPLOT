@@ -334,6 +334,10 @@ if isfield(Ops,'clippingvalues')
     set(findobj(OH,'tag','clippingvals=?'),'enable','on','backgroundcolor',Active,'string',clip2str(c),'userdata',c)
 end
 
+if isfield(Ops,'clipnans')
+    set(findobj(OH,'tag','clipnans'),'enable','on','value',Ops.clipnans)
+end
+
 if isfield(Ops,'xclipping')
     set(findobj(OH,'tag','clippingvals'),'enable','on')
     c = Ops.xclipping;

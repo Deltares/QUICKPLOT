@@ -33,18 +33,16 @@ function hNew=gentextfld(hOld,Ops,Parent,Val,X,Y,Z)
 
 delete(hOld);
 zcoord=nargin>6;
-convert=0;
 if iscellstr(Val) || ischar(Val)
-    blank=0;
+    convert=0;
 else
     convert=1;
-    blank=isnan(Val(:));
 end
 if zcoord
-    blank=blank|isnan(X(:))|isnan(Y(:))|isnan(Z(:));
+    blank=isnan(X(:))|isnan(Y(:))|isnan(Z(:));
     Z=Z(~blank); Z=Z(:);
 else
-    blank=blank|isnan(X(:))|isnan(Y(:));
+    blank=isnan(X(:))|isnan(Y(:));
 end
 X=X(~blank); X=X(:);
 Y=Y(~blank); Y=Y(:);
