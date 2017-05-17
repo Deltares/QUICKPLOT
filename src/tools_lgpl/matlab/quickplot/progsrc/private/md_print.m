@@ -141,7 +141,7 @@ end
 if ischar(LocSettings.PrtID)
     LocSettings.PrtID=ustrcmpi(LocSettings.PrtID,PL(:,2));
 elseif LocSettings.PrtID>=0
-    error('Please replace PrtID number by printer name.');
+    error('Please replace PrtID number by printer name.')
 end
 
 if isfield(LocSettings,'SelectFrom')
@@ -166,9 +166,10 @@ else
     fn='';
 end
 
-i=0;
-tempfil='';
+i = 0;
+tempfil = '';
 pagenr = 1;
+Ex = [];
 while i<length(figlist)
     i=i+1;
     if ishandle(figlist(i))
@@ -320,8 +321,8 @@ while i<length(figlist)
                                 end
                                 pagenr = pagenr+1;
                             end
-                        catch
-                            ui_message('error','error encountered creating %s:%s',fn,lasterr);
+                        catch Ex
+                            %rethrow the error after resetting a few things ...
                         end
                         if ~isempty(normtext)
                             set(normtext,'fontunits','normalized')
@@ -336,8 +337,8 @@ while i<length(figlist)
                     if ischar(fn)
                         try
                             hgsave(figlist(i),fn);
-                        catch
-                            ui_message('error','error encountered creating %s:%s',fn,lasterr);
+                        catch Ex
+                            %rethrow the error after resetting a few things ...
                         end
                     end
                 case 'QUICKPLOT session file'
@@ -351,8 +352,8 @@ while i<length(figlist)
                             SER = qp_session('serialize',SES);
                             SER = qp_session('make_expandables',SER,{'filename','domain'});
                             qp_session('save',SER,fn)
-                        catch
-                            ui_message('error','error encountered creating %s:%s',fn,lasterr);
+                        catch Ex
+                            %rethrow the error after resetting a few things ...
                         end
                     end
                     i = length(figlist); % all done
@@ -391,8 +392,8 @@ while i<length(figlist)
                         end
                         set(figlist(i),'inverthardcopy',ih);
                         cd(ccd);
-                    catch
-                        ui_message('error','error encountered printing to %s:%s',Printer,lasterr);
+                    catch Ex
+                        %rethrow the error after resetting a few things ...
                     end
             end
             if nargout>0
@@ -405,6 +406,9 @@ while i<length(figlist)
             set(figlist(i),'handlevisibility',hvis);
             if ~LocSettings.AllFigures
                 LocSettings.PrtID=-1;
+            end
+            if ~isempty(Ex)
+                rethrow(Ex)
             end
         end
     end
@@ -870,13 +874,13 @@ function add_bookmark(fname,bookmark_text,append)
 % Read in the file
 fh = fopen(fname, 'r');
 if fh == -1
-    error('File %s not found.', fname);
+    error('File %s not found.', fname)
 end
 try
     fstrm = fread(fh, '*char')';
-catch ex
+catch Ex
     fclose(fh);
-    rethrow(ex);
+    rethrow(Ex)
 end
 fclose(fh);
 
@@ -892,13 +896,13 @@ fstrm = [fstrm(1:lastpage-1) strrep(fstrm(lastpage:end), '%%EndPageSetup', sprin
 % Write out the updated file
 fh = fopen(fname, 'w');
 if fh == -1
-    error('Unable to open %s for writing.', fname);
+    error('Unable to open %s for writing.', fname)
 end
 try
     fwrite(fh, fstrm, 'char*1');
-catch ex
+catch Ex
     fclose(fh);
-    rethrow(ex);
+    rethrow(Ex)
 end
 fclose(fh);
 
