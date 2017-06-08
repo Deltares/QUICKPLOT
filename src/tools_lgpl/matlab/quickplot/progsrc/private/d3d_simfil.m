@@ -139,7 +139,7 @@ switch FI.FileType(9:end)
         switch Name
             case 'network'
                 if ~isfield(FI,'ntwXY')
-                    G = inifile('geti',FI.ntw,'Branch','geometry');
+                    G = inifile('cgeti',FI.ntw,'Branch','geometry');
                     for i = length(G):-1:1
                         XY{i} = geom2xy(G{i});
                     end
@@ -209,10 +209,10 @@ switch FI.FileType(9:end)
                 BT = [F{:}];
                 BT = find(BT==Props.varid);
                 %
-                F=inifile('geti',FI.bndLoc,'Boundary','nodeId');
+                F=inifile('getstringi',FI.bndLoc,'Boundary','nodeId');
                 BI = F(BT(idx{M_}));
                 %
-                NI = inifile('geti',FI.ntw,'Node','id');
+                NI = inifile('getstringi',FI.ntw,'Node','id');
                 ni = find(ismember(NI,BI));
                 ni = ni(idx{M_});
                 x = inifile('geti',FI.ntw,'Node','x');
@@ -233,17 +233,17 @@ switch FI.FileType(9:end)
                 Ans.Val = sId(iM);
             otherwise
                 switch Props.varid{1}
-                    case {'calcdim','calcpnt','nodes_cr'}
+                    case {'calcdim','calcpnt','nodes_cr','morph_gr'}
                         FI = check_gpXY(FI);
                         % first N1 points are internal nodes
                         X = inifile('geti',FI.ntw,'Node','x');
                         Y = inifile('geti',FI.ntw,'Node','y');
-                        N = inifile('geti',FI.ntw,'Node','id');
+                        N = inifile('getstringi',FI.ntw,'Node','id');
                         nodXY = [cat(1,X{:}) cat(1,Y{:})];
                         % next N2 points are the internal nodes of the branches
                         igpXY = FI.gpXY(FI.gpInternal,:);
                         % final N3 points are the boundary nodes
-                        B = inifile('geti',FI.bndLoc,'Boundary','nodeId');
+                        B = inifile('getstringi',FI.bndLoc,'Boundary','nodeId');
                         NisB = ismember(N,B);
                         bndXY = nodXY(NisB,:);
                         nodXY = nodXY(~NisB,:);
@@ -410,19 +410,23 @@ switch FI.FileType
         uBT=unique(BT);
         nBT=length(uBT);
         %
-        ST=inifile('geti',FI.strucLoc,'Structure','type');
-        uST=unique(ST);
+        if inifile('exists',FI.strucLoc,'Structure','type')
+            ST=inifile('getstringi',FI.strucLoc,'Structure','type');
+            uST=unique(ST);
+        else
+            uST={};
+        end
         nST=length(uST);
         %
         % CrossSection types have been copied from their definition records
         % to the location record in MDF.
-        CT=inifile('geti',FI.crsLoc,'CrossSection','type');
+        CT=inifile('getstringi',FI.crsLoc,'CrossSection','type');
         uCT=unique(CT);
         nCT=length(uCT);
         hasCxyz = any(strcmp('xyz',uCT));
         %
         try
-            LAT=inifile('geti',FI.latLoc,'LateralDischarge','id');
+            LAT=inifile('getstringi',FI.latLoc,'LateralDischarge','id');
             hasLAT=1;
         catch
             hasLAT=0;
@@ -430,6 +434,7 @@ switch FI.FileType
         %
         nFLD = 0;
         flds = {'calcdim','calcpnt', ... % calculation points
+            'morph_gr', ... % calculation points (morphology)
             'reachdim','flowanal','reachseg','rsegsub', ... % reach segments
             'strucdim','struc', ... % structures
             'qlat', ... % lateral discharges
@@ -529,7 +534,20 @@ switch FI.FileType
                 nFLD = nFLD+1; % skip one for separator
                 for j = 1:length(FI_fld.SubsName)
                     nFLD = nFLD+1;
-                    Out(nFLD).Name  = FI_fld.SubsName{j};
+                    Name  = FI_fld.SubsName{j};
+                    if Name(end)==')'
+                        b = strfind(Name,'(');
+                        if isempty(b)
+                            Units = '';
+                        else
+                            Units = Name(b(end)+1:end-1);
+                            Name  = deblank(Name(1:b(end)-1));
+                        end
+                    else
+                        Units = '';
+                    end
+                    Out(nFLD).Name  = Name;
+                    Out(nFLD).Units = Units;
                     Out(nFLD).Geom  = 'PNT';
                     Out(nFLD).Coords = 'xy';
                     Out(nFLD).NVal  = 1;
@@ -705,7 +723,7 @@ switch FI.FileType
                 F=inifile('chapters',FI.ntw);
                 sz(M_) = sum(strcmp(F,'Node'));
             case 'grid points'
-                F=inifile('geti',FI.ntw,'Branch','gridPointsCount');
+                F=inifile('cgeti',FI.ntw,'Branch','gridPointsCount');
                 sz(M_) = sum([F{:}]);
             case 'lateral discharges';
                 F=inifile('geti',FI.latLoc,'LateralDischarge','id');
@@ -755,8 +773,8 @@ nPnt = length(bId);
 xy = NaN(nPnt,2);
 %
 [uBId,ia,ic] = unique(bId);
-G = inifile('geti',NTWini,'Branch','geometry');
-GId = inifile('geti',NTWini,'Branch','id');
+G = inifile('cgeti',NTWini,'Branch','geometry');
+GId = inifile('cgetstringi',NTWini,'Branch','id');
 for i = 1:length(uBId)
     Branch = uBId(i);
     iBranch = ustrcmpi(Branch,GId);
@@ -777,10 +795,10 @@ end
 % -----------------------------------------------------------------------------
 function FI = check_gpXY(FI)
 if ~isfield(FI,'gpXY')
-    gpCnt = inifile('geti',FI.ntw,'Branch','gridPointsCount');
-    gpX = inifile('geti',FI.ntw,'Branch','gridPointX');
-    gpY = inifile('geti',FI.ntw,'Branch','gridPointY');
-    gpI = inifile('geti',FI.ntw,'Branch','gridPointIds');
+    gpCnt = inifile('cgeti',FI.ntw,'Branch','gridPointsCount');
+    gpX = inifile('cgeti',FI.ntw,'Branch','gridPointX');
+    gpY = inifile('cgeti',FI.ntw,'Branch','gridPointY');
+    gpI = inifile('cgetstringi',FI.ntw,'Branch','gridPointIds');
     gpCnt = [gpCnt{:}];
     nGP   = sum(gpCnt);
     FI.gpXY       = zeros(nGP,2);
@@ -803,9 +821,9 @@ end
 % -----------------------------------------------------------------------------
 function FI = check_reachXY(FI)
 if ~isfield(FI,'reachXY')
-    reachCnt = inifile('geti',FI.ntw,'Branch','gridPointsCount');
-    brId = inifile('geti',FI.ntw,'Branch','id');
-    gpO = inifile('geti',FI.ntw,'Branch','gridPointOffsets');
+    reachCnt = inifile('cgeti',FI.ntw,'Branch','gridPointsCount');
+    brId = inifile('cgetstringi',FI.ntw,'Branch','id');
+    gpO = inifile('cgeti',FI.ntw,'Branch','gridPointOffsets');
     reachCnt = [reachCnt{:}]-1;
     nReach   = sum(reachCnt);
     FI.reachXY = zeros(nReach,2);
@@ -824,8 +842,8 @@ end
 % -----------------------------------------------------------------------------
 function FI = check_latXY(FI)
 if ~isfield(FI,'latXY')
-    bId = inifile('geti',FI.latLoc,'LateralDischarge','branchid');
-    bCh = inifile('geti',FI.latLoc,'LateralDischarge','chainage');
+    bId = inifile('cgetstringi',FI.latLoc,'LateralDischarge','branchid');
+    bCh = inifile('cgeti',FI.latLoc,'LateralDischarge','chainage');
     FI.latXY = branch_idchain2xy(FI.ntw,bId,bCh);
 end
 % -----------------------------------------------------------------------------
@@ -833,8 +851,8 @@ end
 % -----------------------------------------------------------------------------
 function FI = check_crsXY(FI)
 if ~isfield(FI,'crsXY')
-    bId = inifile('geti',FI.crsLoc,'CrossSection','branchid');
-    bCh = inifile('geti',FI.crsLoc,'CrossSection','chainage');
+    bId = inifile('cgetstringi',FI.crsLoc,'CrossSection','branchid');
+    bCh = inifile('cgeti',FI.crsLoc,'CrossSection','chainage');
     FI.crsXY = branch_idchain2xy(FI.ntw,bId,bCh);
 end
 % -----------------------------------------------------------------------------
@@ -842,8 +860,8 @@ end
 % -----------------------------------------------------------------------------
 function FI = check_strucXY(FI)
 if ~isfield(FI,'strucXY')
-    bId = inifile('geti',FI.strucLoc,'Structure','branchid');
-    bCh = inifile('geti',FI.strucLoc,'Structure','chainage');
+    bId = inifile('cgetstringi',FI.strucLoc,'Structure','branchid');
+    bCh = inifile('cgeti',FI.strucLoc,'Structure','chainage');
     FI.strucXY = branch_idchain2xy(FI.ntw,bId,bCh);
 end
 % -----------------------------------------------------------------------------

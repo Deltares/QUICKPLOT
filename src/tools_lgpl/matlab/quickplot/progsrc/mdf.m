@@ -661,6 +661,9 @@ else
 end
 %
 CT=inifile('geti',MF.crsDef,'Definition','type');
+if ~iscell(CT)
+    CT = {CT};
+end
 CID=inifile('geti',MF.crsDef,'Definition','id');
 CDF=inifile('geti',MF.crsLoc,'CrossSection','definition');
 [lDF,iDF]=ismember(CDF,CID);

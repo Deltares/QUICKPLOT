@@ -20,7 +20,7 @@ function varargout=inifile(cmd,varargin)
 %   ListOfKeywords=INIFILE('keywords',Info,Chapter)
 %   Retrieve list of Keywords in specified Chapter (cell array of strings).
 %
-%   BOOL = INIFILE('exist',Info,Chapter,Keyword)
+%   BOOL = INIFILE('exists',Info,Chapter,Keyword)
 %   Check whether a Chapter/Keyword exists in the the Info data set.
 %
 %   Val=INIFILE('get',Info,Chapter,Keyword,Default)
@@ -102,7 +102,7 @@ switch lcmd
         catch
             varargout{1} = false;
         end
-    case {'get','getstring','geti','getstringi'}
+    case {'get','getstring','geti','getstringi','cget','cgetstring','cgeti','cgetstringi'}
         [varargout{1:max(nargout,1)}] = getfield(lcmd,varargin{:});
     case {'set','seti'}
         varargout{1} = setfield(lcmd,varargin{:});
@@ -288,6 +288,10 @@ CaseInsensitive = cmd(end)=='i';
 if CaseInsensitive
     cmd = cmd(1:end-1);
 end
+CellOutput = cmd(1)=='c';
+if CellOutput
+    cmd = cmd(2:end);
+end
 if ischar(grpS)
     if isequal(grpS,'*')
         grp = 1:size(S,1);
@@ -306,7 +310,10 @@ else
     grp = [];
 end
 if isempty(grp)
-    if nargin>=5
+    if CellOutput
+        val = {};
+        return
+    elseif nargin>=5
         val = def;
         return
     end
@@ -338,7 +345,9 @@ else
         error('Keyword indexing not supported for multiple chapters at once.')
     end
 end
-if isequal(size(key),[1 1])
+if isempty(key) && nargin>=5
+    val=def;
+elseif isequal(size(key),[1 1]) && ~CellOutput
     val=Keywords{key,2};
     if ischar(val) && ~strcmp(cmd,'getstring')
         [lni,n,err,SF2i]=sscanf(val,'%f',[1 inf]);
@@ -346,8 +355,6 @@ if isequal(size(key),[1 1])
             val=lni;
         end
     end
-elseif isempty(key) && nargin>=5
-    val=def;
 elseif ~isempty(key)
     val=Keywords(key,2);
     if ~strcmp(cmd,'getstring')
@@ -364,7 +371,6 @@ end
 if ~isempty(iGRP)
     iGRP = iGRP(key);
 end
-
 
 
 function FI=setfield(cmd,FI,grpS,keyS,val)
