@@ -218,9 +218,17 @@ if isfield(Ops,'units')
 end
 
 Ops.basicaxestype = Ops.axestype;
-if ~isempty(strfind(Props.Name,'level')) && ...
-        (~ischar(qp_unitconversion(Units,'m')) || ...
-        ~ischar(qp_unitconversion(Units,'')))
+try
+    length_unit = ~ischar(qp_unitconversion(Units,'m'));
+catch
+    length_unit = 0;
+end
+try
+    empty_unit = ~ischar(qp_unitconversion(Units,''));
+catch
+    empty_unit = 0;
+end
+if ~isempty(strfind(Props.Name,'level')) && (length_unit || empty_unit)
     Ops.axestype = strrep(Ops.axestype,'Z',['Z [',Units,']']);
 elseif ~isempty(strfind(Ops.axestype,'Val'))
     Ops.axestype = strrep(Ops.axestype,'Val',['Val [',Units,']']);

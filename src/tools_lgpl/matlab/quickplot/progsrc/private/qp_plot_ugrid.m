@@ -335,54 +335,67 @@ switch NVal
                         qp_title(Parent,{TStr},'quantity',Quant,'unit',Units,'time',TStr)
                     end
                 else
-                    %Ops.plotcoordinate='(x,y)';
+                    switch data.ValLocation
+                        case 'EDGE'
+                            inode = zeros(length(data.EdgeNodeConnect)+1,1);
+                            if ismember(data.EdgeNodeConnect(1,1),data.EdgeNodeConnect(2,:)) && ~ismember(data.EdgeNodeConnect(1,2),data.EdgeNodeConnect(2,:))
+                                inode(1) = data.EdgeNodeConnect(1,2);
+                                inode(2:end) = data.EdgeNodeConnect(:,1);
+                            elseif ~ismember(data.EdgeNodeConnect(1,1),data.EdgeNodeConnect(2,:)) && ismember(data.EdgeNodeConnect(1,2),data.EdgeNodeConnect(2,:))
+                                inode(1) = data.EdgeNodeConnect(1,1);
+                                inode(2:end) = data.EdgeNodeConnect(:,2);
+                            end
+                            x = data.X(inode);
+                            if isfield(data,'Y')
+                                y = data.Y(inode);
+                            else
+                                y = [];
+                            end
+                            val = data.Val;
+                        case 'NODE'
+                            x = data.X;
+                            if isfield(data,'Y')
+                                y = data.Y;
+                            else
+                                y = [];
+                            end
+                            val = data.Val;
+                    end
+                    z = [];
                     switch Ops.plotcoordinate
                         case 'x coordinate'
-                            data.X(isnan(data.Val))=NaN;
-                            x=data.X;
-                            y=data.Val;
-                            z=zeros(size(x));
+                            if numel(val)==numel(x)
+                                x(isnan(val)) = NaN;
+                            end
+                            y = val;
                         case 'y coordinate'
-                            data.Y(isnan(data.Val))=NaN;
-                            x=data.Y;
-                            y=data.Val;
-                            z=zeros(size(x));
+                            if numel(val)==numel(y)
+                                y(isnan(val)) = NaN;
+                            end
+                            x = y;
+                            y = val;
                         case '(x,y)'
-                            data.X(isnan(data.Val))=NaN;
-                            data.Y(isnan(data.Val))=NaN;
-                            x=data.X;
-                            y=data.Y;
-                            z=data.Val;
+                            if numel(val)==numel(x)
+                                x(isnan(val)) = NaN;
+                                y(isnan(val)) = NaN;
+                            end
+                            z = val;
                         otherwise %case {'path distance','reverse path distance'}
-                            %data.X(isnan(data.Val))=NaN;
-                            xx=data.X;
-                            if isfield(data,'Y')
-                                %data.Y(isnan(data.Val))=NaN;
-                                yy=data.Y;
-                            else
-                                yy=0*xx;
+                            if strcmp(Ops.plotcoordinate,'reverse path distance')
+                                x = rot90(x,2);
+                                y = rot90(y,2);
                             end
-                            if isfield(data,'Z')
-                                %data.Z(isnan(data.Val))=NaN;
-                                zz=data.Z;
+                            if isfield(data,'XUnits') && strcmp(data.XUnits,'deg') % always x and y
+                                x = pathdistance(x,y,'geographic');
+                            elseif ~isempty(y)
+                                x = pathdistance(x,y);
                             else
-                                zz=0*xx;
+                                x = pathdistance(x);
                             end
                             if strcmp(Ops.plotcoordinate,'reverse path distance')
-                                xx=flipud(fliplr(xx));
-                                yy=flipud(fliplr(yy));
-                                zz=flipud(fliplr(zz));
+                                x = rot90(x,2);
                             end
-                            if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
-                                x=pathdistance(xx,yy,'geographic');
-                            else
-                                x=pathdistance(xx,yy);
-                            end
-                            if strcmp(Ops.plotcoordinate,'reverse path distance')
-                                x=flipud(fliplr(x));
-                            end
-                            y=data.Val;
-                            z=zeros(size(x));
+                            y = val;
                     end
                     if length(data.Time)>1
                         nx = numel(x);
@@ -430,6 +443,27 @@ switch NVal
                         end
                     else
                         if strcmp(Ops.facecolour,'none')
+                            if length(y)==length(x)-1
+                                x = [x(1:end-1)'
+                                    x(2:end)'];
+                                x = x(:);
+                                y = [y(:)'
+                                    y(:)'];
+                                y = y(:);
+                            elseif length(z)==length(x)-1
+                                x = [x(1:end-1)'
+                                    x(2:end)'];
+                                x = x(:);
+                                y = [y(1:end-1)'
+                                    y(2:end)'];
+                                y = y(:);
+                                z = [z(:)'
+                                    z(:)'];
+                                z = z(:);
+                            end
+                            if isempty(z)
+                                z = zeros(size(x));
+                            end
                             if FirstFrame
                                 hNew=line(x,y,z, ...
                                     'parent',Parent, ...

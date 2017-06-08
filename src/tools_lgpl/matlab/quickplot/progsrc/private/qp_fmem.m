@@ -278,6 +278,7 @@ switch cmd
                                 end
                                 for i = 1:length(d)
                                     [fp,f,e] = fileparts(d(i).name);
+                                    f = strrep(f,'-','_');
                                     FI.(f) = delwaq('open',fullfile(po,d(i).name));
                                 end
                         end

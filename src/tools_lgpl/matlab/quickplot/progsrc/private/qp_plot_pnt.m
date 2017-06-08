@@ -228,5 +228,5 @@ switch NVal
     case {2,3}
         [hNew,Thresholds,Param,Parent]=qp_plot_default(hNew,Parent,Param,data,Ops,Props);
     case 4
-        hNew=gentextfld(hNew,Ops,Parent,Val,X,Y);
+        hNew=gentextfld(hNew,Ops,Parent,data.Val,X,Y);
 end

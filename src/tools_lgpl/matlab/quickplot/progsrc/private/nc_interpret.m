@@ -940,6 +940,9 @@ for ivar = 1:nvars
             if ~isempty(udim)
                 Info.Mesh = {'ugrid' u ib-1};
                 Info.TSMNK(3) = strmatch(udim,dimNames,'exact')-1;
+                if ~isnan(Info.TSMNK(4))
+                    Info.TSMNK(4) = NaN;
+                end
                 auto_ugrid(:,ivar) = {Info.Name, udim{1}, nc.Dataset(u).Name, ugridLoc{ib}}';
                 break
             end
