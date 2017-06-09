@@ -77,8 +77,12 @@ function delwaq2raster(ini_file)
 %               to retrieve data for layer 6. Specify
 %                 layer = 'depth average'
 %               to compute the depth averaged values (this is the default).
-%               The depth averaging requires that LocalDepth variable is
-%               available on the delwaq MAP file.
+%               Use the setting
+%                 layer = 'bottom layer'
+%               to extract the values in the bottom most layer (for sigma-
+%               layer models it's more efficient to specify this layer by
+%               number). The latter two options require that the LocalDepth
+%               variable is available on the delwaq MAP file.
 %     localdepth: specify the name of the variable to be used for the
 %               layer depth, by default this is: LocalDepth.
 %
@@ -125,6 +129,7 @@ function delwaq2raster(ini_file)
 %   $Id$
 
 LAYER_DEPTH_AVERAGE = -1001;
+LAYER_BOTTOM_MOST   = -1002;
 
 if isstandalone
     fprintf(1,'--------------------------------------------------------------------------------\n');
@@ -264,6 +269,8 @@ for ifld = 1:nchp
                 switch info.layer
                     case 'depth average'
                         info.layer = LAYER_DEPTH_AVERAGE;
+                    case 'bottom layer'
+                        info.layer = LAYER_BOTTOM_MOST;
                     otherwise
                         error('Unknown layer "%s"',info.layer);
                 end
@@ -413,10 +420,10 @@ for ifld = 1:nchp
         if nLayers_WAQ==1
             info.layer = 1;
         end
-        if info.layer == LAYER_DEPTH_AVERAGE
+        if info.layer == LAYER_DEPTH_AVERAGE || info.layer == LAYER_BOTTOM_MOST
             ildp = filter_qnt(info.ldepth,waq_qnt,[]);
             if ildp==0
-                error('Missing depth information (%s) on WAQ map file to compute depth average quantities.',info.ldepth);
+                error('Missing depth information (%s) on WAQ map file to compute depth average or near bed quantities.',info.ldepth);
             end
             info.ildp = waq_qnt(ildp).Val1;
         end
@@ -667,7 +674,33 @@ for ifld = 1:nchp
                 iMissing = DATA_t==-999;
                 if nLayers_WAQ>1
                     % 3D quantity
-                    if info.layer == LAYER_DEPTH_AVERAGE
+                    if info.layer == LAYER_BOTTOM_MOST
+                        nqwq = size(DATA_t,1);
+                        %
+                        % Determine segment thickness
+                        %
+                        [t,LDP_t] = delwaq('read',dwq,info.ildp,0,it);
+                        LDP_t(LDP_t==-999) = 0;
+                        LDP_t = reshape(LDP_t,[nSeg2D nLayers_WAQ]);
+                        LDP_t(:,2:end) = diff(LDP_t,1,2);
+                        %
+                        % Mark cells with zero total depth as missing.
+                        %
+                        TDP_t = sum(LDP_t,2);
+                        zeroDepth = TDP_t==0;
+                        iMissing2D = false(nqwq,nSeg2D);
+                        iMissing2D(:,zeroDepth) = true;
+                        %
+                        DATA_t = reshape(DATA_t,[nqwq nSeg2D nLayers_WAQ]);
+                        DATA2D_t = repmat(missing_value,[nqwq nSeg2D]);
+                        for lyr = 1:nLayers_WAQ % from top to bottom
+                            activeCells = LDP_t(:,lyr)>0;
+                            DATA2D_t(:,activeCells) = DATA_t(:,activeCells,lyr);
+                        end
+                        %
+                        DATA_t   = DATA2D_t;
+                        iMissing = iMissing2D;
+                    elseif info.layer == LAYER_DEPTH_AVERAGE
                         %
                         % Determine segment thickness
                         %
@@ -679,7 +712,7 @@ for ifld = 1:nchp
                         % Determine total waterdepth (set to 1 if 0 to avoid
                         % division by zero).
                         %
-                        TDP_t = sum(LDP_t,2);
+                        TDP_t = sum(LDP_t,2); % more efficient to store LDP_t(:,end) before doing diff ...
                         zeroDepth = TDP_t==0;
                         TDP_t(zeroDepth) = 1;
                         %
