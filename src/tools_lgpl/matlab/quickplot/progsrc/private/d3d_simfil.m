@@ -313,20 +313,26 @@ switch FI.FileType(9:end)
                 F.Y(end+1,:) = NaN;
                 F.X(:,end+1) = NaN;
                 F.Y(:,end+1) = NaN;
-                F.QP_Options.AttribFiles.Data = {FI.dep};
-                F.QP_Options.AttribFiles.FileType = 'wldep';
-                F.QP_Options.AttribFiles.QP_Options.Dpsopt = 'TODO';
-                F.QP_Options.AttribFiles.QP_Options.DOrder = 2;
-                F.QP_Options.AttribFiles.QP_Options.DataLocation = 'TODO';
-                %
-                Props.VecType    = '';
-                Props.Loc        = 'd';
-                Props.ReqLoc     = 'd';
-                Props.Loc3D      = '';
-                Props.File       = 1;
-                Props.Fld        = -1;
-                Props.UseGrid    = 1;
-                Ans = gridfil(F,idom,Props,'griddata',idx{M_},idx{N_});
+                if isfield(FI,'dep')
+                    F.QP_Options.AttribFiles.Data = {FI.dep};
+                    F.QP_Options.AttribFiles.FileType = 'wldep';
+                    F.QP_Options.AttribFiles.QP_Options.Dpsopt = 'TODO';
+                    F.QP_Options.AttribFiles.QP_Options.DOrder = 2;
+                    F.QP_Options.AttribFiles.QP_Options.DataLocation = 'TODO';
+                    %
+                    Props.VecType    = '';
+                    Props.Loc        = 'd';
+                    Props.ReqLoc     = 'd';
+                    Props.Loc3D      = '';
+                    Props.File       = 1;
+                    Props.Fld        = -1;
+                    Props.UseGrid    = 1;
+                    Ans = gridfil(F,idom,Props,'griddata',idx{M_},idx{N_});
+                else
+                    Ans = F;
+                    depuni = inifile('geti',FI.mdf,'*','Depuni',NaN);
+                    Ans.Val = repmat(depuni,size(F.X)); %size-1 if in cell centres?
+                end
             case 'thin dams'
                 F = FI.grd;
                 F.X(end+1,:) = NaN;
@@ -568,6 +574,11 @@ switch FI.FileType
         for i = 1:length(flds)
             if isequal(flds{i},'-')
                 nfld = nfld+1;
+            elseif isequal(flds{i},'dep')
+                % include bed levels always if there is a grid
+                if isfield(FI,'grd')
+                    nfld = nfld+1;
+                end
             elseif isfield(FI,flds{i})
                 switch flds{i}
                     case 'bnd'
@@ -586,7 +597,7 @@ switch FI.FileType
         for i = 1:length(flds)
             if isequal(flds{i},'-')
                 ifld = ifld+1;
-            elseif isfield(FI,flds{i})
+            elseif isfield(FI,flds{i}) || (isequal(flds{i},'dep') && isfield(FI,'grd'))
                 ifld = ifld+1;
                 switch flds{i}
                     case 'grd'
@@ -648,7 +659,7 @@ switch FI.FileType
                             Out(ifld).DimFlag(ST_) = 1;
                             Out(ifld).NVal = 4;
                             %
-                            if strcmp(FI.bnd(ib).Forcing,'T')
+                            if strcmp(FI.bnd.Forcing(ib),'T')
                                 for ib2 = 1:length(FI.bct.Table)
                                     bType2 = FI.bct.Table(ib2).Parameter(2).Name(1:19);
                                     if ~strcmp(bType2,bTyp2)
