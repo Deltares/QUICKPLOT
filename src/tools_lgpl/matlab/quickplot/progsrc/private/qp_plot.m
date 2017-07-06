@@ -35,28 +35,61 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 hNewVec=0;
 Error=1;
-FileInfo=PlotState.FI;
 
-Domain=PlotState.Domain;
-Props=PlotState.Props;
-SubField=PlotState.SubField;
-Selected=PlotState.Selected;
-Parent=PlotState.Parent;
-hOld=PlotState.Handles;
-stats=PlotState.Stations;
-Ops=PlotState.Ops;
+if isfield(PlotState,'FI')
+    FileInfo=PlotState.FI;
+    Domain=PlotState.Domain;
+    Props=PlotState.Props;
+    SubField=PlotState.SubField;
+    Selected=PlotState.Selected;
+    Parent=PlotState.Parent;
+    hOld=PlotState.Handles;
+    stats=PlotState.Stations;
+    Ops=PlotState.Ops;
+    Ops=qp_state_version(Ops);
+    
+    DimFlag=Props.DimFlag;
+    
+    SubSelected=Selected;
+    SubSelected(~DimFlag)=[];
+    if isfield(Props,'MNK') && Props.MNK
+        Props.MNK = xyz_or_mnk(Ops,Selected,Props.MNK);
+    end
+    
+    DataInCell=0;
+    if Props.NVal<0
+        data=[];
+    else
+        if isfield(Ops,'extend2edge') && Ops.extend2edge
+            [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'griddefdata',SubField{:},SubSelected{:});
+        else
+            switch Ops.presentationtype
+                case {'patches','patches with lines','patch centred vector','polygons'}%,'edge'}
+                    [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'gridcelldata',SubField{:},SubSelected{:});
+                    DataInCell=1;
+                otherwise
+                    [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'griddata',SubField{:},SubSelected{:});
+            end
+        end
+        if isempty(data)
+            ui_message('error','Did not get any data from %s file.',FileInfo.FileType)
+            return
+        elseif ~Chk
+            ui_message('error','Error retrieving data from %s file.',FileInfo.FileType);
+            return
+        end
+    end
+else
+    data = PlotState;
+    hOld = [];
+    Parent = gca;
+end
 
 if iscell(hOld)
     hOldVec=cat(1,hOld{:});
 else
     hOldVec=hOld;
     hOld={hOld};
-end
-DimFlag=Props.DimFlag;
-
-Ops=qp_state_version(Ops);
-if isfield(Ops,'horizontalalignment') && isequal(Ops.horizontalalignment,'centre')
-    Ops.horizontalalignment='center';
 end
 
 %
@@ -133,37 +166,6 @@ Thresholds=[]; % Thresholds is predefined to make sure that Thresholds always ex
 
 for i=5:-1:1
     multiple(i) = (length(Selected{i})>1) | isequal(Selected{i},0);
-end
-
-SubSelected=Selected;
-SubSelected(~DimFlag)=[];
-FT=FileInfo.FileType;
-if isfield(Props,'MNK') && Props.MNK
-    Props.MNK = xyz_or_mnk(Ops,Selected,Props.MNK);
-end
-
-DataInCell=0;
-if Props.NVal<0
-    data=[];
-else
-    if isfield(Ops,'extend2edge') && Ops.extend2edge
-        [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'griddefdata',SubField{:},SubSelected{:});
-    else
-        switch Ops.presentationtype
-            case {'patches','patches with lines','patch centred vector','polygons'}%,'edge'}
-                [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'gridcelldata',SubField{:},SubSelected{:});
-                DataInCell=1;
-            otherwise
-                [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'griddata',SubField{:},SubSelected{:});
-        end
-    end
-    if isempty(data)
-        ui_message('error','Did not get any data from %s file.',FT)
-        return
-    elseif ~Chk
-        ui_message('error','Error retrieving data from file.');
-        return
-    end
 end
 
 if isfield(Ops,'axestimezone_shift') && ~isnan(Ops.axestimezone_shift)
@@ -750,6 +752,9 @@ elseif isfield(Ops,'marker')
         'markersize',Ops.markersize, ...
         'markeredgecolor',Ops.markercolour, ...
         'markerfacecolor',Ops.markerfillcolour};
+end
+if isfield(Ops,'horizontalalignment') && isequal(Ops.horizontalalignment,'centre')
+    Ops.horizontalalignment='center';
 end
 if isfield(Ops,'fontsize')
     Ops.FontParams={'color',Ops.colour, ...
