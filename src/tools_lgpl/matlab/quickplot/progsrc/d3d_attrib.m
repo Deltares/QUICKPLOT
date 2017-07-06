@@ -303,6 +303,8 @@ for tpC = types
                         DischType{i,1}='normal discharge';
                     else
                         switch upper(char(X(1)))
+                            case 'N'
+                                DischType{i,1}='normal discharge';
                             case 'W'
                                 DischType{i,1}='walking discharge';
                             case 'P'
