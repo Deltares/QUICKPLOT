@@ -1136,8 +1136,8 @@ if Props.DimFlag(ST_)
             sz(ST_)=sz(ST_)+Info.SizeDim;
         case {'BALVOLUME','BALAREAS','BALDPS','BALR1CONC'}
             % polygon
-            Info=vs_disp(FI,'his-bal-const','BALVOLNAMES');
-            sz(ST_)=Info.SizeDim(1)-1; % remove Open Boundaries
+            Info=vs_disp(FI,'his-bal-const','BALAREAS');
+            sz(ST_)=Info.SizeDim(1); % exclude non-polygons
         case {'BALFLUX','BALR1FLUX','BALSDFLUX'}
             % polygon interfaces
             FI.ElmDef(strcmp('BALNEIGHB',{FI.ElmDef.Name})).Type=3; % make sure BALNEIGB data is read as integers
@@ -1250,8 +1250,8 @@ switch Props.Val1
         end
     case {'BALVOLUME','BALAREAS','BALDPS','BALR1CONC'}
         % polygon
-        Info=vs_disp(FI,'his-bal-const','BALVOLNAMES');
-        [S,Chk]=vs_get(FI,'his-bal-const','BALVOLNAMES',{1:Info.SizeDim(1)-1},'quiet'); % exclude Open Boundaries
+        Info=vs_disp(FI,'his-bal-const','BALAREAS');
+        [S,Chk]=vs_get(FI,'his-bal-const','BALVOLNAMES',{1:Info.SizeDim(1)},'quiet'); % exclude non-polygons
     case {'BALFLUX','BALR1FLUX','BALSDFLUX'}
         % polygon interfaces
         [BS,Chk]=vs_get(FI,'his-bal-const','BALVOLNAMES','quiet');
