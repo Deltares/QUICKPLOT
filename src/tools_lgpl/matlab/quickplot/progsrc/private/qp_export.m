@@ -88,6 +88,8 @@ switch expType
         % assumptions: 2D, one timestep
         % morsys field file: NVal=1
         ext='dep';
+    case 'polygon file'
+        ext='pol';
     case 'tekal file'
         ext='tek';
     case 'tekal file (time series)'
@@ -546,10 +548,10 @@ for f=1:ntim
             if lastfield
                 tecplot('write',filename,xx);
             end
-        case 'arcview shape'
-           if isfield(data,'XDam')
-              Ops.presentationtype = 'thin dams';
-           end
+        case {'arcview shape','polygon file'}
+            if isfield(data,'XDam')
+                Ops.presentationtype = 'thin dams';
+            end
             switch Ops.presentationtype
                 case {'patches','patches with lines','markers','values','grid','polylines','polygons',''}
                     xy=[];
@@ -560,9 +562,9 @@ for f=1:ntim
                         else
                             bs=[1 length(vNaN)];
                         end
-                        xyc={};
+                        xy={};
                         for i=size(bs,1):-1:1
-                            xyc{i}=[data.X(bs(i,1):bs(i,2)) data.Y(bs(i,1):bs(i,2))];
+                            xy{i}=[data.X(bs(i,1):bs(i,2)) data.Y(bs(i,1):bs(i,2))];
                         end
                         vals={};
                         if isfield(data,'Val')
@@ -573,7 +575,17 @@ for f=1:ntim
                         else
                            shp_type = 'polygon';
                         end
-                        shapewrite(filename,shp_type,xyc,vals{:})
+                        switch ExpType
+                            case 'arcview shape'
+                                shapewrite(filename,shp_type,xy,vals{:})
+                            case 'polygon file'
+                                DATA = [];
+                                for i = length(xy):-1:1
+                                    DATA.Field(i).Name = sprintf('polygon %i',i);
+                                    DATA.Field(i).Data = xy{i};
+                                end
+                                tekal('write',filename,DATA);
+                        end
                     else
                         d=1;
                         if isfield(Props,'Geom') && strncmp(Props.Geom,'UGRID',5)
@@ -737,7 +749,23 @@ for f=1:ntim
                             %
                             [xy,cLabels,cv] = process_polygons(xy,fc,cv,Thresholds);
                             %
-                            shapewrite(filename,xy,cLabels,cv)
+                            switch ExpType
+                                case 'arcview shape'
+                                    shapewrite(filename,xy,cLabels,cv)
+                                case 'polygon file'
+                                    DATA = [];
+                                    for i = length(xy):-1:1
+                                        if isnan(cv(i,1))
+                                            DATA.Field(i).Name = sprintf('values smaller than %g',cv(i,2));
+                                        elseif isnan(cv(i,2))
+                                            DATA.Field(i).Name = sprintf('values larger than %g',cv(i,1));
+                                        else
+                                            DATA.Field(i).Name = sprintf('values between %g and %g',cv(i,:));
+                                        end
+                                        DATA.Field(i).Data = xy{i};
+                                    end
+                                    tekal('write',filename,DATA);
+                            end
                         case {'vector','vector (split x,y)','vector (split m,n)'}
                             hascolor = strcmp(get(hNew(end),'type'),'patch');
                             if hascolor

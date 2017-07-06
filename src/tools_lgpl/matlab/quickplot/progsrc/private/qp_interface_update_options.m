@@ -1601,14 +1601,22 @@ if nval>=0
         end
     end
     if (multiple(M_) && (multiple(N_) || triangles || strncmp(geometry,'UGRID',5) || strcmp(geometry,'sSEG'))) && ~multiple(K_) && ~multiple(T_)
-        if ~isfield(Ops,'presentationtype') || ~isequal(Ops.presentationtype,'continuous shades')
+        if ~isfield(Ops,'presentationtype')
             ExpTypes{end+1}='ARCview shape';
+        elseif  ~isequal(Ops.presentationtype,'continuous shades')
+            ExpTypes{end+1}='ARCview shape';
+            if isequal(Ops.presentationtype,'contour patches') || isequal(Ops.presentationtype,'contour patches with lines')
+                ExpTypes{end+1}='polygon file';
+            end
         end
         if strcmp(geometry,'sQUAD') && nval==0
             ExpTypes{end+1}='landboundary file';
         end
     elseif strcmp(geometry,'POLYL') || strcmp(geometry,'POLYG')
         ExpTypes{end+1}='ARCview shape';
+        if strcmp(geometry,'POLYG')
+            ExpTypes{end+1}='polygon file';
+        end
         ExpTypes{end+1}='landboundary file';
     end
     maxt = get(findobj(UD.MainWin.Fig,'tag','max_t'),'userdata');
