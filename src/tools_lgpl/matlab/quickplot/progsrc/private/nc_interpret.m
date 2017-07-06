@@ -753,7 +753,7 @@ for ivar = 1:nvars
             coordAttribs = {nc.Dataset(Info.X).Attribute.Name}';
         end
         j = strmatch('bounds',coordAttribs,'exact');
-        if ~isempty(j)
+        if ~isempty(j) && ~isempty(nc.Dataset(Info.X).Attribute(j).Value)
             Info.XBounds = strmatch(nc.Dataset(Info.X).Attribute(j).Value,varNames);
             if isempty(Info.XBounds)
                 ui_message('error','The bounds attribute of %s points to %s, but that variable does not exist.',nc.Dataset(Info.X).Name,nc.Dataset(Info.X).Attribute(j).Value)
@@ -832,7 +832,7 @@ for ivar = 1:nvars
             coordAttribs = {nc.Dataset(Info.Y).Attribute.Name}';
         end
         j = strmatch('bounds',coordAttribs,'exact');
-        if ~isempty(j)
+        if ~isempty(j) && ~isempty(nc.Dataset(Info.Y).Attribute(j).Value)
             Info.YBounds = strmatch(nc.Dataset(Info.Y).Attribute(j).Value,varNames);
             if isempty(Info.YBounds)
                 ui_message('error','The bounds attribute of %s points to %s, but that variable does not exist.',nc.Dataset(Info.Y).Name,nc.Dataset(Info.Y).Attribute(j).Value)
@@ -1115,9 +1115,11 @@ Info.Coordinates = node_coords;
 nd = strmatch('node_dimension',Attribs,'exact');
 if ~isempty(nd)
     node_dim = Info.Attribute(nd).Value;
-else
+elseif ~isempty(node_coords)
     ndc = find(strcmp(node_coords{1},varNames));
     node_dim = nc.Dataset(ndc).Dimension{1};
+else
+    node_dim = '';
 end
 %
 ed  = strmatch('edge_dimension',Attribs,'exact');

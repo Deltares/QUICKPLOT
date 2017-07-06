@@ -353,10 +353,17 @@ switch subtype
                             y=y(getPnt,:);
                         end
                     case 'netCDF'
+                        Ans = [];
                         if isfield(FI.Grid,'Mesh')
                             switch FI.Grid.Mesh{1}
                                 case 'ugrid'
-                                    [Success,Ans] = qp_getdata(FI.Grid,FI.Grid.Mesh{4},'griddata',idx{M_});
+                                    if isfield(FI.Grid,'Aggregation') && ~isempty(FI.Grid.Aggregation)
+                                        select = {};
+                                    else
+                                        select = {idx{M_}};
+                                    end
+                                    [Success,Ans] = qp_getdata(FI.Grid,FI.Grid.Mesh{4},'griddata',select{:});
+                                    Ans.ValLocation = Props.Geom(7:end);
                             end
                         else
                             if DataInCell
@@ -377,6 +384,18 @@ switch subtype
                             end
                             x=x(idx{M_},:);
                             y=y(idx{M_},:);
+                        elseif ~isempty(Ans)
+                            if isfield(FI.Grid,'Aggregation') && ~isempty(FI.Grid.Aggregation)
+                                [agg, errmsg] = qp_netcdf_get(FI.Grid,FI.Grid.Aggregation,FI.Grid.AggregationDims);
+                                agg = agg(:,1); % select one layer
+                                clip = isnan(agg);
+                                clippedNodes = Ans.FaceNodeConnect(clip,:);
+                                Ans.FaceNodeConnect(clip,:)=[];
+                                clippedNodes = setdiff(clippedNodes(:),Ans.FaceNodeConnect(:));
+                                Ans.X(clippedNodes) = NaN;
+                                Ans.Y(clippedNodes) = NaN;
+                                %agg(clip)=[]; % For aggregation, use agg or FI.Grid.Index
+                            end
                         end
                         XUnits = FI.Grid.Unit;
                     case 'arcgrid'

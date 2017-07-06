@@ -185,6 +185,7 @@ while 1
                     xbounds = 0;
                     ybounds = 0;
                     if any(AggrTable)
+                        C = [];
                         iAggr = find(AggrTable);
                         iAggr = iAggr(1);
                         table = nc_varget(G.Filename,G.Dataset(iAggr).Name);
@@ -194,10 +195,26 @@ while 1
                             GridSeg = min(max(table,[],2)); % should be recoded, because it could be any dimension
                         end
                         if ~isempty(G.Dataset(iAggr).Mesh)
-                            G.Mesh = G.Dataset(iAggr).Mesh;
+                            m = G.Dataset(iAggr).Mesh;
+                            mInfo = G.Dataset(m{2});
+                            mAttribs = mInfo.Attribute;
+                            mAttribNames = {mAttribs.Name};
+                            %
+                            j = strmatch('long_name',mAttribNames,'exact');
+                            if ~isempty(j) && ~isempty(mAttribs(j).Value)
+                                Name = mAttribs(j).Value;
+                            elseif ~isempty(standard_name)
+                                Name = standard_name;
+                            else
+                                Name = mInfo.Name;
+                            end
+                            %
+                            G.Mesh = [m {Name}];
                             switch G.Mesh{1}
                                 case 'ugrid'
-                                    XDimensions = {G.Dataset(G.Mesh{2}).Mesh(4+G.Mesh{2})};
+                                    x = G.Dataset(G.Mesh{2}).X;
+                                    y = G.Dataset(G.Mesh{2}).Y;
+                                    XDimensions = G.Dataset(G.Mesh{2}).Mesh(4+G.Mesh{3});
                             end
                         else
                             xbounds = G.Dataset(iAggr).XBounds;
@@ -375,7 +392,7 @@ while 1
                     if x~=0
                         G.CCoordinates = {G.Dataset(x).Name G.Dataset(y).Name};
                         XDimensions = G.Dataset(x).Dimension;
-                    else
+                    elseif ~isempty(C)
                         XDimensions = C(1,3);
                         x = G.Dataset(C{1,1}).X;
                     end
