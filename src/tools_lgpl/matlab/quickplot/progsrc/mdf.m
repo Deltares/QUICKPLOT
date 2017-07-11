@@ -597,9 +597,35 @@ if isequal(Program,UNSPECIFIED)
         MFile.mdw = master;
         MFile = mdwread(MFile,master_path);
     elseif inifile('existsi',master,'General','fileType')
-        MFile.FileType = 'Delft3D D-Flow1D';
-        MFile.md1d = master;
-        MFile = md1dread(MFile,master_path);
+        fileType = propget(master,'General','fileType');
+        switch fileType
+            case 'modelDef'
+                MFile.FileType = 'Delft3D D-Flow1D';
+                MFile.md1d = master;
+                MFile = md1dread(MFile,master_path);
+            case '1D2D'
+                MFile.FileType = 'Delft3D Coupled Model';
+                MFile.config = master;
+                %
+                typeModel = inifile('geti',master,'Model','type');
+                nameModel = inifile('geti',master,'Model','name');
+                dirModel  = inifile('geti',master,'Model','directory');
+                mdfModel  = inifile('geti',master,'Model','modelDefinitionFile');
+                nModels = length(typeModel);
+                %
+                MFile.Domains = cell(nModels,3);
+                MFile.Domains(:,1) = typeModel;
+                MFile.Domains(:,2) = nameModel;
+                for i = 1:length(typeModel)
+                    fName = relpath(master_path,[dirModel{i} filesep mdfModel{i}]);
+                    MFile.Domains{i,3} = masterread(fName);
+                end
+                %
+                mappingFile = inifile('geti',master,'Files','mappingFile');
+                Domain.FileType = 'Delft3D 1D2D mapping';
+                Domain.mapping = inifile('open',relpath(master_path,mappingFile));
+                MFile.Domains(end+1,:) = {'1D2D','1D2Dmapping',Domain};
+        end
     elseif inifile('existsi',master,'','MNKmax')
         MFile.FileType = 'Delft3D D-Flow2D3D';
         MFile.mdf = master;
@@ -664,8 +690,8 @@ CT=inifile('geti',MF.crsDef,'Definition','type');
 if ~iscell(CT)
     CT = {CT};
 end
-CID=inifile('geti',MF.crsDef,'Definition','id');
-CDF=inifile('geti',MF.crsLoc,'CrossSection','definition');
+CID=inifile('getstringi',MF.crsDef,'Definition','id');
+CDF=inifile('getstringi',MF.crsLoc,'CrossSection','definition');
 [lDF,iDF]=ismember(CDF,CID);
 if ~all(lDF)
     missingDF = unique(CDF(~lDF));

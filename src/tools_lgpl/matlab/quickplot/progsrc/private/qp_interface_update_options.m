@@ -952,6 +952,8 @@ if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'stri
         case 'polylines'
             markerflatfill=nval>0;
             edgeflatcolour=nval>0;
+            SingleColor=0;
+            MultipleColors=1;
             lineproperties=1;
         case 'grid with numbers'
             ask_for_textprops=1;

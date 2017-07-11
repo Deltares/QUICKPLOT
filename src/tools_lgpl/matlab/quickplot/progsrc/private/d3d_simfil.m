@@ -53,6 +53,17 @@ if nargin<2
     error('Not enough input arguments')
 end
 
+oFI = [];
+if strcmp(FI.FileType,'Delft3D Coupled Model')
+    if nargin<3 || (~strcmp(field,'domains') && ~strcmp(field,'options'))
+        oFI = FI;
+        odom = idom;
+        %
+        FI = FI.Domains{idom,3};
+        idom = [];
+    end
+end
+
 if nargin==2
     varargout={infile(FI,idom)};
     return
@@ -125,6 +136,20 @@ for i=1:length(sz)
 end
 
 switch FI.FileType(9:end)
+    case '1D2D mapping'
+        switch Props.Name
+            case {'1D2D links','1D2D link numbers'}
+                XY1D = inifile('geti',FI.mapping,'1d2dLink','XY_1D');
+                XY2D = inifile('geti',FI.mapping,'1d2dLink','XY_2D');
+                for i = 1:length(XY1D)
+                    XY1D{i}(2,:) = XY2D{i};
+                end
+                %
+                Ans.XY = XY1D(idx{M_});
+                if strcmp(Props.Name,'1D2D link numbers')
+                    Ans.Val = idx{M_};
+                end
+        end
     case 'D-Flow1D'
         Name = Props.Name;
         if strcmp(Name,'water level boundary points') || ...
@@ -370,6 +395,10 @@ switch FI.FileType(9:end)
         end
 end
 
+if ~isempty(oFI)
+    oFI.Domains{odom,3} = FI;
+    FI = oFI;
+end
 varargout={Ans FI};
 % -----------------------------------------------------------------------------
 
@@ -396,6 +425,8 @@ function Out=domains(FI)
 switch FI.FileType
     case 'Delft3D D-Wave'
         Out = {FI.domain.name};
+    case 'Delft3D Coupled Model'
+        Out = FI.Domains(:,2);
     otherwise
         Out = {};
 end
@@ -410,6 +441,15 @@ PropNames={'Name'                   'Units' 'Geom' 'Coords' 'DimFlag' 'DataInCel
 DataProps={'-------'                ''      ''     ''      [0 0 0 0 0]  0           0      []       0     []          {}          0         0          0          0};
 Out=cell2struct(DataProps,PropNames,2);
 switch FI.FileType
+    case 'Delft3D 1D2D mapping'
+        Out(1).Name = '1D2D links';
+        Out(1).Geom = 'POLYL';
+        Out(1).Coords = 'xy';
+        Out(1).DimFlag(M_) = 1;
+        %
+        Out(2) = Out(1);
+        Out(2).Name = '1D2D link numbers';
+        Out(2).NVal = 1;
     case 'Delft3D D-Flow1D'
         F=inifile('geti',FI.bndLoc,'Boundary','type');
         BT=[F{:}];
@@ -725,6 +765,9 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 ndims = length(Props.DimFlag);
 sz = zeros(1,ndims);
 switch FI.FileType
+    case 'Delft3D 1D2D mapping'
+        F=inifile('chapters',FI.mapping);
+        sz(M_) = sum(strcmp(F,'1d2dLink'));
     case 'Delft3D D-Flow1D'
         switch Props.Name
             case 'network'
