@@ -723,9 +723,44 @@ function MF = mduread(MF,md_path)
 mshname = propget(MF.mdu,'geometry','NetFile');
 if ~isempty(mshname)
     mshname = relpath(md_path,mshname);
-    MF.mesh.nc_file = nc_interpret(mshname);
-    MF.mesh.nc_file.FileType = 'NetCDF';
-    Q = qpread(MF.mesh.nc_file);
+    F = nc_interpret(mshname);
+    F.FileType = 'NetCDF';
+    Q = qpread(F);
+    if ~strcmp(Q(1).Geom,'UGRID-NODE')
+        % old mesh file: modify data structures such that it behaves like a
+        % new ugrid file.
+        %
+        grdid = length(F.Dataset)+1;
+        %
+        F.Dataset(grdid).Name = 'Mesh2D';
+        F.Dataset(grdid).Attribute(1).Name = 'edge_node_connectivity';
+        F.Dataset(grdid).Attribute(1).Value = 'NetLink';
+        F.Dataset(grdid).Mesh = {'ugrid' grdid -1 'nNetNode' 'nNetLink' ''};
+        F.Dataset(grdid).X = ustrcmpi({F.Dataset.Name},'NetNode_x');
+        F.Dataset(grdid).Y = ustrcmpi({F.Dataset.Name},'NetNode_y');
+        NL = ustrcmpi({F.Dataset.Name},'NetLink');
+        F.Dataset(NL).Attribute(end+1).Name = 'start_index';
+        F.Dataset(NL).Attribute(end).Value = 1;
+        %
+        Q = [];
+        Q.Name = 'Mesh2D';
+        Q.Units = '';
+        Q.TemperatureType = 'unspecified';
+        Q.Geom = 'UGRID-NODE';
+        Q.Coords = 'xy';
+        Q.DimFlag = [0 0 6 0 0];
+        Q.DataInCell = 0;
+        Q.NVal = 0;
+        Q.SubFld = [];
+        Q.MNK = 0;
+        Q.varid = {'node_index' grdid-1};
+        Q.DimName = {[]  []  'nNetNode'  []  []};
+        Q.hasCoords = 1;
+        Q.VectorDef = 0;
+        Q.ClosedPoly = 0;
+        Q.UseGrid = 1;
+    end
+    MF.mesh.nc_file = F;
     MF.mesh.quant = Q(1);
 else
     error('Unable to locate NetFile keyword in [geometry] chapter.');
