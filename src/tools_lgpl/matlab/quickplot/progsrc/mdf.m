@@ -586,6 +586,7 @@ Val = rmhash(inifile('geti',FILE,varargin{:}));
 
 
 function MFile = masterread(filename)
+%MFile = ddbread(filename);
 master = inifile('open',filename);
 master_path = fileparts(filename);
 %
@@ -644,6 +645,30 @@ else
     end
 end
 
+
+function DDB = ddbread(filename)
+fid = fopen(filename,'r');
+DDB.DomainNames = {};
+iLine = 0;
+iBound = 0;
+while ~feof(fid)
+    iLine = iLine+1;
+    Line = fgetl(fid);
+    [Dom1,Rem] = strtok(Line);
+    [val,n] = sscanf(Rem,' %d %d %d %d %s %d %d %d %d');
+    if n<7
+        fclose(fid);
+        error('Invalid DD syntax in line %i of %s',iLine,filename)
+    end
+    Dom2 = char(val(5:end-4)');
+    Idx = val([1:4 end-3:end])';
+    iBound = iBound+1;
+    DDB.DomainNrs(iBound,1:2) = {Dom1 Dom2};
+    DDB.DomainMN(iBound,1:8)  = Idx;
+end
+fclose(fid);
+[DDB.DomainNames,dummy,DDB.DomainNrs]=unique(DDB.DomainNrs);
+DDB.DomainNrs = reshape(DDB.DomainNrs,[iBound 2]);
 
 function MF = md1dread(MF,md_path)
 ntwname = propget(MF.md1d,'Files','networkFile');
@@ -775,7 +800,7 @@ if ~isempty(grdname)
         numDomains = length(grdname);
         for idom = 1:numDomains
             grdname_loc = relpath(md_path,grdname{idom});
-            [f,p,e] = fileparts(grdname_loc);
+            [f,p] = fileparts(grdname_loc);
             MF.domain(idom).name = p;
             MF.domain(idom).grd  = wlgrid('read',grdname_loc);
         end
@@ -783,7 +808,7 @@ if ~isempty(grdname)
         % numDomains = 1;
         idom = 1;
         grdname_loc = relpath(md_path,grdname);
-        [f,p,e] = fileparts(grdname_loc);
+        [f,p] = fileparts(grdname_loc);
         MF.domain(idom).name = p;
         MF.domain(idom).grd = wlgrid('read',grdname_loc);
     end
