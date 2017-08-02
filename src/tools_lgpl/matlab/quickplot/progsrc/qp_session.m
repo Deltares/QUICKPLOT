@@ -658,7 +658,7 @@ for fgi = length(S):-1:1
                             d3d_qp('usemarkerfillcolour',0)
                         else
                             d3d_qp('usemarkerfillcolour',1)
-                            d3d_qp('makerfillcolour',Ops.markerfillcolour)
+                            d3d_qp('markerfillcolour',Ops.markerfillcolour)
                         end
                     end
                     if isfield(Ops,'presentationtype') && strcmp(Ops.presentationtype,'patches')
