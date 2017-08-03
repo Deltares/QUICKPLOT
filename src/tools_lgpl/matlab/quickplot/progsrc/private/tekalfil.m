@@ -412,15 +412,25 @@ elseif Ann
     end
 elseif Props.Time
     switch Props.Time
-        case -1
+        case -1 % time obtained via explicit read
             OutTime = readtim(FI,Props);
             val1 = Data(idx{T_},idx{ST_});
             val1(:,SToutofrange)=NaN;
-        case 1
-            OutTime=Data(idx{T_},1);
+        case {1,1.1,1.2,1.3} % time in seconds/minutes/hours/days
+            switch Props.Time
+                case 1 % seconds
+                    fac = 3600*24;
+                case 1.1 % minutes
+                    fac = 60*24;
+                case 1.2 % hours
+                    fac = 24;
+                case 1.3 % days
+                    fac = 1;
+            end
+            OutTime=Data(idx{T_},1)/fac;
             val1=Data(idx{T_},idx{ST_}+1);
             val1(:,SToutofrange)=NaN;
-        case 2
+        case 2 % (yy)yymmdd hhmmss
             OutTime=tdelft3d(Data(idx{T_},1),Data(idx{T_},2));
             val1=Data(idx{T_},idx{ST_}+2);
             val1(:,SToutofrange)=NaN;
@@ -604,8 +614,18 @@ switch FI.FileType
                                         DP={'field X'    'PNT'  ''  [1 5 0 0 0]  0          1       i       2       0          []      {}  };
                                         DP{1}=sprintf('%s',FI.Field(i).Name);
                                         DataProps(end+1,:)=DP;
-                                    case {'time in seconds'}
-                                        DP={'field X'    'PNT'  ''  [3 5 0 0 0]  0          1       i       1       0          []      {}  };
+                                    case {'time in seconds','time in minutes','time in hours','time in days'}
+                                        switch Col1
+                                            case 'time in seconds'
+                                                tim = 1;
+                                            case 'time in minutes'
+                                                tim = 1.1;
+                                            case 'time in hours'
+                                                tim = 1.2;
+                                            case 'time in days'
+                                                tim = 1.3;
+                                        end
+                                        DP={'field X'    'PNT'  ''  [3 5 0 0 0]  0          1       i       tim     0          []      {}  };
                                         DP{1}=sprintf('%s',FI.Field(i).Name);
                                         DataProps(end+1,:)=DP;
                                     case {'z-coordinate'}
@@ -978,9 +998,15 @@ if Props.Time
         case 'tekal'
             Data=tekal('read',FI,Props.Block);
             switch Props.Time
-                case 1
+                case 1 % time in seconds
                     T=Data(:,1)/3600/24;
-                case 2
+                case 1.1 % time in minutes
+                    T=Data(:,1)/60/24;
+                case 1.2 % time in hours
+                    T=Data(:,1)/24;
+                case 1.3 % time in days
+                    T=Data(:,1);
+                case 2 % (yy)yymmdd and hhmmss
                     T=tdelft3d(Data(:,1),Data(:,2));
             end
         case {'DelwaqTimFile','LexYacc_TimeTable'}
@@ -1021,7 +1047,7 @@ switch FI.FileType
         else
             i0=sum(Props.DimFlag([M_ N_ K_])~=0);
             if Props.Time
-                i0=Props.Time;
+                i0=floor(Props.Time);
             end
             S=FI.Field(Props.Block).ColLabels(i0+1:end);
             for i=1:length(S)
