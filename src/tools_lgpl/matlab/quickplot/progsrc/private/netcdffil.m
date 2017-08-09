@@ -649,144 +649,153 @@ if XYRead || XYneeded
             signup = 1;
         end
         j=strmatch('standard_name',Attribs,'exact');
-        if ~isempty(j)
-            standard_name = CoordInfo.Attribute(j).Value;
-            switch standard_name
-                case 'atmosphere_sigma_coordinate'
-                    [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
-                    [ps     , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
-                    [ptop   , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
-                    Z = zeros(szData);
-                    for t=1:size(Z,1)
-                        for k=1:length(sigma)
-                            Z(t,:,:,k) = ptop+sigma(k)*(ps(t,:,:)-ptop);
+        try
+            if ~isempty(j)
+                standard_name = CoordInfo.Attribute(j).Value;
+                switch standard_name
+                    case 'atmosphere_sigma_coordinate'
+                        [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
+                        [ps     , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
+                        [ptop   , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
+                        Z = zeros(szData);
+                        for t=1:size(Z,1)
+                            for k=1:length(sigma)
+                                Z(t,:,:,k) = ptop+sigma(k)*(ps(t,:,:)-ptop);
+                            end
                         end
-                    end
-                case 'atmosphere_hybrid_sigma_pressure_coordinate'
-                    if isequal(FormulaTerms{1,1},'a:')
-                        [a      , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
-                        [b      , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
-                        [ps     , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
-                        [p0     , status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.DimName,idx);
+                    case 'atmosphere_hybrid_sigma_pressure_coordinate'
+                        if isequal(FormulaTerms{1,1},'a:')
+                            [a      , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
+                            [b      , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
+                            [ps     , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
+                            [p0     , status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.DimName,idx);
+                            Z = zeros(szData);
+                            for t=1:size(Z,1)
+                                for k=1:length(a)
+                                    Z(t,:,:,k) = a(k)*p0+b(k)*ps(t,:,:);
+                                end
+                            end
+                        else
+                            [ap     , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
+                            [b      , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
+                            [ps     , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
+                            Z = zeros(szData);
+                            for t=1:size(Z,1)
+                                for k=1:length(ap)
+                                    Z(t,:,:,k) = ap(k)+b(k)*ps(t,:,:);
+                                end
+                            end
+                        end
+                    case 'atmosphere_hybrid_height_coordinate'
+                        [tau     , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
+                        [eta     , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
+                        [ztop    , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
+                        [zsurface, status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.DimName,idx);
+                        Z = zeros(szData);
+                        for t=1:size(Z,1)
+                            for k=1:length(tau)
+                                Z(t,:,:,k) = tau(k)*zsurface(t,:,:)+eta(k)*ztop;
+                            end
+                        end
+                    case 'atmosphere_sleve_coordinate'
+                        [a       , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
+                        [b1      , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
+                        [b2      , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
+                        [ztop    , status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.DimName,idx);
+                        [zsurf1  , status] = qp_netcdf_get(FI,FormulaTerms{5,2},Props.DimName,idx);
+                        [zsurf2  , status] = qp_netcdf_get(FI,FormulaTerms{6,2},Props.DimName,idx);
                         Z = zeros(szData);
                         for t=1:size(Z,1)
                             for k=1:length(a)
-                                Z(t,:,:,k) = a(k)*p0+b(k)*ps(t,:,:);
+                                Z(t,:,:,k) = a(k)*ztop+b1(k)*zsurf1(t,:,:)+b2(k)*zsurf2(t,:,:);
                             end
                         end
-                    else
-                        [ap     , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
-                        [b      , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
-                        [ps     , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
+                    case 'ocean_sigma_coordinate'
+                        [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
+                        [eta    , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
+                        [depth  , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
+                        if strcmp(FormulaTerms{3,1},'bedlevel:') % hack for D-Flow FM
+                            depth = -depth;
+                        end
                         Z = zeros(szData);
                         for t=1:size(Z,1)
-                            for k=1:length(ap)
-                                Z(t,:,:,k) = ap(k)+b(k)*ps(t,:,:);
+                            for k=1:length(sigma)
+                                Z(t,:,:,k) = eta(t,:,:)+(depth+eta(t,:,:))*sigma(k);
                             end
                         end
-                    end
-                case 'atmosphere_hybrid_height_coordinate'
-                    [tau     , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
-                    [eta     , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
-                    [ztop    , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
-                    [zsurface, status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.DimName,idx);
-                    Z = zeros(szData);
-                    for t=1:size(Z,1)
-                        for k=1:length(tau)
-                            Z(t,:,:,k) = tau(k)*zsurface(t,:,:)+eta(k)*ztop;
-                        end
-                    end
-                case 'atmosphere_sleve_coordinate'
-                    [a       , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
-                    [b1      , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
-                    [b2      , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
-                    [ztop    , status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.DimName,idx);
-                    [zsurf1  , status] = qp_netcdf_get(FI,FormulaTerms{5,2},Props.DimName,idx);
-                    [zsurf2  , status] = qp_netcdf_get(FI,FormulaTerms{6,2},Props.DimName,idx);
-                    Z = zeros(szData);
-                    for t=1:size(Z,1)
-                        for k=1:length(a)
-                            Z(t,:,:,k) = a(k)*ztop+b1(k)*zsurf1(t,:,:)+b2(k)*zsurf2(t,:,:);
-                        end
-                    end
-                case 'ocean_sigma_coordinate'
-                    [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
-                    [eta    , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
-                    [depth  , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
-                    Z = zeros(szData);
-                    for t=1:size(Z,1)
-                        for k=1:length(sigma)
-                            Z(t,:,:,k) = eta(t,:,:)+(depth+eta(t,:,:))*sigma(k);
-                        end
-                    end
-                case 'ocean_s_coordinate'
-                    [s      , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
-                    [eta    , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
-                    [depth  , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
-                    [a      , status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.DimName,idx);
-                    [b      , status] = qp_netcdf_get(FI,FormulaTerms{5,2},Props.DimName,idx);
-                    [depth_c, status] = qp_netcdf_get(FI,FormulaTerms{6,2},Props.DimName,idx);
-                    C = (1-b)*sinh(a*s)/sinh(a) + b*(tanh(a*(s+0.5))/(2*tanh(0.5*a))-0.5);
-                    Z = zeros(szData);
-                    for t=1:size(Z,1)
-                        for k=1:length(s)
-                            Z(t,:,:,k) = eta(t,:,:)*(1+s(k))+depth_c*s(k)+(depth-depth_c)*C(k);
-                        end
-                    end
-                case 'ocean_sigma_z_coordinate'
-                    [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
-                    [eta    , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
-                    [depth  , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
-                    [depth_c, status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.DimName,idx);
-                    [nsigma , status] = qp_netcdf_get(FI,FormulaTerms{5,2},Props.DimName,idx);
-                    [zlev   , status] = qp_netcdf_get(FI,FormulaTerms{6,2},Props.DimName,idx);
-                    K=idx{K_};
-                    Z = zeros(szData);
-                    for t=1:size(Z,1)
-                        for k=1:length(s)
-                            if K(k)<=nsigma
-                                Z(t,:,:,k) = eta(t,:,:) + sigma(k)*(min(depth_c,depth)+eta(t,:,:));
-                            else
-                                Z(t,:,:,k) = zlev(k);
+                    case 'ocean_s_coordinate'
+                        [s      , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
+                        [eta    , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
+                        [depth  , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
+                        [a      , status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.DimName,idx);
+                        [b      , status] = qp_netcdf_get(FI,FormulaTerms{5,2},Props.DimName,idx);
+                        [depth_c, status] = qp_netcdf_get(FI,FormulaTerms{6,2},Props.DimName,idx);
+                        C = (1-b)*sinh(a*s)/sinh(a) + b*(tanh(a*(s+0.5))/(2*tanh(0.5*a))-0.5);
+                        Z = zeros(szData);
+                        for t=1:size(Z,1)
+                            for k=1:length(s)
+                                Z(t,:,:,k) = eta(t,:,:)*(1+s(k))+depth_c*s(k)+(depth-depth_c)*C(k);
                             end
                         end
-                    end
-                case 'ocean_double_sigma_coordinate'
-                    [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
-                    [depth  , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
-                    [z1     , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
-                    [z2     , status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.DimName,idx);
-                    [a      , status] = qp_netcdf_get(FI,FormulaTerms{5,2},Props.DimName,idx);
-                    [href   , status] = qp_netcdf_get(FI,FormulaTerms{6,2},Props.DimName,idx);
-                    [k_c    , status] = qp_netcdf_get(FI,FormulaTerms{7,2},Props.DimName,idx);
-                    K=idx{K_};
-                    Z = zeros(szData);
-                    for t=1:size(Z,1)
-                        for k=1:length(s)
-                            f = 0.5*(z1+z2) + 0.5*(z1-z2)*tanh(2*a/(z1-z2)*(depth-href));
-                            if K(k)<=k_c
-                                Z(t,:,:,k) = sigma(k)*f;
-                            else
-                                Z(t,:,:,k) = f + (sigma(k)-1)*(depth-f);
+                    case 'ocean_sigma_z_coordinate'
+                        [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
+                        [eta    , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
+                        [depth  , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
+                        [depth_c, status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.DimName,idx);
+                        [nsigma , status] = qp_netcdf_get(FI,FormulaTerms{5,2},Props.DimName,idx);
+                        [zlev   , status] = qp_netcdf_get(FI,FormulaTerms{6,2},Props.DimName,idx);
+                        K=idx{K_};
+                        Z = zeros(szData);
+                        for t=1:size(Z,1)
+                            for k=1:length(s)
+                                if K(k)<=nsigma
+                                    Z(t,:,:,k) = eta(t,:,:) + sigma(k)*(min(depth_c,depth)+eta(t,:,:));
+                                else
+                                    Z(t,:,:,k) = zlev(k);
+                                end
                             end
                         end
-                    end
-                otherwise
-                    if ~isempty(formula)
-                        ui_message('warning','Formula for %s not implemented',standard_name)
-                    end
-                    [Z, status] = qp_netcdf_get(FI,CoordInfo,Props.DimName,idx);
-                    if signup<0
-                        Z=-Z;
-                    end
-                    Z = expand_hdim(Z,szData,hdim);
+                    case 'ocean_double_sigma_coordinate'
+                        [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
+                        [depth  , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
+                        [z1     , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
+                        [z2     , status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.DimName,idx);
+                        [a      , status] = qp_netcdf_get(FI,FormulaTerms{5,2},Props.DimName,idx);
+                        [href   , status] = qp_netcdf_get(FI,FormulaTerms{6,2},Props.DimName,idx);
+                        [k_c    , status] = qp_netcdf_get(FI,FormulaTerms{7,2},Props.DimName,idx);
+                        K=idx{K_};
+                        Z = zeros(szData);
+                        for t=1:size(Z,1)
+                            for k=1:length(s)
+                                f = 0.5*(z1+z2) + 0.5*(z1-z2)*tanh(2*a/(z1-z2)*(depth-href));
+                                if K(k)<=k_c
+                                    Z(t,:,:,k) = sigma(k)*f;
+                                else
+                                    Z(t,:,:,k) = f + (sigma(k)-1)*(depth-f);
+                                end
+                            end
+                        end
+                    otherwise
+                        if ~isempty(formula)
+                            ui_message('warning','Formula for %s not implemented',standard_name)
+                        end
+                        [Z, status] = qp_netcdf_get(FI,CoordInfo,Props.DimName,idx);
+                        if signup<0
+                            Z=-Z;
+                        end
+                        Z = expand_hdim(Z,szData,hdim);
+                end
+            else
+                [Z, status] = qp_netcdf_get(FI,CoordInfo,Props.DimName,idx);
+                if signup<0
+                    Z=-Z;
+                end
+                Z = expand_hdim(Z,szData,hdim);
             end
-        else
-            [Z, status] = qp_netcdf_get(FI,CoordInfo,Props.DimName,idx);
-            if signup<0
-                Z=-Z;
-            end
-            Z = expand_hdim(Z,szData,hdim);
+        catch Ex
+            qp_error('Retrieving vertical coordinate failed, continuing with layer index as vertical coordinate',Ex,'netcdffil')
+            szData = [szData 1 1];
+            Z = repmat(reshape(idx{K_},[1 1 1 length(idx{K_})]),szData(1:3));
         end
         %
         j = strmatch('units',Attribs,'exact');
