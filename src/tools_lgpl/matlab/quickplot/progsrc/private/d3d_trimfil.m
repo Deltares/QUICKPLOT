@@ -1074,6 +1074,9 @@ if XYRead
     end
 end
 if strcmp(Props.Name,'high and low bed levels')
+    %
+    % 1) create the polygons for the non-cut cells ...
+    %
     x1 = cat(3,x(1:end-1,1:end-1),x(2:end,1:end-1),x(2:end,2:end),x(1:end-1,2:end),x(1:end-1,1:end-1),x(1:end-1,1:end-1));
     y1 = cat(3,y(1:end-1,1:end-1),y(2:end,1:end-1),y(2:end,2:end),y(1:end-1,2:end),y(1:end-1,1:end-1),y(1:end-1,1:end-1));
     x1 = permute(x1,[3 2 1]);
@@ -1092,6 +1095,8 @@ if strcmp(Props.Name,'high and low bed levels')
     x = x(:);
     y = y(:);
     v = v(:);
+    %
+    % 2) create the polygons for the cut cells (high part) ...
     %
     Time = idx(T_);
     idxN = idx{M_}(ind{1});
@@ -1114,8 +1119,17 @@ if strcmp(Props.Name,'high and low bed levels')
     x = [x;xpoly(:)];
     y = [y;ypoly(:)];
     v = [v;v2(:)];
+    %
+    % 3) create the polygons for the cut cells (low part) ...
+    %
     x1 = x1(:,icut);
     y1 = y1(:,icut);
+    XCOR_info = vs_disp(FI,'map-const','XCOR');
+    INTx_GRS_info = vs_disp(FI,'map-series','INTx_GRS');
+    if XCOR_info.NByteVal > INTx_GRS_info.NByteVal
+        x1 = double(single(x1));
+        y1 = double(single(y1));
+    end
     xcomp = repmat(NaN,size(xpoly));
     ycomp = repmat(NaN,size(ypoly));
     for i = 1:size(xpoly,2)
@@ -1273,32 +1287,6 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    'sQU
     'cut cell patches with line'       ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'INTx_GRS' 'INTy_GRS' []    0
     'cut cell patches only line'       ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'INTx_GRS' 'INTy_GRS' []    0    
    %'reconstructed bankline'           ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'kfs_cc'  ''       []       0
-    'ghost u-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPu1'   ''       []       0
-    'ghost v-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPv1'   ''       []       0
-    'ghost s-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPs1'   ''       []       0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''                 ''        ''       []       0    
-    'fraction high ground'             ''       [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'poros'   ''       []       0    
-    'high bed level'                   'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'dpH'     ''       []       0
-    'low bed level'                    'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'dpL'     ''       []       0
-    'high and low bed levels'          'm'      [1 0 1 1 0]  2         1    'POLYG' 'xy'     ''        'z'   'z'       ''      'map-series'       'dpH'     'dpL'    []       0
-    'type of cut cell'                 ''       [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'kfs_cc'  ''       []       0
-    'cut cell patches'                 ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'INTx_GRS' 'INTy_GRS' []    0
-    'cut cell patches with line'       ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'INTx_GRS' 'INTy_GRS' []    0
-    'cut cell patches only line'       ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'INTx_GRS' 'INTy_GRS' []    0    
-    %'reconstructed bankline'           ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'kfs_cc'  ''       []       0
-    'ghost u-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPu1'   ''       []       0
-    'ghost v-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPv1'   ''       []       0
-    'ghost s-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPs1'   ''       []       0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''                 ''        ''       []       0    
-    'fraction high ground'             ''       [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'poros'   ''       []       0    
-    'high bed level'                   'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'dpH'     ''       []       0
-    'low bed level'                    'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'dpL'     ''       []       0
-    'high and low bed levels'          'm'      [1 0 1 1 0]  2         1    'POLYG' 'xy'     ''        'z'   'z'       ''      'map-series'       'dpH'     'dpL'    []       0
-    'type of cut cell'                 ''       [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'kfs_cc'  ''       []       0
-    'cut cell patches'                 ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'INTx_GRS' 'INTy_GRS' []    0
-    'cut cell patches with line'       ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'INTx_GRS' 'INTy_GRS' []    0
-    'cut cell patches only line'       ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'INTx_GRS' 'INTy_GRS' []    0    
-    %'reconstructed bankline'           ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'kfs_cc'  ''       []       0
     'ghost u-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPu1'   ''       []       0
     'ghost v-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPv1'   ''       []       0
     'ghost s-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPs1'   ''       []       0
@@ -1682,13 +1670,15 @@ end
 
 %======================= SET USEGRID OPTIONS ==============================
 for i=1:length(Out)
-    switch Out(i).ReqLoc
-        case 'd'
-            Out(i).UseGrid=3;%1;
-            Out(i).Geom='SGRID-NODE';
-        case 'z'
-            Out(i).UseGrid=3;%2;
-            Out(i).Geom='SGRID-FACE';
+    if isequal(Out(i).Geom,'sQUAD')
+        switch Out(i).ReqLoc
+            case 'd'
+                Out(i).UseGrid=3;%1;
+                Out(i).Geom='SGRID-NODE';
+            case 'z'
+                Out(i).UseGrid=3;%2;
+                Out(i).Geom='SGRID-FACE';
+        end
     end
     Out(i).Coords='xy';
 end
@@ -3582,7 +3572,7 @@ elseif strcmp(method,'Shepard')
     class(ind)=10;    
 end
 % -------------------------------------------------------------------------
-function hNew = plotthis(FI,Props,Parent,Ops,varargin)
+function hNew = plotthis(FI,Props,Parent,Ops,hOld,varargin)
 hNew = [];
 switch Props.Name
     case {'cut cell patches','cut cell patches with line','cut cell patches only line'}
