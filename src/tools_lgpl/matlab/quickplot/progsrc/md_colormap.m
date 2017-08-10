@@ -49,6 +49,11 @@ if nargin==0 || ~ischar(varargin{1})
     return
 end
 
+colorfiles = {'*.hls' 'Classic Delft3D HLS Files'
+    '*.cpt' 'GMT Palettes'
+    '*.qgs' 'QGIS Gradients'
+    '*.*'   'All Files'};
+
 F=gcbf;
 cmd=lower(varargin{1});
 if isequal(cmd,'close')
@@ -290,43 +295,8 @@ switch cmd
     case 'colorspace'
         spaces=get(gcbo,'string');
         value=get(gcbo,'value');
-
-        currentspace=S.Space;
         newspace=spaces{value};
-        if isequal(currentspace,newspace)
-            return;
-        end
-        clrs=S.Colors;
-        switch [currentspace '->' newspace]
-            case 'RGB->HSV'
-                clrs=rgb2hsv(clrs);
-            case 'RGB->HLS'
-                clrs=rgb2hls(clrs);
-            case 'RGB->CMY'
-                clrs=1-clrs;
-            case 'HSV->RGB'
-                clrs=hsv2rgb(clrs);
-            case 'HSV->HLS'
-                clrs=hsv2rgb(clrs);
-                clrs=rgb2hls(clrs);
-            case 'HSV->CMY'
-                clrs=1-hsv2rgb(clrs);
-            case 'HLS->RGB'
-                clrs=hls2rgb(clrs);
-            case 'HLS->HSV'
-                clrs=hls2rgb(clrs);
-                clrs=rgb2hsv(clrs);
-            case 'HLS->CMY'
-                clrs=1-hls2rgb(clrs);
-            case 'CMY->RGB'
-                clrs=1-clrs;
-            case 'CMY->HSV'
-                clrs=rgb2hsv(1-clrs);
-            case 'CMY->HLS'
-                clrs=rgb2hls(1-clrs);
-        end
-        S.Colors=clrs;
-        S.Space=newspace;
+        S = convertcolors(S,newspace);
     case 'save'
         try
             qp_path=qp_basedir;
@@ -335,7 +305,7 @@ switch cmd
             clrmap_path=pwd;
         end
         %
-        [f,p]=uiputfile(fullfile(clrmap_path,'*.clrmap'));
+        [f,p]=uiputfile(fullfile(clrmap_path,[S.Name '.clrmap']));
         if ~ischar(f)
             return;
         end
@@ -360,20 +330,23 @@ switch cmd
         setappdata(Nm,'NameChanged',0)
         return
     case 'export'
-        [f,p]=uiputfile('*.hls');
+        [f,p]=uiputfile(colorfiles(1:end-1,:),'Save as',S.Name);
         if ~ischar(f)
             return
-        end
-        [pp,ff,ee]=fileparts(f);
-        if isempty(ee)
-            f=[f '.hls'];
         end
         filename=[p f];
         a1=findobj(F,'tag','Colorbar');
         m = get(a1,'userdata');
         map=clrmap(S,m);
         try
-            qnhls('write',filename,map,S.Name);
+            switch filename(end-2:end)
+                case 'hls'
+                    qnhls('write',filename,map,S.Name);
+                case 'cpt'
+                    GMTclr('write',filename,map,S.Name);
+                case 'qgs'
+                    QGISclr('write',filename,map,S.Name);
+            end
         catch
             ui_message('error',lasterr);
         end
@@ -410,25 +383,48 @@ switch cmd
                     return
                 end
             case 'import'
-                [f,p]=uigetfile('*.hls');
+                [f,p]=uigetfile(colorfiles);
                 if ~ischar(f)
                     return
                 end
-                [pp,ff,ee]=fileparts(f);
-                if isempty(ee)
-                    f=[f '.hls'];
-                end
                 filename=[p f];
-                try
-                    [map,label]=qnhls('read',filename);
-                    map=rgb2hls(map);
-                    SS.Name=label;
-                    SS.Space='HLS';
-                    SS.Colors=map;
-                    SS.AlternatingColors=0;
-                    SS.Index=[];
-                catch
-                    ui_message('error',lasterr);
+                SS = [];
+                for FT = colorfiles(:,2)'
+                    ft = FT{1};
+                    try
+                        if strcmp(ft,'All Files')
+                            [pp,ff,ee] = fileparts(filename);
+                            switch lower(ee)
+                                case '.qgs'
+                                    ft = 'QGIS Gradients';
+                                case '.cpt'
+                                    ft = 'GMT Palettes';
+                                otherwise
+                                    ft = 'Classic Delft3D HLS Files';
+                            end
+                        end
+                        switch ft
+                            case 'Classic Delft3D HLS Files'
+                                [map,label]=qnhls('read',filename);
+                                map=rgb2hls(map);
+                                SS.Name=label;
+                                SS.Space='HLS';
+                                SS.Colors=map;
+                                SS.AlternatingColors=0;
+                                SS.Index=[];
+                                break
+                            case 'GMT Palettes'
+                                SS = GMTclr('read',filename);
+                                break
+                            case 'QGIS Gradients'
+                                SS = QGISclr('read',filename);
+                                break
+                        end
+                    catch Ex
+                    end
+                end
+                if isempty(SS)
+                    qp_error('Catch in md_colormap:',Ex,'md_colormap')
                     return
                 end
         end
@@ -467,6 +463,50 @@ end
 
 set(F,'userdata',{S uih currentcolor});
 updateinterface(F,S,currentcolor,uih)
+
+
+function S = convertcolors(S,newspace)
+currentspace = S.Space;
+if iscell(newspace)
+    if ismember(currentspace,newspace)
+        return
+    else
+        newspace = newspace{1};
+    end
+elseif isequal(currentspace,newspace)
+    return
+end
+clrs=S.Colors;
+switch [currentspace '->' newspace]
+    case 'RGB->HSV'
+        clrs=rgb2hsv(clrs);
+    case 'RGB->HLS'
+        clrs=rgb2hls(clrs);
+    case 'RGB->CMY'
+        clrs=1-clrs;
+    case 'HSV->RGB'
+        clrs=hsv2rgb(clrs);
+    case 'HSV->HLS'
+        clrs=hsv2rgb(clrs);
+        clrs=rgb2hls(clrs);
+    case 'HSV->CMY'
+        clrs=1-hsv2rgb(clrs);
+    case 'HLS->RGB'
+        clrs=hls2rgb(clrs);
+    case 'HLS->HSV'
+        clrs=hls2rgb(clrs);
+        clrs=rgb2hsv(clrs);
+    case 'HLS->CMY'
+        clrs=1-hls2rgb(clrs);
+    case 'CMY->RGB'
+        clrs=1-clrs;
+    case 'CMY->HSV'
+        clrs=rgb2hsv(1-clrs);
+    case 'CMY->HLS'
+        clrs=rgb2hls(1-clrs);
+end
+S.Colors=clrs;
+S.Space=newspace;
 
 
 function S1=md_colormap_interface(S,uicontrolfont)
@@ -1066,3 +1106,150 @@ uih(i,j,1) = uicontrol('Parent',h0, ...
     'Style','edit', ...
     'Enable','on', ...
     'tag',tag);
+
+
+function varargout = GMTclr(cmd,filename,varargin)
+switch cmd
+    case 'read'
+        label = '';
+        %
+        fid = fopen(filename,'r');
+        oldPos = ftell(fid);
+        Line = fgetl(fid);
+        lineNr = 1;
+        while ischar(Line) && ~isempty(Line) && Line(1)=='#'
+            if lineNr==1
+                quotes = find(Line == '"');
+                if length(quotes)==2
+                    label = Line(quotes(1)+1:quotes(2)-1);
+                end
+            end
+            %
+            iCM = strfind(Line,'COLOR_MODEL');
+            if ~isempty(iCM)
+                ColorModel = sscanf(Line(iCM:end),'COLOR_MODEL = %s');
+            end
+            %
+            oldPos = ftell(fid);
+            Line = fgetl(fid);
+            lineNr = lineNr+1;
+        end
+        %
+        % check the first palette line
+        [val,n,err] = sscanf(Line,'%i');
+        if n~=8 || ~isempty(err)
+            fclose(fid);
+            error('Expecting 8 numbers on data lines defining the palette in %s\nLine read: %s',filename,Line)
+        end
+        %
+        % read the actual palette
+        fseek(fid,oldPos,-1);
+        [map,n] = fscanf(fid,'%i',[8 inf]);
+        %
+        if n/8 ~= round(n/8)
+            error('Error reading %s: expecting to obtain a multiple of 8 integers',filename)
+        end
+        %
+        map = map';
+        index = [map(:,1);map(end,5)];
+        index = (index-index(1))/(index(end)-index(1));
+        map = [map(:,2:4);map(end,6:8)];
+        %
+        fclose(fid);
+        %
+        SS.Name=label;
+        SS.Space=ColorModel;
+        SS.Colors=map/255;
+        SS.AlternatingColors=0;
+        SS.Index=index;
+        varargout = {SS};
+    case 'write'
+        SS = varargin{1};
+        SS = convertcolors(SS,{'RGB','HSV'}); % RGB, HSV, and CMYK supported by GMT
+        clrs = SS.Colors;
+        %
+        fid = fopen(filename,'w');
+        fprintf(fid,'# autogenerated GMT palette "%s"\n',SS.Name);
+        fprintf(fid,'%s\n',md_colormap_revision);
+        fprintf(fid,'# COLOR_MODEL = %s\n',SS.Space);
+        map = [round(SS.Index*10000)-5000 clrs*255];
+        map = [map(1:end-1,:) map(2:end,:)];
+        fprintf(fid,'%4i %3i %3i %3i %4i %3i %3i %3i\n',map');
+        fclose(fid);
+end
+
+
+function varargout = QGISclr(cmd,filename,varargin)
+switch cmd
+    case 'read'
+        file = xmlread(filename);
+        if ~strcmp(char(file.getDocumentElement.getNodeName),'qgis_style')
+            error('File doesn''t seem to be XML file of "qgis_style"')
+        end
+        ramps = file.getElementsByTagName('colorramps');
+        if ramps.getLength ~= 1
+            error('File %s contains %i color ramps, expecting 1',filename,ramps.getLength)
+        end
+        ramp = ramps.item(0).getChildNodes.item(0);
+        %
+        label = char(ramp.getAttribute('name'));
+        props = ramp.getElementsByTagName('prop');
+        if props.getLength ~= 3
+            error('File %s contains %i prop fields for the colorramp object, expecting 3',filename,props.getLength)
+        end
+        color1 = props.item(0);
+        color2 = props.item(1);
+        colors = props.item(2);
+        %
+        color1 = char(color1.getAttribute('v'));
+        color1 = sscanf(color1,'%i,%i,%i,%i');
+        color2 = char(color2.getAttribute('v'));
+        color2 = sscanf(color2,'%i,%i,%i,%i');
+        %
+        stops = char(colors.getAttribute('k'));
+        if ~strcmp(stops,'stops')
+            error('Attribute k of third prop field reads "%s" while expecting "stops"',stops) 
+        end
+        stops = char(colors.getAttribute('v'));
+        [map,n] = sscanf(stops,'%f;%i,%i,%i,%i:',[5 inf]);
+        map = [0 color1';map';1 color2'];
+        %
+        SS.Name=label;
+        SS.Space='RGB';
+        SS.Colors=map(:,2:4)/255;
+        SS.AlternatingColors=0;
+        SS.Index=map(:,1);
+        varargout = {SS};
+    case 'write'
+        SS = varargin{1};
+        SS = convertcolors(SS,'RGB'); % only RGB supported
+        clrs = SS.Colors*255;
+        %
+        fid = fopen(filename,'w');
+        fprintf(fid,'<!DOCTYPE qgis_style>');
+        fprintf(fid,'<qgis_style version="1">');
+        if 1
+            fprintf(fid,'<symbols/>');
+            fprintf(fid,'<colorramps>');
+            if 1
+                fprintf(fid,'<colorramp type="gradient" name="%s">',SS.Name);
+                if 1
+                    fprintf(fid,'<prop k="color1" v="%i,%i,%i,255"/>',clrs(1,:));
+                    fprintf(fid,'<prop k="color2" v="%i,%i,%i,255"/>',clrs(end,:));
+                    stopv = [SS.Index(2:end-1)' clrs(2:end-1,:)];
+                    stops = sprintf('%.4f;%i,%i,%i,255:',stopv');
+                    fprintf(fid,'<prop k="stops" v="%s"/>',stops(1:end-1));
+                end
+                fprintf(fid,'</colorramp>');
+            end
+            fprintf(fid,'</colorramps>');
+        end
+        fprintf(fid,'</qgis_style>');
+        fclose(fid);
+
+end
+
+function rev = md_colormap_revision
+url = '$HeadURL$';
+rev = '$Id$';
+rev = [url(11:end-2) sscanf(rev,'%*[^ ] %*[^ ] %[^ ]%[ ]%[^ ]%[ ]%[^ ] ')];

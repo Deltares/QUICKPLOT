@@ -58,16 +58,18 @@ end
 function [CMap,Label]=Local_read_hls(filename)
 fid=fopen(filename,'r');
 if fid<0
-    CMap=[];
-    Label='';
-    return
+    error('Unable to open %s',filename)
 end
 Label=fgetl(fid);
 i=0;
 Line=fgetl(fid);
 X=sscanf(Line,'%i%i%i',[1 3]);
+CMap = zeros(128,3);
 while isequal(size(X),[1 3])
     i=i+1;
+    if i>size(CMap,1) % extend array in chunks
+        CMap(2*end,1) = 0;
+    end
     CMap(i,:)=X;
     Line=fgetl(fid);
     if ~ischar(Line) %feof(fid)
@@ -75,10 +77,14 @@ while isequal(size(X),[1 3])
     end
     X=sscanf(Line,'%f%f%f',[1 3]);
 end
+fclose(fid);
+CMap(i+1:end,:) = [];
+if size(CMap,1)<2
+    error('Invalid colour map in %s: need at least two colours.',filename)
+end
 CMap(:,1)=CMap(:,1)/360;
 CMap(:,2:3)=CMap(:,2:3)/100;
 CMap=hls2rgb(CMap);
-fclose(fid);
 
 
 function OK=Local_write_hls(filename,CMap,Label)
