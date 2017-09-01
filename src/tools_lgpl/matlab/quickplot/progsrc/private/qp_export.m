@@ -575,7 +575,7 @@ for f=1:ntim
                         else
                            shp_type = 'polygon';
                         end
-                        switch ExpType
+                        switch expType
                             case 'arcview shape'
                                 shapewrite(filename,shp_type,xy,vals{:})
                             case 'polygon file'
@@ -749,7 +749,7 @@ for f=1:ntim
                             %
                             [xy,cLabels,cv] = process_polygons(xy,fc,cv,Thresholds);
                             %
-                            switch ExpType
+                            switch expType
                                 case 'arcview shape'
                                     shapewrite(filename,xy,cLabels,cv)
                                 case 'polygon file'
