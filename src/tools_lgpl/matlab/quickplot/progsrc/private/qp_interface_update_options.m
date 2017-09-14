@@ -350,7 +350,7 @@ switch geometry
             else
                 axestype={'Time-Val'};
             end
-        elseif ~multiple(T_)
+        else
             axestype={'X-Y'};
             if strcmp(geometry,'POLYG') && ~isfield(Props,'ClosedPoly')
                 Props.ClosedPoly = 2;
