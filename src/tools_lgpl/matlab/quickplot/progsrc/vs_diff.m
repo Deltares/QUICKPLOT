@@ -211,10 +211,7 @@ for i=1:length(gNamesMatch)
             else % compare data
                 if CheckMinSize
                     gSizeDim = min(gInfo1.SizeDim,gInfo2.SizeDim);
-                    gSel=cell(1,length(gSizeDim));
-                    for k=1:length(gSizeDim)
-                        gSel{k}=1:gSizeDim(k);
-                    end
+                    gSel = repmat({0},1,length(gSizeDim));
                     %
                     if isequal(eInfo1.SizeDim,eInfo2.SizeDim)
                         eSizeDim = eInfo1.SizeDim;
@@ -230,6 +227,7 @@ for i=1:length(gNamesMatch)
                 else
                     gSizeDim = gInfo1.SizeDim;
                     eSizeDim = eInfo1.SizeDim;
+                    gSel = repmat({0},1,length(gSizeDim));
                     eSel = {};
                 end
                 NBytes=prod(gSizeDim)*prod(eSizeDim)*8; % size of eData1 (not correct for complex and char arrays)

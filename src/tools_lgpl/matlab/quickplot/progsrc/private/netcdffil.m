@@ -329,7 +329,6 @@ if ~isnan(npolpnt)
 end
 
 if XYRead || XYneeded
-    npolpnt = 0;
     if strncmp(Props.Geom,'UGRID',5)
         %ugrid
         mesh_settings = Info.Mesh;
@@ -809,10 +808,6 @@ if XYRead || XYneeded
             Z = reshape(Z,[szCoord(2:end) 1]);
         end
         %--------------------------------------------------------------------
-        if npolpnt>0
-            Z = repmat(Z(:)',npolpnt,1);
-            Z = Z(:);
-        end
         Ans.Z = Z;
         %
         if isfield(Ans,'X')
@@ -826,26 +821,30 @@ if XYRead || XYneeded
             else
                 szV = NaN*szZ;
             end
-            mismatch = szZ~=szV;
-            if any(mismatch)
-                % dimensions of Z that don't match the corresponding
-                % dimension of the values, should be adjusted to match the
-                % dimension of X.
-                szX = ones(size(szZ));
-                szX(1:ndims(Ans.X)) = size(Ans.X);
-                szX(~mismatch)=1;
-                szZ(~mismatch)=1;
-                if all(szZ==szX)
-                    % nothing to do
-                elseif all(szZ>=szX)
-                    rep = szZ./szX;
-                    Ans.X = repmat(Ans.X,rep);
-                    Ans.Y = repmat(Ans.Y,rep);
-                elseif all(szX>=szZ)
-                    rep = szX./szZ;
-                    Ans.Z = repmat(Ans.Z,rep);
+            if ~isequal(szZ,szV)
+                if npolpnt>0 && prod(szZ)*npolpnt==szV(1)
+                    Z = repmat(Z(:)',npolpnt,1);
+                    Ans.Z = Z(:);
                 else
-                    ui_message('error','Complex X/Z resize not yet implemented!')
+                    % dimensions of Z that don't match the corresponding
+                    % dimension of the values, should be adjusted to match the
+                    % dimension of X.
+                    szX = ones(size(szZ));
+                    szX(1:ndims(Ans.X)) = size(Ans.X);
+                    szX(~mismatch)=1;
+                    szZ(~mismatch)=1;
+                    if all(szZ==szX)
+                        % nothing to do
+                    elseif all(szZ>=szX)
+                        rep = szZ./szX;
+                        Ans.X = repmat(Ans.X,rep);
+                        Ans.Y = repmat(Ans.Y,rep);
+                    elseif all(szX>=szZ)
+                        rep = szX./szZ;
+                        Ans.Z = repmat(Ans.Z,rep);
+                    else
+                        ui_message('error','Complex X/Z resize not yet implemented!')
+                    end
                 end
             end
         end

@@ -99,6 +99,7 @@ while 1
     GetError = 0;
     try
     while 1
+        GridsChecked = {};
         GridSize=[NaN NaN];
         GridSeg=NaN;
         switch trytp
@@ -166,16 +167,17 @@ while 1
                     G = nc_info(GridFileName);
                     G = nc_interpret(G);
                     %
-                    AggrTable=false(length(G.Dataset),1);
+                    matchingAggrTable=false(length(G.Dataset),1);
                     for i=1:length(G.Dataset)
                         for j=1:length(G.Dataset(i).Attribute)
                             if strcmp(G.Dataset(i).Attribute(j).Name,'delwaq_role') && ...
                                     strcmp(G.Dataset(i).Attribute(j).Value,'segment_aggregation_table')
                                 table = nc_varget(G.Filename,G.Dataset(i).Name);
-                                if max(table(:))==MapSeg
-                                    AggrTable(i) = true;
+                                numSeg = max(table(:));
+                                GridsChecked{end+1} = sprintf('Aggregation table "%s", highest segment number = %i',G.Dataset(i).Name,numSeg);
+                                if numSeg==MapSeg
+                                    matchingAggrTable(i) = true;
                                 end
-                                break
                             end
                         end
                     end
@@ -184,10 +186,12 @@ while 1
                     y = 0;
                     xbounds = 0;
                     ybounds = 0;
-                    if any(AggrTable)
+                    %
+                    if any(matchingAggrTable)
+                        % that this aggregation table matches was already checked above
                         C = [];
-                        iAggr = find(AggrTable);
-                        iAggr = iAggr(1);
+                        iAggr = find(matchingAggrTable);
+                        iAggr = iAggr(1); % select first aggregation table
                         table = nc_varget(G.Filename,G.Dataset(iAggr).Name);
                         if numel(table)==length(table)
                             GridSeg = MapSeg;
@@ -234,9 +238,11 @@ while 1
                             if strcmp(G.Dataset(i).Type,'ugrid_mesh')
                                 nNodeDim = G.Dataset(i).Mesh{4};
                                 nNodes = G.Dimension(ustrcmpi(nNodeDim,{G.Dimension.Name})).Length;
+                                GridsChecked{end+1} = sprintf('UGRID mesh "%s", number of nodes = %i',G.Dataset(i).Name,nNodes);
                                 if length(G.Dataset(i).Mesh)>=6
                                     nFaceDim = G.Dataset(i).Mesh{6};
                                     nFaces = G.Dimension(ustrcmpi(nFaceDim,{G.Dimension.Name})).Length;
+                                    GridsChecked{end+1} = sprintf('UGRID mesh "%s", number of faces = %i',G.Dataset(i).Name,nFaces);
                                 else
                                     nFaces = 0;
                                 end
@@ -303,6 +309,7 @@ while 1
                                         C{end,2} = G.Dataset(i).Name;
                                         C{end,3} = G.Dataset(i).Dimension;
                                         C{end,4} = G.Dataset(i).Size;
+                                        GridsChecked{end+1} = sprintf('Variable "%s", size = %s',G.Dataset(i).Name,var2str(G.Dataset(i).Size));
                                     end
                                 end
                             end
@@ -328,7 +335,9 @@ while 1
                                 end
                                 %
                                 if ~matching
-                                    error('Unable to identify coordinate bounds variables for %i segments.',MapSeg)
+                                    GridsChecked = sprintf('  %s\n',GridsChecked{:});
+                                    GridsChecked(end) = [];
+                                    error('Unable to identify coordinate bounds variables for %i segments.\nVariables checked:\n%s',MapSeg,GridsChecked)
                                 else
                                     segdim = C{matching,3};
                                     GridSeg = C{matching,4};
@@ -377,7 +386,13 @@ while 1
                                 end
                             else
                                 % no matching ... attribute table, UGRID, bounds variable
-                                error('No matching attribute table, ugrid mesh, or coordinate variable with bounds found.')
+                                if isempty(GridsChecked)
+                                    GridsChecked = sprintf('  %s\n',GridsChecked{:});
+                                    GridsChecked(end) = [];
+                                else
+                                    GridsChecked = '  no aggregation table, ugrid mesh, or coordinate variable with bounds found.';
+                                end
+                                error('Unable to identify coordinate bounds variables for %i segments.\nVariables checked:\n%s',MapSeg,GridsChecked)
                             end
                             G.MNK=[GridSeg 1 1];
                             G.Index=(1:GridSeg)';
@@ -512,8 +527,6 @@ while 1
                 ui_message('error','Grid size (%ix%i) does not match data size (%ix%i)',GridSize,MapSeg);
             end
         end
-    else
-        ui_message('error',lasterr);
     end
 end
 

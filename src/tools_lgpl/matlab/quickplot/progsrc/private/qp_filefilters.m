@@ -44,7 +44,7 @@ filtertbl={...
     '*.grd;*.rgf'                                          'Delft3D Grid Files'                'wlgrid'             0
     '*.mdf;*.mdu;*.md1d;*.mdw'                             'Delft3D Simulation Files'          'md*-file'           0
     '*.mesh'                                               'Mike Flexible Mesh Files'          'mikemesh'           0
-    '*.14'                                                 'Adcirc Mesh Files'                 'adcircmesh'         0
+    '*.14;*.gr3'                                           'Adcirc Mesh Files'                 'adcircmesh'         0
     '*.shy'                                                'SHYFEM Mesh Files'                 'SHYFEM mesh'        0
     '*.mesh;*.node;*.ele;*.n;*.e'                          'EasyMesh and Triangle Mesh Files'  'nodelemesh'         0
     '*.gem'                                                'GeoSystems Mesh Files'             'geomesh'            0
