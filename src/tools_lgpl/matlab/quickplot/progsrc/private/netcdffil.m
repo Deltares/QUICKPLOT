@@ -829,6 +829,7 @@ if XYRead || XYneeded
                     % dimensions of Z that don't match the corresponding
                     % dimension of the values, should be adjusted to match the
                     % dimension of X.
+                    mismatch = szZ~=szV;
                     szX = ones(size(szZ));
                     szX(1:ndims(Ans.X)) = size(Ans.X);
                     szX(~mismatch)=1;
