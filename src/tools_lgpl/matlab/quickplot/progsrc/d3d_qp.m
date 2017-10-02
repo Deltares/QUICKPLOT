@@ -248,11 +248,6 @@ switch cmd
         showUI = isequal(cmd,'initialize');
         mfig=findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
         %
-        % To hide version number from QuickPlot title, include the
-        % following line
-        %
-        % qpversion='';
-        %
         if length(mfig)>1
             delete(mfig(2:length(mfig)));
             mfig=mfig(1);
@@ -4424,7 +4419,8 @@ switch cmd
             'defaultaxescolor','boundingbox','v6zoombehavior', ...
             'organizationname','filefilterselection','colorbar_ratio', ...
             'showinactiveopt', 'defaultfigurepos','timezonehandling', ...
-            'enforcedtimezone', 'netcdf_use_fillvalue','export_max_ntimes'}
+            'enforcedtimezone', 'netcdf_use_fillvalue','export_max_ntimes', ...
+            'update_showversion'}
         qp_prefs(UD,mfig,cmd,cmdargs);
 
     case {'deltaresweb','deltaresweboss'}

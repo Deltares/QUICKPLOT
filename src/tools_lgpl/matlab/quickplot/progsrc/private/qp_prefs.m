@@ -65,6 +65,16 @@ switch cmd
         qp_settings('timezone',tzestr{itze})
         d3d_qp updatetimezone
         
+    case 'update_showversion'
+        sv=get(gcbo,'value');
+        if sv
+            qp_settings('showversion','on')
+            d3d_qp showversion
+        else
+            qp_settings('showversion','off')
+            d3d_qp hideversion
+        end
+        
     case 'prefpane'
         currentpane = get(gcbf,'userdata');
         newpane = get(gcbo,'value');
