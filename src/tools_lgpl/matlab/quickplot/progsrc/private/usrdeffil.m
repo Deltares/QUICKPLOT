@@ -154,7 +154,9 @@ for i=1:length(FI)
     end
     DataProps{i,7}=FI(i).Props.NVal;
     DataProps{i,8}=i;
-    if isfield(FI(i),'Tri') && ~isempty(FI(i).Tri)
+    if isfield(FI(i),'Geom') && ~isempty(FI(i).Geom)
+        DataProps{i,3}=FI(i).Geom;
+    elseif isfield(FI(i),'Tri') && ~isempty(FI(i).Tri)
         DataProps{i,9}=FI(i).Tri;
         DataProps{i,3}='TRI';
     else
