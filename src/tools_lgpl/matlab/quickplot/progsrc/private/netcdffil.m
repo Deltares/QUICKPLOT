@@ -1229,94 +1229,6 @@ for m = size(meshes,1):-1:1
         Out(mo).ClosedPoly = 1;
     end
 end
-%
-% detect vector quantities
-%
-% VecStdNameTable: component_1, component_2, vector_type, quickplot_combined_name
-%   vector_type = 0: x and y
-%                 4: magnitude and direction
-%                 5: normal and tangential (on ugrid edge)
-VecStdNameTable = {
-    'sea_water_speed',               'direction_of_sea_water_velocity',4,'sea_water_velocity'
-    'sea_ice_speed',                 'direction_of_sea_ice_speed',     4,'sea_ice_velocity'
-    'wind_speed',                    'wind_to_direction',              4,'air_velocity'
-    'eastward_sea_water_velocity',   'northward_sea_water_velocity',   0,'sea_water_velocity'
-    'sea_water_x_velocity',          'sea_water_y_velocity',           0,'sea_water_velocity'
-    'eastward_sea_ice_velocity',     'northward_sea_ice_velocity',     0,'sea_ice_velocity'
-    'eastward_wind_shear',           'northward_wind_shear',           0,'wind_shear'
-    'surface_downward_eastward_wind','surface_downward_northward_wind',0,'surface_downward_wind'
-    'eastward_wind',                 'northward_wind',                 0,'air_velocity'};
-nVecStdNames = size(VecStdNameTable,1);
-
-i=1;
-while i<length(Out)
-    if iscell(Out(i).varid)
-        i=i+1;
-        continue
-    end
-    stdname = FI.Dataset(Out(i).varid+1).StdName;
-    j = strmatch(stdname,VecStdNameTable(:,1:2),'exact');
-    y=[];
-    if ~isempty(j)
-        % standard name matches known standard name of a vector component
-        if j<=nVecStdNames
-            j2 = j+nVecStdNames;
-            Name = VecStdNameTable{j,4};
-            VectorDef = VecStdNameTable{j,3};
-        else
-            j2 = j-nVecStdNames;
-            Name = VecStdNameTable{j2,4};
-            VectorDef = VecStdNameTable{j2,3};
-        end
-        Ystr = VecStdNameTable{j2};
-        for i2=i+1:length(Out)
-            stdname = FI.Dataset(get_varid(Out(i2))+1).StdName;
-            if strcmp(stdname,Ystr)
-                y=i2;
-                break
-            end
-        end
-    elseif length(Out(i).Name)>12 && strcmp(Out(i).Name(end-12:end),', n-component')
-        Ystr = Out(i).Name; Ystr(end-10)='t';
-        Name = Out(i).Name(1:end-13);
-        j=1; j2=2;
-        VectorDef = 5; % normal and tangential
-        for i2=1:length(Out)
-            if strcmp(Out(i2).Name,Ystr)
-                y=i2;
-                break
-            end
-        end
-    elseif length(Out(i).Name)>12 && strcmp(Out(i).Name(end-12:end),', x-component')
-        Ystr = Out(i).Name; Ystr(end-10)='y';
-        Name = Out(i).Name(1:end-13);
-        j=1; j2=2;
-        VectorDef = 0; % x and y
-        for i2=1:length(Out)
-            if strcmp(Out(i2).Name,Ystr)
-                y=i2;
-                break
-            end
-        end
-    end
-    if ~isempty(y)
-        Out(i).NVal=2;
-        Out(i).Name = Name;
-        Out(i).VectorDef = VectorDef;
-        Out(i).MNK = VectorDef==5;
-        if j<j2
-            Out(i).varid=[Out(i).varid Out(y).varid];
-        else
-            Out(i).varid=[Out(y).varid Out(i).varid];
-        end
-        Out(y)=[];
-        if y<i
-            i=i-1;
-        end
-    end
-    i=i+1;
-end
-
 hasCoords = [Out.hasCoords]==1;
 OutNoCoords = Out(~hasCoords);
 Out = Out(hasCoords);
@@ -1417,14 +1329,115 @@ if domain==FI.NumDomains+1
         end
     end
 end
+%
+% detect vector quantities
+%
+% VecStdNameTable: component_1, component_2, vector_type, quickplot_combined_name
+%   vector_type = 0: x and y
+%                 4: magnitude and direction
+%                 5: normal and tangential (on ugrid edge)
+VecStdNameTable = {
+    'sea_water_speed',               'direction_of_sea_water_velocity',4,'sea_water_velocity'
+    'sea_ice_speed',                 'direction_of_sea_ice_speed',     4,'sea_ice_velocity'
+    'wind_speed',                    'wind_to_direction',              4,'air_velocity'
+    'eastward_sea_water_velocity',   'northward_sea_water_velocity',   0,'sea_water_velocity'
+    'sea_water_x_velocity',          'sea_water_y_velocity',           0,'sea_water_velocity'
+    'eastward_sea_ice_velocity',     'northward_sea_ice_velocity',     0,'sea_ice_velocity'
+    'eastward_wind_shear',           'northward_wind_shear',           0,'wind_shear'
+    'surface_downward_eastward_wind','surface_downward_northward_wind',0,'surface_downward_wind'
+    'eastward_wind',                 'northward_wind',                 0,'air_velocity'};
+nVecStdNames = size(VecStdNameTable,1);
+i=1;
+varid_Out = get_varid(Out);
+while i<length(varid_Out)
+    if iscell(Out(i).varid) || isempty(Out(i).varid)
+        i=i+1;
+        continue
+    end
+    stdname = FI.Dataset(Out(i).varid+1).StdName;
+    j = strcmp(stdname,VecStdNameTable(:,1:2));
+    y=[];
+    if any(j(:))
+        j = find(j);
+        % standard name matches known standard name of a vector component
+        if j<=nVecStdNames % matching a name in the first column
+            j2 = j+nVecStdNames;
+            Name = VecStdNameTable{j,4};
+            VectorDef = VecStdNameTable{j,3};
+        else % matching a name in the second column
+            j2 = j-nVecStdNames;
+            Name = VecStdNameTable{j2,4};
+            VectorDef = VecStdNameTable{j2,3};
+        end
+        % locate the second name
+        Ystr = VecStdNameTable{j2};
+        for i2=i+1:length(varid_Out)
+            stdname = FI.Dataset(varid_Out(i2)+1).StdName;
+            if strcmp(stdname,Ystr) % find first ... assumes that there is either only one match, or that the N-th "second component" matches the N-th "first component"
+                y=i2;
+                break
+            end
+        end
+    end
+    %
+    if ~isempty(y)
+        % successful match above
+    else
+        ncmp = strfind(Out(i).Name,', n-component');
+        xcmp = strfind(Out(i).Name,', x-component');
+        if ~isempty(ncmp)
+            Ystr = Out(i).Name; Ystr(ncmp+2)='t';
+            Name = Out(i).Name([1:ncmp-1 ncmp+13:end]);
+            j=1; j2=2;
+            VectorDef = 5; % normal and tangential
+            for i2=1:length(Out)
+                if strcmp(Out(i2).Name,Ystr) % find first ... assumes that there is either only one match, or that the N-th t-component matches the N-th n-component
+                    y=i2;
+                    break
+                end
+            end
+        elseif ~isempty(xcmp)
+            Ystr = Out(i).Name; Ystr(xcmp+2)='y';
+            Name = Out(i).Name([1:xcmp-1 xcmp+13:end]);
+            j=1; j2=2;
+            VectorDef = 0; % x and y
+            for i2=1:length(Out)
+                if strcmp(Out(i2).Name,Ystr) % find first ... assumes that there is either only one match, or that the N-th y-component matches the N-th x-component
+                    y=i2;
+                    break
+                end
+            end
+        end
+    end
+    if ~isempty(y)
+        Out(i).NVal=2;
+        Out(i).Name = Name;
+        Out(i).VectorDef = VectorDef;
+        Out(i).MNK = VectorDef==5;
+        if j<j2
+            Out(i).varid=[Out(i).varid Out(y).varid];
+        else
+            Out(i).varid=[Out(y).varid Out(i).varid];
+        end
+        Out(y)=[];
+        varid_Out(y) = [];
+        if y<i
+            i=i-1;
+        end
+    end
+    i=i+1;
+end
 % -----------------------------------------------------------------------------
 
 
 function ivar = get_varid(Props)
-if iscell(Props.varid)
-    ivar = Props.varid{2};
-else
-    ivar = Props.varid(1);
+ivar = zeros(size(Props));
+for i = 1:numel(Props)
+    if iscell(Props(i).varid)
+        ivar(i) = Props(i).varid{2};
+    elseif ~isempty(Props(i).varid)
+        ivar(i) = Props(i).varid(1);
+    end
 end
 
 
