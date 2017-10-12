@@ -312,7 +312,7 @@ end
 
 function [factor1,si1]=factor_combine(cmd,factor1,si1,factor2,si2)
 switch cmd
-    case '*'
+    case {'*','·'}
         factor1(1)=factor1(1)*factor2(2)+factor1(2)*factor2(1);
         factor1(2)=factor1(2)*factor2(2);
         si1=si1+si2;
@@ -369,7 +369,7 @@ while k<=length(unit)+1
             elseif nob<0
                 break
             end
-        case {'*','/',' '}
+        case {'*','·','/',' '}
             if nob==0
                 if unitk==' '
                     % SPACE ... The final frontier ...
@@ -418,7 +418,7 @@ function [unit,k,factor1,si1] = checkspace(unit,ki,k,TempType)
 for k2 = k+1:length(unit)
     unit = powercheck(unit,k2);
     switch unit(k2)
-        case {'*','/','(',')'}
+        case {'*','·','/','(',')'}
             k2 = k2-1;
             break
     end

@@ -1275,6 +1275,7 @@ for i = length(OutCoords)+(1:length(OutNoCoords))
     end
 end
 %
+[Out.AppendName] = deal('');
 for i = 1:length(Out)
     if iscell(Out(i).varid)
         %TODO
@@ -1282,7 +1283,7 @@ for i = 1:length(Out)
         Info = FI.Dataset(Out(i).varid(1)+1);
         for j = 1:length(Info.Attribute)
             if strcmp(Info.Attribute(j).Name,'cell_methods')
-                Out(i).Name = [Out(i).Name ' - ' Info.Attribute(j).Value];
+                Out(i).AppendName = [' - ' Info.Attribute(j).Value];
             end
         end
     end
@@ -1290,9 +1291,9 @@ end
 %
 for i = 1:length(Out)
    if strcmp(Out(i).Geom,'PNT')
-      Out(i).Name = [Out(i).Name ' (points)'];
+      Out(i).AppendName = [Out(i).AppendName ' (points)'];
    elseif strncmp(Out(i).Geom,'UGRID',5)
-      %Out(i).Name = [Out(i).Name ' (' lower(Out(i).Geom) ')'];
+      %Out(i).AppendName = [Out(i).AppendName ' (' lower(Out(i).Geom) ')'];
    end
 end
 %
@@ -1301,8 +1302,8 @@ for loop = 1:2
     for i = 1:length(Out)
         switch Out(i).Geom
             case {'UGRID-NODE','UGRID-EDGE','UGRID-FACE'}
-                varid = get_varid(Out(i));
-                thisMesh = FI.Dataset(varid+1).Mesh;
+                varid = get_varid(Out(i))+1;
+                thisMesh = FI.Dataset(varid).Mesh;
                 if loop == 1
                     if thisMesh{3} == -1 && Out(i).NVal == 0
                         Meshes(end+1,:) = [thisMesh{2} i];
@@ -1354,61 +1355,68 @@ while i<length(varid_Out)
         i=i+1;
         continue
     end
-    stdname = FI.Dataset(Out(i).varid+1).StdName;
-    j = strcmp(stdname,VecStdNameTable(:,1:2));
+    %
+    % own convention has preference over CF convention of standard names
+    % since there may be multiple quantities with the same standard name
+    % (but defined on different meshes or derived using different cell
+    % methods).
+    %
     y=[];
-    if any(j(:))
-        j = find(j);
-        % standard name matches known standard name of a vector component
-        if j<=nVecStdNames % matching a name in the first column
-            j2 = j+nVecStdNames;
-            Name = VecStdNameTable{j,4};
-            VectorDef = VecStdNameTable{j,3};
-        else % matching a name in the second column
-            j2 = j-nVecStdNames;
-            Name = VecStdNameTable{j2,4};
-            VectorDef = VecStdNameTable{j2,3};
+    ncmp = strfind(Out(i).Name,', n-component');
+    xcmp = strfind(Out(i).Name,', x-component');
+    if ~isempty(ncmp)
+        Ystr = Out(i).Name; Ystr(ncmp+2)='t';
+        Name = Out(i).Name([1:ncmp-1 ncmp+13:end]);
+        j=1; j2=2;
+        VectorDef = 5; % normal and tangential
+        %
+        names = {Out.Name};
+        y = find(strcmp(names,Ystr) & strcmp({Out.AppendName},Out(i).AppendName));
+        if length(y)>1
+            y = [];
         end
-        % locate the second name
-        Ystr = VecStdNameTable{j2};
-        for i2=i+1:length(varid_Out)
-            stdname = FI.Dataset(varid_Out(i2)+1).StdName;
-            if strcmp(stdname,Ystr) % find first ... assumes that there is either only one match, or that the N-th "second component" matches the N-th "first component"
-                y=i2;
-                break
+    elseif ~isempty(xcmp)
+        Ystr = Out(i).Name; Ystr(xcmp+2)='y';
+        Name = Out(i).Name([1:xcmp-1 xcmp+13:end]);
+        j=1; j2=2;
+        VectorDef = 0; % x and y
+        %
+        names = {Out.Name};
+        y = find(strcmp(names,Ystr) & strcmp({Out.AppendName},Out(i).AppendName));
+        if length(y)>1
+            y = [];
+        end
+    end
+    %
+    if isempty(y)
+        % no (unique) match found yet
+        stdname = FI.Dataset(Out(i).varid+1).StdName;
+        j = strmatch(stdname,VecStdNameTable(:,1:2),'exact');
+        if ~isempty(j)
+            % standard name matches known standard name of a vector component
+            if j<=nVecStdNames
+                j2 = j+nVecStdNames;
+                Name = VecStdNameTable{j,4};
+                VectorDef = VecStdNameTable{j,3};
+            else
+                j2 = j-nVecStdNames;
+                Name = VecStdNameTable{j2,4};
+                VectorDef = VecStdNameTable{j2,3};
+            end
+            Ystr = VecStdNameTable{j2};
+            %
+            ii = i+1:length(Out);
+            varid = varid_Out(ii);
+            ii(varid<0) = [];
+            varid(varid<0) = [];
+            stdnames = {FI.Dataset(varid+1).StdName};
+            y = ii(strcmp(stdnames,Ystr) & strcmp({Out(ii).AppendName},Out(i).AppendName));
+            if length(y)>1
+                y = []; %y(1);
             end
         end
     end
     %
-    if ~isempty(y)
-        % successful match above
-    else
-        ncmp = strfind(Out(i).Name,', n-component');
-        xcmp = strfind(Out(i).Name,', x-component');
-        if ~isempty(ncmp)
-            Ystr = Out(i).Name; Ystr(ncmp+2)='t';
-            Name = Out(i).Name([1:ncmp-1 ncmp+13:end]);
-            j=1; j2=2;
-            VectorDef = 5; % normal and tangential
-            for i2=1:length(Out)
-                if strcmp(Out(i2).Name,Ystr) % find first ... assumes that there is either only one match, or that the N-th t-component matches the N-th n-component
-                    y=i2;
-                    break
-                end
-            end
-        elseif ~isempty(xcmp)
-            Ystr = Out(i).Name; Ystr(xcmp+2)='y';
-            Name = Out(i).Name([1:xcmp-1 xcmp+13:end]);
-            j=1; j2=2;
-            VectorDef = 0; % x and y
-            for i2=1:length(Out)
-                if strcmp(Out(i2).Name,Ystr) % find first ... assumes that there is either only one match, or that the N-th y-component matches the N-th x-component
-                    y=i2;
-                    break
-                end
-            end
-        end
-    end
     if ~isempty(y)
         Out(i).NVal=2;
         Out(i).Name = Name;
@@ -1427,11 +1435,16 @@ while i<length(varid_Out)
     end
     i=i+1;
 end
+%
+for i = 1:length(Out)
+    Out(i).Name = [Out(i).Name Out(i).AppendName];
+end
+Out = rmfield(Out,'AppendName');
 % -----------------------------------------------------------------------------
 
 
 function ivar = get_varid(Props)
-ivar = zeros(size(Props));
+ivar = repmat(-1,size(Props));
 for i = 1:numel(Props)
     if iscell(Props(i).varid)
         ivar(i) = Props(i).varid{2};
@@ -1538,8 +1551,8 @@ end
 function T=readtim(FI,Props,t)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
-varid = get_varid(Props);
-tvar = FI.Dataset(varid+1).Time;
+varid = get_varid(Props)+1;
+tvar = FI.Dataset(varid).Time;
 if isempty(tvar)
     tinfo = [];
     T = [];
