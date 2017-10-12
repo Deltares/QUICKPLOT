@@ -622,8 +622,13 @@ for f=1:ntim
                     else
                         d=1;
                         if isfield(Props,'Geom') && strncmp(Props.Geom,'UGRID',5)
+                            if Props.NVal==0 && isfield(data,'FaceNodeConnect')
+                                Props.Geom='UGRID-FACE';
+                                data.ValLocation='FACE';
+                            end
                             switch Props.Geom(7:end)
                                 case 'NODE'
+                                    retrieve='griddata';
                                     xy=[data(d).X data(d).Y];
                                     rm=[];
                                 case 'FACE'
