@@ -204,6 +204,39 @@ for f=1:ntim
             Chk=1;
             data=[];
     end
+    
+    if strcmp(Ops.presentationtype,'vector') || ...
+            strcmp(Ops.presentationtype,'markers') || ...
+            strcmp(Ops.presentationtype,'values')
+        % data = geom2pnt(data);
+        if isfield(data,'ValLocation')
+            if strcmp(data.ValLocation,'EDGE')
+                if isfield(data,'Geom') && strcmp(data.Geom,'sQUAD')
+                    data.EdgeNodeConnect = [1:length(data.X)-1;2:length(data.X)]';
+                end
+                data.X = mean(data.X(data.EdgeNodeConnect),2);
+                data.Y = mean(data.Y(data.EdgeNodeConnect),2);
+            elseif strcmp(data.ValLocation,'FACE')
+                missing = isnan(data.FaceNodeConnect);
+                nNodes = size(missing,2)-sum(missing,2);
+                data.FaceNodeConnect(missing) = 1;
+                data.X = data.X(data.FaceNodeConnect);
+                data.X(missing) = 0;
+                data.X = sum(data.X,2)./nNodes;
+                data.Y = data.Y(data.FaceNodeConnect);
+                data.Y(missing) = 0;
+                data.Y = sum(data.Y,2)./nNodes;
+            end
+            for c = {'FaceNodeConnection','EdgeNodeConnection','ValLocation'}
+                s = c{1};
+                if isfield(data,s)
+                    data = rmfield(data,s);
+                end
+            end
+            data.Geom = 'sSEG';
+        end
+    end
+    
     if ~Chk
         filename='';
         return
