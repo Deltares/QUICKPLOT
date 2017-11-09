@@ -117,7 +117,7 @@ switch NVal
                         hNew=thindam(data.X,data.Y,data.XDam,data.YDam,'parent',Parent);
                         set(hNew,Ops.LineParams{:});
                     end
-                elseif sum(size(data.X)>1)>=2
+                elseif isfield(data,'X') && sum(size(data.X)>1)>=2
                     if ndims(data.X)>2
                         data.X = data.X(:,:,1);
                         data.Y = data.Y(:,:,1);
@@ -138,12 +138,19 @@ switch NVal
                         set(hNew,'xdata',data.X,'ydata',data.Y);
                     end
                 else
+                    if isfield(data,'X')
+                        X = data.X;
+                        Y = data.Y;
+                    elseif isfield(data,'XY')
+                        X = data.XY(:,1);
+                        Y = data.XY(:,2);
+                    end
                     if FirstFrame
-                        hNew=line(data.X,data.Y, ...
+                        hNew=line(X,Y, ...
                             'parent',Parent, ...
                             Ops.LineParams{:});
                     else
-                        set(hNew,'xdata',data.X,'ydata',data.Y);
+                        set(hNew,'xdata',X,'ydata',Y);
                     end
                 end
                 if strcmp(Ops.colourbar,'none')

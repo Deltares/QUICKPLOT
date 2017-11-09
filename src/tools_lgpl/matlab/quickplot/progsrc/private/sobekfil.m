@@ -111,14 +111,14 @@ end
 DimFlag=Props.DimFlag;
 
 % initialize and read indices ...
-idx={[] [] 0 [] []};
+idx={[] [] [] [] []};
 fidx=find(DimFlag);
 idx(fidx(1:length(varargin)))=varargin;
 sz=getsize(FI,Props);
 if isempty(idx{T_})
     idx{T_}=sz(T_);
 end
-if idx{M_}==0
+if sz(M_)>0 && (idx{M_}==0 || isempty(idx{M_}))
     idx{M_}=1:sz(M_);
 end
 if idx{ST_}==0
@@ -177,7 +177,10 @@ if strcmp(FI.FileType,'SOBEK River network')
         NodeHasData = 1:length(idx{M_});
     end
 elseif strcmp(Ans.ValLocation,'NODE')
-    if Props.DFil==-1
+    if Props.DFil==-3
+        % note: inodes will be monotonic since both Node.ID and CalcPnt have been sorted in sobek.m.
+        inodes=ismember(FI.Node.ID,FI.CalcPnt.ID(idx{ST_}));
+    elseif Props.DFil==-1
         nodetype = strtok(Props.Name);
         if strcmp(nodetype,'all')
             inodes=idx{M_};
@@ -260,8 +263,15 @@ elseif Props.DFil==-2
             fld='Name';
         case 'all reach segments: reach number'
             fld='BrReach';
+        case 'all reach segments: water quality segment number'
+            Ans.Val=FI.Delwaq.Reaches.Segment(iedges);
+            fld = [];
     end
-    Ans.Val=FI.Branch.(fld)(iedges);
+    if ~isempty(fld)
+        Ans.Val=FI.Branch.(fld)(iedges);
+    end
+elseif Props.DFil==-3
+    Ans.Val=FI.CalcPnt.ID(idx{ST_});
 elseif Props.NVal>0
     HisFile=FI.Data{Props.DFil};
     Ans.Val = NaN(length(idx{T_}),length(idx{M_}));
@@ -290,14 +300,18 @@ if strcmp(FI.FileType,'SOBEK River network')
     DataProps{2,9}=2;
 else
     nodetypes = unique(FI.Node.Type);
+    %
     DataProps(2,:)=DataProps(1,:);
     DataProps{2,1}='all nodes: ID';
     DataProps{2,6}=4;
     DataProps{2,7}=-1;
+    %
     DataProps(3,:)=DataProps(2,:);
     DataProps{3,1}='all nodes: name';
+    %
     DataProps(4,:)=DataProps(2,:);
     DataProps{4,1}='all nodes: type';
+    %
     i0 = size(DataProps,1);
     for i=length(nodetypes):-1:1
         DataProps(i+i0,:)=DataProps(1,:);
@@ -307,19 +321,32 @@ else
         DataProps{i+i0,7}=-1;
         DataProps{i+i0,9}=0;
     end
+    %
+    DataProps(end+1,:)=DataProps(end,:);
+    DataProps{end,1}='calculation points';
+    DataProps{end,7}=-3;
+    %
     DataProps(end+1,:)=DataProps(1,:);
     DataProps{end,1}='all reach segments: ID';
     DataProps{end,2}='SEG-EDGE';
     DataProps{end,5}=1;
     DataProps{end,6}=4;
     DataProps{end,7}=-2;
+    %
     DataProps(end+1,:)=DataProps(end,:);
     DataProps{end,1}='all reach segments: name';
+    %
     DataProps(end+1,:)=DataProps(end,:);
     DataProps{end,1}='all reach segments: type';
+    %
     DataProps(end+1,:)=DataProps(end,:);
     DataProps{end,1}='all reach segments: reach number';
     DataProps{end,6}=1;
+    %
+    if ~isempty(FI.Delwaq)
+        DataProps(end+1,:)=DataProps(end,:);
+        DataProps{end,1}='all reach segments: water quality segment number';
+    end
 end
 for i=1:length(FI.Data)
     [pn,fn]=fileparts(FI.Data{i}.FileName);
@@ -369,6 +396,8 @@ else
         end
     elseif Props.DFil==-2
         sz(M_)=length(FI.Branch.ID);
+    elseif Props.DFil==-3
+        sz(ST_)=length(FI.CalcPnt.ID);
     else
         sz(M_)=length(FI.Node.ID);
     end
@@ -401,5 +430,7 @@ switch Props.DFil
                 S{i} = [ID ':' Name];
             end
         end
+    case -3
+        S = FI.CalcPnt.ID;
 end
 % -----------------------------------------------------------------------------

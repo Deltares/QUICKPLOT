@@ -243,6 +243,12 @@ if strcmp(Ops.presentationtype,'vector') || ...
         strcmp(Ops.presentationtype,'values')
     % data = geom2pnt(data);
     if isfield(data,'ValLocation')
+        if isfield(data,'SEG')
+            data.EdgeNodeConnect = data.SEG;
+            data.X = data.XY(:,1);
+            data.Y = data.XY(:,2);
+            data = rmfield(data,{'SEG','XY'});
+        end
         if strcmp(data.ValLocation,'EDGE')
             if isfield(data,'Geom') && strcmp(data.Geom,'sQUAD')
                 data.EdgeNodeConnect = [1:length(data.X)-1;2:length(data.X)]';
@@ -260,7 +266,7 @@ if strcmp(Ops.presentationtype,'vector') || ...
             data.Y(missing) = 0;
             data.Y = sum(data.Y,2)./nNodes;
         end
-        for c = {'FaceNodeConnection','EdgeNodeConnection','ValLocation'}
+        for c = {'FaceNodeConnect','EdgeNodeConnect','ValLocation'}
             s = c{1};
             if isfield(data,s)
                 data = rmfield(data,s);

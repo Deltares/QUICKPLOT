@@ -512,6 +512,19 @@ while ln<=nLines
             case '[Model connection node]'
             case '[Model connection branch]'
             case '[Nodes with calculationpoint]'
+                iCalcPnt = strfind(Text,'[Nodes with calculationpoint]');
+                TextRem = Text(iCalcPnt+29:end);
+                [X,nCount,ErrMsg,next] = sscanf(TextRem,' "%f" %i',2);
+                %Version = X(1);
+                nCalcPnt = X(2);
+                Network.CalcPnt = readBlock({'S' 'ID'},TextRem(next:end),nCalcPnt);
+                %
+                % to add: SBK_GRIDPOINT, SBK_GRIDPOINTFIXED,
+                %         SBK_CHANNELCONNECTION, SBK_CHANNELLINKAGENODE
+                %
+                inodes = ismember(Network.Node.Type, ...
+                    {'SBK_GRIDPOINT', 'SBK_GRIDPOINTFIXED', 'SBK_CHANNELCONNECTION', 'SBK_CHANNELLINKAGENODE'});
+                Network.CalcPnt.ID = sort([Network.CalcPnt.ID;Network.Node.ID(inodes)]);
             case '[Reach options]'
             case '[NTW properties]'
                 % "1.00"
@@ -528,6 +541,7 @@ if isfield(Network,'Reach')
     Network.Reach.IFrom = inlist(Network.Reach.FromID,Network.Node.ID);
     Network.Reach.ITo = inlist(Network.Reach.ToID,Network.Node.ID);
 end
+Network.Delwaq = parse_ntrdlwq(fileparts(filename));
 
 cpfilename = [filename(1:end-3) filename(end-2:end-1)-'NT'+'CP'];
 fid = fopen(cpfilename,'r');
@@ -580,3 +594,140 @@ NPar = size(Parameters,1);
 for i=1:size(Parameters,1)
     Out.(Parameters{i,2}) = a{i};
 end
+
+function Delwaq = parse_ntrdlwq(folder)
+filename = fullfile(folder,'NTRDLWQ.POI');
+if ~exist(filename,'file')
+    Delwaq = [];
+    return
+end
+Lines = readfile(filename);
+%
+Delwaq.FileName = filename;
+%POI3.0
+if ~strcmp(Lines{1},'POI3.0')
+    error('Expecting %s to start with "POI3.0"',filename)
+end
+%# Segments links and nodes
+assert_line(Lines,2,'# Segments links and nodes')
+%Reach=0
+assert_line(Lines,3,'Reach=0')
+%
+NSeg = sscanf(Lines{4},'%i');
+DqParts = cell(NSeg,4);
+%
+iLine = 4;
+for i = 1:NSeg
+    %Segment 1  Name:   Color: 255
+    %
+    % reaches of this segment
+    %3,"9903_4_mQuitz1","mQuitz1_9903_5","9903_5_9903_6"
+    Parts = Qstrsplit(Lines{iLine+2},',');
+    % str2double(Parts{1}) is the number of labels
+    DqParts{i,1} = Parts(2:end);
+    DqParts{i,3} = repmat(i,length(Parts)-1,1);
+    %
+    % laterals? of this segment
+    %1,"1"
+    Parts = Qstrsplit(Lines{iLine+3},',');
+    DqParts{i,2} = Parts(2:end);
+    DqParts{i,4} = repmat(i,length(Parts)-1,1);
+    %
+    iLine = iLine+3;
+end
+Delwaq.Reaches.ID = removeQuotes(cat(2,DqParts{:,1})');
+Delwaq.Reaches.Segment = cat(1,DqParts{:,3});
+
+[Delwaq.Reaches.ID,reorder] = sort(Delwaq.Reaches.ID);
+Delwaq.Reaches.Segment = Delwaq.Reaches.Segment(reorder);
+%
+%# Storage Nodes
+assert_line(Lines,iLine+1,'# Storage Nodes')
+%64,14
+values = sscanf(Lines{iLine+2},'%i,%i');
+NStorage = values(2);
+%
+iLine = iLine+2;
+for i = 1:NStorage
+    % number indicating segment for storage node?
+    %
+    iLine = iLine+1;
+end
+%
+%# Internal network flows
+assert_line(Lines,iLine+1,'# Internal network flows')
+%
+iLine = iLine+1;
+while 1
+    %"Node","0701_1542",12,1,2,0,"-0701_1542_0701_1544","0701_1540_0701_1542"
+    Parts = Qstrsplit(Lines{iLine+1},',');
+    if ~strcmp(Parts{1},'"Node"')
+        if strcmp(Lines{iLine+1},'# Default branch boundary names')
+            break
+        end
+        error('Expecting internal network flow line to start with "Node", but encountered: %s',Lines{iLine+1})
+    end
+    NExchanges = str2double(Parts{4});
+    NSegments = str2double(Parts{5});
+    for j = 1:NExchanges
+        %1,2202,"-0701_1542_0701_1544","0701_1540_0701_1542"
+        SegNrs = sscanf(Lines{iLine+1+j},'%i,%i',2);
+    end
+    %
+    iLine = iLine+1+NExchanges;
+end
+%
+%# Default branch boundary names
+%
+%# Lateral Discharges to links
+%
+%# Default node boundary names
+%
+%# Boundary flows of nodes
+%
+%# Boundary types - monitoring stations
+%
+%# Surface water types
+%
+%# Segment surface water types
+%
+%# Boundary connection points
+%# Connection Points for links
+%
+%# Connection Points for nodes
+%
+%# Grid boundary aliases
+%
+%# Segments georeference: segnr, x, y, z
+%
+%# Dry waste for nodes: drywaste nr, nodeID, x, y, z, nrofsegments, seg 1, .., seg nrofsegments
+%
+%# Dry waste for links: drywaste nr, linkID, x, y, z, nrofsegments, seg 1, .., seg nrofsegments
+%
+%# History point for nodes: History nr, nodeID, x, y, z, nrofsegments, seg 1, .., seg nrofsegments
+%
+%# History for links: History nr, linkID, x, y, z, nrofsegments, seg 1, .., seg nrofsegments
+%
+
+function assert_line(Strs,i,Ref)
+if ~strcmp(Strs{i},Ref)
+    error('Expecting line %i to read "%s" while it actually reads: %s',i,Ref,Str)
+end
+
+function Lines = readfile(filename)
+fid = fopen(filename,'r');
+if fid<0
+    error('Error opening %s.',filename)
+end
+Lines = textscan(fid,'%s','delimiter','\n','whitespace','');
+Lines = Lines{1};
+fclose(fid);
+
+function Parts = Qstrsplit(Line,sep)
+% quick version of strsplit - slowest part of strsplit is the handling of
+% special separators and multiple separators
+[Parts, ~] = regexp(Line, sep, 'split', 'match');
+
+function Strs = removeQuotes(Strs)
+F = @(x) x(x~='"');
+Strs = cellfun(F,Strs,'UniformOutput',false);
