@@ -123,6 +123,9 @@ switch expType
     case 'sample file'
         % assumptions: one timestep
         ext='xyz';
+    case {'stl stereolithography file (ascii)','stl stereolithography file (binary)'}
+        % assumptions: one timestep
+        ext='stl';
     case {'mat file (v6)','mat file (v7)','mat file (v7.3/hdf5)'}
         % assumptions: one timestep
         MATfile=1;
@@ -243,7 +246,7 @@ for f=1:ntim
     end
     componentof='';
     if ~isempty(data)
-        if ~(isfield(data,'XYZ') && ~MATfile) || ~strcmp(Ops.thinningmode,'none')
+        if ~(isfield(data,'XYZ') && ~MATfile) || (isfield(Ops,'thinningmode') && ~strcmp(Ops.thinningmode,'none'))
             data = qp_thinning(data,Ops);
         end
         %
@@ -935,6 +938,17 @@ for f=1:ntim
             Format=[Format(2:end) '\n'];
             fprintf(fid,Format,expdata);
             fclose(fid);
+        case {'stl stereolithography file (ascii)','stl stereolithography file (binary)'}
+            xyz = squeeze(data.XYZ);
+            if size(xyz,2)==2
+                xyz  = [xyz data.Val'];
+            end
+            switch expType(strfind(expType,'('):end)
+                case '(ascii)'
+                    stl('write_ascii',filename,data.Name,data.TRI,xyz)
+                case '(binary)'
+                    stl('write',filename,data.Name,data.TRI,xyz)
+            end
         case {'mat file','mat file (v6)','mat file (v7)','mat file (v7.3/hdf5)'}
             if scalar && isfield(data,'XComp')
                 data.Name = [data.Name ', ' Ops.vectorcomponent];

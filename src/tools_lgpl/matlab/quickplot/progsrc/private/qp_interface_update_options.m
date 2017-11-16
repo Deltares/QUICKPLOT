@@ -1635,6 +1635,10 @@ if nval>=0
     if (multiple(M_) || multiple(N_) || multiple(K_)) && ~multiple(T_) && nval>0
         ExpTypes{end+1}='sample file';
     end
+    if multiple(M_) && triangles && ~multiple(K_) && ~multiple(T_)
+        ExpTypes{end+1} = 'STL stereolithography file (ASCII)';
+        ExpTypes{end+1} = 'STL stereolithography file (Binary)';
+    end
     %
     Mver = matlabversionnumber;
     ExpTypes{end+1}='mat file (v6)';
