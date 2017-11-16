@@ -112,7 +112,14 @@ if simplexyz
             xyz = xyz0;
         otherwise
             xyz.XYZ = xyz0;
-            npar = size(xyz0,2);            
+            if iscell(xyz0)
+                npar = 0;
+                for c = 1:length(xyz0)
+                    npar = npar+size(xyz0{c},2);
+                end
+            else
+                npar = size(xyz0,2);
+            end
             xyz.Params = cell(1,npar);
             for i=1:npar
                 xyz.Params{i}=sprintf('Parameter %i',i);
@@ -248,7 +255,11 @@ if isstruct(xyz)
     end
     %
     if isempty(xyz.Time)
-        xyz.nLoc  = size(xyz.XYZ,1);
+        if iscell(xyz.XYZ)
+            xyz.nLoc  = size(xyz.XYZ{1},1);
+        else
+            xyz.nLoc  = size(xyz.XYZ,1);
+        end
         xyz.Times = gettimestamp(xyz.Header);
     else
         crds = [xyz.X xyz.Y];
