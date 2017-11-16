@@ -382,6 +382,15 @@ switch FI.FileType(9:end)
         switch Props.Name
             case 'mesh'
                 Ans = netcdffil(FI.mesh.nc_file,idom,FI.mesh.quant,'grid',idx{M_});
+            case 'bed level samples'
+                Ans.XY = FI.BedLevel(idx{M_},1:2);
+                Ans.Val = FI.BedLevel(idx{M_},3);
+            case 'observation points'
+                Ans.XY = FI.Obs{1}(idx{M_},1:2);
+                Ans.Val = FI.Obs{2}(idx{M_});
+            case 'observation cross sections'
+                Ans.XY = {FI.Crs.Field(idx{M_}).Data};
+                Ans.Val = {FI.Crs.Field(idx{M_}).Name};
             otherwise
                 Ans = [];
         end
@@ -647,6 +656,7 @@ switch FI.FileType
                         Out(ifld).DimFlag([M_ N_]) = 1;
                     case 'dep'
                         Out(ifld).Name = 'bed levels';
+                        Out(ifld).Units = 'm';
                         Out(ifld).Geom = 'sQUAD';
                         Out(ifld).Coords = 'xy';
                         Out(ifld).DimFlag([M_ N_]) = 1;
@@ -723,7 +733,7 @@ switch FI.FileType
                         Out(ifld).DimFlag(M_) = 1;
                         Out(ifld).NVal = 4;
                     case 'crs'
-                        Out(ifld).Name = 'cross sections';
+                        Out(ifld).Name = 'observation cross sections';
                         Out(ifld).Geom = 'POLYL';
                         Out(ifld).Coords = 'xy';
                         Out(ifld).DimFlag(M_) = 1;
@@ -732,10 +742,64 @@ switch FI.FileType
             end
         end
     case 'Delft3D D-Flow FM'
-        Out(1).Name = 'mesh';
-        Out(1).Geom = 'UGRID-NODE';
-        Out(1).Coords = 'xy';
-        Out(1).DimFlag(M_) = 6;
+        flds = {'mesh','-','BedLevel','-','ExtForce','-','Obs','Crs'};
+        nfld = 0;
+        for i = 1:length(flds)
+            if isequal(flds{i},'-')
+                nfld = nfld+1;
+            elseif isfield(FI,flds{i})
+                switch flds{i}
+                    case 'BedLevel'
+                        nfld = nfld+1;
+                    case 'ExtForce'
+                        nfld = nfld+0;
+                    otherwise
+                        nfld = nfld+1;
+                end
+            end
+        end
+        %
+        Out(1:nfld) = Out(1);
+        %
+        ifld = 0;
+        for i = 1:length(flds)
+            if isequal(flds{i},'-')
+                ifld = ifld+1;
+            elseif isfield(FI,flds{i})
+                switch flds{i}
+                    case 'mesh'
+                        ifld = ifld+1;
+                        Out(ifld).Name = 'mesh';
+                        Out(ifld).Geom = 'UGRID-NODE';
+                        Out(ifld).Coords = 'xy';
+                        Out(ifld).DimFlag(M_) = 6;
+                    case 'BedLevel'
+                        ifld = ifld+1;
+                        Out(ifld).Name = 'bed level samples';
+                        Out(ifld).Units = 'm';
+                        Out(ifld).Geom = 'PNT';
+                        Out(ifld).Coords = 'xy';
+                        Out(ifld).DimFlag(M_) = 1;
+                        Out(ifld).NVal = 1;
+                    case 'ExtForce'
+                        %none
+                    case 'Obs'
+                        ifld = ifld+1;
+                        Out(ifld).Name = 'observation points';
+                        Out(ifld).Geom = 'PNT';
+                        Out(ifld).Coords = 'xy';
+                        Out(ifld).DimFlag(M_) = 1;
+                        Out(ifld).NVal = 4;
+                    case 'Crs'
+                        ifld = ifld+1;
+                        Out(ifld).Name = 'observation cross sections';
+                        Out(ifld).Geom = 'POLYL';
+                        Out(ifld).Coords = 'xy';
+                        Out(ifld).DimFlag(M_) = 1;
+                        Out(ifld).NVal = 4;
+                end
+            end
+        end
     case 'Delft3D D-Wave'
         Out(1).Name = 'grid';
         Out(1).Geom = 'sQUAD';
@@ -811,8 +875,17 @@ switch FI.FileType
         MNK = inifile('geti',FI.mdf,'*','MNKmax');
         sz([M_ N_]) = MNK(1:2);
     case 'Delft3D D-Flow FM'
-        grdSz = netcdffil(FI.mesh.nc_file,idom,FI.mesh.quant,'size');
-        sz(M_) = grdSz(M_);
+        switch Props.Name
+            case 'mesh'
+                grdSz = netcdffil(FI.mesh.nc_file,idom,FI.mesh.quant,'size');
+                sz(M_) = grdSz(M_);
+            case 'bed level samples'
+                sz(M_) = size(FI.BedLevel,1);
+            case 'observation points'
+                sz(M_) = size(FI.Obs{1},1);
+            case 'observation cross sections'
+                sz(M_) = length(FI.Crs.Field);
+        end
     case 'Delft3D D-Wave'
         grdSz = size(FI.domain(idom).grd.X);
         sz([M_ N_]) = grdSz;

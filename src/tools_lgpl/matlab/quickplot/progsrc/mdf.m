@@ -748,49 +748,168 @@ function MF = mduread(MF,md_path)
 mshname = propget(MF.mdu,'geometry','NetFile');
 if ~isempty(mshname)
     mshname = relpath(md_path,mshname);
-    F = nc_interpret(mshname);
-    F.FileType = 'NetCDF';
-    Q = qpread(F);
-    if ~strcmp(Q(1).Geom,'UGRID-NODE')
-        % old mesh file: modify data structures such that it behaves like a
-        % new ugrid file.
-        %
-        grdid = length(F.Dataset)+1;
-        %
-        F.Dataset(grdid).Name = 'Mesh2D';
-        F.Dataset(grdid).Attribute(1).Name = 'edge_node_connectivity';
-        F.Dataset(grdid).Attribute(1).Value = 'NetLink';
-        F.Dataset(grdid).Mesh = {'ugrid' grdid -1 'nNetNode' 'nNetLink' ''};
-        F.Dataset(grdid).X = ustrcmpi({F.Dataset.Name},'NetNode_x');
-        F.Dataset(grdid).Y = ustrcmpi({F.Dataset.Name},'NetNode_y');
-        NL = ustrcmpi({F.Dataset.Name},'NetLink');
-        F.Dataset(NL).Attribute(end+1).Name = 'start_index';
-        F.Dataset(NL).Attribute(end).Value = 1;
-        %
-        Q = [];
-        Q.Name = 'Mesh2D';
-        Q.Units = '';
-        Q.TemperatureType = 'unspecified';
-        Q.Geom = 'UGRID-NODE';
-        Q.Coords = 'xy';
-        Q.DimFlag = [0 0 6 0 0];
-        Q.DataInCell = 0;
-        Q.NVal = 0;
-        Q.SubFld = [];
-        Q.MNK = 0;
-        Q.varid = {'node_index' grdid-1};
-        Q.DimName = {[]  []  'nNetNode'  []  []};
-        Q.hasCoords = 1;
-        Q.VectorDef = 0;
-        Q.ClosedPoly = 0;
-        Q.UseGrid = 1;
-    end
+    [F,Q] = getmesh(mshname);
     MF.mesh.nc_file = F;
     MF.mesh.quant = Q(1);
 else
     error('Unable to locate NetFile keyword in [geometry] chapter.');
 end
 %
+attfiles = {...
+   'geometry','BathymetryFile','BedLevel'
+   'geometry','DryPointsFile','DryPoints'
+   'geometry','WaterLevIniFile','WaterLevIni'
+   'geometry','LandBoundaryFile','LandBoundary'
+   'geometry','ThinDamFile','ThinDam'
+   'geometry','FixedWeirFile','FixedWeir'
+   'geometry','ThindykeFile','Thindyke'
+   'geometry','StructureFile','Structure'
+   'geometry','VertplizFile','Vertpliz'
+   'geometry','ProflocFile','Profloc'
+   'geometry','ProfdefFile','Profdef'
+   'geometry','ProfdefxyzFile','Profdefxyz'
+   'geometry','ManholeFile','Manhole'
+   'geometry','PartitionFile','Partition'
+   'restart','RestartFile','Restart'
+   'external forcing','ExtForceFile','ExtForce'
+   'external forcing','ExtForceFileNew','ExtForceNew'
+   'output','ObsFile','Obs'
+   'output','CrsFile','Crs'
+   'sediment','MorFile','Mor'
+   'sediment','SedFile','Sed'};
+for i = 1:size(attfiles,1)
+    grp = attfiles{i,1};
+    fld = attfiles{i,2};
+    key = attfiles{i,3};
+    %
+    filename = propget(MF.mdu,grp,fld);
+    if ~isempty(filename)
+        filename = relpath(md_path,filename);
+        switch key
+            case 'BedLevel'
+                F = samples('read',filename);
+            case {'Mor','Sed'}
+                F = inifile('open',filename);
+            case 'Crs'
+                F = tekal('open',filename,'loaddata');
+            case 'Obs'
+                F = samples('read',filename);
+            case 'ExtForce'
+                ext_path = fileparts(filename);
+                %
+                F1 = inifile('open',filename); % open external forcings file as ini-file
+                K1 = inifile('keywords',F1,1); % keywords of first (and only) section
+                nK = length(K1);
+                Ks = false(1,nK);
+                for k = 1:nK
+                    if isempty(K1{k}) % no =-sign in line
+                        continue
+                    elseif K1{k}(1)=='*' % comment line
+                        continue
+                    else
+                        Ks(k) = true;
+                    end
+                end
+                K1 = K1(Ks);
+                nQ = sum(strcmpi(K1,'quantity'));
+                F = [];
+                %
+                Ks = find(Ks);
+                q = 0;
+                F(nQ).Quantity = '';
+                for k = 1:length(K1)
+                    val = inifile('get',F1,1,Ks(k));
+                    switch lower(K1{k})
+                        case 'quantity'
+                            q = q+1;
+                            F(q).Quantity = val;
+                        case 'filename'
+                            F(q).FileName = relpath(ext_path,val);
+                        case 'filetype'
+                            if isscalar(val) && val>=1 && val<=12
+                                FileTypeList = {'uniform','unimagdir','svwp','arcinfo','spiderweb','curvi','triangulation','triangulation_magdir','polyline','inside_polygon','ncgrid','ncflow'};
+                                val = FileTypeList{val};
+                            end
+                            F(q).FileType = val;
+                        case 'method'
+                            if isscalar(val) && val>=0 && val<=9
+                                MethodList = {'provider','intp_space_and_time','intp_space_then_intp_time','save_weights','spatial_inside_polygon','spatial_triangulation','spatial_averaging','spatial_index_triangulation','spatial_smoothing','spatial_internal_diffusion'};
+                                val = MethodList{val+1};
+                            end
+                            F(q).Method = val;
+                        case 'operand'
+                            switch lower(val)
+                                case 'o'
+                                    val = 'override';
+                                case '+'
+                                    val = 'add';
+                                case '*'
+                                    val = 'multiply';
+                                case 'a'
+                                    val = 'apply_when_undefined';
+                            end
+                            F(q).Operand = val;
+                        case 'value'
+                            F(q).Value = val;
+                        case 'factor'
+                            F(q).Value = val;
+                        otherwise
+                            % unknown keyword - skip it or warn?
+                    end
+                end
+                %
+                for q = 1:length(F)
+                    switch F(q).FileType
+                        case 'polyline'
+                            % ... read pli with optional 3rd column ...
+                    end
+                end
+            otherwise
+                F = filename;
+        end
+        MF.(key) = F;
+    end
+end
+
+
+function [F,Q] = getmesh(mshname)
+F = nc_interpret(mshname);
+F.FileType = 'NetCDF';
+Q = qpread(F);
+if ~strcmp(Q(1).Geom,'UGRID-NODE')
+    % old mesh file: modify data structures such that it behaves like a
+    % new ugrid file.
+    %
+    grdid = length(F.Dataset)+1;
+    %
+    F.Dataset(grdid).Name = 'Mesh2D';
+    F.Dataset(grdid).Attribute(1).Name = 'edge_node_connectivity';
+    F.Dataset(grdid).Attribute(1).Value = 'NetLink';
+    F.Dataset(grdid).Mesh = {'ugrid' grdid -1 'nNetNode' 'nNetLink' ''};
+    F.Dataset(grdid).X = ustrcmpi({F.Dataset.Name},'NetNode_x');
+    F.Dataset(grdid).Y = ustrcmpi({F.Dataset.Name},'NetNode_y');
+    NL = ustrcmpi({F.Dataset.Name},'NetLink');
+    F.Dataset(NL).Attribute(end+1).Name = 'start_index';
+    F.Dataset(NL).Attribute(end).Value = 1;
+    %
+    Q = [];
+    Q.Name = 'Mesh2D';
+    Q.Units = '';
+    Q.TemperatureType = 'unspecified';
+    Q.Geom = 'UGRID-NODE';
+    Q.Coords = 'xy';
+    Q.DimFlag = [0 0 6 0 0];
+    Q.DataInCell = 0;
+    Q.NVal = 0;
+    Q.SubFld = [];
+    Q.MNK = 0;
+    Q.varid = {'node_index' grdid-1};
+    Q.DimName = {[]  []  'nNetNode'  []  []};
+    Q.hasCoords = 1;
+    Q.VectorDef = 0;
+    Q.ClosedPoly = 0;
+    Q.UseGrid = 1;
+end
 
 
 function MF = mdwread(MF,md_path)
