@@ -782,7 +782,7 @@ for i = 1:size(attfiles,1)
     fld = attfiles{i,2};
     key = attfiles{i,3};
     %
-    filename = propget(MF.mdu,grp,fld);
+    filename = propget(MF.mdu,grp,fld,'');
     if ~isempty(filename)
         filename = relpath(md_path,filename);
         switch key
@@ -794,6 +794,8 @@ for i = 1:size(attfiles,1)
                 F = tekal('open',filename,'loaddata');
             case 'Obs'
                 F = samples('read',filename);
+            case 'Structure'
+                F = inifile('open',filename);
             case 'ExtForce'
                 ext_path = fileparts(filename);
                 %
@@ -864,6 +866,8 @@ for i = 1:size(attfiles,1)
                             % ... read pli with optional 3rd column ...
                     end
                 end
+            case 'ExtForceNew'
+                F = inifile('open',filename);
             otherwise
                 F = filename;
         end
