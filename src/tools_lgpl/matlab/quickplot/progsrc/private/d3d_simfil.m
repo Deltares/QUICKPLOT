@@ -902,6 +902,7 @@ xy = NaN(nPnt,2);
 [uBId,ia,ic] = unique(bId);
 G = inifile('cgeti',NTWini,'Branch','geometry');
 GId = inifile('cgetstringi',NTWini,'Branch','id');
+GgpO = inifile('geti',NTWini,'Branch','gridPointOffsets');
 for i = 1:length(uBId)
     Branch = uBId(i);
     iBranch = ustrcmpi(Branch,GId);
@@ -913,6 +914,10 @@ for i = 1:length(uBId)
         XY(db,:) = [];
         iOut = ic==i;
         cCS  = [bCh{iOut}];
+        %
+        bLen = GgpO{iBranch}(end);
+        d = d*bLen/d(end);
+        %
         xyCS = interp1(d,XY,cCS);
         xy(iOut,:) = xyCS;
     end
