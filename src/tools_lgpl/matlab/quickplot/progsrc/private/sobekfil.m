@@ -214,30 +214,37 @@ elseif strcmp(Ans.ValLocation,'EDGE')
         % linked to the his-file content via edges not selected.
         %
         HisFile=FI.Data{Props.DFil};
-        [EdgeHasData,DataIndex]=ismember(FI.Branch.ID,HisFile.SegmentName);
-        %
-        found = true;
-        while found
-            found = false;
-            for i = find(~EdgeHasData)'
-                ifn = FI.Branch.IFrom(i);
-                if ismember(FI.Node.Type(ifn), ...
-                        {'SBK_PROFILE','SBK_MEASSTAT','SBK_SBK-3B-REACH','SBK_WEIR','SBK_CULVERT','SBK_PUMP','SBK_LATERALFLOW'})
-                    ibr = find(EdgeHasData & FI.Branch.ITo==ifn);
-                    if ~isempty(ibr)
-                        EdgeHasData(i) = true;
-                        DataIndex(i) = DataIndex(ibr);
-                        found = true;
+        [p,f] = fileparts(HisFile.FileName);
+        if strcmpi(f,'delwaq')
+            % indexing via segment numbers
+            [EdgeHasData,dwqIdx] = ismember(FI.Branch.ID(iedges),FI.Delwaq.Reaches.ID);
+            DataIndex = FI.Delwaq.Reaches.Segment(dwqIdx(EdgeHasData));
+        else
+            [EdgeHasData,DataIndex]=ismember(FI.Branch.ID,HisFile.SegmentName);
+            %
+            found = true;
+            while found
+                found = false;
+                for i = find(~EdgeHasData)'
+                    ifn = FI.Branch.IFrom(i);
+                    if ismember(FI.Node.Type(ifn), ...
+                            {'SBK_PROFILE','SBK_MEASSTAT','SBK_SBK-3B-REACH','SBK_WEIR','SBK_CULVERT','SBK_PUMP','SBK_LATERALFLOW'})
+                        ibr = find(EdgeHasData & FI.Branch.ITo==ifn);
+                        if ~isempty(ibr)
+                            EdgeHasData(i) = true;
+                            DataIndex(i) = DataIndex(ibr);
+                            found = true;
+                        end
                     end
                 end
             end
+            %
+            % Now clip data set to selected edges
+            %
+            EdgeHasData = EdgeHasData(iedges);
+            DataIndex = DataIndex(iedges);
+            DataIndex(~EdgeHasData) = [];
         end
-        %
-        % Now clip data set to selected edges
-        %
-        EdgeHasData = EdgeHasData(iedges);
-        DataIndex = DataIndex(iedges);
-        DataIndex(~EdgeHasData) = [];
     end
 end
 
@@ -358,17 +365,18 @@ for i=1:length(FI.Data)
     DataProps(end+1,:)={'-------'                  ''         ''   [0 0 0 0 0]   0           0      0      0       0};
     for j=1:length(FI.Data{i}.SubsName)
         DataProps(end+1,:)={FI.Data{i}.SubsName{j} 'SEG-NODE' 'xy' [1 0 6 0 0]   0           1      i      j       1};
-        if strcmp(fn,'reachseg')
-            DataProps{end,2} = 'SEG-EDGE';
-            DataProps{end,5}  = 1; % DataInCell
+        switch fn
+            case 'reachseg'
+                DataProps{end,2} = 'SEG-EDGE';
+                DataProps{end,5} =  1; % DataInCell
+            case 'delwaq'
+                DataProps{end,2} = 'SEG-EDGE';
+                DataProps{end,5} =  1; % DataInCell
+                %Should process name by means of substdb of d3d_waqfil...
         end
     end
 end
 Out=cell2struct(DataProps,PropNames,2);
-%======================== SPECIFIC CODE REMOVE ================================
-
-%======================== SPECIFIC CODE ADD ===================================
-
 % -----------------------------------------------------------------------------
 
 
