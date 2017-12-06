@@ -258,25 +258,47 @@ switch FI.FileType(9:end)
                 Ans.Val = sId(iM);
             otherwise
                 switch Props.varid{1}
-                    case {'calcdim','calcpnt','nodes_cr','morph_gr'}
+                    case {'calcdim','calcpnt','nodes_cr'}
                         FI = check_gpXY(FI);
+                        %
                         % first N1 points are internal nodes
                         X = inifile('geti',FI.ntw,'Node','x');
                         Y = inifile('geti',FI.ntw,'Node','y');
                         N = inifile('getstringi',FI.ntw,'Node','id');
                         nodXY = [cat(1,X{:}) cat(1,Y{:})];
+                        %
                         % next N2 points are the internal nodes of the branches
                         igpXY = FI.gpXY(FI.gpInternal,:);
-                        % final N3 points are the boundary nodes
+                        %
+                        % final N3 points are the boundary nodes in the
+                        % order of the branches
+                        bNodes = [inifile('cgetstringi',FI.ntw,'Branch','FromNode') inifile('cgetstringi',FI.ntw,'Branch','ToNode')]';
+                        bNodes = bNodes(:);
                         B = inifile('getstringi',FI.bndLoc,'Boundary','nodeId');
-                        NisB = ismember(N,B);
-                        bndXY = nodXY(NisB,:);
-                        nodXY = nodXY(~NisB,:);
+                        B = bNodes(ismember(bNodes,B));
+                        [~,locB]=ismember(B,N);
+                        bndXY = nodXY(locB,:);
+                        %
+                        % Finally remove the boundaries from the internal
+                        % nodes list
+                        nodXY(locB,:) = [];
                         %
                         Ans.X = cat(1,nodXY(:,1),igpXY(:,1),bndXY(:,1));
                         Ans.X = Ans.X(idx{M_});
                         Ans.Y = cat(1,nodXY(:,2),igpXY(:,2),bndXY(:,2));
                         Ans.Y = Ans.Y(idx{M_});
+                        [time,data] = delwaq('read',FI.(Props.varid{1}),Props.varid{2},idx{M_},idx{T_});
+                        Ans.Time = time;
+                        Ans.Val = permute(data,[3 2 1]);
+                    case 'morph_gr'
+                        FI = check_gpXY(FI);
+                        %
+                        % all grid points (including fromNode and toNode)
+                        % in order of the branches
+                        XY = FI.gpXY;
+                        %
+                        Ans.X = XY(idx{M_},1);
+                        Ans.Y = XY(idx{M_},2);
                         [time,data] = delwaq('read',FI.(Props.varid{1}),Props.varid{2},idx{M_},idx{T_});
                         Ans.Time = time;
                         Ans.Val = permute(data,[3 2 1]);
