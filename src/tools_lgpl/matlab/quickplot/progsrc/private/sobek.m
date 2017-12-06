@@ -520,10 +520,11 @@ while ln<=nLines
                 Network.CalcPnt = readBlock({'S' 'ID'},TextRem(next:end),nCalcPnt);
                 %
                 % to add: SBK_GRIDPOINT, SBK_GRIDPOINTFIXED,
-                %         SBK_CHANNELCONNECTION, SBK_CHANNELLINKAGENODE
+                %         SBK_CHANNELCONNECTION, SBK_CHANNELLINKAGENODE,
+                %         SBK_CHANNEL_STORCONN&LAT
                 %
                 inodes = ismember(Network.Node.Type, ...
-                    {'SBK_GRIDPOINT', 'SBK_GRIDPOINTFIXED', 'SBK_CHANNELCONNECTION', 'SBK_CHANNELLINKAGENODE'});
+                    {'SBK_GRIDPOINT', 'SBK_GRIDPOINTFIXED', 'SBK_CHANNELCONNECTION', 'SBK_CHANNELLINKAGENODE','SBK_CHANNEL_STORCONN&LAT'});
                 Network.CalcPnt.ID = sort([Network.CalcPnt.ID;Network.Node.ID(inodes)]);
             case '[Reach options]'
             case '[NTW properties]'

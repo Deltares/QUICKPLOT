@@ -118,7 +118,7 @@ sz=getsize(FI,Props);
 if isempty(idx{T_})
     idx{T_}=sz(T_);
 end
-if sz(M_)>0 && (idx{M_}==0 || isempty(idx{M_}))
+if sz(M_)>0 && (isequal(idx{M_},0) || isempty(idx{M_}))
     idx{M_}=1:sz(M_);
 end
 if idx{ST_}==0
@@ -264,7 +264,9 @@ elseif Props.DFil==-2
         case 'all reach segments: reach number'
             fld='BrReach';
         case 'all reach segments: water quality segment number'
-            Ans.Val=FI.Delwaq.Reaches.Segment(iedges);
+            Ans.Val=repmat(NaN,length(iedges),1);
+            [dwqMtch,dwqIdx] = ismember(FI.Branch.ID(iedges),FI.Delwaq.Reaches.ID);
+            Ans.Val(dwqMtch) = FI.Delwaq.Reaches.Segment(dwqIdx(dwqMtch));
             fld = [];
     end
     if ~isempty(fld)
@@ -322,9 +324,11 @@ else
         DataProps{i+i0,9}=0;
     end
     %
-    DataProps(end+1,:)=DataProps(end,:);
-    DataProps{end,1}='calculation points';
-    DataProps{end,7}=-3;
+    if isfield(FI,'CalcPnt')
+        DataProps(end+1,:)=DataProps(end,:);
+        DataProps{end,1}='calculation points';
+        DataProps{end,7}=-3;
+    end
     %
     DataProps(end+1,:)=DataProps(1,:);
     DataProps{end,1}='all reach segments: ID';
