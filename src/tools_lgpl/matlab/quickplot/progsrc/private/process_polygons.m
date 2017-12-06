@@ -46,20 +46,24 @@ end
 %
 % preprocess the values
 %
-nThresh=length(Thresholds);
-for i=1:size(cv,1)
-    if isempty(cv{i})
-        cv{i} = [NaN NaN];
-    else
-        ci = cv{i}(1);
-        if ci<nThresh
-            cv{i} = Thresholds(ci+(0:1));
+if isequal(size(Thresholds),[size(cv,1) 2])
+    cv = Thresholds;
+else
+    nThresh=length(Thresholds);
+    for i=1:size(cv,1)
+        if isempty(cv{i})
+            cv{i} = [NaN NaN];
         else
-            cv{i} = [Thresholds(ci) NaN];
+            ci = cv{i}(1);
+            if ci<nThresh
+                cv{i} = Thresholds(ci+(0:1));
+            else
+                cv{i} = [Thresholds(ci) NaN];
+            end
         end
     end
+    cv=cat(1,cv{:});
 end
-cv=cat(1,cv{:});
 cLabels={'Min','Max'};
 %
 % call the routine specific for the contourf style.

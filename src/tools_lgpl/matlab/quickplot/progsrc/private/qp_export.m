@@ -113,7 +113,7 @@ switch expType
             end
         end
         switch Ops.presentationtype
-            case {'patches','patches with lines','grid','polylines','polygons',''}
+            case {'patches','patches with lines','grid','polylines','polygons','edge',''}
                 retrieve='gridcelldata';
             case {'markers','values'}
                 retrieve='griddata';
@@ -589,7 +589,7 @@ for f=1:ntim
                 Ops.presentationtype = 'thin dams';
             end
             switch Ops.presentationtype
-                case {'patches','patches with lines','markers','values','grid','polylines','polygons',''}
+                case {'patches','patches with lines','markers','values','grid','polylines','polygons','edge',''}
                     xy=[];
                     if isfield(Props,'Geom') && (strcmp(Props.Geom,'POLYL') || strcmp(Props.Geom,'POLYG'))
                         vNaN=isnan(data.X);
@@ -624,20 +624,33 @@ for f=1:ntim
                         end
                     else
                         d=1;
+                        shp_type = 'polygon';
                         if isfield(Props,'Geom') && strncmp(Props.Geom,'UGRID',5)
                             if Props.NVal==0 && isfield(data,'FaceNodeConnect')
                                 Props.Geom='UGRID-FACE';
                                 data.ValLocation='FACE';
                             end
-                            switch Props.Geom(7:end)
-                                case 'NODE'
+                            switch Ops.presentationtype
+                                case {'markers','values'}
                                     retrieve='griddata';
                                     xy=[data(d).X data(d).Y];
                                     rm=[];
-                                case 'FACE'
-                                    xv=[data(d).X data(d).Y];
-                                    fv=data(d).FaceNodeConnect;
-                                    rm=[];
+                                otherwise
+                                    switch Props.Geom(7:end)
+                                        case 'NODE'
+                                            retrieve='griddata';
+                                            xy=[data(d).X data(d).Y];
+                                            rm=[];
+                                        case 'EDGE'
+                                            xv=[data(d).X data(d).Y];
+                                            fv=data(d).EdgeNodeConnect;
+                                            shp_type = 'polyline';
+                                            rm=[];
+                                        case 'FACE'
+                                            xv=[data(d).X data(d).Y];
+                                            fv=data(d).FaceNodeConnect;
+                                            rm=[];
+                                    end
                             end
                         elseif isfield(Props,'Tri') && Props.Tri
                             if strcmp(retrieve,'gridcelldata')
@@ -708,7 +721,7 @@ for f=1:ntim
                             %
                             % make sure that polygons are stored clockwise ...
                             %
-                            if ~any(isnan(fv(1,:))) && clockwise(data(d).X(fv(1,:)),data(d).Y(fv(1,:)))<0
+                            if strcmp(shp_type,'polygon') && ~any(isnan(fv(1,:))) && clockwise(data(d).X(fv(1,:)),data(d).Y(fv(1,:)))<0
                                 % a simple fv=fliplr(fv) only works if all
                                 % patches have the same number of corner
                                 % nodes, so no fill NaNs. To be generic we
@@ -719,7 +732,7 @@ for f=1:ntim
                                     fv(i,1:nv(i)) = fv(i,nv(i):-1:1);
                                 end
                             end
-                            shapewrite(filename,xv,fv,cv{:})
+                            shapewrite(filename,shp_type,xv,fv,cv{:})
                         else
                             shapewrite(filename,'point',xy,cv{:})
                         end
@@ -784,11 +797,12 @@ for f=1:ntim
                             xy=get(hNew,'vertices');
                             fc=get(hNew,'faces');
                             cv=get(hNew,'facevertexcdata');
+                            minmax = zeros(length(hNew),2);
+                            for i = 1:length(hNew)
+                                minmax(i,:) = [getappdata(hNew(i),'MinThreshold') getappdata(hNew(i),'MaxThreshold')];
+                            end
                             %
-                            UD=get(hNew0,'userdata');
-                            Thresholds=UD.XInfo.Thresholds;
-                            %
-                            [xy,cLabels,cv] = process_polygons(xy,fc,cv,Thresholds);
+                            [xy,cLabels,cv] = process_polygons(xy,fc,cv,minmax);
                             %
                             switch expType
                                 case 'arcview shape'

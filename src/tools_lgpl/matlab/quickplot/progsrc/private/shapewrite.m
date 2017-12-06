@@ -119,8 +119,8 @@ else
         nPntPerPatch = sum(~isnan(Patch),2);
         NPnt=min(nPntPerPatch);
         offset=1;
-        if NPnt<=2
-            error('Invalid number of columns in Patch, should be at least 3')
+        if DataType==5 && NPnt<=2
+            error('Number of columns of Patch array too small: for polygons the number of nodes should be at least 3')
         end
     end
     %data3d=size(XY,2)==3;
