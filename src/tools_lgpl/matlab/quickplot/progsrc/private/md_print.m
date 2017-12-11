@@ -926,6 +926,8 @@ switch Type
             else
                 set(GUI.ZBuf,'value',1)
             end
+        else
+            set(GUI.OpenGL,'value',1)
         end
     otherwise
         set(GUI.Painter,'value',0,'enable','on')
