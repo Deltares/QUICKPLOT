@@ -86,7 +86,6 @@
 %   setProperty                 - Generic routine to set values in PropertyName-PropertyValue pairs
 %   stdbeep                     - Produce beep sound.
 %   trim2rst                    - Extract Delft3D-FLOW restart file from TRIM-file.
-%   ui_getdir                   - Compileable platform independent open directory dialog box.
 %   ui_type                     - Simple selection dialog.
 %   ui_typeandname              - Selection dialog with name specification.
 %   uigetfolder                 - Standard Windows browse for folder dialog box.
