@@ -48,7 +48,11 @@ pos(1:2)=min(pos(1:2),MonPos(1:2)+MonPos(3:4)-pos(3:4)-[0 70]);
 % also in R13 compiled mode
 %
 if ~isempty(closecom)
-    closecom=sprintf('%s %s',callbackfcn,closecom);
+    if ischar(callbackfcn)
+        closecom=sprintf('%s %s',callbackfcn,closecom);
+    else
+        closecom = {callbackfcn closecom};
+    end
 end
 %
 H = figure('Visible','off', ...
