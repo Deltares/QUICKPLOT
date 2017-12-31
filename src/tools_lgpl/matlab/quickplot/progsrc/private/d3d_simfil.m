@@ -218,7 +218,7 @@ switch FI.FileType(9:end)
                 Ans.Y = FI.crsXY(iM,2);
                 Ans.Val = csId(iM);
             case 'lateral discharges'
-                lId = inifile('geti',FI.latLoc,'LateralDischarge','id');
+                lId = inifile('cgetstringi',FI.latLoc,'LateralDischarge','id');
                 FI = check_latXY(FI);
                 %
                 Ans.X = FI.latXY(idx{M_},1);
@@ -229,6 +229,13 @@ switch FI.FileType(9:end)
                 Ans.X = FI.gpXY(idx{M_},1);
                 Ans.Y = FI.gpXY(idx{M_},2);
                 Ans.Val = FI.gpId(idx{M_});
+            case 'observation points'
+                lId = inifile('cgetstringi',FI.obs,'ObservationPoint','id');
+                FI = check_obsXY(FI);
+                %
+                Ans.X = FI.obsXY(idx{M_},1);
+                Ans.Y = FI.obsXY(idx{M_},2);
+                Ans.Val = lId(idx{M_});
             case 'boundary points'
                 F=inifile('geti',FI.bndLoc,'Boundary','type');
                 BT = [F{:}];
@@ -482,12 +489,16 @@ switch FI.FileType
         Out(2).Name = '1D2D link numbers';
         Out(2).NVal = 1;
     case 'Delft3D D-Flow1D'
-        F=inifile('geti',FI.bndLoc,'Boundary','type');
-        BT=[F{:}];
-        uBT=unique(BT);
+        if isfield(FI,'bndLoc')
+            F=inifile('geti',FI.bndLoc,'Boundary','type');
+            BT=[F{:}];
+            uBT=unique(BT);
+        else
+            uBT={};
+        end
         nBT=length(uBT);
         %
-        if inifile('exists',FI.strucLoc,'Structure','type')
+        if isfield(FI,'strucLoc') && inifile('exists',FI.strucLoc,'Structure','type')
             ST=inifile('getstringi',FI.strucLoc,'Structure','type');
             uST=unique(ST);
         else
@@ -495,10 +506,22 @@ switch FI.FileType
         end
         nST=length(uST);
         %
+        if isfield(FI,'obs')
+            Obs=inifile('cgetstringi',FI.obs,'ObservationPoint','id');
+        else
+            Obs = {};
+        end
+        nObs=length(Obs);
+        hasObs = nObs>0;
+        %
         % CrossSection types have been copied from their definition records
         % to the location record in MDF.
-        CT=inifile('getstringi',FI.crsLoc,'CrossSection','type');
-        uCT=unique(CT);
+        if isfield(FI,'crsLoc')
+            CT=inifile('getstringi',FI.crsLoc,'CrossSection','type');
+            uCT=unique(CT);
+        else
+            uCT = {};
+        end
         nCT=length(uCT);
         hasCxyz = any(strcmp('xyz',uCT));
         %
@@ -523,7 +546,7 @@ switch FI.FileType
             end
         end
         %
-        Out(2:5+nCT+hasCxyz+1+nBT+hasLAT+1+nST+1+nFLD) = Out(1);
+        Out(2:5+nCT+hasCxyz+1+nBT+hasLAT+1+nST+1+hasObs+1+nFLD) = Out(1);
         Out(2).Name = 'network';
         Out(2).Geom = 'POLYL';
         Out(2).Coords = 'xy';
@@ -604,6 +627,16 @@ switch FI.FileType
             Out(nFLD+i).varid = uST{i};
         end
         nFLD = nFLD+nST;
+        %
+        nFLD = nFLD+1; % skip one for separator
+        if hasObs
+            nFLD = nFLD+1;
+            Out(nFLD).Name = 'observation points';
+            Out(nFLD).Geom = 'PNT';
+            Out(nFLD).Coords = 'xy';
+            Out(nFLD).NVal = 4;
+            Out(nFLD).DimFlag(M_) = 1;
+        end
         %
         for i = 1:length(flds)
             if isfield(FI,flds{i})
@@ -866,12 +899,11 @@ switch FI.FileType
                 F=inifile('cgeti',FI.ntw,'Branch','gridPointsCount');
                 sz(M_) = sum([F{:}]);
             case 'lateral discharges';
-                F=inifile('geti',FI.latLoc,'LateralDischarge','id');
-                if iscell(F)
-                    sz(M_) = length(F);
-                else
-                    sz(M_) = 1;
-                end
+                F=inifile('cgetstringi',FI.latLoc,'LateralDischarge','id');
+                sz(M_) = length(F);
+            case 'observation points'
+                F=inifile('cgetstringi',FI.obs,'ObservationPoint','id');
+                sz(M_) = length(F);
             otherwise
                 if strcmp(Props.Name,'xyz cross section lines') || ...
                         ~isempty(strfind(Props.Name,'cross section points'))
@@ -999,6 +1031,15 @@ if ~isfield(FI,'latXY')
     bId = inifile('cgetstringi',FI.latLoc,'LateralDischarge','branchid');
     bCh = inifile('cgeti',FI.latLoc,'LateralDischarge','chainage');
     FI.latXY = branch_idchain2xy(FI.ntw,bId,bCh);
+end
+% -----------------------------------------------------------------------------
+
+% -----------------------------------------------------------------------------
+function FI = check_obsXY(FI)
+if ~isfield(FI,'obsXY')
+    bId = inifile('cgetstringi',FI.obs,'ObservationPoint','branchid');
+    bCh = inifile('cgeti',FI.obs,'ObservationPoint','chainage');
+    FI.obsXY = branch_idchain2xy(FI.ntw,bId,bCh);
 end
 % -----------------------------------------------------------------------------
 
