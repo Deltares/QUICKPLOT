@@ -179,9 +179,9 @@ if loc(1)=='v', % Append vertical scale to right of current plot
    % set up axes deletefcn
    set(ax,'tag','Colorbar','deletefcn','qp_colorbar delete')
 
-elseif loc(1)=='h', % Append horizontal scale to top of current plot
+elseif loc(1)=='h' % Append horizontal scale to top of current plot
 
-   if isempty(ax),
+   if isempty(ax)
       units = get(h,'units'); set(h,'units','normalized')
       pos = get(h,'Position');
       stripe = 0.075; space = 0.1;
@@ -229,7 +229,12 @@ ud.PlotHandle = h;
 set(ax,'userdata',ud)
 set(GCF,'currentaxes',origCurAxes)
 set(GCF,'NextPlot',origNextPlot)
-if ~isempty(legend)
+try
+    hasLegend = ~isempty(ax.Legend);
+catch
+   hasLegend = ~isempty(legend);
+end
+if hasLegend
    legend % Update legend
 end
 if nargout>0, handle = ax; end
