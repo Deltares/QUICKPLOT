@@ -344,6 +344,7 @@ function hNew = plot_polygons_fill(XY,V,Parent,Ops)
 hasval = ~isempty(V);
 nnodes = cellfun('size',XY,1);
 unodes = unique(nnodes);
+unodes(unodes==0)=[];
 hNew = zeros(length(unodes),1);
 for i = 1:length(unodes)
     n = unodes(i);
