@@ -163,14 +163,14 @@ end
 
 
 function hNew = plot_polygons(XY,val,Parent,Ops)
-hNewL = plot_polygons_outline(XY,val,Parent,Ops);
 if strcmp(Ops.facecolour,'none')
-    hNew = hNewL;
+    hNewP = [];
 else
     [XY,val] = process_polygons_parts(XY,val);
     hNewP = plot_polygons_fill(XY,val,Parent,Ops);
-    hNew = [hNewL;hNewP];
 end
+hNewL = plot_polygons_outline(XY,val,Parent,Ops);
+hNew = [hNewL;hNewP];
 
 function hNew = plot_polygons_outline(XY,val,Parent,Ops)
 len = cellfun('length',XY);
