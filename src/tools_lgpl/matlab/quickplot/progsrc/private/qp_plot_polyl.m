@@ -167,10 +167,11 @@ if strcmp(Ops.facecolour,'none')
     hNewP = [];
 else
     [XYP,valP] = process_polygons_parts(XY,val);
-    hNewP = plot_polygons_fill(XYP,val,Parent,Ops);
+    hNewP = plot_polygons_fill(XYP,valP,Parent,Ops);
 end
-hNewL = plot_polygons_outline(XY,valP,Parent,Ops);
+hNewL = plot_polygons_outline(XY,val,Parent,Ops);
 hNew = [hNewL;hNewP];
+
 
 function hNew = plot_polygons_outline(XY,val,Parent,Ops)
 len = cellfun('length',XY);
