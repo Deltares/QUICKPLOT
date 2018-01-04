@@ -32,7 +32,7 @@ function [xy,cLabels,cv] = process_polygons(xy,fc,cv,Thresholds)
 %   $Id$
 
 contourfstyle = 'structured';
-for i=1:size(fc)
+for i=1:length(fc)
     if size(fc{i},2)>3
         % this is a real polygon, this can't be the output of a tricontourf
         % call.
@@ -41,6 +41,7 @@ for i=1:size(fc)
         % this is a set of triangles which is created by tricontourf and
         % not by contourf
         contourfstyle = 'tri';
+        break
     end
 end
 %
@@ -70,13 +71,14 @@ cLabels={'Min','Max'};
 %
 switch contourfstyle
     case 'structured'
-        [xy,cv] = clip_polygons(xy,cv);
+        [xy,cv] = clip_polygons(xy,cv,false);
     case 'tri'
         [xy,cv] = tri2polygons(xy,fc,cv);
 end
 
 
 function [xy,cv] = tri2polygons(xy,fc,cv)
+cv = mat2cell(cv,ones(1,size(cv,1)),2);
 for part = 1:length(xy)
     xyp = xy{part};
     fcp = fc{part};
@@ -92,28 +94,30 @@ for part = 1:length(xy)
     n1 = contour(1);
     n2 = contour(2);
     %
+    [snodes,irow] = sort(edges(:));
+    irow = mod(irow-1,size(edges,1))+1;
+    istart = cumsum([1;accumarray(snodes,1)]);
+    %
     % mark edge as traversed
     edges(1,:) = NaN;
     %
     i = 2;
     while 1
-        l2 = any(edges==n2,2);
         %
-        if sum(l2)==1
-            % just one edge continues from here
-            % we can use l2 as selection
-        else
-            % multiple edges continue from here
-            % take the first one for the time being but this may not
-            % be correct since we may end up with two contours that partially
-            % overlap. each consisting partly of an outer contour and an
-            % inner contour.
-            l2 = find(l2);
-            l2 = l2(1);
+        % search for an edge that connects to node n2.
+        % these edges are numbered irow(istart(n2):istart(n2+1)-1)
+        % they may already be traversed, so let's check which one is available
+        %
+        for r2 = istart(n2):istart(n2+1)-1
+            l2 = irow(r2);
+            if edges(l2,1)==n2
+                n3 = edges(l2,2);
+                break
+            elseif edges(l2,2)==n2
+                n3 = edges(l2,1);
+                break
+            end
         end
-        % get the number of the other node
-        n3 = edges(l2,:);
-        n3(n3==n2)=[];
         %
         % add the node to the contour
         i=i+1;
@@ -136,6 +140,7 @@ for part = 1:length(xy)
                 n1 = contour(i+2);
                 n2 = contour(i+3);
                 i = i+3;
+                edges(e,:) = NaN;
             end
         else
             % continue the search from the latest node
@@ -143,19 +148,29 @@ for part = 1:length(xy)
         end
     end
     %
-    % TODO: check here how many polygons have been created and whether they represent outlines or holes
-    %
     % put contour back into xy
     contour = contour(1:i);
     bpoint = isnan(contour);
-    contour(bpoint) = 1;
-    xyp = xyp(contour,1:2);
-    xyp(bpoint,:) = NaN;
-    xy{part} = xyp;
+    nparts = sum(bpoint)+1;
+    if nparts==1
+        xy{part} = {xyp(contour,1:2)};
+    else
+        bpoint = [0 find(bpoint) i+1];
+        xypc = cell(nparts,1);
+        for i = 1:nparts
+            xypc{i} = xyp(contour(bpoint(i)+1:bpoint(i+1)-1),1:2);
+        end
+        cvp = repmat(cv{part,:},nparts,1);
+        %[xypc,cvp] = clip_polygons(xypc,cvp,true);
+        xy{part} = xypc;
+        cv{part} = cvp;
+    end
 end
+xy = cat(1,xy{:});
+cv = cat(1,cv{:});
 
 
-function [xy,cv] = clip_polygons(xy,cv)
+function [xy,cv] = clip_polygons(xy,cv,quick)
 %
 % remove individual points
 %
@@ -173,10 +188,20 @@ end
 inside = false(length(xy));
 s = warning('query','MATLAB:inpolygon:ModelingWorld');
 warning('off','MATLAB:inpolygon:ModelingWorld')
-for i=1:length(xy)
-    for j=1:length(xy)
-        if i~=j
-            inside(i,j) = all(inpolygon(xy{i}(:,1),xy{i}(:,2),xy{j}(:,1),xy{j}(:,2)));
+if quick
+    for i=1:length(xy)
+        for j=1:length(xy)
+            if i~=j
+                inside(i,j) = inpolygon(xy{i}(1,1),xy{i}(1,2),xy{j}(:,1),xy{j}(:,2));
+            end
+        end
+    end
+else
+    for i=1:length(xy)
+        for j=1:length(xy)
+            if i~=j
+                inside(i,j) = all(inpolygon(xy{i}(:,1),xy{i}(:,2),xy{j}(:,1),xy{j}(:,2)));
+            end
         end
     end
 end
@@ -331,7 +356,12 @@ while changed
             for part = 1:length(xy1)
                 % inpolygon accepts holes when hole outline is defined with
                 % opposite direction and parts must be separated by NaNs
-                if all(inpolygon(xy2(:,1),xy2(:,2),xy1{part}(:,1),xy1{part}(:,2)));
+                if quick
+                    c = inpolygon(xy2(1,1),xy2(1,2),xy1{part}(:,1),xy1{part}(:,2));
+                else
+                    c = all(inpolygon(xy2(:,1),xy2(:,2),xy1{part}(:,1),xy1{part}(:,2)));
+                end
+                if c
                     % inside this part
                     xy1{part} = [xy1{part};NaN NaN;xy2];
                     % process next hole
