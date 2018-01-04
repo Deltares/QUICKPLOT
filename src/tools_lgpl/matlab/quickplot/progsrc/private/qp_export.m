@@ -767,10 +767,15 @@ for f=1:ntim
                             UD=get(hNew0,'userdata');
                             Thresholds=UD.XInfo.Thresholds;
                             for i=1:length(xy)
-                                xy{i}=xy{i}(1:end-1,:);
-                                cv{i}=Thresholds(cv{i}(1));
+                                if ~isempty(xy{i}) && isnan(xy{i}(end,1))
+                                    xy{i}=xy{i}(1:end-1,:);
+                                end
+                                if ~isempty(cv{i})
+                                    cv{i}=Thresholds(cv{i}(1));
+                                end
                             end
                             cv=cat(1,cv{:});
+                            xy(cellfun('isempty',xy)) = [];
                             cLabels={'Value'};
                             shapewrite(filename,'polyline',xy,cLabels,cv)
                         case 'thin dams'
