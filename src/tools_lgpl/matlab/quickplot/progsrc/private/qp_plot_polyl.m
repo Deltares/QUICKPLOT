@@ -166,10 +166,10 @@ function hNew = plot_polygons(XY,val,Parent,Ops)
 if strcmp(Ops.facecolour,'none')
     hNewP = [];
 else
-    [XY,val] = process_polygons_parts(XY,val);
-    hNewP = plot_polygons_fill(XY,val,Parent,Ops);
+    [XYP,valP] = process_polygons_parts(XY,val);
+    hNewP = plot_polygons_fill(XYP,val,Parent,Ops);
 end
-hNewL = plot_polygons_outline(XY,val,Parent,Ops);
+hNewL = plot_polygons_outline(XY,valP,Parent,Ops);
 hNew = [hNewL;hNewP];
 
 function hNew = plot_polygons_outline(XY,val,Parent,Ops)
