@@ -175,7 +175,7 @@ switch cmd
             for i=1:length(Labels)
                 Labels{i}=strrep(Labels{i},'_','\_');
             end
-            legend(Parent,hNew(end-(0:length(Labels)-1)),Labels,3);
+            legend(Parent,hNew(end-(0:length(Labels)-1)),Labels,'Location','SouthWest');
             %
             setappdata(Parent,'AxesType','Time-<blocking>')
             setappdata(Parent,'BasicAxesType','Time-<blocking>')
