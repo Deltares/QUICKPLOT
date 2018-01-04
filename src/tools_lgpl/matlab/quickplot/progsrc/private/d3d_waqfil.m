@@ -195,6 +195,7 @@ switch cmd
             setappdata(Parent,'AxesType','LimitingFactorsAxes')
             setappdata(getappdata(Parent,'LimitingFactorsAxes'), ...
                 'AxesType','LimitingFactorsAxes2')
+            colormap(getappdata(Parent,'LimitingFactorsAxes'),'jet')
         end
         varargout={hNew FI};
         return
