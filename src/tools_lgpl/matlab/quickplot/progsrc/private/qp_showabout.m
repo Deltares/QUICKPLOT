@@ -102,8 +102,8 @@ switch style
             'String','Delft3D-QUICKPLOT');
         
         if strcmp(qpdate,'<CREATIONDATE>')
-            voffset = 40;
-            str = vers;
+            voffset = 20;
+            str = {vers,['running in MATLAB ' version]};
         else
             voffset = 20;
             str = {vers,qpdate};
