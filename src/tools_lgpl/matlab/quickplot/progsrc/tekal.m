@@ -174,7 +174,7 @@ while i<=length(INP)
 end
 
 variable=0;
-fid=fopen(filename);
+fid=fopen(filename,'r');
 if fid<0
     error('Cannot open file ...')
 end
@@ -303,7 +303,7 @@ while 1
                         dim(1)=N;
                         FileInfo.Field(variable).Size(2)=N;
                     end
-                    [Data,ErrorFound] = read_numeric(fid,dim,TryToCorrect,variable);
+                    [Data,ErrorFound] = read_numeric(fid,FileInfo.Field(variable).Name,dim,TryToCorrect,variable);
                     if ErrorFound
                         break
                     end
@@ -389,7 +389,7 @@ try
             Data{i} = FileInfo.Field(v).Data;
         else
             if fid<0
-                fid=fopen(FileInfo.FileName);
+                fid=fopen(FileInfo.FileName,'r');
             end
             fseek(fid,FileInfo.Field(v).Offset,-1);
             if length(FileInfo.Field(v).Size)>1
@@ -402,7 +402,7 @@ try
                     data = read_annotation(fid,dim);
                 otherwise %'numeric' % all numerics; use fscanf
                     %Data=fscanf(fid,'%f',dim);
-                    data = read_numeric(fid,dim,0,v);
+                    data = read_numeric(fid,FileInfo.Field(v).Name,dim,0,v);
                     
                     % replace 999999 by Not-a-Numbers
                     data(data(:)==999999)=NaN;
@@ -452,14 +452,14 @@ Data{1}=Data{1}';
 Data{2}=Data{2}';
 
 
-function [Data,ErrorFound] = read_numeric(fid,dim,TryToCorrect,variable)
+function [Data,ErrorFound] = read_numeric(fid,BlockName,dim,TryToCorrect,variable)
 offset     = ftell(fid);
 ErrorFound = 0;
 try
     if ~isfinite(dim(2))
-        d2 = textscan(fid,[repmat('%f ',1,dim(1)) '%*s']); % read until problem occurs (hopefully the name of the next block or eof)
+        d2 = textscan(fid,[repmat('%f%*[ ]',1,dim(1)-1) '%f%*s'],'delimiter','','whitespace',''); % read until problem occurs (hopefully the name of the next block or eof)
     else
-        d2 = textscan(fid,[repmat('%f ',1,dim(1)) '%*s'],dim(2));
+        d2 = textscan(fid,[repmat('%f%*[ ]',1,dim(1)-1) '%f%*s'],dim(2),'delimiter','','whitespace','');
     end
     Data = cat(2,d2{:});
     textscan_failed = 0;
@@ -501,13 +501,14 @@ if textscan_failed
                     rowStr = [rowFirst sscanf(Chars(Nxt:end),n([1 3:end]),1)];
                 end
                 Msg=sprintf(['Field %i labelled ''%s''\n' ...
-                    'Unable to interpret data on row %i: ''%s''\n' ...
-                    'Data field %i is probably damaged.'], ...
+                    'Unable to interpret "%s" at character %i in data row %i:\n%s\n' ...
+                    'Data field is probably damaged.'], ...
                     variable, ...
-                    FileInfo.Field(variable).Name, ...
+                    BlockName, ...
+                    Chars(Nxt), ...
+                    Nxt, ...
                     floor(Nr/dim(1))+1, ...
-                    sscanf(Chars(Nxt:end),n([1 3:end]),1), ...
-                    variable);
+                    rowStr);
                 if ~TryToCorrect
                     fclose(fid);
                     error(Msg)
