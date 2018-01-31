@@ -1508,10 +1508,14 @@ switch cmd
         d3d_qp('editm*',MN')
         
     case 'convertmn2xy'
-        MW=UD.MainWin;
         XY = qp_gridview('convertmn2xy',UD.GridView.Fig);
         d3d_qp('editxy*',XY)
         
+    case 'reversemn'
+        MW=UD.MainWin;
+        MN = get(MW.EditMN,'userdata');
+        d3d_qp('editmn*',flipud(MN))
+
     case {'editmn*','editmn','editxy*','editxy','loadxy'}
         MW=UD.MainWin;
         isMN = isequal(cmd(5:6),'mn');

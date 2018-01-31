@@ -581,8 +581,8 @@ filename = [caseid '.mdf'];
 inifile('write',fullfile(path,filename),MDF.mdf);
 
 
-function Val = propget(FILE,varargin)
-Val = rmhash(inifile('geti',FILE,varargin{:}));
+function Val = propget(varargin)
+Val = rmhash(inifile('geti',varargin{:}));
 
 
 function MFile = masterread(filename)
@@ -591,7 +591,7 @@ master = inifile('open',filename);
 master_path = fileparts(filename);
 %
 UNSPECIFIED = 'UNSPECIFIED';
-Program = inifile('geti',master,'model','Program',UNSPECIFIED);
+Program = propget(master,'model','Program',UNSPECIFIED);
 if isequal(Program,UNSPECIFIED)
     if inifile('existsi',master,'WaveFileInformation')
         MFile.FileType = 'Delft3D D-Wave';
@@ -756,7 +756,7 @@ else
 end
 %
 attfiles = {...
-   'geometry','BathymetryFile','BedLevel'
+   'geometry','BedlevelFile','BedLevel'
    'geometry','DryPointsFile','DryPoints'
    'geometry','WaterLevIniFile','WaterLevIni'
    'geometry','LandBoundaryFile','LandBoundary'
@@ -782,7 +782,70 @@ for i = 1:size(attfiles,1)
     fld = attfiles{i,2};
     key = attfiles{i,3};
     %
-    filename = propget(MF.mdu,grp,fld,'');
+    if strcmp(key,'BedLevel')
+        Missing = -999;
+        bltyp = propget(MF.mdu,grp,'BedlevType',Missing);
+        if bltyp == Missing
+            bltyp = propget(MF.mdu,grp,'BotlevType',Missing);
+            if bltyp == Missing
+                bltyp = 3;
+            end
+        end
+        MF.BedLevelType = bltyp;
+        %
+        zkuni = -5;
+        zkuni = propget(MF.mdu,grp,'BotLevUni',zkuni);
+        zkuni = propget(MF.mdu,grp,'BedLevUni',zkuni);
+        VNames = {F.Dataset.Name}';
+        %
+        if bltyp == 1
+            % bed levels specified at faces: from samples or net file
+            % ... data from Bathymetry/BedlevelFile
+            filename = propget(MF.mdu,grp,fld,'');
+            if isempty(filename)
+                filename = propget(MF.mdu,grp,'BathymetryFile','');
+            end
+            if isempty(filename) % in FM: if file not exists ...
+                % ... variable with standard name "altitude" at cell centres from mesh file
+                % ... variable with name "mesh2d_flowelem_bl" from mesh file
+                SNames = get_standard_names(F);
+                ibl2d = strcmp('altitude',SNames);
+                if none(ibl2d)
+                    ibl2d = strcmp('mesh2d_flowelem_bl',VNames);
+                end
+                ibl2d = find(ibl2d)-1;
+                if ~isempty(ibl2d)
+                    % use bed level from mesh file
+                    iq = cellfun(@(x) isequal(x,ibl2d),{Q.varid}');
+                    MF.BedLevel = Q(iq);
+                else
+                    % use uniform bed level
+                    MF.BedLevel = zkuni;
+                end
+                continue
+            end
+        elseif bltyp == 2
+            % bed levels specified at edges: always from samples
+        else
+            % bed levels specified at nodes: always from mesh file
+            ibl2d = strcmp('NetNode_z',VNames);
+            if none(ibl2d)
+                ibl2d = strcmp('node_z',VNames);
+            end
+            ibl2d = find(ibl2d)-1;
+            if ~isempty(ibl2d)
+                % use bed level from mesh file
+                iq = cellfun(@(x) isequal(x,ibl2d),{Q.varid}');
+                MF.BedLevel = Q(iq);
+            else
+                % use uniform bed level
+                MF.BedLevel = zkuni;
+            end
+            continue
+        end
+    else
+        filename = propget(MF.mdu,grp,fld,'');
+    end
     if ~isempty(filename)
         filename = relpath(md_path,filename);
         switch key
@@ -867,11 +930,80 @@ for i = 1:size(attfiles,1)
                     end
                 end
             case 'ExtForceNew'
-                F = inifile('open',filename);
+                F = [];
+                F.File = inifile('open',filename);
+                ext_path = fileparts(filename);
+                if inifile('exists',F.File,'boundary')>0
+                    BndTypes = inifile('cgetstring',F.File,'boundary','quantity');
+                    BndLocs  = inifile('cgetstring',F.File,'boundary','locationfile');
+                    BndForce = inifile('cgetstring',F.File,'boundary','forcingfile');
+                    uBndTypes = unique(BndTypes);
+                    F.Bnd.Types = uBndTypes;
+                    BndInd = cellfun(@(f)find(strcmp(f,BndTypes)),F.Bnd.Types,'uniformoutput',false);
+                    %
+                    [BndLocs,~,ic] = unique(BndLocs);
+                    for iBL = length(BndLocs):-1:1
+                        bndfilename = relpath(ext_path,BndLocs{iBL});
+                        F.BndLoc.Files{iBL} = tekal('open',bndfilename,'loaddata');
+                        [p,BndLocs{iBL}] = fileparts(BndLocs{iBL});
+                    end
+                    F.BndLoc.Names = BndLocs;
+                    BndLocs = BndLocs(ic);
+                    F.Bnd.Locs = cellfun(@(f)BndLocs(f),BndInd,'uniformoutput',false);
+                    %
+                    [uBndForce,~,ic] = unique(BndForce);
+                    for iBF = length(uBndForce):-1:1
+                        bndfilename = relpath(ext_path,uBndForce{iBF});
+                        F.BndForce.Files{iBF} = inifile('open',bndfilename);
+                    end
+                    BndForce = F.BndForce.Files(ic);
+                    F.Bnd.Forcing = cellfun(@(f)BndForce(f),BndInd,'uniformoutput',false);
+                    %
+                    for iBT = 1:length(F.Bnd.Types)
+                        BTp  = F.Bnd.Types{iBT};
+                        Locs = F.Bnd.Locs{iBT};
+                        for iBL = 1:length(Locs)
+                            Loc = Locs{iBL};
+                            ForceFile = F.Bnd.Forcing{iBT}{iBL};
+                            %fprintf('Searching for %s at %s in %s\n',BTp,Loc,ForceFile.FileName);
+                            [nForcings,iQ]=inifile('exists',ForceFile,'forcing');
+                            forcesThisLocAndType = false(size(ForceFile.Data,1));
+                            for iFQ = 1:nForcings
+                                Name = inifile('get',ForceFile,iQ(iFQ),'Name');
+                                if ~strncmp(Name,Loc,length(Loc))
+                                    continue
+                                end
+                                Qnts = inifile('get',ForceFile,iQ(iFQ),'Quantity');
+                                if ~strncmp(Qnts{end},BTp,length(BTp))
+                                    continue
+                                end
+                                forcesThisLocAndType(iQ(iFQ)) = true;
+                            end
+                            ForceFile.Data = ForceFile.Data(forcesThisLocAndType,:);
+                            F.Bnd.Forcing{iBT}{iBL} = ForceFile;
+                        end
+                    end
+                else
+                    F.Bnd.Types = {};
+                end
             otherwise
                 F = filename;
         end
         MF.(key) = F;
+    end
+end
+
+
+function SNames = get_standard_names(F)
+N = length(F.Dataset);
+SNames = cell(N,1);
+for i = 1:N
+    if ~isempty(F.Dataset(i).Attribute)
+        Att = {F.Dataset(i).Attribute.Name};
+        SN = strcmp(Att,'standard_name');
+        if any(SN)
+            SNames{i} = F.Dataset(i).Attribute(SN).Value;
+        end
     end
 end
 

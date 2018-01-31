@@ -49,8 +49,12 @@ NVal       = Param.NVal;
 DimFlag=Props.DimFlag;
 Thresholds=Ops.Thresholds;
 
+NeedsCell = ~strcmp(Ops.facecolour,'none') || isfield(data,'Val');
+if NVal==4 && isfield(Ops,'presentationtype') && strcmp(Ops.presentationtype,'polylines')
+    NeedsCell = 0;
+end
 if isfield(data,'XY') && iscell(data.XY)
-    if ~strcmp(Ops.facecolour,'none') || isfield(data,'Val')
+    if NeedsCell
         % no change
     else
         len = cellfun('length',data.XY);
@@ -68,7 +72,7 @@ else
         data.XY = [data.X data.Y];
         data = rmfield(data,{'X','Y'});
     end
-    if ~strcmp(Ops.facecolour,'none') || isfield(data,'Val')
+    if NeedsCell
         breaks = none(isnan(data.XY),2);
         % could use mat2cell below, but this would keep all the singleton NaNs
         PolyStartEnd = findseries(breaks);
@@ -96,18 +100,22 @@ else
     end
 end
 %
-if isfield(Ops,'presentationtype') && ...
-        (strcmp(Ops.presentationtype,'markers') ...
-        || strcmp(Ops.presentationtype,'values') ...
-        || strcmp(Ops.presentationtype,'labels'))
-    if iscell(data.XY)
-        XY = zeros(length(data.XY),2);
-        for i = 1:length(data.XY)
-            d = pathdistance(data.XY{i}(:,1),data.XY{i}(:,2));
-            uNode = d~=[NaN;d(1:end-1)];
-            XY(i,:) = interp1(d(uNode),data.XY{i}(uNode,1:2),d(end)/2);
-        end
-        data.XY = XY;
+if isfield(Ops,'presentationtype')
+    switch Ops.presentationtype
+        case {'markers','values','labels'}
+            if iscell(data.XY)
+                XY = zeros(length(data.XY),2);
+                for i = 1:length(data.XY)
+                    d = pathdistance(data.XY{i}(:,1),data.XY{i}(:,2));
+                    uNode = d~=[NaN;d(1:end-1)];
+                    XY(i,:) = interp1(d(uNode),data.XY{i}(uNode,1:2),d(end)/2);
+                end
+                data.XY = XY;
+            end
+        otherwise
+            if NVal==4
+                NVal=0;
+            end
     end
 end
 switch NVal

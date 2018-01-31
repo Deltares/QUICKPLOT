@@ -269,10 +269,13 @@ if iscell(XY)
         ranges(4)=max(ranges(4),max(XY{i}(:,2)));
     end
 else
-    ranges(1)=min(XY(:,1));
-    ranges(2)=min(XY(:,2));
-    ranges(3)=max(XY(:,1));
-    ranges(4)=max(XY(:,2));
+    pMin = min(Patch(:));
+    Patch(isnan(Patch)) = pMin;
+    xy = XY(Patch,:);
+    ranges(1)=min(xy(:,1));
+    ranges(2)=min(xy(:,2));
+    ranges(3)=max(xy(:,1));
+    ranges(4)=max(xy(:,2));
 end
 fwrite(fid,ranges,'float64');
 fwrite(fidx,ranges,'float64');

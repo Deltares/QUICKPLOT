@@ -549,6 +549,7 @@ if strcmp(get(MW.HSelType,'enable'),'on')
     set(MW.MN,'enable','on',vis{:})
     set(MW.EditMN,'enable','on','backgroundcolor',Active,vis{:})
     set(MW.MN2XY,vis{:})
+    set(MW.MNrev,vis{:})
     if ~isempty(Props) && isfield(Props,'DimFlag') && Props(fld).DimFlag(M_) && ~Props(fld).DimFlag(N_)
         set(MW.MN2M,vis{:})
     else

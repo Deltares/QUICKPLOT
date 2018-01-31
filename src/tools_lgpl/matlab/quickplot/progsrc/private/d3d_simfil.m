@@ -404,6 +404,16 @@ switch FI.FileType(9:end)
                 Props.Fld        = 1;
                 Props.UseGrid    = 1;
                 Ans = gridfil(F,idom,Props,'griddata',idx{M_},idx{N_});
+            case 'observation points'
+                I0 = sub2ind(size(FI.grd.X),FI.sta.MN(idx{M_},1),FI.sta.MN(idx{M_},2));
+                d1 = size(FI.grd.X,1);
+                Ans.XY =  0;
+                for i = [0 1 d1 d1+1]
+                    I = max(I0-i,1); 
+                    Ans.XY = Ans.XY + [FI.grd.X(I) FI.grd.Y(I)];
+                end
+                Ans.XY = Ans.XY/4;
+                Ans.Val = FI.sta.Name(idx{M_});
             otherwise
                 Ans = [];
         end
@@ -411,6 +421,11 @@ switch FI.FileType(9:end)
         switch Props.Name
             case 'mesh'
                 Ans = netcdffil(FI.mesh.nc_file,idom,FI.mesh.quant,'grid',idx{M_});
+            case 'bed levels'
+                Ans = netcdffil(FI.mesh.nc_file,idom,FI.BedLevel,'griddata',idx{M_});
+            case 'bed level'
+                Ans = netcdffil(FI.mesh.nc_file,idom,FI.mesh.quant,'grid',idx{M_});
+                Ans.Val = repmat(FI.BedLevel,size(Ans.X));
             case 'bed level samples'
                 Ans.XY = FI.BedLevel(idx{M_},1:2);
                 Ans.Val = FI.BedLevel(idx{M_},3);
@@ -421,7 +436,20 @@ switch FI.FileType(9:end)
                 Ans.XY = {FI.Crs.Field(idx{M_}).Data};
                 Ans.Val = {FI.Crs.Field(idx{M_}).Name};
             otherwise
-                Ans = [];
+                if ~isempty(strfind(Props.Name,'open boundaries'))
+                    ibtp = strcmp(FI.ExtForceNew.Bnd.Types,strtok(Props.Name));
+                    bnds = FI.ExtForceNew.Bnd.Locs{ibtp};
+                    bnds = bnds(idx{M_});
+                    [~,ibloc] = ismember(bnds,FI.ExtForceNew.BndLoc.Names);
+                    bfil = FI.ExtForceNew.BndLoc.Files(ibloc);
+                    Ans.XY = cell(length(bfil),1);
+                    for i = 1:length(bfil)
+                        Ans.XY{i} = bfil{i}.Field.Data;
+                    end
+                    Ans.Val = bnds;
+                else
+                    Ans = [];
+                end
         end
     case 'D-Wave'
         switch Props.Name
@@ -797,7 +825,7 @@ switch FI.FileType
             end
         end
     case 'Delft3D D-Flow FM'
-        flds = {'mesh','-','BedLevel','-','ExtForce','-','Obs','Crs'};
+        flds = {'mesh','-','BedLevel','-','ExtForce','-','ExtForceNew','-','Obs','Crs'};
         nfld = 0;
         for i = 1:length(flds)
             if isequal(flds{i},'-')
@@ -807,7 +835,12 @@ switch FI.FileType
                     case 'BedLevel'
                         nfld = nfld+1;
                     case 'ExtForce'
-                        nfld = nfld+0;
+                        nfld = nfld+length(unique({FI.ExtForce.Quantity}));
+                    case 'ExtForceNew'
+                        nfld = nfld+length(FI.ExtForceNew.Bnd.Types);
+                        for iBT = 1:length(FI.ExtForceNew.Bnd.Types) % maximum number: assumes all forcings are time series
+                            nfld = nfld+sum(cellfun(@(f)size(f.Data,1),FI.ExtForceNew.Bnd.Forcing{iBT}));
+                        end
                     otherwise
                         nfld = nfld+1;
                 end
@@ -830,14 +863,112 @@ switch FI.FileType
                         Out(ifld).DimFlag(M_) = 6;
                     case 'BedLevel'
                         ifld = ifld+1;
-                        Out(ifld).Name = 'bed level samples';
-                        Out(ifld).Units = 'm';
-                        Out(ifld).Geom = 'PNT';
-                        Out(ifld).Coords = 'xy';
-                        Out(ifld).DimFlag(M_) = 1;
-                        Out(ifld).NVal = 1;
+                        BL = FI.(flds{i});
+                        if isstruct(BL) % quantity on mesh
+                            Out(ifld).Name = 'bed levels';
+                            Out(ifld).Units = 'm';
+                            Out(ifld).Geom = 'UGRID-FACE';
+                            Out(ifld).Coords = 'xy';
+                            Out(ifld).DimFlag(M_) = 6;
+                            Out(ifld).NVal = 1;
+                        elseif isscalar(BL)
+                            Out(ifld).Name = 'bed level';
+                            Out(ifld).Units = 'm';
+                            Out(ifld).Geom = 'UGRID-NODE';
+                            Out(ifld).Coords = 'xy';
+                            Out(ifld).DimFlag(M_) = 6;
+                            Out(ifld).NVal = 1;
+                        else
+                            Out(ifld).Name = 'bed level samples';
+                            Out(ifld).Units = 'm';
+                            Out(ifld).Geom = 'PNT';
+                            Out(ifld).Coords = 'xy';
+                            Out(ifld).DimFlag(M_) = 1;
+                            Out(ifld).NVal = 1;
+                        end
                     case 'ExtForce'
-                        %none
+                        forces = unique({FI.ExtForce.Quantity});
+                        translate = {'lowergatelevel'               'lower gate level'                          'm'
+                            'damlevel'                              'dam level'                                 'm'
+                            'pump'                                  'pump?'                                     '' % discharge?
+                            'horizontaleddyviscositycoefficient'    'horizontal eddy viscosity coefficient'     ''
+                            'horizontaleddydiffusivitycoefficient'  'horizontal eddy diffusivity coefficient'   ''
+                            'bedlevel'                              'bed levels'                                'm'
+                            'initialwaterlevel'                     'initial water level'                       'm'
+                            'initialsalinity'                       'initial salinity'                          'ppt'
+                            'initialsalinitytop'                    'initial salinity near water surface'       'ppt'
+                            'initialverticaltemperatureprofile'     'initial vertical temperature profile'      'degC'
+                            'initialverticalsalinityprofile'        'initial vertical salinity profile'         'ppt'
+                            'windstresscoefficient'                 'wind stress coefficient'                   ''
+                            'stemdiameter'                          'stem diameter'                             'm'
+                            'stemdensity'                           'stem density'                              ''
+                            'stemheight'                            'stem height'                               'm'
+                            'interceptionlayerthickness'            'interception layer thickness'              'm'
+                            'windx'                                 'wind velocity, x-component'                'm/s'
+                            'windy'                                 'wind velocity, y-component'                'm/s'
+                            'rainfall'                              'rainfall'                                  ''
+                            'airpressure'                           'air pressure'                              ''
+                            'atmosphericpressure'                   'air pressure'                              ''};
+                        for iforce = 1:length(forces)
+                            ifld = ifld+1;
+                            fName = forces{iforce};
+                            switch fName
+                                case 'frictioncoefficient'
+                                    frctyp = inifile('get',FI.mdu,'physics','UnifFrictType',1);
+                                    switch frctyp
+                                        case 0
+                                            ForceName  = 'Chezy C';
+                                            ForceUnits = 'm^{1/2}/s';
+                                        case 1
+                                            ForceName  = 'Manning n';
+                                            ForceUnits = 's/m^{1/3}';
+                                        case 2
+                                            ForceName  = 'White-Colebrook/Nikuradse k';
+                                            ForceUnits = 'm';
+                                        case 3
+                                            ForceName  = 'White-Colebrook/Nikuradse k (WAQUA implementation)';
+                                            ForceUnits = 'm';
+                                    end
+                                case translate(:,1)
+                                    ifrc = find(strcmp(fName,translate(:,1)));
+                                    ForceName  = translate{ifrc,2};
+                                    ForceUnits = translate{ifrc,3};
+                                otherwise
+                                    ForceName  = fName;
+                                    ForceUnits = 'm';
+                            end
+                            Out(ifld).Name  = ForceName;
+                            Out(ifld).Units = ForceUnits;
+                            Out(ifld).Geom = 'PNT';
+                            Out(ifld).Coords = 'xy';
+                            Out(ifld).DimFlag(M_) = 1;
+                            Out(ifld).NVal = 1;
+                        end
+                    case 'ExtForceNew'
+                        for itype = 1:length(FI.ExtForceNew.Bnd.Types)
+                            ifld = ifld+1;
+                            Out(ifld).Name = [FI.ExtForceNew.Bnd.Types{itype} ' open boundaries'];
+                            Out(ifld).Geom = 'POLYL';
+                            Out(ifld).Coords = 'xy';
+                            Out(ifld).DimFlag(M_) = 1;
+                            Out(ifld).NVal = 4;
+                            %
+                            for iloc = 1:length(FI.ExtForceNew.Bnd.Locs{itype})
+                                Force = FI.ExtForceNew.Bnd.Forcing{itype}{iloc};
+                                for ipnt = 1:size(Force.Data,1)
+                                    if ~strcmp(inifile('get',Force,ipnt,'Function'),'timeseries')
+                                        continue
+                                    end
+                                    ifld = ifld+1;
+                                    Loc = inifile('get',Force,ipnt,'Name');
+                                    Out(ifld).Name = [FI.ExtForceNew.Bnd.Types{itype} ' time series at ' Loc];
+                                    Out(ifld).Geom = 'PNT';
+                                    Out(ifld).Coords = 'xy';
+                                    Out(ifld).DimFlag(M_) = 1;
+                                    Out(ifld).NVal = 1;
+                                end
+                            end
+                        end
                     case 'Obs'
                         ifld = ifld+1;
                         Out(ifld).Name = 'observation points';
@@ -926,12 +1057,20 @@ switch FI.FileType
                 end
         end
     case 'Delft3D D-Flow2D3D'
-        MNK = inifile('geti',FI.mdf,'*','MNKmax');
-        sz([M_ N_]) = MNK(1:2);
+        switch Props.Name
+            case 'observation points'
+                sz(M_) = size(FI.sta.MN,1);
+            otherwise
+                MNK = inifile('geti',FI.mdf,'*','MNKmax');
+                sz([M_ N_]) = MNK(1:2);
+        end
     case 'Delft3D D-Flow FM'
         switch Props.Name
-            case 'mesh'
+            case {'mesh','bed level'}
                 grdSz = netcdffil(FI.mesh.nc_file,idom,FI.mesh.quant,'size');
+                sz(M_) = grdSz(M_);
+            case 'bed levels'
+                grdSz = netcdffil(FI.mesh.nc_file,idom,FI.BedLevel,'size');
                 sz(M_) = grdSz(M_);
             case 'bed level samples'
                 sz(M_) = size(FI.BedLevel,1);
@@ -939,6 +1078,11 @@ switch FI.FileType
                 sz(M_) = size(FI.Obs{1},1);
             case 'observation cross sections'
                 sz(M_) = length(FI.Crs.Field);
+            otherwise
+                if ~isempty(strfind(Props.Name,'open boundaries'))
+                    ibtp = strcmp(FI.ExtForceNew.Bnd.Types,strtok(Props.Name));
+                    sz(M_) = length(FI.ExtForceNew.Bnd.Locs{ibtp});
+                end
         end
     case 'Delft3D D-Wave'
         grdSz = size(FI.domain(idom).grd.X);

@@ -84,21 +84,38 @@ switch lcmd
             if nargin==3
                 % only Chapter
                 if strcmp(lcmd,'exists')
-                    lcmd = 'keywords';
+                    lcmd = 'chapters';
+                    chap = varargin{2};
                 else
-                    lcmd = 'keywordsi';
+                    lcmd = 'chaptersi';
+                    chap = lower(varargin{2});
                 end
-                A=chapkeys(lcmd,varargin{:});
+                A = chapfile(lcmd,varargin{1});
+                Amatch = strcmp(chap,A);
+                varargout{1} = sum(Amatch);
+                if nargout>1
+                    varargout{2} = find(Amatch);
+                end
+                return
             else
                 % Chapter/Keyword pair
+                [A,iChap] = inifile(lcmd,varargin{1:2});
                 if strcmp(lcmd,'exists')
-                    lcmd = 'get';
+                    lcmd = 'keywords';
+                    keyw = varargin{3};
                 else
-                    lcmd = 'geti';
+                    lcmd = 'keywordsi';
+                    keyw = lower(varargin{3});
                 end
-                A=getfield(lcmd,varargin{:});
+                %
+                M = zeros(size(iChap));
+                for i = 1:length(iChap)
+                    A = chapkeys(lcmd,varargin{1},iChap(i));
+                    M(i) = sum(strcmp(keyw,A));
+                end
+                varargout{1} = M;
+                return
             end
-            varargout{1} = true;
         catch
             varargout{1} = false;
         end

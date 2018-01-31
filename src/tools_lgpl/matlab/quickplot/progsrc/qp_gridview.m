@@ -112,42 +112,47 @@ switch cmd
         F=varargin{1};
         G=findobj(F,'tag','GRID');
         GRID=get(G,'userdata');
-        switch GRID.ValLocation
-            case 'NODE'
-                XY = [GRID.X(GRID.Selected.Range) GRID.Y(GRID.Selected.Range)];
-            case 'FACE'
-                Nodes = GRID.FaceNodeConnect(GRID.Selected.Range,:);
-                missing = isnan(Nodes);
-                Nodes(missing) = 1;
-                X = GRID.X(Nodes);
-                Y = GRID.Y(Nodes);
-                X(missing) = 0;
-                Y(missing) = 0;
-                X = sum(X,2);
-                Y = sum(Y,2);
-                nNodes = sum(~missing,2);
-                X = X./nNodes;
-                Y = Y./nNodes;
-                XY = [X Y];
-            case 'EDGE'
-                Nodes = GRID.EdgeNodeConnect(GRID.Selected.Range,:);
-                for i = 2:size(Nodes,1)
-                    if ismember(Nodes(i,1),Nodes(i-1,:))
-                        if i==2
-                            Nodes(i-1,:) = [Nodes(i-1,Nodes(i-1,:)~=Nodes(i,1)) Nodes(i,1)];
+        switch GRID.Type
+            case 'sgrid'
+                fprintf('To implement\n');
+            case 'ugrid'
+                switch GRID.ValLocation
+                    case 'NODE'
+                        XY = [GRID.X(GRID.Selected.Range) GRID.Y(GRID.Selected.Range)];
+                    case 'FACE'
+                        Nodes = GRID.FaceNodeConnect(GRID.Selected.Range,:);
+                        missing = isnan(Nodes);
+                        Nodes(missing) = 1;
+                        X = GRID.X(Nodes);
+                        Y = GRID.Y(Nodes);
+                        X(missing) = 0;
+                        Y(missing) = 0;
+                        X = sum(X,2);
+                        Y = sum(Y,2);
+                        nNodes = sum(~missing,2);
+                        X = X./nNodes;
+                        Y = Y./nNodes;
+                        XY = [X Y];
+                    case 'EDGE'
+                        Nodes = GRID.EdgeNodeConnect(GRID.Selected.Range,:);
+                        for i = 2:size(Nodes,1)
+                            if ismember(Nodes(i,1),Nodes(i-1,:))
+                                if i==2
+                                    Nodes(i-1,:) = [Nodes(i-1,Nodes(i-1,:)~=Nodes(i,1)) Nodes(i,1)];
+                                end
+                                Nodes(i,1) = NaN;
+                            elseif ismember(Nodes(i,2),Nodes(i-1,:))
+                                if i==2
+                                    Nodes(i-1,:) = [Nodes(i-1,Nodes(i-1,:)~=Nodes(i,2)) Nodes(i,2)];
+                                end
+                                Nodes(i,2) = NaN;
+                            end
                         end
-                        Nodes(i,1) = NaN;
-                    elseif ismember(Nodes(i,2),Nodes(i-1,:))
-                        if i==2
-                            Nodes(i-1,:) = [Nodes(i-1,Nodes(i-1,:)~=Nodes(i,2)) Nodes(i,2)];
-                        end
-                        Nodes(i,2) = NaN;
-                    end
+                        Nodes = Nodes';
+                        Nodes = Nodes(:);
+                        Nodes(isnan(Nodes)) = [];
+                        XY = [GRID.X(Nodes) GRID.Y(Nodes)];
                 end
-                Nodes = Nodes';
-                Nodes = Nodes(:);
-                Nodes(isnan(Nodes)) = [];
-                XY = [GRID.X(Nodes) GRID.Y(Nodes)];
         end
         GRID.Selected.Type = 'genline';
         GRID.Selected.Range = XY;
@@ -208,35 +213,76 @@ switch cmd
         i0=ij0(1);
         j0=ij0(2);
         %
-        [i,j]=trackpnt(gcbf);
-        midist=abs(i-i0);
-        mjdist=abs(j-j0);
-        switch cmd
-            case {'draglineup','draglinemotion'}
-                if midist<mjdist
-                    j1=j;
-                    i1=i0;
-                else
-                    i1=i;
-                    j1=j0;
+        switch GRID.Type
+            case 'sgrid'
+                [i,j]=trackpnt(gcbf);
+                midist=abs(i-i0);
+                mjdist=abs(j-j0);
+                switch cmd
+                    case {'draglineup','draglinemotion'}
+                        if midist<mjdist
+                            j1=j;
+                            i1=i0;
+                        else
+                            i1=i;
+                            j1=j0;
+                        end
+                        localdrawsel(gcbf,'range',[i0 i1 j0 j1])
+                        %---trackcoord start
+                        %trackxy(gcbf,pnt)
+                        MN=findobj(gcbf,'tag','MNcoord');
+                        set(MN,'string',sprintf('m,n: %i,%i',i1,j1))
+                        %---trackcoord stop
+                    case {'dragwholelineup','dragwholelinemotion'}
+                        if midist<mjdist
+                            localdrawsel(gcbf,'line',[i0 0 j0 inf])
+                        else
+                            localdrawsel(gcbf,'line',[i0 inf j0 0])
+                        end
+                        %---trackcoord start
+                        %trackxy(gcbf,pnt)
+                        MN=findobj(gcbf,'tag','MNcoord');
+                        set(MN,'string','m,n:')
+                        %---trackcoord stop
                 end
-                localdrawsel(gcbf,'range',[i0 i1 j0 j1])
-                %---trackcoord start
-                %trackxy(gcbf,pnt)
-                MN=findobj(gcbf,'tag','MNcoord');
-                set(MN,'string',sprintf('m,n: %i,%i',i1,j1))
-                %---trackcoord stop
-            case {'dragwholelineup','dragwholelinemotion'}
-                if midist<mjdist
-                    localdrawsel(gcbf,'line',[i0 0 j0 inf])
+            case 'ugrid'
+                % identify the grid lines
+                if isfield(GRID,'GridLines')
+                    GLines = GRID.GridLines;
                 else
-                    localdrawsel(gcbf,'line',[i0 inf j0 0])
+                    GLines = gridlines(GRID);
                 end
-                %---trackcoord start
-                %trackxy(gcbf,pnt)
-                MN=findobj(gcbf,'tag','MNcoord');
-                set(MN,'string','m,n:')
-                %---trackcoord stop
+                if isempty(GLines)
+                    % if none exist, stop selection
+                    cmd = 'up';
+                elseif length(GLines)==1
+                    % if one exists, select it and stop selection
+                    localdrawsel(gcbf,'pwline',GLines{1})
+                    cmd = 'up';
+                else
+                    % choose one of the lines
+                    idx = cat(2,GLines{:});
+                    i=trackpnt(gcbf,idx);
+                    idx = i; %find(idx==i);
+                    if idx(1)<=length(GLines{1})
+                        idx = 1;
+                    else
+                        idx = 2;
+                    end
+                    if strcmp(cmd(end-1:end),'up')
+                        % clear buffer
+                        if isfield(GRID,'GridLines')
+                            GRID = rmfield(GRID,'GridLines');
+                        end
+                    else
+                        % buffer lines
+                        if ~isfield(GRID,'GridLines')
+                            GRID.GridLines = GLines;
+                        end
+                    end
+                    set(G,'userdata',GRID)
+                    localdrawsel(gcbf,'pwline',GLines{idx})
+                end
         end
         if strcmp(cmd(end-1:end),'up')
             normalstate(gcbf)
@@ -794,6 +840,138 @@ switch cmd
         fprintf('Unkwown command: %s\n',cmd);
 end
 
+function GLines = gridlines(GRID)
+i = GRID.Selected.Range(1);
+switch GRID.ValLocation
+    case 'FACE'
+        FNC = GRID.FaceNodeConnect;
+        % check if this is a quad, if not then there are no "grid lines" 
+        if sum(~isnan(FNC(i,:)))~=4
+            GLines = {};
+            return
+        end
+        % cell with four nodes, hence fout edges
+        % construct face edge connectivity for full grid
+        Missing = isnan(FNC)';
+        NFaces = size(FNC,1);
+        NMaxNd = size(FNC,2);
+        NEdges = sum(~isnan(FNC),2);
+        for nd = 4:NMaxNd
+            M = isnan(FNC(:,nd));
+            if any(M)
+                FNC(M,nd) = FNC(M,nd);
+            end
+        end
+        FNC = FNC';
+        FNC = FNC(ceil([1:0.5:end 1]),:);
+        FNC = reshape(FNC,[2 numel(FNC)/2]);
+        FNC = sort(FNC)';
+        % FNC now contains NMaxNd node pairs of "edge nodes", give them
+        % unique numbers and mark all dummy edges as NaN
+        [~,~,iedge] = unique(FNC,'rows');
+        iface = repmat(1:NFaces,[NMaxNd 1]);
+        iface = iface(:);
+        %
+        iedge1 = iedge;
+        iedge1(Missing) = NaN;
+        [uedge1,IA1] = unique(iedge1);
+        iedge1(IA1) = NaN;
+        [uedge2,IA2] = unique(iedge1);
+        M = isnan(uedge2);
+        IA2(M) = [];
+        uedge2(M) = [];
+        EFC = NaN(max(iedge),2);
+        EFC(uedge1,1) = iface(IA1);
+        EFC(uedge2,2) = iface(IA2);
+        %
+        FFC = EFC(iedge,:);
+        FFC(FFC(:,1)==iface,1)=NaN;
+        FFC(FFC(:,2)==iface,2)=NaN;
+        FFC = max(FFC,[],2);
+        FFC = reshape(FFC,[NMaxNd NFaces])';
+        %
+        GLines = cell(1,2);
+        SingleGridline = 0;
+        for d = [1 3 2 4]
+            if d<=2
+                n = i;
+                in = 1;
+                gline = zeros(1,2*NFaces);
+                gline(in) = n;
+                CircularGridline = 0;
+            elseif CircularGridline
+                % already did a full loop and did administration, so just
+                % continue with second direction.
+                continue
+            end
+            n2 = FFC(n,d);
+            while ~isnan(n2)
+                in = in+1;
+                gline(in) = n2;
+                if NEdges(n2)~=4 % only continue if this face is also a quad
+                    break
+                end
+                idir = find(FFC(n2,:)==n);
+                if idir>2
+                    idir = idir-2;
+                else
+                    idir = idir+2;
+                end
+                if n2==i 
+                    if idir==d % detecting infinite loop
+                        CircularGridline = 1;
+                        in = in-1;
+                        break
+                    else % OK, we're going through this face a second time hence we only have one grid line
+                        SingleGridline = 1;
+                    end
+                end
+                n = n2;
+                n2 = FFC(n,idir);
+            end
+            if CircularGridline % always d<=2
+                if ~SingleGridline
+                    % The current list of faces starts and ends in the
+                    % selected face. Since this is the face of interest, it
+                    % seems to be better to split the loop as far as
+                    % possible from this face.
+                    im = round(in/2);
+                    GLines{d} = gline([im:in 1:im]);
+                else % Wow, special case: a single circular grid line!
+                    % Halfway might be close to the first face, so we need
+                    % to search for the face "furthest away".
+                    thisNode = find(gline(1:in)==i);
+                    in2 = thisNode(2);
+                    if in2 > in/2+1
+                        % most faces between 1 and in2
+                        im = round(in2/2);
+                    else
+                        % most faces between in2 and in+1 (=1)
+                        im = round((in2+in)/2);
+                    end
+                    GLines = {gline([im:in 1:in])};
+                    break
+                end
+            elseif d>2 % We have searched in two directions
+                if SingleGridline
+                    GLines = {gline(1:in)};
+                    break
+                else
+                    GLines{d-2} = gline(1:in);
+                end
+            else % d<=2
+                % flip the faces and continue searching in the other
+                % direction
+                gline(1:in) = gline(in:-1:1);
+                n = i;
+            end
+        end
+    case 'EDGE'
+        fprintf('To implement: gridline for EDGE location\n');
+    case 'NODE'
+        fprintf('To implement: gridline for NODE location\n');
+end
+
 function [mdist,indrng,i1,j1]=NearDiag(dist,i0,j0)
 sz=size(dist);
 szi=sz(1);
@@ -1099,7 +1277,10 @@ switch selection.Type
         end
         
     case 'genline'
-        if size(Range,1)==1
+        if isempty(Range)
+            set(SelectedPoint,'xdata',[],'ydata',[])
+            set(SelectedLine,'xdata',[],'ydata',[])
+        elseif size(Range,1)==1
             set(SelectedLine,'xdata',[],'ydata',[])
             set(SelectedPoint, ...
                 'xdata',Range(:,1), ...
@@ -1351,7 +1532,7 @@ else
     set(findall(F,'tag','gridviewrange'),'enable','off')
     set(findall(F,'tag','gridviewpiecewise'),'enable','off')
     set(findall(F,'tag','gridviewlineseg'),'enable','off')
-    set(findall(F,'tag','gridviewline'),'enable','off')
+    %set(findall(F,'tag','gridviewline'),'enable','off')
     if strcmp(GRID.Type,'network') || ...
             ~isfield(GRID,'FaceNodeConnect') || ...
             isempty(GRID.FaceNodeConnect)
@@ -1380,7 +1561,8 @@ xf = sprintf('%%.%if',min(3,6-floor(log10(abs(pnt(1))))));
 yf = sprintf('%%.%if',min(3,6-floor(log10(abs(pnt(2))))));
 set(XY,'string',sprintf(['x,y: ',xf,',',yf],pnt))
 
-function [i,j] = trackpnt(F)
+function [i,j] = trackpnt(F,idx)
+% idx is optional subset
 G = findobj(F,'tag','GRID');
 GRID = get(G,'userdata');
 pnt = get(get(G,'parent'),'currentpoint');
@@ -1411,6 +1593,10 @@ switch GRID.ValLocation
     case 'FACE'
         if strcmp(GRID.Type,'ugrid')
             Faces = GRID.FaceNodeConnect;
+            if nargin>1
+                Faces = Faces(idx,:);
+                % should do something to renumber ...
+            end
         else
             Faces = repmat(NaN,[size(GRID.X) 4]);
             Faces(:,:,1)         = reshape(1:numel(GRID.X),size(GRID.X));

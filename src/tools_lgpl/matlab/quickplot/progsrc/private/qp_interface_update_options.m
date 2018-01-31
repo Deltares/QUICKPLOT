@@ -950,10 +950,17 @@ if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'stri
         case 'polygons'
             lineproperties=1;
         case 'polylines'
-            markerflatfill=nval>0;
-            edgeflatcolour=nval>0;
-            SingleColor=0;
-            MultipleColors=1;
+            if nval==0 || nval==4
+                markerflatfill=0;
+                edgeflatcolour=0;
+                SingleColor=1;
+                MultipleColors=0;
+            else
+                markerflatfill=1;
+                edgeflatcolour=1;
+                SingleColor=0;
+                MultipleColors=1;
+            end
             lineproperties=1;
         case 'grid with numbers'
             ask_for_textprops=1;
