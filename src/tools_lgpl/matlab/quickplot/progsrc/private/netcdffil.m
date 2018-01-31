@@ -221,6 +221,28 @@ if DataRead && Props.NVal>0
                 Psi = Psi - min(Psi);
                 %
                 Ans.Val = Psi(idx{3});
+            case 'erosion_sedimentation'
+                [data, status] = qp_netcdf_get(FI,Props.varid{2},Props.DimName,idx);
+                if any(idx{T_}==1)
+                    first = find(idx{T_}==1);
+                    data1 = data(first(1),:);
+                else
+                    idx1 = idx;
+                    idx1{T_} = 1;
+                    [data1, status] = qp_netcdf_get(FI,Props.varid{2},Props.DimName,idx1);
+                end
+                for i = 1:length(idx{T_})
+                    data(i,:) = data(i,:) - data1;
+                end
+                szData = size(data);
+                %
+                if length(idx{T_})==1
+                    szV = [size(data) 1];
+                    data = reshape(data,szV(2:end));
+                    removeTime = 1;
+                end
+                %
+                Ans.Val = data;
             case {'node_index','edge_index','face_index'}
                 Ans.Val = idx{3}(:);
             otherwise
@@ -243,13 +265,6 @@ if DataRead && Props.NVal>0
                 data = reshape(data,szV(2:end));
                 removeTime = 1;
             end
-            %
-            %positive = strmatch('positive',Attribs,'exact');
-            %if ~isempty(positive)
-            %   if isequal(lower(Info.Attribute(positive).Value),'down')
-            %      data = -data;
-            %   end
-            %end
             %
             if ii==1
                 if length(Props.varid)==1
@@ -1183,6 +1198,16 @@ else
             Insert.varid = {'stream_function' Insert.varid};
             %
             Out(end+1)=Insert;
+        else
+            switch lower(Insert.Name)
+                case 'time-varying bottom level in flow cell center'
+                    if FI.Dimension(Info.TSMNK(T_)+1).Length>1
+                        Insert.Name = 'cum. erosion/sedimentation';
+                        Insert.varid = {'erosion_sedimentation' Insert.varid};
+                        %
+                        Out(end+1)=Insert;
+                    end
+            end
         end
     end
     Out(1)=[];
@@ -1523,7 +1548,8 @@ if iscell(Props.varid)
             Info = FI.Dataset(Props.varid{2}+1);
             sz(3) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{6})).Length;
         otherwise
-            error('Size function not yet implemented for special case "%s"',Props.varid{1})
+            Props.varid = Props.varid{2};
+            sz = getsize(FI,Props);
     end
 elseif ~isempty(Props.varid)
     for q = 1:length(Props.varid)
