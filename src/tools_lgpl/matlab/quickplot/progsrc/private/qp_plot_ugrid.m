@@ -336,6 +336,18 @@ switch NVal
                     end
                 else
                     switch data.ValLocation
+                        case 'FACE'
+                            Skip = isnan(data.FaceNodeConnect);
+                            nNd = sum(~Skip,2);
+                            FNC = data.FaceNodeConnect;
+                            FNC(Skip) = 1;
+                            x = data.X(FNC);
+                            x(Skip) = 0;
+                            x = sum(x,2)./nNd;
+                            y = data.Y(FNC);
+                            y(Skip) = 0;
+                            y = sum(y,2)./nNd;
+                            val = data.Val;
                         case 'EDGE'
                             inode = zeros(length(data.EdgeNodeConnect)+1,1);
                             if ismember(data.EdgeNodeConnect(1,1),data.EdgeNodeConnect(2,:)) && ~ismember(data.EdgeNodeConnect(1,2),data.EdgeNodeConnect(2,:))

@@ -142,7 +142,7 @@ FI.Data=S;
 
 
 function FI=readfile(filename)
-fid=fopen(filename,'r');
+fid=fopen(filename,'rt');
 if fid<0
     error('Error opening %s.',filename)
 end
