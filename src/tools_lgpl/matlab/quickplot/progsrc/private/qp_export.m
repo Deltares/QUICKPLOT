@@ -526,6 +526,7 @@ for f=1:ntim
                 switch expType
                     case 'spline'
                         expdata=squeeze(expdata);
+                        expdata=expdata(:,1:2); % don't write data or z coordinates ro spline file
                         %
                         % the following line initially made sense when skipping
                         % over small gaps in grid lines, but it doesn't work in
@@ -535,7 +536,7 @@ for f=1:ntim
                         %expdata(any(isnan(expdata),2),:)=[];
                     case 'landboundary file'
                         expdata=squeeze(expdata);
-                        expdata(any(isnan(expdata),2),:)=999.999;
+                        expdata(any(isnan(expdata(:,1:2)),2),:)=999.999;
                     otherwise
                         expdata(isnan(expdata))=-999;
                 end

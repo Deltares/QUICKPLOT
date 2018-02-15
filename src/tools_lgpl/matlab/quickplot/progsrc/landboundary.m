@@ -234,6 +234,11 @@ for c = 1:Ncell
     else
         if ndims(data1)>2
             error('Invalid size of data array %i.',c)
+        elseif size(data1,2)==3
+            if size(data1,1)==2
+                data1 = data1';
+            else % accept third column as z coordinate
+            end
         elseif size(data1,2)~=2
             if size(data1,1)==2
                 data1 = data1';
