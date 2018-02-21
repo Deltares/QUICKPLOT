@@ -380,6 +380,12 @@ if XYRead || XYneeded
                 ui_message('error','Face_node_connectivity not found!')
             else
                 [Ans.FaceNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
+                nNodes = sum(~isnan(Ans.FaceNodeConnect),2);
+                min_nNodes = min(nNodes);
+                if min_nNodes<3
+                    nError = sum(nNodes==min_nNodes);
+                    error('%i faces found with %i nodes. Number of nodes per face should be at least 3.',nError,min_nNodes)
+                end
                 if isempty(FI.Dataset(iconnect).Attribute)
                     istart = [];
                 else

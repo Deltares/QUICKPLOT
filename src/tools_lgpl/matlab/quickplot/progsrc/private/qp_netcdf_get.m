@@ -1,4 +1,4 @@
-function [Data, errmsg] = qp_netcdf_get(FI,var,RequestDims,RequestedSubset)
+function [Data, errmsg] = qp_netcdf_get(FI,var,varargin)
 %QP_NETCDF_GET Get data from netcdf file and reshape.
 %   [DATA,ERR] = QP_NETCDF_GET(FILE,VAR,REQDIMS,REQIND) reads data for the
 %   variable VAR from the specified netcdf file FILE. The order of the
@@ -53,10 +53,34 @@ if isempty(Info)
     error('Variable ''%s'' not found in file.',Info.Name)
 end
 %
-if nargin<4
-    if nargin<3
-        RequestDims = Info.Dimension;
+RequestDims = {};
+RequestedSubset = {};
+netcdf_use_fillvalue = qp_settings('netcdf_use_fillvalue');
+%
+i = 1;
+while i<=length(varargin)
+    if ischar(varargin{i})
+        switch lower(varargin{i})
+            case 'netcdf_use_fillvalue'
+                netcdf_use_fillvalue = varargin{i+1};
+            otherwise
+                error('Unknown input argument %i "%s" in qp_netcdf_get',i+2,varargin{i})
+        end
+        i = i+1;
+    elseif isempty(RequestDims)
+        RequestDims = varargin{i};
+    elseif isempty(RequestedSubset)
+        RequestedSubset = varargin{i};
+    else
+        error('Unknown input argument %i in qp_netcdf_get',i+2)
     end
+    i = i+1;
+end
+%
+if isempty(RequestDims)
+    RequestDims = Info.Dimension;
+end
+if isempty(RequestedSubset)
     RequestedSubset = cell(1,length(RequestDims));
     for i = 1:length(RequestDims)
         idim = strmatch(RequestDims{i},Info.Dimension,'exact');
@@ -176,7 +200,7 @@ if ~isempty(Info.Attribute)
     missval = strmatch('_FillValue',Attribs,'exact');
     if ~isempty(missval)
         missval = Info.Attribute(missval).Value;
-        switch qp_settings('netcdf_use_fillvalue')
+        switch netcdf_use_fillvalue
             case 'exact_match'
                 Data(Data==missval)=NaN;
             otherwise % 'valid_range'
