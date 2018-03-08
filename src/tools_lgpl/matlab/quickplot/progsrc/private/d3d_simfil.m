@@ -907,7 +907,7 @@ switch FI.FileType
                             Out(ifld).DimFlag(M_) = 1;
                             Out(ifld).NVal = 1;
                         end
-                    case 'ExtForce'
+                    case 'TOBEIMPLEMENTED_ExtForce'
                         forces = unique({FI.ExtForce.Quantity});
                         translate = {'lowergatelevel'               'lower gate level'                          'm'
                             'damlevel'                              'dam level'                                 'm'
@@ -965,7 +965,7 @@ switch FI.FileType
                             Out(ifld).DimFlag(M_) = 1;
                             Out(ifld).NVal = 1;
                         end
-                    case 'ExtForceNew'
+                    case 'TOBEIMPLEMENTED_ExtForceNew'
                         for itype = 1:length(FI.ExtForceNew.Bnd.Types)
                             ifld = ifld+1;
                             Out(ifld).Name = [FI.ExtForceNew.Bnd.Types{itype} ' open boundaries'];
