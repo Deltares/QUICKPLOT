@@ -62,7 +62,7 @@ if isfield(data,'XY') && iscell(data.XY)
         XY = NaN(tlen,2);
         offset = 0;
         for i = 1:length(data.XY)
-            XY(offset+(1:len(i)),:) = data.XY{i};
+            XY(offset+(1:len(i)),:) = data.XY{i}(:,1:2); % quick fix: just copy the first two columns if XY contains Z
             offset = offset+len(i)+1;
         end
         data.XY = XY;

@@ -953,8 +953,14 @@ for i = 1:size(attfiles,1)
                     %
                     [uBndForce,~,ic] = unique(BndForce);
                     for iBF = length(uBndForce):-1:1
-                        bndfilename = relpath(ext_path,uBndForce{iBF});
-                        F.BndForce.Files{iBF} = inifile('open',bndfilename);
+                        bndfilename = uBndForce{iBF};
+                        if strcmp(bndfilename,'REALTIME')
+                            % REALTIME in memory data exchange
+                            F.BndForce.Files{iBF} = 'REALTIME';
+                        else
+                            bndfilename = relpath(ext_path,bndfilename);
+                            F.BndForce.Files{iBF} = inifile('open',bndfilename);
+                        end
                     end
                     BndForce = F.BndForce.Files(ic);
                     F.Bnd.Forcing = cellfun(@(f)BndForce(f),BndInd,'uniformoutput',false);
@@ -966,6 +972,9 @@ for i = 1:size(attfiles,1)
                             Loc = Locs{iBL};
                             ForceFile = F.Bnd.Forcing{iBT}{iBL};
                             %fprintf('Searching for %s at %s in %s\n',BTp,Loc,ForceFile.FileName);
+                            if strcmp(ForceFile,'REALTIME')
+                                continue
+                            end
                             [nForcings,iQ]=inifile('exists',ForceFile,'forcing');
                             forcesThisLocAndType = false(size(ForceFile.Data,1));
                             for iFQ = 1:nForcings

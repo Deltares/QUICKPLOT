@@ -370,7 +370,7 @@ switch FI.FileType(9:end)
                 if isfield(FI,'dep')
                     F.QP_Options.AttribFiles.Data = {FI.dep};
                     F.QP_Options.AttribFiles.FileType = 'wldep';
-                    F.QP_Options.AttribFiles.QP_Options.Dpsopt = 'TODO';
+                    F.QP_Options.AttribFiles.QP_Options.Dpsopt = rmhash(inifile('geti',FI.mdf,'*','Dpsopt','#MEAN#'));
                     F.QP_Options.AttribFiles.QP_Options.DOrder = 2;
                     F.QP_Options.AttribFiles.QP_Options.DataLocation = 'TODO';
                     %
@@ -381,7 +381,8 @@ switch FI.FileType(9:end)
                     Props.File       = 1;
                     Props.Fld        = -1;
                     Props.UseGrid    = 1;
-                    Ans = gridfil(F,idom,Props,'griddata',idx{M_},idx{N_});
+                    % cmd is griddata or gridcelldata
+                    Ans = gridfil(F,idom,Props,cmd,idx{M_},idx{N_});
                 else
                     Ans = F;
                     depuni = inifile('geti',FI.mdf,'*','Depuni',NaN);
@@ -403,7 +404,24 @@ switch FI.FileType(9:end)
                 Props.File       = 1;
                 Props.Fld        = 1;
                 Props.UseGrid    = 1;
-                Ans = gridfil(F,idom,Props,'griddata',idx{M_},idx{N_});
+                Ans = gridfil(F,idom,Props,cmd,idx{M_},idx{N_});
+            case 'dry points'
+                F = FI.grd;
+                F.X(end+1,:) = NaN;
+                F.Y(end+1,:) = NaN;
+                F.X(:,end+1) = NaN;
+                F.Y(:,end+1) = NaN;
+                F.QP_Options.AttribFiles = FI.dry;
+                F.QP_Options.AttribFiles.FileType = 'drypoint';
+                %
+                Props.VecType    = '';
+                Props.Loc        = 'd';
+                Props.ReqLoc     = 'd';
+                Props.Loc3D      = '';
+                Props.File       = 1;
+                Props.Fld        = 1;
+                Props.UseGrid    = 1;
+                Ans = gridfil(F,idom,Props,cmd,idx{M_},idx{N_});
             case 'observation points'
                 I0 = sub2ind(size(FI.grd.X),FI.sta.MN(idx{M_},1),FI.sta.MN(idx{M_},2));
                 d1 = size(FI.grd.X,1);
@@ -526,7 +544,7 @@ switch FI.FileType
         end
         nBT=length(uBT);
         %
-        if isfield(FI,'strucLoc') && inifile('exists',FI.strucLoc,'Structure','type')
+        if isfield(FI,'strucLoc') && all(inifile('exists',FI.strucLoc,'Structure','type'))
             ST=inifile('getstringi',FI.strucLoc,'Structure','type');
             uST=unique(ST);
         else
@@ -746,6 +764,8 @@ switch FI.FileType
                         Out(ifld).NVal = 1;
                         dpsopt = rmhash(inifile('geti',FI.mdf,'*','Dpsopt','#MEAN#'));
                         if strcmpi(dpsopt,'DP')
+                            Out(ifld).DataInCell = 2;
+                        else
                             Out(ifld).DataInCell = 1;
                         end
                     case 'thd'
@@ -758,8 +778,9 @@ switch FI.FileType
                         Out(ifld).Geom = 'sQUAD';
                         Out(ifld).Coords = 'xy';
                         Out(ifld).DimFlag([M_ N_]) = 1;
-                        Out(ifld).NVal = 1;
-                    case 'bnd'
+                        Out(ifld).DataInCell = 2;
+                        Out(ifld).NVal = 5;
+                    case 'TOBEIMPLEMENTED_bnd'
                         ifld = ifld-1;
                         %
                         bTypes = unique(FI.bnd.BndType);
@@ -815,7 +836,7 @@ switch FI.FileType
                         Out(ifld).Coords = 'xy';
                         Out(ifld).DimFlag(M_) = 1;
                         Out(ifld).NVal = 4;
-                    case 'crs'
+                    case 'TOBEIMPLEMENTED_crs'
                         Out(ifld).Name = 'observation cross sections';
                         Out(ifld).Geom = 'POLYL';
                         Out(ifld).Coords = 'xy';
@@ -838,8 +859,8 @@ switch FI.FileType
                         nfld = nfld+length(unique({FI.ExtForce.Quantity}));
                     case 'ExtForceNew'
                         nfld = nfld+length(FI.ExtForceNew.Bnd.Types);
-                        for iBT = 1:length(FI.ExtForceNew.Bnd.Types) % maximum number: assumes all forcings are time series
-                            nfld = nfld+sum(cellfun(@(f)size(f.Data,1),FI.ExtForceNew.Bnd.Forcing{iBT}));
+                        for iBT = 1:length(FI.ExtForceNew.Bnd.Types) % return 0 for non-time series
+                            nfld = nfld+sum(cellfun(@(f)lentim(f),FI.ExtForceNew.Bnd.Forcing{iBT}));
                         end
                     otherwise
                         nfld = nfld+1;
@@ -955,6 +976,9 @@ switch FI.FileType
                             %
                             for iloc = 1:length(FI.ExtForceNew.Bnd.Locs{itype})
                                 Force = FI.ExtForceNew.Bnd.Forcing{itype}{iloc};
+                                if ~isfield(Force,'Data')
+                                    continue
+                                end
                                 for ipnt = 1:size(Force.Data,1)
                                     if ~strcmp(inifile('get',Force,ipnt,'Function'),'timeseries')
                                         continue
@@ -995,6 +1019,13 @@ switch FI.FileType
         Out(:,1) = [];
 end
 % -----------------------------------------------------------------------------
+
+function l = lentim(f)
+if isfield(f,'Data')
+    l = size(f.Data,1);
+else
+    l = 0;
+end
 
 % -----------------------------------------------------------------------------
 function subf=getsubfields(FI,Props,f)
