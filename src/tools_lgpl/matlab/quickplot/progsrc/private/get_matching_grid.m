@@ -38,14 +38,15 @@ function [G,GridFileName]=get_matching_grid(MapSeg,pn,filterspec)
 
 GridSeg=-1;
 PerLayer=0;
-CouldReadGridData = 0;
-filters = {'*.cco;*.lga' 'Delft3D Grid (Aggregation) Files'
-    '*.m2b' 'SOBEK Grid Aggregation Files'
+filters = {'*.cco;*.lga;*.m2b;*.geo;geo*;*.slf;T2DD12;*.dwq;*.nc;*.shp' 'Any Supported Grid Files'
+    '*.cco;*.lga'      'Delft3D Grid (Aggregation) Files'
+    '*.m2b'            'SOBEK Grid Aggregation Files'
     '*.geo;geo*;*.slf' 'Telemac Grid Files'
-    'T2DD12;*.dwq' 'DIDO Aggregation File (for Telemac)'
-    '*.nc' 'UGRID netCDF Files (D-Flow FM, Untrim)'
-    '*.shp' 'Shape File'};
-telemacfilter = filters(3,:);
+    'T2DD12;*.dwq'     'DIDO Aggregation File (for Telemac)'
+    '*.nc'             'UGRID netCDF Files (D-Flow FM, Untrim)'
+    '*.shp'            'Shape File'
+    '*.*'              'All Files'};
+telemacfilter = filters(4,:);
 if nargin<3
     filterspec = '';
 end
