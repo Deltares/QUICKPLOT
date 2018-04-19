@@ -3081,6 +3081,7 @@ switch cmd,
     case 'simsteps'
         t=get(findobj(mfig,'tag','Erestart'),'userdata');
         Txt=simsteps(FI,t);
+        d3d_qp refreshfigs
         ui_message('error',Txt);
     case 'dz'
         Hdz=findobj(mfig,'tag','Edz');
