@@ -111,9 +111,33 @@ try
     end
     S.NodeCoor = Coords(2:4,:)';
     fclose(fid);
-catch
+catch err
     fclose(fid);
-    error(lasterr)
+    rethrow(err)
 end
-
-% also load casename_dep.dat file?
+%
+[p,f,e] = fileparts(FileName);
+if length(f)>4 && strcmpi(f(end-3:end),'_grd') && all(S.NodeCoor(:,3)==0)
+    f(end-2:end) = f(end-2:end)-'grd'+'dep';
+    depFil = [p f e];
+    fid = fopen(depFil,'r');
+    if fid>0
+        try
+            Line = fgetl(fid);
+            nNodes2 = sscanf(Line,'Node Number = %i',1);
+            if isempty(nNodes2)
+                error('Expecting "Node Number = " on first line of %s',depFil)
+            elseif nNodes2~=nNodes
+                error('Number of nodes in %s (%i) does not match number of grid nodes (%i)',depFil,nNodes2,nNodes)
+            end
+            D = readmat(fid,3,nNodes,'bed levels')';
+            if isequal(D(:,1:2),S.NodeCoor(:,1:2))
+                S.NodeCoor(:,3) = D(:,3);
+            end
+            fclose(fid);
+        catch err
+            fclose(fid);
+            rethrow(err)
+        end
+    end
+end
