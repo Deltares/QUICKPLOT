@@ -751,6 +751,9 @@ if ~isempty(mshname)
     [F,Q] = getmesh(mshname);
     MF.mesh.nc_file = F;
     MF.mesh.quant = Q(1);
+    %
+    FirstPoint = netcdffil(F,1,Q(1),'grid',1);
+    MF.mesh.XYUnits = FirstPoint.XUnits;
 else
     error('Unable to locate NetFile keyword in [geometry] chapter.');
 end
