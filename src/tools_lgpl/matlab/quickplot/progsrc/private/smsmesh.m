@@ -119,7 +119,7 @@ end
 [p,f,e] = fileparts(FileName);
 if length(f)>4 && strcmpi(f(end-3:end),'_grd') && all(S.NodeCoor(:,3)==0)
     f(end-2:end) = f(end-2:end)-'grd'+'dep';
-    depFil = [p f e];
+    depFil = fullfile(p,[f e]);
     fid = fopen(depFil,'r');
     if fid>0
         try
