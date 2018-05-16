@@ -690,6 +690,13 @@ switch cmd
                             FI.Options=0;
                             Tp=FI.FileType;
                         end
+                    case 'smsmesh'
+                        asciicheck(ASCII,try_next)
+                        FI=smsmesh('open',FileName);
+                        if ~isempty(FI)
+                            FI.Options=0;
+                            Tp=FI.FileType;
+                        end
                     case 'mikemesh'
                         asciicheck(ASCII,try_next)
                         FI=mikemesh('open',FileName);

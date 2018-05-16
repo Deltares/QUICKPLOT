@@ -469,6 +469,10 @@ switch FI.FileType(9:end)
                     Ans = [];
                 end
         end
+        if isfield(Ans,'XY') && ~isfield(Ans,'XUnits')
+            Ans.XUnits = FI.mesh.XYUnits;
+            Ans.YUnits = FI.mesh.XYUnits;
+        end
     case 'D-Wave'
         switch Props.Name
             case 'grid'

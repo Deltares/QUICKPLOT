@@ -38,6 +38,7 @@
 %   shapewrite                  - Write ESRI shape files.
 %   shipma                      - Read Shipma project (and embedded) files.
 %   shyfemmesh                  - Read a SHYFEM mesh topology file.
+%   smsmesh                     - Read a Surface-water Modeling System mesh topology file.
 %   sobek                       - Read and plot SOBEK topology.
 %   swan                        - Read/write SWAN files.
 %   tecplot                     - Read/write for Tecplot files.

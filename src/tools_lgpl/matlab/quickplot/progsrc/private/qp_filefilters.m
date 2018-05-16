@@ -46,6 +46,7 @@ filtertbl={...
     '*.mesh'                                               'Mike Flexible Mesh Files'          'mikemesh'           0
     '*.14;*.gr3'                                           'Adcirc Mesh Files'                 'adcircmesh'         0
     '*.shy'                                                'SHYFEM Mesh Files'                 'SHYFEM mesh'        0
+    '*_grd.dat'                                            'SMS Mesh Files'                    'smsmesh'            0
     '*.mesh;*.node;*.ele;*.n;*.e'                          'EasyMesh and Triangle Mesh Files'  'nodelemesh'         0
     '*.gem'                                                'GeoSystems Mesh Files'             'geomesh'            0
     '*.bct;*.bcc;*.bcb;*.bc'                               'Delft3D-FLOW Bound. Cond. Files'   'bct'                0
