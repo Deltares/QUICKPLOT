@@ -93,8 +93,12 @@ try
     nNodes = sscanf(Line,'Node Number = %i',1);
     Line = fgetl(fid);
     nElm = sscanf(Line,'Cell Number = %i',1);
-    if nNodes==0
+    if isempty(nNodes)
+       error('Invalid mesh: expecting "Node Number =" on first line of file')
+    elseif nNodes==0
        error('Invalid mesh: number of nodes = 0')
+    elseif isempty(nElm)
+       error('Invalid mesh: expecting "Cell Number =" on second line of file')
     elseif nElm==0
        error('Invalid mesh: number of cells = 0')
     end
