@@ -1590,7 +1590,12 @@ if isempty(tvar)
     T = [];
 else
     tinfo = FI.Dataset(tvar).Info;
-    T = double(nc_varget(FI.Filename,FI.Dataset(tvar).Name));
+    if nargin>2 && length(t)==1 && t~=0
+        T = nc_varget(FI.Filename,FI.Dataset(tvar).Name,t-1,1);
+    else
+        T = nc_varget(FI.Filename,FI.Dataset(tvar).Name);
+    end
+    T = double(T);
 end
 if ~isstruct(tinfo) % likely even empty
     % continue with T = T;
@@ -1611,12 +1616,6 @@ elseif ~isempty(tinfo.RefDate)
     T = tinfo.RefDate + tinfo.DT * T;
 else
     T = tinfo.DT * T;
-end
-%if ~isnan(tinfo.TZshift)
-%    T = T - tinfo.TZshift/24;
-%end
-if t~=0
-    T=T(t);
 end
 % -----------------------------------------------------------------------------
 
