@@ -3012,7 +3012,8 @@ switch cmd,
         else
             filterspec = ...
                 {'tri-rst.*' 'restart binary file (tri-rst.*)'
-                'trim-*.dat' 'restart map file (trim-*.dat)'
+                'trim-*.dat' 'restart map file - NEFIS format (trim-*.dat)'
+                'trim-*.nc'  'restart map file - NetCDF format (trim-*.nc)'
                 '*.ini' 'initial conditions file (*.ini)'};
         end
         [f,p]=uiputfile(filterspec,'Specify restart file name');
@@ -3025,8 +3026,10 @@ switch cmd,
                 pf = fullfile(p,f);
             end
             t=get(findobj(mfig,'tag','Erestart'),'userdata');
-            if ustrcmpi('tri-rst',f)>0 || (ustrcmpi('.dat',e)<0 && ~isempty(e))
+            if ustrcmpi('tri-rst',f)>0 || (ustrcmpi('.dat',e)<0 && ustrcmpi('.nc',e)<0 && ~isempty(e))
                 trim2rst(FI,t,pf);
+            elseif ustrcmpi('.nc',e)>0
+                write_nctrimfile(FI,pf,t);
             else
                 pf = fullfile(p,f); % get rid of .dat extension
                 write_trimfile(FI,pf,t);
@@ -3182,6 +3185,283 @@ switch cmd,
         error(['Unknown option command: ',cmd])
 end
 % -------------------------------------------------------------------------
+
+function [FORMAT, shuffle, deflateLevel, chunk2D] = get_netcdfsettings(cmd)
+if nargin==0
+    FORMAT = 'NC_NETCDF4'; % '64BIT_OFFSET'; %
+    shuffle = false;
+    deflateLevel = 3;
+    chunk2D = 20;
+    %
+    %H = qp_uifigure('xx','','ncsettings',[100 100 100 100],@get_netcdfsettings);
+else
+    %switch cmd
+    %    case ....
+    %end
+end
+% get export settings using H=qp_uifigure(Name,closecom,tag,pos,callbackfcn)
+
+function write_nctrimfile(FI,pf,t)
+[FORMAT, shuffle, deflateLevel, chunk2D] = get_netcdfsettings;
+%
+% Get the data
+%
+MC = vs_get(FI,'map-const','*','quiet!');
+MIT = vs_get(FI,'map-info-series',{t},'*','quiet!');
+MT = vs_get(FI,'map-series',{t},'*','quiet!');
+MIST = vs_get(FI,'map-infsed-serie',{t},'*','quiet!');
+MST = vs_get(FI,'map-sed-series',{t},'*','quiet!');
+MRT = vs_get(FI,'map-rol-series',{t},'*','quiet!');
+if isfield(MST,'MSED')
+    nlyr = size(MST.MSED,3);
+    lsedtot = size(MST.MSED,4);
+elseif isfield(MST,'LYRFRAC')
+    nlyr = size(MST.LYRFRAC,3);
+    lsedtot = size(MST.LYRFRAC,4);
+elseif isfield(MST,'BODSED')
+    nlyr = 1;
+    lsedtot = size(MST.BODSED,3);
+else
+    nlyr = 0;
+    lsedtot = 0;
+end
+if isfield(MST,'MFLUFF')
+    lsed = size(MST.MFLUFF,3);
+else
+    lsed = 0;
+end
+%
+mmax = MC.MMAX;
+nmax = MC.NMAX;
+kmax = MC.KMAX;
+lstsci = MC.LSTCI;
+ltur = MC.LTUR;
+if kmax>0
+    if isfield(MC,'LAYER_MODEL')
+        layer_model = MC.LAYER_MODEL;
+        zmodel = layer_model(1)=='Z';
+    else
+        layer_model = 'SIGMA-MODEL';
+        zmodel = 0;
+    end
+end
+time = MIT.ITMAPC * MC.DT * MC.TUNIT;
+%
+% Create the new file and define dimensions and variables.
+%
+CLOBBER = netcdf.getConstant('CLOBBER');
+UNLIMITED = netcdf.getConstant('UNLIMITED');
+GLOBAL = netcdf.getConstant('GLOBAL');
+PREC = 'double';
+%
+mode = bitor(CLOBBER, netcdf.getConstant(FORMAT));
+ncid = netcdf.create(pf,mode);
+if ~strcmp(FORMAT,'NC_NETCDF4')
+    shuffle = false;
+    deflateLevel = 0;
+    chunk2D = [];
+else
+    if length(chunk2D)==1
+        chunk2D = chunk2D*[1 1];
+    end
+    chunk2D = min(chunk2D,[nmax mmax]);
+end
+%
+dim_t  = netcdf.defDim(ncid, 'time', UNLIMITED);
+dim_m  = netcdf.defDim(ncid, 'M', mmax); % center
+dim_mc = netcdf.defDim(ncid, 'MC', mmax); % corner
+dim_n  = netcdf.defDim(ncid, 'N', nmax); % center
+dim_nc = netcdf.defDim(ncid, 'NC', nmax); % corner
+if kmax>0
+    if zmodel
+        dim_k  = netcdf.defDim(ncid, 'K_LYR', kmax);
+        dim_k1 = netcdf.defDim(ncid, 'K_INTF', kmax+1);
+    else
+        dim_k  = netcdf.defDim(ncid, 'SIG_LYR', kmax);
+        dim_k1 = netcdf.defDim(ncid, 'SIG_INTF', kmax+1);
+    end
+end
+if lstsci>0
+    dim_lstsci = netcdf.defDim(ncid, 'LSTSCI', lstsci);
+    dim_20 = netcdf.defDim(ncid, 'strlen20', 20);
+end
+if ltur>0
+    dim_ltur   = netcdf.defDim(ncid, 'LTUR'  , ltur  );
+end
+if lsedtot>0
+    dim_lsedtot = netcdf.defDim(ncid, 'LSEDTOT', lsedtot);
+end
+if lsed>0
+    dim_lsed = netcdf.defDim(ncid, 'LSED', lsed);
+end
+if nlyr>0
+    dim_nlyr  = netcdf.defDim(ncid, 'nlyr', nlyr);
+    dim_nlyr1 = netcdf.defDim(ncid, 'nlyrp1', nlyr+1);
+end
+%
+if isempty(chunk2D)
+    chunk3D               = [];
+    chunk3D_lstsci        = [];
+    chunk3Di_ltur         = [];
+    chunk2D_nlyr_lsedtot  = [];
+    chunk2D_lsedtot       = [];
+    chunk2D_nlyrp1        = [];
+    chunk2D_nlyr          = [];
+    chunk2D_lsed          = [];
+else
+    chunk3D               = [chunk2D kmax 1];
+    chunk3D_lstsci        = [chunk2D kmax lstsci 1];
+    chunk3Di_ltur         = [chunk2D kmax+1 ltur 1];
+    chunk2D_nlyr_lsedtot  = [chunk2D nlyr lsedtot 1];
+    chunk2D_lsedtot       = [chunk2D lsedtot 1];
+    chunk2D_nlyrp1        = [chunk2D nlyr+1 1];
+    chunk2D_nlyr          = [chunk2D nlyr 1];
+    chunk2D_lsed          = [chunk2D lsed 1];
+    chunk2D               = [chunk2D 1];
+end
+%
+var_t = netcdf.defVar(ncid,'time','double',dim_t);
+Y = floor(MC.ITDATE(1)/10000);
+M = floor(MC.ITDATE(1)/100-100*Y);
+D = floor(MC.ITDATE(1)-10000*Y-100*M);
+netcdf.putAtt(ncid,var_t,'units',sprintf('seconds since %i-%0.2i-%0.2i 00:00:00',Y,M,D));
+var_s1 = netcdf_defVar(ncid,'S1',PREC,[dim_n dim_m dim_t],false,deflateLevel,chunk2D);
+var_u1 = netcdf_defVar(ncid,'U1',PREC,[dim_n dim_mc dim_k dim_t],false,deflateLevel,chunk3D);
+var_v1 = netcdf_defVar(ncid,'V1',PREC,[dim_nc dim_m dim_k dim_t],false,deflateLevel,chunk3D);
+if lstsci>0 && isfield(MT,'R1')
+    var_nc = netcdf.defVar(ncid,'NAMCON','char',[dim_20 dim_lstsci]);
+    var_r1 = netcdf_defVar(ncid,'R1',PREC,[dim_n dim_m dim_k dim_lstsci dim_t],false,deflateLevel,chunk3D_lstsci);
+end
+if ltur>0 && isfield(MT,'RTUR1')
+    var_rtur1 = netcdf_defVar(ncid,'RTUR1',PREC,[dim_n dim_m dim_k1 dim_ltur dim_t],false,deflateLevel,chunk3Di_ltur);
+end
+var_ku = netcdf_defVar(ncid,'KFU','NC_INT',[dim_n dim_mc dim_t],shuffle,deflateLevel,chunk2D);
+var_kv = netcdf_defVar(ncid,'KFV','NC_INT',[dim_nc dim_m dim_t],shuffle,deflateLevel,chunk2D);
+if isfield(MT,'UMNLDF')
+    var_um = netcdf_defVar(ncid,'UMNLDF',PREC,[dim_n dim_mc dim_t],false,deflateLevel,chunk2D);
+    var_vm = netcdf_defVar(ncid,'VMNLDF',PREC,[dim_nc dim_m dim_t],false,deflateLevel,chunk2D);
+end
+%
+if isfield(MIST,'MORFT')
+    var_mt = netcdf.defVar(ncid,'MORFT','double',dim_t);
+end
+if isfield(MST,'DPS')
+    var_dps = netcdf_defVar(ncid,'DPS',PREC,[dim_n dim_m dim_t],false,deflateLevel,chunk2D);
+end
+if isfield(MST,'MSED')
+    var_msed = netcdf_defVar(ncid,'MSED',PREC,[dim_n dim_m dim_nlyr dim_lsedtot dim_t],false,deflateLevel,chunk2D_nlyr_lsedtot);
+elseif isfield(MST,'LYRFRAC')
+    var_lyrfrac = netcdf_defVar(ncid,'LYRFRAC',PREC,[dim_n dim_m dim_nlyr dim_lsedtot dim_t],false,deflateLevel,chunk2D_nlyr_lsedtot);
+elseif isfield(MST,'BODSED')
+    var_bodsed = netcdf_defVar(ncid,'BODSED',PREC,[dim_n dim_m dim_lsedtot dim_t],false,deflateLevel,chunk2D_lsedtot);
+end
+if isfield(MST,'DP_BEDLYR')
+    var_dpb = netcdf_defVar(ncid,'DP_BEDLYR',PREC,[dim_n dim_m dim_nlyr1 dim_t],false,deflateLevel,chunk2D_nlyrp1);
+elseif isfield(MST,'THLYR')
+    var_thlyr = netcdf_defVar(ncid,'THLYR',PREC,[dim_n dim_m dim_nlyr dim_t],false,deflateLevel,chunk2D_nlyr);
+end
+if isfield(MST,'MFLUFF')
+    var_mfl = netcdf_defVar(ncid,'MFLUFF',PREC,[dim_n dim_m dim_lsed dim_t],false,deflateLevel,chunk2D_lsed);
+end
+if isfield(MST,'DUNEHEIGHT')
+    var_dh = netcdf_defVar(ncid,'DUNEHEIGHT',PREC,[dim_n dim_m dim_t],false,deflateLevel,chunk2D);
+    var_dl = netcdf_defVar(ncid,'DUNELENGTH',PREC,[dim_n dim_m dim_t],false,deflateLevel,chunk2D);
+end
+%
+if isfield(MRT,'HS')
+    var_hs = netcdf_defVar(ncid,'HS',PREC,[dim_n dim_m dim_t],false,deflateLevel,chunk2D);
+end
+if isfield(MRT,'EWAVE1')
+    var_ew = netcdf_defVar(ncid,'EWAVE1',PREC,[dim_n dim_m dim_t],false,deflateLevel,chunk2D);
+    var_er = netcdf_defVar(ncid,'EROLL1',PREC,[dim_n dim_m dim_t],false,deflateLevel,chunk2D);
+    var_qxkr = netcdf_defVar(ncid,'QXKR',PREC,[dim_n dim_mc dim_t],false,deflateLevel,chunk2D);
+    var_qykr = netcdf_defVar(ncid,'QYKR',PREC,[dim_nc dim_m dim_t],false,deflateLevel,chunk2D);
+    var_qxkw = netcdf_defVar(ncid,'QXKW',PREC,[dim_n dim_mc dim_t],false,deflateLevel,chunk2D);
+    var_qykw = netcdf_defVar(ncid,'QYKW',PREC,[dim_nc dim_m dim_t],false,deflateLevel,chunk2D);
+end
+if isfield(MRT,'FXW')
+    var_fxw = netcdf_defVar(ncid,'FXW',PREC,[dim_n dim_mc dim_t],false,deflateLevel,chunk2D);
+    var_fyw = netcdf_defVar(ncid,'FYW',PREC,[dim_nc dim_m dim_t],false,deflateLevel,chunk2D);
+    var_wsu = netcdf_defVar(ncid,'WSU',PREC,[dim_n dim_mc dim_t],false,deflateLevel,chunk2D);
+    var_wsv = netcdf_defVar(ncid,'WSV',PREC,[dim_nc dim_m dim_t],false,deflateLevel,chunk2D);
+end
+%
+netcdf.putAtt(ncid,GLOBAL,'LAYER_MODEL',layer_model);
+netcdf.endDef(ncid);
+%
+% End of definition, now write the data.
+%
+netcdf.putVar(ncid,var_t,0,time);
+netcdf.putVar(ncid,var_s1,[0 0 0],[nmax mmax 1],MT.S1);
+netcdf.putVar(ncid,var_u1,[0 0 0 0],[nmax mmax kmax 1],MT.U1);
+netcdf.putVar(ncid,var_v1,[0 0 0 0],[nmax mmax kmax 1],MT.V1);
+if lstsci>0 && isfield(MT,'R1')
+    netcdf.putVar(ncid,var_nc,[0 0],[20 lstsci],MC.NAMCON(:,1:lstsci));
+    netcdf.putVar(ncid,var_r1,[0 0 0 0 0],[nmax mmax kmax lstsci 1],MT.R1);
+end
+if ltur>0 && isfield(MT,'RTUR1')
+    netcdf.putVar(ncid,var_rtur1,[0 0 0 0 0],[nmax mmax kmax+1 ltur 1],MT.RTUR1);
+end
+netcdf.putVar(ncid,var_ku,[0 0 0],[nmax mmax 1],MT.KFU);
+netcdf.putVar(ncid,var_kv,[0 0 0],[nmax mmax 1],MT.KFV);
+if isfield(MT,'UMNLDF')
+    netcdf.putVar(ncid,var_um,[0 0 0],[nmax mmax 1],MT.UMNLDF);
+    netcdf.putVar(ncid,var_vm,[0 0 0],[nmax mmax 1],MT.VMNLDF);
+end
+%
+if isfield(MIST,'MORFT')
+    netcdf.putVar(ncid,var_mt,0,1,MIST.MORFT);
+end
+if isfield(MST,'DPS')
+    netcdf.putVar(ncid,var_dps,[0 0 0],[nmax mmax 1],MST.DPS);
+end
+if isfield(MST,'MSED')
+    netcdf.putVar(ncid,var_msed,[0 0 0 0 0],[nmax mmax nlyr lsedtot 1],MST.MSED);
+elseif isfield(MST,'LYRFRAC')
+    netcdf.putVar(ncid,var_lyrfrac,[0 0 0 0 0],[nmax mmax nlyr lsedtot 1],MST.LYRFRAC);
+elseif isfield(MST,'BODSED')
+    netcdf.putVar(ncid,var_bodsed,[0 0 0 0],[nmax mmax lsedtot 1],MST.BODSED);
+end
+if isfield(MST,'DP_BEDLYR')
+    netcdf.putVar(ncid,var_dpb,[0 0 0 0],[nmax mmax nlyr+1 1],MST.DP_BEDLYR);
+elseif isfield(MST,'THLYR')
+    netcdf.putVar(ncid,var_thlyr,[0 0 0 0],[nmax mmax nlyr 1],MST.THLYR);
+end
+if isfield(MST,'MFLUFF')
+    netcdf.putVar(ncid,var_mfl,[0 0 0 0],[nmax mmax lsed 1],MST.MFLUFF);
+end
+if isfield(MST,'DUNEHEIGHT')
+    netcdf.putVar(ncid,var_dh,[0 0 0],[nmax mmax 1],MST.DUNEHEIGHT);
+    netcdf.putVar(ncid,var_dl,[0 0 0],[nmax mmax 1],MST.DUNELENGTH);
+end
+%
+if isfield(MRT,'HS')
+    netcdf.putVar(ncid,var_hs,[0 0 0],[nmax mmax 1],MRT.HS);
+end
+if isfield(MRT,'EWAVE1')
+    netcdf.putVar(ncid,var_ew,[0 0 0],[nmax mmax 1],MRT.HS);
+    netcdf.putVar(ncid,var_er,[0 0 0],[nmax mmax 1],MRT.HS);
+    netcdf.putVar(ncid,var_qxkr,[0 0 0],[nmax mmax 1],MRT.QXKR);
+    netcdf.putVar(ncid,var_qykr,[0 0 0],[nmax mmax 1],MRT.QYKR);
+    netcdf.putVar(ncid,var_qxkw,[0 0 0],[nmax mmax 1],MRT.QXKW);
+    netcdf.putVar(ncid,var_qykw,[0 0 0],[nmax mmax 1],MRT.QYKW);
+end
+if isfield(MRT,'FXW')
+    netcdf.putVar(ncid,var_fxw,[0 0 0],[nmax mmax 1],MRT.FXW);
+    netcdf.putVar(ncid,var_fyw,[0 0 0],[nmax mmax 1],MRT.FYW);
+    netcdf.putVar(ncid,var_wsu,[0 0 0],[nmax mmax 1],MRT.WSU);
+    netcdf.putVar(ncid,var_wsv,[0 0 0],[nmax mmax 1],MRT.WSV);
+end
+netcdf.close(ncid);
+
+function varid = netcdf_defVar(ncid,varname,xtype,dimids,shuffle,deflateLevel,chunkDims)
+varid = netcdf.defVar(ncid,varname,xtype,dimids);
+if shuffle || deflateLevel>0
+    netcdf.defVarDeflate(ncid,varid,shuffle,deflateLevel>0,deflateLevel)
+end
+if ~isempty(chunkDims)
+    netcdf.defVarChunking(ncid,varid,'CHUNKED',chunkDims);
+end
 
 function write_trimfile(FI,pf,t)
 grps = {'map-series','map-info-series', ...
