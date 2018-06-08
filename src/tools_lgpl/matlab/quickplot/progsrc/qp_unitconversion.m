@@ -524,7 +524,7 @@ if isempty(i) && length(unit)>5 && strcmpi(unit(end-4:end),' abs.') % this is mo
     i=strmatch(unit,unittable{1},'exact');
 end
 %
-MightBePlural = length(unit)>2 && unit(end)=='s'; % don't think ms is meters but milliseconds.
+MightBePlural = length(unit)>2 && unit(end)=='s' && unit(end-1)~=' '; % don't think ms is meters but milliseconds.
 if isempty(i) && MightBePlural
     i=strmatch(unit(1:end-1),unittable{1},'exact');
 end
