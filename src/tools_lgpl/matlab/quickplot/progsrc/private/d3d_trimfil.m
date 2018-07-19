@@ -3188,7 +3188,7 @@ end
 
 function [FORMAT, shuffle, deflateLevel, chunk2D] = get_netcdfsettings(cmd)
 if nargin==0
-    FORMAT = 'NC_NETCDF4'; % '64BIT_OFFSET'; %
+    FORMAT = '64BIT_OFFSET'; % 'NC_NETCDF4'; %
     shuffle = false;
     deflateLevel = 3;
     chunk2D = 20;
