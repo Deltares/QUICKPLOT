@@ -1590,8 +1590,17 @@ if isempty(tvar)
     T = [];
 else
     tinfo = FI.Dataset(tvar).Info;
-    if nargin>2 && length(t)==1 && t~=0
-        T = nc_varget(FI.Filename,FI.Dataset(tvar).Name,t-1,1);
+    if nargin>2
+        if isequal(t,0)
+            T = nc_varget(FI.Filename,FI.Dataset(tvar).Name);
+        elseif length(t)==1
+            T = nc_varget(FI.Filename,FI.Dataset(tvar).Name,t-1,1);
+        elseif isequal(t,t(1):t(2)-t(1):t(end))
+            T = nc_varget(FI.Filename,FI.Dataset(tvar).Name,t(1)-1,(t(end)-t(1))/(t(2)-t(1))+1,t(2)-t(1));
+        else
+            T = nc_varget(FI.Filename,FI.Dataset(tvar).Name,t(1)-1,t(end)-t(1)+1);
+            T = T(t-t(1)+1);
+        end
     else
         T = nc_varget(FI.Filename,FI.Dataset(tvar).Name);
     end
