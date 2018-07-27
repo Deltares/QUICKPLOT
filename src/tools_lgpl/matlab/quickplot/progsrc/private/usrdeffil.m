@@ -538,6 +538,56 @@ if isequal(Props.FileInfo,'operator')
                     data = [];
                 end
             end
+        case {'m index','n index','k index'}
+            switch Oper(1)
+                case 'm'
+                    m_ = M_;
+                    dIndex = 1;
+                case 'n'
+                    m_ = N_;
+                    dIndex = 2;
+                case 'k'
+                    m_ = K_;
+                    dIndex = kIndex;
+            end
+            [Ans,FI]=getdata(P,cmd,sel);
+            Props.Props.Data{1}=FI;
+            szP = getsize(P.FileInfo,P);
+            %
+            szData = [];
+            for i=1:length(FieldList)
+                f = FieldList{i};
+                if isfield(Ans,f)
+                    szData = size(Ans.(f));
+                    Ans = rmfield(Ans,f);
+                end
+            end
+            if isempty(szData) % NVal=0
+                szData = [1 1];
+                mm_ = [M_ 1; N_ 2; K_ kIndex];
+                for i = 1:3
+                    D_ = mm_(i,1);
+                    DI = mm_(i,2);
+                    if szP(D_)>0
+                        if isequal(sel{D_},0)
+                            szData(DI) = szP(D_);
+                        else
+                            szData(DI) = length(sel{D_});
+                        end
+                    end
+                end
+            end
+            szIdx = ones(size(szData));
+            if isequal(sel{m_},0)
+                szM = szP(m_);
+                idx = 1:szM;
+            else
+                idx = sel{m_};
+                szM = length(idx);
+            end
+            szIdx(dIndex) = szM;
+            idx = reshape(idx,szIdx);
+            Ans.Val = repmat(idx,szData./szIdx);
         case 'magnitude'
             [Ans,FI]=getdata(P,cmd,sel);
             Props.Props.Data{1}=FI;
@@ -879,8 +929,18 @@ switch cmd
 
             NVal=Vars(i).Props.NVal;
             switch NVal
-                case {0,-1}
+                case -1
+                case 0
                     Ops={};
+                    if Vars(i).DimFlag(M_)
+                        Ops(end+1) = {'m index'};
+                    end
+                    if Vars(i).DimFlag(N_)
+                        Ops(end+1) = {'n index'};
+                    end
+                    if Vars(i).DimFlag(K_)
+                        Ops(end+1) = {'k index'};
+                    end
                 case {1,1.9,2,3}
                     Ops={'A+B','A-B','A*B','A/B','max(A,B)','min(A,B)', ...
                         '+ constant','* constant','^ constant','max(A,constant)','min(A,constant)', ...
@@ -890,19 +950,19 @@ switch cmd
                         if NVal==1
                             Ops(end+(1:2))={'min m' 'max m'};
                         end
-                        Ops(end+(1:3)) = {'alg.mean m' 'sum m' 'flip m'};
+                        Ops(end+(1:4)) = {'alg.mean m' 'sum m' 'flip m' 'm index'};
                     end
                     if Vars(i).DimFlag(N_)
                         if NVal==1
                             Ops(end+(1:2))={'min n' 'max n'};
                         end
-                        Ops(end+(1:3)) = {'alg.mean n' 'sum n' 'flip n'};
+                        Ops(end+(1:4)) = {'alg.mean n' 'sum n' 'flip n' 'n index'};
                     end
                     if Vars(i).DimFlag(K_)
                         if NVal==1
                             Ops(end+(1:2))={'min k' 'max k'};
                         end
-                        Ops(end+(1:3)) = {'alg.mean k' 'sum k' 'flip k'};
+                        Ops(end+(1:4)) = {'alg.mean k' 'sum k' 'flip k' 'k index'};
                     end
                     if NVal>1
                         Ops(end+1)={'magnitude'};
@@ -1059,7 +1119,7 @@ switch cmd
                     set(Handle_Const,'enable','on','backgroundcolor',Active);
                     set(Handle_DefVar,'enable','on')
                     set(Handle_UserOp,'enable','off','backgroundcolor',Inactive);
-                case {'magnitude','abs','10log','max m','alg.mean m','min m','sum m','max n','alg.mean n','min n','sum n','max k','alg.mean k','min k','sum k','flip m','flip n','flip k'}
+                case {'magnitude','abs','10log','max m','alg.mean m','min m','sum m','max n','alg.mean n','min n','sum n','max k','alg.mean k','min k','sum k','flip m','flip n','flip k','m index','n index','k index'}
                     set(Handle_VarList2,'enable','off','value',1,'string',{' '},'backgroundcolor',Inactive,'userdata',[]);
                     set(Handle_UserOp,'enable','off','backgroundcolor',Inactive);
                 case {'f(A) = user defined'}
@@ -1291,6 +1351,12 @@ switch cmd
                         Props.Units = Vars(i).Units;
                 end
                 Props.NVal=Vars(i).Props.NVal;
+                Props.Oper=Ops{k};
+                Props.Data={Vars(i)};
+                Props.DataInCell = Vars(i).DataInCell;
+            case {'m index','n index','k index'}
+                VarName=sprintf('%s(%s)',Ops{k},Vars(i).Name);
+                Props.NVal=1;
                 Props.Oper=Ops{k};
                 Props.Data={Vars(i)};
                 Props.DataInCell = Vars(i).DataInCell;
@@ -1768,16 +1834,15 @@ while i<length(Op)
                             fcn(2,ifcn) = 0;
                             if i+1<length(Op)
                                 if strcmp(Op{i+2},')')
-                                    Op{i} = {'rand'};
                                     Op(i+1:i+2)=[];
                                     fcn(:,ifcn) = 0;
                                     ifcn = ifcn-1;
                                 else
-                                    err = 'Too many arguments specified for function: rand';
+                                    err = ['Too many arguments specified for function: ' Op{i}];
                                     return
                                 end
                             else
-                                err = 'Unexpected end of formula while processing function: rand';
+                                err = ['Unexpected end of formula while processing function: ' Op{i}];
                                 return
                             end      
                         case f1
@@ -1875,7 +1940,7 @@ else
 end
 
 function [f0,f1,f2,f3] = supportedfunctions
-f0 = {'rand'};
+f0 = {'rand','index'};
 f1 = {'abs','acos','asin','atan','ceil','cos', ...
     'cosh','exp','floor','log','log10', ...
     'round','sin','sinh','sqrt','tan','tanh'};
@@ -1921,7 +1986,7 @@ else
         argin{i-1} = usereval(fun{i},args{:});
     end
     switch fun{1}
-        case 'rand'
+        case {'rand','index'}
             sz = size(args{1});
             if length(args)>1
                 sz = max(sz,size(args{2}));
@@ -1945,6 +2010,9 @@ else
     end
     val = feval(fun{1},argin{:});
 end
+
+function val = index(szA)
+val = reshape(1:prod(szA),szA);
 
 function val = fmod(A,B)
 val = A - fix(A/B)*B;
