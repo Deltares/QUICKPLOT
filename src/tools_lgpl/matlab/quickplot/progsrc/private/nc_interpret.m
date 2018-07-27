@@ -176,7 +176,9 @@ for ivar = 1:nvars
         Info.StdName = Info.Attribute(j).Value;
     end
     %
-    if Info.Nctype==2
+    if ~isempty(Info.Type)
+        % avoid overruling already defined variables types (e.g. ugrid_mesh)
+    elseif Info.Nctype==2
         %
         % for character variables the second dimension is the string length
         %
