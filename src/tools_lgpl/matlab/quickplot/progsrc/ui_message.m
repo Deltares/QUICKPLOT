@@ -331,6 +331,9 @@ else
         case 'close'
             set(fig,'visible','off');
         case 'max'
+            if ischar(Msg)
+                Msg = str2double(Msg);
+            end
             MaxNMessages=max(1,Msg);
             while length(MessageOffset)>MaxNMessages
                 MessageOffset(1)=[];

@@ -1134,9 +1134,14 @@ elseif ~isempty(ce)
     edc = find(strcmp(edge_coords{1},varNames));
     edge_dim = nc.Dataset(edc).Dimension{1};
 elseif ~isempty(enc)
-    enc = find(strcmp(Info.Attribute(enc).Value,varNames));
-    edge_dim = nc.Dataset(enc).Dimension; % 2 dimensional
-    edge_dim = edge_dim{1};
+    encv = find(strcmp(Info.Attribute(enc).Value,varNames));
+    if isempty(encv)
+        ui_message('error','The edge_node_connectivity "%s" of %s is not available in the file.',Info.Attribute(enc).Value,Info.Name)
+        edge_dim = '';
+    else
+        edge_dim = nc.Dataset(encv).Dimension; % 2 dimensional
+        edge_dim = edge_dim{1};
+    end
 else
     edge_dim = '';
 end
