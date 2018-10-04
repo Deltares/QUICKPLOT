@@ -548,7 +548,7 @@ switch FI.FileType
         end
         nBT=length(uBT);
         %
-        if isfield(FI,'strucLoc') && all(inifile('exists',FI.strucLoc,'Structure','type'))
+        if isfield(FI,'strucLoc') && inifile('exists',FI.strucLoc,'Structure')
             ST=inifile('getstringi',FI.strucLoc,'Structure','type');
             uST=unique(ST);
         else
