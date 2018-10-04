@@ -83,9 +83,18 @@ end
 if isempty(RequestedSubset)
     RequestedSubset = cell(1,length(RequestDims));
     for i = 1:length(RequestDims)
-        idim = strmatch(RequestDims{i},Info.Dimension,'exact');
+        idim = strcmp(RequestDims{i},Info.Dimension);
         RequestedSubset{i} = 1:Info.Size(idim);
     end
+end
+%
+if iscell(Info.Mesh) && strcmp(Info.Mesh{1},'ugrid')
+    imesh = Info.Mesh{2};
+    imdim = Info.Mesh{3};
+    mInfo = FI.Dataset(imesh);
+    mdim  = mInfo.Mesh{4+imdim};
+else
+    mdim = '';
 end
 %
 rank=Info.Rank;
@@ -94,7 +103,49 @@ permuted=zeros(1,N);
 for d=1:N
     DName=RequestDims{d};
     if ~isempty(DName)
-        d_netcdf=strmatch(DName,Info.Dimension,'exact');
+        d_netcdf = strcmp(DName,Info.Dimension);
+        if none(d_netcdf) &&  ~isempty(mdim)
+            imdim2 = find(strcmp(DName,mInfo.Mesh(4:end)))-1;
+            if ~isempty(imdim2)
+                %
+                % the unmatched dimension is a spatial dimension. The data
+                % that we're trying to read is defined at a different mesh
+                % location. The dimension for that location is mdim. Try to
+                % match that.
+                %
+                d_netcdf = strcmp(mdim,Info.Dimension);
+                %
+                % OK, this is a bit of a challenge. So, we get data at
+                % imdim2 and need to provide it at imdim. First of all, we
+                % need to take care of the subsetting, and after the
+                % reading we need to map the data back to the requested
+                % location.
+                %
+                switch imdim*10+imdim2
+                    case 01
+                        % requested at NODE, provided at EDGE
+                        % NODE -> all neighbouring EDGES ... -> average the values
+                    case 02
+                        % requested at NODE, provided at FACE
+                        % NODE -> all neighbouring FACES ... -> average the values
+                    case 10
+                        % requested at EDGE, provided at NODE
+                        % EDGE -> EDGE2NODE mapping -> average of the two node values
+                    case 12
+                        % requested at EDGE, provided at FACE
+                        % EDGE -> two neighbouring FACE -> average the two face
+                        % values, or the value of a single neighbouring face
+                    case 20
+                        % requested at FACE, provided at NODE
+                        % FACE -> FACE2NODE mapping -> average of the node values
+                    case 21
+                        % requested at FACE, provided at EDGE
+                        % FACE -> "FACE2EDGE" mapping -> average the values
+                end
+            end
+        end
+        %
+        d_netcdf = find(d_netcdf);
         if isempty(d_netcdf)
             %
             % requested dimension does not occur in NetCDF source
@@ -199,6 +250,9 @@ if ~isempty(Info.Attribute)
     %
     missval = strmatch('_FillValue',Attribs,'exact');
     if ~isempty(missval)
+        % the following code is not allowed for Datatype = char, in
+        % nc_interpret we should have removed _FillValue attributes for
+        % char.
         missval = Info.Attribute(missval).Value;
         switch netcdf_use_fillvalue
             case 'exact_match'
