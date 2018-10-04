@@ -139,6 +139,31 @@ for ivar = 1:nvars
         Attribs = {};
     end
     %
+    % 1=BYTE, 2=CHAR, 3=SHORT, 4=INT, 5=FLOAT, 6=DOUBLE, 7=UBYTE, 8=USHORT,
+    % 9=UINT, 10=INT64, 11=UINT64, ... 12=STRING?
+    if Info.Nctype==2 || Info.Nctype>11
+        for cattrib = {'_FillValue','missing_value','valid_min','valid_max','valid_range'}
+            attrib = cattrib{1};
+            j = strmatch(attrib,Attribs,'exact');
+            if ~isempty(j) && Info.Nctype==2 && Info.Attribute(j).Nctype==2 && strcmp(attrib,'_FillValue')
+                % fill value on char is allowed if it's a single char.
+                if length(Info.Attribute(j).Value)==1
+                    j = [];
+                else
+                    msg = 'Invalid value of attribute "%s" on data variable "%s" of type %s: the value should be a single character. Attribute ignored.';
+                end
+            else
+                msg = 'Invalid use of attribute "%s" on data variable "%s" of type %s. Attribute ignored.';
+            end
+            if ~isempty(j)
+                ui_message('error',msg,attrib,Info.Name,Info.Datatype)
+                nc.Dataset(ivar).Attribute(j) = [];
+                Info = nc.Dataset(ivar);
+                Attribs(j) = [];
+            end
+        end
+    end
+    %
     if ~isfield(Info,'Dimid') || isempty(Info.Dimid)
         nc.Dataset(ivar).Varid = ivar-1;
         nc.Dataset(ivar).Dimid = zeros(size(Info.Dimension));
@@ -153,7 +178,7 @@ for ivar = 1:nvars
     if isempty(j) % hack to support my coding error in FM
         j = strmatch('cf_type',Attribs,'exact');
         if ~isempty(j) && strcmp(Info.Attribute(j).Value,'mesh_topology')
-            ui_message('error','This file uses incorrect attribute "cf_type" for specifying the mesh_topology role. Please update your data file.')
+            ui_message('error','Incorrect attribute "cf_type" used for specifying the mesh_topology role of variable "%s".',Info.Name)
         end
     end
     if ~isempty(j) && strcmp(Info.Attribute(j).Value,'mesh_topology')
