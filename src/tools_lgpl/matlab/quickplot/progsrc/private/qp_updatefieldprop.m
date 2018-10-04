@@ -237,8 +237,18 @@ else
     %
     set(MW.T,'enable','off')
     set(MW.AllT,'enable','off','value',0)
-    set(MW.EditT,'enable','off','string','1','backgroundcolor',Inactive,'userdata',1)
-    set(MW.MaxT,'enable','on','string','1','userdata',1)
+    if DimFlag(T_)
+        if sz(T_)==1
+            set(MW.EditT,'enable','off','string','1','backgroundcolor',Inactive,'userdata',1)
+            set(MW.MaxT,'enable','on','string','1','userdata',1)
+        else
+            set(MW.EditT,'enable','off','string','-','backgroundcolor',Inactive,'userdata',1)
+            set(MW.MaxT,'enable','on','string','0','userdata',0)
+        end
+    else
+        set(MW.EditT,'enable','off','string',' ','backgroundcolor',Inactive,'userdata',1)
+        set(MW.MaxT,'enable','on','string','-','userdata',1)
+    end
     set(MW.ShowT,'enable','off')
     set(MW.TList,'enable','off','max',2,'value',[],'string','','backgroundcolor',Inactive,'userdata',0)
 end
