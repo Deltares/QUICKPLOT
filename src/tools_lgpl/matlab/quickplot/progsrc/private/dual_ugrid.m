@@ -168,5 +168,9 @@ data.FaceNodeConnect = NodeFaceDual;
 %-----
 bEdgeVal = data.Val(max(EdgeFaceConnect(iBoundaryEdges,:),[],2));
 bNodeVal = (bEdgeVal(iBoundEdge1) + bEdgeVal(iBoundEdge2))/2;
-data.Val = [data.Val;bEdgeVal;bNodeVal];
+if size(data.Val,1)>1
+    data.Val = cat(1,data.Val,bEdgeVal,bNodeVal);
+else
+    data.Val = cat(2,data.Val,bEdgeVal,bNodeVal);
+end
 data.ValLocation = 'NODE';
