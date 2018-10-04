@@ -237,7 +237,7 @@ switch NVal
                 hNew=gentext(hNew,Ops,Parent,'Plot not defined');
         end
         
-    case {1,5}
+    case {1,5,6}
         switch axestype
             case {'X-Y','Lon-Lat'}
                 hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'UGRID',data,Ops);

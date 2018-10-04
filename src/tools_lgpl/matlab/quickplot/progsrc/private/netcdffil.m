@@ -161,6 +161,19 @@ for d_ = 1:length(DimFlag)
         if isequal(idx{d_},0)
             idx{d_}=1:sz(d_);
         end
+        %
+        % Rule: if dimension = 0, then error
+        %
+        if sz(d_)==0
+            switch d_
+                case T_
+                    error('No time steps available in the file.')
+                case ST_
+                    error('No stations available in the file.')
+                otherwise
+                    error('Empty dimension encountered: unable to read the data.')
+            end
+        end
     end
 end
 
@@ -295,6 +308,11 @@ if DataRead && Props.NVal>0
             XYneeded = true;
         otherwise
             % no rotation
+    end
+    %
+    if Props.NVal==6
+        fm = ustrcmpi('flag_meanings',Attribs);
+        Ans.Classes = strsplit(Info.Attribute(fm).Value,' ');
     end
     %
     hdim = 1-cellfun('isempty',Props.DimName);
@@ -672,6 +690,11 @@ if XYRead || XYneeded
         try
             if ~isempty(j)
                 standard_name = CoordInfo.Attribute(j).Value;
+                if isnan(Info.TSMNK(N_))
+                    hdims = {':'};
+                else
+                    hdims = {':',':'};
+                end
                 switch standard_name
                     case 'atmosphere_sigma_coordinate'
                         [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
@@ -680,7 +703,7 @@ if XYRead || XYneeded
                         Z = zeros(szData);
                         for t=1:size(Z,1)
                             for k=1:length(sigma)
-                                Z(t,:,:,k) = ptop+sigma(k)*(ps(t,:,:)-ptop);
+                                Z(t,hdims{:},k) = ptop+sigma(k)*(ps(t,hdims{:})-ptop);
                             end
                         end
                     case 'atmosphere_hybrid_sigma_pressure_coordinate'
@@ -692,7 +715,7 @@ if XYRead || XYneeded
                             Z = zeros(szData);
                             for t=1:size(Z,1)
                                 for k=1:length(a)
-                                    Z(t,:,:,k) = a(k)*p0+b(k)*ps(t,:,:);
+                                    Z(t,hdims{:},k) = a(k)*p0+b(k)*ps(t,hdims{:});
                                 end
                             end
                         else
@@ -702,7 +725,7 @@ if XYRead || XYneeded
                             Z = zeros(szData);
                             for t=1:size(Z,1)
                                 for k=1:length(ap)
-                                    Z(t,:,:,k) = ap(k)+b(k)*ps(t,:,:);
+                                    Z(t,hdims{:},k) = ap(k)+b(k)*ps(t,hdims{:});
                                 end
                             end
                         end
@@ -714,7 +737,7 @@ if XYRead || XYneeded
                         Z = zeros(szData);
                         for t=1:size(Z,1)
                             for k=1:length(tau)
-                                Z(t,:,:,k) = tau(k)*zsurface(t,:,:)+eta(k)*ztop;
+                                Z(t,hdims{:},k) = tau(k)*zsurface(t,hdims{:})+eta(k)*ztop;
                             end
                         end
                     case 'atmosphere_sleve_coordinate'
@@ -727,7 +750,7 @@ if XYRead || XYneeded
                         Z = zeros(szData);
                         for t=1:size(Z,1)
                             for k=1:length(a)
-                                Z(t,:,:,k) = a(k)*ztop+b1(k)*zsurf1(t,:,:)+b2(k)*zsurf2(t,:,:);
+                                Z(t,hdims{:},k) = a(k)*ztop+b1(k)*zsurf1(t,hdims{:})+b2(k)*zsurf2(t,hdims{:});
                             end
                         end
                     case 'ocean_sigma_coordinate'
@@ -740,7 +763,7 @@ if XYRead || XYneeded
                         Z = zeros(szData);
                         for t=1:size(Z,1)
                             for k=1:length(sigma)
-                                Z(t,:,:,k) = eta(t,:,:)+(depth+eta(t,:,:))*sigma(k);
+                                Z(t,hdims{:},k) = eta(t,hdims{:})+(depth+eta(t,hdims{:}))*sigma(k);
                             end
                         end
                     case 'ocean_s_coordinate'
@@ -754,7 +777,7 @@ if XYRead || XYneeded
                         Z = zeros(szData);
                         for t=1:size(Z,1)
                             for k=1:length(s)
-                                Z(t,:,:,k) = eta(t,:,:)*(1+s(k))+depth_c*s(k)+(depth-depth_c)*C(k);
+                                Z(t,hdims{:},k) = eta(t,hdims{:})*(1+s(k))+depth_c*s(k)+(depth-depth_c)*C(k);
                             end
                         end
                     case 'ocean_sigma_z_coordinate'
@@ -769,9 +792,9 @@ if XYRead || XYneeded
                         for t=1:size(Z,1)
                             for k=1:length(s)
                                 if K(k)<=nsigma
-                                    Z(t,:,:,k) = eta(t,:,:) + sigma(k)*(min(depth_c,depth)+eta(t,:,:));
+                                    Z(t,hdims{:},k) = eta(t,hdims{:}) + sigma(k)*(min(depth_c,depth)+eta(t,hdims{:}));
                                 else
-                                    Z(t,:,:,k) = zlev(k);
+                                    Z(t,hdims{:},k) = zlev(k);
                                 end
                             end
                         end
@@ -789,9 +812,9 @@ if XYRead || XYneeded
                             for k=1:length(s)
                                 f = 0.5*(z1+z2) + 0.5*(z1-z2)*tanh(2*a/(z1-z2)*(depth-href));
                                 if K(k)<=k_c
-                                    Z(t,:,:,k) = sigma(k)*f;
+                                    Z(t,hdims{:},k) = sigma(k)*f;
                                 else
-                                    Z(t,:,:,k) = f + (sigma(k)-1)*(depth-f);
+                                    Z(t,hdims{:},k) = f + (sigma(k)-1)*(depth-f);
                                 end
                             end
                         end
@@ -1082,6 +1105,8 @@ else
         Insert.DimName = cell(1,5);
         if strcmp(Info.Datatype,'char')
             Insert.NVal = 4;
+        elseif any(strcmp('flag_values',Attribs))
+            Insert.NVal = 6;
         end
         %
         % Link to dimension variables
