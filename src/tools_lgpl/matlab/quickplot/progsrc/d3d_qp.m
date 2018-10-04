@@ -2607,6 +2607,7 @@ switch cmd
             zlim;
             qpsf;
             qpsa;
+            qpfile
         end
         
     case 'showmessagewin'
