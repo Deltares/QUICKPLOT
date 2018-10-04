@@ -256,7 +256,7 @@ if isequal(Props.FileInfo,'operator')
             if griduse~=1
                 for c = {'FaceNodeConnect','ValueLocation','TRI','XYZ','X','Y','Z'}
                     f = c{1};
-                    if isfield(Ans,f)
+                    if isfield(Ans2,f)
                         Ans.(f) = Ans2.(f);
                     end
                 end

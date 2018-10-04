@@ -308,9 +308,6 @@ if XYRead || compute_unitvalue || computeDZ
         end
     elseif DimFlag(K_) && strcmp(Props.Loc3D,'b')
         dp=readdps(FI,idx);
-        if ~DataInCell && length(idx{K_})>1
-            error('Plot type not yet supported for underlayers')
-        end
         I=vs_disp(FI,'map-sed-series','DP_BEDLYR');
         idxK_=[idx{K_} idx{K_}(end)+1];
         if isstruct(I)
@@ -324,9 +321,20 @@ if XYRead || compute_unitvalue || computeDZ
         if length(szdp)<3
             szh(3)=1;
         end
-        z=repmat(dp,[1 1 1 length(idxK_)]);
-        for k=find(idxK_>0)
-            z(:,:,:,k)=dp-dz(:,:,:,idxK_(k));
+        if DataInCell
+            z=repmat(dp,[1 1 1 length(idxK_)]);
+            for k=find(idxK_>0)
+                z(:,:,:,k)=dp-dz(:,:,:,idxK_(k));
+            end
+        else
+            z=repmat(dp,[1 1 1 length(idxK_)-1]);
+            for k = 1:length(idxK_)-1
+                if idxK_(k)==0
+                    z(:,:,:,k)=dp - (dz(:,:,:,idxK_(k+1)))/2;
+                else
+                    z(:,:,:,k)=dp - (dz(:,:,:,idxK_(k)) + dz(:,:,:,idxK_(k+1)))/2;
+                end
+            end
         end
         x=reshape(x,[1 size(x)]);
         x=repmat(x,[1 1 1 length(idxK_)]);
