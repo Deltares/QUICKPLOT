@@ -30,6 +30,10 @@ function varargout=wlgrid(cmd,varargin)
 %                         shifted slightly to avoid clipping, hence don't
 %                         use MV to already mark clipped points in the X,Y
 %                         datasets provided.
+%     'Attributes'      : An Nx2 cell array of N keyword-value pairs. The
+%                         values should be either strings or scalar values.
+%                         The special keywords 'Coordinate System' and
+%                         'Missing Value' will be skipped.
 %
 %   Accepted without property name: x-coordinates, y-coordinates and
 %   enclosure array (in this order), file name, file format, coordinate
@@ -146,6 +150,7 @@ end
 filename=fullfile(path,[name ext]);
 basename=fullfile(path,name);
 GRID.FileName=filename;
+GRID.Attributes = cell(0,2);
 
 % Grid file
 gridtype='RGF';
@@ -179,11 +184,13 @@ try
             EqualSign = strfind(line,'=');
             if ~isempty(EqualSign)
                 keyword = strtrim(line(1:EqualSign(1)-1));
+                value   = strtrim(line(EqualSign(1)+1:end));
+                GRID.Attributes(end+1,:) = {keyword value};
                 switch keyword
                     case 'Coordinate System'
-                        GRID.CoordinateSystem=strtrim(line(EqualSign(1)+1:end));
+                        GRID.CoordinateSystem = value;
                     case 'Missing Value'
-                        GRID.MissingValue=str2double(line(EqualSign(1)+1:end));
+                        GRID.MissingValue     = str2double(value);
                 end
                 prevlineoffset = ftell(fid);
                 line=fgetl(fid);
@@ -592,6 +599,7 @@ end
 
 % write
 fid=fopen(filename,'w');
+SpecialKeywords = {'Coordinate System','Missing Value'};
 if strcmp(fileformat,'oldrgf') || strcmp(fileformat,'newrgf')
     if strcmp(fileformat,'oldrgf')
         fprintf(fid,'* MATLAB Version %s file created at %s.\n',version,datestr(now));
@@ -599,6 +607,19 @@ if strcmp(fileformat,'oldrgf') || strcmp(fileformat,'newrgf')
         fprintf(fid,'Coordinate System = %s\n',Grd.CoordinateSystem);
         if isfield(Grd,'MissingValue') && Grd.MissingValue~=0
             fprintf(fid,['Missing Value = ' Format '\n'],Grd.MissingValue);
+        end
+        if isfield(Grd,'Attributes')
+            for i = 1:size(Grd.Attributes,1)
+                keyword = Grd.Attributes{i,1};
+                value   = Grd.Attributes{i,2};
+                if ~ismember(keyword,SpecialKeywords)
+                    if ischar(value)
+                        fprintf(fid,'%s = %s\n',keyword,value);
+                    else
+                        fprintf(fid,'%s = %g\n',keyword,value);
+                    end
+                end
+            end
         end
     end
     fprintf(fid,'%8i%8i\n',size(Grd.X));
