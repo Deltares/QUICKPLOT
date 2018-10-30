@@ -201,9 +201,7 @@ for ivar = 1:nvars
         Info.StdName = Info.Attribute(j).Value;
     end
     %
-    if ~isempty(Info.Type)
-        % avoid overruling already defined variables types (e.g. ugrid_mesh)
-    elseif Info.Nctype==2
+    if Info.Nctype==2
         %
         % for character variables the second dimension is the string length
         %
@@ -428,7 +426,11 @@ for ivar = 1:nvars
             % time quantity "since" --> time dimension
             %
             if ~isempty(refdate) && ~isequal(nc.Dataset(ivar).Type,'time') && length(nc.Dataset(ivar).Dimension)==1
-                nc = setType(nc,ivar,idim,'aux-time');
+                if strcmp(nc.Dataset(ivar).Type,'coordinate')
+                    nc = setType(nc,ivar,idim,'time');
+                else
+                    nc = setType(nc,ivar,idim,'aux-time');
+                end
             end
             %
             nc.Dataset(ivar).Info.DT      = dt/86400;
@@ -662,35 +664,34 @@ for ivar = 1:nvars
     end
     %
     if ~isempty(Info.Station)
-        iStation = abs(Info.Station);
-        %
-        if length(Info.Station)>1
+        iStation = Info.Station(Info.Station>0);
+        if length(iStation)<1
+            % if no coordinate was explicitly specified, then use the first
+            % autodetected variable without complaint
+            iStation = abs(Info.Station(1));
+        elseif length(iStation)>1
+            % if multiple explicit coordinates match, then report error
             Names = {nc.Dataset(iStation).Name};
             for is = 1:length(Names)
                 isInfo = nc.Dataset(iStation(is));
                 dims = sprintf('%s, ',isInfo.Dimension{:});
                 Names{is} = [isInfo.Datatype ' :: ' Names{is} ' (' dims(1:end-2) ')'];
             end
-            %
-            % rather than always using the first one, we may keep track of
-            % the ones being used and then preferentially select one that
-            % has been used before (only necessary if the order in which we
-            % find them is not consistent). Implement if necessary. What if
-            % both variables v1 and v2 would do and variable X points to v1
-            % and Y points to v2, so both have been used by the time
-            % variable Z is processed. Then we still need to select the
-            % either one.
-            %
             ui_message('error', ...
                 [{sprintf('Problem detecting station coordinate for "%s".',Info.Name) ...
                 'Any one of the following variables seems to be valid'} ...
                 Names ...
                 {'Using the first one.'}])
+            iStation = iStation(1);
         end
-        Info.Station = iStation(1);
-        %
+        Info.Station = iStation;
         statdim = intersect(Info.Dimid,nc.Dataset(Info.Station).Dimid(1));
-        Info.TSMNK(2) = statdim;
+        %
+        if statdim==Info.TSMNK(1) % station dimension matches time dimension, most likely a string representation of time is mistaken for a station variable
+            Info.Station = [];
+        else
+            Info.TSMNK(2) = statdim;
+        end
     end
     %
     xName = '';

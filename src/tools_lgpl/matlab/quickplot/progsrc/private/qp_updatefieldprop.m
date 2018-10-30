@@ -661,7 +661,7 @@ set(MW.S,'enable','off')
 set(MW.AllS,'enable','off','visible','off')
 set(MW.EditS,'enable','off','string','','backgroundcolor',UD.Inactive,'visible','off')
 set(MW.MaxS,'enable','off','string','-','visible','off')
-set(MW.StList,'enable','off','value',1,'string',' ','backgroundcolor',UD.Inactive)
+set(MW.StList,'enable','off','value',1,'string',' ','backgroundcolor',UD.Inactive,'visible','on')
 %
 % MNK/XYZ selection controls ...
 %
