@@ -648,6 +648,11 @@ for j=1:length(Out1)
                 if ~strcmp(OutIn.Char,'MESH_WEIRS')  && any(strcmp('MESH_WEIRS',chars))
                     OutIn=[];
                 end
+            case {'weir flow condition', 'weir unit discharge', 'weir overflow depth', 'weir velocity', 'weir head loss'}
+                % remove time varying weir quantities if the weir location information is missing
+                if ~any(strcmp('MESH_WEIRS',chars))
+                    OutIn=[];
+                end
             case {'wind','pressure'}
                 switch stagwflag
                     case 11
