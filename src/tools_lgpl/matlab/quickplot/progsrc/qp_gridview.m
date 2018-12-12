@@ -1536,7 +1536,9 @@ else
     set(findall(F,'tag','gridviewrange'),'enable','off')
     set(findall(F,'tag','gridviewpiecewise'),'enable','off')
     set(findall(F,'tag','gridviewlineseg'),'enable','off')
-    %set(findall(F,'tag','gridviewline'),'enable','off')
+    if ~strcmp(GRID.ValLocation,'FACE')
+        set(findall(F,'tag','gridviewline'),'enable','off')
+    end
     if strcmp(GRID.Type,'network') || ...
             ~isfield(GRID,'FaceNodeConnect') || ...
             isempty(GRID.FaceNodeConnect)

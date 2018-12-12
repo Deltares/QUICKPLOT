@@ -84,7 +84,7 @@ if isfield(data,'Connect')
 end
 switch v_slice
     case 'MN'
-        if isfield(data,'FaceNodeConnect') || isfield(data,'TRI') || isfield(data,'SEG')
+        if isfield(data,'FaceNodeConnect') || isfield(data,'TRI') || isfield(data,'EdgeNodeConnect') || isfield(data,'SEG')
             multiTime = false;
             if isfield(data,'Time') && length(data.Time)>1
                 multiTime = true;
@@ -128,6 +128,16 @@ switch v_slice
                 data = rmfield(data,'TRI');
                 data = rmfield(data,'XYZ');
                 multiTime = true;
+            elseif isfield(data,'EdgeNodeConnect')
+                switch data.ValLocation
+                    case 'NODE'
+                        data.X = data.X(isel,:);
+                        data.Y = data.Y(isel,:);
+                        data = rmfield(data,'EdgeNodeConnect');
+                    case 'EDGE'
+                        error('EDGE data on 1D network still to be implemented')
+                end
+                data.Geom = 'sQUAD';
             else % isfield(data,'SEG')
                 switch data.ValLocation
                     case 'NODE'
