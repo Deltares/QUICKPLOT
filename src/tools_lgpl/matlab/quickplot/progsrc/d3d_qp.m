@@ -2739,6 +2739,8 @@ switch cmd
                             mm=get(MW.EditM,'userdata');
                             range{1}=mm;
                         end
+                    elseif strcmp(get(MW.MaxM,'enable'),'on')
+                        range{1}=1;
                     end
                     %----
                     if strcmp(get(MW.N,'enable'),'on')
@@ -2750,6 +2752,8 @@ switch cmd
                             nn=get(MW.EditN,'userdata');
                             range{2}=nn;
                         end
+                    elseif strcmp(get(MW.MaxN,'enable'),'on')
+                        range{2}=1;
                     end
                     %----
                 case '(M,N) point/path'
@@ -4238,7 +4242,7 @@ switch cmd
         news = getvalstr(MWSelType);
         switch news
             case 'M range and N range'
-                set([MW.MN MW.EditMN MW.MN2XY MW.MN2M],'visible','off')
+                set([MW.MN MW.EditMN MW.MNrev MW.MN2XY MW.MN2M],'visible','off')
                 set([MW.XY MW.EditXY MW.LoadXY MW.SaveXY],'visible','off')
                 set([MW.M MW.AllM MW.EditM MW.MaxM],'visible','on')
                 set([MW.N MW.AllN MW.EditN MW.MaxN],'visible','on')
@@ -4246,7 +4250,7 @@ switch cmd
                 set([MW.M MW.AllM MW.EditM],'visible','off')
                 set([MW.N MW.AllN MW.EditN],'visible','off')
                 set([MW.XY MW.EditXY MW.LoadXY MW.SaveXY],'visible','off')
-                set([MW.MN MW.EditMN MW.MN2XY],'visible','on')
+                set([MW.MN MW.EditMN MW.MNrev MW.MN2XY],'visible','on')
                 %
                 Props=get(MW.Field,'userdata');
                 fld=get(MW.Field,'value');
@@ -4259,7 +4263,7 @@ switch cmd
             case '(X,Y) point/path'
                 set([MW.M MW.AllM MW.EditM MW.MaxM],'visible','off')
                 set([MW.N MW.AllN MW.EditN MW.MaxN],'visible','off')
-                set([MW.MN MW.EditMN MW.MN2XY MW.MN2M],'visible','off')
+                set([MW.MN MW.EditMN MW.MNrev MW.MN2XY MW.MN2M],'visible','off')
                 set([MW.XY MW.EditXY MW.LoadXY MW.SaveXY],'visible','on')
             case 'K range'
                 set([MW.Z MW.EditZ],'visible','off')
