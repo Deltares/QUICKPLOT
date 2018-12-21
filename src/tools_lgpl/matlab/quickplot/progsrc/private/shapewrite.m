@@ -268,6 +268,11 @@ if iscell(XY)
         ranges(3)=max(ranges(3),max(XY{i}(:,1)));
         ranges(4)=max(ranges(4),max(XY{i}(:,2)));
     end
+elseif DataType==1
+    ranges(1)=min(XY(:,1));
+    ranges(2)=min(XY(:,2));
+    ranges(3)=max(XY(:,1));
+    ranges(4)=max(XY(:,2));
 else
     pMin = min(Patch(:));
     Patch(isnan(Patch)) = pMin;
