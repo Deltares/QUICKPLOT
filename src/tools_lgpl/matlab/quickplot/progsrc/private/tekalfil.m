@@ -596,6 +596,7 @@ switch FI.FileType
                         switch length(FI.Field(i).Size)
                             case 2 % 1D
                                 Col1 = lower(FI.Field(i).ColLabels{1});
+                                Col2 = '';
                                 if length(FI.Field(i).ColLabels)>=2
                                     Col2 = lower(FI.Field(i).ColLabels{2});
                                     if isequal(Col1,'date') && isequal(Col2,'time')
@@ -604,6 +605,12 @@ switch FI.FileType
                                         Col1='date and time';
                                     elseif isequal(Col1,'yyyymmdd') && isequal(Col2,'hhmmss')
                                         Col1='date and time';
+                                    end
+                                end
+                                if strncmpi(Col1,'x coord',7) || strncmpi(Col1,'x-coord',7)
+                                    Col1 = 'x-coordinate';
+                                    if strncmpi(Col2,'y coord',7) || strncmpi(Col2,'y-coord',7)
+                                        Col1 = 'x- and y-coordinate';
                                     end
                                 end
                                 if strncmpi(Col1,'z coord',7) || strncmpi(Col1,'z-coord',7)
@@ -630,6 +637,10 @@ switch FI.FileType
                                         DataProps(end+1,:)=DP;
                                     case {'z-coordinate'}
                                         DP={'field X'    'PNT+' 'z'  [0 5 0 0 1]  0          1       i       0       0          []      {}  };
+                                        DP{1}=sprintf('%s',FI.Field(i).Name);
+                                        DataProps(end+1,:)=DP;
+                                    case {'x- and y-coordinate'}
+                                        DP={'field X'    'PNT' 'xy'  [0 5 1 0 0]  0          1       i       0       0          []      {}  };
                                         DP{1}=sprintf('%s',FI.Field(i).Name);
                                         DataProps(end+1,:)=DP;
                                     otherwise
