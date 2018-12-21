@@ -100,13 +100,27 @@ else
         %
         % ---> X and Y
         %
-        faces=reshape(1:numel(Y),size(Y));
-        if isequal(size(Y),size(Val)+1)
+        nX = size(X,1);
+        nZ = size(Y,2);
+        if isequal(size(Val),[nX-1 nZ-1]) && isequal(size(Y),[nX nZ])
+            % Val at centre, X and Y defined at corners
+            faces=reshape(1:numel(Y),size(Y));
             faces=faces(1:end-1,1:end-1);
             faces=faces(:);
             xv=[X(:) Y(:)];
             fv=[faces faces+1 faces+size(X,1)+1 faces+size(X,1)];
-        else
+        elseif isequal(size(Val),[nX-1 nZ-1]) && isequal(size(Y),[nX-1 nZ])
+            faces=reshape(1:numel(Y),size(Y));
+            faces=faces(:,1:end-1);
+            faces=faces(:);
+            X0=X(1:end-1,:);
+            X1=X(2:end,:);
+            xv=[X0(:) Y(:); X1(:) Y(:)];
+            fv=[faces faces+numel(X0) faces+size(X0,1)+numel(X0) faces+size(X0,1)];
+        elseif isequal(size(Val),[nX-1 nZ]) && isequal(size(Y),[nX-1 nZ])
+            Y = (Y(:,[1:end end]) + Y(:,[1 1:end]))/2;
+            X(:,end+1) = X(:,end);
+            faces=reshape(1:numel(Y),size(Y));
             faces=faces(:,1:end-1);
             faces=faces(:);
             X0=X(1:end-1,:);

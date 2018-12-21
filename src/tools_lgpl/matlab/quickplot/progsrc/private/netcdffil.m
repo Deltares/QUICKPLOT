@@ -313,6 +313,17 @@ if DataRead && Props.NVal>0
     if Props.NVal==6
         fm = ustrcmpi('flag_meanings',Attribs);
         Ans.Classes = strsplit(Info.Attribute(fm).Value,' ');
+        fv = ustrcmpi('flag_values',Attribs);
+        if fv>0
+            [dummy,Ans.Val] = ismember(Ans.Val,Info.Attribute(fv).Value);
+        else
+            fm = ustrcmpi('flag_masks',Attribs);
+            if fm>0
+                ui_message('warning','The quantity %s uses ''flag_masks'' which are not yet supported.',Info.Name)
+            else
+                ui_message('warning','The quantity %s uses ''flag_meanings'' attribute,\nbut the associated ''flag_values'' or ''flag_masks'' attribute can''t be found.', Info.Name)
+            end
+        end
     end
     %
     hdim = 1-cellfun('isempty',Props.DimName);
@@ -366,6 +377,28 @@ if XYRead || XYneeded
         %ugrid
         mesh_settings = Info.Mesh;
         meshInfo      = FI.Dataset(mesh_settings{2});
+        %
+        dimNodes = meshInfo.Mesh{4};
+        dimEdges = meshInfo.Mesh{5};
+        dimFaces = meshInfo.Mesh{6};
+        allDims = {FI.Dimension.Name};
+        switch mesh_settings{3}
+            case 0
+                ValLocation = 'EDGE';
+                MeshSubset = {'NODE' dimNodes idx{M_}
+                              'EDGE' dimEdges -1
+                              'FACE' dimFaces -1};
+            case 1
+                ValLocation = 'EDGE';
+                MeshSubset = {'NODE' dimNodes 1:FI.Dimension(strcmp(dimNodes,allDims)).Length
+                              'EDGE' dimEdges idx{M_}
+                              'FACE' dimFaces -1};
+            case 2
+                ValLocation = 'FACE';
+                MeshSubset = {'NODE' dimNodes 1:FI.Dimension(strcmp(dimNodes,allDims)).Length
+                              'EDGE' dimEdges -1
+                              'FACE' dimFaces idx{M_}};
+        end
         %
         for c = 'XY'
             CoordInfo2 = FI.Dataset(meshInfo.(c));
@@ -650,6 +683,13 @@ if XYRead || XYneeded
     if ~isempty(Info.Z) && Props.hasCoords
         vdimid = Info.Z;
         CoordInfo = FI.Dataset(vdimid);
+        if ~isempty(strfind(CoordInfo.Name,'_layer_'))
+            iName  = strrep(CoordInfo.Name,'_layer_','_interface_');
+            iDimid = ustrcmpi(iName,{FI.Dataset.Name});
+            CoordInfo = FI.Dataset(iDimid);
+            idx{K_} = unique([idx{K_} idx{K_}+1]);
+            Props.DimName{K_} = CoordInfo.Dimension{1};
+        end
         %
         if isempty(CoordInfo.Attribute)
             Attribs = {};
@@ -687,6 +727,7 @@ if XYRead || XYneeded
             signup = 1;
         end
         j=strmatch('standard_name',Attribs,'exact');
+        zUnitVar = '';
         try
             if ~isempty(j)
                 standard_name = CoordInfo.Attribute(j).Value;
@@ -696,6 +737,16 @@ if XYRead || XYneeded
                     hdims = {':',':'};
                 end
                 switch standard_name
+                    case 'atmosphere_ln_pressure_coordinate'
+                        [p0  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
+                        [lev , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
+                        Z = zeros(szData);
+                        for t=1:size(Z,1)
+                            for k=1:length(lev)
+                                Z(t,hdims{:},k) = p0 * exp(-lev(k));
+                            end
+                        end
+                        zUnitVar = FormulaTerms{1,2};
                     case 'atmosphere_sigma_coordinate'
                         [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
                         [ps     , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
@@ -706,6 +757,7 @@ if XYRead || XYneeded
                                 Z(t,hdims{:},k) = ptop+sigma(k)*(ps(t,hdims{:})-ptop);
                             end
                         end
+                        zUnitVar = FormulaTerms{3,2};
                     case 'atmosphere_hybrid_sigma_pressure_coordinate'
                         if isequal(FormulaTerms{1,1},'a:')
                             [a      , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
@@ -718,6 +770,7 @@ if XYRead || XYneeded
                                     Z(t,hdims{:},k) = a(k)*p0+b(k)*ps(t,hdims{:});
                                 end
                             end
+                            zUnitVar = FormulaTerms{4,2};
                         else
                             [ap     , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
                             [b      , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
@@ -728,18 +781,19 @@ if XYRead || XYneeded
                                     Z(t,hdims{:},k) = ap(k)+b(k)*ps(t,hdims{:});
                                 end
                             end
+                            zUnitVar = FormulaTerms{1,2};
                         end
                     case 'atmosphere_hybrid_height_coordinate'
-                        [tau     , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
-                        [eta     , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
-                        [ztop    , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
-                        [zsurface, status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.DimName,idx);
+                        [a     , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
+                        [b     , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
+                        [orog  , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
                         Z = zeros(szData);
                         for t=1:size(Z,1)
-                            for k=1:length(tau)
-                                Z(t,hdims{:},k) = tau(k)*zsurface(t,hdims{:})+eta(k)*ztop;
+                            for k=1:length(a)
+                                Z(t,hdims{:},k) = a(k) + b(k)*orog(t,hdims{:});
                             end
                         end
+                        zUnitVar = FormulaTerms{1,2};
                     case 'atmosphere_sleve_coordinate'
                         [a       , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
                         [b1      , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
@@ -753,12 +807,16 @@ if XYRead || XYneeded
                                 Z(t,hdims{:},k) = a(k)*ztop+b1(k)*zsurf1(t,hdims{:})+b2(k)*zsurf2(t,hdims{:});
                             end
                         end
+                        zUnitVar = FormulaTerms{4,2};
                     case 'ocean_sigma_coordinate'
                         [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
                         [eta    , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
                         [depth  , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx);
-                        if strcmp(FormulaTerms{3,1},'bedlevel:') % hack for D-Flow FM
+                        % some hacks for D-Flow FM
+                        if strcmp(FormulaTerms{3,1},'bedlevel:')
                             depth = -depth;
+                        elseif length(FormulaTerms{3,2})>10 && strcmp(FormulaTerms{3,2}(end-9:end),'waterdepth')
+                            depth = depth-eta;
                         end
                         Z = zeros(szData);
                         for t=1:size(Z,1)
@@ -766,6 +824,7 @@ if XYRead || XYneeded
                                 Z(t,hdims{:},k) = eta(t,hdims{:})+(depth+eta(t,hdims{:}))*sigma(k);
                             end
                         end
+                        zUnitVar = FormulaTerms{2,2};
                     case 'ocean_s_coordinate'
                         [s      , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
                         [eta    , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
@@ -780,6 +839,7 @@ if XYRead || XYneeded
                                 Z(t,hdims{:},k) = eta(t,hdims{:})*(1+s(k))+depth_c*s(k)+(depth-depth_c)*C(k);
                             end
                         end
+                        zUnitVar = FormulaTerms{2,2};
                     case 'ocean_sigma_z_coordinate'
                         [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
                         [eta    , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
@@ -798,6 +858,7 @@ if XYRead || XYneeded
                                 end
                             end
                         end
+                        zUnitVar = FormulaTerms{2,2};
                     case 'ocean_double_sigma_coordinate'
                         [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx);
                         [depth  , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx);
@@ -818,6 +879,7 @@ if XYRead || XYneeded
                                 end
                             end
                         end
+                        zUnitVar = FormulaTerms{3,2};
                     otherwise
                         if ~isempty(formula)
                             ui_message('warning','Formula for %s not implemented',standard_name)
@@ -837,13 +899,22 @@ if XYRead || XYneeded
             end
         catch Ex
             qp_error('Retrieving vertical coordinate failed, continuing with layer index as vertical coordinate',Ex,'netcdffil')
-            szData = [szData 1 1];
-            Z = repmat(reshape(idx{K_},[1 1 1 length(idx{K_})]),szData(1:3));
+            kDim = length(szData);
+            kVec = ones(1,kDim);
+            kVec(kDim) = length(idx{K_});
+            Z = repmat(reshape(idx{K_},kVec),szData(1:kDim-1));
         end
         %
-        j = strmatch('units',Attribs,'exact');
-        if ~isempty(j)
-            Ans.ZUnits = CoordInfo.Attribute(j).Value;
+        if ~isempty(zUnitVar)
+            zUnitVar = strmatch(zUnitVar,{FI.Dataset.Name},'exact')-1;
+            Info = FI.Dataset(zUnitVar+1);
+            zUnitAtt = strmatch('units',{Info.Attribute.Name},'exact');
+            Ans.ZUnits = Info.Attribute(zUnitAtt).Value;
+        else
+            j = strmatch('units',Attribs,'exact');
+            if ~isempty(j)
+                Ans.ZUnits = CoordInfo.Attribute(j).Value;
+            end
         end
         %--------------------------------------------------------------------
         %
@@ -1223,7 +1294,14 @@ else
             end
         end
         %
-        if strcmp(standard_name,'discharge') && strcmp(Insert.Geom,'UGRID-EDGE')
+        %if strcmp(standard_name,'discharge') && strncmp(Insert.Name,'Discharge',9) && strcmp(Insert.Geom,'UGRID-EDGE') && Insert.DimFlag(K_)>0
+        %    Insert.Name = ['Depth integrated d' Insert.Name(2:end)];
+        %    Insert.DimFlag(K_)=0;
+        %    %
+        %    Out(end+1)=Insert;
+        %end
+        %
+        if strcmp(standard_name,'discharge') && strcmp(Insert.Geom,'UGRID-EDGE') && Insert.DimFlag(K_)==0
             Insert.Name = 'stream function'; % previously: discharge potential
             Insert.Geom = 'UGRID-NODE';
             Insert.varid = {'stream_function' Insert.varid};

@@ -221,6 +221,7 @@ switch v_slice
             Slice = arbcross(geomin{:},isel(:,1),isel(:,2));
         end
         nValLoc = [];
+        nZLoc = [];
         Flds = {'X','Y','Z','Val','XComp','YComp','ZComp'};
         for i=1:length(Flds)
             fld = Flds{i};
@@ -238,13 +239,20 @@ switch v_slice
                         data.(fld) = permute(data.(fld),dms);
                     end
                     if isequal(fld,'Z')
-                        data.(fld) = arbcross(Slice,data.(fld));
+                        data.ZLocation = 'FACE';
+                        if isfield(data,'ZLocation') && ~isempty(data.ZLocation)
+                            data.(fld) = arbcross(Slice,{data.ZLocation data.(fld)});
+                        else
+                            data.(fld) = arbcross(Slice,data.(fld));
+                        end
+                        nZLoc = size(data.(fld),1);
                     elseif isfield(data,'ValLocation') && ~isempty(data.ValLocation)
                         data.(fld) = arbcross(Slice,{data.ValLocation data.(fld)});
+                        nValLoc = size(data.(fld),1);
                     else
                         data.(fld) = arbcross(Slice,data.(fld));
+                        nValLoc = size(data.(fld),1);
                     end
-                    nValLoc = size(data.(fld),1);
                     if isfield(data,'Time') && length(data.Time)>1
                         szV = size(data.(fld));
                         dms = [length(szV) 1:length(szV)-1];
@@ -274,6 +282,13 @@ switch v_slice
             data.ValLocation = 'NODE';
         else
             data.ValLocation = 'EDGE';
+        end
+        if isempty(nZLoc)
+            % no z-values, so no ZLocation
+        elseif nZLoc==size(data.X,1)
+            data.ZLocation = 'NODE';
+        else
+            data.ZLocation = 'EDGE';
         end
     otherwise
         error('Expected ''XY'' or ''MN'' slice TYPE.')

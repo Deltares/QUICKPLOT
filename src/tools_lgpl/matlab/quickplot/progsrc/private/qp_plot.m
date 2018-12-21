@@ -238,6 +238,51 @@ end
 
 FirstFrame=isempty(hOldVec);
 
+if isfield(Ops,'plotcoordinate')
+    switch Ops.plotcoordinate
+        case {'path distance','reverse path distance'}
+            x = data.X(:,:,1);
+            if isfield(data,'Y')
+                y = data.Y(:,:,1);
+            else
+                y = 0*x;
+            end
+            if strcmp(Ops.plotcoordinate,'reverse path distance')
+                x = rot90(x,2);
+                y = rot90(y,2);
+            end
+            if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
+                s = pathdistance(x,y,'geographic');
+                data.XUnits = 'm';
+            else
+                s = pathdistance(x,y);
+            end
+            %if ~isequal(size(data.X),size(data.Val)) && ~isfield(data,'dX_tangential')
+            %    ds = s(min(find(s>0)))/2;
+            %    if ~isempty(ds)
+            %        s = s-ds;
+            %    end
+            %end
+            if strcmp(Ops.plotcoordinate,'reverse path distance')
+                s = rot90(s,2);
+            end
+            s = reshape(repmat(s,[1 1 size(data.X,3)]),size(data.X));
+        case 'x coordinate'
+            s = data.X;
+        case 'y coordinate'
+            s = data.Y;
+        case 'time'
+            s = repmat(data.Time,[1 size(data.X,3)]);
+    end
+    data.X = squeeze(s);
+    if isfield(data,'Y')
+        data = rmfield(data,'Y');
+        if isfield(data,'YUnits')
+            data = rmfield(data,'YUnits');
+        end
+    end
+end
+
 if strcmp(Ops.presentationtype,'vector') || ...
         strcmp(Ops.presentationtype,'markers') || ...
         strcmp(Ops.presentationtype,'values')
@@ -254,7 +299,9 @@ if strcmp(Ops.presentationtype,'vector') || ...
                     data(i).EdgeNodeConnect = [1:length(data(i).X)-1;2:length(data(i).X)]';
                 end
                 data(i).X = mean(data(i).X(data(i).EdgeNodeConnect),2);
-                data(i).Y = mean(data(i).Y(data(i).EdgeNodeConnect),2);
+                if isfield(data,'Y')
+                    data(i).Y = mean(data(i).Y(data(i).EdgeNodeConnect),2);
+                end
             elseif strcmp(data(i).ValLocation,'FACE')
                 missing = isnan(data(i).FaceNodeConnect);
                 nNodes = size(missing,2)-sum(missing,2);
@@ -262,9 +309,11 @@ if strcmp(Ops.presentationtype,'vector') || ...
                 data(i).X = data(i).X(data(i).FaceNodeConnect);
                 data(i).X(missing) = 0;
                 data(i).X = sum(data(i).X,2)./nNodes;
-                data(i).Y = data(i).Y(data(i).FaceNodeConnect);
-                data(i).Y(missing) = 0;
-                data(i).Y = sum(data(i).Y,2)./nNodes;
+                if isfield(data,'Y')
+                    data(i).Y = data(i).Y(data(i).FaceNodeConnect);
+                    data(i).Y(missing) = 0;
+                    data(i).Y = sum(data(i).Y,2)./nNodes;
+                end
             end
             data(i).Geom = 'sSEG';
         end

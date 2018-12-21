@@ -225,7 +225,7 @@ else
         Msg = '';
     end
     switch lower(Cmd)
-        case {'error','warning',''}
+        case {'error','warning','message',''}
             if nargin>2
                 Msg = sprintf(varargin{:});
             end

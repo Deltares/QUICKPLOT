@@ -33,7 +33,6 @@ function outdata=d3d_qp(cmd,varargin)
 %   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
-
 try
     if nargin==0
         cmd='initialize';
@@ -343,7 +342,12 @@ switch cmd
             figure(mfig);
         end
         if isstandalone
-            setpref('SNCTOOLS','USE_JAVA',true);
+            try
+                % Insert a try-catch block here since the setpref command sometimes fails on a write error to matlabprefs.mat.
+                setpref('SNCTOOLS','USE_JAVA',true);
+            catch
+                ui_message('message','Failed to persist preferences during initialization.')
+            end
             javaaddpath([qp_basedir('exe') filesep 'netcdfAll-4.1.jar'])
             try
                 CloseSplashScreen;

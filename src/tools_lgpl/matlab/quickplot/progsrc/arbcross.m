@@ -297,8 +297,8 @@ for i=1:nargin-input_offset-input_skip_end
         % Values defined on mesh patches
         %
         v=[];
-        for k = size(VGRID,3):-1:1
-            vgrid = VGRID(:,:,k);
+        for k = size(VGRID,2):-1:1
+            vgrid = VGRID(:,k);
             v(:,1,k) = vgrid(iFace);
             v(outside,1,k) = NaN;
         end
