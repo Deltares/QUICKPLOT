@@ -51,4 +51,8 @@ elseif isequal(message(1:min(15,end)),'Error: <a href=')
     newline = find(message==char(10));
     message = message(newline(1)+5:end);
 end
-ui_message('error',{msg,message,stacklist{:}})
+if iscell(msg)
+    ui_message('error',{msg{:},message,stacklist{:}})
+else
+    ui_message('error',{msg,message,stacklist{:}})
+end

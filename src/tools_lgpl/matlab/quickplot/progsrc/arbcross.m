@@ -269,6 +269,13 @@ end
 % starting after the grid information (unless it is a 3D grid) and stopping
 % before the last two arguments.
 %
+if strcmp(VGRIDStr,'VGRID')
+    vdim = 3;
+    hdims = {':',':'};
+else
+    vdim = 2;
+    hdims = {':'};
+end
 for i=1:nargin-input_offset-input_skip_end
     VLOC = '?';
     VGRID = varargin{input_offset+i};
@@ -285,8 +292,8 @@ for i=1:nargin-input_offset-input_skip_end
         % Values defined at mesh nodes
         %
         v=[];
-        for k = size(VGRID,3):-1:1
-            vgrid = VGRID(:,:,k);
+        for k = size(VGRID,vdim):-1:1
+            vgrid = VGRID(hdims{:},k);
             v(:,1,k) = sum(wght.*vgrid(iNode),2);
         end
     elseif strcmp(VLOC,'FACE') || ...
@@ -297,16 +304,16 @@ for i=1:nargin-input_offset-input_skip_end
         % Values defined on mesh patches
         %
         v=[];
-        for k = size(VGRID,2):-1:1
-            vgrid = VGRID(:,k);
+        for k = size(VGRID,vdim):-1:1
+            vgrid = VGRID(hdims{:},k);
             v(:,1,k) = vgrid(iFace);
             v(outside,1,k) = NaN;
         end
     elseif strcmp(VLOC,'EDGE')
         noEdge = isnan(iEdge);
         iEdge(noEdge) = 1;
-        for k = size(VGRID,3):-1:1
-            vgrid = VGRID(:,:,k);
+        for k = size(VGRID,vdim):-1:1
+            vgrid = VGRID(hdims{:},k);
             v(:,1,k) = vgrid(iEdge);
         end
         v(noEdge,:) = NaN;

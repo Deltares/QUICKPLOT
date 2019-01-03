@@ -252,8 +252,6 @@ switch geometry
                 else
                     axestype={'X-Val','X-Y'};
                 end
-            elseif multiple(M_) && multiple(K_)
-                % noplot
             elseif multiple(M_)
                 axestype={'X-Y'};
             elseif multiple(K_)
@@ -380,29 +378,33 @@ switch geometry
                 axestype={'Val-Z'};
             end
         else
-            if nval==0
-                axestype={'X-Y'};
-            elseif nval==4 || nval==6
-                if ~multiple(T_) && ~multiple(M_) && ~multiple(N_)
-                    axestype={'X-Y','Text'};
+            if vslice || ...
+                    (multiple(M_) && ~multiple(N_)) || ...
+                    (multiple(N_) && ~multiple(M_))
+                % grid line or slice
+                if multiple(T_)
+                    axestype={'X-Val','X-Y','X-Time','Time-X'};
                 else
-                    axestype={'X-Y'};
+                    axestype={'X-Val','X-Y'};
                 end
+            elseif multiple(M_) && multiple(N_)
+                % 2D domain
+                axestype={'X-Y','X-Y-Val'};
             else
-                if multiple(M_) && multiple(N_) && ~vslice
-                    axestype={'X-Y','X-Y-Val'};
-                elseif multiple(M_) || multiple(N_) || vslice
-                    if multiple(T_)
-                        axestype={'X-Val','X-Y','X-Time','Time-X'};
-                    elseif DimFlag(K_)
-                        axestype={'X-Val','X-Y','X-Z'};
+                % point
+                if nval==4 || nval==6
+                    % string or discrete
+                    if ~multiple(T_)
+                        axestype={'X-Y','Text'};
                     else
-                        axestype={'X-Val','X-Y'};
+                        axestype={'X-Y'};
                     end
-                elseif multiple(T_)
-                    axestype={'Time-Val','X-Y','X-Val'};
                 else
-                    axestype={'X-Y','X-Val','Text'};
+                    if multiple(T_)
+                        axestype={'Time-Val','X-Y','X-Val'};
+                    else
+                        axestype={'X-Y','X-Val','Text'};
+                    end
                 end
             end
         end
@@ -857,7 +859,11 @@ if strcmp(geometry,'SEG-EDGE') || ((nval==1 || nval==6) && TimeSpatial==2) || nv
                         case {'POLYL'}
                             PrsTps={'polylines','values'};
                         case {'UGRID-EDGE'}
-                            PrsTps={'markers';'values';'edge'};
+                            if SpatialV
+                                PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
+                            else
+                                PrsTps={'markers';'values';'edge'};
+                            end
                         case {'UGRID-NODE'}
                             PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                         otherwise

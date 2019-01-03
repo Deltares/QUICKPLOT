@@ -239,7 +239,6 @@ switch v_slice
                         data.(fld) = permute(data.(fld),dms);
                     end
                     if isequal(fld,'Z')
-                        data.ZLocation = 'FACE';
                         if isfield(data,'ZLocation') && ~isempty(data.ZLocation)
                             data.(fld) = arbcross(Slice,{data.ZLocation data.(fld)});
                         else

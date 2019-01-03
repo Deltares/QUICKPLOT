@@ -160,31 +160,7 @@ switch NVal
                 end
             case {'X-Val'}
                 if 1
-                    switch Ops.plotcoordinate
-                        case 'x coordinate'
-                            s = data.X;
-                        case 'y coordinate'
-                            s = data.Y;
-                        otherwise %case {'path distance','reverse path distance'}
-                            xx=data.X;
-                            if isfield(data,'Y')
-                                yy=data.Y;
-                            else
-                                yy=0*xx;
-                            end
-                            if strcmp(Ops.plotcoordinate,'reverse path distance')
-                                xx=rot90(xx,2);
-                                yy=rot90(yy,2);
-                            end
-                            if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
-                                s = pathdistance(xx,yy,'geographic');
-                            else
-                                s = pathdistance(xx,yy);
-                            end
-                            if strcmp(Ops.plotcoordinate,'reverse path distance')
-                                s = rot90(s,2);
-                            end
-                    end
+                    s = data.X;
                     nX = length(s);
                     x = [s s NaN(nX,1)]';
                     y = repmat([get(Parent,'ylim')';NaN],1,nX);
@@ -396,52 +372,14 @@ switch NVal
                         end
                     end
                     switch Ops.plotcoordinate
-                        case 'x coordinate'
-                            data.X(mask)=NaN;
-                            x=data.X;
-                            y=data.Val;
-                            z=zeros(size(x));
-                        case 'y coordinate'
-                            data.Y(mask)=NaN;
-                            x=data.Y;
-                            y=data.Val;
-                            z=zeros(size(x));
                         case '(x,y)'
                             data.X(mask)=NaN;
                             data.Y(mask)=NaN;
                             x=data.X;
                             y=data.Y;
                             z=data.Val;
-                        otherwise %case {'path distance','reverse path distance'}
-                            xx=data.X;
-                            if isfield(data,'Y')
-                                yy=data.Y;
-                            else
-                                yy=0*xx;
-                            end
-                            if isfield(data,'Z')
-                                data.Z(mask)=NaN;
-                                zz=data.Z;
-                            else
-                                zz=0*xx;
-                            end
-                            if strcmp(Ops.plotcoordinate,'reverse path distance')
-                                xx=flipud(fliplr(xx));
-                                yy=flipud(fliplr(yy));
-                                zz=flipud(fliplr(zz));
-                            end
-                            if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
-                                x=pathdistance(xx,yy,'geographic');
-                            else
-                                x=pathdistance(xx,yy);
-                            end
-                            if strcmp(Ops.plotcoordinate,'reverse path distance')
-                                x=flipud(fliplr(x));
-                            end
-                            if length(mask)==length(x)-1
-                                mask=~([~mask;false]|[false;~mask]);
-                            end
-                            x(mask)=NaN;
+                        otherwise
+                            x=data.X;
                             y=data.Val;
                             z=zeros(size(x));
                     end
@@ -668,36 +606,11 @@ switch NVal
                     set(hNew,Ops.LineParams{:});
                 end
             case 'X-Z'
-                x=min(data.X,[],3);
-                if isfield(data,'Y')
-                    y=min(data.Y,[],3);
+                s = min(data.X,[],3);
+                if strcmp(Ops.plotcoordinate,'reverse path distance')
+                    xsign=-1;
                 else
-                    y=0*x;
-                end
-                %
-                xsign=0;
-                switch Ops.plotcoordinate
-                    case {'path distance','reverse path distance'}
-                        if strcmp(Ops.plotcoordinate,'reverse path distance')
-                            x=flipud(fliplr(x));
-                            y=flipud(fliplr(y));
-                            xsign=-1;
-                        else
-                            xsign=1;
-                        end
-                        if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
-                            s=pathdistance(x,y,'geographic');
-                        else
-                            s=pathdistance(x,y);
-                        end
-                        if strcmp(Ops.plotcoordinate,'reverse path distance')
-                            s=flipud(fliplr(s));
-                        end
-                        s=reshape(repmat(s,[1 1 size(data.X,3)]),size(data.X));
-                    case 'x coordinate'
-                        s=data.X;
-                    case 'y coordinate'
-                        s=data.Y;
+                    xsign=1;
                 end
                 %
                 if isequal(size(s),size(data.XComp))
@@ -1035,7 +948,8 @@ end
 
 function hNew = plotslice(hNew,Parent,data,Ops,multiple,DimFlag,Props,Thresholds)
 data = qp_dimsqueeze(data,Ops.basicaxestype,multiple,DimFlag,Props);
-Mask=repmat(min(data.Z,[],3)==max(data.Z,[],3),[1 1 size(data.Z,3)]);
+Mask=repmat(min(data.Z,[],2)==max(data.Z,[],2),[1 size(data.Z,2)]);
+%Mask=repmat(min(data.Z,[],3)==max(data.Z,[],3),[1 1 size(data.Z,3)]);
 if isequal(size(Mask),size(data.X))
     data.X(Mask)=NaN;
 end
@@ -1079,25 +993,29 @@ switch Ops.presentationtype
         hNew=gentextfld(hNew,Ops,Parent,data.Val(I),s(I),data.Z(I));
         
     case 'continuous shades'
-        [s,z] = resize2data(data.Val,s,data.Z);
-        hNew=gensurface(hNew,Ops,Parent,data.Val,s,z,data.Val);
+        [val,s,z] = resize2data(data.Val,s,data.Z,Ops);
+        hNew=gensurface(hNew,Ops,Parent,val,s,z,val);
         
     case 'markers'
-        [s,z] = resize2data(data.Val,s,data.Z);
-        hNew=genmarkers(hNew,Ops,Parent,data.Val,s,z);
+        [val,s,z] = resize2data(data.Val,s,data.Z,Ops);
+        hNew=genmarkers(hNew,Ops,Parent,val,s,z);
         
     case {'contour lines','coloured contour lines','contour patches','contour patches with lines'}
-        [s,z] = resize2data(data.Val,s,data.Z);
-        data.Val(isnan(s) | isnan(z))=NaN;
+        [val,s,z] = resize2data(data.Val,s,data.Z,Ops);
+        val(isnan(s) | isnan(z))=NaN;
         ms=max(s(:));
         mz=max(z(:));
         s(isnan(s))=ms;
         z(isnan(z))=mz;
-        hNew=gencontour(hNew,Ops,Parent,s,z,data.Val,Thresholds);
+        hNew=gencontour(hNew,Ops,Parent,s,z,val,Thresholds);
         
 end
 
-function [s,z] = resize2data(val,s,z)
+function [val,s,z] = resize2data(val,s,z,Ops)
+if isfield(Ops,'extend2edge') && Ops.extend2edge
+    [s,z,val] = face2surf(s,z,val);
+    return
+end
 nH = size(val,1);
 nV = size(val,2);
 if size(s,1)==nH+1
@@ -1108,6 +1026,8 @@ if size(s,2)==nV+1
 end
 if size(z,1)==nH+1
     z = (z(1:end-1,:)+z(2:end,:))/2;
+elseif size(z,1)==nH-1
+    z = (z([1 1:end],:)+z([1:end end],:))/2;
 end
 if size(z,2)==nV+1
     z = (z(:,1:end-1)+z(:,2:end))/2;

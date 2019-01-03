@@ -56,6 +56,7 @@ end
 RequestDims = {};
 RequestedSubset = {};
 netcdf_use_fillvalue = qp_settings('netcdf_use_fillvalue');
+mesh_subsets = {};
 %
 i = 1;
 while i<=length(varargin)
@@ -63,6 +64,8 @@ while i<=length(varargin)
         switch lower(varargin{i})
             case 'netcdf_use_fillvalue'
                 netcdf_use_fillvalue = varargin{i+1};
+            case 'mesh_subsets'
+                mesh_subsets = varargin{i+1};
             otherwise
                 error('Unknown input argument %i "%s" in qp_netcdf_get',i+2,varargin{i})
         end
@@ -107,40 +110,17 @@ for d=1:N
         if none(d_netcdf) &&  ~isempty(mdim)
             imdim2 = find(strcmp(DName,mInfo.Mesh(4:end)))-1;
             if ~isempty(imdim2)
-                %
-                % the unmatched dimension is a spatial dimension. The data
-                % that we're trying to read is defined at a different mesh
-                % location. The dimension for that location is mdim. Try to
-                % match that.
-                %
-                d_netcdf = strcmp(mdim,Info.Dimension);
-                %
-                % OK, this is a bit of a challenge. So, we get data at
-                % imdim2 and need to provide it at imdim. First of all, we
-                % need to take care of the subsetting, and after the
-                % reading we need to map the data back to the requested
-                % location.
-                %
-                switch imdim*10+imdim2
-                    case 01
-                        % requested at NODE, provided at EDGE
-                        % NODE -> all neighbouring EDGES ... -> average the values
-                    case 02
-                        % requested at NODE, provided at FACE
-                        % NODE -> all neighbouring FACES ... -> average the values
-                    case 10
-                        % requested at EDGE, provided at NODE
-                        % EDGE -> EDGE2NODE mapping -> average of the two node values
-                    case 12
-                        % requested at EDGE, provided at FACE
-                        % EDGE -> two neighbouring FACE -> average the two face
-                        % values, or the value of a single neighbouring face
-                    case 20
-                        % requested at FACE, provided at NODE
-                        % FACE -> FACE2NODE mapping -> average of the node values
-                    case 21
-                        % requested at FACE, provided at EDGE
-                        % FACE -> "FACE2EDGE" mapping -> average the values
+                canConvert = false;
+                if ~isempty(mesh_subsets)
+                    isMDIM = strcmp(mdim,mesh_subsets(:,2));
+                    if sum(isMDIM)==1
+                        canConvert = true;
+                        d_netcdf = strcmp(mdim,Info.Dimension);
+                        RequestedSubset{d} = mesh_subsets{isMDIM,3};
+                    end
+                end
+                if ~canConvert
+                    error('Spatial dimension mismatch for variable "%s": requested dimension "%s", known dimension "%s"',Info.Name,DName,mdim)
                 end
             end
         end

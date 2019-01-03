@@ -275,6 +275,13 @@ if isfield(Ops,'plotcoordinate')
             s = repmat(data.Time,[1 size(data.X,3)]);
     end
     data.X = squeeze(s);
+    flds = {'Z','Val','XComp','YComp','ZComp'};
+    for i = 1:length(flds)
+        fld = flds{i};
+        if isfield(data,fld)
+            data.(fld) = squeeze(data.(fld));
+        end
+    end
     if isfield(data,'Y')
         data = rmfield(data,'Y');
         if isfield(data,'YUnits')

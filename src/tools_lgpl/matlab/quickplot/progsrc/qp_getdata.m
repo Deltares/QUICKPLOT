@@ -528,7 +528,7 @@ end
 %
 % Get all data needed.
 %
-[arg2 arg3]=feval(Fcn,FI,X{:});
+[arg2,arg3]=feval(Fcn,FI,X{:});
 %
 % Take average if cell data was required, but not provided.
 % The following code does not yet work for 3D slices!
