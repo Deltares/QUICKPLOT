@@ -241,10 +241,25 @@ FirstFrame=isempty(hOldVec);
 if isfield(Ops,'plotcoordinate')
     switch Ops.plotcoordinate
         case {'path distance','reverse path distance'}
-            x = data.X(:,:,1);
             if isfield(data,'Y')
+                if size(data.X,2)==2 && size(data.X,1)>2
+                    % The following lines are not valid for geographic coordinates!
+                    data.X = (data.X(:,1,:) + data.X(:,2,:))/2;
+                    data.Y = (data.Y(:,1,:) + data.Y(:,2,:))/2;
+                elseif size(data.X,1)==2 && size(data.X,2)>2
+                    % The following lines are not valid for geographic coordinates!
+                    data.X = (data.X(1,:,:) + data.X(2,:,:))/2;
+                    data.Y = (data.Y(1,:,:) + data.Y(2,:,:))/2;
+                end
+                x = data.X(:,:,1);
                 y = data.Y(:,:,1);
             else
+                if size(data.X,2)==2 && size(data.X,1)>2
+                    data.X = (data.X(:,1,:) + data.X(:,2,:))/2;
+                elseif size(data.X,1)==2 && size(data.X,2)>2
+                    data.X = (data.X(1,:,:) + data.X(2,:,:))/2;
+                end
+                x = data.X(:,:,1);
                 y = 0*x;
             end
             if strcmp(Ops.plotcoordinate,'reverse path distance')

@@ -70,7 +70,6 @@ if isfield(data,'XYZ')
     data.Y = data.XYZ(:,:,:,2);
 end
 
-%data = qp_dimsqueeze(data,Ops.axestype,multiple,DimFlag,Props);
 switch NVal
     
     case {0,0.5}

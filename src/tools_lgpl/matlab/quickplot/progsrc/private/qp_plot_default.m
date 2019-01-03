@@ -55,7 +55,6 @@ DimFlag=Props.DimFlag;
 Thresholds=Ops.Thresholds;
 axestype=Ops.basicaxestype;
 
-%data = qp_dimsqueeze(data,Ops.axestype,multiple,DimFlag,Props);
 switch NVal
     
     case {0,0.5}
@@ -947,7 +946,6 @@ end
 
 
 function hNew = plotslice(hNew,Parent,data,Ops,multiple,DimFlag,Props,Thresholds)
-data = qp_dimsqueeze(data,Ops.basicaxestype,multiple,DimFlag,Props);
 Mask=repmat(min(data.Z,[],2)==max(data.Z,[],2),[1 size(data.Z,2)]);
 %Mask=repmat(min(data.Z,[],3)==max(data.Z,[],3),[1 1 size(data.Z,3)]);
 if isequal(size(Mask),size(data.X))
