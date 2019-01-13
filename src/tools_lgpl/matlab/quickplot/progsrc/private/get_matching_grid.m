@@ -237,11 +237,11 @@ while 1
                         C = cell(0,4);
                         for i=1:length(G.Dataset)
                             if strcmp(G.Dataset(i).Type,'ugrid_mesh')
-                                nNodeDim = G.Dataset(i).Mesh{4};
+                                nNodeDim = G.Dataset(i).Mesh{5};
                                 nNodes = G.Dimension(ustrcmpi(nNodeDim,{G.Dimension.Name})).Length;
                                 GridsChecked{end+1} = sprintf('UGRID mesh "%s", number of nodes = %i',G.Dataset(i).Name,nNodes);
-                                if length(G.Dataset(i).Mesh)>=6
-                                    nFaceDim = G.Dataset(i).Mesh{6};
+                                if length(G.Dataset(i).Mesh)>=7
+                                    nFaceDim = G.Dataset(i).Mesh{7};
                                     nFaces = G.Dimension(ustrcmpi(nFaceDim,{G.Dimension.Name})).Length;
                                     GridsChecked{end+1} = sprintf('UGRID mesh "%s", number of faces = %i',G.Dataset(i).Name,nFaces);
                                 else

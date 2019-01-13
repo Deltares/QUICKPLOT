@@ -253,7 +253,7 @@ for i=[M_ N_ K_]
         elseif ~isequal(idx{i},idx{i}(1):idx{i}(end))
             error('Only scalars or ranges allowed for index %i',i)
         end
-        if (i~=K_) && ~strcmp(subtype,'plot') && ~strcmp(Props.Geom,'POLYG') && ~strcmp(Props.Geom,'UGRID-FACE')
+        if (i~=K_) && ~strcmp(subtype,'plot') && ~strcmp(Props.Geom,'POLYG') && ~strcmp(Props.Geom,'UGRID2D-FACE')
             if DataInCell
                 if isequal(idx{i},1)
                     idx{i}=[1 2];
@@ -364,7 +364,7 @@ switch subtype
                                         select = {idx{M_}};
                                     end
                                     [Success,Ans] = qp_getdata(FI.Grid,FI.Grid.Mesh{4},'griddata',select{:});
-                                    Ans.ValLocation = Props.Geom(7:end);
+                                    Ans.ValLocation = Props.Geom(9:end);
                             end
                         else
                             if DataInCell
@@ -839,7 +839,7 @@ end
 %======================== SPECIFIC CODE =======================================
 % select active points ...
 act_from_z = 0;
-if strcmp(subtype,'map') && mapgrid && ~strcmp(Props.Geom,'TRI') && ~strcmp(Props.Geom,'POLYG') && ~strcmp(Props.Geom,'UGRID-FACE')
+if strcmp(subtype,'map') && mapgrid && ~strcmp(Props.Geom,'TRI') && ~strcmp(Props.Geom,'POLYG') && ~strcmp(Props.Geom,'UGRID2D-FACE')
     act=FI.Grid.Index(idx{[M_ N_]},1)~=0;
     gridact=~isnan(x(:,:,:,1));
 elseif strcmp(subtype,'plot') && ~isempty(z)
@@ -1007,7 +1007,7 @@ end
 % generate output ...
 if XYRead
     switch Props.Geom
-        case {'UGRID-FACE','UGRID-EDGE','UGRID-NODE'}
+        case {'UGRID2D-FACE','UGRID2D-EDGE','UGRID2D-NODE'}
             % Ans already filled with geometry information
         case 'POLYG'
             if size(x,2)==2 % segments
@@ -1227,7 +1227,7 @@ switch Type
                             enablegridview=0;
                             %
                             if isfield(FI.Grid,'Mesh')
-                                DataProps{r,3}='UGRID-FACE';
+                                DataProps{r,3}='UGRID2D-FACE';
                             else
                                 DataProps{r,3}='POLYG';
                             end

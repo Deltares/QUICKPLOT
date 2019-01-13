@@ -220,6 +220,7 @@ switch v_slice
         else
             Slice = arbcross(geomin{:},isel(:,1),isel(:,2));
         end
+        nXLoc = [];
         nValLoc = [];
         nZLoc = [];
         Flds = {'X','Y','Z','Val','XComp','YComp','ZComp'};
@@ -227,14 +228,15 @@ switch v_slice
             fld = Flds{i};
             if isfield(data,fld)
                 if isequal(fld,'X')
-                    data.(fld) = Slice.x;
+                    data.X = Slice.x;
                     data.dX_tangential = Slice.dxt;
+                    nXLoc = size(data.X,1);
                 elseif isequal(fld,'Y')
-                    data.(fld) = Slice.y;
+                    data.Y = Slice.y;
                     data.dY_tangential = Slice.dyt;
                 else
-                    if isfield(data,'Time') && length(data.Time)>1
-                        szV = size(data.(fld));
+                    szV = size(data.(fld));
+                    if isfield(data,'Time') && length(data.Time)==szV(1)
                         dms = [2:max(length(szV),3) 1];
                         data.(fld) = permute(data.(fld),dms);
                     end
@@ -252,9 +254,13 @@ switch v_slice
                         data.(fld) = arbcross(Slice,data.(fld));
                         nValLoc = size(data.(fld),1);
                     end
-                    if isfield(data,'Time') && length(data.Time)>1
+                    if isfield(data,'Time') && length(data.Time)==szV(1)
                         szV = size(data.(fld));
-                        dms = [length(szV) 1:length(szV)-1];
+                        if length(data.Time)==1
+                            dms = [length(szV)+1 1:length(szV)];
+                        else
+                            dms = [length(szV) 1:length(szV)-1];
+                        end
                         data.(fld) = permute(data.(fld),dms);
                     end
                 end
@@ -266,25 +272,46 @@ switch v_slice
                 data=rmfield(data,'EdgeNodeConnect');
             end
         elseif isfield(data,'TRI')
-            data.X = arbcross(Slice,data.XYZ(:,:,:,1));
-            data.Y = arbcross(Slice,data.XYZ(:,:,:,2));
-            if size(data.XYZ,4)>2
-                data.Z = arbcross(Slice,data.XYZ(:,:,:,3));
+            szV = size(data.XYZ);
+            if isfield(data,'Time') && length(data.Time)==szV(1)
+                dms = [2:max(length(szV),3) 1];
+                data.XYZ = permute(data.XYZ,dms);
+            end
+            data.X = arbcross(Slice,data.XYZ(:,:,1,:));
+            nXLoc = size(data.X,1);
+            data.dX_tangential = Slice.dxt;
+            data.Y = arbcross(Slice,data.XYZ(:,:,2,:));
+            data.dY_tangential = Slice.dyt;
+            if size(data.XYZ,3)>2
+                data.Z = arbcross(Slice,data.XYZ(:,:,3,:));
             end
             data=rmfield(data,'TRI');
             data=rmfield(data,'XYZ');
+            if isfield(data,'Time') && length(data.Time)==szV(1)
+                szV = size(data.X);
+                if length(data.Time)==1
+                    dms = [length(szV)+1 1:length(szV)];
+                else
+                    dms = [length(szV) 1:length(szV)-1];
+                end
+                data.X = permute(data.X,dms);
+                data.Y = permute(data.Y,dms);
+                if isfield(data,'Z')
+                    data.Z = permute(data.Z,dms);
+                end
+            end
         end
         data.Geom = 'sQUAD';
         if isempty(nValLoc)
             % no values, so no ValLocation
-        elseif nValLoc==size(data.X,1)
+        elseif nValLoc==nXLoc
             data.ValLocation = 'NODE';
         else
             data.ValLocation = 'EDGE';
         end
         if isempty(nZLoc)
             % no z-values, so no ZLocation
-        elseif nZLoc==size(data.X,1)
+        elseif nZLoc==nXLoc
             data.ZLocation = 'NODE';
         else
             data.ZLocation = 'EDGE';

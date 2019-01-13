@@ -205,7 +205,7 @@ if DataRead && Props.NVal>0
                 edge_idx{3} = 1:FI.Dimension(Info.TSMNK(3)+1).Length;
                 [Discharge, status] = qp_netcdf_get(FI,ivar,Props.DimName,edge_idx);
                 %
-                meshInfo    = FI.Dataset(Info.Mesh{2});
+                meshInfo    = FI.Dataset(Info.Mesh{3});
                 if isempty(meshInfo.Attribute)
                     meshAttribs = {};
                 else
@@ -372,15 +372,16 @@ if ~isnan(npolpnt)
     end
 end
 
+getOptions = {};
 if XYRead || XYneeded
     if strncmp(Props.Geom,'UGRID',5)
         %ugrid
         mesh_settings = Info.Mesh;
-        meshInfo      = FI.Dataset(mesh_settings{2});
+        meshInfo      = FI.Dataset(mesh_settings{3});
         %
-        dimNodes = meshInfo.Mesh{4};
-        dimEdges = meshInfo.Mesh{5};
-        dimFaces = meshInfo.Mesh{6};
+        dimNodes = meshInfo.Mesh{5};
+        dimEdges = meshInfo.Mesh{6};
+        dimFaces = meshInfo.Mesh{7};
         allDims = {FI.Dimension.Name};
         MeshSubset = {};
         switch mesh_settings{3}
@@ -419,19 +420,43 @@ if XYRead || XYneeded
             CoordInfo2 = FI.Dataset(meshInfo.(c));
             [Ans.(c), status] = qp_netcdf_get(FI,CoordInfo2);
             %
-            if ~isempty(CoordInfo2.Attribute)
-                Attribs = {CoordInfo2.Attribute.Name};
-                j = strmatch('units',Attribs,'exact');
-                if ~isempty(j)
-                    unit = CoordInfo2.Attribute(j).Value;
-                    units = {'degrees_east','degree_east','degreesE','degreeE', ...
-                        'degrees_north','degree_north','degreesN','degreeN'};
-                    if ismember(unit,units)
-                        unit = 'deg';
-                    end
-                    Ans.([c 'Units']) = unit;
-                end
+            unit = get_unit(CoordInfo2);
+            if ischar(unit)
+                Ans.([c 'Units']) = unit;
             end
+        end
+        if strcmp(mesh_settings{1},'ugrid1d_network')
+            attcsp = strmatch('coordinate_space',{meshInfo.Attribute.Name});
+            csp = strmatch(meshInfo.Attribute(attcsp).Value,{FI.Dataset.Name},'exact');
+            attbl = strmatch('branch_lengths',{FI.Dataset(csp).Attribute.Name}); %TODO: edge_lengths
+            vbl = strmatch(FI.Dataset(csp).Attribute(attbl).Value,{FI.Dataset.Name},'exact');
+            atteg = strmatch('edge_geometry',{FI.Dataset(csp).Attribute.Name});
+            veg = strmatch(FI.Dataset(csp).Attribute(atteg).Value,{FI.Dataset.Name},'exact');
+            % node count dimension
+            %attnc = strmatch('node_count',{FI.Dataset(veg).Attribute.Name});
+            %dnc = strmatch(FI.Dataset(veg).Attribute(attnc).Value,{FI.Dimension.Name},'exact');
+            % part node count
+            attpnc = strmatch('part_node_count',{FI.Dataset(veg).Attribute.Name});
+            vpnc = strmatch(FI.Dataset(veg).Attribute(attpnc).Value,{FI.Dataset.Name},'exact');
+            %
+            [BrX, status] = qp_netcdf_get(FI,FI.Dataset(FI.Dataset(veg).X));
+            [BrY, status] = qp_netcdf_get(FI,FI.Dataset(FI.Dataset(veg).Y));
+            [BrL, status] = qp_netcdf_get(FI,FI.Dataset(vbl));
+            [PNC, status] = qp_netcdf_get(FI,FI.Dataset(vpnc));
+            BrX = mat2cell(BrX,PNC,1);
+            BrY = mat2cell(BrY,PNC,1);
+            %
+            % TODO: get it from start_index of meshInfo.X
+            if min(Ans.X)==0
+                Ans.X = Ans.X+1;
+            end
+            %
+            xUnit = get_unit(FI.Dataset(FI.Dataset(veg).X));
+            if ischar(xUnit)
+                Ans.XUnits = xUnit;
+                Ans.YUnits = xUnit;
+            end
+            [Ans.X,Ans.Y] = branch2xy(BrX,BrY,xUnit,BrL,Ans.X,Ans.Y);
         end
         %
         if isempty(meshInfo.Attribute)
@@ -481,7 +506,7 @@ if XYRead || XYneeded
             end
         end
         %
-        Ans.ValLocation = Props.Geom(7:end);
+        Ans.ValLocation = Props.Geom(max(strfind(Props.Geom,'-'))+1:end);
         connect = strmatch('edge_node_connectivity',meshAttribs,'exact');
         if strcmp(Ans.ValLocation,'EDGE') || ~isfield(Ans,'FaceNodeConnect') || (~DataRead && ~isempty(connect))
             % "~DataRead" is a hack to load EdgeNodeConnect if available for use in GridView
@@ -994,13 +1019,15 @@ if XYRead || XYneeded
         if ~isempty(zLocVar)
             zLocVar = strmatch(zLocVar,{FI.Dataset.Name},'exact')-1;
             Info = FI.Dataset(zLocVar+1);
-            switch Info.Mesh{3}
-                case 0
-                    Ans.ZLocation = 'NODE';
-                case 1
-                    Ans.ZLocation = 'EDGE';
-                case 2
-                    Ans.ZLocation = 'FACE';
+            if iscell(Info.Mesh)
+                switch Info.Mesh{4}
+                    case 0
+                        Ans.ZLocation = 'NODE';
+                    case 1
+                        Ans.ZLocation = 'EDGE';
+                    case 2
+                        Ans.ZLocation = 'FACE';
+                end
             end
         elseif isfield(Ans,'ValLocation')
             Ans.ZLocation = Ans.ValLocation;
@@ -1305,25 +1332,32 @@ else
         %
         if ~isempty(Info.Mesh)
             nmesh = nmesh+1;
-            Insert.Geom = 'UGRID';
+            switch Info.Mesh{1}
+                case 'ugrid'
+                    tpd = Info.Mesh{2};
+                    Insert.Geom = sprintf('UGRID%iD',tpd);
+                otherwise
+                    Insert.Geom = upper(Info.Mesh{1});
+            end
             Insert.Coords = 'xy';
             Insert.hasCoords=1;
-            switch Info.Mesh{3}
+            BaseGeom = Insert.Geom;
+            switch Info.Mesh{4}
                 case -1 % the mesh itself
-                    Insert.Geom = 'UGRID-NODE';
+                    Insert.Geom = [Insert.Geom '-NODE'];
                     Insert.DimFlag(3) = 6;
                 case 0 % node
-                    Insert.Geom = 'UGRID-NODE';
+                    Insert.Geom = [Insert.Geom '-NODE'];
                     Insert.DimFlag(3) = 6;
                 case 1 % edge
-                    Insert.Geom = 'UGRID-EDGE';
+                    Insert.Geom = [Insert.Geom '-EDGE'];
                     Insert.DimFlag(3) = 6;
                 case 2 % face
-                    Insert.Geom = 'UGRID-FACE';
+                    Insert.Geom = [Insert.Geom '-FACE'];
                     Insert.DimFlag(3) = 6;
                     Insert.DataInCell = 1;
                 case 3 % volume
-                    Insert.Geom = 'UGRID-VOLUME';
+                    Insert.Geom = [Insert.Geom '-VOLUME'];
                     Insert.DimFlag(3) = 6;
                     Insert.DataInCell = 1;
             end
@@ -1361,13 +1395,13 @@ else
         %
         Insert.varid = Info.Varid;
         %
-        if ~isempty(Info.Mesh) && isequal(Info.Mesh{3},-1)
+        if ~isempty(Info.Mesh) && isequal(Info.Mesh{4},-1)
             Insert.varid = {'node_index' Insert.varid};
         end
         %
         Out(end+1)=Insert;
         %
-        if ~isempty(Info.Mesh) && isequal(Info.Mesh{3},-1)
+        if ~isempty(Info.Mesh) && isequal(Info.Mesh{4},-1)
             Nm = Insert.Name;
             %
             Insert.Name = [Nm ' - node indices'];
@@ -1375,16 +1409,16 @@ else
             Insert.varid{1} = 'node_index';
             Out(end+1) = Insert;
             %
-            if ~isempty(Info.Mesh{5})
+            if ~isempty(Info.Mesh{6})
                 Insert.Name = [Nm ' - edge indices'];
-                Insert.Geom = 'UGRID-EDGE';
+                Insert.Geom = [BaseGeom '-EDGE'];
                 Insert.varid{1} = 'edge_index';
                 Out(end+1) = Insert;
             end
             %
-            if length(Info.Mesh)>=6 && ~isempty(Info.Mesh{6})
+            if length(Info.Mesh)>=7 && ~isempty(Info.Mesh{7})
                 Insert.Name = [Nm ' - face indices'];
-                Insert.Geom = 'UGRID-FACE';
+                Insert.Geom = [BaseGeom '-FACE'];
                 Insert.DataInCell = 1;
                 Insert.varid{1} = 'face_index';
                 Out(end+1) = Insert;
@@ -1398,9 +1432,9 @@ else
         %    Out(end+1)=Insert;
         %end
         %
-        if strcmp(standard_name,'discharge') && strcmp(Insert.Geom,'UGRID-EDGE') && Insert.DimFlag(K_)==0
+        if strcmp(standard_name,'discharge') && strcmp(Insert.Geom,'UGRID2D-EDGE') && Insert.DimFlag(K_)==0
             Insert.Name = 'stream function'; % previously: discharge potential
-            Insert.Geom = 'UGRID-NODE';
+            Insert.Geom = 'UGRID2D-NODE';
             Insert.varid = {'stream_function' Insert.varid};
             %
             Out(end+1)=Insert;
@@ -1532,18 +1566,18 @@ Meshes = zeros(0,2);
 for loop = 1:2
     for i = 1:length(Out)
         switch Out(i).Geom
-            case {'UGRID-NODE','UGRID-EDGE','UGRID-FACE'}
+            case {'UGRID1D_NETWORK-NODE','UGRID1D_NETWORK-EDGE','UGRID1D-NODE','UGRID1D-EDGE','UGRID2D-NODE','UGRID2D-EDGE','UGRID2D-FACE'}
                 varid = get_varid(Out(i))+1;
                 thisMesh = FI.Dataset(varid).Mesh;
                 if loop == 1
-                    if thisMesh{3} == -1 && Out(i).NVal == 0
-                        Meshes(end+1,:) = [thisMesh{2} i];
+                    if thisMesh{4} == -1 && Out(i).NVal == 0
+                        Meshes(end+1,:) = [thisMesh{3} i];
                     end
                 else % loop == 2
-                    if thisMesh{3} == -1
+                    if thisMesh{4} == -1
                         Out(i).UseGrid = i;
                     else
-                        j = find(Meshes(:,1) == thisMesh{2});
+                        j = find(Meshes(:,1) == thisMesh{3});
                         Out(i).UseGrid = Meshes(j,2);
                     end
                 end
@@ -1740,19 +1774,19 @@ if iscell(Props.varid)
             Info = FI.Dataset(Props.varid{2}+1);
             sz(1) = FI.Dimension(Info.TSMNK(1)+1).Length;
             % get the x-coordinates variable for the nodes of the mesh
-            XVar = FI.Dataset(Info.Mesh{2}).X;
+            XVar = FI.Dataset(Info.Mesh{3}).X;
             % get the node dimension
             dimNodes = FI.Dataset(XVar).TSMNK(3)+1;
             sz(3) = FI.Dimension(dimNodes).Length;
         case 'node_index'
             Info = FI.Dataset(Props.varid{2}+1);
-            sz(3) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{4})).Length;
+            sz(3) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{5})).Length;
         case 'edge_index'
             Info = FI.Dataset(Props.varid{2}+1);
-            sz(3) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{5})).Length;
+            sz(3) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{6})).Length;
         case 'face_index'
             Info = FI.Dataset(Props.varid{2}+1);
-            sz(3) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{6})).Length;
+            sz(3) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{7})).Length;
         otherwise
             Props.varid = Props.varid{2};
             sz = getsize(FI,Props);
@@ -1884,3 +1918,48 @@ end
 function szZData  = updateSize(szData,szFld,hdims)
 szZData = szData;
 szZData(hdims) = szFld(hdims);
+% -----------------------------------------------------------------------------
+
+
+% -----------------------------------------------------------------------------
+function [X,Y] = branch2xy(BrX,BrY,xUnit,BrL,BrNr,BrOffset)
+X = zeros(size(BrNr));
+Y = X;
+if strcmp(xUnit,'deg')
+    cUnit = {'Geographic'};
+else
+    cUnit = {};
+end
+for i = 1:length(BrNr)
+    bN = BrNr(i);
+    bX = BrX{bN};
+    bY = BrY{bN};
+    bS = pathdistance(bX,bY,cUnit{:});
+    s  = (BrOffset(i)/BrL(bN))*bS(end);
+    if s>bS(end)
+        error('Offset %g larger than branch length %s',BrOffset(i),BrL(bN));
+    else
+        x = interp1(bS,bX,s);
+        y = interp1(bS,bY,s);
+    end
+    X(i) = x;
+    Y(i) = y;
+end
+% -----------------------------------------------------------------------------
+
+
+% -----------------------------------------------------------------------------
+function unit = get_unit(Info)
+unit = [];
+if ~isempty(Info.Attribute)
+    Attribs = {Info.Attribute.Name};
+    j = strmatch('units',Attribs,'exact');
+    if ~isempty(j)
+        unit = Info.Attribute(j).Value;
+        units = {'degrees_east','degree_east','degreesE','degreeE', ...
+            'degrees_north','degree_north','degreesN','degreeN'};
+        if ismember(unit,units)
+            unit = 'deg';
+        end
+    end
+end

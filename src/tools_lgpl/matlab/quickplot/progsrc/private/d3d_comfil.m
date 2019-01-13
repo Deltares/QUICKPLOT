@@ -94,6 +94,10 @@ switch cmd
     otherwise
         [XYRead,DataRead,DataInCell]=gridcelldata(cmd);
 end
+%
+if strcmp(Props.Name,'grid')
+    DataInCell = 1;
+end
 if isfield(FI,'Partitions')
     if domain<=FI.Partitions{1}
         [Ans,FI.NEFIS(domain)] = get_single_partition(FI.NEFIS(domain),1,Props,XYRead,DataRead,DataInCell,varargin);
@@ -805,6 +809,7 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 PropNames={'Name'                   'Units'   'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc'  'Loc3D' 'Group'          'Val1'    'Val2'  'SubFld' 'MNK'};
 DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0     ''       'd'   'd'       ''      'GRID'           'XCOR'    ''       []       0
     'hydrodynamic grid'         ''       [1 0 1 1 1]  0         0     ''       'z'   'z'       'i'     'CURTIM'         'S1'      ''       []       0
+    'grid'                      ''       [1 0 1 1 1]  0         0     ''       'z'   'z'       ''      'CURTIM'         'S1'      ''       []       0
     'inactive water level points' ...
     ''       [1 0 1 1 0]  2         1     ''       'z'   'z'       ''      'KENMCNST'       'KCS'     ''       []       0
     'thin dams'                 ''       [1 0 1 1 0]  0         0     ''       'd'   'd'       ''      'KENMCNST'       'KCU'     'KCV'    []       0
@@ -933,7 +938,12 @@ for i=size(Out,1):-1:1
     if ~isempty(strmatch('---',Out(i).Name))
     elseif ~isstruct(Info)
         % remove references to non-stored data fields
-        Out(i)=[];
+        if strcmp(Out(i).Name,'grid') % S1 not available on file, so convert grid to 2D time-independent quantity.
+            Out(i).DimFlag(1) = 0;
+            Out(i).DimFlag(5) = 0;
+        else
+            Out(i)=[];
+        end
     elseif isequal(Info.SizeDim,1)
         % remove references to non-stored data fields
         Out(i)=[];
@@ -1022,10 +1032,13 @@ end
 for i=1:length(Out)
     switch Out(i).ReqLoc
         case 'd'
-            Out(i).UseGrid=1;
+            Out(i).UseGrid=3;%1;
+            Out(i).Geom='SGRID-NODE';
         case 'z'
-            Out(i).UseGrid=2;
+            Out(i).UseGrid=3;%2;
+            Out(i).Geom='SGRID-FACE';
     end
+    Out(i).Coords='xy';
 end
 
 [Out.TemperatureType] = deal('unspecified');
@@ -1061,10 +1074,9 @@ if Props.DimFlag(M_) & Props.DimFlag(N_)
 end
 if Props.DimFlag(K_)
     Info=vs_disp(FI,'GRID','THICK');
-    if Props.NVal==0,
-        sz(K_)=Info.SizeDim(1)+1;
-    else
-        sz(K_)=Info.SizeDim;
+    sz(K_)=Info.SizeDim(1);
+    if strcmp(Props.Loc3D,'i')
+        sz(K_)=sz(K_)+1;
     end
 end
 if Props.DimFlag(T_)

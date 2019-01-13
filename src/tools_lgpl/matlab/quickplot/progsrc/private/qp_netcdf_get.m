@@ -92,10 +92,10 @@ if isempty(RequestedSubset)
 end
 %
 if iscell(Info.Mesh) && strcmp(Info.Mesh{1},'ugrid')
-    imesh = Info.Mesh{2};
-    imdim = Info.Mesh{3};
+    imesh = Info.Mesh{3};
+    imdim = Info.Mesh{4};
     mInfo = FI.Dataset(imesh);
-    mdim  = mInfo.Mesh{4+imdim};
+    mdim  = mInfo.Mesh{5+imdim};
 else
     mdim = '';
 end
@@ -108,7 +108,7 @@ for d=1:N
     if ~isempty(DName)
         d_netcdf = strcmp(DName,Info.Dimension);
         if none(d_netcdf) &&  ~isempty(mdim)
-            imdim2 = find(strcmp(DName,mInfo.Mesh(4:end)))-1;
+            imdim2 = find(strcmp(DName,mInfo.Mesh(5:end)))-1;
             if ~isempty(imdim2)
                 canConvert = false;
                 if ~isempty(mesh_subsets)

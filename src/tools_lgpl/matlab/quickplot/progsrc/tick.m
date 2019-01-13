@@ -598,6 +598,9 @@ if limmanual
     lim = get(handle,[ax 'lim']);
 else
     lim = limits(handle,ax);
+    if any(~isfinite(lim)) % no data !?
+        lim = get(handle,[ax 'lim']);
+    end
 end
 [ticks,format] = bestscale(lim);
 if ~limmanual && length(ticks)>1

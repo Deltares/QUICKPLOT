@@ -61,7 +61,7 @@ function varargout = mdfclip(MDF1,varargin)
 % MDFCLIP(MDF,MMIN,MMAX,NMIN,NMAX
 % MDFCLIP(MDF,MLIM,NLIM)
 %
-mnkmax = propget(MDF1.mdf,'','MNKmax');
+mnkmax = propgetval(MDF1.mdf,'','MNKmax');
 switch nargin
     case 2
         % MDFCLIP(MDF,MASK)
@@ -256,7 +256,7 @@ if nargin>1
 end
 MDF2 = MDF1;
 %
-mnkmax = propget(MDF2.mdf,'','MNKmax');
+mnkmax = propgetval(MDF2.mdf,'','MNKmax');
 MMAX = mnkmax(1);
 MDF2.mdf = inifile('seti',MDF2.mdf,'','MNKmax',mnkmax([2 1 3]));
 %
@@ -787,9 +787,9 @@ for i = 1:size(attfiles,1)
     %
     if strcmp(key,'BedLevel')
         Missing = -999;
-        bltyp = propget(MF.mdu,grp,'BedlevType',Missing);
+        bltyp = propgetval(MF.mdu,grp,'BedlevType',Missing);
         if bltyp == Missing
-            bltyp = propget(MF.mdu,grp,'BotlevType',Missing);
+            bltyp = propgetval(MF.mdu,grp,'BotlevType',Missing);
             if bltyp == Missing
                 bltyp = 3;
             end
@@ -797,8 +797,8 @@ for i = 1:size(attfiles,1)
         MF.BedLevelType = bltyp;
         %
         zkuni = -5;
-        zkuni = propget(MF.mdu,grp,'BotLevUni',zkuni);
-        zkuni = propget(MF.mdu,grp,'BedLevUni',zkuni);
+        zkuni = propgetval(MF.mdu,grp,'BotLevUni',zkuni);
+        zkuni = propgetval(MF.mdu,grp,'BedLevUni',zkuni);
         VNames = {F.Dataset.Name}';
         %
         if bltyp == 1
@@ -1024,7 +1024,7 @@ function [F,Q] = getmesh(mshname)
 F = nc_interpret(mshname);
 F.FileType = 'NetCDF';
 Q = qpread(F);
-if ~strcmp(Q(1).Geom,'UGRID-NODE')
+if ~strcmp(Q(1).Geom,'UGRID1D-NODE') && ~strcmp(Q(1).Geom,'UGRID2D-NODE')
     % old mesh file: modify data structures such that it behaves like a
     % new ugrid file.
     %
@@ -1033,7 +1033,7 @@ if ~strcmp(Q(1).Geom,'UGRID-NODE')
     F.Dataset(grdid).Name = 'Mesh2D';
     F.Dataset(grdid).Attribute(1).Name = 'edge_node_connectivity';
     F.Dataset(grdid).Attribute(1).Value = 'NetLink';
-    F.Dataset(grdid).Mesh = {'ugrid' grdid -1 'nNetNode' 'nNetLink' ''};
+    F.Dataset(grdid).Mesh = {'ugrid' 2 grdid -1 'nNetNode' 'nNetLink' ''};
     F.Dataset(grdid).X = ustrcmpi({F.Dataset.Name},'NetNode_x');
     F.Dataset(grdid).Y = ustrcmpi({F.Dataset.Name},'NetNode_y');
     NL = ustrcmpi({F.Dataset.Name},'NetLink');
@@ -1044,7 +1044,7 @@ if ~strcmp(Q(1).Geom,'UGRID-NODE')
     Q.Name = 'Mesh2D';
     Q.Units = '';
     Q.TemperatureType = 'unspecified';
-    Q.Geom = 'UGRID-NODE';
+    Q.Geom = 'UGRID1D-NODE';
     Q.Coords = 'xy';
     Q.DimFlag = [0 0 6 0 0];
     Q.DataInCell = 0;
@@ -1085,7 +1085,7 @@ end
 
 
 function MF = mdfread(MF,md_path)
-mnkmax = propget(MF.mdf,'','MNKmax');
+mnkmax = propgetval(MF.mdf,'','MNKmax');
 SUB1   = propget(MF.mdf,'','Sub1','');
 salin  = ~isempty(strfind(lower(SUB1),'s'));
 tempa  = ~isempty(strfind(lower(SUB1),'t'));
@@ -1137,7 +1137,7 @@ if ~isempty(ininame)
     idate = propget(MF.mdf,'','Itdate');
     idate = idate([1:4 6:7 9:10]);
     %
-    tunit = propget(MF.mdf,'','Tunit');
+    tunit = propgetval(MF.mdf,'','Tunit');
     switch lower(tunit)
         case 'w'
             tunit = 7;
@@ -1150,7 +1150,7 @@ if ~isempty(ininame)
         case 's'
             tunit = 1/86400;
     end
-    itime = propget(MF.mdf,'','TStart')*tunit;
+    itime = propgetval(MF.mdf,'','TStart')*tunit;
     rdate = datenum(idate,'yyyymmdd')+itime;
     if itime>=1
         itime = datestr(rdate,'HHMMSS');
@@ -1351,7 +1351,8 @@ if ~isempty(flsname)
 end
 
 
-function val = getval(str)
+function val = propgetval(varargin)
+str = propget(varargin{:});
 if iscell(str)
     val = cell(size(str));
     for i = 1:length(str)

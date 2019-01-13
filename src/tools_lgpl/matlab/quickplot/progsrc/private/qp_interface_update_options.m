@@ -232,7 +232,7 @@ axestype={'noplot'};
 switch geometry
     case 'SELFPLOT'
         axestype={''};
-    case {'UGRID-NODE','UGRID-EDGE','UGRID-FACE'}
+    case {'UGRID1D_NETWORK-NODE','UGRID1D_NETWORK-EDGE','UGRID1D-NODE','UGRID1D-EDGE','UGRID2D-NODE','UGRID2D-EDGE','UGRID2D-FACE'}
         if multiple(K_)
             if multiple(M_)
                 if vslice
@@ -262,7 +262,7 @@ switch geometry
                 axestype={'Time-Val','X-Y','Text'};
             end
         end
-    case 'UGRID-VOLUME'
+    case 'UGRID3D-VOLUME'
     case 'PNT'
         if multiple(ST_) || multiple(M_)
             if length(coordinates)==1
@@ -384,6 +384,8 @@ switch geometry
                 % grid line or slice
                 if multiple(T_)
                     axestype={'X-Val','X-Y','X-Time','Time-X'};
+                elseif nval==4
+                    axestype={'X-Y'};
                 else
                     axestype={'X-Val','X-Y'};
                 end
@@ -770,6 +772,7 @@ if nval==2 || nval==3
 end
 if (nval==2 || nval==3) && ~vectors
     nval=1;
+    [nval,nvalstr]=convertnval(nval);
 end
 if isfield(Ops,'vectorcomponent') && strcmp(Ops.vectorcomponent,'vector')
     %if ~isequal(geometry,'TRI')
@@ -783,7 +786,7 @@ end
 %---- presentation type
 %
 extend2edge = 0;
-if strcmp(geometry,'SEG-EDGE') || ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') || (strcmp(geometry,'POLYG') && nval~=2 && ~TimeDim) % || (nval==0 & ~DimFlag(ST_))
+if ((nval==1 || nval==6) && TimeSpatial==2) || nval==1.9 || strcmp(nvalstr,'strings') || strcmp(nvalstr,'boolean') || (strcmp(geometry,'POLYG') && nval~=2 && ~TimeDim) % || (nval==0 & ~DimFlag(ST_))
     switch nvalstr
         case 1.9 % EDGE
             if strcmp(geometry,'SGRID-EDGE')
@@ -858,13 +861,19 @@ if strcmp(geometry,'SEG-EDGE') || ((nval==1 || nval==6) && TimeSpatial==2) || nv
                             end
                         case {'POLYL'}
                             PrsTps={'polylines','values'};
-                        case {'UGRID-EDGE'}
+                        case {'UGRID1D_NETWORK-EDGE','UGRID1D-EDGE','UGRID2D-EDGE'}
                             if SpatialV
                                 PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                             else
                                 PrsTps={'markers';'values';'edge'};
                             end
-                        case {'UGRID-NODE'}
+                        case {'UGRID1D_NETWORK-NODE','UGRID1D-NODE'}
+                            if SpatialV
+                                PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
+                            else
+                                PrsTps={'continuous shades';'markers';'values'};
+                            end
+                        case {'UGRID2D-NODE'}
                             PrsTps={'patches';'patches with lines';'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                         otherwise
                             switch dic
@@ -878,114 +887,123 @@ if strcmp(geometry,'SEG-EDGE') || ((nval==1 || nval==6) && TimeSpatial==2) || nv
                     end
             end
     end
-    if length(PrsTps)==1
-        p=1;
+    if isempty(PrsTps)
+        axestype = 'noplot';
     else
-        set(findobj(OH,'tag','presenttype'),'enable','on')
-        pt=findobj(OH,'tag','presenttype=?');
-        pPrsTps=get(pt,'string');
-        if isequal(pPrsTps,PrsTps)
-            set(pt,'enable','on','backgroundcolor',Active)
-            p=get(pt,'value');
+        if length(PrsTps)==1
+            p=1;
         else
-            % try to find an exact match when switching presentation type strings
-            p=get(pt,'value');
-            if iscellstr(pPrsTps),
-                p=pPrsTps{p};
+            set(findobj(OH,'tag','presenttype'),'enable','on')
+            pt=findobj(OH,'tag','presenttype=?');
+            pPrsTps=get(pt,'string');
+            if isequal(pPrsTps,PrsTps)
+                set(pt,'enable','on','backgroundcolor',Active)
+                p=get(pt,'value');
             else
-                p=pPrsTps(p,:);
+                % try to find an exact match when switching presentation type strings
+                p=get(pt,'value');
+                if iscellstr(pPrsTps),
+                    p=pPrsTps{p};
+                else
+                    p=pPrsTps(p,:);
+                end
+                p=strmatch(p,PrsTps,'exact');
+                if isempty(p),
+                    p=1;
+                end
+                set(pt,'enable','on','value',1,'string',PrsTps,'value',p,'backgroundcolor',Active)
             end
-            p=strmatch(p,PrsTps,'exact');
-            if isempty(p),
-                p=1;
-            end
-            set(pt,'enable','on','value',1,'string',PrsTps,'value',p,'backgroundcolor',Active)
         end
-    end
-    Ops.presentationtype=lower(PrsTps{p});
-    switch Ops.presentationtype
-        case 'patches with lines'
-            SingleColor=1;
-        case 'continuous shades'
-            extend2edge = 1;
-        case 'values'
-            MultipleColors=0;
-            SingleColor=1;
-            %
-            ask_for_textprops=1;
-            %
-            ask_for_numformat=1;
-            ask_for_thinningmode=1;
-            if strcmp(geometry,'POLYG') || strcmp(geometry,'POLYL')
-                geometry='PNT';
-            end
-        case {'contour lines','coloured contour lines','contour patches','contour patches with lines'}
-            ask_for_thresholds = 1;
-            switch Ops.presentationtype
-                case 'contour lines'
+        Ops.presentationtype=lower(PrsTps{p});
+        switch Ops.presentationtype
+            case 'patches with lines'
+                SingleColor=1;
+            case 'continuous shades'
+                switch geometry
+                    case {'UGRID1D_NETWORK-NODE','UGRID1D-NODE'}
+                        lineproperties = 1;
+                    otherwise
+                        extend2edge = 1;
+                end
+            case 'values'
+                MultipleColors=0;
+                SingleColor=1;
+                %
+                ask_for_textprops=1;
+                %
+                ask_for_numformat=1;
+                ask_for_thinningmode=1;
+                if strcmp(geometry,'POLYG') || strcmp(geometry,'POLYL')
+                    geometry='PNT';
+                end
+            case {'contour lines','coloured contour lines','contour patches','contour patches with lines'}
+                ask_for_thresholds = 1;
+                switch Ops.presentationtype
+                    case 'contour lines'
+                        MultipleColors=0;
+                        SingleColor=1;
+                        lineproperties=1;
+                    case 'coloured contour lines'
+                        lineproperties=1;
+                    case 'contour patches with lines'
+                        SingleColor=1;
+                        lineproperties=1;
+                end
+                extend2edge = 1;
+            case 'markers'
+                usesmarker=1;
+                forcemarker=1;
+                lineproperties=0;
+                switch nvalstr
+                    case {'strings'}
+                        SingleColor=0;
+                        forcemarkercolor=1;
+                    otherwise
+                        markerflatfill=1;
+                        %
+                        ask_for_thinningmode=1;
+                end
+                if strcmp(geometry,'POLYG') || strcmp(geometry,'POLYL')
+                    geometry='PNT';
+                end
+            case 'patches'
+                if strcmp(nvalstr,'boolean')
+                    SingleColor=1;
                     MultipleColors=0;
+                end
+            case 'labels'
+                ask_for_textprops=1;
+                SingleColor=1;
+                MultipleColors=0;
+                if strcmp(geometry,'POLYG') || strcmp(geometry,'POLYL')
+                    geometry='PNT';
+                end
+                lineproperties=0;
+            case 'polygons'
+                lineproperties=1;
+            case 'polylines'
+                if nval==0 || nval==4
+                    markerflatfill=0;
+                    edgeflatcolour=0;
                     SingleColor=1;
-                    lineproperties=1;
-                case 'coloured contour lines'
-                    lineproperties=1;
-                case 'contour patches with lines'
-                    SingleColor=1;
-                    lineproperties=1;
-            end
-            extend2edge = 1;
-        case 'markers'
-            usesmarker=1;
-            forcemarker=1;
-            lineproperties=0;
-            switch nvalstr
-                case {'strings'}
-                    SingleColor=0;
-                    forcemarkercolor=1;
-                otherwise
+                    MultipleColors=0;
+                else
                     markerflatfill=1;
-                    %
-                    ask_for_thinningmode=1;
-            end
-            if strcmp(geometry,'POLYG') || strcmp(geometry,'POLYL')
-                geometry='PNT';
-            end
-        case 'patches'
-            if strcmp(nvalstr,'boolean')
-                SingleColor=1;
-                MultipleColors=0;
-            end
-        case 'labels'
-            ask_for_textprops=1;
-            SingleColor=1;
-            MultipleColors=0;
-            if strcmp(geometry,'POLYG') || strcmp(geometry,'POLYL')
-                geometry='PNT';
-            end
-            lineproperties=0;
-        case 'polygons'
-            lineproperties=1;
-        case 'polylines'
-            if nval==0 || nval==4
-                markerflatfill=0;
-                edgeflatcolour=0;
-                SingleColor=1;
-                MultipleColors=0;
-            else
-                markerflatfill=1;
-                edgeflatcolour=1;
-                SingleColor=0;
-                MultipleColors=1;
-            end
-            lineproperties=1;
-        case 'grid with numbers'
-            ask_for_textprops=1;
-        case {'edge','edge m','edge n'}
-            thindams=1;
-            lineproperties=1;
-            nval=0.9;
-        case 'vector'
-            vectors=1';
-            Ops.vectorcomponent='edge';
+                    edgeflatcolour=1;
+                    SingleColor=0;
+                    MultipleColors=1;
+                end
+                lineproperties=1;
+            case 'grid with numbers'
+                ask_for_textprops=1;
+            case {'edge','edge m','edge n'}
+                thindams=1;
+                lineproperties=1;
+                nval=0.9;
+            case 'vector'
+                vectors=1';
+                Ops.vectorcomponent='edge';
+        end
     end
 end
 

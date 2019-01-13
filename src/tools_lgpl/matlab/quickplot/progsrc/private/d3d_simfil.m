@@ -883,7 +883,7 @@ switch FI.FileType
                     case 'mesh'
                         ifld = ifld+1;
                         Out(ifld).Name = 'mesh';
-                        Out(ifld).Geom = 'UGRID-NODE';
+                        Out(ifld).Geom = 'UGRID1D-NODE';
                         Out(ifld).Coords = 'xy';
                         Out(ifld).DimFlag(M_) = 6;
                     case 'BedLevel'
@@ -892,14 +892,14 @@ switch FI.FileType
                         if isstruct(BL) % quantity on mesh
                             Out(ifld).Name = 'bed levels';
                             Out(ifld).Units = 'm';
-                            Out(ifld).Geom = 'UGRID-FACE';
+                            Out(ifld).Geom = 'UGRID1D-NODE';
                             Out(ifld).Coords = 'xy';
                             Out(ifld).DimFlag(M_) = 6;
                             Out(ifld).NVal = 1;
                         elseif isscalar(BL)
                             Out(ifld).Name = 'bed level';
                             Out(ifld).Units = 'm';
-                            Out(ifld).Geom = 'UGRID-NODE';
+                            Out(ifld).Geom = 'UGRID1D-NODE';
                             Out(ifld).Coords = 'xy';
                             Out(ifld).DimFlag(M_) = 6;
                             Out(ifld).NVal = 1;

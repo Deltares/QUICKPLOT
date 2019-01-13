@@ -120,12 +120,12 @@ iFaces = [];
 lFaces = [];
 if ~isequal(idx{M_},0)
     switch Props.Geom
-        case 'UGRID-NODE'
+        case 'UGRID2D-NODE'
             lFaces = all(ismember(Faces,idx{M_}) | Faces<=0,2);
             Faces = Faces(lFaces,:);
             %NodeCoor = NodeCoor(idx{M_},:); % will be updated below since
             %Faces only contains a subset of the Node indices.
-        case 'UGRID-FACE'
+        case 'UGRID2D-FACE'
             iFaces = idx{M_};
             Faces = Faces(iFaces,:);
     end
@@ -163,7 +163,7 @@ switch Props.Geom
         sz = size(NodeCoor);
         Ans.XYZ = reshape(NodeCoor,[1 sz(1) 1 sz(2)]);
         Ans.Val = NodeCoor(:,3);
-    case {'UGRID-NODE','UGRID-FACE'}
+    case {'UGRID2D-NODE','UGRID2D-FACE'}
         Faces(Faces==0) = NaN;
         Ans.FaceNodeConnect = Faces;
         Ans.X = NodeCoor(:,1);
@@ -182,7 +182,7 @@ switch Props.Geom
             case 'value'
                 Ans.Val = NodeCoor(:,3);
         end
-        Ans.ValLocation = Props.Geom(7:end);
+        Ans.ValLocation = Props.Geom(9:end);
 end
 %
 varargout={Ans FI};
@@ -194,10 +194,10 @@ function Out=infile(FI,domain)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'                   'Units' 'Geom'       'Coords' 'DimFlag' 'DataInCell' 'NVal' 'SubFld' 'ClosedPoly' 'UseGrid'};
-DataProps={'mesh'                   ''      'UGRID-NODE' 'xy'    [0 0 6 0 0]  0            0      []         0            1
-           'mesh - node indices'    ''      'UGRID-NODE' 'xy'    [0 0 6 0 0]  0            1      []         0            1
-           'mesh - face indices'    ''      'UGRID-FACE' 'xy'    [0 0 6 0 0]  1            1      []         0            1
-           'value'                  ''      'UGRID-NODE' 'xy'    [0 0 6 0 0]  0            1      []         0            1};
+DataProps={'mesh'                   ''      'UGRID2D-NODE' 'xy'    [0 0 6 0 0]  0            0      []         0            1
+           'mesh - node indices'    ''      'UGRID2D-NODE' 'xy'    [0 0 6 0 0]  0            1      []         0            1
+           'mesh - face indices'    ''      'UGRID2D-FACE' 'xy'    [0 0 6 0 0]  1            1      []         0            1
+           'value'                  ''      'UGRID2D-NODE' 'xy'    [0 0 6 0 0]  0            1      []         0            1};
 if strcmp(FI.FileType,'Gmsh')
     Out=cell2struct(DataProps,PropNames,2);
 else
@@ -217,16 +217,16 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 sz=[0 0 0 0 0];
 if strcmp(FI.FileType,'Gmsh')
     switch Props.Geom
-        case 'UGRID-NODE'
+        case 'UGRID2D-NODE'
             sz(M_) = size(FI.Nodes.XYZ,2);
-        case 'UGRID-FACE'
+        case 'UGRID2D-FACE'
             sz(M_) = size(FI.Element.Node,2);
     end
 else
     switch Props.Geom
-        case 'UGRID-NODE'
+        case 'UGRID2D-NODE'
             % to do
-        case 'UGRID-FACE'
+        case 'UGRID2D-FACE'
             if isfield(Props,'ElmLayer')
                 sz(M_) = sum(FI.ElmLyr==Props.ElmLayer);
             else

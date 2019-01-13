@@ -185,6 +185,11 @@ for ivar = 1:nvars
         [nc,Info] = parse_ugrid_mesh(nc,varNames,dimNames,ivar,Info,Attribs);
     end
     %
+    j = strmatch('geometry_type',Attribs,'exact');
+    if ~isempty(j)
+        [nc,Info] = parse_simple_geometry(nc,varNames,dimNames,ivar,Info,Attribs);
+    end
+    %
     j = strmatch('standard_name',Attribs,'exact');
     if isempty(j)
         j = strmatch('NAVO_code',Attribs,'exact');
@@ -554,37 +559,42 @@ for ivar = 1:nvars
         j1 = strmatch('mesh',Attribs,'exact');
         j2 = strmatch('location',Attribs,'exact');
         if ~isempty(j1) && ~isempty(j2)
-            j3 = strmatch(Info.Attribute(j1).Value,UGrid,'exact');
+            nameMesh = Info.Attribute(j1).Value;
+            % We hve identified a mesh and location attribute, so it looks
+            % like a UGRID reference to a mesh variable and location.
+            j3 = strmatch(nameMesh,UGrid,'exact');
             if isempty(j3)
-                v3 = strmatch(Info.Attribute(j1).Value,varNames,'exact');
-                nc = parse_ugrid_mesh(nc,varNames,dimNames,v3);
-                %
-                iUGrid = strcmp({nc.Dataset.Type}','ugrid_mesh');
-                UGrid  = {nc.Dataset(iUGrid).Name};
-                iUGrid = find(iUGrid);
-                %
-                j3 = strmatch(Info.Attribute(j1).Value,UGrid,'exact');
+                % The mesh variable referred to is not yet in list of known
+                % UGRID meshes.
+                v3 = strmatch(nameMesh,varNames,'exact');
+                if ~isempty(v3)
+                    nc = parse_ugrid_mesh(nc,varNames,dimNames,v3);
+                    %
+                    iUGrid = strcmp({nc.Dataset.Type}','ugrid_mesh');
+                    UGrid  = {nc.Dataset(iUGrid).Name};
+                    iUGrid = find(iUGrid);
+                    %
+                    j3 = strmatch(Info.Attribute(j1).Value,UGrid,'exact');
+                end
             end
             j4 = strmatch(Info.Attribute(j2).Value,ugridLoc,'exact')-1;
-            %if strcmp(Info.Attribute(j2).Value,'poly')
-            %    j4 = 2;
-            %end
             if isempty(j3)
-                if any(strcmp(Info.Attribute(j1).Value,varNames))
-                    ui_message('error','Variable "%s" does not comply to UGRID conventions for a mesh.\nIgnoring mesh/location attributes on "%s".',Info.Attribute(j1).Value,Info.Name)
+                if any(strcmp(nameMesh,varNames))
+                    ui_message('error','Variable "%s" does not comply to UGRID conventions for a mesh.\nIgnoring mesh/location attributes on "%s".',nameMesh,Info.Name)
                 else
-                    ui_message('error','Cannot find mesh "%s"; ignoring mesh/location attributes on "%s".',Info.Attribute(j1).Value,Info.Name)
+                    ui_message('error','Cannot find mesh "%s"; ignoring mesh/location attributes on "%s".',nameMesh,Info.Name)
                 end
             elseif isempty(j4)
-                ui_message('error','Invalid location type "%s"; ignoring mesh/location attributes on "%s".',Info.Attribute(j2).Value,Info.Name)
+                ui_message('error','Invalid location type "%s"; ignoring mesh/location attributes on "%s".',nameMesh,Info.Name)
             else
-                topoDim   = nc.Dataset(iUGrid(j3)).Mesh{j4+4};
+                topoDim   = nc.Dataset(iUGrid(j3)).Mesh{j4+5};
                 if isempty(strmatch(topoDim,Info.Dimension,'exact'))
                     dims = sprintf('%s, ',Info.Dimension{:});
                     ui_message('error','Variable "%s" points to UGRID mesh "%s" location "%s"\nbut the variable''s dimensions {%s}\ndon''t include the %s dimension "%s".\nIgnoring the mesh/location attributes.',...
                         Info.Name, Info.Attribute(j1).Value, Info.Attribute(j2).Value, dims(1:end-2), Info.Attribute(j2).Value, topoDim)
                 else
-                    Info.Mesh = {'ugrid' iUGrid(j3) j4};
+                    ugrid = nc.Dataset(iUGrid(j3)).Mesh(1:2);
+                    Info.Mesh = {ugrid{:} iUGrid(j3) j4};
                     Info.TSMNK(3) = strmatch(topoDim,dimNames,'exact')-1;
                 end
             end
@@ -612,7 +622,7 @@ for ivar = 1:nvars
             else
                 nmDims = setdiff(cvDims,vDims);
             end
-            if ~isempty(nmDims) && ~strcmp(Info.Type,'ugrid_mesh')
+            if ~isempty(nmDims) && ~strcmp(Info.Type,'ugrid_mesh') && ~strcmp(Info.Type,'simple_geometry')
                 vDimsStr = sprintf('%s, ',vDims{:});
                 cvDimsStr = sprintf('%s, ',cvDims{:});
                 Msg = sprintf(['Dimensions of variable and auxiliary coordinate do not match.\n', ...
@@ -687,7 +697,10 @@ for ivar = 1:nvars
         Info.Station = iStation;
         statdim = intersect(Info.Dimid,nc.Dataset(Info.Station).Dimid(1));
         %
-        if statdim==Info.TSMNK(1) % station dimension matches time dimension, most likely a string representation of time is mistaken for a station variable
+        if any(statdim==Info.TSMNK)
+            % don't assign a station dimension that matches also time/space
+            % dimension. This is typically caused by a string
+            % representation of time or labels for network nodes.
             Info.Station = [];
         else
             Info.TSMNK(2) = statdim;
@@ -788,6 +801,23 @@ for ivar = 1:nvars
             else
                 nc.Dataset(Info.XBounds).Type = nc.Dataset(Info.X).Type;
             end
+        end
+    elseif strcmp(Info.Type,'ugrid_mesh')
+        crds = Info.Coordinates;
+        for i = 1:length(crds)
+            crds{i} = fliplr(crds{i});
+        end
+        branchid = find(strncmp(fliplr('_branch_id'),crds,10));
+        offset = find(strncmp(fliplr('_branch_offset'),crds,14));
+        Info.X = strmatch(Info.Coordinates{branchid},varNames);
+        Info.Y = strmatch(Info.Coordinates{offset},varNames);
+        %
+        iDims = setdiff(nc.Dataset(Info.X).Dimid,Info.TSMNK);
+        iDim = intersect(iDim,iDims);
+        if ~isempty(iDim)
+            Info.TSMNK(3) = iDim(1);
+        elseif ~isempty(iDims)
+            Info.TSMNK(3) = iDims(1);
         end
     end
     if ~isempty(Info.Y)
@@ -964,9 +994,10 @@ for ivar = 1:nvars
     Info = nc.Dataset(ivar);
     if isempty(Info.Mesh) && ~isempty(iUGrid)
         for u = iUGrid'
-            [udim,ia,ib] = intersect(Info.Dimension,nc.Dataset(u).Mesh(4:end));
+            [udim,ia,ib] = intersect(Info.Dimension,nc.Dataset(u).Mesh(5:end));
             if ~isempty(udim)
-                Info.Mesh = {'ugrid' u ib-1};
+                ugrid = nc.Dataset(u).Mesh(1:2);
+                Info.Mesh = {ugrid{:} u ib-1};
                 Info.TSMNK(3) = strmatch(udim,dimNames,'exact')-1;
                 if ~isnan(Info.TSMNK(4))
                     Info.TSMNK(4) = NaN;
@@ -1109,6 +1140,20 @@ NAVO_codes={
     207,'loni','Time Dependent Longitude','longitude'
     208,'ship_speed','Ship Speed',''};
 
+function [nc,Info] = parse_simple_geometry(nc,varNames,dimNames,ivar,Info,Attribs)
+if nargin<5
+    Info = nc.Dataset(ivar);
+    Attribs = {Info.Attribute.Name};
+end
+Info.Type = 'simple_geometry';
+%
+cn = strmatch('node_coordinates',Attribs,'exact');
+if ~isempty(cn)
+    node_coords = multiline(Info.Attribute(cn).Value,' ','cellrow');
+else
+    node_coords = {};
+end
+Info.Coordinates = node_coords;
 
 function [nc,Info] = parse_ugrid_mesh(nc,varNames,dimNames,ivar,Info,Attribs)
 if nargin<5
@@ -1129,6 +1174,14 @@ if isempty(tpd)
     tpd = -1;
 else
     tpd = Info.Attribute(tpd).Value;
+    if ischar(tpd)
+        ui_message('error','Invalid value ''%s'' for attribute ''topology_dimension'' for UGRID mesh variable %s: should be integer 1, 2 or 3.',tpd,Info.Name)
+        % try to convert string to number
+        tpd = sscanf(tpd,'%i',1);
+        if isempty(tpd) || tpd<1 || tpd>3
+            tpd =-1;
+        end 
+    end
 end
 %
 cn = strmatch('node_coordinates',Attribs,'exact');
@@ -1199,15 +1252,42 @@ end
 %
 if tpd<0
     if ~isempty(face_dim)
-        % tpd = 2;
+        tpd = 2;
     elseif ~isempty(edge_dim)
-        % tpd = 1;
+        tpd = 1;
     else
         ui_message('error','Unable to detect dimensionality of mesh %s.',Info.Name)
     end
+else
+    switch tpd
+        case 1
+            if isempty(enc)
+                ui_message('error','No edge_node_connectivity attribute specified for 1D UGRID mesh %s.',Info.Name)
+            elseif isempty(edge_dim)
+                ui_message('error','Unable to identify the edge dimension for 1D UGRID mesh %s.',Info.Name)
+            end
+        case 2
+            if isempty(fnc)
+                ui_message('error','No face_node_connectivity attribute specified for 2D UGRID mesh %s.',Info.Name)
+            elseif isempty(face_dim)
+                ui_message('error','Unable to identify the face dimension for 2D UGRID mesh %s.',Info.Name)
+            end
+        case 3
+            ui_message('error','3D UGRID mesh %s not yet supported.',Info.Name)
+    end
 end
 %
-Info.Mesh = {'ugrid' ivar -1 node_dim edge_dim face_dim}; % vol_dim
+coordspace = strmatch('coordinate_space',Attribs,'exact');
+ugrid = 'ugrid';
+if ~isempty(coordspace)
+    if tpd==1
+        ugrid = 'ugrid1d_network';
+    else
+        ui_message('error','Attribute ''coordinate_space'' not supported for %i-dimensional UGRID mesh %s',tpd,Info.Name)
+    end
+end
+%
+Info.Mesh = {ugrid tpd ivar -1 node_dim edge_dim face_dim}; % vol_dim
 %
 id = strmatch(node_dim,dimNames,'exact');
 if isempty(id)

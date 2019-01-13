@@ -857,12 +857,19 @@ if ~iscell(selqnt)
     selqnt = {selqnt};
 end
 selqnt = unique(selqnt);
-[mem,idx1]=ismember(selqnt,{waq_qnt.Name}');
-[mem,idx2]=ismember(selqnt,{waq_qnt.ShortName}');
+lselqnt = lower(selqnt);
+%
+% Find WAQ quantity case insenstive
+%
+[mem,idx1]=ismember(lselqnt,lower({waq_qnt.Name})');
+[mem,idx2]=ismember(lselqnt,lower({waq_qnt.ShortName})');
 iselqnt=max(idx1,idx2);
 %
 if ~isempty(flw_qnt)
-    [mem,idx3]=ismember(selqnt,{flw_qnt.Name}');
+    %
+    % Find FLOW quantity case insensitive
+    %
+    [mem,idx3]=ismember(lselqnt,lower({flw_qnt.Name})');
     iselqnt(idx3>0)=-idx3(idx3>0);
 end
 

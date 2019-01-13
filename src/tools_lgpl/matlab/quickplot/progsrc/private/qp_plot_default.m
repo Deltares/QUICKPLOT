@@ -181,7 +181,7 @@ switch NVal
                 % dummy values
                 if ~isequal(size(data.Z),size(data.X))
                     Ops.presentationtype = 'grid';
-                    data.Val = repmat(NaN,size(data.Z)-[0 0 1]);
+                    data.Val = repmat(NaN,size(data.Z)-[0 1]);
                 else
                     Ops.presentationtype = 'old grid';
                     data.Val = repmat(NaN,size(data.Z));
@@ -295,8 +295,9 @@ switch NVal
             case {'Distance-Val','X-Val','X-Z','X-Time','Time-X','Time-Z','Time-Val'}
                 if ~isfield(Ops,'plotcoordinate')
                     Ops.plotcoordinate = 'time';
+                    data.X = data.Time;
                 end
-                if ~isempty(strfind(axestype,'Z')) && isfield(data,'Z')
+                if ~isempty(strfind(axestype,'Z')) && isfield(data,'Z') && multiple(K_)
                     hNew = plotslice(hNew,Parent,data,Ops,multiple,DimFlag,Props,Thresholds);
                     if FirstFrame
                         set(Parent,'view',[0 90],'layer','top');
@@ -946,15 +947,16 @@ end
 
 
 function hNew = plotslice(hNew,Parent,data,Ops,multiple,DimFlag,Props,Thresholds)
-Mask=repmat(min(data.Z,[],2)==max(data.Z,[],2),[1 size(data.Z,2)]);
-%Mask=repmat(min(data.Z,[],3)==max(data.Z,[],3),[1 1 size(data.Z,3)]);
-if isequal(size(Mask),size(data.X))
-    data.X(Mask)=NaN;
-end
-
 data.X=squeeze(data.X);
 data.Z=squeeze(data.Z);
 data.Val=squeeze(data.Val);
+%
+if size(data.Z,2)>1
+    Mask=repmat(min(data.Z,[],2)==max(data.Z,[],2),[1 size(data.Z,2)]);
+    if isequal(size(Mask),size(data.X))
+        data.X(Mask)=NaN;
+    end
+end
 %
 s = data.X;
 set(Parent,'NextPlot','add');

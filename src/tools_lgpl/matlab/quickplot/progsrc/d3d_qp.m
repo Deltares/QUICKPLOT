@@ -47,7 +47,7 @@ catch Ex
 end
 
 function outdata=d3d_qp_core(cmd,varargin)
-%VERSION = 2.33
+%VERSION = 2.50
 qpversionbase = 'v<VERSION>';
 qpcreationdate = '<CREATIONDATE>';
 %
@@ -199,6 +199,7 @@ switch cmd
             PS.Parent = parent;
             PS.Handles = [];
             PS.Stations = [];
+            PS.Ops.version = 1.3;
             PS.Ops.axestype = getappdata(parent,'AxesType');
             PS.Ops.basicaxestype = getappdata(parent,'BasicAxesType');
             [hNew,Error,Info]=qp_plot(PS);

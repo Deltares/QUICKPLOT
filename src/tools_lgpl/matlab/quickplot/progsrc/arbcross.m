@@ -286,15 +286,17 @@ for i=1:nargin-input_offset-input_skip_end
     szVGRID = size(VGRID);
     if strcmp(VLOC,'NODE') || ...
             (strcmp(VLOC,'?') && ...
-             (isequal(szVGRID(1:2),szXGRID) || ...
-              (isequal(szVGRID([2 1]),szXGRID) && szXGRID(2)==1)))
+             (isequal(prod(szVGRID(1:vdim-1)),prod(szXGRID))))
+%             (isequal(szVGRID(1:2),szXGRID) || ...
+%              (isequal(szVGRID([2 1]),szXGRID) && szXGRID(2)==1)))
         %
         % Values defined at mesh nodes
         %
         v=[];
-        for k = size(VGRID,vdim):-1:1
+        szVGRID = size(VGRID);
+        for k = prod(szVGRID(vdim:end)):-1:1
             vgrid = VGRID(hdims{:},k);
-            v(:,1,k) = sum(wght.*vgrid(iNode),2);
+            v(:,k) = sum(wght.*vgrid(iNode),2);
         end
     elseif strcmp(VLOC,'FACE') || ...
             (strcmp(VLOC,'?') && ...
@@ -304,17 +306,19 @@ for i=1:nargin-input_offset-input_skip_end
         % Values defined on mesh patches
         %
         v=[];
-        for k = size(VGRID,vdim):-1:1
+        szVGRID = size(VGRID);
+        for k = prod(szVGRID(vdim:end)):-1:1
             vgrid = VGRID(hdims{:},k);
-            v(:,1,k) = vgrid(iFace);
-            v(outside,1,k) = NaN;
+            v(:,k) = vgrid(iFace);
+            v(outside,k) = NaN;
         end
     elseif strcmp(VLOC,'EDGE')
         noEdge = isnan(iEdge);
         iEdge(noEdge) = 1;
-        for k = size(VGRID,vdim):-1:1
+        szVGRID = size(VGRID);
+        for k = prod(szVGRID(vdim:end)):-1:1
             vgrid = VGRID(hdims{:},k);
-            v(:,1,k) = vgrid(iEdge);
+            v(:,k) = vgrid(iEdge);
         end
         v(noEdge,:) = NaN;
     else

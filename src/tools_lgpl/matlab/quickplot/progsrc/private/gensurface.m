@@ -50,7 +50,7 @@ if ~isequal(size(X),size(Val))
 end
 X(isnan(Val))=NaN;
 Y(isnan(Val))=NaN;
-if ~isempty(hOld) & ishandle(hOld)
+if ~isempty(hOld) && ishandle(hOld)
     hNew=hOld;
     set(hNew,'xdata',X, ...
         'ydata',Y, ...
