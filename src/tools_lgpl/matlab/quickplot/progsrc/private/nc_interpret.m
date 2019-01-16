@@ -498,6 +498,20 @@ for ivar = 1:nvars
         nc = setType(nc,ivar,idim,'z-coordinate');
         continue
     end
+    %
+    j = strmatch('standard_name',Attribs,'exact');
+    if ~isempty(j) && strcmp(Info.Attribute(j).Value,'altitude')
+        %
+        % Altitude accepted as vertical coordinate under certain conditions
+        % ... I want to accept mesh2d_layer_z and mesh2d_interface_z, but
+        % not mesh2d_flowelem_bl or mesh2d_node_z. 
+        %
+        if ~isempty(strfind(Info.Name,'_interface_z')) || ...
+                ~isempty(strfind(Info.Name,'_layer_z'))
+            nc = setType(nc,ivar,idim,'z-coordinate');
+        end
+        continue
+    end
 end
 
 iCoords = ~strcmp({nc.Dataset.Type},'unknown');

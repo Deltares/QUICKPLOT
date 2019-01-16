@@ -955,7 +955,7 @@ if XYRead || XYneeded
                         K=idx{K_};
                         Z = zeros(szZData);
                         for t=1:size(Z,1)
-                            for k=1:length(s)
+                            for k=1:length(sigma)
                                 if K(k)<=nsigma
                                     Z(t,HDIMS{:},k) = eta(t,HDIMS{:}) + sigma(k)*(min(depth_c,depth)+eta(t,HDIMS{:}));
                                 else
@@ -978,7 +978,7 @@ if XYRead || XYneeded
                         K=idx{K_};
                         Z = zeros(szZData);
                         for t=1:size(Z,1)
-                            for k=1:length(s)
+                            for k=1:length(sigma)
                                 f = 0.5*(z1+z2) + 0.5*(z1-z2)*tanh(2*a/(z1-z2)*(depth-href));
                                 if K(k)<=k_c
                                     Z(t,HDIMS{:},k) = sigma(k)*f;
@@ -992,10 +992,59 @@ if XYRead || XYneeded
                             ui_message('warning','Formula for %s not implemented',standard_name)
                         end
                         [Z, status] = qp_netcdf_get(FI,CoordInfo,Props.DimName,idx);
+                        nZ = length(Z);
                         if signup<0
                             Z=-Z;
                         end
-                        Z = expand_hdim(Z,szData,hdim);
+                        %
+                        % hack for z-layers in FM
+                        %
+                        us = strfind(CoordInfo.Name,'_');
+                        if ~isempty(us)
+                            waterlevel = [CoordInfo.Name(1:us(1)) 's1'];
+                            izw = strmatch(waterlevel,{FI.Dataset.Name});
+                            %
+                            zb_t_dependent = true;
+                            bedlevel   = [CoordInfo.Name(1:us(1)) 'mor_bl'];
+                            izb = strmatch(bedlevel,{FI.Dataset.Name});
+                            if isempty(izb)
+                                zb_t_dependent = false;
+                                bedlevel   = [CoordInfo.Name(1:us(1)) 'flowelem_bl'];
+                                izb = strmatch(bedlevel,{FI.Dataset.Name});
+                            end
+                            %
+                            if ~isempty(izw) && ~isempty(izb)
+                                [zw, status] = qp_netcdf_get(FI,FI.Dataset(izw),Props.DimName,idx,getOptions{:});
+                                %
+                                szZwData = size(zw);
+                                szZData = szData;
+                                szZData(hdims) = szZwData(hdims);
+                                Z = expand_hdim(Z,szZData,hdim);
+                                %
+                                for k=1:nZ
+                                    Z(:,HDIMS{:},k) = min(Z(:,HDIMS{:},k),zw);
+                                end
+                                %
+                                [zb, status] = qp_netcdf_get(FI,FI.Dataset(izb),Props.DimName,idx,getOptions{:});
+                                if zb_t_dependent
+                                    for k=1:nZ
+                                        Z(:,HDIMS{:},k) = max(Z(:,HDIMS{:},k),zb);
+                                    end
+                                else
+                                    for t=1:size(Z,1)
+                                        for k=1:nZ
+                                            Z(t,HDIMS{:},k) = max(Z(t,HDIMS{:},k),zb(1,HDIMS{:}));
+                                        end
+                                    end
+                                end
+                                %
+                                zLocVar = waterlevel;
+                            else
+                                Z = expand_hdim(Z,szData,hdim);
+                            end
+                        else
+                            Z = expand_hdim(Z,szData,hdim);
+                        end
                 end
             else
                 [Z, status] = qp_netcdf_get(FI,CoordInfo,Props.DimName,idx);
