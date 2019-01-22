@@ -125,7 +125,14 @@ if isfield(Props,'UseGrid') && ~isempty(Props(fld).UseGrid) && Props(fld).UseGri
     % Gridview information: update grid view when shown
     %
     if strcmp(get(UD.GridView.Fig,'visible'),'on')
-        qp_gridviewhelper(UD,Info,DomainNr,Props,fld)
+        try
+            qp_gridviewhelper(UD,Info,DomainNr,Props,fld)
+        catch err
+            qp_gridview('setgrid',UD.GridView.Fig,[])
+            set(UD.GridView.Fig,'userdata',[])
+            d3d_qp hidegridview
+            rethrow(err)
+        end
     end
 else
     %

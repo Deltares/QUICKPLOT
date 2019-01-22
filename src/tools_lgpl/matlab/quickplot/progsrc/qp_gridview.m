@@ -1476,6 +1476,13 @@ if isfield(GRID,'FaceNodeConnect') || isfield(GRID,'EdgeNodeConnect') % unstruct
     end
     xy = eConnect(:,[1 2 2])';
     xy = xy(:);
+    xy_wrong = min(xy);
+    if xy_wrong>=1
+        xy_wrong = max(xy);
+    end
+    if xy_wrong<1 || xy_wrong>length(GRID.X)
+        error('Invalid node index found in edge_node_connectivity table. Value (%i) outside range 1:%i.',xy_wrong,length(GRID.X))
+    end
     X = GRID.X(xy);
     Y = GRID.Y(xy);
     X(3:3:end) = NaN;

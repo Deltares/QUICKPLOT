@@ -2843,8 +2843,14 @@ switch cmd
                 Handle_Domain=findobj(mfig,'tag','selectdomain');
                 DomainNr=get(Handle_Domain,'value');
                 %
-                qp_gridviewhelper(UD,Info,DomainNr,Props,fld)
-                d3d_qp('gridview_update')
+                try
+                    qp_gridviewhelper(UD,Info,DomainNr,Props,fld)
+                    d3d_qp('gridview_update')
+                catch err
+                    qp_gridview('setgrid',UD.GridView.Fig,[],[])
+                    set(UD.GridView.Fig,'userdata',[])
+                    rethrow(err)
+                end
             else
                 qp_gridview('setgrid',UD.GridView.Fig,[],[])
                 set(UD.GridView.Fig,'userdata',[])
