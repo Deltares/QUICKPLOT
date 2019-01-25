@@ -117,7 +117,7 @@ else
                 selected{N_}=0;
             end
         case '(X,Y) point/path'
-            vslice=1;
+            vslice=2;
             selected{M_}={'XY' get(MW.EditXY,'userdata')};
             if DimFlag(N_)
                 selected{N_}=0;
@@ -509,6 +509,17 @@ if (multiple(M_) && ~multiple(N_) && DimFlag(N_)) || (~multiple(M_) && DimFlag(M
         if Props.DataInCell || ~isempty(strfind(geometry,'FACE'))
             geometry = 'SEG-EDGE';
             lineproperties = 1;
+        elseif ~isempty(strfind(geometry,'EDGE'))
+            % This a slice through data located at EDGEs.
+            % Is the slice along EDGEs or crossing EDGEs?
+            % Assuming that an (M,N) point/path is following EDGEs and
+            % an (X,Y) point/path is crossing EDGEs.
+            if vslice==1
+                geometry = 'SEG-EDGE';
+            elseif vslice==2
+                geometry = 'SEG-NODE';
+            end
+            lineproperties = 1;
         else
             geometry = 'SEG-NODE';
             lineproperties = 1;
@@ -831,7 +842,11 @@ if ((nval==1 || nval==6) && TimeSpatial==2) || ...
             end
             switch axestype
                 case {'X-Val'}
-                    PrsTps={'linear';'stepwise'};
+                    if strcmp(geometry,'SEG-EDGE')
+                        PrsTps={'linear';'stepwise'};
+                    else
+                        PrsTps={'linear'};
+                    end
                 case {'X-Time','Time-X','Time-Z'}
                     PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                 otherwise

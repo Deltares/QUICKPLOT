@@ -444,7 +444,7 @@ for d=1:length(data)
     end
 end
 npnt=0;
-if isfield(data,'Val') && ~iscell(data(1).Val) && ~VectorPlot
+if isfield(data,'Val') && isnumeric(data(1).Val) && ~VectorPlot
     for d=length(data):-1:1
         if isfield(data,'X')
             szX=size(data(d).X);

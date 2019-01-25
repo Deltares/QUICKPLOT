@@ -237,24 +237,22 @@ switch FI.FileType(9:end)
                 Ans.Y = FI.obsXY(idx{M_},2);
                 Ans.Val = lId(idx{M_});
             case 'boundary points'
-                F=inifile('geti',FI.bndLoc,'Boundary','type');
+                F=inifile('cgeti',FI.bndLoc,'Boundary','type');
                 BT = [F{:}];
                 BT = find(BT==Props.varid);
                 %
-                F=inifile('getstringi',FI.bndLoc,'Boundary','nodeId');
-                BI = F(BT(idx{M_}));
+                F=inifile('cgeti',FI.bndLoc,'Boundary','nodeId');
+                ni = [F{BT(idx{M_})}];
                 %
-                NI = inifile('getstringi',FI.ntw,'Node','id');
-                ni = find(ismember(NI,BI));
-                ni = ni(idx{M_});
+                NI = inifile('cgetstringi',FI.ntw,'Node','id');
                 x = inifile('geti',FI.ntw,'Node','x');
                 y = inifile('geti',FI.ntw,'Node','y');
                 Ans.X   = [x{ni}]';
                 Ans.Y   = [y{ni}]';
                 Ans.Val = NI(ni);
             case 'structure points'
-                sId = inifile('geti',FI.strucLoc,'Structure','id');
-                ST = inifile('geti',FI.strucLoc,'Structure','type');
+                sId = inifile('cgeti',FI.strucLoc,'Structure','id');
+                ST = inifile('cgeti',FI.strucLoc,'Structure','type');
                 ST = find(strcmp(ST,Props.varid));
                 iM = ST(idx{M_});
                 %
@@ -549,7 +547,7 @@ switch FI.FileType
         nBT=length(uBT);
         %
         if isfield(FI,'strucLoc') && inifile('exists',FI.strucLoc,'Structure')
-            ST=inifile('getstringi',FI.strucLoc,'Structure','type');
+            ST=inifile('cgetstringi',FI.strucLoc,'Structure','type');
             uST=unique(ST);
         else
             uST={};
@@ -1135,7 +1133,7 @@ xy = NaN(nPnt,2);
 [uBId,ia,ic] = unique(bId);
 G = inifile('cgeti',NTWini,'Branch','geometry');
 GId = inifile('cgetstringi',NTWini,'Branch','id');
-GgpO = inifile('geti',NTWini,'Branch','gridPointOffsets');
+GgpO = inifile('cgeti',NTWini,'Branch','gridPointOffsets');
 for i = 1:length(uBId)
     Branch = uBId(i);
     iBranch = ustrcmpi(Branch,GId);

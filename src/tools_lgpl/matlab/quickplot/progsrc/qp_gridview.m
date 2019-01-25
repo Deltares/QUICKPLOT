@@ -1226,39 +1226,46 @@ switch selection.Type
                             'xdata',X(:), ...
                             'ydata',Y(:))
                     case 'EDGE'
-                        % determine Edge-Face relationship (code copy)
-                        Faces = GRID.FaceNodeConnect;
-                        missing = isnan(Faces);
-                        NEdges = sum(~missing(:));
-                        Edges = zeros(3,NEdges);
-                        ie = 0;
-                        for j = 1:size(Faces,2)
-                            for i = 1:size(Faces,1)
-                                if ~isnan(Faces(i,j))
-                                    ie = ie+1;
-                                    Edges(1,ie) = Faces(i,j);
-                                    if j==size(Faces,2) || isnan(Faces(i,j+1))
-                                        Edges(2,ie) = Faces(i,1);
-                                    else
-                                        Edges(2,ie) = Faces(i,j+1);
+                        if isfield(GRID,'FaceNodeConnect')
+                            % determine Edge-Face relationship (code copy)
+                            Faces = GRID.FaceNodeConnect;
+                            missing = isnan(Faces);
+                            NEdges = sum(~missing(:));
+                            Edges = zeros(3,NEdges);
+                            ie = 0;
+                            for j = 1:size(Faces,2)
+                                for i = 1:size(Faces,1)
+                                    if ~isnan(Faces(i,j))
+                                        ie = ie+1;
+                                        Edges(1,ie) = Faces(i,j);
+                                        if j==size(Faces,2) || isnan(Faces(i,j+1))
+                                            Edges(2,ie) = Faces(i,1);
+                                        else
+                                            Edges(2,ie) = Faces(i,j+1);
+                                        end
+                                        Edges(3,ie) = i;
                                     end
-                                    Edges(3,ie) = i;
                                 end
                             end
+                            Edges(1:2,:) = sort(Edges(1:2,:));
+                            Edges = Edges';
+                            % determine for which Faces all Edges have been selected
+                            EdgeSel = sort(GRID.EdgeNodeConnect(Range{1},:),2);
+                            yEdges = ismember(Edges(:,1:2),EdgeSel,'rows');
+                            NEdgesIncluded = accumarray(Edges(:,3),double(yEdges));
+                            NEdgesTotal    = sum(~missing,2);
+                            lface = NEdgesIncluded==NEdgesTotal;
+                            CNECT = GRID.FaceNodeConnect(lface,:);
+                            % determine which Edges are not part of the selected faces
+                            FacesIncluded  = find(lface);
+                            ledge = ismember(Edges(:,3),FacesIncluded);
+                            Edges = EdgeSel(~ismember(EdgeSel,Edges(ledge,1:2),'rows'),:)';
+                        else
+                            % no faces, so faces are empty and all edges
+                            % should be drawn
+                            CNECT = [];
+                            Edges = GRID.EdgeNodeConnect(Range{1},:);
                         end
-                        Edges(1:2,:) = sort(Edges(1:2,:));
-                        Edges = Edges';
-                        % determine for which Faces all Edges have been selected
-                        EdgeSel = sort(GRID.EdgeNodeConnect(Range{1},:),2);
-                        yEdges = ismember(Edges(:,1:2),EdgeSel,'rows');
-                        NEdgesIncluded = accumarray(Edges(:,3),double(yEdges));
-                        NEdgesTotal    = sum(~missing,2);
-                        lface = NEdgesIncluded==NEdgesTotal;
-                        CNECT = GRID.FaceNodeConnect(lface,:);
-                        % determine which Edges are not part of the selected faces
-                        FacesIncluded  = find(lface);
-                        ledge = ismember(Edges(:,3),FacesIncluded);
-                        Edges = EdgeSel(~ismember(EdgeSel,Edges(ledge,1:2),'rows'),:)';
                         X = GRID.X(Edges);
                         Y = GRID.Y(Edges);
                         X(3,:) = NaN;

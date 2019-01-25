@@ -135,7 +135,8 @@ switch v_slice
                         data.Y = data.Y(isel,:);
                         data = rmfield(data,'EdgeNodeConnect');
                     case 'EDGE'
-                        error('EDGE data on 1D network still to be implemented')
+                        iedge = isel;
+                        data.EdgeNodeConnect = data.EdgeNodeConnect(iedge,:);
                 end
                 data.Geom = 'sQUAD';
             else % isfield(data,'SEG')
