@@ -222,6 +222,12 @@ elseif isfield(data,'SEG') && ~isempty(data.SEG)
     EdgeNodeConnect = data.SEG;
 end
 
+if ndims(data.X)>2 || size(data.X,2)>1
+    data.X = data.X(:,1);
+    data.Y = data.Y(:,1);
+    data.Z = data.Z(:,1);
+end
+
 switch data.ValLocation
     case 'NODE'
         switch presentationtype
@@ -401,7 +407,7 @@ switch data.ValLocation
                 hNew = cat(2,hNew{:});
                 
             case {'continuous shades','contour lines','coloured contour lines','contour patches','contour patches with lines'}
-                data = dual_ugrid(data);
+                data = dual_ugrid(data,Ops.extend2edge);
                 hNew = qp_scalarfield_ugrid(Parent,hNew,presentationtype,data,Ops);
                 
             case {'values','markers'}

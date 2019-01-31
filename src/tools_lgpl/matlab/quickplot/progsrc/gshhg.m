@@ -91,7 +91,7 @@ while i<=nargin-1
                     type = 'GSHHS';
                 case {'r','river','rivers'}
                     type = 'river';
-                case {'b','border','borders'}
+                case {'b','border','borders','country and state borders'}
                     type = 'border';
                 otherwise
                     unknown_type = 1;
