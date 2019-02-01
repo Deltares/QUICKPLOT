@@ -242,9 +242,13 @@ switch FI.FileType(9:end)
                 BT = find(BT==Props.varid);
                 %
                 F=inifile('cgeti',FI.bndLoc,'Boundary','nodeId');
-                ni = [F{BT(idx{M_})}];
+                BNI = F(BT(idx{M_}));
                 %
                 NI = inifile('cgetstringi',FI.ntw,'Node','id');
+                [~,iBNI,iNI] = intersect(BNI,NI);
+                ni = zeros(size(BNI));
+                ni(iBNI)=iNI;
+                %
                 x = inifile('geti',FI.ntw,'Node','x');
                 y = inifile('geti',FI.ntw,'Node','y');
                 Ans.X   = [x{ni}]';
