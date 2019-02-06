@@ -1001,7 +1001,7 @@ else
                 [hNew{d},Thresholds,Param,Parent]=qp_plot_pnt(plotargs{:});
             case {'POLYL','POLYG'}
                 [hNew{d},Thresholds,Param]=qp_plot_polyl(plotargs{:});
-            case {'UGRID1D-NODE','UGRID1D-EDGE','UGRID2D-NODE','UGRID2D-EDGE','UGRID2D-FACE'}
+            case {'UGRID1D_NETWORK-NODE','UGRID1D_NETWORK-EDGE','UGRID1D-NODE','UGRID1D-EDGE','UGRID2D-NODE','UGRID2D-EDGE','UGRID2D-FACE'}
                 [hNew{d},Thresholds,Param]=qp_plot_ugrid(plotargs{:});
             otherwise
                 [hNew{d},Thresholds,Param,Parent]=qp_plot_default(plotargs{:});
