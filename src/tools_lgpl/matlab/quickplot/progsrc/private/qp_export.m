@@ -628,7 +628,7 @@ for f=1:ntim
                         shp_type = 'polygon';
                         if isfield(Props,'Geom') && strncmp(Props.Geom,'UGRID',5)
                             if Props.NVal==0 && isfield(data,'FaceNodeConnect')
-                                Props.Geom='UGRID-FACE';
+                                Props.Geom='UGRID2D-FACE';
                                 data.ValLocation='FACE';
                             end
                             switch Ops.presentationtype
@@ -637,7 +637,7 @@ for f=1:ntim
                                     xy=[data(d).X data(d).Y];
                                     rm=[];
                                 otherwise
-                                    switch Props.Geom(7:end)
+                                    switch Props.Geom(max(strfind(Props.Geom,'-'))+1:end)
                                         case 'NODE'
                                             retrieve='griddata';
                                             xy=[data(d).X data(d).Y];
@@ -651,6 +651,8 @@ for f=1:ntim
                                             xv=[data(d).X data(d).Y];
                                             fv=data(d).FaceNodeConnect;
                                             rm=[];
+                                        otherwise
+                                            error('Unsupported geometry ''%s''.',Props.Geom);
                                     end
                             end
                         elseif isfield(Props,'Tri') && Props.Tri
