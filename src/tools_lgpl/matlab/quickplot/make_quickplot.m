@@ -109,7 +109,9 @@ fstrrep('d3d_qp.m','<CREATIONDATE>',TStr)
 fstrrep('wl_identification.c','<VERSION>',qpversion)
 fstrrep('wl_identification.c','<CREATIONDATE>',TStr)
 g = which('-all','gscript');
-copyfile(g{1},'.')
+if ~isempty(g)
+    copyfile(g{1},'.')
+end
 make_exe
 if ispc
    movefile('d3d_qp.exe','d3d_qp.exec');
