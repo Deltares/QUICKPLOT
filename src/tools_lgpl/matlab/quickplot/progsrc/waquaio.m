@@ -67,9 +67,11 @@ function varargout=waquaio(sds,exper,field,varargin)
 %
 %   * flowstat-wl : water level station names
 %   * xy-wl       : water level station xy coordinates
+%   * mn-wl       : water level station mn coordinates
 %   * wlstat      : water level at station
 %   * flowstat-uv : current station names
 %   * xy-uv       : current station xy coordinates
+%   * mn-uv       : current station mn coordinates
 %   * uv-stat     : velocity at current station
 %                   (U,V components in X,Y direction)
 %   * uv0-stat    : velocity at current station
@@ -297,6 +299,7 @@ elseif ismember(field,{'transtat','trancrs-u','trancrs-v', ...
         'wlstat','wl-stat','u-stat','v-stat','uv-stat','w-stat', ...
         'mq-stat','cq-stat','z-stat','z-stati','z-statc', ...
         'z-sbstat','z-sbstati','z-sbstatc','wl-xy','uv-xy', ...
+        'wl-mn'   ,'uv-mn',                                 ...
         'q-barp','wl-lbarp','vel-lbarp','wl-hbarp','vel-hbarp', ...
         'vel-barp','hg-barp','enl-barp','sl-bar','gl-bar','wd-bar', ...
         'barriers','barrierpoints','mn-transtat','mn-trancrs-u', ...
@@ -436,6 +439,7 @@ switch field
             'wl-stat','u-stat','v-stat','uv-stat','w-stat','mq-stat', ...
             'cq-stat','z-stat','z-stati','z-statc','uv0-stat', ...
             'z-sbstat','z-sbstati','z-sbstatc','wl-xy','uv-xy', ...
+            'wl-mn'   ,'uv-mn'    ,                             ...
             'q-barp','wl-lbarp','vel-lbarp','wl-hbarp','vel-hbarp', ...
             'vel-barp','hg-barp','enl-barp','sl-bar','gl-bar','wd-bar', ...
             'barriers','barrierpoints'}
@@ -495,7 +499,7 @@ switch field
                 statmax=dim.nsluv;
             case 'barrierpoints'
                 statmax=nbaruv;
-            case {'wlstat','wl-stat','wl-xy','uv-xy'}
+            case {'wlstat','wl-stat','wl-xy','uv-xy','wl-mn','uv-mn'}
                 stoffset=0;
                 krange=1;
                 statmax=nowl;
@@ -624,6 +628,17 @@ switch field
                 [zgx,zgy]=waqua_get_spatial(sds,exper,'zgrid',dim,refdate,{});
                 mn = sub2ind(size(zgx),MN(:,2),MN(:,1));
                 varargout={zgx(mn) zgy(mn)};
+            case {'wl-mn','uv-mn'}
+                switch field
+                    case 'wl-mn'
+                        ARRAY='CHECKPOINTS_FLOW_IWLPT';
+                    case 'uv-mn'
+                        ARRAY='CHECKPOINTS_FLOW_ICURPT';
+                end
+                stationi=local_argin(argin);
+                MN=waqua('readsds',sds,exper,ARRAY);
+                MN=reshape(MN,[length(MN)/2 2]);
+                varargout = {MN}; 
             case {'wlstat','wl-stat','umag-stat','u-stat','v-stat', ...
                     'mq-stat','cq-stat','w-stat','z-stat','z-stati','z-statc', ...
                     'z-sbstat','z-sbstati','z-sbstatc','barrierdata'}
