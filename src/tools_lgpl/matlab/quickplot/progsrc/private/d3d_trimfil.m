@@ -774,6 +774,16 @@ if DataRead
     % combine vectors components ...
     if isequal(Props.VecType,'m')
         [val1,val2]=dir2uv(val1,val2);
+    elseif isequal(Props.VecType,'mr')
+        [alf,Chk] = vs_let(FI,'map-const','ALFAS',idx([M_ N_]),'quiet');
+	if ~Chk
+	    ui_message('warning','No direction information in file. Vector direction probably incorrect.');
+	    alf=0;
+	end
+	for t = 1:size(val2,1)
+	    val2(t,:) = val2(t,:) + alf(1,:);
+	end
+	[val1,val2]=dir2uv(val1,val2);
     end
     % data interpolation ...
     if isequal(Props.Loc,'d') && isequal(Props.ReqLoc,'z')
@@ -1299,22 +1309,26 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    'sQU
     'ghost v-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPv1'   ''       []       0
     'ghost s-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPs1'   ''       []       0
     '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
-    'wave height'                      'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-trit-series' 'WAVE_HEIGHT' ''  []       0
-    'significant wave height'          'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-rol-series'  'HS'     ''       []       0
-    'wave vector'                      'm'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'm'       'z'   'z'       ''      'map-trit-series' 'WAVE_HEIGHT' 'DIR' []     0
-    'orbital velocity amplitude'       'm/s'    [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-trit-series' 'UORB'   ''       []       0
-    'wave period'                      's'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-trit-series' 'PERIOD' ''       []       0
-    'wave length'                      'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-trit-series' 'WAVE_LENGTH' ''  []       0
-    'short-wave energy'                'J/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-rol-series' 'EWAVE1'  ''       []       0
-    'roller energy'                    'J/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-rol-series' 'EROLL1'  ''       []       0
+    'wave height'                      'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-trit-series'  'WAVE_HEIGHT' ''  []       0
+    'significant wave height'          'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-rol-series'   'HS'     ''       []       0
+    'wave vector'                      'm'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'm'       'z'   'z'       ''      'map-trit-series'  'WAVE_HEIGHT' 'DIR' []     0
+    'wave vector'                      'm'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'mr'      'z'   'z'       ''      'map-rol-series'   'HS'     'TETA'   []       0
+    'orbital velocity amplitude'       'm/s'    [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-trit-series'  'UORB'   ''       []       0
+    'orbital velocity amplitude'       'm/s'    [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-rol-series'   'UORB'   ''       []       0
+    'wave period'                      's'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-trit-series'  'PERIOD' ''       []       0
+    'peak wave period'                 's'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-rol-series'   'TP' ''       []       0
+    'wave length'                      'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-trit-series'  'WAVE_LENGTH' ''  []       0
+    'wave length'                      'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-rol-series'   'LAMBDA'  ''  []       0
+    'short-wave energy'                'J/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-rol-series'   'EWAVE1'  ''       []       0
+    'roller energy'                    'J/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-rol-series'   'EROLL1'  ''       []       0
     'transport velocity of roller energy' ...
-                                       'm/s'    [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-rol-series' 'QXKR'    'QYKR'   []       0
+                                       'm/s'    [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-rol-series'   'QXKR'    'QYKR'   []       0
     'transport velocity of wave energy' ...
-                                       'm/s'    [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-rol-series' 'QXKW'    'QYKW'   []       0
-    'wave force'                       'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-rol-series' 'FXW'     'FYW'    []       0
-    'wave force'                       'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-trit-series' 'WAVE_FORCE_X' 'WAVE_FORCE_Y' []      0
-    'roller force'                     'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-rol-series' 'WSU'     'WSV'    []       0
-    'roller force'                     'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-trit-series' 'ROLLER_FORCE_X' 'ROLLER_FORCE_Y'  [] 0
+                                       'm/s'    [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-rol-series'   'QXKW'    'QYKW'   []       0
+    'wave force'                       'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-rol-series'   'FXW'     'FYW'    []       0
+    'wave force'                       'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-trit-series'  'WAVE_FORCE_X' 'WAVE_FORCE_Y' []      0
+    'roller force'                     'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-rol-series'   'WSU'     'WSV'    []       0
+    'roller force'                     'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-trit-series'  'ROLLER_FORCE_X' 'ROLLER_FORCE_Y'  [] 0
     '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
     'water level (when dry: bed level)' 'm'     [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'S1'      ''       []       0
     'water level'                      'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'S1'      ''       []       0
