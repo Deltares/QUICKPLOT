@@ -107,7 +107,7 @@ if nargin<3
     else
         error('No time selected')
     end
-elseif isequal(t,':')
+elseif strcmp(t,':')
     t = 1:length(Structure.Data);
 end
 %
