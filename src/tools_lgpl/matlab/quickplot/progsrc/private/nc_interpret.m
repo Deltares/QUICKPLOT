@@ -164,6 +164,31 @@ for ivar = 1:nvars
         end
     end
     %
+    j = strmatch('flag_values',Attribs,'exact');
+    if ~isempty(j)
+        if ~isequal(Info.Attribute(j).Datatype,Info.Datatype)
+            msg = {sprintf('Data type of flag_values attribute (%s) inconsistent with data type of data variable %s (%s).',Info.Attribute(j).Datatype,Info.Name,Info.Datatype)};
+            if isequal(Info.Attribute(j).Datatype,'char')
+                strValues = Info.Attribute(j).Value;
+                try
+                    switch Info.Datatype
+                        case {'int8','int16','int32','int64','uint8','uint16','uint32','uint64'}
+                            Values = str2vec(strValues,'%d');
+                        otherwise
+                            Values = str2vec(strValues,'%f');
+                    end
+                    Info.Attribute(j).Value = feval(Info.Datatype,Values);
+                    Info.Attribute(j).Datatype = Info.Datatype;
+                    nc.Dataset(ivar) = Info;
+                    msg{2} = sprintf('Attribute value ''%s'' converted.',strValues);
+                catch
+                    msg{2} = sprintf('Conversion of attribute value ''%s'' failed.',strValues);
+                end
+            end
+            ui_message('error',msg)
+        end
+    end
+    %
     if ~isfield(Info,'Dimid') || isempty(Info.Dimid)
         nc.Dataset(ivar).Varid = ivar-1;
         nc.Dataset(ivar).Dimid = zeros(size(Info.Dimension));
