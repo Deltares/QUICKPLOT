@@ -384,8 +384,8 @@ if XYRead || XYneeded
         dimFaces = meshInfo.Mesh{7};
         allDims = {FI.Dimension.Name};
         MeshSubset = {};
-        switch mesh_settings{3}
-            case 0
+        switch mesh_settings{4}
+            case 0 % data at NODE
                 MeshSubset = {'NODE' dimNodes idx{M_}
                               'EDGE' dimEdges -1
                               'FACE' dimFaces -1};
@@ -395,14 +395,14 @@ if XYRead || XYneeded
                 if ~isempty(dimFaces)
                     MeshSubset{3,3} = 1:FI.Dimension(strcmp(dimFaces,allDims)).Length;
                 end
-            case 1
+            case 1 % data at EDGE
                 MeshSubset = {'NODE' dimNodes 1:FI.Dimension(strcmp(dimNodes,allDims)).Length
                     'EDGE' dimEdges idx{M_}
                     'FACE' dimFaces -1};
                 if ~isempty(dimFaces)
                     MeshSubset{3,3} = 1:FI.Dimension(strcmp(dimFaces,allDims)).Length;
                 end
-            case 2
+            case 2 % data at FACE
                 MeshSubset = {'NODE' dimNodes 1:FI.Dimension(strcmp(dimNodes,allDims)).Length
                               'EDGE' dimEdges -1
                               'FACE' dimFaces idx{M_}};
