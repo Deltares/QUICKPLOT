@@ -231,6 +231,7 @@ switch lower(Ops.thinningmode)
                 tnpnt = 0;
                 for d = 1:length(data)
                     tmpf(:,tnpnt+(1:npnt(d))) = data(d).(f)(sela{:});
+                    tnpnt = tnpnt+npnt(d);
                     data(d).(f) = [];
                 end
                 if multi_time
