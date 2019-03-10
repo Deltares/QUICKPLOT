@@ -158,12 +158,12 @@ EnableLoad = false;
 
 [nval,nvalstr]=convertnval(Props.NVal);
 DimFlag = Props.DimFlag;
-if isfield(Props,'Geom') && ~isempty(Props.Geom)
-    geometry=Props.Geom;
-    coordinates=Props.Coords;
-elseif nval<0
+if nval<0
     geometry='SELFPLOT';
     coordinates='';
+elseif isfield(Props,'Geom') && ~isempty(Props.Geom)
+    geometry=Props.Geom;
+    coordinates=Props.Coords;
 else
     if DimFlag(M_) && DimFlag(N_)
         geometry='sQUAD';
@@ -1083,7 +1083,7 @@ end
 %
 %---- data units
 %
-if ~isempty(Units)
+if ~isempty(Units) && nval>0
     set(findobj(OH,'tag','dataunits'),'enable','on')
     dunit=findobj(OH,'tag','dataunits=?');
     set(dunit,'enable','on', ...
