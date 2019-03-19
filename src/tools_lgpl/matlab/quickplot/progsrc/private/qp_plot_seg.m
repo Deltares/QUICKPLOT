@@ -81,7 +81,7 @@ switch NVal
                     Ops.LineParams{:});
             end
         end
-    case 1
+    case {1,5,6}
         switch Ops.presentationtype
             case 'markers'
                 if strcmp(data.ValLocation,'EDGE')

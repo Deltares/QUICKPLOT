@@ -134,7 +134,7 @@ switch NVal
             PName = [PName ': ' stn];
         end
         qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
-    case 1
+    case {1,5,6}
         axestype = strtok(Ops.axestype);
         if strcmp(axestype,'Distance-Val') || strcmp(axestype,'X-Val') || strcmp(axestype,'Time-Val') || strcmp(axestype,'Time-Z')
         %if multiple(T_)

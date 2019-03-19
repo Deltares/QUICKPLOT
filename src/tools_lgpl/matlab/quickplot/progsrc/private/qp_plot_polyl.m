@@ -139,7 +139,7 @@ switch NVal
             set(Parent,'layer','top')
         end
         qp_title(Parent,TStr,'quantity',Quant,'unit',Units,'time',TStr)
-    case 1
+    case {1,5,6}
         switch Ops.presentationtype
             case {'values'}
                 hNew=gentextfld(hNew,Ops,Parent,data.Val,data.XY(:,1),data.XY(:,2));
