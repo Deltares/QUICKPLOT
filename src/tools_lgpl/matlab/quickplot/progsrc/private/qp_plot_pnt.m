@@ -168,7 +168,8 @@ switch NVal
                     hNew=gentextfld(hNew,Ops,Parent,data.Val,X,Y);
                     
                 case 'markers'
-                    hNew=genmarkers(hNew,Ops,Parent,data.Val,X,Y);
+                    hNew = genmarkers(hNew,Ops,Parent,data.Val,X,Y);
+                    Thresholds = Ops.Thresholds;
                     
                 otherwise
                     if ~FirstFrame

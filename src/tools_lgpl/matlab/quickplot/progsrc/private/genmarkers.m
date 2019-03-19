@@ -1,4 +1,4 @@
-function hNew=genmarkers(hOld,Ops,Parent,Val,X,Y,Z)
+function hNew = genmarkers(hOld,Ops,Parent,Val,X,Y,Z)
 %GENMARKERS Generic plot routine for marker plot.
 
 %----- LGPL --------------------------------------------------------------------
