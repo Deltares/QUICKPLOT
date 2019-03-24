@@ -3907,9 +3907,13 @@ switch cmd
             Fig=gcbf;
         elseif isempty(gcbf) || isequal(get(gcbf,'handlevisibility'),'off')
             FigIDs=get(UD.PlotMngr.FigList,'userdata');
-            FigVal=get(UD.PlotMngr.FigList,'value');
-            if FigVal<=length(FigIDs)
-                Fig=FigIDs(FigVal);
+            if get(UD.PlotMngr.FigAll,'value') % all figures
+                Fig=FigIDs;
+            else
+                FigVal=get(UD.PlotMngr.FigList,'value');
+                if FigVal<=length(FigIDs)
+                    Fig=FigIDs(FigVal);
+                end
             end
         else
             Fig=gcbf;
