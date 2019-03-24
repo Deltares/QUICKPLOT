@@ -176,60 +176,64 @@ end
 
 % generate output ...
 if XYRead
-    X=vs_let(FI,'GRID_coor','X_coor','quiet');
-    Y=vs_let(FI,'GRID_coor','Y_coor','quiet');
-    XYZ=[X Y];
-    %
-    PointIndices=vs_let(FI,'MESH_2','KMESHC','quiet');
-    INPELM=vs_let(FI,'MESH_1','INPELM','quiet');
-    INELEM=vs_let(FI,'MESH_1','INELEM','quiet');
-    %
-    % INPELM contains the number of points per element
-    % INELEM contains the number of elements
-    % The last "element set" contains the triangles.
-    % The other "element sets" contain the boundary conditions.
-    %
-    switch Props.Name
-        case {'closed boundaries','open boundary','transmission boundaries'}
-            LELNR=vs_let(FI,'GRID_adm',{1},'LELNR','quiet');
-            LELNR=LELNR(cumsum(INELEM))';
-            elm={};
-            ind=0;
-            for i=1:length(INPELM)-1
-                if LELNR(i)==6 & strcmp(Props.Name,'closed boundaries')
-                    elm{i}=transpose(reshape(PointIndices(ind+(1:INPELM(i)*INELEM(i))),[INPELM(i) INELEM(i)]));
-                elseif LELNR(i)==3 & strcmp(Props.Name,'open boundary')
-                    bnd=reshape(PointIndices(ind+(1:INPELM(i))),[INPELM(i) 1]);
-                    elm{i}=[bnd(1:end-1) bnd(2:end)];
-                elseif LELNR(i)==4 & strcmp(Props.Name,'transmission boundaries')
-                    bnd=reshape(PointIndices(ind+(1:INPELM(i))),[INPELM(i) 1]);
-                    elm{i}=[bnd(1:end-1) bnd(2:end)];
-                else
-                    elm{i}=zeros(0,2);
+    if strcmp(Props.Geom,'PNT')
+        % skip until after reading the data
+    else
+        X=vs_let(FI,'GRID_coor','X_coor','quiet');
+        Y=vs_let(FI,'GRID_coor','Y_coor','quiet');
+        XYZ=[X Y];
+        %
+        PointIndices=vs_let(FI,'MESH_2','KMESHC','quiet');
+        INPELM=vs_let(FI,'MESH_1','INPELM','quiet');
+        INELEM=vs_let(FI,'MESH_1','INELEM','quiet');
+        %
+        % INPELM contains the number of points per element
+        % INELEM contains the number of elements
+        % The last "element set" contains the triangles.
+        % The other "element sets" contain the boundary conditions.
+        %
+        switch Props.Name
+            case {'closed boundaries','open boundary','transmission boundaries'}
+                LELNR=vs_let(FI,'GRID_adm',{1},'LELNR','quiet');
+                LELNR=LELNR(cumsum(INELEM))';
+                elm={};
+                ind=0;
+                for i=1:length(INPELM)-1
+                    if LELNR(i)==6 & strcmp(Props.Name,'closed boundaries')
+                        elm{i}=transpose(reshape(PointIndices(ind+(1:INPELM(i)*INELEM(i))),[INPELM(i) INELEM(i)]));
+                    elseif LELNR(i)==3 & strcmp(Props.Name,'open boundary')
+                        bnd=reshape(PointIndices(ind+(1:INPELM(i))),[INPELM(i) 1]);
+                        elm{i}=[bnd(1:end-1) bnd(2:end)];
+                    elseif LELNR(i)==4 & strcmp(Props.Name,'transmission boundaries')
+                        bnd=reshape(PointIndices(ind+(1:INPELM(i))),[INPELM(i) 1]);
+                        elm{i}=[bnd(1:end-1) bnd(2:end)];
+                    else
+                        elm{i}=zeros(0,2);
+                    end
+                    ind=ind+INPELM(i)*INELEM(i);
                 end
-                ind=ind+INPELM(i)*INELEM(i);
-            end
-            %
-            Ans.XY=XYZ;
-            Ans.SEG=cat(1,elm{:});
-        otherwise
-            if idx{M_}~=0
-                XYZ = XYZ(idx{M_},:);
-            end
-            Ans.X = XYZ(:,1);
-            Ans.Y = XYZ(:,2);
-            %
-            ind=sum(INPELM(1:end-1).*INELEM(1:end-1));
-            TRI=transpose(reshape(PointIndices(ind+(1:INPELM(end)*INELEM(end))),[INPELM(end) INELEM(end)]));
-            %
-            if idx{M_}~=0
-                Translate=zeros(sz(M_),1);
-                Translate(idx{M_})=1:length(idx{M_});
-                TRI = Translate(TRI);
-                TRI = TRI(all(TRI,2),:);
-            end
-            Ans.FaceNodeConnect=TRI;
-            Ans.ValLocation='NODE';
+                %
+                Ans.XY=XYZ;
+                Ans.SEG=cat(1,elm{:});
+            otherwise
+                if idx{M_}~=0
+                    XYZ = XYZ(idx{M_},:);
+                end
+                Ans.X = XYZ(:,1);
+                Ans.Y = XYZ(:,2);
+                %
+                ind=sum(INPELM(1:end-1).*INELEM(1:end-1));
+                TRI=transpose(reshape(PointIndices(ind+(1:INPELM(end)*INELEM(end))),[INPELM(end) INELEM(end)]));
+                %
+                if idx{M_}~=0
+                    Translate=zeros(sz(M_),1);
+                    Translate(idx{M_})=1:length(idx{M_});
+                    TRI = Translate(TRI);
+                    TRI = TRI(all(TRI,2),:);
+                end
+                Ans.FaceNodeConnect=TRI;
+                Ans.ValLocation='NODE';
+        end
     end
 end
 
@@ -246,104 +250,117 @@ WL = RPAR(4);
 switch Props.NVal
     case 0
     case 1
-        %H=vs_get(FI,'GRID','H_depth');
-        switch Props.Name
-            case 'relative breaking intensity'
-                Val1=vs_let(FI,Props.Group,{idx{T_}},Props.Val1,{0},'quiet');
-            otherwise
-                Val1=vs_let(FI,Props.Group,{idx{T_}},Props.Val1,{idx{M_}},'quiet');
-        end
-        Val2=[];
-        if ~isempty(Props.Val2)
-            Val2=vs_let(FI,Props.Group,{idx{T_}},Props.Val2,{idx{M_}},'quiet');
-        end
-        switch Props.Name
-            case 'water level'
-                Ans.Val = Val1;
-                Ans.Val(:) = WL;
-            case 'bed level'
-                Ans.Val = WL - Val1;
-            case 'wave height'
-                Amp = sqrt(Val1.^2 + Val2.^2);
-                Ans.Val = 2*Amp;
-            case 'wave image'
-                Amp   = sqrt(Val1.^2 + Val2.^2);
-                Phase = atan2(Val2,Val1);
-                if NRun>1
-                    Info = vs_disp(FI,'SPECTRAL-INFO',[]);
-                    if isstruct(Info) & Info.SizeDim>0
-                        Freqs = vs_let(FI,'SPECTRAL-INFO','SPECTRAL-RPAR',{1},'quiet');
-                        Weights = vs_let(FI,'SPECTRAL-INFO','WEIGHTS','quiet')';
-                        Weights = Weights(:);
-                        if size(Amp,1)~=NRun
-                            Weights = Weights(idx{T_});
-                            Weights(:)=1; % reset weights to one, to generate same wave image from combined file as from individual file.
+        if strcmp(Props.Geom,'PNT')
+            Location = vs_get(FI,'SEICH_loc',idx(ST_),'Point_nr','quiet');
+            %
+            Freqs = vs_let(FI,'SEICH_def','FREQ','quiet');
+            Freqs = Freqs(Freqs>0)';
+            %
+            %Get data for Location+1 because the Location is zero-based (writing
+            %program is a C-program).
+            Ans = qpread(FI,Props.Data,'data',0,Location+1);
+            Ans.X = vs_get(FI,'SEICH_loc',idx(ST_),'Xp','quiet');
+            Ans.Y = vs_get(FI,'SEICH_loc',idx(ST_),'Yp','quiet');
+        else
+            %H=vs_get(FI,'GRID','H_depth');
+            switch Props.Name
+                case 'relative breaking intensity'
+                    Val1=vs_let(FI,Props.Group,{idx{T_}},Props.Val1,{0},'quiet');
+                otherwise
+                    Val1=vs_let(FI,Props.Group,{idx{T_}},Props.Val1,{idx{M_}},'quiet');
+            end
+            Val2=[];
+            if ~isempty(Props.Val2)
+                Val2=vs_let(FI,Props.Group,{idx{T_}},Props.Val2,{idx{M_}},'quiet');
+            end
+            switch Props.Name
+                case 'water level'
+                    Ans.Val = Val1;
+                    Ans.Val(:) = WL;
+                case 'bed level'
+                    Ans.Val = WL - Val1;
+                case 'wave height'
+                    Amp = sqrt(Val1.^2 + Val2.^2);
+                    Ans.Val = 2*Amp;
+                case 'wave image'
+                    Amp   = sqrt(Val1.^2 + Val2.^2);
+                    Phase = atan2(Val2,Val1);
+                    if NRun>1
+                        Info = vs_disp(FI,'SPECTRAL-INFO',[]);
+                        if isstruct(Info) & Info.SizeDim>0
+                            Freqs = vs_let(FI,'SPECTRAL-INFO','SPECTRAL-RPAR',{1},'quiet');
+                            Weights = vs_let(FI,'SPECTRAL-INFO','WEIGHTS','quiet')';
+                            Weights = Weights(:);
+                            if size(Amp,1)~=NRun
+                                Weights = Weights(idx{T_});
+                                Weights(:)=1; % reset weights to one, to generate same wave image from combined file as from individual file.
+                            end
+                            for i=1:size(Amp,1)
+                                Amp(i,:) = Weights(i)*Amp(i,:);
+                            end
+                        else
+                            error('Combination not implemented.');
+                            Freqs = vs_let(FI,'INFO','RPAR',{1},'quiet');
                         end
-                        for i=1:size(Amp,1)
-                            Amp(i,:) = Weights(i)*Amp(i,:);
+                        Per = 1./Freqs;
+                        Per = repmat(Per(:)',NRun/length(Per),1);
+                        Per = Per(:);
+                        if size(Amp,1)~=NRun
+                            Per = Per(idx{T_});
+                        end
+                        SeicheSpecial=0;
+                    else
+                        Per=Props.Period;
+                        SeicheSpecial=size(Amp,1)>1;
+                    end
+                    %
+                    if SeicheSpecial
+                        %
+                        [Ampmax,i] = max(Amp,[],2);
+                        ii = sub2ind(size(Phase),1:size(Phase,1),i');
+                        PhaseRef   = Phase(ii)';
+                        % apply selection
+                        if m~=0
+                            Amp = Amp(:,m);
+                            Phase = Phase(:,m);
+                        end
+                        Ans.Val = zeros(length(ii),size(Amp,2));
+                        for i=1:length(ii)
+                            Ans.Val(i,:) = Amp(i,:).*cos(Phase(i,:)-PhaseRef(i));
                         end
                     else
-                        error('Combination not implemented.');
-                        Freqs = vs_let(FI,'INFO','RPAR',{1},'quiet');
-                    end
-                    Per = 1./Freqs;
-                    Per = repmat(Per(:)',NRun/length(Per),1);
-                    Per = Per(:);
-                    if size(Amp,1)~=NRun
-                        Per = Per(idx{T_});
-                    end
-                    SeicheSpecial=0;
-                else
-                    Per=Props.Period;
-                    SeicheSpecial=size(Amp,1)>1;
-                end
-                %
-                if SeicheSpecial
-                    %
-                    [Ampmax,i] = max(Amp,[],2);
-                    ii = sub2ind(size(Phase),1:size(Phase,1),i');
-                    PhaseRef   = Phase(ii)';
-                    % apply selection
-                    if m~=0
-                        Amp = Amp(:,m);
-                        Phase = Phase(:,m);
-                    end
-                    Ans.Val = zeros(length(ii),size(Amp,2));
-                    for i=1:length(ii)
-                        Ans.Val(i,:) = Amp(i,:).*cos(Phase(i,:)-PhaseRef(i));
-                    end
-                else
-                    SumAmp=sum(Amp,1);
-                    [Ampmax,i] = max(SumAmp);
-                    PhaseRef   = Phase(:,i);
-                    % apply selection
-                    if m~=0
-                        Amp = Amp(:,m);
-                        Phase = Phase(:,m);
-                    end
-                    if ~DimFlag(T_)
-                        t=0;
-                    end
-                    Ans.Val = zeros(length(t),size(Amp,2));
-                    deltaT = Props.Period/Props.NSamples;
-                    for i=1:length(t)
-                        for f=1:size(Amp,1)
-                            Ans.Val(i,:) = Ans.Val(i,:) + Amp(f,:).*cos(Phase(f,:)-PhaseRef(f)-2*pi*t(i)*deltaT/Per(f));
+                        SumAmp=sum(Amp,1);
+                        [Ampmax,i] = max(SumAmp);
+                        PhaseRef   = Phase(:,i);
+                        % apply selection
+                        if m~=0
+                            Amp = Amp(:,m);
+                            Phase = Phase(:,m);
                         end
+                        if ~DimFlag(T_)
+                            t=0;
+                        end
+                        Ans.Val = zeros(length(t),size(Amp,2));
+                        deltaT = Props.Period/Props.NSamples;
+                        for i=1:length(t)
+                            for f=1:size(Amp,1)
+                                Ans.Val(i,:) = Ans.Val(i,:) + Amp(f,:).*cos(Phase(f,:)-PhaseRef(f)-2*pi*t(i)*deltaT/Per(f));
+                            end
+                        end
+                        idx{T_} = t;
                     end
-                    idx{T_} = t;
-                end
-            case 'wave phase'
-                Phase   = atan2(Val2,Val1);
-                Ans.Val = Phase;
-            case 'relative breaking intensity'
-                mVal1 = max(Val1(:));
-                if ~isequal(idx{M_},0)
-                    Val1 = Val1(:,idx{M_});
-                end
-                Ans.Val = Val1/mVal1;
-            otherwise
-                Ans.Val = Val1;
+                case 'wave phase'
+                    Phase   = atan2(Val2,Val1);
+                    Ans.Val = Phase;
+                case 'relative breaking intensity'
+                    mVal1 = max(Val1(:));
+                    if ~isequal(idx{M_},0)
+                        Val1 = Val1(:,idx{M_});
+                    end
+                    Ans.Val = Val1/mVal1;
+                otherwise
+                    Ans.Val = Val1;
+            end
         end
     otherwise
         Val1=vs_let(FI,Props.Group,{idx{T_}},Props.Val1,{idx{M_}},'quiet');
@@ -544,7 +561,7 @@ if isstruct(Info) & Info.SizeDim>0
             Out(end).Name = cat(1,[Out(end).Name ' (frequency graph)']);
             Out(end).SubFld = '';
             Out(end).DimFlag = [0 5 0 0 0];
-            Out(end).NVal = -1;
+            Out(end).NVal = 1;
             Out(end).Geom = 'PNT';
             Out(end).Data = Out(i);
         end
