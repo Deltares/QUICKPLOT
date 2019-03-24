@@ -63,12 +63,14 @@ if nargin>1
         end
     end
     %
-    nc.NumDomains   = NumPartitions;
+    nc = Partitions{1};
+    nc.NumDomains = NumPartitions;
     if NumPartitions>1
         nc.Partitions = Partitions;
         nc.DomainOffset = PartNr_StrOffset;
         nc.Filename(PartNr_StrOffset+(1:nDigits)) = sprintf(partNrFormat,Part1);
     end
+    return
 else
     nc.NumDomains = 1;
 end
@@ -593,6 +595,7 @@ iUGrid = find(iUGrid);
 ugridLoc = {'node','edge','face','volume'};
 for ivar = 1:nvars
     Info = nc.Dataset(ivar);
+    % fprintf('%i: %s\n',ivar,Info.Name);
     if ~isempty(Info.Attribute)
         Attribs = {Info.Attribute.Name};
         j1 = strmatch('mesh',Attribs,'exact');
@@ -648,6 +651,7 @@ for ivar = 1:nvars
         Factor    = ctp{1}{2};
         %
         [coords,ia,ib]=intersect(crdField,varNames);
+        % setdiff(crdField,varNames) missing?
         for icvar1 = 1:length(ib)
             icvar  = ib(icvar1);
             sicvar = Factor*icvar;
@@ -844,19 +848,58 @@ for ivar = 1:nvars
     elseif strcmp(Info.Type,'ugrid_mesh')
         crds = Info.Coordinates;
         for i = 1:length(crds)
-            crds{i} = fliplr(crds{i});
+            crds{i} = nc.Dataset(find(strcmp(crds{i},varNames)));
         end
-        branchid = find(strncmp(fliplr('_branch_id'),crds,10));
-        offset = find(strncmp(fliplr('_branch_offset'),crds,14));
-        Info.X = strmatch(Info.Coordinates{branchid},varNames);
-        Info.Y = strmatch(Info.Coordinates{offset},varNames);
+        is_branchid = false(size(crds));
+        is_offset = false(size(crds));
+        for i = 1:length(crds)
+            if strcmp(crds{i}.Type,'unknown')
+                Att = crds{i}.Attribute;
+                j = strcmp('units',{Att.Name});
+                if any(j)
+                    is_offset(i) = true;
+                else
+                    is_branchid(i) = true;
+                end
+            end
+        end
+        branchid = find(is_branchid);
+        offset   = find(is_offset);
         %
-        iDims = setdiff(nc.Dataset(Info.X).Dimid,Info.TSMNK);
-        iDim = intersect(iDim,iDims);
-        if ~isempty(iDim)
-            Info.TSMNK(3) = iDim(1);
-        elseif ~isempty(iDims)
-            Info.TSMNK(3) = iDims(1);
+        ok = false;
+        if isempty(offset)
+            clist = sprintf('''%s'', ',Info.Coordinates{:});
+            ui_message('error','None of %s node coordinates {%s} has a units attribute.\nUnable to identify the branch offset variable, so X and Y coordinates will not be set.', Info.Name, clist(1:end-2))
+        elseif isempty(branchid)
+            clist = sprintf('''%s'', ',Info.Coordinates{:});
+            ui_message('error','All %s node coordinates {%s} have a units attribute.\nUnable to identify the branch id variable, so X and Y coordinates will not be set.', Info.Name, clist(1:end-2))
+        elseif numel(offset)>1 || numel(branchid)>1
+            clist = sprintf('''%s'', ',Info.Coordinates{:});
+            ui_message('error','Too many %s node coordinates {%s} unable to uniquely identify the branch id and offset variables.\nX and Y coordinates will not be set.', Info.Name, clist(1:end-2))
+        else
+            ok = true;
+        end
+        %
+        if ok
+            Info.X = strmatch(Info.Coordinates{branchid},varNames);
+            Info.Y = strmatch(Info.Coordinates{offset},varNames);
+            nodeDim = nc.Dataset(Info.X).Dimid;
+        else
+            j = strcmp('node_dimension',{Info.Attribute.Name});
+            ndim = Info.Attribute(j).Value;
+            nodeDim = ustrcmpi(ndim,{nc.Dimension.Name});
+            if nodeDim<0
+                ui_message('error','No node_dimension attribute found on %s; unable to identify spatial dimension.', Info.Name)
+            end
+        end
+        if nodeDim>0
+            iDims = setdiff(nodeDim,Info.TSMNK);
+            iDim = intersect(iDim,iDims);
+            if ~isempty(iDim)
+                Info.TSMNK(3) = iDim(1);
+            elseif ~isempty(iDims)
+                Info.TSMNK(3) = iDims(1);
+            end
         end
     end
     if ~isempty(Info.Y)
@@ -1035,13 +1078,18 @@ for ivar = 1:nvars
         for u = iUGrid'
             [udim,ia,ib] = intersect(Info.Dimension,nc.Dataset(u).Mesh(5:end));
             if ~isempty(udim)
-                ugrid = nc.Dataset(u).Mesh(1:2);
-                Info.Mesh = {ugrid{:} u ib-1};
-                Info.TSMNK(3) = strmatch(udim,dimNames,'exact')-1;
-                if ~isnan(Info.TSMNK(4))
-                    Info.TSMNK(4) = NaN;
+                xdim = strmatch(udim,dimNames,'exact')-1;
+                if any(Info.TSMNK==xdim)
+                    % dimension already matched to a dimension
+                else
+                    ugrid = nc.Dataset(u).Mesh(1:2);
+                    Info.Mesh = {ugrid{:} u ib-1};
+                    Info.TSMNK(3) = xdim;
+                    if ~isnan(Info.TSMNK(4))
+                        Info.TSMNK(4) = NaN;
+                    end
+                    auto_ugrid(:,ivar) = {Info.Name, udim{1}, nc.Dataset(u).Name, ugridLoc{ib}}';
                 end
-                auto_ugrid(:,ivar) = {Info.Name, udim{1}, nc.Dataset(u).Name, ugridLoc{ib}}';
                 break
             end
         end

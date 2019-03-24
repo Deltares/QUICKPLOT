@@ -377,7 +377,8 @@ if XYRead || XYneeded
     if strncmp(Props.Geom,'UGRID',5)
         %ugrid
         mesh_settings = Info.Mesh;
-        meshInfo      = FI.Dataset(mesh_settings{3});
+        msh = mesh_settings{3};
+        meshInfo      = FI.Dataset(msh);
         %
         dimNodes = meshInfo.Mesh{5};
         dimEdges = meshInfo.Mesh{6};
@@ -417,6 +418,9 @@ if XYRead || XYneeded
         end
         %
         for c = 'XY'
+            if isempty(meshInfo.(c))
+                error('No %s coordinate found for %s.',c,meshInfo.Name)
+            end
             CoordInfo2 = FI.Dataset(meshInfo.(c));
             [Ans.(c), status] = qp_netcdf_get(FI,CoordInfo2);
             %
@@ -428,30 +432,17 @@ if XYRead || XYneeded
         if strcmp(mesh_settings{1},'ugrid1d_network')
             attcsp = strmatch('coordinate_space',{meshInfo.Attribute.Name});
             csp = strmatch(meshInfo.Attribute(attcsp).Value,{FI.Dataset.Name},'exact');
-            attbl = strmatch('branch_lengths',{FI.Dataset(csp).Attribute.Name}); %TODO: edge_lengths
-            vbl = strmatch(FI.Dataset(csp).Attribute(attbl).Value,{FI.Dataset.Name},'exact');
-            atteg = strmatch('edge_geometry',{FI.Dataset(csp).Attribute.Name});
-            veg = strmatch(FI.Dataset(csp).Attribute(atteg).Value,{FI.Dataset.Name},'exact');
-            % node count dimension
-            %attnc = strmatch('node_count',{FI.Dataset(veg).Attribute.Name});
-            %dnc = strmatch(FI.Dataset(veg).Attribute(attnc).Value,{FI.Dimension.Name},'exact');
-            % part node count
-            attpnc = strmatch('part_node_count',{FI.Dataset(veg).Attribute.Name});
-            vpnc = strmatch(FI.Dataset(veg).Attribute(attpnc).Value,{FI.Dataset.Name},'exact');
-            %
-            [BrX, status] = qp_netcdf_get(FI,FI.Dataset(FI.Dataset(veg).X));
-            [BrY, status] = qp_netcdf_get(FI,FI.Dataset(FI.Dataset(veg).Y));
-            [BrL, status] = qp_netcdf_get(FI,FI.Dataset(vbl));
-            [PNC, status] = qp_netcdf_get(FI,FI.Dataset(vpnc));
-            BrX = mat2cell(BrX,PNC,1);
-            BrY = mat2cell(BrY,PNC,1);
+            [BrX,BrY,xUnit,BrL] = get_edge_geometry(FI,csp);
             %
             % TODO: get it from start_index of meshInfo.X
-            if min(Ans.X)==0
-                Ans.X = Ans.X+1;
+            si = strmatch('start_index',{FI.Dataset(meshInfo.X).Attribute.Name});
+            if ~isempty(si)
+                start_index = FI.Dataset(meshInfo.X).Attribute(si).Value;
+            else
+                start_index = 0;
             end
+            Ans.X = Ans.X-start_index+1;
             %
-            xUnit = get_unit(FI.Dataset(FI.Dataset(veg).X));
             if ischar(xUnit)
                 Ans.XUnits = xUnit;
                 Ans.YUnits = xUnit;
@@ -538,6 +529,15 @@ if XYRead || XYneeded
             Ans.EdgeNodeConnect = Ans.EdgeNodeConnect - start + 1;
             Ans.EdgeNodeConnect(Ans.EdgeNodeConnect<1) = NaN;
         end
+        if mesh_settings{2}==1 % also: if strncmp(Props.Geom,'UGRID1D',7)
+            aEG = strcmp({meshInfo.Attribute.Name},'edge_geometry');
+            if any(aEG)
+                % get edge geometry
+                [BrX,BrY,xUnit] = get_edge_geometry(FI,msh);
+                Ans.EdgeGeometry.X = BrX;
+                Ans.EdgeGeometry.Y = BrY;
+            end
+        end     
         %
         switch Ans.ValLocation
             case 'NODE'
@@ -557,12 +557,18 @@ if XYRead || XYneeded
                 %end
             case 'EDGE'
                 Ans.EdgeNodeConnect = Ans.EdgeNodeConnect(idx{M_},:);
+                if isfield(Ans,'Edge')
+                    Ans.EdgeGeometry.X = Ans.EdgeGeometry.X(idx{M_});
+                    Ans.EdgeGeometry.Y = Ans.EdgeGeometry.Y(idx{M_});
+                end
             case 'FACE'
                 Ans.FaceNodeConnect = Ans.FaceNodeConnect(idx{M_},:);
         end
         %
         %[Ans.XFace, status] = qp_netcdf_get(FI,'mesh2d_face_x');
         %[Ans.YFace, status] = qp_netcdf_get(FI,'mesh2d_face_y');
+    elseif strcmp(Info.Type,'simple_geometry')
+        error('Simple geometry not yet implemented.')
     else
         firstbound = 1;
         for iCoord = 1:length(coordname)
@@ -1979,20 +1985,23 @@ if strcmp(xUnit,'deg')
 else
     cUnit = {};
 end
-for i = 1:length(BrNr)
-    bN = BrNr(i);
+uBrNr = unique(BrNr);
+for i = 1:length(uBrNr)
+    bN = uBrNr(i);
     bX = BrX{bN};
     bY = BrY{bN};
     bS = pathdistance(bX,bY,cUnit{:});
-    s  = (BrOffset(i)/BrL(bN))*bS(end);
-    if s>bS(end)
-        error('Offset %g larger than branch length %s',BrOffset(i),BrL(bN));
-    else
-        x = interp1(bS,bX,s);
-        y = interp1(bS,bY,s);
+    for j = find(BrNr==bN)'
+        s  = (BrOffset(j)/BrL(bN))*bS(end);
+        if s>bS(end)
+            error('Offset %g larger than branch length %g',BrOffset(j),BrL(bN));
+        else
+            x = interp1(bS,bX,s);
+            y = interp1(bS,bY,s);
+        end
+        X(j) = x;
+        Y(j) = y;
     end
-    X(i) = x;
-    Y(i) = y;
 end
 % -----------------------------------------------------------------------------
 
@@ -2009,6 +2018,66 @@ if ~isempty(Info.Attribute)
             'degrees_north','degree_north','degreesN','degreeN'};
         if ismember(unit,units)
             unit = 'deg';
+        end
+    end
+end
+% -----------------------------------------------------------------------------
+
+% -----------------------------------------------------------------------------
+function [BrX,BrY,xUnit,BrL] = get_edge_geometry(FI,csp)
+CSP = FI.Dataset(csp);
+atteg = strmatch('edge_geometry',{CSP.Attribute.Name});
+veg = strmatch(CSP.Attribute(atteg).Value,{FI.Dataset.Name},'exact');
+% node count dimension
+VEG = FI.Dataset(veg);
+attnc = strmatch('node_count',{VEG.Attribute.Name});
+ndc = [];
+if ~isempty(attnc)
+    ndc = strmatch(VEG.Attribute(attnc).Value,{FI.Dataset.Name},'exact');
+    ndcd = strmatch(VEG.Attribute(attnc).Value,{FI.Dimension.Name},'exact');
+    if isempty(ndc)
+        if ~isempty(ndcd)
+            ui_message('error','Geometry %s attribute node_count reads "%s". This is a dimension, but should be a variable.',VEG.Name,VEG.Attribute(attnc).Value)
+        else
+            ui_message('error','Geometry %s attribute node_count reads "%s". Variable not found.',VEG.Name,VEG.Attribute(attnc).Value)
+        end
+    end
+end
+if isempty(ndc)
+    attnc = strmatch('part_node_count',{VEG.Attribute.Name});
+    ui_message('error','Incorrect attribute "part_node_count" used for specifying the node_count for geometry variable "%s".',VEG.Name)
+    ndc = strmatch(VEG.Attribute(attnc).Value,{FI.Dataset.Name},'exact');
+end
+%
+if isempty(FI.Dataset(veg).X)
+    error('Missing X coordinate for geometry variable "%s".',VEG.Name)
+elseif isempty(FI.Dataset(veg).Y)
+    error('Missing Y coordinate for geometry variable "%s".',VEG.Name)
+end
+[BrX, status] = qp_netcdf_get(FI,FI.Dataset(FI.Dataset(veg).X));
+[BrY, status] = qp_netcdf_get(FI,FI.Dataset(FI.Dataset(veg).Y));
+[NDC, status] = qp_netcdf_get(FI,FI.Dataset(ndc));
+BrX = mat2cell(BrX,NDC,1);
+BrY = mat2cell(BrY,NDC,1);
+%
+xUnit = get_unit(FI.Dataset(FI.Dataset(veg).X));
+%
+if nargout>3
+    attbl = strmatch('edge_length',{CSP.Attribute.Name});
+    if isempty(attbl)
+        attbl = strmatch('branch_lengths',{CSP.Attribute.Name});
+        if ~isempty(attbl)
+            ui_message('error','Incorrect attribute "branch_lengths" used for specifying the edge_length for 1D UGRID variable "%s".',CSP.Name)
+        end
+    end
+    if ~isempty(attbl)
+        vbl = strmatch(CSP.Attribute(attbl).Value,{FI.Dataset.Name},'exact');
+        [BrL, status] = qp_netcdf_get(FI,FI.Dataset(vbl));
+    else
+        BrL = zeros(size(BrX));
+        for i = 1:length(BrX)
+            brl = pathdistance(BrX{i},BrY{i}); % Cartesian or spherical?
+            BrL(i) = brl(end);
         end
     end
 end

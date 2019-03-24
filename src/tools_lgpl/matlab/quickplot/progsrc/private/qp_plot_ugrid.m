@@ -78,29 +78,45 @@ switch NVal
                 %
                 % edges
                 %
-                if isfield(data,'EdgeNodeConnect')
-                    EdgeNodeConnect = data.EdgeNodeConnect;
+                if isfield(data,'EdgeGeometry') && ~isempty(data.EdgeGeometry)
+                    NP = cellfun(@numel,data.EdgeGeometry.X);
+                    TNP = sum(NP+1)-1;
+                    X = NaN(TNP,1);
+                    Y = X;
+                    offset = 0;
+                    for i = 1:length(data.EdgeGeometry.X)
+                        X(offset+(1:NP(i))) = data.EdgeGeometry.X{i};
+                        Y(offset+(1:NP(i))) = data.EdgeGeometry.Y{i};
+                        offset = offset+NP(i)+1;
+                    end
+                    %
+                    Xp = [];
+                    Yp = [];
                 else
-                    iConnect = ceil(([0 0:2*nc-2])/2+0.1);
-                    EdgeNodeConnect = FaceNodeConnect(:,iConnect);
-                    ncP = sum(~isnan(FaceNodeConnect),2);
-                    EdgeNodeConnect(:,1) = FaceNodeConnect(sub2ind(size(FaceNodeConnect),(1:size(FaceNodeConnect,1))',ncP));
-                    EdgeNodeConnect = unique(sort(reshape(EdgeNodeConnect',[2 numel(FaceNodeConnect)]),1)','rows');
-                    EdgeNodeConnect(any(isnan(EdgeNodeConnect),2),:) = [];
+                    if isfield(data,'EdgeNodeConnect')
+                        EdgeNodeConnect = data.EdgeNodeConnect;
+                    else
+                        iConnect = ceil(([0 0:2*nc-2])/2+0.1);
+                        EdgeNodeConnect = FaceNodeConnect(:,iConnect);
+                        ncP = sum(~isnan(FaceNodeConnect),2);
+                        EdgeNodeConnect(:,1) = FaceNodeConnect(sub2ind(size(FaceNodeConnect),(1:size(FaceNodeConnect,1))',ncP));
+                        EdgeNodeConnect = unique(sort(reshape(EdgeNodeConnect',[2 numel(FaceNodeConnect)]),1)','rows');
+                        EdgeNodeConnect(any(isnan(EdgeNodeConnect),2),:) = [];
+                    end
+                    %
+                    xy = EdgeNodeConnect(:,[1 2 2])';
+                    xy = xy(:);
+                    X = data.X(xy);
+                    Y = data.Y(xy);
+                    X(3:3:end) = NaN;
+                    Y(3:3:end) = NaN;
+                    %
+                    % points without edge
+                    %
+                    ip = find(~ismember(1:length(data.X),xy));
+                    Xp = data.X(ip);
+                    Yp = data.Y(ip);
                 end
-                %
-                xy = EdgeNodeConnect(:,[1 2 2])';
-                xy = xy(:);
-                X = data.X(xy);
-                Y = data.Y(xy);
-                X(3:3:end) = NaN;
-                Y(3:3:end) = NaN;
-                %
-                % points without edge
-                %
-                ip = find(~ismember(1:length(data.X),xy));
-                Xp = data.X(ip);
-                Yp = data.Y(ip);
                 if FirstFrame
                     hNew=line(1,1, ...
                         'color',Ops.colour, ...
