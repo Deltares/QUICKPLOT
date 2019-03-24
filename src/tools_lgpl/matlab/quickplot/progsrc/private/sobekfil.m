@@ -199,7 +199,7 @@ elseif strcmp(Ans.ValLocation,'NODE')
     Ans.XY=FI.Node.XY(inodes,:);
     if DimFlag(M_)
         Ans.SEG=cat(2,FI.Branch.IFrom,FI.Branch.ITo);
-        Renum=zeros(FI.nNodes,1);
+        Renum=zeros(1,FI.nNodes);
         Renum(inodes)=1:length(inodes);
         Ans.SEG=Renum(Ans.SEG);
         Ans.SEG(any(Ans.SEG==0,2),:)=[];

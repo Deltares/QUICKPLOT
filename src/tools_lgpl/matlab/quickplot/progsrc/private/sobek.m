@@ -382,55 +382,58 @@ nBranches = ln-1;
 % The following table lists the parameters per line for the latest
 % versions.
 %
-Versions  =[ -1 -1       6.3   6.4  6.6];
+Versions  =[ -1 -1       6.3   6.4  6.5  6.6];
 x = NaN;
 Parameters={
-    'S' 'BrID'            0     0    0
-    'S' 'BrName'          1     1    1
-    'I' 'BrReach'         2     2    2
-    'I' 'BrType'          3     3    3
-    'S' 'BrObjID'         4     4    4
-    'S' 'BrUserObjID'     x     5    5
-    'F' 'BrFrmZ'          5     6    6
-    'F' 'BrToZ'           6     7    7
-    'F' 'BrDepth'         7     8    8
-    'F' 'BrLength'        8     9    9
-    'F' 'BrLengthMap'     9    10   10
-    'F' 'BrLengthUser'   10    11   11
-    'F' 'BrVolume'       11    12   12
-    'F' 'BrWidth'        12    13   13
+    'S' 'BrID'            0     0    0    0
+    'S' 'BrName'          1     1    1    1
+    'I' 'BrReach'         2     2    2    2
+    'I' 'BrType'          3     3    3    3
+    'S' 'BrObjID'         4     4    4    4
+    'S' 'BrUserObjID'     x     5    5    5
+    'F' 'BrFrmZ'          5     6    6    6
+    'F' 'BrToZ'           6     7    7    7
+    'F' 'BrDepth'         7     8    8    8
+    'F' 'BrLength'        8     9    9    9
+    'F' 'BrLengthMap'     9    10   10   10
+    'F' 'BrLengthUser'   10    11   11   11
+    'F' 'BrVolume'       11    12   12   12
+    'F' 'BrWidth'        12    13   13   13
 %   -------
-    'S' 'NdFrmID'        13    14   14
-    'S' 'NdFrmName'      14    15   15
-    'S' 'NdFrmArea'      15    16   16
-    'I' 'NdFrmReach'     16    17   17
-    'I' 'NdFrmType'      17    18   18
-    'S' 'NdFrmObjID'     18    19   19
-    'S' 'NdFrmUserObjID'  x    20   20
-    'F' 'NdFrmX'         19    21   21
-    'F' 'NdFrmY'         20    22   22
-    'F' 'NdFrmZ'         21    23   23
-    'F' 'NdFrmReachDist' 22    24   24
-    'I' 'NdFrmSys'       23    25    x
-    'S' 'NdFrmSysStr'     x     x   25
-    'I' 'NdFrmIden'      24    26   26
+    'S' 'NdFrmID'        13    14   14   14
+    'S' 'NdFrmName'      14    15   15   15
+    'S' 'NdFrmArea'      15    16   16   16
+    'I' 'NdFrmReach'     16    17   17   17
+    'I' 'NdFrmType'      17    18   18   18
+    'S' 'NdFrmObjID'     18    19   19   19
+    'S' 'NdFrmUserObjID'  x    20   20   20
+    'F' 'NdFrmX'         19    21   21   21
+    'F' 'NdFrmY'         20    22   22   22
+    'F' 'NdFrmZ'         21    23   23   23
+    'F' 'NdFrmReachDist' 22    24   24   24
+    'I' 'NdFrmSys'       23    25   25    x
+    'S' 'NdFrmSysStr'     x     x    x   25
+    'I' 'NdFrmIden'      24    26   26   26
 %   -------
-    'S' 'NdToID'         25    27   27
-    'S' 'NdToName'       26    28   28
-    'S' 'NdToArea'       27    29   29
-    'I' 'NdToReach'      28    30   30
-    'I' 'NdToType'       29    31   31
-    'S' 'NdToObjID'      30    32   32
-    'S' 'NdToUserObjID'   x    33   33
-    'F' 'NdToX'          31    34   34
-    'F' 'NdToY'          32    35   35
-    'F' 'NdToZ'          33    36   36
-    'F' 'NdToReachDist'  34    37   37
-    'I' 'NdToSys'        35    38    x
-    'S' 'NdToSysStr'      x     x   38
-    'I' 'NdToIden'       36    39   39};
+    'S' 'NdToID'         25    27   27   27
+    'S' 'NdToName'       26    28   28   28
+    'S' 'NdToArea'       27    29   29   29
+    'I' 'NdToReach'      28    30   30   30
+    'I' 'NdToType'       29    31   31   31
+    'S' 'NdToObjID'      30    32   32   32
+    'S' 'NdToUserObjID'   x    33   33   33
+    'F' 'NdToX'          31    34   34   34
+    'F' 'NdToY'          32    35   35   35
+    'F' 'NdToZ'          33    36   36   36
+    'F' 'NdToReachDist'  34    37   37   37
+    'I' 'NdToSys'        35    38   38    x
+    'S' 'NdToSysStr'      x     x    x   38
+    'I' 'NdToIden'       36    39   39   39};
 %
 index = [Parameters{:,Versions==Network.Version}]+1;
+if isempty(index)
+    error('The network.ntw file indicates version %g. This version is not supported.',Network.Version)
+end
 infile = index==round(index);
 Parameters = Parameters(infile,:);
 %
@@ -472,6 +475,7 @@ Network.nNodes=length(Network.Node.ID);
 Network.nBranches=nBranches;
 %
 ln=ln+1;
+nReaches = 0;
 while ln<=nLines
     Str = Line{ln};
     if ~isempty(Str) & Str(1)=='['
@@ -545,43 +549,58 @@ end
 Network.Delwaq = parse_ntrdlwq(fileparts(filename));
 
 cpfilename = [filename(1:end-3) filename(end-2:end-1)-'NT'+'CP'];
-fid = fopen(cpfilename,'r');
-if fid>0
-    %CP_1.0
-    Str = fgetl(fid);
-    if isempty(strmatch('CP_',Str))
-        fclose(fid);
-        return
-    end
-    CPVersion=sscanf(Str(3:end),'%f',1);
-    %
-    % Preallocate arrays ...
-    %
-    Network.Reach.CalcPoints = cell(1,nReaches);
-    %
-    for i = 1:nReaches
-        %
-        % BRCH id '1' cp 1 ct bc
-        % TBLE
-        if i>1
-            ID = fscanf(fid,'tble brch BRCH id ''%[^'']'' cp 1 ct bc TBLE');
-        else
-            ID = fscanf(fid,'BRCH id ''%[^'']'' cp 1 ct bc TBLE');
-        end
-        if ~strcmp(ID,Network.Reach.ID{i})
-            fclose(fid);
-            error('Problem reading calculation points');
-        end
-        %
-        % 575.625082042046 157.159833170141 <
-        Network.Reach.CalcPoints{i} = fscanf(fid,'%f %f <',[2 inf])';
-        %
-        % tble brch
-        % <empty line>
-    end
-    fclose(fid);
-end
+Network = parse_calcpoints(cpfilename,Network,nReaches);
 Network.Check='OK';
+
+
+function Network = parse_calcpoints(filename,Network,nReaches)
+if ~exist(filename,'file')
+    return
+end
+fid = fopen(filename,'r');
+%CP_1.0
+Str = fgetl(fid);
+if ~ischar(Str)
+    % empty file
+    return
+end
+if strncmp(Str,'BRCH',4)
+    % not CP_ version header
+    CPVersion=0;
+    fseek(fid,0,-1);
+elseif ~strncmp(Str,'CP_',3)
+    fclose(fid);
+    error('Expecting "%s" to start with "CP_" while first line reads: %s',filename,Str)
+else
+    CPVersion=sscanf(Str(3:end),'%f',1);
+end
+%
+% Preallocate arrays ...
+%
+Network.Reach.CalcPoints = cell(1,nReaches);
+%
+for i = 1:nReaches
+    %
+    % BRCH id '1' cp 1 ct bc
+    % TBLE
+    if i>1
+        ID = fscanf(fid,'tble brch BRCH id ''%[^'']'' cp 1 ct bc TBLE');
+    else
+        ID = fscanf(fid,'BRCH id ''%[^'']'' cp 1 ct bc TBLE');
+    end
+    if ~strcmp(ID,Network.Reach.ID{i})
+        fclose(fid);
+        error('Expecting reach "%s", but reading reach "%s"',Network.Reach.ID{i},ID)
+    end
+    %
+    % 575.625082042046 157.159833170141 <
+    Network.Reach.CalcPoints{i} = fscanf(fid,'%f %f <',[2 inf])';
+    %
+    % tble brch
+    % <empty line>
+end
+fclose(fid);
+
 
 function Out = readBlock(Parameters,Text,N)
 format = strcat(Parameters{:,1});
@@ -606,13 +625,20 @@ Lines = readfile(filename);
 %
 Delwaq.FileName = filename;
 %POI3.0
-if ~strcmp(Lines{1},'POI3.0')
-    error('Expecting %s to start with "POI3.0"',filename)
+if isempty(Lines) || (length(Lines)==1 && isempty(Lines{1}))
+    % empty file
+    Delwaq = [];
+    return
 end
+assert_line(filename,Lines,1,'POI3.0')
 %# Segments links and nodes
-assert_line(Lines,2,'# Segments links and nodes')
+assert_line(filename,Lines,2,'# Segments links and nodes')
 %Reach=0
-assert_line(Lines,3,'Reach=0')
+if ~assert_line(filename,Lines,3,'Reach=0');
+    % still an empty file
+    Delwaq = [];
+    return
+end
 %
 NSeg = sscanf(Lines{4},'%i');
 DqParts = cell(NSeg,4);
@@ -643,7 +669,7 @@ Delwaq.Reaches.Segment = cat(1,DqParts{:,3});
 Delwaq.Reaches.Segment = Delwaq.Reaches.Segment(reorder);
 %
 %# Storage Nodes
-assert_line(Lines,iLine+1,'# Storage Nodes')
+assert_line(filename,Lines,iLine+1,'# Storage Nodes')
 %64,14
 values = sscanf(Lines{iLine+2},'%i,%i');
 NStorage = values(2);
@@ -656,17 +682,21 @@ for i = 1:NStorage
 end
 %
 %# Internal network flows
-assert_line(Lines,iLine+1,'# Internal network flows')
+assert_line(filename,Lines,iLine+1,'# Internal network flows')
 %
 iLine = iLine+1;
 while 1
     %"Node","0701_1542",12,1,2,0,"-0701_1542_0701_1544","0701_1540_0701_1542"
+    %"Node","0-F2032W, 0-F2033W",61,2,2,1,"-31","12_16",1
     Parts = Qstrsplit(Lines{iLine+1},',');
     if ~strcmp(Parts{1},'"Node"')
         if strcmp(Lines{iLine+1},'# Default branch boundary names')
             break
         end
         error('Expecting internal network flow line to start with "Node", but encountered: %s',Lines{iLine+1})
+    end
+    if length(Parts)<5
+        error('Unable to parse internal network flows line %i of %s\n%s\n',iLine+1,filename,Lines{iLine+1})
     end
     NExchanges = str2double(Parts{4});
     NSegments = str2double(Parts{5});
@@ -710,9 +740,12 @@ end
 %# History for links: History nr, linkID, x, y, z, nrofsegments, seg 1, .., seg nrofsegments
 %
 
-function assert_line(Strs,i,Ref)
-if ~strcmp(Strs{i},Ref)
-    error('Expecting line %i to read "%s" while it actually reads: %s',i,Ref,Str)
+function OK = assert_line(filename,Strs,i,Ref)
+ok = strcmp(Strs{i},Ref);
+if nargout==1
+    OK = ok;
+elseif ~ok
+    error('Expecting line %i of "%s" to read "%s" while it actually reads: %s',i,filename,Ref,Strs{i})
 end
 
 function Lines = readfile(filename)
@@ -727,7 +760,24 @@ fclose(fid);
 function Parts = Qstrsplit(Line,sep)
 % quick version of strsplit - slowest part of strsplit is the handling of
 % special separators and multiple separators
-[Parts, ~] = regexp(Line, sep, 'split', 'match');
+[Parts,~] = regexp(Line, sep, 'split', 'match');
+nQuotes = cellfun(@(x)sum(x=='"'),Parts);
+oddQuotes = nQuotes~=round(nQuotes/2)*2;
+if any(oddQuotes)
+    oddQuotes = find(oddQuotes);
+    nOdd = length(oddQuotes);
+    if nOdd~=round(nOdd/2)*2
+        oddQuotes(end+1) = length(Parts);
+        nOdd = nOdd+1;
+    end
+    for i = nOdd-1:-2:1
+        newStr = Parts(oddQuotes(i):oddQuotes(i+1));
+        newStr(2,1:end-1) = {','};
+        newStr = cat(2,newStr{:});
+        Parts = Parts([1:oddQuotes(i) oddQuotes(i+1)+1:end]);
+        Parts{oddQuotes(i)} = newStr;
+    end
+end
 
 function Strs = removeQuotes(Strs)
 F = @(x) x(x~='"');
