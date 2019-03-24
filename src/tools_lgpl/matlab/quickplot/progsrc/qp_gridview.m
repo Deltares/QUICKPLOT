@@ -440,9 +440,12 @@ switch cmd
         else
             points = GRID.Selected.Range(1:NFixed,:);
             DistanceState = getappdata(G,'DistanceState');
-            if DistanceState.distfromlast(i) ==0
+            if DistanceState.distfromlast(i) == 0
                 DistanceState = determine_frompoint(DistanceState,i);
                 setappdata(G,'DistanceState',DistanceState)
+                if DistanceState.distfromlast(i) ==0
+                    i = trackpnt(gcbf,DistanceState.distfromlast~=0);
+                end
             end
             frompoint = DistanceState.frompoint;
             ilast = points(end);
@@ -1583,6 +1586,9 @@ set(XY,'string',sprintf(['x,y: ',xf,',',yf],pnt))
 
 function [i,j] = trackpnt(F,idx)
 % idx is optional subset
+if nargin>1 && islogical(idx)
+    idx = find(idx);
+end
 G = findobj(F,'tag','GRID');
 GRID = get(G,'userdata');
 pnt = get(get(G,'parent'),'currentpoint');
@@ -1590,11 +1596,20 @@ pnt = pnt(1,1:2);
 switch GRID.ValLocation
     case 'NODE'
         if isfield(GRID,'X') % ugrid and sgrid
-            dist = (pnt(1)-GRID.X).^2+(pnt(2)-GRID.Y).^2;
+            X = GRID.X;
+            Y = GRID.Y;
+            if nargin>1
+                X = X(idx);
+                Y = Y(idx);
+            end
+            dist = (pnt(1)-X).^2+(pnt(2)-Y).^2;
             mdist = min(dist(:));
             [i,j] = find(dist==mdist);
             i = i(1);
             j = j(1);
+            if nargin>1
+                i = idx(i);
+            end
         else
             i = 1;
             j = 1;
