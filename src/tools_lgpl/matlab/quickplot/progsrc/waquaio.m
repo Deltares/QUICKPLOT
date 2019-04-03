@@ -645,9 +645,10 @@ switch field
                 data=waqua('readsds',sds,exper,ARRAY,tstep);
                 switch field
                     case {'z-stat','z-statc','z-sbstat','z-sbstatc'}
-                        z = (data.Data(:,stoffset+(stationi-1)+krange(k)) + ...
-                            data.Data(:,stoffset+(stationi-1)+krange(k+1)))/2;
-                        varargout={z refdate+data.SimTime/1440};
+                        z_int = data.Data(:,stoffset+(stationi-1)+krange(:));
+                        z     = (data.Data(:,stoffset+(stationi-1)+krange(1:kmax)) + ...
+                            data.Data(:,stoffset+(stationi-1)+krange(2:kmax+1)))/2;
+                        varargout={z refdate+data.SimTime/1440 z_int};
                     otherwise
                         varargout={factor*data.Data(:,stoffset+(stationi-1)+krange(k)) refdate+data.SimTime/1440};
                 end
