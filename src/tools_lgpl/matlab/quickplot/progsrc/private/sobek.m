@@ -347,7 +347,7 @@ end
 Network.Version=sscanf(Str(5:end),'%f',1);
 if Network.Version<6.3
     fclose(fid);
-    error('SOBEK Network file too old.');
+    error('SOBEK Network file version %g too old.',Network.Version);
 end
 
 %
@@ -478,7 +478,7 @@ ln=ln+1;
 nReaches = 0;
 while ln<=nLines
     Str = Line{ln};
-    if ~isempty(Str) & Str(1)=='['
+    if ~isempty(Str) && Str(1)=='['
         switch deblank(Str)
             case '[Reach description]'
                 % [Reach description]
@@ -513,6 +513,45 @@ while ln<=nLines
                 Network.Reach.Name   = Network.Reach.ReachName;
                 Network.Reach.FromID = Network.Reach.NodeFromID;
                 Network.Reach.ToID   = Network.Reach.NodeToID;
+            case '[D2Grid description]'
+                % "1.20"
+                % 1
+                iD2Grid = strfind(Text,'[D2Grid description]');
+                TextRem = Text(iD2Grid+20:end);
+                [X,nCount,ErrMsg,next] = sscanf(TextRem,' "%f" %i',2);
+                %Version = X(1);
+                nD2Grid = X(2);
+                %
+                % "14","FLS_GRID","14","14",0,"..\FIXED\dem100m9_klein.asc",104,111,134815,452730,100,100,0,0,1,0,5,1,0,-1,0
+                Parameters={
+                    'S' 'GridID'
+                    'S' 'GridType'
+                    'S' 'NodeFromID'
+                    'S' 'NodeToID'
+                    'I' 'I1'
+                    'S' 'FileName'
+                    'I' 'NCols'
+                    'I' 'NRows'
+                    'F' 'XULCorner'
+                    'F' 'YULCorner'
+                    'F' 'CellSizeX'
+                    'F' 'CellSizeY'
+                    'I' 'I2'
+                    'I' 'I3'
+                    'I' 'I4'
+                    'I' 'I5'
+                    'I' 'I6'
+                    'I' 'I7'
+                    'I' 'I8'
+                    'I' 'I9'
+                    'I' 'I10'};
+                %
+                Network.Grid2D = readBlock(Parameters,TextRem(next:end),nD2Grid);
+                p = fileparts(Network.FileName);
+                for i = nD2Grid:-1:1
+                    Network.Grid2D.FileData{i} = arcgrid('open',fullfile(p,Network.Grid2D.FileName{i}));
+                end
+                fprintf('%s: %i grids\n',p,nD2Grid);
             case '[Model connection node]'
             case '[Model connection branch]'
             case '[Nodes with calculationpoint]'
@@ -546,14 +585,46 @@ if isfield(Network,'Reach')
     Network.Reach.IFrom = inlist(Network.Reach.FromID,Network.Node.ID);
     Network.Reach.ITo = inlist(Network.Reach.ToID,Network.Node.ID);
 end
-Network.Delwaq = parse_ntrdlwq(fileparts(filename));
+try
+    Network.Description = parse_caselist(fileparts(filename));
+catch
+    % can't determine description from caselist file ...
+end
+
+Network.Settings = parse_settings(fullfile(fileparts(filename),'SETTINGS.DAT'));
+if ismember('Water Quality 1D',Network.Settings.Components)
+    Network.Delwaq = parse_ntrdlwq(fileparts(filename));
+end
 
 cpfilename = [filename(1:end-3) filename(end-2:end-1)-'NT'+'CP'];
 Network = parse_calcpoints(cpfilename,Network,nReaches);
 Network.Check='OK';
 
 
-function Network = parse_calcpoints(filename,Network,nReaches)
+function Settings = parse_settings(filename)
+if ~exist(filename,'file')
+    Settings.Components = {};
+    return
+end
+Settings = inifile('open',filename);
+Components = {'Flow 1D CF','Flow 1D SF','Flow 1D RE','Flow 2D','Flow 3D','Rainfall Runoff','Morphology 1D','Water Quality 1D','Water Quality 2D','Water Quality 3D','Emission Module','Real-Time Control'};
+CLabels = {'Channel','Sewer','RIVER','FLS','D3DFLOW','3B','1DMOR','DELWAQ','2DWAQ','3DWAQ','WLM','RTC'};
+Included = false(size(CLabels));
+for i = 1:length(CLabels)
+    Included(i) = inifile('get',Settings,'General',CLabels{i},0)~=0;
+end
+Settings.Components = Components(Included);
+
+
+function description = parse_caselist(case_folder)
+[lit_folder,Case] = fileparts(case_folder);
+Lines = readfile(fullfile(lit_folder,'CASELIST.CMT'));
+CaseSpace = [Case ' '];
+Matching = strncmp(CaseSpace,Lines,length(CaseSpace));
+description = char(sscanf(Lines{Matching},'%*d ''%[^'']'))';
+
+
+    function Network = parse_calcpoints(filename,Network,nReaches)
 if ~exist(filename,'file')
     return
 end
