@@ -54,7 +54,7 @@ if strcmp(Ops.presentationtype,'values')
 end
 switch NVal
     case 0
-        if multiple(M_) && ~strcmp(Ops.presentationtype,'markers') % network
+        if strcmp(Ops.presentationtype,'edges') || (multiple(M_) && ~strcmp(Ops.presentationtype,'markers')) % network
             if ishandle(hNew)
                 set(hNew,'vertices',data.XY,'faces',data.SEG(:,[1 2 2]))
             else
@@ -103,7 +103,7 @@ switch NVal
                         'edgecolor','flat', ...
                         'facecolor','none');
                 end
-            case 'edge'
+            case 'edges'
                 XY=data.XY(data.SEG(:),:);
                 SEG=data.SEG; SEG(:)=1:2*size(SEG,1);
                 Val=cat(1,data.Val(:),data.Val(:));

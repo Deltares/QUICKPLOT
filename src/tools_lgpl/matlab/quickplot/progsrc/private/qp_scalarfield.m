@@ -126,7 +126,7 @@ switch presentationtype
             set(hNew,Ops.LineParams{:});
         end
         
-    case 'edge'
+    case 'edges'
         XY = [X(:) Y(:)];
         SEG = 1:numel(X);
         Val = cat(1,Val(:),NaN);
@@ -355,7 +355,7 @@ switch data.ValLocation
     case 'EDGE'
         iEdge = data.EdgeNodeConnect;
         switch presentationtype
-            case 'edge'
+            case 'edges'
                 if isempty(hNew)
                     hNew = patch(...
                         'vertices',[data.X(iEdge,:) data.Y(iEdge,:)], ...

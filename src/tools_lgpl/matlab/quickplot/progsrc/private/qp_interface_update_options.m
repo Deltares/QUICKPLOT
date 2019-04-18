@@ -231,7 +231,15 @@ MultipleColors = (nval>=1 & nval<4) | nval==6;
 axestype={'noplot'};
 switch geometry
     case 'SELFPLOT'
-        axestype={''};
+        if isfield(Props,'AxesType')
+            if iscell(Props.AxesType)
+                axestype = Props.AxesType;
+            else
+                axestype = {Props.AxesType};
+            end
+        else
+            axestype={''};
+        end
     case {'UGRID1D_NETWORK-NODE','UGRID1D_NETWORK-EDGE','UGRID1D-NODE','UGRID1D-EDGE','UGRID2D-NODE','UGRID2D-EDGE','UGRID2D-FACE'}
         if multiple(K_)
             if multiple(M_)
@@ -544,7 +552,9 @@ end
 if nval==-1 || (nval>=0 && nval<1)
     lineproperties=1;
 end
-if ~isempty(strfind(axestype,'Time'))
+if nval<0
+    animate = 0;
+elseif ~isempty(strfind(axestype,'Time'))
     animate = 0;
 elseif ~multiple(M_) && ~multiple (N_) && ~multiple(K_) && strcmp(axestype,'X-Y')
     animate = 0;
@@ -771,7 +781,7 @@ if nval==2 || nval==3
         case {'magnitude in plane','m component','n component','normal component','slice normal component','slice tangential component','edge normal component','edge tangential component'}
             vectors=0;
             VectorReq=1;
-        case 'edge'
+        case 'edges'
             Ops.presentationtype=Ops.vectorcomponent;
             vectors=0;
             nval=0.9;
@@ -806,9 +816,9 @@ if ((nval==1 || nval==6) && TimeSpatial==2) || ...
     switch nvalstr
         case 1.9 % EDGE
             if strcmp(geometry,'SGRID-EDGE')
-                PrsTps={'vector';'edge';'edge M';'edge N'};
+                PrsTps={'vector';'edges';'edges M';'edges N'};
             else
-                PrsTps={'vector';'edge';'values'};
+                PrsTps={'vector';'edges';'values'};
             end
         case 'strings'
             switch geometry
@@ -819,6 +829,8 @@ if ((nval==1 || nval==6) && TimeSpatial==2) || ...
                 otherwise
                     if multiple(T_)
                         PrsTps={'tracks'}; % {'labels';'tracks'};
+                    elseif strcmp(geometry,'SEG-EDGE')
+                        PrsTps={'labels';'edges';'markers'};
                     else
                         PrsTps={'labels';'markers'};
                     end
@@ -868,7 +880,7 @@ if ((nval==1 || nval==6) && TimeSpatial==2) || ...
                                 case 0
                                     PrsTps={'continuous shades';'markers';'values'};
                                 case 1
-                                    PrsTps={'edge';'markers';'values'};
+                                    PrsTps={'edges';'markers';'values'};
                                 case 2
                                     PrsTps={'markers';'labels'};
                             end
@@ -885,7 +897,7 @@ if ((nval==1 || nval==6) && TimeSpatial==2) || ...
                             if SpatialV
                                 PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                             else
-                                PrsTps={'markers';'values';'edge'};
+                                PrsTps={'markers';'values';'edges'};
                             end
                         case {'UGRID1D_NETWORK-NODE','UGRID1D-NODE'}
                             if SpatialV
@@ -1016,15 +1028,23 @@ if ((nval==1 || nval==6) && TimeSpatial==2) || ...
                 lineproperties=1;
             case 'grid with numbers'
                 ask_for_textprops=1;
-            case {'edge','edge m','edge n'}
-                thindams=1;
+            case {'edges','edges m','edges n'}
                 lineproperties=1;
-                nval=0.9;
+                switch nvalstr
+                    case {'strings'}
+                        SingleColor=1;
+                        MultipleColors=0;
+                    otherwise
+                        thindams=1;
+                        nval=0.9;
+                end
             case 'vector'
                 vectors=1';
                 Ops.vectorcomponent='edge';
         end
     end
+elseif strcmp(geometry,'SEG-EDGE') && nval==0
+    Ops.presentationtype = 'edges';
 end
 
 %--------------------------------------------------------------------------
@@ -1606,7 +1626,7 @@ Ops.axestype=axestype;
 %---- clipping values
 %
 
-if (nval==1 || isfield(Ops,'vectorcolour') || isfield(Ops,'colourdams') || (isfield(Ops,'presentationtype') && strcmp(Ops.presentationtype,'values'))) && (lineproperties || TimeSpatial==2)
+if (nval==1 || isfield(Ops,'vectorcolour') || isfield(Ops,'colourdams') || (isfield(Ops,'presentationtype') && strcmp(Ops.presentationtype,'values'))) && (lineproperties || TimeSpatial==2) && ~strcmp(nvalstr,'strings')
     set(findobj(OH,'tag','clippingvals'),'enable','on')
     set(findobj(OH,'tag','clippingvals=?'),'enable','on','backgroundcolor',Active)
     Ops.clippingvalues=get(findobj(OH,'tag','clippingvals=?'),'userdata');
@@ -1701,11 +1721,13 @@ if nval>=0
     end
     %
     Mver = matlabversionnumber;
-    ExpTypes{end+1}='mat file (v6)';
-    if Mver>=7
-        ExpTypes{end+1}='mat file (v7)';
-        if Mver>=7.03
-            ExpTypes{end+1}='mat file (v7.3/hdf5)';
+    if ~((multiple(M_) || multiple(N_) || multiple(K_)) && ((length(selected{T_})>maxTimeSteps && ~isequal(selected{T_},0)) || (maxt>maxTimeSteps && isequal(selected{T_},0))))
+        ExpTypes{end+1}='mat file (v6)';
+        if Mver>=7
+            ExpTypes{end+1}='mat file (v7)';
+            if Mver>=7.03
+                ExpTypes{end+1}='mat file (v7.3/hdf5)';
+            end
         end
     end
 end

@@ -64,7 +64,7 @@ if isfield(PlotState,'FI')
             [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'griddefdata',SubField{:},SubSelected{:});
         else
             switch Ops.presentationtype
-                case {'patches','patches with lines','patch centred vector','polygons'}%,'edge'}
+                case {'patches','patches with lines','patch centred vector','polygons'}%,'edges'}
                     [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'gridcelldata',SubField{:},SubSelected{:});
                     DataInCell=1;
                 otherwise
@@ -320,9 +320,9 @@ if strcmp(Ops.presentationtype,'vector') || ...
                 if isfield(data,'Geom') && strcmp(data(i).Geom,'sQUAD')
                     data(i).EdgeNodeConnect = [1:length(data(i).X)-1;2:length(data(i).X)]';
                 end
-                data(i).X = mean(data(i).X(data(i).EdgeNodeConnect),2);
+                data(i).X = mean(shaped_subsref(data(i).X,data(i).EdgeNodeConnect),2);
                 if isfield(data,'Y')
-                    data(i).Y = mean(data(i).Y(data(i).EdgeNodeConnect),2);
+                    data(i).Y = mean(shaped_subsref(data(i).Y,data(i).EdgeNodeConnect),2);
                 end
             elseif strcmp(data(i).ValLocation,'FACE')
                 missing = isnan(data(i).FaceNodeConnect);
@@ -357,9 +357,9 @@ if NVal==0.6 || NVal==0.9
     % 0.9 = coloured thindam
     NVal=0.5;
 elseif  NVal==1.9 
-    if isequal(Ops.presentationtype,'edge') || ...
-             isequal(Ops.presentationtype,'edge m') || ...
-              isequal(Ops.presentationtype,'edge n') || ...
+    if isequal(Ops.presentationtype,'edges') || ...
+             isequal(Ops.presentationtype,'edges m') || ...
+              isequal(Ops.presentationtype,'edges n') || ...
               isequal(Ops.presentationtype,'values')
         % 1.9 = coloured thindam or vector perpendicular to thindam
         NVal=0.5;
@@ -935,7 +935,7 @@ end
 
 if NVal==4
     switch Ops.presentationtype
-        case {'markers','tracks'}
+        case {'markers','edges','tracks'}
             NVal = 0;
     end
 end
@@ -1233,3 +1233,10 @@ for i=1:length(hNewVec)
     %set(a,'CameraViewAngle',get(a,'CameraViewAngle'))
 end
 setappdata(hNewVec(1),'Level',Level)
+
+
+function y = shaped_subsref(x,ind)
+% x(ind) returns an array of the same shape as ind unless both x and ind
+% are vectors. In that case x(ind) is a similar (row or column) vector as
+% x. This function reshapes it to the shape of ind.
+y = reshape(x(ind),size(ind));

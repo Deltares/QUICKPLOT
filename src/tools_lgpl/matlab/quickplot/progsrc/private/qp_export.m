@@ -113,7 +113,7 @@ switch expType
             end
         end
         switch Ops.presentationtype
-            case {'patches','patches with lines','grid','polylines','polygons','edge',''}
+            case {'patches','patches with lines','grid','polylines','polygons','edges',''}
                 retrieve='gridcelldata';
             case {'markers','values'}
                 retrieve='griddata';
@@ -590,7 +590,7 @@ for f=1:ntim
                 Ops.presentationtype = 'thin dams';
             end
             switch Ops.presentationtype
-                case {'patches','patches with lines','markers','values','grid','polylines','polygons','edge',''}
+                case {'patches','patches with lines','markers','values','grid','polylines','polygons','edges',''}
                     xy=[];
                     if isfield(Props,'Geom') && (strcmp(Props.Geom,'POLYL') || strcmp(Props.Geom,'POLYG'))
                         vNaN=isnan(data.X);
