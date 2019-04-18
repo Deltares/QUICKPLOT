@@ -1079,8 +1079,8 @@ for ivar = 1:nvars
             [udim,ia,ib] = intersect(Info.Dimension,nc.Dataset(u).Mesh(5:end));
             if ~isempty(udim)
                 xdim = strmatch(udim,dimNames,'exact')-1;
-                if any(Info.TSMNK==xdim)
-                    % dimension already matched to a dimension
+                if any(Info.TSMNK([1:2 4:end])==xdim)
+                    % dimension already matched to dimension not equal to M
                 else
                     ugrid = nc.Dataset(u).Mesh(1:2);
                     Info.Mesh = {ugrid{:} u ib-1};
@@ -1096,25 +1096,7 @@ for ivar = 1:nvars
         nc.Dataset(ivar) = Info;
     end
 end
-%
-auto_ugrid(:,cellfun('isempty',auto_ugrid(1,:))) = [];
-if 0 % ~isempty(auto_ugrid)
-    message = {'Missing UGRID attributed automatically added for:'};
-    [ugrids,dummy,iugrids] = unique(auto_ugrid(3,:));
-    for iu = 1:length(ugrids)
-        thisgrid = auto_ugrid(:,iugrids==iu);
-        [ulocs,dummy,iulocs] = unique(thisgrid(4,:));
-        %
-        for il = 1:length(ulocs)
-            thisloc = thisgrid(:,iulocs==il);
-            message{end+1} = ['  variables: ' sprintf('%s, ',thisloc{1,:})];
-            message{end}(end-1:end) = [];
-            message{end} = [message{end} ' (common UGRID dimension: ' thisloc{2,1} ')'];
-            message{end+1} = sprintf('    attributes: mesh="%s", location="%s"',thisloc{3,1},thisloc{4,1});
-        end
-    end
-    ui_message('warning',message)
-end
+
 
 function nc = setType(nc,ivar,idim,value)
 nc.Dataset(ivar).Type = value;

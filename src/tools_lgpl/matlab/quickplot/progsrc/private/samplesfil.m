@@ -388,6 +388,7 @@ if isempty(FI.X) || isempty(FI.Y)
         Out(1) = Out(Minm);
         Out(1).Name = 'error bars';
         Out(1).NVal = -1;
+        Out(1).AxesType = 'Time-Val';
         Out(1).SubFld = [Out(Minm).SubFld -999 Out(Maxm).SubFld];
         if ~isempty(Mean)
             Out(1).SubFld(2) = Out(Mean).SubFld;

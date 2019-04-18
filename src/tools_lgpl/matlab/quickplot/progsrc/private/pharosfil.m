@@ -254,10 +254,10 @@ switch Props.NVal
             Location = vs_get(FI,'SEICH_loc',idx(ST_),'Point_nr','quiet');
             %
             Freqs = vs_let(FI,'SEICH_def','FREQ','quiet');
-            Freqs = Freqs(Freqs>0)';
+            Freqs = Freqs(Freqs>0)'; % TODO: Add Freqs to Ans and plot ...
             %
-            %Get data for Location+1 because the Location is zero-based (writing
-            %program is a C-program).
+            %Get data for Location+1 because the Location is zero-based
+            %(writing program is a C-program).
             Ans = qpread(FI,Props.Data,'data',0,Location+1);
             Ans.X = vs_get(FI,'SEICH_loc',idx(ST_),'Xp','quiet');
             Ans.Y = vs_get(FI,'SEICH_loc',idx(ST_),'Yp','quiet');
@@ -561,7 +561,7 @@ if isstruct(Info) & Info.SizeDim>0
             Out(end).Name = cat(1,[Out(end).Name ' (frequency graph)']);
             Out(end).SubFld = '';
             Out(end).DimFlag = [0 5 0 0 0];
-            Out(end).NVal = 1;
+            Out(end).NVal = -1;
             Out(end).Geom = 'PNT';
             Out(end).Data = Out(i);
         end
