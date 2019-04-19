@@ -866,6 +866,18 @@ for ivar = 1:nvars
         branchid = find(is_branchid);
         offset   = find(is_offset);
         %
+        if isempty(offset) && numel(branchid)>1
+            toffset = offset;
+            tbranchid = branchid;
+            offset   = find(strcmp([Info.Name '_nodes_branch_offset'],Info.Coordinates));
+            branchid = find(strcmp([Info.Name '_nodes_branch_id'],Info.Coordinates));
+            if numel(offset)==1 && numel(branchid)==1
+                ui_message('error','Missing important metadata for %s coordinates.\nBranch id and branch offset coordinate variables identified by D-Flow FM specific names.',Info.Name)
+            else
+                offset   = toffset;
+                branchid = tbranchid;
+            end
+        end
         ok = false;
         if isempty(offset)
             clist = sprintf('''%s'', ',Info.Coordinates{:});

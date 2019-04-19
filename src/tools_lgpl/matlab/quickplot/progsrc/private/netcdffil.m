@@ -503,10 +503,12 @@ if XYRead || XYneeded
             % "~DataRead" is a hack to load EdgeNodeConnect if available for use in GridView
             iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name},'exact');
             if isempty(iconnect)
-                error('Edge_node_connectivity not found!')
+                ui_message('warning','EDGE-NODE connectivity variable %s not found! Using empty set.',meshInfo.Attribute(connect).Value)
+                Ans.EdgeNodeConnect = zeros(0,2);
+            else
+                [Ans.EdgeNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
+                Ans.EdgeNodeConnect(Ans.EdgeNodeConnect<0) = NaN;
             end
-            [Ans.EdgeNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
-            Ans.EdgeNodeConnect(Ans.EdgeNodeConnect<0) = NaN;
         end
         if isfield(Ans,'EdgeNodeConnect')
             if isempty(FI.Dataset(iconnect).Attribute)
