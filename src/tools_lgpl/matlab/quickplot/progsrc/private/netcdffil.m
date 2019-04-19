@@ -499,6 +499,7 @@ if XYRead || XYneeded
         %
         Ans.ValLocation = Props.Geom(max(strfind(Props.Geom,'-'))+1:end);
         connect = strmatch('edge_node_connectivity',meshAttribs,'exact');
+        iconnect = [];
         if strcmp(Ans.ValLocation,'EDGE') || ~isfield(Ans,'FaceNodeConnect') || (~DataRead && ~isempty(connect))
             % "~DataRead" is a hack to load EdgeNodeConnect if available for use in GridView
             iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name},'exact');
@@ -510,7 +511,7 @@ if XYRead || XYneeded
                 Ans.EdgeNodeConnect(Ans.EdgeNodeConnect<0) = NaN;
             end
         end
-        if isfield(Ans,'EdgeNodeConnect')
+        if isfield(Ans,'EdgeNodeConnect') && ~isempty(iconnect)
             if isempty(FI.Dataset(iconnect).Attribute)
                 istart = [];
             else
