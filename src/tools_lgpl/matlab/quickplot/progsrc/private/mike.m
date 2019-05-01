@@ -285,6 +285,7 @@ fclose(fid);
 function Info=read_info(fid,Info,loaddata)
 it=0;
 att=0;
+crs=0;
 static=0;
 fld=0;
 while 1
@@ -326,7 +327,7 @@ while 1
         case 7
             N=fread(fid,1,'int32');
             %fprintf('%i: %i ??\n',Typ,N);
-            Info.Data{end+1}=fread(fid,[1 N],'uint16'); % something with 2 bytes per value ...
+            Info.Data{end+1}=fread(fid,[1 N],'uint16');
         case 254
             Opt=fread(fid,1,'uchar');
             X=fread(fid,1,'uchar');
@@ -334,6 +335,32 @@ while 1
             i2.Data={};
             i2=read_info(fid,i2,1);
             switch Opt
+                case 1 % 'JOTIJA'    [         0]    'CURRENT'    '3'    
+                    crs=crs+1;
+                    Info.CrossSection.Name{crs}    = deblank(i2.Data{4});
+                    Info.CrossSection.Branch{crs}  = deblank(i2.Data{1});
+                    Info.CrossSection.Offset(crs)  = i2.Data{2};
+                    Info.CrossSection.Version{crs} = deblank(i2.Data{3});
+                case 2 % 25 int32  : 0 2 1 ? ? 0 0 0 0 1 50 0 0 0 0 0 ? 0 0 0 0 0 0 0 0
+                       %                   1 2            3           4
+                       % 1: unknown range 4-17
+                       % 2: NPnts in cross section (size in block 3)
+                       % 3: NLevels in tables (size in block 5)
+                       % 4: 2 (if block 6 present)
+                       % 23 float64: 0 0 0 0 0 ? ? ? ? 0 1 1 1 1 1 0.001 1 1 1 1 1 1 1
+                    Info.CrossSection.Integers(crs,:) = i2.Data{1};
+                    Info.CrossSection.Reals(crs,:)    = i2.Data{2};
+                    Info.CrossSection.NPnts(crs)      = i2.Data{1}(5);
+                case 3 % 6 * NPnts float64
+                       % Y, Z, 1, 0, 0, 0
+                    Info.CrossSection.YZ{crs} = cat(1,i2.Data{1:2});
+                    %Info.CrossSection.ones(crs,:) = i2.Data{3};
+                    %Info.CrossSection.zeros(crs,:) = i2.Data{4/5/6};
+                case 5 % 6 * 50 float64
+                       % Z, Area(Z), Hydraulic Radius(Z), Wetted Perimeter(Z), 0, 1
+                    Info.CrossSection.ZARP{crs} = cat(1,i2.Data{1:4});
+                case 6 % N * 
+                    Info.CrossSection.GeoLine{crs} = cat(1,i2.Data{:});
                 case 16 %39  {}
                 case 17 %39
                     Info.FileTitle=deblank(i2.Data{1});
@@ -437,6 +464,7 @@ while 1
                         end
                         Fld=Fld1;
                     end
+                    %fprintf('%s\nGeneral Field: %s\n\n',fopen(fid),Fld);
                     Info=setfield(Info,Fld,i2);
             end
         case 255
