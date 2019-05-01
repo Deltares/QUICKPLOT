@@ -105,21 +105,15 @@ switch file_ext
         S.FileType='MikeDFS';
         S.Dat=file_ext;
         S.Def='';
+    case {'.xns11'}
+        S.FileType='MikeXFS';
+        S.Dat=file_ext;
+        S.Def='';
     otherwise
         error('Invalid filename or unknown MIKE file type')
 end
 
-if isunix
-    if ~isequal(filename(1),'/')
-        filename=[pwd '/' filename];
-        S.FileName=filename;
-    end
-else % PCWIN
-    if (length(filename)<2) || (~isequal(filename(1:2),'\\') && ~isequal(filename(2),':'))
-        filename=[pwd '\' filename];
-        S.FileName=filename;
-    end
-end
+S.FileName = absfullfile(filename);
 
 if isempty(S.Def)
     S=Local_open_mike_new(S,filename);
@@ -240,11 +234,13 @@ if fid<0
 end
 
 X=fread(fid,[1 64],'*char');
-if ~strcmp(X,'DHI_DFS_ MIKE Zero - this file contains binary data, do not edit')
+if ~strcmp(X,['DHI_' S.FileType(5:7) '_ MIKE Zero - this file contains binary data, do not edit'])
     error('Invalid start of MIKE Zero file.')
 end
 
-X=fread(fid,[1 17],'*char'); %  FOpenFileCreate
+if strcmp(S.FileType,'MikeDFS')
+    X=fread(fid,[1 17],'*char'); %  FOpenFileCreate
+end
 
 X=fread(fid,1,'uchar'); %<end of text>
 
@@ -258,16 +254,22 @@ V=fread(fid,[1 6],'int16'); % FileCreationDate
 X=fread(fid,4,'int32'); %104, 206, 0, 0
 
 S.Data={};
-n = lower(S.Dat(end));
-if isequal(n,'u')
-    S.NumCoords='u';
-else
-    S.NumCoords=n-'0';
+switch lower(S.Dat)
+    case {'.dfs0','.dfs1','.dfs2','.dfs3'}
+        n = lower(S.Dat(end));
+        S.NumCoords=n-'0';
+        S.DataType = 'structured';
+    case {'.dfsu'}
+        S.NumCoords='u';
+        S.DataType = 'unstructured';
+    case { '.xns11'}
+        S.NumCoords='x';
+        S.DataType = 'crosssections';
 end
+
 S.SparseStorage=0;
 S=read_info(fid,S,0);
-S.Unstructured = isequal(S.NumCoords,'u');
-if S.Unstructured
+if strcmp(S.DataType,'unstructured')
     fm = strmatch('MIKE_FM',S.Attrib.Name,'exact');
     S.NumCoords = S.Attrib(fm).Data(3);
     S.NumLayers = max(1,S.Attrib(fm).Data(4));
@@ -321,6 +323,10 @@ while 1
             N=fread(fid,1,'int32');
             %fprintf('%i: %i int16\n',Typ,N);
             Info.Data{end+1}=fread(fid,[1 N],'int16');
+        case 7
+            N=fread(fid,1,'int32');
+            %fprintf('%i: %i ??\n',Typ,N);
+            Info.Data{end+1}=fread(fid,[1 N],'uint16'); % something with 2 bytes per value ...
         case 254
             Opt=fread(fid,1,'uchar');
             X=fread(fid,1,'uchar');
