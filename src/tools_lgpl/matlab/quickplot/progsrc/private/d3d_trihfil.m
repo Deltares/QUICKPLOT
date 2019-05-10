@@ -674,6 +674,14 @@ DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     '' 
     'air pressure'              'Pa'     [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'PATM'     ''         []       0
     'precipitation rate'        'mm/h'   [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZPRECP'   ''         []       0
     'evaporation rate'          'mm/h'   [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZEVAP'    ''         []       0
+    'evaporation heat flux'            'W/m^2'  [1 5 0 0 0]  0  1     ''       'z'   'z'       ''      'his-series'     'QEVA'     ''         []       0
+    'heat flux of forced convection'   'W/m^2'  [1 5 0 0 0]  0  1     ''       'z'   'z'       ''      'his-series'     'QCO'      ''         []       0
+    'nett back radiation'              'W/m^2'  [1 5 0 0 0]  0  1     ''       'z'   'z'       ''      'his-series'     'QBL'      ''         []       0
+    'nett solar radiation'             'W/m^2'  [1 5 0 0 0]  0  1     ''       'z'   'z'       ''      'his-series'     'QIN'      ''         []       0
+    'total nett heat flux'             'W/m^2'  [1 5 0 0 0]  0  1     ''       'z'   'z'       ''      'his-series'     'QNET'     ''         []       0
+    'free convection of sensible heat' 'W/m^2'  [1 5 0 0 0]  0  1     ''       'z'   'z'       ''      'his-series'     'HFREE'    ''         []       0
+    'free convection of latent heat'   'W/m^2'  [1 5 0 0 0]  0  1     ''       'z'   'z'       ''      'his-series'     'EFREE'    ''         []       0
+%    'computed minus derived heat flux' 'W/m^2'  [1 5 0 0 0]  0  1     ''       'z'   'z'       ''      'his-series'     'QMIS'     ''         []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'density'                   'kg/m^3' [1 5 0 0 1]  0         1     ''       'z'   'z'       'c'     'his-series'     'ZRHO'     ''         []       0
     'non-hydrostatic pressure'  ''       [1 5 0 0 1]  0         1     ''       'z'   'z'       'c'     'his-series'     'HYDPRES'  ''         []       0
