@@ -1218,7 +1218,7 @@ if ~waqua('exists',sds,exper,'MESH_IDIMEN')
                 [x,y]=qp_proj_rotatepole(x,y,lonsp,latsp,0);
             end
             varargout = {x y};
-        case {'wind','press'}
+        case {'wind','press','charnock'}
             [tstep,n,m]=local_argin(argin);
             nmfull = reshape(1:dim.mmax*dim.nmax,dim.mmax,dim.nmax)';
             nm = nmfull(n,m);
@@ -1244,6 +1244,11 @@ if ~waqua('exists',sds,exper,'MESH_IDIMEN')
                     varargout = {windu windv time};
                 case 'press'
                     press = waqua('readsds',sds,exper,'SOLUTION_PRESS',tstep,1:nmmax);
+                    time = refdate+press.SimTime/1440;
+                    press = press.Data(nm);
+                    varargout = {press time};
+                case 'charnock'
+                    press = waqua('readsds',sds,exper,'SOLUTION_CHARNOCK',tstep,1:nmmax);
                     time = refdate+press.SimTime/1440;
                     press = press.Data(nm);
                     varargout = {press time};

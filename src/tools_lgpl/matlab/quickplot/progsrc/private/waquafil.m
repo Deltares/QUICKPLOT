@@ -486,6 +486,7 @@ DataProps={'depth grid'               ''       [0 0 1 1 0]  0        0      0   
     'wind'                            'm/s'    [1 0 1 1 0]  1        0      2     'z'   'z'       ''     ''      'wind'      ''         'FORCINGS_SVWP_WINDU'
     'pressure'                        'Pa'     [1 0 1 1 0]  1        0      1     'z'   'z'       ''     ''      'press'     ''         'SOLUTION_PRESS'
     'pressure'                        'Pa'     [1 0 1 1 0]  1        0      1     'z'   'z'       ''     ''      'press'     ''         'FORCINGS_SVWP_PRESSURE'
+    'Charnock parameter'              '-'      [1 0 1 1 0]  1        0      1     'z'   'z'       ''     ''      'charnock'  ''         'SOLUTION_CHARNOCK'
     '-------'                         ''       [0 0 0 0 0]  0        0      0     ''    ''        ''     ''      ''          ''         ''
     'wave height'                     'm'      [1 0 1 1 0]  1        0      1     'z'   'z'       ''     ''      'hrms'      ''         'COEFF_FLOW_WAVES'
     'wave vector'                     'm'      [1 0 1 1 0]  1        0      2     'z'   'z'       ''     ''      'wvec'      ''         'COEFF_FLOW_WAVES'
