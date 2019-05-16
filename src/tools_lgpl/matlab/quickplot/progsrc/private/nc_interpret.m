@@ -751,7 +751,75 @@ for ivar = 1:nvars
     end
     %
     xName = '';
-    if  ~isempty(Info.X)
+    if strcmp(Info.Type,'ugrid_mesh') && iscell(Info.Mesh) && strcmp(Info.Mesh{1},'ugrid1d_network')
+        crds = Info.Coordinates;
+        for i = 1:length(crds)
+            crds{i} = nc.Dataset(find(strcmp(crds{i},varNames)));
+        end
+        is_branchid = false(size(crds));
+        is_offset = false(size(crds));
+        for i = 1:length(crds)
+            if strcmp(crds{i}.Type,'unknown')
+                Att = crds{i}.Attribute;
+                j = strcmp('units',{Att.Name});
+                if any(j)
+                    is_offset(i) = true;
+                else
+                    is_branchid(i) = true;
+                end
+            end
+        end
+        branchid = find(is_branchid);
+        offset   = find(is_offset);
+        %
+        if isempty(offset) && numel(branchid)>1
+            toffset = offset;
+            tbranchid = branchid;
+            offset   = find(strcmp([Info.Name '_nodes_branch_offset'],Info.Coordinates));
+            branchid = find(strcmp([Info.Name '_nodes_branch_id'],Info.Coordinates));
+            if numel(offset)==1 && numel(branchid)==1
+                ui_message('error','Missing important metadata for %s coordinates.\nBranch id and branch offset coordinate variables identified by D-Flow FM specific names.',Info.Name)
+            else
+                offset   = toffset;
+                branchid = tbranchid;
+            end
+        end
+        ok = false;
+        if isempty(offset)
+            clist = sprintf('''%s'', ',Info.Coordinates{:});
+            ui_message('error','None of %s node coordinates {%s} has a units attribute.\nUnable to identify the branch offset variable, so X and Y coordinates will not be set.', Info.Name, clist(1:end-2))
+        elseif isempty(branchid)
+            clist = sprintf('''%s'', ',Info.Coordinates{:});
+            ui_message('error','All %s node coordinates {%s} have a units attribute.\nUnable to identify the branch id variable, so X and Y coordinates will not be set.', Info.Name, clist(1:end-2))
+        elseif numel(offset)>1 || numel(branchid)>1
+            clist = sprintf('''%s'', ',Info.Coordinates{:});
+            ui_message('error','Too many %s node coordinates {%s} unable to uniquely identify the branch id and offset variables.\nX and Y coordinates will not be set.', Info.Name, clist(1:end-2))
+        else
+            ok = true;
+        end
+        %
+        if ok
+            Info.X = strmatch(Info.Coordinates{branchid},varNames);
+            Info.Y = strmatch(Info.Coordinates{offset},varNames);
+            nodeDim = nc.Dataset(Info.X).Dimid;
+        else
+            j = strcmp('node_dimension',{Info.Attribute.Name});
+            ndim = Info.Attribute(j).Value;
+            nodeDim = ustrcmpi(ndim,{nc.Dimension.Name});
+            if nodeDim<0
+                ui_message('error','No node_dimension attribute found on %s; unable to identify spatial dimension.', Info.Name)
+            end
+        end
+        if nodeDim>0
+            iDims = setdiff(nodeDim,Info.TSMNK);
+            iDim = intersect(iDim,iDims);
+            if ~isempty(iDim)
+                Info.TSMNK(3) = iDim(1);
+            elseif ~isempty(iDims)
+                Info.TSMNK(3) = iDims(1);
+            end
+        end
+    elseif  ~isempty(Info.X)
         iX = abs(Info.X);
         %
         iDim = {nc.Dataset(iX).Dimid};
@@ -843,74 +911,6 @@ for ivar = 1:nvars
                 ui_message('error','The bounds attribute of %s points to %s, but that variable does not exist.',nc.Dataset(Info.X).Name,nc.Dataset(Info.X).Attribute(j).Value)
             else
                 nc.Dataset(Info.XBounds).Type = nc.Dataset(Info.X).Type;
-            end
-        end
-    elseif strcmp(Info.Type,'ugrid_mesh')
-        crds = Info.Coordinates;
-        for i = 1:length(crds)
-            crds{i} = nc.Dataset(find(strcmp(crds{i},varNames)));
-        end
-        is_branchid = false(size(crds));
-        is_offset = false(size(crds));
-        for i = 1:length(crds)
-            if strcmp(crds{i}.Type,'unknown')
-                Att = crds{i}.Attribute;
-                j = strcmp('units',{Att.Name});
-                if any(j)
-                    is_offset(i) = true;
-                else
-                    is_branchid(i) = true;
-                end
-            end
-        end
-        branchid = find(is_branchid);
-        offset   = find(is_offset);
-        %
-        if isempty(offset) && numel(branchid)>1
-            toffset = offset;
-            tbranchid = branchid;
-            offset   = find(strcmp([Info.Name '_nodes_branch_offset'],Info.Coordinates));
-            branchid = find(strcmp([Info.Name '_nodes_branch_id'],Info.Coordinates));
-            if numel(offset)==1 && numel(branchid)==1
-                ui_message('error','Missing important metadata for %s coordinates.\nBranch id and branch offset coordinate variables identified by D-Flow FM specific names.',Info.Name)
-            else
-                offset   = toffset;
-                branchid = tbranchid;
-            end
-        end
-        ok = false;
-        if isempty(offset)
-            clist = sprintf('''%s'', ',Info.Coordinates{:});
-            ui_message('error','None of %s node coordinates {%s} has a units attribute.\nUnable to identify the branch offset variable, so X and Y coordinates will not be set.', Info.Name, clist(1:end-2))
-        elseif isempty(branchid)
-            clist = sprintf('''%s'', ',Info.Coordinates{:});
-            ui_message('error','All %s node coordinates {%s} have a units attribute.\nUnable to identify the branch id variable, so X and Y coordinates will not be set.', Info.Name, clist(1:end-2))
-        elseif numel(offset)>1 || numel(branchid)>1
-            clist = sprintf('''%s'', ',Info.Coordinates{:});
-            ui_message('error','Too many %s node coordinates {%s} unable to uniquely identify the branch id and offset variables.\nX and Y coordinates will not be set.', Info.Name, clist(1:end-2))
-        else
-            ok = true;
-        end
-        %
-        if ok
-            Info.X = strmatch(Info.Coordinates{branchid},varNames);
-            Info.Y = strmatch(Info.Coordinates{offset},varNames);
-            nodeDim = nc.Dataset(Info.X).Dimid;
-        else
-            j = strcmp('node_dimension',{Info.Attribute.Name});
-            ndim = Info.Attribute(j).Value;
-            nodeDim = ustrcmpi(ndim,{nc.Dimension.Name});
-            if nodeDim<0
-                ui_message('error','No node_dimension attribute found on %s; unable to identify spatial dimension.', Info.Name)
-            end
-        end
-        if nodeDim>0
-            iDims = setdiff(nodeDim,Info.TSMNK);
-            iDim = intersect(iDim,iDims);
-            if ~isempty(iDim)
-                Info.TSMNK(3) = iDim(1);
-            elseif ~isempty(iDims)
-                Info.TSMNK(3) = iDims(1);
             end
         end
     end
