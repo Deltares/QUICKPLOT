@@ -34,9 +34,15 @@ function qp_validate(varargin)
 log_style('latex')
 baseini='validation.ini';
 val_dir = '';
+openlog = true;
 
-for i = 1:nargin
+i = 0;
+while i<nargin
+    i = i+1;
     switch lower(varargin{i})
+        case 'openlog'
+            i = i+1;
+            openlog = varargin{i};
         case {'latex','html'}
             log_style(lower(varargin{i}))
         otherwise
@@ -47,7 +53,7 @@ if isempty(val_dir)
     %
     % Would prefer to use uigetdir, but that doesn't compile.
     %
-    [dummy,val_dir]=uigetfile(baseini,'Select directory containing validation cases');
+    [~,val_dir]=uigetfile(baseini,'Select directory containing validation cases');
     if ~ischar(val_dir)
         return
     end
@@ -65,9 +71,9 @@ includes = {};
 logid1=-1;
 switch log_style
     case 'latex'
-        Color.Page       = 'FFFFFF';
-        Color.Titlebar   = 'BAD4F4';
-        Color.Table      = {'DEEBFA' 'E8F1FB'};
+        Color.Page       = 'white';
+        Color.Titlebar   = 'magenta!25!cyan!50';
+        Color.Table      = {'magenta!10!cyan!20' 'magenta!5!cyan!10'};
         Color.Failed     = 'red!80!black';
         Color.Success    = 'green!80!black';
         Color.Font       = 'black';
@@ -157,7 +163,7 @@ try
     %
     % Sorting required for MATLAB 5.3 ...
     %
-    [sorteddirnames,I]=sort(upper({d.name}));
+    [~,I]=sort(upper({d.name}));
     d=d(I);
     [d.dt] = deal(NaN);
     %
@@ -205,11 +211,15 @@ try
         includes{i,2} = logname;
         NTested=NTested+1;
         DiffFound=0;
-        color='';      frcolor=Color.Success;  lgcolor=Color.Font;
-        result='';     frresult='PASSED';      lgresult='N/A';
+        color    = '';
+        frcolor  = Color.Success; 
+        lgcolor  = Color.Font;
+        result   = '';
+        frresult = 'PASSED';
+        lgresult = 'N/A';
         logid2=[];
         TC2=1;
-        CrashMsg='';
+        Crash = [];
         try
             cd(fullfile(val_dir,d(i).name));
             CaseInfo='case.ini';
@@ -345,14 +355,14 @@ try
                                             write_log(logid2,'Deleted datafields:');
                                             write_log(logid2,'<li>%s</li>',dppn{:});
                                         end
-                                        [common,ipn,ippn]=intersect(pn,ppn);
+                                        [~,ipn,ippn]=intersect(pn,ppn);
                                         Prop=Prop(ipn);
                                         PropRef=PropRef(ippn);
                                     elseif ~isempty(dppn)
                                         JustAddedData=0;
                                         write_log(logid2,'Deleted datafields:');
                                         write_log(logid2,dppn);
-                                        [common,ipn,ippn]=intersect(pn,ppn);
+                                        [~,ipn,ippn]=intersect(pn,ppn);
                                         Prop=Prop(ipn);
                                         PropRef=PropRef(ippn);
                                     end
@@ -518,7 +528,6 @@ try
                                                 frcolor=Color.Failed;
                                             end
                                             write_table2_line(logid2,[],[],[],2);
-                                            emptyTable2 = false;
                                             ChkOK = DiffFound<=0;
                                             if ~ChkOK
                                                 frresult=sprintf('FAILED: Data changed for ''%s''.',P(p).Name);
@@ -585,7 +594,7 @@ try
                                 checkf=checkfs{icheck};
                                 write_log1(logid2,'Checking File ''%s'': ',protected(checkf));
                                 showfig=0;
-                                [dummypath,dummyfile,ext]=fileparts(checkf);
+                                [~,~,ext]=fileparts(checkf);
                                 reffile=[sref,checkf];
                                 args={};
                                 switch lower(ext)
@@ -612,7 +621,6 @@ try
                                     end
                                 else
                                     [Eql,Msg]=filesequal(checkf,reffile,args{:});
-                                    hasdiff=0;
                                     diffimg={};
                                     if ~Eql
                                         try
@@ -628,7 +636,6 @@ try
                                                         diffimg=[checkf(1:end-4) '_diff.png'];
                                                         imwrite(1-abs(I1-I2)/255,diffimg);
                                                         diffimg={['work/' diffimg]};
-                                                        hasdiff=1;
                                                         Msg='The bitmap images are different.';
                                                     end
                                             end
@@ -661,8 +668,7 @@ try
                 frcolor=Color.Font;
                 frresult='FAILED: case.ini missing.';
             end
-        catch
-            CrashMsg=lasterr;
+        catch Crash
             color=Color.Failed;
             AnyFail=1;
             if UserInterrupt
@@ -673,8 +679,8 @@ try
         end
         d3d_qp('closefile');
         if ~isempty(logid2)
-            if ~isempty(CrashMsg)
-                write_log(logid2,color_write(protected(CrashMsg),Color.Failed,true));
+            if ~isempty(Crash)
+                write_log(logid2,color_write(protected(Crash.message),Color.Failed,true));
             end
             [dt2,dt2_str] = write_footer(logid2,d(i).name,Color,t2,dt2_old);
             fclose(logid2);
@@ -685,8 +691,8 @@ try
                 fprintf(timid,'%5.1f',dt2);
                 fclose(timid);
             end
-        elseif ~isempty(CrashMsg)
-            result = [result CrashMsg];
+        elseif ~isempty(Crash)
+            result = [result Crash.message];
             dt2 = (now-t2)*86400;
             dt2_str = duration(dt2);
         end
@@ -713,7 +719,7 @@ try
     end
 catch err
     if ~isempty(logid2)
-        fclose(logid2)
+        fclose(logid2);
     end
     if logid1>0
         write_table_error(logid1,Color,err)
@@ -736,14 +742,16 @@ end
 if AnyFail
     ui_message('error','Testbank failed on %i out of %i cases! Check log file.\n',NFailed,NTested)
     %
-    if matlabversionnumber>5
-        ops={'-browser'};
-    else
-        ops={};
-    end
-    try
-        web(full_ln,ops{:});
-    catch
+    if openlog
+        if matlabversionnumber>5
+            ops={'-browser'};
+        else
+            ops={};
+        end
+        try
+            web(full_ln,ops{:});
+        catch
+        end
     end
 else
     ui_message('','Testbank completed successfully (%i cases).\n',NTested)
@@ -800,41 +808,61 @@ switch log_style
             % main document
             fprintf(logid,'%s\n','\documentclass[table]{deltares_manual}');
             fprintf(logid,'%s\n','\usepackage{pdflscape}');
-            %fprintf(logid,'%s\n','\rowcolors{1}{blue!10}{blue!5}');
+            versionstr = d3d_qp('version'); % returns "source code version" or "vA.B.revsion (64bit)"
+            if versionstr(1)=='v'
+                version = sscanf(a,'v%d.%d.%d');
+                revision = version(3);
+                % insert QUICKPLOT revision number into SVN revsion string of the report
+                fprintf(logid,'%s%d%s%s%s\n','\svnid{$Id$}');
+                versionstr = sprintf('%d.%d',version(1:2));
+            end
             fprintf(logid,'\n');
             fprintf(logid,'%s\n','\begin{document}');
             fprintf(logid,'%% %s\n','\pagestyle{empty}');
             fprintf(logid,'%% %s\n','\includepdf[pages=1,offset=72 -70]{pictures/Delft3D-cover_hydro.pdf} % links-rechts past precies');
             fprintf(logid,'%% %s\n','\cleardoublepage');
+            fprintf(logid,'%s%s%s\n','\pagecolor{',Color.Page,'}');
             fprintf(logid,'\n');
             fprintf(logid,'%s\n','\input{../../../../doc/user_manuals/common/program_names}');
             fprintf(logid,'\n');
             fprintf(logid,'%s\n','\title{\QUICKPLOT\ Testing}');
-            fprintf(logid,'%s\n','\subtitle{Automated report all cases tested}');
+            fprintf(logid,'%s\n','\subtitle{Automated regression testing report}');
             fprintf(logid,'%s\n','\manualtype{Validation Document}');
             fprintf(logid,'%s\n','\distribution{}');
-            fprintf(logid,'%s{%s%s}\n','\version',d3d_qp('version'),stalone);
+            fprintf(logid,'%s{%s%s}\n','\version',versionstr,stalone);
             fprintf(logid,'%s\n','\deltarestitle');
+            fprintf(logid,'%s%s%s%s%s\n','\rowcolors{1}{',Color.Table{1},'}{',Color.Table{2},'}');
             fprintf(logid,'\n');
             fprintf(logid,'%s\n','\begin{landscape}');
             fprintf(logid,'%s{%s} %s{Chap:%s}\n','\chapter','Validation summary','\label','Summary');
             fprintf(logid,'%s\n','\begin{longtable}{|l|l|l|l|l|}');
+            fprintf(logid,'%s\n','\hiderowcolors');
             fprintf(logid,'%s\n','\caption{Overview of all test cases included} \label{Tab:Summary} \\');
+            fprintf(logid,'%s\n','\showrowcolors');
             fprintf(logid,'%s\n','\hline');
-            fprintf(logid,'%s\n','\STRUT \textbf{Validation case} & \textbf{Result file read} & \textbf{Result log files} & \textbf{Timing} \\ [1ex] \hline');
+            fprintf(logid,'%s%s%s\n','\rowcolor{',Color.Titlebar,'} \STRUT \textbf{Validation case} & \textbf{Result file read} & \textbf{Result log files} & \textbf{Timing} \\ [1ex] \hline');
             fprintf(logid,'%s\n','\endfirsthead');
             fprintf(logid,'%%\n');
+            fprintf(logid,'%s\n','\hiderowcolors');
             fprintf(logid,'%s\n','\multicolumn{5}{c}{{\STRUT \tablename\ \thetable{} -- continued from previous page}} \\ [1ex] \hline');
-            fprintf(logid,'%s\n','\STRUT \textbf{Validation case} & \textbf{Result file read} & \textbf{Result log files} & \textbf{Timing} \\ [1ex] \hline');
+            fprintf(logid,'%s\n','\showrowcolors');
+            fprintf(logid,'%s%s%s\n','\rowcolor{',Color.Titlebar,'} \STRUT \textbf{Validation case} & \textbf{Result file read} & \textbf{Result log files} & \textbf{Timing} \\ [1ex] \hline');
             fprintf(logid,'%s\n','\endhead');
             fprintf(logid,'%%\n');
-            fprintf(logid,'%s\n','\multicolumn{5}{|r|}{{\STRUT continued on next page}} \\ [1ex] \hline');
+            fprintf(logid,'%s\n','\hline');
+            fprintf(logid,'%s\n','\hiderowcolors');
+            fprintf(logid,'%s\n','\multicolumn{5}{r}{{\STRUT \tablename \thetable{} continues on next page}} \\');
+            fprintf(logid,'%s\n','\showrowcolors');
             fprintf(logid,'%s\n','\endfoot');
             fprintf(logid,'%%\n');
             fprintf(logid,'%s\n','\endlastfoot');
         else
             fprintf(logid,'%% %s %s\n','Delft3D-QUICKPLOT validation report for case ',casename);
-            fprintf(logid,'%s{%s} %s{Chap:%s}\n','\chapter',protected(casename),'\label',makelabel(casename));
+            casetype = sametype(casename);
+            if ~isempty(casetype)
+                fprintf(logid,'%s{%s} %s{Chap:%s}\n','\chapter',protected(casetype),'\label',makelabel(casetype));
+            end
+            fprintf(logid,'%s{%s} %s{Sec:%s}\n','\section',protected(casename),'\label',makelabel(casename));
             fprintf(logid,'\n');
         end
     otherwise
@@ -877,9 +905,9 @@ function write_table1_line(logid,bgcolor,casename,frcolor,frresult,lgcolor,lgres
 switch log_style
     case 'latex'
         if isempty(lgcolor)
-            fprintf(logid,'\\STRUT \\nameref{Chap:%s} & \\textcolor{%s}{%s} &  & %s \\\\\n',makelabel(casename),frcolor,frresult,dt2_str);
+            fprintf(logid,'\\STRUT \\nameref{Sec:%s} & \\textcolor{%s}{%s} &  & %s \\\\\n',makelabel(casename),frcolor,frresult,dt2_str);
         else
-            fprintf(logid,'\\STRUT \\nameref{Chap:%s} & \\textcolor{%s}{%s} & \\textcolor{%s}{%s} & %s \\\\\n',makelabel(casename),frcolor,frresult,lgcolor,lgresult,dt2_str);
+            fprintf(logid,'\\STRUT \\nameref{Sec:%s} & \\textcolor{%s}{%s} & \\textcolor{%s}{%s} & %s \\\\\n',makelabel(casename),frcolor,frresult,lgcolor,lgresult,dt2_str);
         end
     otherwise
         fprintf(logid,'<tr bgcolor=%s><td>%s</td>',bgcolor,casename);
@@ -1012,17 +1040,19 @@ function include_diff_figures(logid,files,Color)
 nfiles = length(files);
 switch log_style
     case 'latex'
-        fprintf(logid,'\begin{tabular}{%s}\n',repmat('l',1,nfiles));
+        fprintf(logid,'%s%s%s\n','\begin{tabular}{',repmat('l',1,nfiles),'}');
+        fprintf(logid,'%s\n','\hiderowcolors');
         for i = 1:nfiles-1
-            fprintf(logid,'\textbf{%s} & ',protected(files{i}));
+            fprintf(logid,'%s%s%s','\textbf{',protected(files{i}),'} & ');
         end
-        fprintf(logid,'\textbf{%s} \\\\\n',protected(files{end}));
+        fprintf(logid,'%s%s%s\n','\textbf{',protected(files{end}),'} \\');
         %
         for i = 1:nfiles-1
-            fprintf(logid,'\\includegraphics*[width=50mm]{%s} & ',protect_filename(files{i}));
+            fprintf(logid,'%s%s%s','\includegraphics*[width=50mm]{',protect_filename(files{i}),'} & ');
         end
-        fprintf(logid,'\\includegraphics*[width=50mm]{%s} \\\\\n',protect_filename(files{end}));
-        fprintf(logid,'\end{tabular}\n');
+        fprintf(logid,'%s%s%s\n','\includegraphics*[width=50mm]{',protect_filename(files{end}),'} \\');
+        fprintf(logid,'%s\n','\showrowcolors');
+        fprintf(logid,'%s\n','\end{tabular}');
     otherwise
         fprintf(logid,'<table bgcolor=%s>\n',Color.Table{1});
         fprintf(logid,['<tr>' repmat(['<td width=300 bgcolor=',Color.Titlebar,'>%s</td>'],1,nfiles) '</tr>\n'],files{:});
@@ -1044,16 +1074,23 @@ function write_begin_table(logid,Color)
 switch log_style
     case 'latex'
         fprintf(logid,'%s\n','\begin{longtable}{|l|l|l|}');
+        %fprintf(logid,'%s\n','\hiderowcolors');
         %fprintf(logid,'%s\n','\caption{No caption} \\');
+        %fprintf(logid,'%s\n','\showrowcolors');
         fprintf(logid,'%s\n','\hline');
-        fprintf(logid,'%s\n','\STRUT \textbf{Data field} & \textbf{Read} & \textbf{Compare} \\ [1ex] \hline');
+        fprintf(logid,'%s%s%s\n','\rowcolor{',Color.Titlebar,'} \STRUT \textbf{Data field} & \textbf{Read} & \textbf{Compare} \\ [1ex] \hline');
         fprintf(logid,'%s\n','\endfirsthead');
         fprintf(logid,'%%\n');
+        fprintf(logid,'%s\n','\hiderowcolors');
         fprintf(logid,'%s\n','\multicolumn{3}{c}{{\STRUT \tablename\ \thetable{} -- continued from previous page}} \\ [1ex] \hline');
-        fprintf(logid,'%s\n','\STRUT \textbf{Data field} & \textbf{Read} & \textbf{Compare} \\ [1ex] \hline');
+        fprintf(logid,'%s\n','\showrowcolors');
+        fprintf(logid,'%s%s%s\n','\rowcolor{',Color.Titlebar,'} \STRUT \textbf{Data field} & \textbf{Read} & \textbf{Compare} \\ [1ex] \hline');
         fprintf(logid,'%s\n','\endhead');
         fprintf(logid,'%%\n');
-        fprintf(logid,'%s\n','\multicolumn{3}{|r|}{{\STRUT continued on next page}} \\ [1ex] \hline');
+        fprintf(logid,'%s\n','\hline');
+        fprintf(logid,'%s\n','\hiderowcolors');
+        fprintf(logid,'%s\n','\multicolumn{3}{r}{{\STRUT \tablename \thetable{} continues on next page}} \\');
+        fprintf(logid,'%s\n','\showrowcolors');
         fprintf(logid,'%s\n','\endfoot');
         fprintf(logid,'%%\n');
         fprintf(logid,'%s\n','\endlastfoot');
@@ -1170,9 +1207,9 @@ if isempty(dir(dirname))
     end
     c = computer;
     if strcmp(c(1:2),'PC')
-        s=dos(['mkdir "',thisdir,'"']);
+        s = dos(['mkdir "',thisdir,'"']);
     else
-        s=unix(['mkdir -p ',thisdir]);
+        s = unix(['mkdir -p ',thisdir]);
     end
 end
 
@@ -1185,7 +1222,7 @@ else
 end
 
 
-function Data = localload(filename,loadops)
+function Data = localload(filename)
 if isstandalone
     Data = load(filename);
 else
@@ -1199,4 +1236,18 @@ if nargin>0
     current_type = type;
 else
     xtype = current_type;
+end
+
+function type = sametype(casename)
+persistent previous_type
+sep = strfind(casename,' - ');
+if isempty(sep)
+    type = casename;
+else
+    type = casename(1:sep-1);
+end
+if isequal(type,previous_type)
+    type = '';
+else
+    previous_type = type;
 end
