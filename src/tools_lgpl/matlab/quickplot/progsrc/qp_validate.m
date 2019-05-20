@@ -369,7 +369,7 @@ try
                                     %
                                     if vardiff(Prop,PropRef)>1
                                         JustAddedData=0;
-                                        vardiff(Prop,PropRef,logid2,'html','Current Data','Reference Data');
+                                        vardiff(Prop,PropRef,logid2,log_style,'Current Data','Reference Data');
                                     end
                                     drawnow
                                 end

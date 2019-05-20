@@ -61,6 +61,8 @@ if nargin>3
     switch lower(formatflag)
         case 'html'
             br='<br>\n';
+        case 'latex'
+            br='\\\\*\n';
         otherwise
             br='\n';
     end
