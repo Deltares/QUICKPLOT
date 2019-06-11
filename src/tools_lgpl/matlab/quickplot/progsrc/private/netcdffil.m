@@ -571,7 +571,14 @@ if XYRead || XYneeded
         %[Ans.XFace, status] = qp_netcdf_get(FI,'mesh2d_face_x');
         %[Ans.YFace, status] = qp_netcdf_get(FI,'mesh2d_face_y');
     elseif strcmp(Info.Type,'simple_geometry')
-        error('Simple geometry not yet implemented.')
+        gt = ustrcmpi('geometry_type',Attribs);
+        switch Info.Attribute(gt).Value
+            case {'multiline'}
+                Ans.X = qp_netcdf_get(FI,FI.Dataset(Info.X));
+                Ans.Y = qp_netcdf_get(FI,FI.Dataset(Info.Y));
+            otherwise
+                error('Simple geometry type "%s" not yet implemented.',Info.Attribute(gt).Value)
+        end
     else
         firstbound = 1;
         for iCoord = 1:length(coordname)
@@ -1356,7 +1363,9 @@ else
         %
         Insert.NVal = 1;
         Insert.DimName = cell(1,5);
-        if strcmp(Info.Datatype,'char')
+        if strcmp(Info.Type,'simple_geometry')
+            Insert.NVal = 0;
+        elseif strcmp(Info.Datatype,'char')
             Insert.NVal = 4;
         elseif any(strcmp('flag_values',Attribs))
             Insert.NVal = 6;
