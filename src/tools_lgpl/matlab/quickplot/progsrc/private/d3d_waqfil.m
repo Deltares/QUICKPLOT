@@ -1135,7 +1135,7 @@ switch Type
                 switch name
                     case 'vol'
                         Out(end).DimFlag(T_) = 5;
-                        name = 'flow volumes';
+                        name = 'water volumes';
                         units = 'm^3';
                     case 'sal'
                         Out(end).DimFlag(T_) = 5;
