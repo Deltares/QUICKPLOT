@@ -1181,7 +1181,11 @@ switch Type
                     case 'srf'
                         name = 'surface areas';
                         units = 'm^2';
-                        Out(end).DimFlag(K_) = 0;
+                        if isfield(FI.Attributes.srf,'Srf')
+                            Out(end).DimFlag(K_) = 0;
+                        else
+                            Out(end).DimFlag(T_) = 5;
+                        end
                     case 'dps'
                         name = 'bed level';
                         units = 'm';
@@ -2269,7 +2273,10 @@ switch cmd
                     case {'.srf','.dps','.chz'}
                         NewFI.Attributes.(ext) = waqfil('open',[base ext]);
                 end
-            catch
+            catch e
+                if strcmp(e.message,'Could this be a new format srf file?')
+                    NewFI.Attributes.(ext) = waqfil('open',[base ext],FI.NoSeg);
+                end
             end
         end
         delete(H)
