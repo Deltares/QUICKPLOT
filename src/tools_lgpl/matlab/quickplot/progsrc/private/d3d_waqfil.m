@@ -1178,14 +1178,18 @@ switch Type
                         name = 'chezy - direction 2';
                         units = 'm^{1/2}/s';
                         Out(end).AttPar = {2};
-                    case 'srf'
-                        name = 'surface areas';
-                        units = 'm^2';
-                        if isfield(FI.Attributes.srf,'Srf')
+                    case {'srf','srfold'}
+                        if isfield(FI.Attributes.(name),'Srf')
                             Out(end).DimFlag(K_) = 0;
                         else
                             Out(end).DimFlag(T_) = 5;
                         end
+                        if strcmp(name,'srfold')
+                            name = 'surface areas (old format)';
+                        else
+                            name = 'surface areas';
+                        end
+                        units = 'm^2';
                     case 'dps'
                         name = 'bed level';
                         units = 'm';
@@ -2270,7 +2274,7 @@ switch cmd
                         NewFI.Attributes.(ext) = waqfil('open',[base ext],FI.NoSeg);
                     case {'.are','.flo','.poi','.len'}
                         %NewFI.Attributes.(ext) = waqfil('open',[base ext],sum(FI.NoExchMNK));
-                    case {'.srf','.dps','.chz'}
+                    case {'.srf','.dps','.chz','.srfold'}
                         NewFI.Attributes.(ext) = waqfil('open',[base ext]);
                 end
             catch e

@@ -97,7 +97,7 @@ switch lower(cmd(1:4))
                 S = openlen(file,varargin{:});
             case '.chz'
                 S = openchz(file,varargin{:});
-            case {'.srf','.dps'}
+            case {'.srf','.srfold','.dps'}
                 if nargin==3
                     S = openvol(file,varargin{:});
                 else
@@ -125,7 +125,7 @@ switch lower(cmd(1:4))
                 S = readlen(file,varargin{:});
             case '.chz'
                 S = file.Chezy(varargin{end},:)';
-            case {'.srf','.dps'}
+            case {'.srf','.srfold','.dps'}
                 if isfield(file,'Srf')
                     S = file.Srf;
                 else
