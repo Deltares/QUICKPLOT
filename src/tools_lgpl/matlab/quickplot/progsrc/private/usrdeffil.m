@@ -125,7 +125,9 @@ idx(fidx(1:length(varargin)))=varargin;
 
 i=Props.Fld;
 [Ans,FIi]=getdata(FI(i),cmd,idx);
-Ans.Time=readtim(FI,Props,idx{1});
+if Props.DimFlag(T_)
+    Ans.Time=readtim(FI,Props,idx{1});
+end
 FI(i)=FIi;
 
 varargout={Ans FI};
