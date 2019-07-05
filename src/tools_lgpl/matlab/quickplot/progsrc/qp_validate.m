@@ -570,7 +570,8 @@ try
                         end
                         logf=logs(lg).name;
                         write_rule(logid2);
-                        write_section(logid2,'Running log file: %s',protected(logf));
+                        write_section(logid2,'Results for log file: %s',protected(logf));
+                        echo_logfile(logid2,[slog,logf]);
                         d3d_qp('reset');
                         d1=dir; d1={d1.name};
                         m1=ui_message('getall');
@@ -991,6 +992,36 @@ switch log_style
     otherwise
         fprintf(logid,'%s<br>\n',message{:});
 end
+
+
+function echo_logfile(logid,logf)
+C = protected(getfile(logf));
+switch log_style
+    case 'latex'
+        fprintf(logid,'\\begin{Verbatim}[frame=single, framesep=5pt]\n');
+        fprintf(logid,'%s\n',C{:});
+        fprintf(logid,'\\end{Verbatim}\n');
+end
+
+
+function fileContent = getfile(filename)
+fileContent = cell(100,1);
+nC = 0;
+fid = fopen(filename);
+while 1
+    str = fgetl(fid);
+    if ischar(str)
+        nC = nC+1;
+        if nC>length(fileContent)
+            fileContent{2*nC} = '';
+        end
+        fileContent{nC} = str;
+    else
+        break
+    end
+end
+fileContent(nC+1:end) = [];
+fclose(fid);
 
 
 function write_log(logid,message,varargin)
