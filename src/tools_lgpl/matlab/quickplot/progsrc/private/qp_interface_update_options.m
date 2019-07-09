@@ -339,6 +339,8 @@ switch geometry
                         axestype={'X-Val'};
                     end
             end
+        elseif multiple(T_)
+            axestype={'Time-Val'};
         else
             switch nval
                 case {0,2,4,6}
@@ -1049,7 +1051,7 @@ end
 
 %--------------------------------------------------------------------------
 
-if vectors %&& ~isempty(strmatch(axestype,{'X-Y','X-Y-Z','X-Y-Val','X-Z'},'exact'))
+if vectors && ~strcmp(axestype,'Time-Val')
     colvect=findobj(OH,'tag','colourvectors');
     set(colvect,'enable','on')
     if get(colvect,'value')
