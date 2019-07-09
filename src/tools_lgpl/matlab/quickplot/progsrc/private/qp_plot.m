@@ -64,7 +64,7 @@ if isfield(PlotState,'FI')
             [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'griddefdata',SubField{:},SubSelected{:});
         else
             switch Ops.presentationtype
-                case {'patches','patches with lines','patch centred vector','polygons'}%,'edges'}
+                case {'patches','patches with lines','patch centred vector','polygons'}%,'edges'} %--> edges needed for slice through patches
                     [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'gridcelldata',SubField{:},SubSelected{:});
                     DataInCell=1;
                 otherwise
@@ -917,9 +917,8 @@ if isfield(Ops,'plotcoordinate') && ~isempty(Ops.plotcoordinate)
                 diststr = 'x coordinate';
             end
         case 'y coordinate'
-            if ~isfield(data,'Y')
-                error('No Y data to plot against.')
-            elseif isfield(data,'XUnits') && isequal(data(1).XUnits,'deg')
+            % data.Y has been moved to data.X while processing Ops.plotcoordinate
+            if isfield(data,'XUnits') && isequal(data(1).XUnits,'deg')
                 diststr = 'latitude';
             else
                 diststr = 'y coordinate';
