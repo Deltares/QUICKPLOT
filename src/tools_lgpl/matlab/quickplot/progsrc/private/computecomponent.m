@@ -166,11 +166,11 @@ for d=1:length(data)
             if strncmpi(Ops.angleconvention,'Nautical To',10)
                     data(d).Val=sf*atan2(data(d).XComp,data(d).YComp);
             elseif strncmpi(Ops.angleconvention,'Nautical From',12)
-                    data(d).Val=-sf*atan2(data(d).XComp,data(d).YComp);
+                    data(d).Val=sf*atan2(-data(d).XComp,-data(d).YComp);
             elseif strncmpi(Ops.angleconvention,'Cartesian To',12)
                     data(d).Val=sf*atan2(data(d).YComp,data(d).XComp);
             elseif strncmpi(Ops.angleconvention,'Cartesian From',14)
-                    data(d).Val=-sf*atan2(data(d).YComp,data(d).XComp);
+                    data(d).Val=sf*atan2(-data(d).YComp,-data(d).XComp);
             end
             if strfind(Ops.angleconvention,'[0 to')
                 neg = data(d).Val<0;
