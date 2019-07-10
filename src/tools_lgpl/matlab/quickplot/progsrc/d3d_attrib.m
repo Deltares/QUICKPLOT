@@ -378,8 +378,10 @@ for tpC = types
                 i=0;
                 while 1
                     Line=fgetl(fid);
-                    if (~ischar(Line) || isempty(deblank(Line)) ) && feof(fid)
+                    if ~ischar(Line)
                         break
+                    elseif isempty(deblank(Line))
+                        continue
                     end
                     i=i+1;
                     Name{i,1}=deblank(Line(1:20));

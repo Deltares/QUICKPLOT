@@ -4366,6 +4366,7 @@ switch cmd
         set(UOH,'enable','off','visible','off','backgroundcolor',Inactive)
         set(findobj(UOH,'tag','axestype=?'),'value',1,'string',{''})
         set(findobj(UOH,'tag','dataunits=?'),'value',1)
+        set(findobj(UOH,'tag','angleconvention=?'),'value',1)
         set(findobj(UOH,'tag','plotcoordinate=?'),'value',1,'string',{' '})
         set(findobj(UOH,'tag','component=?'),'value',1,'string',{' '})
         set(findobj(UOH,'tag','numformat=?'),'string','%.2f')

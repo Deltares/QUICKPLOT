@@ -171,7 +171,7 @@ l=0;
 for i=1:length(FI.Table)
     for j=2:size(FI.Table(i).Parameter,2)
         l=l+1;
-        if strcmp(FI.Table.Parameter(1).Name,'total discharge (t)')
+        if strcmp(FI.Table(i).Parameter(1).Name,'total discharge (t)')
             DataProps(l,:)={[FI.Table(i).Location ' - QH Table'] ...
                 [0 0 1 0 0]  0         -1     ''        ''   ''      ''      i    j };
         else
