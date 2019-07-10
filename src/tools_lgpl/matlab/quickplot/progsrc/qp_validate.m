@@ -35,6 +35,7 @@ log_style('latex')
 baseini='validation.ini';
 val_dir = '';
 openlog = true;
+extra_files = {'summary','failed_cases','all_cases'};
 
 i = 0;
 while i<nargin
@@ -69,6 +70,7 @@ currdir=pwd;
 TC1 = 1;
 includes = {};
 logid1=-1;
+extlog=[];
 switch log_style
     case 'latex'
         Color.Page       = 'white';
@@ -146,12 +148,25 @@ try
         end
         return
     end
+    %
+    [p,f,e] = fileparts(full_ln);
+    extlog.files = extra_files;
+    for ifile = 1:length(extra_files)
+        fName = extra_files{ifile};
+        %
+        fileName = [f '_' extra_files{ifile} e];
+        extlog.(fName).filename = fileName;
+        %
+        extlog.(fName).fid = fopen([p filesep fileName],'w');
+        extlog.(fName).empty = true;
+    end
+    %
     logid1=fopen(full_ln,'w');
     if logid1<0
         ui_message('error',{'Cannot open logfile for validation report.','Stopping validation process.'})
         return
     else
-        t1 = write_header(logid1,'MAIN',Color);
+        t1 = write_header(logid1,'MAIN',Color,extlog);
     end
     cd(val_dir)
     d=dir('*');
@@ -410,7 +425,7 @@ try
                     for p=1:NP
                         if progressbar((acc_dt+case_dt(i)*(p-1)/NT)/tot_dt,Hpb)<0
                             write_table2_line(logid2,Color.Table{TC2},'','',''); % at least one line needed in table
-                            write_end_table(logid2,false,emptyTable2);
+                            write_end_table(logid2,emptyTable2);
                             UserInterrupt=1;
                             error('User interrupt');
                         end
@@ -553,7 +568,7 @@ try
                         end
                         flush(logid2)
                     end
-                    write_end_table(logid2,false,emptyTable2);
+                    write_end_table(logid2,emptyTable2);
                     drawnow
                 end
                 %
@@ -706,10 +721,10 @@ try
             UserInterrupt=1;
         end
         if ~isempty(result)
-            write_table1_line(logid1,Color.Table{TC1},d(i).name,color,result,[],[],logname,dt2_str);
+            extlog = write_table1_line(logid1,extlog,Color,CaseFailed,Color.Table{TC1},d(i).name,color,result,[],[],logname,dt2_str);
             TC1=3-TC1;
         else
-            write_table1_line(logid1,Color.Table{TC1},d(i).name,frcolor,frresult,lgcolor,lgresult,logname,dt2_str);
+            extlog = write_table1_line(logid1,extlog,Color,CaseFailed,Color.Table{TC1},d(i).name,frcolor,frresult,lgcolor,lgresult,logname,dt2_str);
             TC1=3-TC1;
         end
         flush(logid1);
@@ -723,7 +738,7 @@ catch err
         fclose(logid2);
     end
     if logid1>0
-        write_table_error(logid1,Color,err)
+        write_table_error(logid1,extlog,Color,err)
         AnyFail=1;
     end
 end
@@ -735,9 +750,12 @@ if ~isempty(current_procdef)
     qp_settings('delwaq_procdef',current_procdef)
 end
 if logid1>0
-    write_end_table(logid1,true);
+    write_summary(logid1,extlog,NFailed,NTested);
     write_includes(logid1,includes);
     write_footer(logid1,'MAIN',Color,t1,NaN);
+    for fName = extlog.files
+        fclose(extlog.(fName{1}).fid);
+    end
     fclose(logid1);
 end
 if AnyFail
@@ -797,7 +815,7 @@ switch log_style
 end
 
 
-function t = write_header(logid,casename,Color)
+function t = write_header(logid,casename,Color,extlog)
 stalone='';
 if isstandalone
     stalone=' (standalone)';
@@ -836,27 +854,10 @@ switch log_style
             fprintf(logid,'\n');
             fprintf(logid,'%s\n','\begin{landscape}');
             fprintf(logid,'%s{%s} %s{Chap:%s}\n','\chapter','Validation summary','\label','Summary');
-            fprintf(logid,'%s\n','\begin{longtable}{|l|l|l|l|l|}');
-            fprintf(logid,'%s\n','\hiderowcolors');
-            fprintf(logid,'%s\n','\caption{Overview of all test cases included} \label{Tab:Summary} \\');
-            fprintf(logid,'%s\n','\showrowcolors');
-            fprintf(logid,'%s\n','\hline');
-            fprintf(logid,'%s%s%s\n','\rowcolor{',Color.Titlebar,'} \STRUT \textbf{Validation case} & \textbf{Result file read} & \textbf{Result log files} & \textbf{Timing} \\ [1ex] \hline');
-            fprintf(logid,'%s\n','\endfirsthead');
-            fprintf(logid,'%%\n');
-            fprintf(logid,'%s\n','\hiderowcolors');
-            fprintf(logid,'%s\n','\multicolumn{5}{c}{{\STRUT \tablename\ \thetable{} -- continued from previous page}} \\ [1ex] \hline');
-            fprintf(logid,'%s\n','\showrowcolors');
-            fprintf(logid,'%s%s%s\n','\rowcolor{',Color.Titlebar,'} \STRUT \textbf{Validation case} & \textbf{Result file read} & \textbf{Result log files} & \textbf{Timing} \\ [1ex] \hline');
-            fprintf(logid,'%s\n','\endhead');
-            fprintf(logid,'%%\n');
-            fprintf(logid,'%s\n','\hline');
-            fprintf(logid,'%s\n','\hiderowcolors');
-            fprintf(logid,'%s\n','\multicolumn{5}{r}{{\STRUT \tablename \thetable{} continues on next page}} \\');
-            fprintf(logid,'%s\n','\showrowcolors');
-            fprintf(logid,'%s\n','\endfoot');
-            fprintf(logid,'%%\n');
-            fprintf(logid,'%s\n','\endlastfoot');
+            for fName = extlog.files
+                fprintf(logid,'\\input{"%s"}\n',extlog.(fName{1}).filename);
+            end
+            fprintf(logid,'%s\n\n','\end{landscape}');
         else
             fprintf(logid,'%% %s %s\n','Delft3D-QUICKPLOT validation report for case ',casename);
             casetype = sametype(casename);
@@ -884,17 +885,45 @@ end
 flush(logid)
 t = datenum(c);
 
+function write_table_header(logid,tbl,Color)
+fprintf(logid,'%s\n','\begin{longtable}{|l|l|l|l|l|}');
+fprintf(logid,'%s\n','\hiderowcolors');
+switch tbl
+    case 'failed_cases'
+        fprintf(logid,'%s\n','\caption{Overview of all failed cases} \label{Tab:FailedSummary} \\');
+    otherwise
+        fprintf(logid,'%s\n','\caption{Overview of all test cases included} \label{Tab:Summary} \\');
+end
+fprintf(logid,'%s\n','\showrowcolors');
+fprintf(logid,'%s\n','\hline');
+fprintf(logid,'%s%s%s\n','\rowcolor{',Color.Titlebar,'} \STRUT \textbf{Validation case} & \textbf{File read} & \textbf{Run script} & \textbf{Error message} & \textbf{Timing} \\ [1ex] \hline');
+fprintf(logid,'%s\n','\endfirsthead');
+fprintf(logid,'%%\n');
+fprintf(logid,'%s\n','\hiderowcolors');
+fprintf(logid,'%s\n','\multicolumn{5}{c}{{\STRUT \tablename\ \thetable{} -- continued from previous page}} \\ [1ex] \hline');
+fprintf(logid,'%s\n','\showrowcolors');
+fprintf(logid,'%s%s%s\n','\rowcolor{',Color.Titlebar,'} \STRUT \textbf{Validation case} & \textbf{File read} & \textbf{Run script} & \textbf{Error message} & \textbf{Timing} \\ [1ex] \hline');
+fprintf(logid,'%s\n','\endhead');
+fprintf(logid,'%%\n');
+fprintf(logid,'%s\n','\hline');
+fprintf(logid,'%s\n','\hiderowcolors');
+fprintf(logid,'%s\n','\multicolumn{5}{r}{{\STRUT \tablename \thetable{} continues on next page}} \\');
+fprintf(logid,'%s\n','\showrowcolors');
+fprintf(logid,'%s\n','\endfoot');
+fprintf(logid,'%%\n');
+fprintf(logid,'%s\n','\endlastfoot');
 
-function write_table_error(logid,Color,err)
+
+
+function write_table_error(logid,extlog,Color,err)
 msg = stack2str(err.stack);
 switch log_style
     case 'latex'
         message = protected(err.message);
         msg = protected(msg);
-        fprintf(logid,'%s%s%s\n','\multicolumn{5}{|p{\textwidth-12pt}|}{\STRUT \textcolor{',Color.Failed,'}{');
-        fprintf(logid,'Test bench execution failed unexpectedly. \\\\\n');
-        fprintf(logid,'%s \\\\\n',message,msg{:});
-        fprintf(logid,'%s\n','}}');
+        fprintf(extlog.summary.fid,'The test bench execution failed unexpectedly with the following message: %s%s%s\\\\\n','\textcolor{',Color.Failed,'}{');
+        fprintf(extlog.summary.fid,'%s \\\\\n',message,msg{:});
+        fprintf(extlog.summary.fid,'%s\n','}');
     otherwise
         fprintf(logid,'<tr><td colspan=5><font color=%s><b>Test bench execution failed unexpectedly.</b><br>\n',Color.Failed);
         fprintf(logid,'%s<br>',err.message,msg{:});
@@ -902,13 +931,41 @@ switch log_style
 end
 
 
-function write_table1_line(logid,bgcolor,casename,frcolor,frresult,lgcolor,lgresult,logname,dt2_str)
+function extlog = write_table1_line(logid,extlog,Color,CaseFailed,bgcolor,casename,frcolor,frresult,lgcolor,lgresult,logname,dt2_str)
 switch log_style
     case 'latex'
+        message = '';
         if isempty(lgcolor)
-            fprintf(logid,'\\STRUT \\nameref{Sec:%s} & \\textcolor{%s}{%s} &  & %s \\\\\n',makelabel(casename),frcolor,frresult,dt2_str);
+            colon = strfind(frresult,':');
+            if ~isempty(colon)
+                message = frresult(colon+2:end);
+                frresult = frresult(1:colon-1); % FAILED
+            end
+            str = sprintf('\\STRUT \\nameref{Sec:%s} & \\textcolor{%s}{%s} &  & %s & %s \\\\\n',makelabel(casename),frcolor,frresult,message,dt2_str);
         else
-            fprintf(logid,'\\STRUT \\nameref{Sec:%s} & \\textcolor{%s}{%s} & \\textcolor{%s}{%s} & %s \\\\\n',makelabel(casename),frcolor,frresult,lgcolor,lgresult,dt2_str);
+            colon = strfind(lgresult,':');
+            if ~isempty(colon)
+                message = lgresult(colon+2:end); % Log file results differ.
+                lgresult = lgresult(1:colon-1); % FAILED
+            end
+            colon = strfind(frresult,':');
+            if ~isempty(colon)
+                message = frresult(colon+2:end);
+                frresult = frresult(1:colon-1); % FAILED
+            end
+            str = sprintf('\\STRUT \\nameref{Sec:%s} & \\textcolor{%s}{%s} & \\textcolor{%s}{%s} & %s & %s \\\\\n',makelabel(casename),frcolor,frresult,lgcolor,lgresult,message,dt2_str);
+        end
+        if extlog.all_cases.empty
+            write_table_header(extlog.all_cases.fid,'all_cases',Color)
+            extlog.all_cases.empty = false;
+        end
+        fprintf(extlog.all_cases.fid,'%s',str);
+        if CaseFailed
+            if extlog.failed_cases.empty
+                write_table_header(extlog.failed_cases.fid,'failed_cases',Color)
+                extlog.failed_cases.empty = false;
+            end
+            fprintf(extlog.failed_cases.fid,'%s',str);
         end
     otherwise
         fprintf(logid,'<tr bgcolor=%s><td>%s</td>',bgcolor,casename);
@@ -1131,8 +1188,38 @@ switch log_style
 end
 
 
-function write_end_table(logid,landscape,emptyTable)
-if nargin<3
+function write_summary(logid1,extlog,NFailed,NTested)
+switch log_style
+    case 'latex'
+        sumid = extlog.summary.fid;
+        fprintf(sumid,'This document reports on the regression testing of QUICKPLOT.\n');
+        if NFailed==0
+            fprintf(sumid,'The software was successfully run on %d cases; none of them failed.\n',NTested);
+        else
+            fprintf(sumid,'The software was run on %d cases of which %d cases failed.\n',NTested,NFailed);
+        end
+        %
+        if NFailed>0
+            fprintf(sumid,'The failed cases are summarized in Table \\ref{Tab:FailedSummary}.\n');
+        end
+        if NTested>0
+            fprintf(sumid,'All tested cases are reported in Table \\ref{Tab:Summary}.\n');
+        else
+            fprintf(sumid,'Nothing to report.\n');
+        end
+        %
+        for fName = extlog.files
+            if ~extlog.(fName{1}).empty
+                write_end_table(extlog.(fName{1}).fid)
+            end
+        end
+    otherwise
+        write_end_table(logid1);
+end
+
+
+function write_end_table(logid,emptyTable)
+if nargin<2
     emptyTable = false;
 end
 switch log_style
@@ -1142,9 +1229,6 @@ switch log_style
         end
         fprintf(logid,'%s\n','[1ex] \hline');
         fprintf(logid,'%s\n','\end{longtable}');
-        if landscape
-            fprintf(logid,'%s\n','\end{landscape}');
-        end
     otherwise
         fprintf(logid,'</table>\n');
 end
@@ -1188,7 +1272,7 @@ switch log_style
         else
             write_section(logid,'Timing');
             if ~isequal(color,Color.Font)
-                dt_str = ['\textcolor{',color,'}{',dt_str,'} previously: ',duration(dt_old)];
+                dt_str = ['\textcolor{',color,'}{',dt_str,'} was: ',duration(dt_old)];
             end
             fprintf(logid,'Duration: %s\n',dt_str);
         end
@@ -1197,7 +1281,7 @@ switch log_style
             Color.Table{1},Color.Titlebar);
         fprintf(logid,'<tr><td>Date:</td><td>%4.4i-%2.2i-%2.2i %2.2i:%2.2i:%02.0f</td></tr>\n',c);
         if ~isequal(color,Color.Font)
-            dt_str = ['<font color=',color,'>',dt_str,'</font> previously: ',duration(dt_old)];
+            dt_str = ['<font color=',color,'>',dt_str,'</font> was: ',duration(dt_old)];
         end
         fprintf(logid,'<tr><td>Duration:</td><td>%s</td></tr>\n',dt_str);
         fprintf(logid,'</table><br>\n');
@@ -1210,7 +1294,7 @@ function s = duration(dt)
 if dt>60
     mdt = floor(dt/60);
     sdt = dt-60*mdt;
-    s = sprintf('%.1fs (%im %.1fs)',dt,mdt,sdt);
+    s = sprintf('%im %.1fs',mdt,sdt);
 else
     s = sprintf('%.1fs',dt);
 end
