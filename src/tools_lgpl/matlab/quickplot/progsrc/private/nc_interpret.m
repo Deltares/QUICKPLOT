@@ -42,7 +42,7 @@ end
 if nargin>1
     nc1 = rmfield(nc,'Filename');
     nc1.Dimension = rmfield(nc1.Dimension,'Length');
-    nc1.Dataset   = rmfield(nc1.Dataset,'Size');
+    nc1.Dataset   = rmfield(nc1.Dataset,{'Size','Chunking','Shuffle','Deflate'});
     nc1 = rmfield(nc1,'Attribute');
     partNrFormat = ['%' num2str(nDigits) '.' num2str(nDigits) 'd'];
     %
@@ -54,7 +54,7 @@ if nargin>1
         Partitions{i} = nc_interpret(nc2);
         nc2 = rmfield(nc2,'Filename');
         nc2.Dimension = rmfield(nc2.Dimension,'Length');
-        nc2.Dataset   = rmfield(nc2.Dataset,'Size');
+        nc2.Dataset   = rmfield(nc2.Dataset,{'Size','Chunking','Shuffle','Deflate'});
         nc2 = rmfield(nc2,'Attribute');
         %
         if vardiff(nc1,nc2)>1
