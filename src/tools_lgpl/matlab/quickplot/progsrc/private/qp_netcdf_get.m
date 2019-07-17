@@ -151,17 +151,11 @@ for d=1:Info.Rank
     end
 end
 %
-fliporder = ~getpref('SNCTOOLS','PRESERVE_FVD',false);
-%if fliporder
-%   reverse=Info.Rank:-1:1;
-%else
-   reverse=1:Info.Rank;
-%end
-%
-if isempty(Info.Dimid)
+if isempty(Info.Dimid) || nargin==3
     Data = nc_varget(FI.Filename,FI.Dataset(varid+1).Name);
-elseif nargin==3
-    Data = nc_varget(FI.Filename,FI.Dataset(varid+1).Name);
+    if ~isequal(size(Data),FI.Dataset(varid+1).Size)
+        Data = reshape(Data,FI.Dataset(varid+1).Size);
+    end
 else
     %
     % Convert data subset in QP dimension order to NetCDF dimension order
@@ -169,6 +163,7 @@ else
     RS_netcdf=cell(1,Info.Rank);
     start_coord=zeros(1,Info.Rank);
     count_coord=zeros(1,Info.Rank);
+    %fprintf('%s: %d %d %d %d %d\n',FI.Dataset(varid+1).Name,permuted);
     %
     % The following block selection procedure is inefficient if a relatively
     % limited number of values is requested compared to full range of
@@ -195,10 +190,9 @@ if ~isa(Data,'double') && ~isa(Data,'char')
     Data = double(Data);
 end
 %
-reverse=[reverse Info.Rank+1:5];
 permuted(permuted==0)=[];
 if length(permuted)>1
-    Data=permute(Data,reverse(permuted));
+    Data=permute(Data,permuted);
 end
 %
 if ~isempty(Info.Attribute)
