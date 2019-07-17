@@ -153,7 +153,7 @@ end
 %
 if isempty(Info.Dimid) || nargin==3
     Data = nc_varget(FI.Filename,FI.Dataset(varid+1).Name);
-    if ~isequal(size(Data),FI.Dataset(varid+1).Size)
+    if length(FI.Dataset(varid+1).Size)>1 && ~isequal(size(Data),FI.Dataset(varid+1).Size)
         Data = reshape(Data,FI.Dataset(varid+1).Size);
     end
 else
