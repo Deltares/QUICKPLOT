@@ -36,6 +36,17 @@ function nc = nc_interpret(nc,NumPartitions,PartNr_StrOffset,nDigits,Part1)
 %   $HeadURL$
 %   $Id$
 
+persistent CHARDIM
+if isempty(CHARDIM)
+    if getpref('SNCTOOLS','PRESERVE_FVD',false)
+        % true: the first dimension is the character length
+        CHARDIM = 1;
+    else
+        % false: the last dimension is the character length
+        CHARDIM = 2;
+    end
+end
+
 if ischar(nc)
     nc = nc_info(nc);
 end
@@ -235,10 +246,10 @@ for ivar = 1:nvars
     %
     if Info.Nctype==2
         %
-        % for character variables the second dimension is the string length
+        % for character variables the CHARDIM dimension is the string length
         %
         if Info.Rank==2
-            if strcmp(Info.Dimension{1},Info.Name);
+            if strcmp(Info.Dimension{3-CHARDIM},Info.Name)
                 Info.Type = 'coordinate';
             else
                 j = strmatch('cf_role',Attribs,'exact');
@@ -252,7 +263,7 @@ for ivar = 1:nvars
             end
         end
     elseif Info.Rank==1
-        if strcmp(Info.Dimension{1},Info.Name);
+        if strcmp(Info.Dimension{1},Info.Name)
             Info.Type = 'coordinate';
         elseif strcmp(Info.StdName,'latitude') || strcmp(Info.StdName,'longitude')
             %AuxCoordVars=union(AuxCoordVars,{Info.Name});
@@ -555,7 +566,11 @@ for i = 1:length(AuxCoordVars)
         Info = nc.Dataset(ivar);
         if strcmp(Info.Name,AuxCoordVars{i})
             if Info.Nctype==2 % character
-                AuxCoordVar_Dimens{i} = Info.Dimension(1:end-1);
+                if CHARDIM==1
+                    AuxCoordVar_Dimens{i} = Info.Dimension(2:end);
+                else
+                    AuxCoordVar_Dimens{i} = Info.Dimension(1:end-1);
+                end
             else
                 AuxCoordVar_Dimens{i} = Info.Dimension;
             end
@@ -659,9 +674,12 @@ for ivar = 1:nvars
             vDims  = Info.Dimension;
             cvDims = nc.Dataset(icvar).Dimension;
             if nc.Dataset(icvar).Nctype==2
-                % in case of a character array, leave out the last dimension
-                % (string length)
-                nmDims = setdiff(cvDims(1:end-1),vDims);
+                % in case of a character array, remove string length
+                if CHARDIM==1
+                    nmDims = setdiff(cvDims(2:end),vDims);
+                else
+                    nmDims = setdiff(cvDims(1:end-1),vDims);
+                end
             else
                 nmDims = setdiff(cvDims,vDims);
             end
@@ -738,7 +756,7 @@ for ivar = 1:nvars
             iStation = iStation(1);
         end
         Info.Station = iStation;
-        statdim = intersect(Info.Dimid,nc.Dataset(Info.Station).Dimid(1));
+        statdim = intersect(Info.Dimid,nc.Dataset(Info.Station).Dimid(3-CHARDIM));
         %
         if any(statdim==Info.TSMNK)
             % don't assign a station dimension that matches also time/space
@@ -1060,7 +1078,11 @@ for ivar = 1:nvars
     %
     Info.SubFieldDim = setdiff(Info.Dimid,Info.TSMNK);
     if strcmp(Info.Datatype,'char') && ~isempty(Info.SubFieldDim)
-        Info.CharDim = setdiff(Info.Dimid(end),Info.TSMNK);
+        if CHARDIM==1
+            Info.CharDim = setdiff(Info.Dimid(1),Info.TSMNK);
+        else
+            Info.CharDim = setdiff(Info.Dimid(end),Info.TSMNK);
+        end
         Info.SubFieldDim = setdiff(Info.SubFieldDim,Info.CharDim);
     end
     %

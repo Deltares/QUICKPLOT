@@ -1934,7 +1934,12 @@ end
 function S=readsts(FI,Props,t)
 %======================== SPECIFIC CODE =======================================
 stcrd = FI.Dataset(get_varid(Props)+1).Station;
-[Stations, status] = qp_netcdf_get(FI,stcrd-1,FI.Dataset(stcrd).Dimension);
+if FI.Dataset(stcrd).CharDim==FI.Dataset(stcrd).Dimid(1)
+    % PRESERVE_FVD=true
+    [Stations, status] = qp_netcdf_get(FI,stcrd-1,fliplr(FI.Dataset(stcrd).Dimension));
+else
+    [Stations, status] = qp_netcdf_get(FI,stcrd-1,FI.Dataset(stcrd).Dimension);
+end
 if t~=0
     Stations = Stations(t,:);
 end
