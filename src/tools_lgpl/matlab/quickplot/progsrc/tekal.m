@@ -223,8 +223,8 @@ while 1
         if ~ischar(line)
             dim=[];
         else
-            dim=sscanf(line,['%f' space],[1 inf]);
-            if ~isequal(dim,round(dim))
+            [dim,~,err]=sscanf(line,['%f' space],[1 inf]);
+            if ~isequal(dim,round(dim)) || ~isempty(err)
                 if TryToCorrect
                     dim = inf;
                     fprintf(1,'Expecting block size but reading: %s\nInterpreting as missing block size; trying to automatically detect block size.\n',line);
