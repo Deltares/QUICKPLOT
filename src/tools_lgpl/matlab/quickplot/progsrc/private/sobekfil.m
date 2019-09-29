@@ -245,8 +245,11 @@ if isequal(Props.Geom,'SEG-NODE') || isequal(Props.Geom,'SEG-EDGE')
                 iedges = iedges(filter);
                 segNr  = segNr(filter);
             elseif ~isequal(Props.Subs,0)
-                iedges = find(ismember(FI.Branch.ID,DataFile.SegmentName));
-                iedges = iedges(selected);
+                [mem,index] = ismember(FI.Branch.ID,DataFile.SegmentName(selected));
+                selectedEdgeNr = FI.Branch.EdgeNr(mem);
+                iselected = selected(index(mem));
+                [iedges,index] = ismember(FI.Branch.EdgeNr,selectedEdgeNr);
+                selected = iselected(index(iedges));
             else
                 iedges = find(ismember(FI.Branch.Type,Props.DFil));
                 iedges = iedges(selected);
@@ -264,8 +267,7 @@ if isequal(Props.Geom,'SEG-NODE') || isequal(Props.Geom,'SEG-EDGE')
                     Ans.Val = NaN(length(idx{T_}),length(selected));
                     %
                     if strcmp(DataFile.FileType,'DelwaqHIS')
-                        [Member,Idx] = ismember(DataFile.SegmentName,FI.Branch.ID(iedges));
-                        [t,Ans.Val(:,Idx(Member))]=delwaq('read',DataFile,Props.Subs(2),find(Member),idx{T_});
+                        [t,Ans.Val]=delwaq('read',DataFile,Props.Subs(2),selected,idx{T_});
                     else
                         [t,Ans.Val]=delwaq('read',DataFile,Props.Subs(2),segNr,idx{T_});
                     end

@@ -474,6 +474,43 @@ Network.Branch.ITo   =J(nBranches+1:2*nBranches);
 Network.nNodes=length(Network.Node.ID);
 Network.nBranches=nBranches;
 %
+% Identify the branches connected to each node (link = branch)
+%
+Network.Node.FlowLinks = cell(size(Network.Node.ID));
+for i = 1:length(Network.Node.ID)
+    nm = Network.Node.ID{i};
+    links = find(strcmp(nm,Network.Branch.NdFrmID) | strcmp(nm,Network.Branch.NdToID));
+    links(~ismember(Network.Branch.BrObjID(links),{'SBK_CHANNEL', 'SBK_CHANNEL&LAT', 'SBK_DAMBRK', 'SBK_INTCULVERT', 'SBK_INTORIFICE', 'SBK_INTPUMP', 'SBK_INTWEIR', 'SBK_PIPE', 'SBK_PIPE&INFILTRATION', 'SBK_PIPE&RUNOFF'}))=[];
+    Network.Node.FlowLinks{i} = links;
+end
+%
+% Identify the reach number to which each branch belongs (edgenr = reachnr)
+% ... unfortunately the SOBEK BrReach/LinkNr doesn't seem to be correct.
+%
+EdgeNr = (1:length(Network.Branch.BrID))';
+changes = true;
+while changes
+    changes = false;
+    for i = 1:length(Network.Node.ID)
+        switch Network.Node.Type{i}
+            case {'SBK_1D2DBOUNDARY', 'SBK_BOUNDARY', ...
+                    'SBK_CHANNELCONNECTION', 'SBK_CHANNELLINKAGENODE', 'SBK_CHANNEL_CONN&LAT', 'SBK_CHANNEL_STORCONN&LAT', ...
+                    'SBK_CONN&LAT', 'SBK_CONN&LAT&RUNOFF', 'SBK_CONN&MEAS', 'SBK_CONN&RUNOFF', 'SBK_CONNECTIONNODE', ...
+                    'SBK_GRIDPOINT', 'SBK_GRIDPOINTFIXED'}
+                % these nodes separate edges
+            otherwise
+                iBr = Network.Node.FlowLinks{i};
+                eNr = EdgeNr(iBr);
+                eMin = min(eNr);
+                if max(eNr)~=eMin
+                    EdgeNr(iBr) = eMin;
+                    changes = true;
+                end
+        end
+    end
+end
+[~,~,Network.Branch.EdgeNr] = unique(EdgeNr);
+%
 ln=ln+1;
 nReaches = 0;
 while ln<=nLines
