@@ -280,7 +280,8 @@ else
             while length(Msg)>1 && isempty(Msg{end})
                 Msg(end)=[];
             end
-            errors={errors{:} Separator{:} Msg{:}};
+            Msg = strrep(Msg,char(9),'   ');
+            errors=[errors(:)' Separator(:)' Msg(:)'];
             if length(MessageOffset)>MaxNMessages
                 MessageOffset(1)=[];
                 errors(1:(MessageOffset(1)-1))=[];
