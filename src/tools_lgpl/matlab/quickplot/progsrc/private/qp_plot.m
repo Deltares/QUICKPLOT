@@ -309,14 +309,21 @@ if strcmp(Ops.presentationtype,'vector') || ...
         strcmp(Ops.presentationtype,'markers') || ...
         strcmp(Ops.presentationtype,'values')
     % data = geom2pnt(data);
-    if isfield(data,'ValLocation')
-        for i = length(data):-1:1
-            if isfield(data,'SEG')
-                data(i).EdgeNodeConnect = data(i).SEG;
-                data(i).X = data(i).XY(:,1);
-                data(i).Y = data(i).XY(:,2);
-            end
-            if strcmp(data(i).ValLocation,'EDGE')
+    for i = length(data):-1:1
+        if isfield(data,'ValLocation')
+            LOC = data(i).ValLocation;
+        else
+            LOC = 'NODE';
+        end
+        if isfield(data,'SEG')
+            data(i).EdgeNodeConnect = data(i).SEG;
+        end
+        if isfield(data,'XY')
+            data(i).X = data(i).XY(:,1);
+            data(i).Y = data(i).XY(:,2);
+        end
+        switch LOC
+            case 'EDGE'
                 if isfield(data,'Geom') && strcmp(data(i).Geom,'sQUAD')
                     data(i).EdgeNodeConnect = [1:length(data(i).X)-1;2:length(data(i).X)]';
                 end
@@ -324,7 +331,7 @@ if strcmp(Ops.presentationtype,'vector') || ...
                 if isfield(data,'Y')
                     data(i).Y = mean(shaped_subsref(data(i).Y,data(i).EdgeNodeConnect),2);
                 end
-            elseif strcmp(data(i).ValLocation,'FACE')
+            case 'FACE'
                 missing = isnan(data(i).FaceNodeConnect);
                 nNodes = size(missing,2)-sum(missing,2);
                 data(i).FaceNodeConnect(missing) = 1;
@@ -336,9 +343,8 @@ if strcmp(Ops.presentationtype,'vector') || ...
                     data(i).Y(missing) = 0;
                     data(i).Y = sum(data(i).Y,2)./nNodes;
                 end
-            end
-            data(i).Geom = 'sSEG';
         end
+        data(i).Geom = 'sSEG';
     end
     for c = {'FaceNodeConnect','EdgeNodeConnect','ValLocation','SEG','XY'}
         s = c{1};

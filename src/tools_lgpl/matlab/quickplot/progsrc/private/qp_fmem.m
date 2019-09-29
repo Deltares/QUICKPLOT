@@ -422,6 +422,7 @@ switch cmd
                         FI = nc_interpret(FileName,Opt{:});
                         %nc_dump(FileName)
                         FI.FileName = FI.Filename;
+                        FI.Options=1;
                         Tp = try_next;
                     case 'HDF5'
                         FI = hdf5info(FileName);

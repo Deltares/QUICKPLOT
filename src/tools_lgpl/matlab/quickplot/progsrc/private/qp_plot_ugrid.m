@@ -255,7 +255,22 @@ switch NVal
     case {1,5,6}
         switch axestype
             case {'X-Y','Lon-Lat'}
-                hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'UGRID',data,Ops);
+                if isfield(data,'EdgeGeometry') && ~isempty(data.EdgeGeometry)
+                    NP = cellfun(@numel,data.EdgeGeometry.X);
+                    uNP = unique(NP);
+                    for i = length(uNP):-1:1
+                        j = NP==uNP(i);
+                        x = cat(2,data.EdgeGeometry.X{j});
+                        y = cat(2,data.EdgeGeometry.Y{j});
+                        v = data.Val(j);
+                        faces = repmat(numel(x)+1,fliplr(size(x))+[0 1]);
+                        faces(:,1:end-1) = reshape(1:numel(x),size(x))';
+                        v = reshape(repmat(v',uNP(i),1),[numel(x) 1]);
+                        hNew(i) = patch('parent',Parent,'vertices',[x(:) y(:);NaN NaN],'faces',faces,'facevertexcdata',[v;NaN],'edgecolor','flat','facecolor','none','linewidth',Ops.linewidth,'linestyle',Ops.linestyle,'marker',Ops.marker,'markersize',Ops.markersize,'markeredgecolor',Ops.markercolour,'markerfacecolor',Ops.markerfillcolour);
+                    end
+                else
+                    hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'UGRID',data,Ops);
+                end
                 if strcmp(Ops.colourbar,'none')
                     qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
                 else

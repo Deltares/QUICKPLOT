@@ -430,24 +430,93 @@ if XYRead || XYneeded
             end
         end
         if strcmp(mesh_settings{1},'ugrid1d_network')
+            % Ans.X contains mesh node branch index
+            % Ans.Y contains mesh node offset/chainage
+            %
             attcsp = strmatch('coordinate_space',{meshInfo.Attribute.Name});
             csp = strmatch(meshInfo.Attribute(attcsp).Value,{FI.Dataset.Name},'exact');
             [BrX,BrY,xUnit,BrL] = get_edge_geometry(FI,csp);
             %
-            % TODO: get it from start_index of meshInfo.X
             si = strmatch('start_index',{FI.Dataset(meshInfo.X).Attribute.Name});
             if ~isempty(si)
                 start_index = FI.Dataset(meshInfo.X).Attribute(si).Value;
             else
                 start_index = 0;
             end
+            if min(Ans.X)~=start_index
+                % trigger warning ...?
+            end
             Ans.X = Ans.X-start_index+1;
+            %
+            % Get edge_node_connectivity
+            attENC= strmatch('edge_node_connectivity',{meshInfo.Attribute.Name});
+            [e2n, status] = qp_netcdf_get(FI,meshInfo.Attribute(attENC).Value);
+            %
+            % Get mesh_edge branch affinity (read from edge_coordinates or reconstructed)
+            attECO = strmatch('edge_coordinates',{meshInfo.Attribute.Name});
+            if ~isempty(attECO)
+                ecoords = strsplit(meshInfo.Attribute(attECO).Value);
+                for iec = 1:length(ecoords)
+                    i_eBrNr = strmatch(ecoords{iec},{FI.Dataset.Name});
+                    ecAtt = {FI.Dataset(i_eBrNr).Attribute.Name};
+                    if ismember('units',ecAtt) || ismember('standard_name',ecAtt)
+                        % x-coordinate, y-coordinate, offset
+                        continue
+                    end
+                    % branch_id
+                    [eBrNr, status] = qp_netcdf_get(FI,FI.Dataset(i_eBrNr));
+                    break
+                end
+                si = strmatch('start_index',{FI.Dataset(i_eBrNr).Attribute.Name});
+                if ~isempty(si)
+                    start_index = FI.Dataset(i_eBrNr).Attribute(si).Value;
+                else
+                    start_index = 0;
+                end
+                eBrNr = eBrNr-start_index+1;
+            else
+                eBrNr = [];
+            end
+            if isempty(eBrNr)
+                % TODO: create networknode(i)
+                % networknode(i) = N if mesh node i coincides with network node N
+                % networknode(i) = -1 if mesh node i does not coincide with a network node
+                networknode = -ones(size(Ans.X));
+                %
+                % reconstruct mesh_edge branch affinity
+                eBrNr = Ans.X(e2n);
+                for i = 1:size(eBrNr,1)
+                    n1 = networknode(e2n(i,1));
+                    if n1<0
+                        % start node isn't a network node, so edge must
+                        % be on same branch.
+                        % eBrNr(i,1) is correct.
+                        continue
+                    end
+                    n2 = networknode(e2n(i,2));
+                    if n2<0
+                        % end node isn't a network node, so edge must
+                        % be on same branch.
+                        eBrNr(i,1) = eBrNr(i,2);
+                        continue
+                    end
+                    % both start and end node of edge match a network node.
+                    % identify the branches between the network nodes.
+                    %
+                    if 1
+                        % if one branch, select that one.
+                    else
+                        % if multiple branches, select one and give warning.
+                    end
+                end
+                eBrNr = eBrNr(:,1);
+            end
             %
             if ischar(xUnit)
                 Ans.XUnits = xUnit;
                 Ans.YUnits = xUnit;
             end
-            [Ans.X,Ans.Y] = branch2xy(BrX,BrY,xUnit,BrL,Ans.X,Ans.Y);
+            [Ans.X,Ans.Y,Ans.EdgeGeometry.X,Ans.EdgeGeometry.Y] = branch2xy(BrX,BrY,xUnit,BrL,Ans.X,Ans.Y,eBrNr,e2n);
         end
         %
         if isempty(meshInfo.Attribute)
@@ -1994,7 +2063,9 @@ szZData(hdims) = szFld(hdims);
 
 
 % -----------------------------------------------------------------------------
-function [X,Y] = branch2xy(BrX,BrY,xUnit,BrL,BrNr,BrOffset)
+function [X,Y,EdgeX,EdgeY] = branch2xy(BrX,BrY,xUnit,BrL,BrNr,BrOffset,eBrNr,EdgeNode)
+EdgeX = cell(size(eBrNr));
+EdgeY = EdgeX;
 X = zeros(size(BrNr));
 Y = X;
 if strcmp(xUnit,'deg')
@@ -2002,12 +2073,13 @@ if strcmp(xUnit,'deg')
 else
     cUnit = {};
 end
-uBrNr = unique(BrNr);
+uBrNr = unique(eBrNr);
 for i = 1:length(uBrNr)
     bN = uBrNr(i);
     bX = BrX{bN};
     bY = BrY{bN};
     bS = pathdistance(bX,bY,cUnit{:});
+    %
     for j = find(BrNr==bN)'
         s  = (BrOffset(j)/BrL(bN))*bS(end);
         if s>bS(end)
@@ -2018,6 +2090,45 @@ for i = 1:length(uBrNr)
         end
         X(j) = x;
         Y(j) = y;
+    end
+    %
+    for j = find(eBrNr==bN)'
+        n = EdgeNode(j,:);
+        nBranches = BrNr(n);
+        if all(nBranches==bN)
+            % both nodes on this branch, select the segment
+            s  = (sort(BrOffset(n))/BrL(bN))*bS(end);
+            I = bS>s(1) & bS<s(2);
+            x = interp1(bS,bX,s);
+            y = interp1(bS,bY,s);
+            EdgeX{j} = [x(1);bX(I);x(2)];
+            EdgeY{j} = [y(1);bY(I);y(2)];
+        elseif all(nBranches~=bN)
+            % both nodes on other branches, select the whole branch
+            EdgeX{j} = bX;
+            EdgeY{j} = bY;
+        elseif nBranches(1)==bN
+            % second node on other branch ...
+            % assume we need the end part of the branch
+            n = n(1);
+            s  = (BrOffset(n)/BrL(bN))*bS(end);
+            I = bS>s;
+            x = interp1(bS,bX,s);
+            y = interp1(bS,bY,s);
+            EdgeX{j} = [x;bX(I)];
+            EdgeY{j} = [y;bY(I)];
+        else % nBranches(2)==bN
+            % first node on other branch ...
+            % assume we need the beginning of the branch
+            n = n(2);
+            s  = (BrOffset(n)/BrL(bN))*bS(end);
+            I = bS<s;
+            x = interp1(bS,bX,s);
+            y = interp1(bS,bY,s);
+            EdgeX{j} = [bX(I);x];
+            EdgeY{j} = [bY(I);y];
+            % first node on other branch ...
+        end
     end
 end
 % -----------------------------------------------------------------------------
@@ -2097,4 +2208,102 @@ if nargout>3
             BrL(i) = brl(end);
         end
     end
+end
+
+
+% -----------------------------------------------------------------------------
+function [NewFI,cmdargs]=options(FI,mfig,cmd,varargin)
+T_=1; ST_=2; M_=3; N_=4; K_=5;
+%======================== SPECIFIC CODE =======================================
+Inactive=get(0,'defaultuicontrolbackground');
+Active=[1 1 1];
+NewFI=FI;
+cmd=lower(cmd);
+cmdargs={};
+switch cmd
+    case 'initialize'
+        optfig(mfig);
+        set(findobj(mfig,'tag','ncdump'),'enable','on')
+        set(findobj(mfig,'tag','ncdumpto=?'),'enable','on','backgroundcolor',Active)
+    case 'ncdump'
+        out = get(findobj(mfig,'tag','ncdumpto=?'),'value');
+        switch out
+            case 1
+                [f,p] = uiputfile('*.ncdump','Specify Dump File');
+                if ischar(f)
+                    fid = fopen([p,f],'w');
+                    nc_dump(FI.FileName,fid)
+                    fclose(fid);
+                end
+            case {2,3}
+                f = tempname;
+                fid = fopen(f,'w');
+                nc_dump(FI.FileName,fid);
+                fclose(fid);
+                C = getfile(f);
+                delete(f);
+                if out==2
+                    clipboard('copy',sprintf('%s\n',C{:}));
+                else
+                    C = strrep(C,sprintf('\t'),'   ');
+                    C(cellfun(@isempty,C)) = {' '};
+                    ui_message('message',C);
+                end
+        end
+    otherwise
+        error(['Unknown option command: ',cmd])
+end
+% -----------------------------------------------------------------------------
+
+% -----------------------------------------------------------------------------
+function optfig(h0)
+Inactive=get(0,'defaultuicontrolbackground');
+FigPos=get(h0,'position');
+FigPos(3:4) = getappdata(h0,'DefaultFileOptionsSize');
+set(h0,'position',FigPos)
+
+voffset=FigPos(4)-30;
+uicontrol('Parent',h0, ...
+    'Style','pushbutton', ...
+    'BackgroundColor',Inactive, ...
+    'Callback','d3d_qp fileoptions ncdump', ...
+    'Position',[11 voffset-3 140 24], ...
+    'String','NetCDF Dump to', ...
+    'Horizontalalignment','left', ...
+    'Enable','off', ...
+    'Tag','ncdump');
+uicontrol('Parent',h0, ...
+    'Style','popupmenu', ...
+    'BackgroundColor',Inactive, ...
+    'Position',[161 voffset 170 20], ...
+    'String',{'File','Clipboard','Message Window'}, ...
+    'Enable','off', ...
+    'Tag','ncdumpto=?');
+% -----------------------------------------------------------------------------
+
+function C = getfile(file)
+if ischar(file)
+    localfopen = true;
+    fid = fopen(file,'r');
+else
+    localfopen = false;
+    fid = file;
+end
+C = cell(1000,1);
+i = 0;
+while 1
+    L = fgetl(fid);
+    if ischar(L)
+        i = i+1;
+        if i>length(C)
+            C{2*i} = [];
+        end
+        C{i} = L;
+    else
+        break
+    end
+end
+C = C(1:i);
+if localfopen
+    fclose(fid);
 end

@@ -1298,20 +1298,37 @@ Info.Coordinates = node_coords;
 %
 nd = strmatch('node_dimension',Attribs,'exact');
 if ~isempty(nd)
-    node_dim = Info.Attribute(nd).Value;
-elseif ~isempty(node_coords)
+    set_node_dim = Info.Attribute(nd).Value;
+else
+    set_node_dim = '';
+end    
+if ~isempty(node_coords)
     ndc = find(strcmp(node_coords{1},varNames));
     node_dim = nc.Dataset(ndc).Dimension{1};
 else
     node_dim = '';
+end
+if ~isempty(set_node_dim)
+    id = strmatch(set_node_dim,dimNames,'exact');
+    if isempty(id)
+        ERR = 'Attribute node_dimension of UGRID mesh %s points to ''%s''. This is not a NetCDF dimension in the file. ';
+        if isempty(node_dim)
+            ui_message('error',[ERR 'No alternative found.'],Info.Name,set_node_dim)
+        else
+            ui_message('error',[ERR 'Using ''%s'' instead.'],Info.Name,set_node_dim,node_dim)
+        end
+    end
 end
 %
 ed  = strmatch('edge_dimension',Attribs,'exact');
 ce  = strmatch('edge_coordinates',Attribs,'exact');
 enc = strmatch('edge_node_connectivity',Attribs,'exact');
 if ~isempty(ed)
-    edge_dim = Info.Attribute(ed).Value;
-elseif ~isempty(ce)
+    set_edge_dim = Info.Attribute(ed).Value;
+else
+    set_edge_dim = '';
+end
+if ~isempty(ce)
     edge_coords = multiline(Info.Attribute(ce).Value,' ','cellrow');
     edc = find(strcmp(edge_coords{1},varNames));
     edge_dim = nc.Dataset(edc).Dimension{1};
@@ -1327,13 +1344,27 @@ elseif ~isempty(enc)
 else
     edge_dim = '';
 end
+if ~isempty(set_edge_dim)
+    id = strmatch(set_edge_dim,dimNames,'exact');
+    if isempty(id)
+        ERR = 'Attribute edge_dimension of UGRID mesh %s points to ''%s''. This is not a NetCDF dimension in the file. ';
+        if isempty(edge_dim)
+            ui_message('error',[ERR 'No alternative found.'],Info.Name,set_edge_dim)
+        else
+            ui_message('error',[ERR 'Using ''%s'' instead.'],Info.Name,set_edge_dim,edge_dim)
+        end
+    end
+end
 %
 fd  = strmatch('face_dimension',Attribs,'exact');
 cf  = strmatch('face_coordinates',Attribs,'exact');
 fnc = strmatch('face_node_connectivity',Attribs,'exact');
 if ~isempty(fd)
-    face_dim = Info.Attribute(fd).Value;
-elseif ~isempty(cf)
+    set_face_dim = Info.Attribute(fd).Value;
+else
+    set_face_dim = '';
+end
+if ~isempty(cf)
     face_coords = multiline(Info.Attribute(cf).Value,' ','cellrow');
     fcc = find(strcmp(face_coords{1},varNames));
     face_dim = nc.Dataset(fcc).Dimension{1};
@@ -1351,6 +1382,17 @@ else
         ui_message('error','No face_node_connectivity specified for mesh topology %s.',Info.Name)
     end
     face_dim = '';
+end
+if ~isempty(set_face_dim)
+    id = strmatch(set_face_dim,dimNames,'exact');
+    if isempty(id)
+        ERR = 'Attribute face_dimension of UGRID mesh %s points to ''%s''. This is not a NetCDF dimension in the file. ';
+        if isempty(face_dim)
+            ui_message('error',[ERR 'No alternative found.'],Info.Name,set_face_dim)
+        else
+            ui_message('error',[ERR 'Using ''%s'' instead.'],Info.Name,set_face_dim,face_dim)
+        end
+    end
 end
 %
 if tpd<0
@@ -1392,29 +1434,19 @@ end
 %
 Info.Mesh = {ugrid tpd ivar -1 node_dim edge_dim face_dim}; % vol_dim
 %
-id = strmatch(node_dim,dimNames,'exact');
-if isempty(id)
-    ui_message('error','The node dimension ''%s'' of UGRID mesh %s does not exist as NetCDF dimension in the file.',face_dim,Info.Name)
-else
+if ~isempty(node_dim)
+    id = strmatch(node_dim,dimNames,'exact');
     nc.Dimension(id).Type = 'ugrid_node';
 end
 %
 if ~isempty(edge_dim)
     id = strmatch(edge_dim,dimNames,'exact');
-    if isempty(id)
-        ui_message('error','The edge dimension ''%s'' of UGRID mesh %s does not exist as NetCDF dimension in the file.',face_dim,Info.Name)
-    else
-        nc.Dimension(id).Type = 'ugrid_edge';
-    end
+    nc.Dimension(id).Type = 'ugrid_edge';
 end
 %
 if ~isempty(face_dim)
     id = strmatch(face_dim,dimNames,'exact');
-    if isempty(id)
-        ui_message('error','The face dimension ''%s'' of UGRID mesh %s does not exist as NetCDF dimension in the file.',face_dim,Info.Name)
-    else
-        nc.Dimension(id).Type = 'ugrid_face';
-    end
+    nc.Dimension(id).Type = 'ugrid_face';
 end
 if nargout<2
     nc.Dataset(ivar) = Info;
