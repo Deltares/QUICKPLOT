@@ -106,6 +106,9 @@ fstrrep('d3d_qp.m','<VERSION>',qpversion)
 fstrrep('d3d_qp.m','<CREATIONDATE>',TStr)
 fstrrep('wl_identification.c','<VERSION>',qpversion)
 fstrrep('wl_identification.c','<CREATIONDATE>',TStr)
+if ~d3d_qp('version',qpversion,TStr)
+    error('Unable to write correct d3d_qp.version file.')
+end
 g = which('-all','gscript');
 if ~isempty(g)
     copyfile(g{1},'.')
