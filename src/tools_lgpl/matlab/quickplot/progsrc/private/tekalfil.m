@@ -217,7 +217,28 @@ switch FI.FileType
             end
             Data = cat(1,Data{:});
         elseif isfield(FI,'combinelines') && FI.combinelines % LDB
-            Data=tekal('read',FI,0);
+            switch Props.Name
+                case 'lines'
+                    Data=tekal('read',FI,idx{M_});
+                    already_selected = 1;
+                case 'labels'
+                    Data=tekal('read',FI,idx{M_});
+                    if iscell(Data)
+                        for i = 1:numel(Data)
+                            d = Data{i};
+                            j = find(d(:,1)~=999.999 | d(:,2)~=999.999);
+                            Data{i} = d(j(1),:);
+                        end
+                        Data=cat(1,Data{:});
+                    else
+                        j = find(Data(:,1)~=999.999 | Data(:,2)~=999.999);
+                        Data = Data(j(1),:);
+                    end
+                    val1 = {FI.Field(idx{M_}).Name};
+                    already_selected = 1;
+                otherwise
+                    Data=tekal('read',FI,0);
+            end
             if iscell(Data) % if there is more than one block
                 for i=1:length(Data)-1
                     Data{i}(end+1,:)=NaN;
@@ -238,7 +259,15 @@ switch FI.FileType
             end
         end
         if strcmp(Props.Geom,'POLYL')
-            Data(Data(:,1)==999.999 & Data(:,2)==999.999,:)=NaN;
+            if iscell(Data)
+                for i = 1:numel(Data)
+                    d = Data{i};
+                    d(d(:,1)==999.999 & d(:,2)==999.999,:) = NaN;
+                    Data{i} = d;
+                end
+            else
+                Data(Data(:,1)==999.999 & Data(:,2)==999.999,:)=NaN;
+            end
         end
     case 'AutoCAD DXF'
         Data=FI.Lines(1:2,:)';
@@ -576,17 +605,21 @@ switch FI.FileType
         elseif isfield(FI,'combinelines') && FI.combinelines
             if FI.Field(1).Size(2)==3 % pliz-file
                 DataProps={'line'              'POLYL' 'xy'    [0 0 1 0 0]   0           0       0       0       1          []      {}
+                           'lines'             'POLYL' 'xy'    [0 0 1 0 0]   0           0       0       0       1          []      {}
+                           'labels'            'PNT'   'xy'    [0 0 1 0 0]   0           4       0       0       1          []      {}
                            'column 3'          'POLYL' 'xy'    [0 0 1 0 0]   0           1       0       0       0          []      {}  };
                 if ~isempty(FI.Field(1).ColLabels{3})
-                    DataProps{2,1} = FI.Field(1).ColLabels{3};
+                    DataProps{4,1} = FI.Field(1).ColLabels{3};
                 else
                     [p,f,e]=fileparts(FI.FileName);
                     if strcmpi(e,'.pliz')
-                        DataProps{2,1} = 'elevation';
+                        DataProps{4,1} = 'elevation';
                     end
                 end
             else
-                DataProps={'line'              'POLYL' 'xy'    [0 0 1 0 0]   0           0       0       0       1          []      {}  };
+                DataProps={'line'              'POLYL' 'xy'    [0 0 1 0 0]   0           0       0       0       1          []      {}
+                           'lines'             'POLYL' 'xy'    [0 0 1 0 0]   0           0       0       0       1          []      {}
+                           'labels'            'PNT'   'xy'    [0 0 1 0 0]   0           4       0       0       1          []      {}  };
             end
         else
             [p,f,e]=fileparts(FI.FileName);
@@ -922,8 +955,13 @@ switch FI.FileType
         if isfield(FI,'plotonpoly')
             sz(M_)=FI.Field.Size(1);
         elseif isfield(FI,'combinelines') && FI.combinelines
-            szi=cat(1,FI.Field.Size);
-            sz(M_)=sum(szi(:,1))+length(FI.Field)-1;
+            switch Props.Name
+                case {'lines','labels'}
+                    sz(M_) = length(FI.Field);
+                otherwise
+                    szi=cat(1,FI.Field.Size);
+                    sz(M_)=sum(szi(:,1))+length(FI.Field)-1;
+            end
         elseif strcmp(FI.Field(blck).DataTp,'annotation')
             if Props.DimFlag(ST_)
                 sz(ST_)=FI.Field(blck).Size(1);
