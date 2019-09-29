@@ -364,7 +364,8 @@ switch FI.FileType(9:end)
                 Ans.X(1:nM,1:nN) = FI.grd.X(idx{M_},idx{N_});
                 Ans.Y(1:nM,1:nN) = FI.grd.Y(idx{M_},idx{N_});
             case 'bed levels'
-                F = FI.grd;
+                F.X = FI.grd.X;
+                F.Y = FI.grd.Y;
                 F.X(end+1,:) = NaN;
                 F.Y(end+1,:) = NaN;
                 F.X(:,end+1) = NaN;
@@ -447,14 +448,37 @@ switch FI.FileType(9:end)
                 Ans = netcdffil(FI.mesh.nc_file,idom,FI.mesh.quant,'grid',idx{M_});
                 Ans.Val = repmat(FI.BedLevel,size(Ans.X));
             case 'bed level samples'
-                Ans.XY = FI.BedLevel(idx{M_},1:2);
+                Ans.XY  = FI.BedLevel(idx{M_},1:2);
                 Ans.Val = FI.BedLevel(idx{M_},3);
             case 'observation points'
-                Ans.XY = FI.Obs{1}(idx{M_},1:2);
-                Ans.Val = FI.Obs{2}(idx{M_});
+                Ans.XY  = zeros(sz(M_),2);
+                Ans.Val = cell(sz(M_),1);
+                offset = 0;
+                for i = 1:length(FI.Obs)
+                    % switch file type
+                    nobj = size(FI.Obs{i}{1},1);
+                    Mask = idx{M_}>offset & idx{M_}<=offset+nobj;
+                    if any(Mask)
+                        iObj = idx{M_}(Mask)-offset;
+                        Ans.XY(Mask,:) = FI.Obs{i}{1}(iObj,1:2);
+                        Ans.Val(Mask)  = FI.Obs{i}{2}(iObj);
+                    end
+                    offset = offset+nobj;
+                end
             case 'observation cross sections'
-                Ans.XY = {FI.Crs.Field(idx{M_}).Data};
-                Ans.Val = {FI.Crs.Field(idx{M_}).Name};
+                Ans.XY  = cell(sz(M_),1);
+                Ans.Val = cell(sz(M_),1);
+                offset = 0;
+                for i = 1:length(FI.Crs)
+                    % switch file type
+                    nobj = length(FI.Crs{i}.Field);
+                    Mask = idx{M_}>offset & idx{M_}<=offset+nobj;
+                    if any(Mask)
+                        iObj = idx{M_}(Mask)-offset;
+                        Ans.XY(Mask)  = {FI.Crs{i}.Field(iObj).Data};
+                        Ans.Val(Mask) = {FI.Crs{i}.Field(iObj).Name};
+                    end
+                end
             otherwise
                 if ~isempty(strfind(Props.Name,'open boundaries'))
                     ibtp = strcmp(FI.ExtForceNew.Bnd.Types,strtok(Props.Name));
@@ -569,7 +593,7 @@ switch FI.FileType
         % CrossSection types have been copied from their definition records
         % to the location record in MDF.
         if isfield(FI,'crsLoc')
-            CT=inifile('getstringi',FI.crsLoc,'CrossSection','type');
+            CT=inifile('cgetstringi',FI.crsLoc,'CrossSection','type');
             uCT=unique(CT);
         else
             uCT = {};
@@ -578,7 +602,7 @@ switch FI.FileType
         hasCxyz = any(strcmp('xyz',uCT));
         %
         try
-            LAT=inifile('getstringi',FI.latLoc,'LateralDischarge','id');
+            LAT=inifile('cgetstringi',FI.latLoc,'LateralDischarge','id');
             hasLAT=1;
         catch
             hasLAT=0;
@@ -1112,9 +1136,19 @@ switch FI.FileType
             case 'bed level samples'
                 sz(M_) = size(FI.BedLevel,1);
             case 'observation points'
-                sz(M_) = size(FI.Obs{1},1);
+                szM = 0;
+                for i = 1:length(FI.Obs)
+                    % switch based ob Obs file type
+                    szM = szM + size(FI.Obs{i}{1},1);
+                end
+                sz(M_) = szM;
             case 'observation cross sections'
-                sz(M_) = length(FI.Crs.Field);
+                szM = 0;
+                for i = 1:length(FI.Crs)
+                    % switch based ob Obs file type
+                    szM = szM + length(FI.Crs{i}.Field);
+                end
+                sz(M_) = szM;
             otherwise
                 if ~isempty(strfind(Props.Name,'open boundaries'))
                     ibtp = strcmp(FI.ExtForceNew.Bnd.Types,strtok(Props.Name));

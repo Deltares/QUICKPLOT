@@ -591,7 +591,13 @@ master = inifile('open',filename);
 master_path = fileparts(filename);
 %
 UNSPECIFIED = 'UNSPECIFIED';
-Program = propget(master,'model','Program',UNSPECIFIED);
+block = 'model';
+Program = propget(master,block,'Program',UNSPECIFIED);
+if isequal(Program,UNSPECIFIED)
+    block = 'general';
+    Program = propget(master,block,'Program',UNSPECIFIED);
+end
+%
 if isequal(Program,UNSPECIFIED)
     if inifile('existsi',master,'WaveFileInformation')
         MFile.FileType = 'Delft3D D-Wave';
@@ -599,6 +605,16 @@ if isequal(Program,UNSPECIFIED)
         MFile = mdwread(MFile,master_path);
     elseif inifile('existsi',master,'General','fileType')
         fileType = propget(master,'General','fileType');
+        fversion = inifile('getstringi',master,'General','fileVersion','');
+        if isempty(fversion)
+            mversion = inifile('getstringi',master,'General','majorVersion','');
+            if isempty(mversion)
+                fversion = '1.0';
+            else
+                iversion = inifile('getstringi',master,'General','minorVeriosn','');
+                fversion = [mversion '.' iversion];
+            end
+        end
         switch fileType
             case 'modelDef'
                 MFile.FileType = 'Delft3D D-Flow1D';
@@ -626,6 +642,10 @@ if isequal(Program,UNSPECIFIED)
                 Domain.FileType = 'Delft3D 1D2D mapping';
                 Domain.mapping = inifile('open',relpath(master_path,mappingFile));
                 MFile.Domains(end+1,:) = {'1D2D','1D2Dmapping',Domain};
+            otherwise
+                MFile.FileType = fileType;
+                MFile.FileVersion = fversion;
+                MFile.file = master;
         end
     elseif inifile('existsi',master,'','MNKmax')
         MFile.FileType = 'Delft3D D-Flow2D3D';
@@ -639,6 +659,7 @@ else
         case 'D-Flow FM'
             MFile.FileType = 'Delft3D D-Flow FM';
             MFile.mdu = master;
+            MFile.general = block;
             MFile = mduread(MFile,master_path);
         otherwise
             error('Unknown program type %s in %s',Program,filename)
@@ -715,8 +736,8 @@ CT=inifile('geti',MF.crsDef,'Definition','type');
 if ~iscell(CT)
     CT = {CT};
 end
-CID=inifile('getstringi',MF.crsDef,'Definition','id');
-CDF=inifile('getstringi',MF.crsLoc,'CrossSection','definition');
+CID=inifile('cgetstringi',MF.crsDef,'Definition','id');
+CDF=inifile('cgetstringi',MF.crsLoc,'CrossSection','definition');
 [lDF,iDF]=ismember(CDF,CID);
 if ~all(lDF)
     missingDF = unique(CDF(~lDF));
@@ -850,158 +871,187 @@ for i = 1:size(attfiles,1)
         filename = propget(MF.mdu,grp,fld,'');
     end
     if ~isempty(filename)
-        filename = relpath(md_path,filename);
-        switch key
-            case 'BedLevel'
-                F = samples('read',filename);
-            case {'Mor','Sed'}
-                F = inifile('open',filename);
-            case 'Crs'
-                F = tekal('open',filename,'loaddata');
-            case 'Obs'
-                F = samples('read',filename);
-            case 'Structure'
-                F = inifile('open',filename);
-            case 'ExtForce'
-                ext_path = fileparts(filename);
-                %
-                F1 = inifile('open',filename); % open external forcings file as ini-file
-                K1 = inifile('keywords',F1,1); % keywords of first (and only) section
-                nK = length(K1);
-                Ks = false(1,nK);
-                for k = 1:nK
-                    if isempty(K1{k}) % no =-sign in line
-                        continue
-                    elseif K1{k}(1)=='*' % comment line
-                        continue
-                    else
-                        Ks(k) = true;
+        filenames = strsplit(filename,';');
+        Files = [];
+        for ifile = length(filenames):-1:1
+            filename = relpath(md_path,filenames{ifile});
+            switch key
+                case 'BedLevel'
+                    F = samples('read',filename);
+                case {'Mor','Sed'}
+                    F = inifile('open',filename);
+                case 'Crs'
+                    try
+                        F = tekal('open',filename,'loaddata');
+                    catch
+                        F = inifile('open',filename);
                     end
-                end
-                K1 = K1(Ks);
-                nQ = sum(strcmpi(K1,'quantity'));
-                F = [];
-                %
-                Ks = find(Ks);
-                q = 0;
-                F(nQ).Quantity = '';
-                for k = 1:length(K1)
-                    val = inifile('get',F1,1,Ks(k));
-                    switch lower(K1{k})
-                        case 'quantity'
-                            q = q+1;
-                            F(q).Quantity = val;
-                        case 'filename'
-                            F(q).FileName = relpath(ext_path,val);
-                        case 'filetype'
-                            if isscalar(val) && val>=1 && val<=12
-                                FileTypeList = {'uniform','unimagdir','svwp','arcinfo','spiderweb','curvi','triangulation','triangulation_magdir','polyline','inside_polygon','ncgrid','ncflow'};
-                                val = FileTypeList{val};
-                            end
-                            F(q).FileType = val;
-                        case 'method'
-                            if isscalar(val) && val>=0 && val<=9
-                                MethodList = {'provider','intp_space_and_time','intp_space_then_intp_time','save_weights','spatial_inside_polygon','spatial_triangulation','spatial_averaging','spatial_index_triangulation','spatial_smoothing','spatial_internal_diffusion'};
-                                val = MethodList{val+1};
-                            end
-                            F(q).Method = val;
-                        case 'operand'
-                            switch lower(val)
-                                case 'o'
-                                    val = 'override';
-                                case '+'
-                                    val = 'add';
-                                case '*'
-                                    val = 'multiply';
-                                case 'a'
-                                    val = 'apply_when_undefined';
-                            end
-                            F(q).Operand = val;
-                        case 'value'
-                            F(q).Value = val;
-                        case 'factor'
-                            F(q).Value = val;
-                        otherwise
-                            % unknown keyword - skip it or warn?
+                case 'Obs'
+                    try
+                        F = samples('read',filename);
+                    catch
+                        F = inifile('open',filename);
                     end
-                end
-                %
-                for q = 1:length(F)
-                    switch F(q).FileType
-                        case 'polyline'
-                            % ... read pli with optional 3rd column ...
-                    end
-                end
-            case 'ExtForceNew'
-                F = [];
-                F.File = inifile('open',filename);
-                ext_path = fileparts(filename);
-                if inifile('exists',F.File,'boundary')>0
-                    BndTypes = inifile('cgetstring',F.File,'boundary','quantity');
-                    BndLocs  = inifile('cgetstring',F.File,'boundary','locationfile');
-                    BndForce = inifile('cgetstring',F.File,'boundary','forcingfile');
-                    uBndTypes = unique(BndTypes);
-                    F.Bnd.Types = uBndTypes;
-                    BndInd = cellfun(@(f)find(strcmp(f,BndTypes)),F.Bnd.Types,'uniformoutput',false);
+                case 'Structure'
+                    F = inifile('open',filename);
+                case 'ExtForce'
+                    ext_path = fileparts(filename);
                     %
-                    [BndLocs,~,ic] = unique(BndLocs);
-                    for iBL = length(BndLocs):-1:1
-                        bndfilename = relpath(ext_path,BndLocs{iBL});
-                        F.BndLoc.Files{iBL} = tekal('open',bndfilename,'loaddata');
-                        [p,BndLocs{iBL}] = fileparts(BndLocs{iBL});
-                    end
-                    F.BndLoc.Names = BndLocs;
-                    BndLocs = BndLocs(ic);
-                    F.Bnd.Locs = cellfun(@(f)BndLocs(f),BndInd,'uniformoutput',false);
-                    %
-                    [uBndForce,~,ic] = unique(BndForce);
-                    for iBF = length(uBndForce):-1:1
-                        bndfilename = uBndForce{iBF};
-                        if strcmp(bndfilename,'REALTIME')
-                            % REALTIME in memory data exchange
-                            F.BndForce.Files{iBF} = 'REALTIME';
+                    F1 = inifile('open',filename); % open external forcings file as ini-file
+                    K1 = inifile('keywords',F1,1); % keywords of first (and only) section
+                    nK = length(K1);
+                    Ks = false(1,nK);
+                    for k = 1:nK
+                        if isempty(K1{k}) % no =-sign in line
+                            continue
+                        elseif K1{k}(1)=='*' % comment line
+                            continue
                         else
-                            bndfilename = relpath(ext_path,bndfilename);
-                            F.BndForce.Files{iBF} = inifile('open',bndfilename);
+                            Ks(k) = true;
                         end
                     end
-                    BndForce = F.BndForce.Files(ic);
-                    F.Bnd.Forcing = cellfun(@(f)BndForce(f),BndInd,'uniformoutput',false);
+                    K1 = K1(Ks);
+                    nQ = sum(strcmpi(K1,'quantity'));
+                    F = [];
                     %
-                    for iBT = 1:length(F.Bnd.Types)
-                        BTp  = F.Bnd.Types{iBT};
-                        Locs = F.Bnd.Locs{iBT};
-                        for iBL = 1:length(Locs)
-                            Loc = Locs{iBL};
-                            ForceFile = F.Bnd.Forcing{iBT}{iBL};
-                            %fprintf('Searching for %s at %s in %s\n',BTp,Loc,ForceFile.FileName);
-                            if strcmp(ForceFile,'REALTIME')
-                                continue
-                            end
-                            [nForcings,iQ]=inifile('exists',ForceFile,'forcing');
-                            forcesThisLocAndType = false(size(ForceFile.Data,1));
-                            for iFQ = 1:nForcings
-                                Name = inifile('get',ForceFile,iQ(iFQ),'Name');
-                                if ~strncmp(Name,Loc,length(Loc))
-                                    continue
+                    Ks = find(Ks);
+                    q = 0;
+                    F(nQ).Quantity = '';
+                    for k = 1:length(K1)
+                        val = inifile('get',F1,1,Ks(k));
+                        switch lower(K1{k})
+                            case 'quantity'
+                                q = q+1;
+                                F(q).Quantity = val;
+                            case 'filename'
+                                F(q).FileName = relpath(ext_path,val);
+                            case 'filetype'
+                                if isscalar(val) && val>=1 && val<=12
+                                    FileTypeList = {'uniform','unimagdir','svwp','arcinfo','spiderweb','curvi','triangulation','triangulation_magdir','polyline','inside_polygon','ncgrid','ncflow'};
+                                    val = FileTypeList{val};
                                 end
-                                Qnts = inifile('get',ForceFile,iQ(iFQ),'Quantity');
-                                if ~strncmp(Qnts{end},BTp,length(BTp))
-                                    continue
+                                F(q).FileType = val;
+                            case 'method'
+                                if isscalar(val) && val>=0 && val<=9
+                                    MethodList = {'provider','intp_space_and_time','intp_space_then_intp_time','save_weights','spatial_inside_polygon','spatial_triangulation','spatial_averaging','spatial_index_triangulation','spatial_smoothing','spatial_internal_diffusion'};
+                                    val = MethodList{val+1};
                                 end
-                                forcesThisLocAndType(iQ(iFQ)) = true;
-                            end
-                            ForceFile.Data = ForceFile.Data(forcesThisLocAndType,:);
-                            F.Bnd.Forcing{iBT}{iBL} = ForceFile;
+                                F(q).Method = val;
+                            case 'operand'
+                                switch lower(val)
+                                    case 'o'
+                                        val = 'override';
+                                    case '+'
+                                        val = 'add';
+                                    case '*'
+                                        val = 'multiply';
+                                    case 'a'
+                                        val = 'apply_when_undefined';
+                                end
+                                F(q).Operand = val;
+                            case 'value'
+                                F(q).Value = val;
+                            case 'factor'
+                                F(q).Value = val;
+                            otherwise
+                                % unknown keyword - skip it or warn?
                         end
                     end
-                else
-                    F.Bnd.Types = {};
-                end
-            otherwise
-                F = filename;
+                    %
+                    for q = 1:length(F)
+                        switch F(q).FileType
+                            case 'polyline'
+                                % ... read pli with optional 3rd column ...
+                        end
+                    end
+                case 'ExtForceNew'
+                    F = [];
+                    F.File = inifile('open',filename);
+                    ext_path = fileparts(filename);
+                    if inifile('exists',F.File,'boundary')>0
+                        BndQuant = inifile('cgetstring',F.File,'boundary','quantity');
+                        %
+                        [BndLines,pliBnd]  = inifile('cgetstring',F.File,'boundary','locationfile',{});
+                        [BndNodes,nodBnd] = inifile('cgetstring',F.File,'boundary','nodeId',{});
+                        BndLocs = cell(size(BndQuant));
+                        BndType = BndLocs;
+                        BndLocs(pliBnd) = BndLines;
+                        BndType(pliBnd) = {'line'};
+                        BndLocs(nodBnd) = BndNodes;
+                        BndType(nodBnd) = {'node'};
+                        %
+                        BndForce = inifile('cgetstring',F.File,'boundary','forcingfile');
+                        uBndQuant = unique(BndQuant);
+                        F.Bnd.Types = uBndQuant;
+                        BndInd = cellfun(@(f)find(strcmp(f,BndQuant)),F.Bnd.Types,'uniformoutput',false);
+                        %
+                        [BndLocs,~,ic] = unique(BndLocs);
+                        for iBL = length(BndLocs):-1:1
+                            if strcmp(BndType{ic(iBL)},'line')
+                                bndfilename = relpath(ext_path,BndLocs{iBL});
+                                F.BndLoc.Files{iBL} = tekal('open',bndfilename,'loaddata');
+                                [p,BndLocs{iBL}] = fileparts(BndLocs{iBL});
+                            end
+                        end
+                        F.BndLoc.Names = BndLocs;
+                        BndLocs = BndLocs(ic);
+                        F.Bnd.Locs = cellfun(@(f)BndLocs(f),BndInd,'uniformoutput',false);
+                        %
+                        [uBndForce,~,ic] = unique(BndForce);
+                        for iBF = length(uBndForce):-1:1
+                            bndfilename = uBndForce{iBF};
+                            if strcmp(bndfilename,'REALTIME')
+                                % REALTIME in memory data exchange
+                                F.BndForce.Files{iBF} = 'REALTIME';
+                            else
+                                bndfilename = relpath(ext_path,bndfilename);
+                                F.BndForce.Files{iBF} = inifile('open',bndfilename);
+                            end
+                        end
+                        BndForce = F.BndForce.Files(ic);
+                        F.Bnd.Forcing = cellfun(@(f)BndForce(f),BndInd,'uniformoutput',false);
+                        %
+                        for iBT = 1:length(F.Bnd.Types)
+                            BTp  = F.Bnd.Types{iBT};
+                            Locs = F.Bnd.Locs{iBT};
+                            for iBL = 1:length(Locs)
+                                Loc = Locs{iBL};
+                                ForceFile = F.Bnd.Forcing{iBT}{iBL};
+                                %fprintf('Searching for %s at %s in %s\n',BTp,Loc,ForceFile.FileName);
+                                if strcmp(ForceFile,'REALTIME')
+                                    continue
+                                end
+                                [nForcings,iQ]=inifile('exists',ForceFile,'forcing');
+                                forcesThisLocAndType = false(size(ForceFile.Data,1));
+                                for iFQ = 1:nForcings
+                                    Name = inifile('getstringi',ForceFile,iQ(iFQ),'Name');
+                                    if ~strncmp(Name,Loc,length(Loc))
+                                        continue
+                                    end
+                                    Qnts = inifile('cgetstringi',ForceFile,iQ(iFQ),'Quantity');
+                                    if ~strncmp(Qnts{end},BTp,length(BTp))
+                                        continue
+                                    end
+                                    forcesThisLocAndType(iQ(iFQ)) = true;
+                                end
+                                ForceFile.Data = ForceFile.Data(forcesThisLocAndType,:);
+                                F.Bnd.Forcing{iBT}{iBL} = ForceFile;
+                            end
+                        end
+                    else
+                        F.Bnd.Types = {};
+                    end
+                otherwise
+                    F = filename;
+            end
+            switch key
+                case {'Obs','Crs'}
+                    Files{ifile} = F;
+                otherwise
+                    Files = F;
+            end
         end
-        MF.(key) = F;
+        MF.(key) = Files;
     end
 end
 
