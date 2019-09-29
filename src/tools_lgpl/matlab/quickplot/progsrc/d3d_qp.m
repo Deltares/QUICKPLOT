@@ -78,19 +78,23 @@ if ~ischar(cmd)
     return
 end
 cmd=lower(cmd);
-if (nargout~=0)
+if nargout~=0
     if strcmp(cmd,'initialize')
-        outdata=[];
+        outdata = [];
     elseif strcmp(cmd,'iswl')
-        outdata=isequal(qp_settings('WLextensions','off'),'on');
+        outdata = isequal(qp_settings('WLextensions','off'),'on');
         return
     elseif strcmp(cmd,'version')
-        outdata=qpversion;
+        if nargin>1
+            outdata = qp_checkversion(varargin{:});
+        else
+            outdata = qpversion;
+        end
         return
     elseif isstandalone % allow standalone auto start ...
-        outdata=[];
+        outdata = [];
     elseif none(strcmp(cmd,{'loaddata','selectedfigure','selectedaxes','selecteditem','selectfield','selectedfield','qpmanual','matlabmanual'}))
-        error('Too many output arguments.');
+        error('Too many output arguments.')
     end
 end
 
@@ -253,59 +257,7 @@ switch cmd
             mfig=mfig(1);
         elseif isempty(mfig)
             if isstandalone && matlabversionnumber>7.10
-                % Until MATLAB 7.10 (R2010a) it was possible to mix
-                % c/c++ files in with the MATLAB executable. This was
-                % used to include the @(#) identification string in the
-                % executable that could be located using the WHAT tool.
-                % Unfortunately, this option is no longer supported by
-                % later MATLAB versions. For later versions we'll need
-                % to use a separate text file which is easy to mess up
-                % and therefore we only start QuickPlot if that file is
-                % consistent with the actual executable.
-                whatfile = fullfile(qp_basedir('exe'),'d3d_qp.version');
-                Str = ['@(#)Deltares, Delft3D-QUICKPLOT, Version ' qpversionbase(2:end) ', ' qpcreationdate ];
-                fid = fopen(whatfile,'r');
-                if fid>0
-                    % file exists, read its contents
-                    Str2 = fgetl(fid);
-                    if ~ischar(Str2)
-                        Str2 = '';
-                    end
-                    fclose(fid);
-                    if ~isequal(Str,Str2)
-                        % if contents does not match, do as if file
-                        % does not exist (which will try to write it)
-                        fid = -1;
-                    end
-                end
-                if fid<0
-                    % file does not exist, try to write it
-                    fid = fopen(whatfile,'w');
-                    if fid>0
-                        % file can be opened for writing, write string
-                        try
-                            fprintf(fid,'%s\n',Str);
-                            fclose(fid);
-                            % reopen the file to check whether string
-                            % was written correctly
-                            fid = fopen(whatfile,'r');
-                            Str2 = fgetl(fid);
-                            if ~ischar(Str2)
-                                Str2 = '';
-                            end
-                            fclose(fid);
-                        catch
-                            fid = -1;
-                        end
-                    end
-                end
-                if fid>0
-                    if ~isequal(Str,Str2)
-                        ui_message('error',{['First line in ' whatfile],Str2,'doesn''t match the string',Str,'Please correct.'})
-                        return
-                    end
-                else
-                    ui_message('error',{'Copy the following line:',Str,['to ' whatfile ' to start QuickPlot.']})
+                if ~qp_checkversion(qpversionbase,qpcreationdate)
                     return
                 end
             end
@@ -1092,7 +1044,7 @@ switch cmd
                 writelog(logfile,logtype,cmd);
             end
         end
-       
+        
     case 'selectedfield'
         sf   = findobj(mfig,'tag','selectfield');
         ifld = get(sf,'value');
@@ -1520,7 +1472,7 @@ switch cmd
         MW=UD.MainWin;
         MN = get(MW.EditMN,'userdata');
         d3d_qp('editmn*',flipud(MN))
-
+        
     case {'editmn*','editmn','editxy*','editxy','loadxy'}
         MW=UD.MainWin;
         isMN = isequal(cmd(5:6),'mn');
@@ -1823,7 +1775,7 @@ switch cmd
                         writelog(logfile,logtype,cmd,VarName);
                     end
                 end
-
+                
             case 'exportdata'
                 lasterr('');
                 try
@@ -3437,7 +3389,7 @@ switch cmd
                 writelog(logfile,logtype,cmd,lbox);
             end
         end
-
+        
     case 'axeslinewidth'
         ax = qpsa;
         if isempty(cmdargs)
@@ -3453,7 +3405,7 @@ switch cmd
                 writelog(logfile,logtype,cmd,lw);
             end
         end
-
+        
     case 'axesposition'
         ax = qpsa;
         PM = UD.PlotMngr;
@@ -4447,7 +4399,7 @@ switch cmd
             'enforcedtimezone', 'netcdf_use_fillvalue','export_max_ntimes', ...
             'update_showversion'}
         qp_prefs(UD,mfig,cmd,cmdargs);
-
+        
     case {'deltaresweb','deltaresweboss'}
         ops={};
         if matlabversionnumber>5
@@ -4610,4 +4562,66 @@ switch str
         clr=[1 1 1];
     otherwise
         clr=str2vec(str,'%f');
+end
+
+function OK = qp_checkversion(qpversionbase,qpcreationdate)
+% Until MATLAB 7.10 (R2010a) it was possible to mix
+% c/c++ files in with the MATLAB executable. This was
+% used to include the @(#) identification string in the
+% executable that could be located using the WHAT tool.
+% Unfortunately, this option is no longer supported by
+% later MATLAB versions. For later versions we'll need
+% to use a separate text file which is easy to mess up
+% and therefore we only start QuickPlot if that file is
+% consistent with the actual executable.
+OK = true;
+whatfile = fullfile(qp_basedir('exe'),'d3d_qp.version');
+if isequal(qpversionbase(1),'v')
+    qpversion = qpversionbase(2:end);
+else
+    qpversion = qpversionbase;
+end
+Str = ['@(#)Deltares, Delft3D-QUICKPLOT, Version ' qpversion ', ' qpcreationdate ];
+fid = fopen(whatfile,'r');
+if fid>0
+    % file exists, read its contents
+    Str2 = fgetl(fid);
+    if ~ischar(Str2)
+        Str2 = '';
+    end
+    fclose(fid);
+    if ~isequal(Str,Str2)
+        % if contents does not match, do as if file
+        % does not exist (which will try to write it)
+        fid = -1;
+    end
+end
+if fid<0
+    % file does not exist, try to write it
+    fid = fopen(whatfile,'w');
+    if fid>0
+        % file can be opened for writing, write string
+        try
+            fprintf(fid,'%s\n',Str);
+            fclose(fid);
+            % reopen the file to check whether string was written correctly
+            fid = fopen(whatfile,'r');
+            Str2 = fgetl(fid);
+            if ~ischar(Str2)
+                Str2 = '';
+            end
+            fclose(fid);
+        catch
+            fid = -1;
+        end
+    end
+end
+if fid>0
+    if ~isequal(Str,Str2)
+        ui_message('error',{['First line in ' whatfile],Str2,'doesn''t match the string',Str,'Please correct.'})
+        OK = false;
+    end
+else
+    ui_message('error',{'Copy the following line:',Str,['to ' whatfile ' to start QuickPlot.']})
+    OK = false;
 end
