@@ -36,6 +36,7 @@ baseini='validation.ini';
 val_dir = '';
 openlog = true;
 extra_files = {'summary','failed_cases','all_cases'};
+sametype('');
 
 i = 0;
 while i<nargin
@@ -70,7 +71,13 @@ currdir=pwd;
 TC1 = 1;
 includes = {};
 logid1=-1;
+t1=[];
+logid2=[];
 extlog=[];
+FAILED = 'FAILED';
+PASSED = 'PASSED';
+CREATED = 'CREATED';
+NOTAPP = 'N/A';
 switch log_style
     case 'latex'
         Color.Page       = 'white';
@@ -80,12 +87,17 @@ switch log_style
         Color.Success    = 'green!80!black';
         Color.Font       = 'black';
         %
+        FAILED = '\xmark';
+        PASSED = '\cmark';
+        CREATED = '\cmark';
+        NOTAPP = '-';
+        %
         logname='validation_log.tex';
-        sc={['\textcolor{',Color.Failed,'}{Failed}']
-            ['\textcolor{',Color.Success,'}{Successful}']};
-        sc3={['\textcolor{',Color.Failed,'}{Failed}']
-            ['\textcolor{',Color.Success,'}{Successful}']
-            ['\textcolor{',Color.Success,'}{Successful}']};
+        sc={['\textcolor{',Color.Failed,'}{\xmark}']
+            ['\textcolor{',Color.Success,'}{\cmark}']};
+        sc3={['\textcolor{',Color.Failed,'}{\xmark}']
+            ['\textcolor{',Color.Success,'}{\cmark}']
+            ['\textcolor{',Color.Success,'}{\cmark}']};
     otherwise
         Color.Page       = 'FFFFFF';
         Color.Titlebar   = 'BAD4F4';
@@ -104,6 +116,9 @@ end
 AnyFail=0;
 NTested=0;
 NFailed=0;
+NSlower=0;
+TotTimeRef=0;
+TotTime=0;
 fs=filesep;
 sdata=['..',fs,'data',fs];
 sref=['..',fs,'reference',fs];
@@ -230,8 +245,8 @@ try
         frcolor  = Color.Success; 
         lgcolor  = Color.Font;
         result   = '';
-        frresult = 'PASSED';
-        lgresult = 'N/A';
+        frresult = PASSED;
+        lgresult = NOTAPP;
         logid2=[];
         TC2=1;
         Crash = [];
@@ -406,12 +421,12 @@ try
                     end
                     if DiffFound
                         frcolor=Color.Failed;
-                        frresult='FAILED: Data fields differ.';
+                        frresult=[FAILED ': Data fields differ.'];
                         ChkOK=0;
                     end
                 else
                     frcolor=Color.Failed;
-                    frresult='FAILED: Error while reading data.';
+                    frresult=[FAILED ': Error while reading data.'];
                     ChkOK=0;
                 end
                 %
@@ -424,18 +439,18 @@ try
                     P=Props{dmx};
                     for p=1:NP
                         if progressbar((acc_dt+case_dt(i)*(p-1)/NT)/tot_dt,Hpb)<0
-                            write_table2_line(logid2,Color.Table{TC2},'','',''); % at least one line needed in table
+                            write_table2_line(logid2,Color.Table{TC2},'','','',''); % at least one line needed in table
                             write_end_table(logid2,emptyTable2);
                             UserInterrupt=1;
                             error('User interrupt');
                         end
                         if ~strcmp(P(p).Name,'-------')
                             if P(p).NVal<0
-                                write_table2_line(logid2,Color.Table{TC2},P(p).Name,'Check n/a','');
+                                write_table2_line(logid2,Color.Table{TC2},P(p).Name,NOTAPP,'','Check not applicable.');
                                 emptyTable2 = false;
                                 TC2=3-TC2;
                             elseif ~inifile('get',CaseInfo,'datacheck',P(p).Name,datacheck)
-                                write_table2_line(logid2,Color.Table{TC2},P(p).Name,'Skipped','Skipped');
+                                write_table2_line(logid2,Color.Table{TC2},P(p).Name,NOTAPP,NOTAPP,'Check skipped.');
                                 emptyTable2 = false;
                                 TC2=3-TC2;
                             else
@@ -465,19 +480,19 @@ try
                                     subf={length(subfields)};
                                 end
                                 [Chk,Data]=qp_getdata(FI,dm,P(p),'griddata',subf{:},idx{:});
-                                if Chk && isempty(Data)
-                                    write_table2_line(logid2,Color.Table{TC2},P(p).Name,color_write('Failed to get data',Color.Failed),'');
+                                if ~Chk && isempty(Data)
+                                    write_table2_line(logid2,Color.Table{TC2},P(p).Name,color_write(FAILED,Color.Failed),'','Failed to get data');
                                     emptyTable2 = false;
                                     TC2=3-TC2;
                                     Chk = 0;
                                 else
-                                    write_table2_line(logid2,Color.Table{TC2},P(p).Name,sc{Chk+1},[]);
+                                    write_table2_line(logid2,Color.Table{TC2},P(p).Name,sc{Chk+1},[],'');
                                     emptyTable2 = false;
                                     TC2=3-TC2;
                                 end
                                 if ~Chk
                                     frcolor=Color.Failed;
-                                    frresult=sprintf('FAILED: Error retrieving data for ''%s''.',P(p).Name);
+                                    frresult=sprintf('%s: Error retrieving data for ''%s''.',FAILED,P(p).Name);
                                     ChkOK=0;
                                 else
                                     if localexist(RefFile)
@@ -521,7 +536,7 @@ try
                                         end
                                         if DiffFound
                                             localsave(WrkFile,Data,saveops);
-                                            write_table2_line(logid2,[],[],[],1);
+                                            write_table2_line(logid2,[],[],[],1,sc3{2-DiffFound});
                                             emptyTable2 = false;
                                             if ~isempty(addedfields)
                                                 write_log(logid2,'New Fields:');
@@ -534,31 +549,30 @@ try
                                                 end
                                             end
                                             if DiffFound>0
-                                                write_log(logid2,sc{2-DiffFound});
                                                 if ~isempty(addedfields)
-                                                    vardiff(newData,PrevData,logid2,'html','Current Data','Reference Data');
+                                                    vardiff(newData,PrevData,logid2,log_style,'Current Data','Reference Data');
                                                 else
-                                                    vardiff(Data,PrevData,logid2,'html','Current Data','Reference Data');
+                                                    vardiff(Data,PrevData,logid2,log_style,'Current Data','Reference Data');
                                                 end
                                                 frcolor=Color.Failed;
                                             end
-                                            write_table2_line(logid2,[],[],[],2);
+                                            write_table2_line(logid2,[],[],[],2,'');
                                             ChkOK = DiffFound<=0;
                                             if ~ChkOK
-                                                frresult=sprintf('FAILED: Data changed for ''%s''.',P(p).Name);
+                                                frresult=sprintf('%s: Data changed for ''%s''.',FAILED,P(p).Name);
                                             end
                                             localsave([PName,'.mat'],Data,saveops);
                                         else
-                                            write_table2_line(logid2,[],[],[],sc{2-DiffFound});
+                                            write_table2_line(logid2,[],[],[],sc{2-DiffFound},'');
                                             emptyTable2 = false;
                                         end
                                     else
                                         localsave(RefFile,Data,saveops);
-                                        write_table2_line(logid2,[],[],[],'Created');
+                                        write_table2_line(logid2,[],[],[],CREATED,'');
                                         emptyTable2 = false;
-                                        if isequal(frresult,'PASSED')
+                                        if isequal(frresult,PASSED)
                                             frcolor=Color.Font;
-                                            frresult='CREATED';
+                                            frresult=CREATED;
                                         end
                                     end
                                 end
@@ -577,7 +591,7 @@ try
                     write_log(logid2,'No log files to run for validation.');
                 else
                     lgcolor=Color.Success;
-                    lgresult='PASSED';
+                    lgresult=PASSED;
                     for lg=1:NL
                         if progressbar((acc_dt+case_dt(i)*(NP+lg-1)/NT)/tot_dt,Hpb)<0
                             UserInterrupt=1;
@@ -603,7 +617,7 @@ try
                         if isempty(checkfs)
                             write_log(logid2,'No file to check.');
                             lgcolor=Color.Failed;
-                            lgresult=sprintf('FAILED: No check on ''%s''.',logf);
+                            lgresult=sprintf('%s: No check on ''%s''.',FAILED,logf);
                         else
                             %checkf=inifile('get',CaseInfo,'logfilecheck',logf,'');
                             for icheck=1:length(checkfs)
@@ -628,9 +642,9 @@ try
                                 if ~localexist(reffile)
                                     copyfile(checkf,reffile);
                                     write_log(logid2,'reference file created');
-                                    if isequal(lgresult,'PASSED')
+                                    if isequal(lgresult,PASSED)
                                         lgcolor=Color.Font;
-                                        lgresult='CREATED';
+                                        lgresult=CREATED;
                                     end
                                     if showfig
                                         include_figure(logid2,['reference/' checkf]);
@@ -671,7 +685,7 @@ try
                                             include_diff_figures(logid2,{['reference/' checkf],['work/' checkf],diffimg{:}},Color);
                                         end
                                         lgcolor=Color.Failed;
-                                        lgresult='FAILED: Log file results differ.';
+                                        lgresult=[FAILED ': Log file results differ.'];
                                     end
                                 end
                             end
@@ -682,15 +696,15 @@ try
                 end
             else
                 frcolor=Color.Font;
-                frresult='FAILED: case.ini missing.';
+                frresult=[FAILED ': case.ini missing.'];
             end
         catch Crash
             color=Color.Failed;
             AnyFail=1;
             if UserInterrupt
-                result='FAILED: User interrupt.';
+                result=[FAILED ': User interrupt.'];
             else
-                result='FAILED: Validation test crashed - ';
+                result=[FAILED ': Validation test crashed - '];
             end
         end
         d3d_qp('closefile');
@@ -698,7 +712,7 @@ try
             if ~isempty(Crash)
                 write_log(logid2,color_write(protected(Crash.message),Color.Failed,true));
             end
-            [dt2,dt2_str] = write_footer(logid2,d(i).name,Color,t2,dt2_old);
+            [dt2,dt2_str,slower] = write_footer(logid2,d(i).name,Color,t2,dt2_old);
             fclose(logid2);
             logid2=[];
             %
@@ -708,12 +722,20 @@ try
                 fclose(timid);
             end
         elseif ~isempty(Crash)
-            result = [result Crash.message];
-            dt2 = (now-t2)*86400;
+            result  = [result Crash.message];
+            dt2     = (now-t2)*86400;
             dt2_str = duration(dt2);
+            slower  = dt2>dt2_old;
         end
-        CaseFailed = ~isempty(strmatch('FAILED',frresult)) | ~isempty(strmatch('FAILED',lgresult)) | ~isempty(strmatch('FAILED',result));
+        CaseFailed = ~isempty(strmatch(FAILED,frresult)) | ~isempty(strmatch(FAILED,lgresult)) | ~isempty(strmatch(FAILED,result));
         NFailed=NFailed + double(CaseFailed);
+        if isnan(dt2_old)
+            TotTimeRef = TotTimeRef + dt2;
+        else
+            TotTimeRef = TotTimeRef + dt2_old;
+            NSlower = NSlower + slower;
+        end
+        TotTime    = TotTime + dt2;
         AnyFail=AnyFail | CaseFailed;
         if AnyFail && ishandle(Hpb)
             progressbar(Hpb,'color','r')
@@ -750,9 +772,11 @@ if ~isempty(current_procdef)
     qp_settings('delwaq_procdef',current_procdef)
 end
 if logid1>0
-    write_summary(logid1,extlog,NFailed,NTested);
+    write_summary(logid1,extlog,NFailed,NTested,NSlower,TotTimeRef,TotTime);
     write_includes(logid1,includes);
-    write_footer(logid1,'MAIN',Color,t1,NaN);
+    if ~isempty(t1)
+        write_footer(logid1,'MAIN',Color,t1,NaN);
+    end
     for fName = extlog.files
         fclose(extlog.(fName{1}).fid);
     end
@@ -821,20 +845,28 @@ if isstandalone
     stalone=' (standalone)';
 end
 c = clock;
+versionstr = d3d_qp('version'); % returns "source code version" or "vA.B.revsion (64bit)"
+if versionstr(1)=='v'
+    version = sscanf(a,'v%d.%d.%d');
+    revision = version(3);
+    % insert QUICKPLOT revision number into SVN revision string of the report
+    versionstr = sprintf('%d.%d',version(1:2));
+else
+    revision = 999999;
+end
 switch log_style
     case 'latex'
         if strcmp(casename,'MAIN')
             % main document
             fprintf(logid,'%s\n','\documentclass[table]{deltares_manual}');
             fprintf(logid,'%s\n','\usepackage{pdflscape}');
-            versionstr = d3d_qp('version'); % returns "source code version" or "vA.B.revsion (64bit)"
-            if versionstr(1)=='v'
-                version = sscanf(a,'v%d.%d.%d');
-                revision = version(3);
-                % insert QUICKPLOT revision number into SVN revsion string of the report
-                fprintf(logid,'%s%d%s%s%s\n','\svnid{$Id$}');
-                versionstr = sprintf('%d.%d',version(1:2));
-            end
+            fprintf(logid,'%s\n','\usepackage{pifont}% http://ctan.org/pkg/pifont');
+            fprintf(logid,'%s\n','\newcommand{\cmark}{\ding{51}}%');
+            fprintf(logid,'%s\n','\newcommand{\xmark}{\ding{55}}%');
+            % insert QUICKPLOT revision number into SVN revision string of the report
+            fn = fopen(logid);
+            [~,f,e] = fileparts(fn);
+            fprintf(logid,'%s%d%s\n',['\svnid{$Id$}']);
             fprintf(logid,'\n');
             fprintf(logid,'%s\n','\begin{document}');
             fprintf(logid,'%% %s\n','\pagestyle{empty}');
@@ -866,13 +898,18 @@ switch log_style
             end
             fprintf(logid,'%s{%s} %s{Sec:%s}\n','\section',protected(casename),'\label',makelabel(casename));
             fprintf(logid,'\n');
+            fprintf(logid,'\n');
+            if exist('doc/description.tex','file')
+                fprintf(logid,'%s%s%s\n','\input{"',casename,'/doc/description.tex"}');
+                fprintf(logid,'\n');
+            end
         end
     otherwise
         fprintf(logid,'<html>\n<title>Delft3D-QUICKPLOT validation report</title>\n<body bgcolor=%s><font face=arial>\n',Color.Page);
         fprintf(logid,'<table bgcolor=%s><tr><td colspan=2 bgcolor=%s><b>Deltares validation report</b></td></tr>\n<tr><td>Program:</td><td>Delft3D-QUICKPLOT</td></tr>\n', ...
             Color.Table{1},Color.Titlebar);
         fprintf(logid,'<tr bgcolor=%s><td>Version:</td><td>%s%s</td></tr>\n<tr><td>Date:</td><td>%4.4i-%2.2i-%2.2i %2.2i:%2.2i:%02.0f</td></tr>\n',Color.Table{2},d3d_qp('version'),stalone,c);
-        fprintf(logid,'<tr bgcolor=%s><td>MATLAB version:</td><td>%s</td></tr>\n',Color.Table{1},version);
+        fprintf(logid,'<tr bgcolor=%s><td>MATLAB version:</td><td>%s</td></tr>\n',Color.Table{1},versionstr);
         fprintf(logid,'<tr bgcolor=%s><td>Computer type:</td><td>%s</td></tr>\n',Color.Table{2},computer);
         if strcmp(casename,'MAIN')
             fprintf(logid,'<tr bgcolor=%s><td>Case:</td><td>%s</td></tr>\n',Color.Table{1},casename);
@@ -886,7 +923,7 @@ flush(logid)
 t = datenum(c);
 
 function write_table_header(logid,tbl,Color)
-fprintf(logid,'%s\n','\begin{longtable}{|l|l|l|l|l|}');
+fprintf(logid,'%s\n','\begin{longtable}{|p{0.3\linewidth}|p{0.05\linewidth}|p{0.05\linewidth}|p{0.3\linewidth}|p{0.2\linewidth}|}');
 fprintf(logid,'%s\n','\hiderowcolors');
 switch tbl
     case 'failed_cases'
@@ -896,18 +933,18 @@ switch tbl
 end
 fprintf(logid,'%s\n','\showrowcolors');
 fprintf(logid,'%s\n','\hline');
-fprintf(logid,'%s%s%s\n','\rowcolor{',Color.Titlebar,'} \STRUT \textbf{Validation case} & \textbf{File read} & \textbf{Run script} & \textbf{Error message} & \textbf{Timing} \\ [1ex] \hline');
+fprintf(logid,'%s%s%s\n','\rowcolor{',Color.Titlebar,'} \STRUT \textbf{Validation case} & \textbf{Read} & \textbf{Script} & \textbf{Error message} & \textbf{Timing} \\ [1ex] \hline');
 fprintf(logid,'%s\n','\endfirsthead');
 fprintf(logid,'%%\n');
 fprintf(logid,'%s\n','\hiderowcolors');
 fprintf(logid,'%s\n','\multicolumn{5}{c}{{\STRUT \tablename\ \thetable{} -- continued from previous page}} \\ [1ex] \hline');
 fprintf(logid,'%s\n','\showrowcolors');
-fprintf(logid,'%s%s%s\n','\rowcolor{',Color.Titlebar,'} \STRUT \textbf{Validation case} & \textbf{File read} & \textbf{Run script} & \textbf{Error message} & \textbf{Timing} \\ [1ex] \hline');
+fprintf(logid,'%s%s%s\n','\rowcolor{',Color.Titlebar,'} \STRUT \textbf{Validation case} & \textbf{Read} & \textbf{Script} & \textbf{Error message} & \textbf{Timing} \\ [1ex] \hline');
 fprintf(logid,'%s\n','\endhead');
 fprintf(logid,'%%\n');
 fprintf(logid,'%s\n','\hline');
 fprintf(logid,'%s\n','\hiderowcolors');
-fprintf(logid,'%s\n','\multicolumn{5}{r}{{\STRUT \tablename \thetable{} continues on next page}} \\');
+fprintf(logid,'%s\n','\multicolumn{5}{r}{{\STRUT \tablename \thetable{} -- continued on next page}} \\');
 fprintf(logid,'%s\n','\showrowcolors');
 fprintf(logid,'%s\n','\endfoot');
 fprintf(logid,'%%\n');
@@ -978,36 +1015,36 @@ switch log_style
 end
 
 
-function write_table2_line(logid,bgcolor,Name,Read,Compare)
+function write_table2_line(logid,bgcolor,Name,Read,Compare,Message)
 switch log_style
     case 'latex'
         % to set the color of a single row use '\rowcolor{...} '
         if ~ischar(Read)
-            if isequal(Compare,1)
-                fprintf(logid,'');
-            elseif isequal(Compare,2)
+            if isequal(Compare,1) % Compare FAILED ... Message contains "FAILED", actual message will be written by caller
+                fprintf(logid,'%s & ',Message);
+            elseif isequal(Compare,2) % finish the message
                 fprintf(logid,'\\\\\n');
             else
-                fprintf(logid,'%s \\\\\n',Compare);
+                fprintf(logid,'%s & %s\\\\\n',Compare,Message);
             end
         elseif ~ischar(Compare)
             fprintf(logid,'\\STRUT %s & %s & ',protected(Name),Read);
         else
-            fprintf(logid,'\\STRUT %s & %s & %s \\\\\n',protected(Name),Read,Compare);
+            fprintf(logid,'\\STRUT %s & %s & %s & %s\\\\\n',protected(Name),Read,Compare,Message);
         end
     otherwise
         if ~ischar(Read)
-            if isequal(Compare,1)
-                fprintf(logid,'<td>');
-            elseif isequal(Compare,2)
+            if isequal(Compare,1) % Compare FAILED ... Message contains "FAILED", actual message will be written by caller
+                fprintf(logid,'<td>%s</td><td>',Message);
+            elseif isequal(Compare,2) % finish the message
                 fprintf(logid,'</td></tr>\n');
             else
-                fprintf(logid,'<td>%s</td></tr>\n',Compare);
+                fprintf(logid,'<td>%s</td><td>%s</td></tr>\n',Compare,Message);
             end
         elseif ~ischar(Compare)
             fprintf(logid,'<tr bgcolor=%s><td>%s</td><td>%s</td>',bgcolor,Name,Read);
         else
-            fprintf(logid,'<tr bgcolor=%s><td>%s</td><td>%s</td><td>%s</td></tr>\n',bgcolor,Name,Read,Compare);
+            fprintf(logid,'<tr bgcolor=%s><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n',bgcolor,Name,Read,Compare,Message);
         end
 end
 
@@ -1090,7 +1127,7 @@ if ~iscell(message)
 end
 switch log_style
     case 'latex'
-        fprintf(logid,'%s\\\\*\n',message{:});
+        fprintf(logid,'%s\\newline\n',message{:});
     otherwise
         fprintf(logid,'%s<br>\n',message{:});
 end
@@ -1103,9 +1140,9 @@ end
 switch log_style
     case 'latex'
         if bold
-            str = sprintf('\textcolor{%s}{\textbf{%s}}',color,str);
+            str = sprintf('\\textcolor{%s}{\\textbf{%s}}',color,str);
         else
-            str = sprintf('\textcolor{%s}{%s}',color,str);
+            str = sprintf('\\textcolor{%s}{%s}',color,str);
         end
     otherwise
         if bold
@@ -1145,7 +1182,7 @@ switch log_style
         fprintf(logid,'<table bgcolor=%s>\n',Color.Table{1});
         fprintf(logid,['<tr>' repmat(['<td width=300 bgcolor=',Color.Titlebar,'>%s</td>'],1,nfiles) '</tr>\n'],files{:});
         fprintf(logid,['<tr>',repmat('<td><img src=''%s''></td>',1,nfiles),'</tr>\n'],files{:});
-        fprintf(logid,'</table>\n');
+        fprintf(logid,'</table><br>\n');
 end
 
 
@@ -1161,34 +1198,34 @@ end
 function write_begin_table(logid,Color)
 switch log_style
     case 'latex'
-        fprintf(logid,'%s\n','\begin{longtable}{|l|l|l|}');
+        fprintf(logid,'%s\n','\begin{longtable}{|p{0.4\linewidth}|p{0.05\linewidth}|p{0.1\linewidth}|p{0.4\linewidth}|}');
         %fprintf(logid,'%s\n','\hiderowcolors');
         %fprintf(logid,'%s\n','\caption{No caption} \\');
         %fprintf(logid,'%s\n','\showrowcolors');
         fprintf(logid,'%s\n','\hline');
-        fprintf(logid,'%s%s%s\n','\rowcolor{',Color.Titlebar,'} \STRUT \textbf{Data field} & \textbf{Read} & \textbf{Compare} \\ [1ex] \hline');
+        fprintf(logid,'%s%s%s\n','\rowcolor{',Color.Titlebar,'} \STRUT \textbf{Data field} & \textbf{Read} & \textbf{Compare} & \textbf{Error message}\\ [1ex] \hline');
         fprintf(logid,'%s\n','\endfirsthead');
         fprintf(logid,'%%\n');
         fprintf(logid,'%s\n','\hiderowcolors');
         fprintf(logid,'%s\n','\multicolumn{3}{c}{{\STRUT \tablename\ \thetable{} -- continued from previous page}} \\ [1ex] \hline');
         fprintf(logid,'%s\n','\showrowcolors');
-        fprintf(logid,'%s%s%s\n','\rowcolor{',Color.Titlebar,'} \STRUT \textbf{Data field} & \textbf{Read} & \textbf{Compare} \\ [1ex] \hline');
+        fprintf(logid,'%s%s%s\n','\rowcolor{',Color.Titlebar,'} \STRUT \textbf{Data field} & \textbf{Read} & \textbf{Compare} & \textbf{Error message} \\ [1ex] \hline');
         fprintf(logid,'%s\n','\endhead');
         fprintf(logid,'%%\n');
         fprintf(logid,'%s\n','\hline');
         fprintf(logid,'%s\n','\hiderowcolors');
-        fprintf(logid,'%s\n','\multicolumn{3}{r}{{\STRUT \tablename \thetable{} continues on next page}} \\');
+        fprintf(logid,'%s\n','\multicolumn{3}{r}{{\STRUT \tablename \thetable{} -- continued on next page}} \\');
         fprintf(logid,'%s\n','\showrowcolors');
         fprintf(logid,'%s\n','\endfoot');
         fprintf(logid,'%%\n');
         fprintf(logid,'%s\n','\endlastfoot');
     otherwise
-        fprintf(logid,'<table bgcolor=%s><tr><td bgcolor=%s><b>Data field</b></td><td bgcolor=%s><b>Read</b></td><td bgcolor=%s><b>Compare</b></td></tr>\n', ...
-            Color.Table{1},Color.Titlebar,Color.Titlebar,Color.Titlebar);
+        fprintf(logid,'<table bgcolor=%s><tr><td bgcolor=%s><b>Data field</b></td><td bgcolor=%s><b>Read</b></td><td bgcolor=%s><b>Compare</b></td><td bgcolor=%s><b>Error message</b></td></tr>\n', ...
+            Color.Table{1},Color.Titlebar,Color.Titlebar,Color.Titlebar,Color.Titlebar);
 end
 
 
-function write_summary(logid1,extlog,NFailed,NTested)
+function write_summary(logid1,extlog,NFailed,NTested,NSlower,TotTimeRef,TotTime)
 switch log_style
     case 'latex'
         sumid = extlog.summary.fid;
@@ -1206,6 +1243,23 @@ switch log_style
             fprintf(sumid,'All tested cases are reported in Table \\ref{Tab:Summary}.\n');
         else
             fprintf(sumid,'Nothing to report.\n');
+        end
+        %
+        dTTR = duration(TotTimeRef);
+        dTT  = duration(TotTime);
+        if abs(TotTime-TotTimeRef)<0.005*TotTimeRef
+            fprintf(sumid,'The overall time spent on the test cases (%s) is similar to the reference time (%f);',dTT,dTTR);
+        elseif TotTime>TotTimeRef
+            fprintf(sumid,'The overall time spent on the test cases has increased by about %.0f \\%% from %s to %s;',(TotTime/TotTimeRef-1)*100,dTTR,dTT);
+        else
+            fprintf(sumid,'The overall time spent on the test cases has decreased by about %.0f \\%% from %s to %s;',(1-TotTime/TotTimeRef)*100,dTTR,dTT);
+        end
+        if NSlower>0
+            fprintf(sumid,' %i test cases were slower than before, the other %i test cases had similar or better timing than before.\n',NSlower,NTested-NSlower);
+        elseif NSlower==NTested
+            fprintf(sumid,' all test cases had slower timing than before.\n');
+        else
+            fprintf(sumid,' all test cases had similar or better timing than before.\n');
         end
         %
         for fName = extlog.files
@@ -1230,7 +1284,7 @@ switch log_style
         fprintf(logid,'%s\n','[1ex] \hline');
         fprintf(logid,'%s\n','\end{longtable}');
     otherwise
-        fprintf(logid,'</table>\n');
+        fprintf(logid,'</table><br>\n');
 end
 fprintf(logid,'\n');
 
@@ -1248,16 +1302,18 @@ switch log_style
         % no includes needed
 end
 
-function [dt,dt_str] = write_footer(logid,casename,Color,t0,dt_old)
-c = clock;
-dt = (datenum(c)-t0)*86400;
+function [dt,dt_str,slower] = write_footer(logid,casename,Color,t0,dt_old)
+c      = clock;
+dt     = (datenum(c)-t0)*86400;
 dt_str = duration(dt);
+slower = false;
 if isnan(dt_old) || abs(dt-dt_old)<max(0.2,min(dt,dt_old)/30)
-    color = Color.Font;
+    color  = Color.Font;
 elseif dt>dt_old
-    color = Color.Failed;
+    color  = Color.Failed;
+    slower = true;
 else
-    color = Color.Success;
+    color  = Color.Success;
 end
 switch log_style
     case 'latex'
@@ -1284,7 +1340,7 @@ switch log_style
             dt_str = ['<font color=',color,'>',dt_str,'</font> was: ',duration(dt_old)];
         end
         fprintf(logid,'<tr><td>Duration:</td><td>%s</td></tr>\n',dt_str);
-        fprintf(logid,'</table><br>\n');
+        fprintf(logid,'</table>\n');
         fprintf(logid,'</font></body>');
 end
 flush(logid)

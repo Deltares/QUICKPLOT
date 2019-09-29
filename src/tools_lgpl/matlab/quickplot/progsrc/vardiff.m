@@ -62,7 +62,7 @@ if nargin>3
         case 'html'
             br='<br>\n';
         case 'latex'
-            br='\\\\*\n';
+            br='\\newline\n';
         otherwise
             br='\n';
     end
@@ -166,7 +166,7 @@ switch pflag
                if strcmp(fn1{i},fn2{i})
                   myfprintf(fid,['  %2i %s [same]' br],i,sfn1(i,:));
                else
-                  myfprintf(fid,['  %2i %s - %2i %s' br],i,sfn1(i,:),i1(r2(i)),sfn2(i,:));
+                  myfprintf(fid,['  %2i %s [%s] - %2i %s [%s]' br],i,sfn1(i,:),var1,i1(r2(i)),sfn2(i,:),var2);
                end
             end
         end
