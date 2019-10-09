@@ -77,9 +77,19 @@ H = figure('Visible','off', ...
     'NumberTitle','off', ...
     'Resize','off', ...
     'Position',pos, ...
+    'KeyPressFcn',@keypress, ...
     'Handlevisibility','off', ...
     'Tag',tag);
 setappdata(H,'WL_UserInterface',1)
 if matlabversionnumber >= 7
     set(H,'WindowStyle','normal','DockControls','off')
+end
+
+function keypress(handle,event)
+if isequal(event.Key,'s')
+    if isequal(event.Modifier,{'control'})
+        d3d_qp('move_onscreen',handle)
+    elseif isequal(event.Modifier,{'control','alt'})
+        d3d_qp('move_onscreen')
+    end
 end

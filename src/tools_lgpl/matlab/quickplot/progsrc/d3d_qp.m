@@ -4427,6 +4427,31 @@ switch cmd
         set(hpause,'value',1)
         waitfor(hpause,'value',0)
         
+    case 'move_onscreen'
+        if ~isempty(cmdargs)
+            movegui(cmdargs{1})
+        else
+            movegui(UD.MainWin.Fig)
+            if ~isempty(UD.Options.Fig)
+                movegui(UD.Options.Fig)
+            end
+            movegui(UD.PlotMngr.Fig)
+            movegui(UD.PlotMngr.Fig)
+            movegui(UD.FilOpt.Fig)
+            movegui(UD.GridView.Fig)
+            movegui(UD.ComLine.Fig)
+            %
+            figs = get(UD.PlotMngr.Fig,'userdata');
+            for i = 1:length(figs)
+                movegui(figs(i))
+            end
+            %
+            umsg = findall(0,'tag','UI_MESSAGE window');
+            if ~isempty(umsg)
+                movegui(umsg)
+            end
+        end
+        
     otherwise
         if (strncmpi(cmd,'all',3) || strncmpi(cmd,'edit',4)) && ~isempty(cmdargs)
             if strncmpi(cmd,'all',3)
