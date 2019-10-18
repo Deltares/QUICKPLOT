@@ -331,7 +331,7 @@ else
     % no m,n
     set(MW.HSelType,'enable','off','string',{'M range and N range'},'value',1,'backgroundcolor',Inactive)
 end
-if 1%~DimFlag(K_)
+if ~DimFlag(K_)
     set(MW.VSelType,'enable','off','backgroundcolor',Inactive)
 end
 if strcmp(get(MW.HSelType,'enable'),'off')

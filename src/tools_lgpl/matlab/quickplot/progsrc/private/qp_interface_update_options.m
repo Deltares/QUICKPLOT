@@ -134,8 +134,15 @@ switch getvalstr(MW.VSelType)
                 selected{K_}=get(MW.EditK,'userdata');
             end
         end
-    case {'Z slice','dZ below surface','dZ above bed'}
+    case {'Z slice'}
         hslice=1;
+        selected{K_}={'z' get(MW.EditZ,'userdata')};
+    case {'dZ below surface'}
+        hslice=1;
+        selected{K_}={'dz_below_max' get(MW.EditZ,'userdata')};
+    case {'dZ above bed'}
+        hslice=1;
+        selected{K_}={'dz_above_min' get(MW.EditZ,'userdata')};
 end
 
 for m = 6:length(DimFlag)
@@ -241,7 +248,7 @@ switch geometry
             axestype={''};
         end
     case {'UGRID1D_NETWORK-NODE','UGRID1D_NETWORK-EDGE','UGRID1D-NODE','UGRID1D-EDGE','UGRID2D-NODE','UGRID2D-EDGE','UGRID2D-FACE'}
-        if multiple(K_)
+        if multiple(K_) && ~hslice
             if multiple(M_)
                 if vslice
                     axestype={'X-Z'};
@@ -307,7 +314,7 @@ switch geometry
             end
         end
     case 'PNT+'
-        if multiple(K_)
+        if multiple(K_) && ~hslice
             if ~multiple(M_) && ~multiple(ST_)
                 if multiple(T_)
                     axestype={'Val-Z','Time-Z'};
@@ -354,17 +361,17 @@ switch geometry
             end
         end
     case 'sSEG+'
-        if multiple(M_) && multiple(K_)
+        if multiple(M_) && (multiple(K_) && ~hslice)
             axestype={'X-Z'};
         elseif multiple(M_)
             axestype={'X-Val'};
-        elseif multiple(K_)
+        elseif multiple(K_) && ~hslice
             axestype={'Val-Z'};
         else
             axestype={'X-Z'};
         end
     case {'POLYL','POLYG'}
-        if multiple(T_) && ~multiple(M_) && ~multiple(K_)
+        if multiple(T_) && ~multiple(M_) && (~multiple(K_) || ~hslice)
             if nval==0
                 axestype={'X-Y'};
             else
@@ -377,7 +384,7 @@ switch geometry
             end
         end
     case {'sQUAD','sQUAD+','SGRID-FACE','SGRID-EDGE','SGRID-NODE'}
-        if multiple(K_)
+        if multiple(K_) && ~hslice
             if multiple(M_) && multiple(N_) && ~vslice
                 axestype={'X-Y-Z'};
             elseif multiple(M_) || multiple(N_) || vslice
@@ -423,7 +430,7 @@ switch geometry
     case {'TRI','TRI+'}
         triangles=1;
         if vslice
-            if multiple(M_) && multiple(K_)
+            if multiple(M_) && (multiple(K_) && ~hslice)
                 axestype={'X-Z'};
             elseif multiple(M_)
                 if nval==0
@@ -431,7 +438,7 @@ switch geometry
                 else
                     axestype={'X-Val','X-Y'};
                 end
-            elseif multiple(K_)
+            elseif multiple(K_) && ~hslice
                 axestype={'Val-Z'};
             else
                 if multiple(T_)
@@ -440,11 +447,11 @@ switch geometry
                     axestype={'X-Y'};
                 end
             end
-        elseif multiple(M_) && multiple(K_)
+        elseif multiple(M_) && (multiple(K_) && ~hslice)
             axestype={'X-Y-Z'};
         elseif multiple(M_)
             axestype={'X-Y'};
-        elseif multiple(K_)
+        elseif multiple(K_) && ~hslice
             axestype={'Val-Z'};
         elseif multiple(T_)
             axestype={'Time-Val'};
@@ -515,7 +522,7 @@ end
 axestype=axestype{i};
 %
 if (multiple(M_) && ~multiple(N_) && DimFlag(N_)) || (~multiple(M_) && DimFlag(M_) && multiple(N_)) || vslice
-    if isempty(strfind(axestype,'Time')) && ~multiple(K_) && isempty(strfind(axestype,'Z'))
+    if isempty(strfind(axestype,'Time')) && (~multiple(K_) || hslice) && isempty(strfind(axestype,'Z'))
         if Props.DataInCell || ~isempty(strfind(geometry,'FACE'))
             geometry = 'SEG-EDGE';
             lineproperties = 1;
@@ -558,7 +565,7 @@ if nval<0
     animate = 0;
 elseif ~isempty(strfind(axestype,'Time'))
     animate = 0;
-elseif ~multiple(M_) && ~multiple (N_) && ~multiple(K_) && strcmp(axestype,'X-Y')
+elseif ~multiple(M_) && ~multiple (N_) && (~multiple(K_) || hslice) && strcmp(axestype,'X-Y')
     animate = 0;
 elseif strcmp(axestype,'Distance-Val')
     animate = 0;
@@ -771,7 +778,7 @@ if nval==2 || nval==3
     switch Ops.vectorcomponent
         case {'vector','patch centred vector','vector (split x,y)','vector (split m,n)'}
             Ops.presentationtype=Ops.vectorcomponent;
-            if VectorDef==2 && (multiple(M_) + multiple(N_) == 1) && (multiple(K_) == 1)
+            if VectorDef==2 && (multiple(M_) + multiple(N_) == 1) && (multiple(K_) || hslice)
                 VectorReq=1;
             end
         case {'magnitude','x component','y component','z component'}
@@ -1661,14 +1668,14 @@ if nval>=0
         ExpTypes{end+1}='grid file';
         ExpTypes{end+1}='grid file (old format)';
     end
-    if strncmp(geometry,'UGRID',5) && multiple(M_) && ~multiple(K_) && ~multiple(T_)
+    if strncmp(geometry,'UGRID',5) && multiple(M_) && (~multiple(K_) || hslice) && ~multiple(T_)
         ExpTypes{end+1}='netCDF3 file';
         ExpTypes{end+1}='netCDF4 file';
     end
     if sum(multiple)==1 && sum(multiple([M_ N_]))==1 && nval==0
         ExpTypes{end+1}='spline';
     end
-    if (multiple(M_) && multiple(N_)) && ~multiple(K_) && ~multiple(T_)
+    if (multiple(M_) && multiple(N_)) && (~multiple(K_) || hslice) && ~multiple(T_)
         if nval>0
             ExpTypes{end+1}='QuickIn file';
         end
@@ -1709,21 +1716,21 @@ if nval>=0
     end
     %
     maxTimeSteps = qp_settings('export_max_ntimes');
-    if ((length(selected{T_})<=maxTimeSteps && ~isequal(selected{T_},0)) || (maxt<=maxTimeSteps && isequal(selected{T_},0))) && nval>0 && (multiple(M_) || multiple(N_) || multiple(K_))
+    if ((length(selected{T_})<=maxTimeSteps && ~isequal(selected{T_},0)) || (maxt<=maxTimeSteps && isequal(selected{T_},0))) && nval>0 && (multiple(M_) || multiple(N_) || (multiple(K_) && ~hslice))
         ExpTypes{end+1}='csv file';
         ExpTypes{end+1}='Tekal file';
         ExpTypes{end+1}='Tecplot file';
     end
-    if (multiple(M_) || multiple(N_) || multiple(K_)) && ~multiple(T_) && nval>0
+    if (multiple(M_) || multiple(N_) || (multiple(K_) && ~hslice)) && ~multiple(T_) && nval>0
         ExpTypes{end+1}='sample file';
     end
-    if multiple(M_) && triangles && ~multiple(K_) && ~multiple(T_)
+    if multiple(M_) && triangles && (~multiple(K_) || hslice) && ~multiple(T_)
         ExpTypes{end+1} = 'STL stereolithography file (ASCII)';
         ExpTypes{end+1} = 'STL stereolithography file (Binary)';
     end
     %
     Mver = matlabversionnumber;
-    if ~((multiple(M_) || multiple(N_) || multiple(K_)) && ((length(selected{T_})>maxTimeSteps && ~isequal(selected{T_},0)) || (maxt>maxTimeSteps && isequal(selected{T_},0))))
+    if ~((multiple(M_) || multiple(N_) || (multiple(K_) && ~hslice)) && ((length(selected{T_})>maxTimeSteps && ~isequal(selected{T_},0)) || (maxt>maxTimeSteps && isequal(selected{T_},0))))
         ExpTypes{end+1}='mat file (v6)';
         if Mver>=7
             ExpTypes{end+1}='mat file (v7)';

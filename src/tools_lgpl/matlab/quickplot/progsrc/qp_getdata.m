@@ -499,13 +499,8 @@ function [arg2,arg3] = hvslice(Fcn,FI,X)
 v_slice=[];
 h_slice=[];
 if iscell(X{end})
-    switch X{end}{1}
-        case 'k'
-            X{end}=X{end}{2};
-        case {'z'}
-            h_slice=X{end};
-            X{end}=0;
-    end
+    h_slice=X{end};
+    X{end}=0;
 end
 m = 3+find(cellfun('isclass',X(4:end),'cell'));
 if ~isempty(m)
@@ -553,10 +548,7 @@ end
 % Handle h_slice options as needed.
 %
 if ~isempty(h_slice)
-    switch h_slice{1}
-        case 'z'
-            arg2 = hslice(arg2,h_slice{2});
-    end
+    arg2 = hslice(arg2,h_slice{:});
 end
 %
 % Handle v_slice options as needed.

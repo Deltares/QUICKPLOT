@@ -12,7 +12,7 @@ function dataOut = hslice(dataIn,Type,Z0)
 %
 %       TYPE           | meaning of ALPHA
 %       ------------------------------------------------------------------
-%       'z'            | vertical level Z0
+%       'z'            | vertical level ALPHA (equal to HSLICE(DATA3D,ALPHA)
 %       'dz_below_max' | ALPHA is the distance dz below top
 %       'dz_above_min' | ALPHA is the distance dz below bottom
 %       'depth_frac'   | ALPHA is the depth fraction (0 = top, 1 = bottom)
