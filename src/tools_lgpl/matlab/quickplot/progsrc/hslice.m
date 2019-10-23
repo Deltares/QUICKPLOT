@@ -105,7 +105,7 @@ switch Type
       Zmax = max(dataIn.Z,[],zdim);
       Z0 = Zmax + (Zmin - Zmax) * Z0;
    case 'z'
-      Z0 = repmat(Z0,szZ(1:zdim-1));
+      Z0 = repmat(Z0,[szZ(1:zdim-1) 1]);
    otherwise
       error('Unknown slice TYPE.')
 end
@@ -113,7 +113,7 @@ end
 for k = 1:szZ(zdim)-1
    Zk0 = dataIn.Z(fulldims{:},k);
    Zk1 = dataIn.Z(fulldims{:},k+1);
-   inRange = Zk1<=Z0 & Z0<=Zk0;
+   inRange = (Zk1<=Z0 & Z0<=Zk0) | (Zk0<=Z0 & Z0<=Zk1);
    if any(inRange(:))
       dZ = Zk0(inRange)-Zk1(inRange);
       dZ(dZ==0) = NaN;
