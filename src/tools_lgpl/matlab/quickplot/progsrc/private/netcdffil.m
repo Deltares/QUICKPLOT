@@ -2074,10 +2074,17 @@ else
     cUnit = {};
 end
 uBrNr = unique(eBrNr);
+doublePoints = false(size(uBrNr));
 for i = 1:length(uBrNr)
     bN = uBrNr(i);
     bX = BrX{bN};
     bY = BrY{bN};
+    Mask = diff(bX)==0 & diff(bY)==0;
+    if any(Mask)
+        doublePoints(i) = true;
+        bX(Mask)=[];
+        bY(Mask)=[];
+    end
     bS = pathdistance(bX,bY,cUnit{:});
     %
     for j = find(BrNr==bN)'
@@ -2129,6 +2136,13 @@ for i = 1:length(uBrNr)
             EdgeY{j} = [bY(I);y];
             % first node on other branch ...
         end
+    end
+end
+if any(doublePoints)
+    if sum(doublePoints)==1
+        ui_message('warning','Double geometry points encountered on branch: %i',find(doublePoints))
+    else
+        ui_message('warning','Double geometry points encountered on branches: %s',vec2str(find(doublePoints),'nobrackets'))
     end
 end
 % -----------------------------------------------------------------------------

@@ -262,10 +262,22 @@ switch NVal
                         j = NP==uNP(i);
                         x = cat(2,data.EdgeGeometry.X{j});
                         y = cat(2,data.EdgeGeometry.Y{j});
-                        v = data.Val(j);
+                        switch data.ValLocation
+                            case 'EDGE'
+                                v = data.Val(j);
+                                v = repmat(v',uNP(i),1);
+                            case 'NODE'
+                                j0 = find(j);
+                                v = zeros(size(x));
+                                for ij = length(j0):-1:1
+                                    d = pathdistance(x(:,ij),y(:,ij));
+                                    dataNodes = data.Val(data.EdgeNodeConnect(j0(ij),:));
+                                    v(:,ij) = interp1([0;d(end)],dataNodes,d);
+                                end
+                        end
                         faces = repmat(numel(x)+1,fliplr(size(x))+[0 1]);
                         faces(:,1:end-1) = reshape(1:numel(x),size(x))';
-                        v = reshape(repmat(v',uNP(i),1),[numel(x) 1]);
+                        v = reshape(v,[numel(x) 1]);
                         hNew(i) = patch('parent',Parent,'vertices',[x(:) y(:);NaN NaN],'faces',faces,'facevertexcdata',[v;NaN],'edgecolor','flat','facecolor','none','linewidth',Ops.linewidth,'linestyle',Ops.linestyle,'marker',Ops.marker,'markersize',Ops.markersize,'markeredgecolor',Ops.markercolour,'markerfacecolor',Ops.markerfillcolour);
                     end
                 else
