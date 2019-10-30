@@ -837,6 +837,10 @@ if XYRead || XYneeded
                 end
             end
             FormulaTerms = reshape(FormulaTerms,2,length(FormulaTerms)/2)';
+            FTerror = sprintf('Empty attribute ''formula_terms'' on vertical coordinate variable ''%s''.',CoordInfo.Name);
+        else
+            FormulaTerms = cell(0,2);
+            FTerror = sprintf('Missing attribute ''formula_terms'' on vertical coordinate variable ''%s''.',CoordInfo.Name);
         end
         %
         j=strmatch('positive',Attribs,'exact');
@@ -868,6 +872,7 @@ if XYRead || XYneeded
                 end
                 switch standard_name
                     case 'atmosphere_ln_pressure_coordinate'
+                        if isempty(FormulaTerms), error(FTerror), end
                         [p0  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx,getOptions{:});
                         [lev , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx,getOptions{:});
                         zUnitVar = FormulaTerms{1,2}; % p0
@@ -879,6 +884,7 @@ if XYRead || XYneeded
                             end
                         end
                     case 'atmosphere_sigma_coordinate'
+                        if isempty(FormulaTerms), error(FTerror), end
                         [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx,getOptions{:});
                         [ps     , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx,getOptions{:});
                         [ptop   , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx,getOptions{:});
@@ -893,6 +899,7 @@ if XYRead || XYneeded
                             end
                         end
                     case 'atmosphere_hybrid_sigma_pressure_coordinate'
+                        if isempty(FormulaTerms), error(FTerror), end
                         if isequal(FormulaTerms{1,1},'a:')
                             [a      , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx,getOptions{:});
                             [b      , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx,getOptions{:});
@@ -924,6 +931,7 @@ if XYRead || XYneeded
                             end
                         end
                     case 'atmosphere_hybrid_height_coordinate'
+                        if isempty(FormulaTerms), error(FTerror), end
                         [a     , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx,getOptions{:});
                         [b     , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx,getOptions{:});
                         [orog  , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx,getOptions{:});
@@ -938,6 +946,7 @@ if XYRead || XYneeded
                             end
                         end
                     case 'atmosphere_sleve_coordinate'
+                        if isempty(FormulaTerms), error(FTerror), end
                         [a       , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx,getOptions{:});
                         [b1      , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx,getOptions{:});
                         [b2      , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx,getOptions{:});
@@ -955,6 +964,7 @@ if XYRead || XYneeded
                             end
                         end
                     case 'ocean_sigma_coordinate'
+                        if isempty(FormulaTerms), error(FTerror), end
                         [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx,getOptions{:});
                         [eta    , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx,getOptions{:});
                         [depth  , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx,getOptions{:});
@@ -975,6 +985,7 @@ if XYRead || XYneeded
                             end
                         end
                     case 'ocean_s_coordinate'
+                        if isempty(FormulaTerms), error(FTerror), end
                         [s      , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx,getOptions{:});
                         [eta    , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx,getOptions{:});
                         [depth  , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx,getOptions{:});
@@ -993,6 +1004,7 @@ if XYRead || XYneeded
                             end
                         end
                     case 'ocean_s_coordinate_g1'
+                        if isempty(FormulaTerms), error(FTerror), end
                         [s      , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx,getOptions{:});
                         [C      , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx,getOptions{:});
                         [eta    , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx,getOptions{:});
@@ -1010,6 +1022,7 @@ if XYRead || XYneeded
                             end
                         end
                     case 'ocean_s_coordinate_g2'
+                        if isempty(FormulaTerms), error(FTerror), end
                         [s      , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx,getOptions{:});
                         [C      , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx,getOptions{:});
                         [eta    , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx,getOptions{:});
@@ -1027,6 +1040,7 @@ if XYRead || XYneeded
                             end
                         end
                     case 'ocean_sigma_z_coordinate'
+                        if isempty(FormulaTerms), error(FTerror), end
                         [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx,getOptions{:});
                         [eta    , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx,getOptions{:});
                         [depth  , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx,getOptions{:});
@@ -1049,6 +1063,7 @@ if XYRead || XYneeded
                             end
                         end
                     case 'ocean_double_sigma_coordinate'
+                        if isempty(FormulaTerms), error(FTerror), end
                         [sigma  , status] = qp_netcdf_get(FI,FormulaTerms{1,2},Props.DimName,idx,getOptions{:});
                         [depth  , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx,getOptions{:});
                         [z1     , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx,getOptions{:});
