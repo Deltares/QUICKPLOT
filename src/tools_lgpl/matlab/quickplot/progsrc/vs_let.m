@@ -1601,7 +1601,7 @@ function Ind = subcript2ind(Siz,Sub)
 Nsub = cellfun('length',Sub);
 Nind = prod(Nsub);
 for i = 1:length(Nsub)
-    Sub{i} = reshape(repmat(Sub{i},[prod(Nsub(1:i-1)) 1 prod(Nsub(i+1:end))]),Nind,1);
+    Sub{i} = reshape(repmat(Sub{i}(:)',[prod(Nsub(1:i-1)) 1 prod(Nsub(i+1:end))]),Nind,1);
 end
 if Nind==0
     Ind = zeros(0,1);
