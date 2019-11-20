@@ -186,7 +186,7 @@ try
     cd(val_dir)
     d=dir('*');
     for i=length(d):-1:1
-        if ~d(i).isdir || strcmp(d(i).name(1),'.') || strcmp(d(i).name(1),'..')
+        if ~d(i).isdir || any(strcmp(d(1).name,{'.','..','common'}))
             d(i)=[];
         end
     end
@@ -874,7 +874,7 @@ switch log_style
             fprintf(logid,'%% %s\n','\cleardoublepage');
             fprintf(logid,'%s%s%s\n','\pagecolor{',Color.Page,'}');
             fprintf(logid,'\n');
-            fprintf(logid,'%s\n','\input{../../../../doc/user_manuals/common/program_names}');
+            fprintf(logid,'%s\n','\input{common/program_names}');
             fprintf(logid,'\n');
             fprintf(logid,'%s\n','\title{\QUICKPLOT\ Testing}');
             fprintf(logid,'%s\n','\subtitle{Automated regression testing report}');
