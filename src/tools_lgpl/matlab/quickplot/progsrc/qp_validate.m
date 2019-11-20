@@ -617,7 +617,7 @@ try
                         if isempty(checkfs)
                             write_log(logid2,'No file to check.');
                             lgcolor=Color.Failed;
-                            lgresult=sprintf('%s: No check on ''%s''.',FAILED,logf);
+                            lgresult=sprintf('%s: No check on ''%s''.',FAILED,protected(logf));
                         else
                             %checkf=inifile('get',CaseInfo,'logfilecheck',logf,'');
                             for icheck=1:length(checkfs)
