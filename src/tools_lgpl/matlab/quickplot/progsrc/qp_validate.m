@@ -611,7 +611,7 @@ try
                         if length(m2)>length(m1)
                             diffm=m2(length(m1)+2:length(m2));
                             for mi = 1:length(diffm)
-                                write_log(logid2,'%s: %s',logf,color_write(diffm{mi},Color.Failed));
+                                write_log(logid2,'%s: %s',logf,color_write(protected(diffm{mi}),Color.Failed));
                             end
                         end
                         if isempty(checkfs)
@@ -816,6 +816,7 @@ switch log_style
             str = strrep(str,'\','\char`\\');
             str = strrep(str,'_','\_');
             str = strrep(str,'#','\#');
+            str = strrep(str,'$','\$');
             str = strrep(str,'&','\&');
             str = strrep(str,'%','\%');
             str = strrep(str,'³','$^3$');
