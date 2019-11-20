@@ -854,7 +854,7 @@ switch cmd
                     case {'moveitemdown','moveitemtoback'}
                         ItVal2 = ItVal+1;
                 end
-                if ItVal2>length(ItTags)
+                if ItVal2>length(ItTags) || ItVal2<1
                     break
                 end
                 %
