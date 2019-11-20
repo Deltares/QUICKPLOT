@@ -51,5 +51,5 @@ if iscell(Z)
             str = 'unknown level';
     end
 else
-    str = sprintf('layer %i',K);
+    str = sprintf('layer %i',Z);
 end

@@ -283,11 +283,31 @@ switch NVal
                 else
                     hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'UGRID',data,Ops);
                 end
-                if strcmp(Ops.colourbar,'none')
-                    qp_title(Parent,{PName,TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                if isempty(Selected{K_})
+                    str=PName;
+                    lyr={};
                 else
-                    qp_title(Parent,{TStr},'quantity',Quant,'unit',Units,'time',TStr)
+                    lyr = qp_layer(Selected{K_});
+                    str = sprintf('%s in %s',PName,lyr);
+                    lyr = {lyr};
                 end
+                %
+                if strcmp(Ops.colourbar,'none')
+                    tit = {str};
+                else
+                    tit = lyr;
+                end
+                if ~isempty(stn)
+                    tit{end+1}=stn;
+                end
+                if ~isempty(TStr)
+                    tit{end+1}=TStr;
+                end
+                if length(tit)>2
+                    tit{1}=[tit{1} ' at ' tit{2}];
+                    tit(2)=[];
+                end
+                qp_title(Parent,tit,'quantity',Quant,'unit',Units,'time',TStr)
                 
             case {'Distance-Val','X-Val','X-Z','X-Time','Time-X'}
                 if multiple(K_)
