@@ -847,7 +847,7 @@ end
 c = clock;
 versionstr = d3d_qp('version'); % returns "source code version" or "vA.B.revsion (64bit)"
 if versionstr(1)=='v'
-    version = sscanf(a,'v%d.%d.%d');
+    version = sscanf(versionstr,'v%d.%d.%d');
     revision = version(3);
     % insert QUICKPLOT revision number into SVN revision string of the report
     versionstr = sprintf('%d.%d',version(1:2));
