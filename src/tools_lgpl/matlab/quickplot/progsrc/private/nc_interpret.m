@@ -78,7 +78,9 @@ if nargin>1
     nc.NumDomains = NumPartitions;
     if NumPartitions>1
         nc.Partitions = Partitions;
-        nc.DomainOffset = PartNr_StrOffset;
+        nc.DomainCount.StrLoc = PartNr_StrOffset;
+        nc.DomainCount.Digits = nDigits;
+        nc.DomainCount.Offset = Part1;
         nc.Filename(PartNr_StrOffset+(1:nDigits)) = sprintf(partNrFormat,Part1);
     end
     return

@@ -419,6 +419,11 @@ switch cmd
                         end
                     case 'NetCDF'
                         Opt = get_matching_names(FileName,'_',-2);
+                        if Opt{1}>1
+                            if Opt{4}~=0 || Opt(3)~=4
+                                Opt = {};
+                            end
+                        end
                         FI = nc_interpret(FileName,Opt{:});
                         %nc_dump(FileName)
                         FI.FileName = FI.Filename;

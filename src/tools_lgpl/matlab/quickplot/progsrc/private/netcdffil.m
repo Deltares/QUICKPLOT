@@ -1957,7 +1957,8 @@ end
 % -----------------------------------------------------------------------------
 function Domains=domains(FI)
 if FI.NumDomains > 1
-    Domains = multiline(sprintf('partition %4.4d-',0:FI.NumDomains-1),'-','cell');
+    format = sprintf('%%%d.%dd-',FI.DomainCount.Digits,FI.DomainCount.Digits);
+    Domains = multiline(sprintf(['partition ' format],FI.DomainCount.Offset+(0:FI.NumDomains-1)),'-','cell');
     Domains{end} = 'all partitions';
 else
     Domains = {};
