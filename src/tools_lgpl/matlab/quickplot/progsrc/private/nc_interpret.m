@@ -1086,33 +1086,6 @@ for ivar = 1:nvars
         end
     end
     %
-    % SubField variables must be one-dimensional.
-    % Their dimension should not match any of time/coordinate dimensions.
-    %
-    Info.SubFieldDim = setdiff(Info.Dimid,Info.TSMNK);
-    if strcmp(Info.Datatype,'char') && ~isempty(Info.SubFieldDim)
-        if CHARDIM==1
-            Info.CharDim = setdiff(Info.Dimid(1),Info.TSMNK);
-        else
-            Info.CharDim = setdiff(Info.Dimid(end),Info.TSMNK);
-        end
-        Info.SubFieldDim = setdiff(Info.SubFieldDim,Info.CharDim);
-    end
-    %
-    % try to reassign subfield dimensions to M, N, K
-    %
-    if all(isnan(Info.TSMNK(2:end)))
-        for i=1:min(3,length(Info.SubFieldDim))
-            Info.TSMNK(2+i) = Info.SubFieldDim(i);
-        end
-        Info.SubFieldDim = Info.SubFieldDim(4:end);
-    end
-    %
-    %if ~isempty(Info.SubFieldDim)
-    %    Info.TSMNK(5+(1:length(Info.SubFieldDim))) = Info.SubFieldDim;
-    %    Info.SubFieldDim = [];
-    %end
-    %
     nc.Dataset(ivar) = Info;
 end
 %
@@ -1143,10 +1116,40 @@ for ivar = 1:nvars
                 break
             end
         end
+        %
         nc.Dataset(ivar) = Info;
     end
 end
-
+%
+% Process remaining dimensions
+%
+for ivar = 1:nvars
+    Info = nc.Dataset(ivar);
+    %
+    % SubField variables must be one-dimensional.
+    % Their dimension should not match any of time/coordinate dimensions.
+    %
+    Info.SubFieldDim = setdiff(Info.Dimid,Info.TSMNK);
+    if strcmp(Info.Datatype,'char') && ~isempty(Info.SubFieldDim)
+        if CHARDIM==1
+            Info.CharDim = setdiff(Info.Dimid(1),Info.TSMNK);
+        else
+            Info.CharDim = setdiff(Info.Dimid(end),Info.TSMNK);
+        end
+        Info.SubFieldDim = setdiff(Info.SubFieldDim,Info.CharDim);
+    end
+    %
+    % reassign subfield dimensions to M, N, K
+    %
+    if all(isnan(Info.TSMNK(2:end)))
+        for i=1:min(3,length(Info.SubFieldDim))
+            Info.TSMNK(2+i) = Info.SubFieldDim(i);
+        end
+        Info.SubFieldDim = Info.SubFieldDim(4:end);
+    end
+    %
+    nc.Dataset(ivar) = Info;
+end
 
 function nc = setType(nc,ivar,idim,value)
 nc.Dataset(ivar).Type = value;
@@ -1284,12 +1287,12 @@ Info.Type = 'ugrid_mesh_contact';
 %
 j = strmatch('cf_role',Attribs,'exact');
 if isempty(j) || ~strcmp(Info.Attribute(j).Value,'mesh_topology_contact')
-    ui_message('error','Attribute ''cf_role'' should be set to ''mesh_topology_contact'' for UGRID mesh contact variable %s.',Info.Name)
+    ui_message('error','Attribute ''cf_role'' should be set to ''mesh_topology_contact'' for UGRID mesh contact variable "%s".',Info.Name)
 end
 %
 j = strmatch('contact',Attribs,'exact');
 if isempty(j)
-    ui_message('error','Attribute ''contact'' should be defined for UGRID mesh contact variable %s.',Info.Name)
+    ui_message('error','Attribute ''contact'' should be defined for UGRID mesh contact variable "%s".',Info.Name)
 else
     meshLoc = reshape(multiline(Info.Attribute(j).Value,' ','cell'),[2 2])';
 end
@@ -1308,7 +1311,7 @@ Attribs = {Info.Attribute.Name};
 %
 j = strmatch('cf_role',Attribs,'exact');
 if isempty(j) || (~strcmp(Info.Attribute(j).Value,'mesh_topology') && ~strcmp(Info.Attribute(j).Value,'mesh_topology_contact'))
-    ui_message('error','Attribute ''cf_role'' should be set to ''mesh_topology'' or ''mesh_topology_contact'' for UGRID mesh or UGRID mesh contact variable %s.',Info.Name)
+    ui_message('error','Unable to interpret "%s" as UGRID variable the ''cf_role'' attribute should equal ''mesh_topology'' or ''mesh_topology_contact''.',Info.Name)
 elseif strcmp(Info.Attribute(j).Value,'mesh_topology')
     [nc,Info] = parse_ugrid_mesh(nc,varNames,dimNames,ivar);
 elseif strcmp(Info.Attribute(j).Value,'mesh_topology_contact')

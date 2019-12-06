@@ -496,16 +496,30 @@ end
 
 
 function [arg2,arg3] = hvslice(Fcn,FI,X)
+T_=1; ST_=2; M_=3; N_=4; K_=5;
+Props   = X{2};
+DimFlag = Props.DimFlag;
+%
 v_slice=[];
 h_slice=[];
-if iscell(X{end})
-    h_slice=X{end};
-    X{end}=0;
+if isfield(Props,'SubFld') && ~isempty(Props.SubFld)
+    sf = 1;
+else
+    sf = 0;
 end
-m = 3+find(cellfun('isclass',X(4:end),'cell'));
-if ~isempty(m)
-    v_slice=X{m};
-    X{m}=0;
+if DimFlag(K_)
+    idxK = 3+sf+sum(DimFlag(1:K_)~=0);
+    if length(X)>=idxK && iscell(X{idxK})
+        h_slice = X{idxK};
+        X{idxK}=0;
+    end
+end
+if DimFlag(M_)
+    idxM = 3+sf+sum(DimFlag(1:M_)~=0);
+    if length(X)>=idxM && iscell(X{idxM})
+        v_slice = X{idxM};
+        X{idxM}=0;
+    end
 end
 %
 % If function does not support delivery of DataInCell but

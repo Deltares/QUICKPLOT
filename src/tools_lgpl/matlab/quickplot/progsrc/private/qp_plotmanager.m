@@ -680,6 +680,15 @@ switch cmd
                                         k=UserDatas{itloc}.PlotState.Selected{K_};
                                         if isequal(k,0)
                                             extrastr{itloc}='All K';
+                                        elseif iscell(k)
+                                            switch k{1}
+                                                case 'z'
+                                                    extrastr{itloc}=['Z=' sprintf('%g',k{2})];
+                                                case 'dz_below_max'
+                                                    extrastr{itloc}=['dZ below surface=' sprintf('%g',k{2})];
+                                                case 'dz_above_min'
+                                                    extrastr{itloc}=['dZ above bed=' sprintf('%g',k{2})];
+                                            end
                                         elseif ~isempty(k)
                                             extrastr{itloc}=['K=' vec2str(k,'nobrackets')];
                                         end

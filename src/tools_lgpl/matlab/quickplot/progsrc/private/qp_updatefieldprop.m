@@ -665,22 +665,27 @@ set(MW.TList,'enable','off','max',2,'value',[],'string','','backgroundcolor',UD.
 % Station controls ...
 %
 set(MW.S,'enable','off')
-set(MW.AllS,'enable','off','visible','off')
-set(MW.EditS,'enable','off','string','','backgroundcolor',UD.Inactive,'visible','off')
-set(MW.MaxS,'enable','off','string','-','visible','off')
-set(MW.StList,'enable','off','value',1,'string',' ','backgroundcolor',UD.Inactive,'visible','on')
+set(MW.AllS,'enable','off')
+set(MW.EditS,'enable','off','string','','backgroundcolor',UD.Inactive)
+set(MW.MaxS,'enable','off','string','-')
+set(MW.StList,'enable','off','value',1,'string',' ','backgroundcolor',UD.Inactive)
 %
 % MNK/XYZ selection controls ...
 %
-set(MW.HSelType,'enable','off','backgroundcolor',UD.Inactive)
+set(MW.HSelType,'enable','off','backgroundcolor',UD.Inactive')
 set(MW.VSelType,'enable','off','backgroundcolor',UD.Inactive)
 %
 % MN/XY controls ...
 %
 set(MW.MN,'enable','off')
 set(MW.EditMN,'enable','off','backgroundcolor',UD.Inactive)
+set(MW.MNrev,'enable','off')
+set(MW.MN2XY,'enable','off')
+set(MW.MN2M,'enable','off')
 set(MW.XY,'enable','off')
 set(MW.EditXY,'enable','off','backgroundcolor',UD.Inactive)
+set(MW.LoadXY,'enable','off')
+set(MW.SaveXY,'enable','off')
 %
 % M controls ...
 %
@@ -702,6 +707,11 @@ set(MW.K,'enable','off')
 set(MW.AllK,'enable','off')
 set(MW.EditK,'enable','off','string','','backgroundcolor',UD.Inactive)
 set(MW.MaxK,'enable','off','string','-')
+%
+% Z controls ...
+%
+set(MW.Z,'enable','off')
+set(MW.EditZ,'enable','off','string','','backgroundcolor',UD.Inactive)
 %
 % Plot buttons ...
 %

@@ -71,6 +71,11 @@ elseif ~ischar(Type)
 else
    % Type: z, dz_below_max, dz_above_min, depth_frac
 end
+if isempty(Z0)
+    error('Empty horizontal slice level ALPHA specified.')
+elseif numel(Z0)>1
+    error('Horizontal slice level ALPHA should be scalar.')
+end
 
 dataOut = dataIn;
 flds = {'Val','XComp','YComp','ZComp'};

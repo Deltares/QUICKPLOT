@@ -134,15 +134,17 @@ switch getvalstr(MW.VSelType)
                 selected{K_}=get(MW.EditK,'userdata');
             end
         end
-    case {'Z slice'}
+    otherwise
         hslice=1;
-        selected{K_}={'z' get(MW.EditZ,'userdata')};
-    case {'dZ below surface'}
-        hslice=1;
-        selected{K_}={'dz_below_max' get(MW.EditZ,'userdata')};
-    case {'dZ above bed'}
-        hslice=1;
-        selected{K_}={'dz_above_min' get(MW.EditZ,'userdata')};
+        Z=get(MW.EditZ,'userdata');
+        switch getvalstr(MW.VSelType)
+            case {'Z slice'}
+                selected{K_}={'z' get(MW.EditZ,'userdata')};
+            case {'dZ below surface'}
+                selected{K_}={'dz_below_max' get(MW.EditZ,'userdata')};
+            case {'dZ above bed'}
+                selected{K_}={'dz_above_min' get(MW.EditZ,'userdata')};
+        end
 end
 
 for m = 6:length(DimFlag)

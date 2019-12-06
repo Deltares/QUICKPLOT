@@ -237,7 +237,12 @@ switch v_slice
                     data.dY_tangential = Slice.dyt;
                 else
                     szV = size(data.(fld));
-                    if isfield(data,'Time') && length(data.Time)==szV(1)
+                    if isfield(data,'Time')
+                        if szV(1)==length(data.Time)
+                            dms = [2:max(length(szV),3) 1];
+                            data.(fld) = permute(data.(fld),dms);
+                        end
+                    elseif szV(1)==1
                         dms = [2:max(length(szV),3) 1];
                         data.(fld) = permute(data.(fld),dms);
                     end

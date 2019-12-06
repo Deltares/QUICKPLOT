@@ -975,8 +975,6 @@ switch cmd
         datafields=findobj(mfig,'tag','selectfield');
         if ~Succes
             set(datafields,'string',' ','value',1,'enable','off','backgroundcolor',Inactive,'userdata',Props);
-            set(mfig,'pointer','arrow')
-            d3d_qp updatefieldprop
         else
             Handle_Domain=findobj(mfig,'tag','selectdomain');
             DomainNr=get(Handle_Domain,'value');
@@ -989,14 +987,10 @@ switch cmd
                     'enable','off', ...
                     'backgroundcolor',Inactive, ...
                     'userdata',Props);
-                set(mfig,'pointer','arrow')
-                d3d_qp updatefieldprop
             else
                 names={Props.Name};
                 if isempty(names),
                     set(datafields,'string','<no datafields found>','value',1,'enable','off','backgroundcolor',Inactive,'userdata',Props);
-                    set(mfig,'pointer','arrow')
-                    d3d_qp updatefieldprop
                 else
                     df=1;
                     if strcmp(get(datafields,'enable'),'on')
@@ -1668,6 +1662,14 @@ switch cmd
         if Succes
             Info=File(NrInList);
             [DomainNr,Props,subf,selected,stats,Ops]=qp_interface_update_options(mfig,UD);
+            if ~strcmp(cmd,'updateoptions') && iscell(selected{K_}) && isempty(selected{K_}{2})
+                switch selected{K_}{1}
+                    case {'z'}
+                        error('No horizontal slice level Z specified!')
+                    case {'dz_below_max', 'dz_above_min'}
+                        error('No horizontal slice level dZ specified!')
+                end
+            end
             if isempty(Ops)
                 cmd='error';
             end

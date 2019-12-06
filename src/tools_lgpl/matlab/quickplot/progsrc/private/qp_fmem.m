@@ -420,7 +420,7 @@ switch cmd
                     case 'NetCDF'
                         Opt = get_matching_names(FileName,'_',-2);
                         if ~isempty(Opt)
-                            if Opt{4}~=0 || Opt(3)~=4
+                            if Opt{4}~=0 || Opt{3}~=4
                                 Opt = {};
                             end
                         end

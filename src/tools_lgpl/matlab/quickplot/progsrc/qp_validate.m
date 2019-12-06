@@ -381,19 +381,16 @@ try
                                         write_log(logid2,'<b>Domain ''%s''</b>',Dms{dm});
                                     end
                                     if ~isempty(dpn)
+                                        dpn = protected(dpn);
                                         write_log(logid2,'New datafields:');
                                         write_log(logid2,'<li>%s</li>',dpn{:});
-                                        if ~isempty(dppn)
-                                            write_log(logid2,'Deleted datafields:');
-                                            write_log(logid2,'<li>%s</li>',dppn{:});
-                                        end
-                                        [~,ipn,ippn]=intersect(pn,ppn);
-                                        Prop=Prop(ipn);
-                                        PropRef=PropRef(ippn);
-                                    elseif ~isempty(dppn)
-                                        JustAddedData=0;
+                                    end
+                                    if ~isempty(dppn)
+                                        dppn = protected(dppn);
                                         write_log(logid2,'Deleted datafields:');
-                                        write_log(logid2,dppn);
+                                        write_log(logid2,'<li>%s</li>',dppn{:});
+                                    end
+                                    if ~isempty(dpn) || ~isempty(dppn)
                                         [~,ipn,ippn]=intersect(pn,ppn);
                                         Prop=Prop(ipn);
                                         PropRef=PropRef(ippn);
