@@ -613,7 +613,7 @@ try
                         if length(m2)>length(m1)
                             diffm=m2(length(m1)+2:length(m2));
                             for mi = 1:length(diffm)
-                                write_log(logid2,'%s: %s',logf,color_write(protected(diffm{mi}),Color.Failed));
+                                write_log(logid2,'%s: %s',protected(logf),color_write(protected(diffm{mi}),Color.Failed));
                             end
                         end
                         if isempty(checkfs)
