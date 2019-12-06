@@ -383,12 +383,12 @@ try
                                     if ~isempty(dpn)
                                         dpn = protected(dpn);
                                         write_log(logid2,'New datafields:');
-                                        write_log(logid2,'<li>%s</li>',dpn{:});
+                                        write_list(logid2,dpn);
                                     end
                                     if ~isempty(dppn)
                                         dppn = protected(dppn);
                                         write_log(logid2,'Deleted datafields:');
-                                        write_log(logid2,'<li>%s</li>',dppn{:});
+                                        write_list(logid2,dppn);
                                     end
                                     if ~isempty(dpn) || ~isempty(dppn)
                                         [~,ipn,ippn]=intersect(pn,ppn);
@@ -1130,6 +1130,22 @@ switch log_style
         fprintf(logid,'%s\\newline\n',message{:});
     otherwise
         fprintf(logid,'%s<br>\n',message{:});
+end
+
+
+function write_list(logid,list)
+if ~iscell(list)
+    list = {list};
+end
+switch log_style
+    case 'latex'
+        fprintf(logid,'\\begin{itemize}\n'');
+        fprintf(logid,'  \\item %s\n',list{:});
+        fprintf(logid,'\\end{itemize}\n');
+    otherwise
+        fprintf(logid,'<ul>\n'');
+        fprintf(logid,'  <li>%s</li>\n',list{:});
+        fprintf(logid,'</ul>\n');
 end
 
 
