@@ -1486,7 +1486,11 @@ else
             switch Info.Mesh{1}
                 case 'ugrid'
                     tpd = Info.Mesh{2};
-                    Insert.Geom = sprintf('UGRID%iD',tpd);
+                    if tpd<0
+                        Insert.Geom = 'UGRID-CONTACT';
+                    else
+                        Insert.Geom = sprintf('UGRID%iD',tpd);
+                    end
                 otherwise
                     Insert.Geom = upper(Info.Mesh{1});
             end
@@ -1931,7 +1935,11 @@ if iscell(Props.varid)
             sz(3) = FI.Dimension(dimNodes).Length;
         case 'node_index'
             Info = FI.Dataset(Props.varid{2}+1);
-            sz(3) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{5})).Length;
+            if Info.Mesh{2}<0
+                sz(3) = 123;
+            else
+                sz(3) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{5})).Length;
+            end
         case 'edge_index'
             Info = FI.Dataset(Props.varid{2}+1);
             sz(3) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{6})).Length;

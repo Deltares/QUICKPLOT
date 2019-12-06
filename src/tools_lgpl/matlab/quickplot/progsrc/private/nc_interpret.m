@@ -221,8 +221,12 @@ for ivar = 1:nvars
             ui_message('error','Incorrect attribute "cf_type" used for specifying the mesh_topology role of variable "%s".',Info.Name)
         end
     end
-    if ~isempty(j) && strcmp(Info.Attribute(j).Value,'mesh_topology')
-        [nc,Info] = parse_ugrid_mesh(nc,varNames,dimNames,ivar,Info,Attribs);
+    if ~isempty(j) 
+        if strcmp(Info.Attribute(j).Value,'mesh_topology')
+            [nc,Info] = parse_ugrid_mesh(nc,varNames,dimNames,ivar,Info,Attribs);
+        elseif strcmp(Info.Attribute(j).Value,'mesh_topology_contact')
+            [nc,Info] = parse_ugrid_contact(nc,varNames,dimNames,ivar,Info,Attribs);
+        end
     end
     %
     j = strmatch('geometry_type',Attribs,'exact');
@@ -606,7 +610,7 @@ end
 %
 % Try to detect x/y/z/time coordinates.
 %
-iUGrid = strcmp({nc.Dataset.Type}','ugrid_mesh');
+iUGrid = strcmp({nc.Dataset.Type}','ugrid_mesh') | strcmp({nc.Dataset.Type}','ugrid_mesh_contact');
 UGrid  = {nc.Dataset(iUGrid).Name};
 iUGrid = find(iUGrid);
 ugridLoc = {'node','edge','face','volume'};
@@ -627,16 +631,23 @@ for ivar = 1:nvars
                 % UGRID meshes.
                 v3 = strmatch(nameMesh,varNames,'exact');
                 if ~isempty(v3)
-                    nc = parse_ugrid_mesh(nc,varNames,dimNames,v3);
+                    nc = parse_ugrid_mesh_or_contact(nc,varNames,dimNames,v3);
                     %
-                    iUGrid = strcmp({nc.Dataset.Type}','ugrid_mesh');
+                    iUGrid = strcmp({nc.Dataset.Type}','ugrid_mesh') | strcmp({nc.Dataset.Type}','ugrid_mesh_contact');
                     UGrid  = {nc.Dataset(iUGrid).Name};
                     iUGrid = find(iUGrid);
                     %
                     j3 = strmatch(Info.Attribute(j1).Value,UGrid,'exact');
                 end
             end
-            j4 = strmatch(Info.Attribute(j2).Value,ugridLoc,'exact')-1;
+            if ~isempty(j3)
+                switch nc.Dataset(iUGrid(j3)).Type
+                    case 'ugrid_mesh'
+                        j4 = strmatch(Info.Attribute(j2).Value,ugridLoc,'exact')-1;
+                    case 'ugrid_mesh_contact'
+                        j4 = strmatch(Info.Attribute(j2).Value,{'contact'},'exact')-1;
+                end
+            end
             if isempty(j3)
                 if any(strcmp(nameMesh,varNames))
                     ui_message('error','Variable "%s" does not comply to UGRID conventions for a mesh.\nIgnoring mesh/location attributes on "%s".',nameMesh,Info.Name)
@@ -645,7 +656,7 @@ for ivar = 1:nvars
                 end
             elseif isempty(j4)
                 ui_message('error','Invalid location type "%s"; ignoring mesh/location attributes on "%s".',nameMesh,Info.Name)
-            else
+            elseif strcmp(nc.Dataset(iUGrid(j3)).Type,'ugrid_mesh')
                 topoDim   = nc.Dataset(iUGrid(j3)).Mesh{j4+5};
                 if isempty(strmatch(topoDim,Info.Dimension,'exact'))
                     dims = sprintf('%s, ',Info.Dimension{:});
@@ -1112,6 +1123,9 @@ for ivar = 1:nvars
     Info = nc.Dataset(ivar);
     if isempty(Info.Mesh) && ~isempty(iUGrid)
         for u = iUGrid'
+            if strcmp(nc.Dataset(u).Type,'ugrid_mesh_contact')
+                continue
+            end
             [udim,ia,ib] = intersect(Info.Dimension,nc.Dataset(u).Mesh(5:end));
             if ~isempty(udim)
                 xdim = strmatch(udim,dimNames,'exact')-1;
@@ -1259,6 +1273,47 @@ else
     node_coords = {};
 end
 Info.Coordinates = node_coords;
+
+function [nc,Info] = parse_ugrid_contact(nc,varNames,dimNames,ivar,Info,Attribs)
+if nargin<5
+    Info = nc.Dataset(ivar);
+    Attribs = {Info.Attribute.Name};
+end
+% ugrid mesh contact
+Info.Type = 'ugrid_mesh_contact';
+%
+j = strmatch('cf_role',Attribs,'exact');
+if isempty(j) || ~strcmp(Info.Attribute(j).Value,'mesh_topology_contact')
+    ui_message('error','Attribute ''cf_role'' should be set to ''mesh_topology_contact'' for UGRID mesh contact variable %s.',Info.Name)
+end
+%
+j = strmatch('contact',Attribs,'exact');
+if isempty(j)
+    ui_message('error','Attribute ''contact'' should be defined for UGRID mesh contact variable %s.',Info.Name)
+else
+    meshLoc = reshape(multiline(Info.Attribute(j).Value,' ','cell'),[2 2])';
+end
+%
+%      contacts:cf_role = "mesh_topology_contact" ;
+%      contacts:contact = "mesh2d: face mesh1d: node" ;
+%      contacts:contact_type = "contacts_contact_type" ;
+%      contacts:contact_id = "contacts_contact_id" ;
+%      contacts:contact_long_name = "contacts_contact_long_name" ;
+%      contacts:start_index = 1 d;
+
+
+function [nc,Info] = parse_ugrid_mesh_or_contact(nc,varNames,dimNames,ivar)
+Info = nc.Dataset(ivar);
+Attribs = {Info.Attribute.Name};
+%
+j = strmatch('cf_role',Attribs,'exact');
+if isempty(j) || (~strcmp(Info.Attribute(j).Value,'mesh_topology') && ~strcmp(Info.Attribute(j).Value,'mesh_topology_contact'))
+    ui_message('error','Attribute ''cf_role'' should be set to ''mesh_topology'' or ''mesh_topology_contact'' for UGRID mesh or UGRID mesh contact variable %s.',Info.Name)
+elseif strcmp(Info.Attribute(j).Value,'mesh_topology')
+    [nc,Info] = parse_ugrid_mesh(nc,varNames,dimNames,ivar);
+elseif strcmp(Info.Attribute(j).Value,'mesh_topology_contact')
+    [nc,Info] = parse_ugrid_contact(nc,varNames,dimNames,ivar);
+end
 
 function [nc,Info] = parse_ugrid_mesh(nc,varNames,dimNames,ivar,Info,Attribs)
 if nargin<5
