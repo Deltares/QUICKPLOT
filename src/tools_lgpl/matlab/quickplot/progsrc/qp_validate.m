@@ -186,16 +186,18 @@ try
     cd(val_dir)
     d=dir('*');
     for i=length(d):-1:1
-        if ~d(i).isdir || any(strcmp(d(1).name,{'.','..','common'}))
+        if ~d(i).isdir || any(strcmp(d(i).name,{'.','..','common'}))
             d(i)=[];
         end
     end
     %
     % Sorting required for MATLAB 5.3 ...
     %
-    [~,I]=sort(upper({d.name}));
-    d=d(I);
-    [d.dt] = deal(NaN);
+    if ~isempty(d)
+        [~,I]=sort(upper({d.name}));
+        d=d(I);
+        [d.dt] = deal(NaN);
+    end
     %
     % Start up the QuickPlot interface such that this time is not included
     % in the timing of the first testcase. Hide the plot manager because
