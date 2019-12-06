@@ -655,7 +655,7 @@ for ivar = 1:nvars
                     ui_message('error','Cannot find mesh "%s"; ignoring mesh/location attributes on "%s".',nameMesh,Info.Name)
                 end
             elseif isempty(j4)
-                ui_message('error','Invalid location type "%s"; ignoring mesh/location attributes on "%s".',nameMesh,Info.Name)
+                ui_message('error','Invalid location type "%s"; ignoring mesh/location attributes on "%s".',Info.Attribute(j2).Value,Info.Name)
             elseif strcmp(nc.Dataset(iUGrid(j3)).Type,'ugrid_mesh')
                 topoDim   = nc.Dataset(iUGrid(j3)).Mesh{j4+5};
                 if isempty(strmatch(topoDim,Info.Dimension,'exact'))
@@ -1316,6 +1316,9 @@ elseif strcmp(Info.Attribute(j).Value,'mesh_topology')
     [nc,Info] = parse_ugrid_mesh(nc,varNames,dimNames,ivar);
 elseif strcmp(Info.Attribute(j).Value,'mesh_topology_contact')
     [nc,Info] = parse_ugrid_contact(nc,varNames,dimNames,ivar);
+end
+if nargout<2
+    nc.Dataset(ivar) = Info;
 end
 
 function [nc,Info] = parse_ugrid_mesh(nc,varNames,dimNames,ivar,Info,Attribs)
