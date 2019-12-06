@@ -1139,11 +1139,11 @@ if ~iscell(list)
 end
 switch log_style
     case 'latex'
-        fprintf(logid,'\\begin{itemize}\n'');
+        fprintf(logid,'\\begin{itemize}\n');
         fprintf(logid,'  \\item %s\n',list{:});
         fprintf(logid,'\\end{itemize}\n');
     otherwise
-        fprintf(logid,'<ul>\n'');
+        fprintf(logid,'<ul>\n');
         fprintf(logid,'  <li>%s</li>\n',list{:});
         fprintf(logid,'</ul>\n');
 end
