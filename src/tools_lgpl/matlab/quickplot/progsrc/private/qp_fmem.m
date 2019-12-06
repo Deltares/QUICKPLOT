@@ -419,7 +419,7 @@ switch cmd
                         end
                     case 'NetCDF'
                         Opt = get_matching_names(FileName,'_',-2);
-                        if Opt{1}>1
+                        if ~isempty(Opt)
                             if Opt{4}~=0 || Opt(3)~=4
                                 Opt = {};
                             end
