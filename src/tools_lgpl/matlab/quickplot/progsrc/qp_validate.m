@@ -1089,7 +1089,7 @@ end
 
 
 function echo_logfile(logid,logf)
-C = protected(getfile(logf));
+C = getfile(logf); % syntax highlighting in TeXnicCenter may be off, but the symbols don't need protecting
 switch log_style
     case 'latex'
         fprintf(logid,'\\begin{Verbatim}[frame=single, framesep=5pt]\n');
