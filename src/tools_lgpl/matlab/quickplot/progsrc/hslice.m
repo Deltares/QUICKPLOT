@@ -87,12 +87,12 @@ end
 nflds = length(flds);
 
 szZ = size(dataIn.Z);
-dataOut.Z = repmat(NaN,szZ(1:end-1));
+dataOut.Z = repmat(NaN,[szZ(1:end-1) 1]);
 for i = 1:nflds
    Fld = flds{i};
    Field3D = getfield(dataIn,Fld);
    szV = size(Field3D);
-   Field2D = repmat(NaN,szV(1:end-1));
+   Field2D = repmat(NaN,[szV(1:end-1) 1]);
    dataOut = setfield(dataOut,Fld,Field2D);
 end
 
