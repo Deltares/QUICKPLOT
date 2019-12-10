@@ -58,7 +58,8 @@ if nargin<3
     fid = double(nargout==0);
 end
 if nargin>3
-    switch lower(formatflag)
+    formatflag = lower(formatflag);
+    switch formatflag
         case 'html'
             br='<br>\n';
         case 'latex'
@@ -84,7 +85,7 @@ try
     if isequal(var1,var2)
         myfprintf(fid,['The variables are identical and they don''t contain NaNs.' br]);
     else
-        DiffFound=1+detailedcheck(var1,var2,fid,br,'');
+        DiffFound=1+detailedcheck(var1,var2,fid,formatflag,br,'');
         switch DiffFound
             case 1
                 myfprintf(fid,['The variables are identical, but they do contain NaNs.' br])
@@ -176,7 +177,7 @@ end
 % -----------------------------------------------------------------------
 %  Function used for recursive checking ...
 % -----------------------------------------------------------------------
-function DiffFound=detailedcheck(s1,s2,fid,br,substr)
+function DiffFound=detailedcheck(s1,s2,fid,formatflag,br,substr)
 DiffFound=0;
 if ~isequal(class(s1),class(s2))  % different classes?
     DiffFound=1;
@@ -199,12 +200,22 @@ elseif iscell(s1)  % & s2 is also cell! if cell -> check per element
         if length(ivec)>1
             [ivec{:}] = ind2sub(size(s1),i);
             istr = sprintf('%i,',ivec{:});
-            str = sprintf('%s{%s}',substr,istr(1:end-1));
+            switch formatflag
+                case 'latex'
+                    str = sprintf('%s\{%s\}',substr,istr(1:end-1));
+                otherwise
+                    str = sprintf('%s{%s}',substr,istr(1:end-1));
+            end
         else
-            str = sprintf('%s{%i}',substr,i);
+            switch formatflag
+                case 'latex'
+                    str = sprintf('%s\{%i\}',substr,i);
+                otherwise
+                    str = sprintf('%s{%i}',substr,i);
+            end
         end
         if ~isequal(s1{i},s2{i})
-            Diff=detailedcheck(s1{i},s2{i},fid,br,str);
+            Diff=detailedcheck(s1{i},s2{i},fid,formatflag,br,str);
             if Diff
                 if ~DiffFound
                     DiffFound=Diff;
@@ -255,7 +266,7 @@ elseif isstruct(s1) || isobject(s1)
             Nsubstr=sprintf('%s.%s',substr,fields{j});
         end
         if ~isequal(s1{i},s2{i})
-            Diff=detailedcheck(s1{i},s2{i},fid,br,Nsubstr);
+            Diff=detailedcheck(s1{i},s2{i},fid,formatflag,br,Nsubstr);
             if Diff
                 if ~DiffFound
                     DiffFound=Diff;
