@@ -139,11 +139,13 @@ switch getvalstr(MW.VSelType)
         Z=get(MW.EditZ,'userdata');
         switch getvalstr(MW.VSelType)
             case {'Z slice'}
-                selected{K_}={'z' get(MW.EditZ,'userdata')};
+                selected{K_}={'z' Z};
             case {'dZ below surface'}
-                selected{K_}={'dz_below_max' get(MW.EditZ,'userdata')};
+                selected{K_}={'dz_below_max' Z};
             case {'dZ above bed'}
-                selected{K_}={'dz_above_min' get(MW.EditZ,'userdata')};
+                selected{K_}={'dz_above_min' Z};
+            case {'depth percentage'}
+                selected{K_}={'depth_frac' Z/100};
         end
 end
 

@@ -1633,6 +1633,12 @@ switch cmd
             z=[];
         elseif ~isequal(size(z),[1 1])
             z=z(1);
+            switch getvalstr(UD.MainWin.VSelType)
+                case {'dZ below surface','dZ above bed'}
+                    z = max(0,z);
+                case 'depth percentage'
+                    z = min(max(0,z),100);
+            end
         end
         set(UD.MainWin.EditZ,'string',sprintf('%g',z),'userdata',z)
         d3d_qp updateoptions
@@ -1668,6 +1674,8 @@ switch cmd
                         error('No horizontal slice level Z specified!')
                     case {'dz_below_max', 'dz_above_min'}
                         error('No horizontal slice level dZ specified!')
+                    case 'percentage depth'
+                        error('No depth percentage for horizontal slice specified!')
                 end
             end
             if isempty(Ops)
@@ -4241,6 +4249,10 @@ switch cmd
                 set([MW.K MW.AllK MW.EditK MW.MaxK],'visible','off')
                 set([MW.Z MW.EditZ],'visible','on')
                 set(MW.Z,'string',strtok(news))
+            case {'depth percentage'}
+                set([MW.K MW.AllK MW.EditK MW.MaxK],'visible','off')
+                set([MW.Z MW.EditZ],'visible','on')
+                set(MW.Z,'string','%')
         end
         
         d3d_qp updateoptions
@@ -4294,7 +4306,7 @@ switch cmd
         set(MW.StList,'enable','off','value',1,'string',' ','backgroundcolor',Inactive,'UserData',[],'visible','on')
         set(MW.Stat,'visible','off')
         set(MW.HSelType,'String',{'M range and N range','(M,N) point/path','(X,Y) point/path'},'value',1)
-        set(MW.VSelType,'String',{'K range','Z slice','dZ below surface','dZ above bed'},'value',1)
+        set(MW.VSelType,'String',{'K range','Z slice','dZ below surface','dZ above bed','depth percentage'},'value',1)
         set([MW.MN MW.MN2XY],'visible','off')
         set(MW.EditMN,'string','','Userdata',[],'visible','off')
         set([MW.XY MW.LoadXY MW.SaveXY],'visible','off')

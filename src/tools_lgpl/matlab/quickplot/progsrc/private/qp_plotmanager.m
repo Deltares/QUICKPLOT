@@ -683,11 +683,13 @@ switch cmd
                                         elseif iscell(k)
                                             switch k{1}
                                                 case 'z'
-                                                    extrastr{itloc}=['Z=' sprintf('%g',k{2})];
+                                                    extrastr{itloc} = sprintf('at Z=%g',k{2});
                                                 case 'dz_below_max'
-                                                    extrastr{itloc}=['dZ below surface=' sprintf('%g',k{2})];
+                                                    extrastr{itloc} = sprintf('at %g below surface',k{2});
                                                 case 'dz_above_min'
-                                                    extrastr{itloc}=['dZ above bed=' sprintf('%g',k{2})];
+                                                    extrastr{itloc} = sprintf('at %g above bed',k{2});
+                                                case 'depth_frac'
+                                                    extrastr{itloc} = sprintf('at %g%% of depth',k{2}*100);
                                             end
                                         elseif ~isempty(k)
                                             extrastr{itloc}=['K=' vec2str(k,'nobrackets')];
