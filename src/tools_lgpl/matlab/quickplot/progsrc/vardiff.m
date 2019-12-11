@@ -68,6 +68,7 @@ if nargin>3
             br='\n';
     end
 else
+    formatflag='';
     br='\n';
 end
 if fid

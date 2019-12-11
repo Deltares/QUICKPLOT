@@ -421,79 +421,77 @@ try
                     if DiffFound
                         frcolor=Color.Failed;
                         frresult=[FAILED ': Data fields differ.'];
-                        ChkOK=0;
                     end
                 else
                     frcolor=Color.Failed;
                     frresult=[FAILED ': Error while reading data.'];
-                    ChkOK=0;
                 end
                 %
                 NP=length(P);
                 NL=length(logs);
                 NT=NP+NL;
-                if 1%ChkOK
-                    write_begin_table(logid2,Color)
-                    datacheck=inifile('get',CaseInfo,'datacheck','default',1);
-                    P=Props{dmx};
-                    for p=1:NP
-                        if progressbar((acc_dt+case_dt(i)*(p-1)/NT)/tot_dt,Hpb)<0
-                            write_table2_line(logid2,Color.Table{TC2},'','','',''); % at least one line needed in table
-                            write_end_table(logid2,emptyTable2);
-                            UserInterrupt=1;
-                            error('User interrupt');
-                        end
-                        if ~strcmp(P(p).Name,'-------')
-                            if P(p).NVal<0
-                                write_table2_line(logid2,Color.Table{TC2},P(p).Name,NOTAPP,'','Check not applicable.');
-                                emptyTable2 = false;
-                                TC2=3-TC2;
-                            elseif ~inifile('get',CaseInfo,'datacheck',P(p).Name,datacheck)
-                                write_table2_line(logid2,Color.Table{TC2},P(p).Name,NOTAPP,NOTAPP,'Check skipped.');
-                                emptyTable2 = false;
-                                TC2=3-TC2;
-                            else
-                                PName=P(p).Name;
-                                PName_double = strmatch(PName,{P(1:p-1).Name},'exact');
-                                PName=str2file(PName);
-                                CmpFile=[PName '.mat'];
-                                if PName_double
-                                    CmpFile=[PName sprintf('.(%i).mat',PName_double+1)];
-                                end
-                                RefFile=[sref CmpFile];
-                                WrkFile=[swrk CmpFile];
-                                idx={};
-                                subf={};
-                                if P(p).DimFlag(ST_)
-                                    idx={1};
-                                    if P(p).DimFlag(T_)
-                                        if P(p).DimFlag(M_) || P(p).DimFlag(N_)
-                                            idx={P(p).Size(T_) idx{:}};
-                                        else
-                                            idx={1:min(10,P(p).Size(T_)) idx{:}};
-                                        end
+                %
+                write_begin_table(logid2,Color)
+                datacheck=inifile('get',CaseInfo,'datacheck','default',1);
+                P=Props{dmx};
+                for p=1:NP
+                    if progressbar((acc_dt+case_dt(i)*(p-1)/NT)/tot_dt,Hpb)<0
+                        write_table2_line(logid2,Color.Table{TC2},'','','',''); % at least one line needed in table
+                        write_end_table(logid2,emptyTable2);
+                        UserInterrupt=1;
+                        error('User interrupt');
+                    end
+                    if ~strcmp(P(p).Name,'-------')
+                        if P(p).NVal<0
+                            write_table2_line(logid2,Color.Table{TC2},P(p).Name,NOTAPP,'','Check not applicable.');
+                            emptyTable2 = false;
+                            TC2=3-TC2;
+                        elseif ~inifile('get',CaseInfo,'datacheck',P(p).Name,datacheck)
+                            write_table2_line(logid2,Color.Table{TC2},P(p).Name,NOTAPP,NOTAPP,'Check skipped.');
+                            emptyTable2 = false;
+                            TC2=3-TC2;
+                        else
+                            PName=P(p).Name;
+                            PName_double = strmatch(PName,{P(1:p-1).Name},'exact');
+                            PName=str2file(PName);
+                            CmpFile=[PName '.mat'];
+                            if PName_double
+                                CmpFile=[PName sprintf('.(%i).mat',PName_double+1)];
+                            end
+                            RefFile=[sref CmpFile];
+                            WrkFile=[swrk CmpFile];
+                            idx={};
+                            subf={};
+                            if P(p).DimFlag(ST_)
+                                idx={1};
+                                if P(p).DimFlag(T_)
+                                    if P(p).DimFlag(M_) || P(p).DimFlag(N_)
+                                        idx={P(p).Size(T_) idx{:}};
+                                    else
+                                        idx={1:min(10,P(p).Size(T_)) idx{:}};
                                     end
                                 end
-                                [Chk,subfields]=qp_getdata(FI,dm,P(p),'subfields');
-                                if Chk && ~isempty(subfields)
-                                    subf={length(subfields)};
-                                end
-                                [Chk,Data]=qp_getdata(FI,dm,P(p),'griddata',subf{:},idx{:});
-                                if ~Chk && isempty(Data)
-                                    write_table2_line(logid2,Color.Table{TC2},P(p).Name,color_write(FAILED,Color.Failed),'','Failed to get data');
-                                    emptyTable2 = false;
-                                    TC2=3-TC2;
-                                    Chk = 0;
-                                else
-                                    write_table2_line(logid2,Color.Table{TC2},P(p).Name,sc{Chk+1},[],'');
-                                    emptyTable2 = false;
-                                    TC2=3-TC2;
-                                end
-                                if ~Chk
-                                    frcolor=Color.Failed;
-                                    frresult=sprintf('%s: Error retrieving data for ''%s''.',FAILED,P(p).Name);
-                                    ChkOK=0;
-                                else
+                            end
+                            [Chk,subfields]=qp_getdata(FI,dm,P(p),'subfields');
+                            if Chk && ~isempty(subfields)
+                                subf={length(subfields)};
+                            end
+                            [Chk,Data]=qp_getdata(FI,dm,P(p),'griddata',subf{:},idx{:});
+                            if ~Chk && isempty(Data)
+                                write_table2_line(logid2,Color.Table{TC2},P(p).Name,color_write(FAILED,Color.Failed),'','Failed to get data');
+                                emptyTable2 = false;
+                                TC2=3-TC2;
+                                Chk = 0;
+                            else
+                                write_table2_line(logid2,Color.Table{TC2},P(p).Name,sc{Chk+1},[],'');
+                                emptyTable2 = false;
+                                TC2=3-TC2;
+                            end
+                            if ~Chk
+                                frcolor=Color.Failed;
+                                frresult=sprintf('%s: Error retrieving data for ''%s''.',FAILED,P(p).Name);
+                            else
+                                try
                                     if localexist(RefFile)
                                         cmpFile=localload(RefFile);
                                         PrevData=cmpFile.Data;
@@ -574,16 +572,22 @@ try
                                             frresult=CREATED;
                                         end
                                     end
+                                catch Crash
+                                    frcolor=Color.Failed;
+                                    frresult=sprintf('%s: Error checking one or more data fields.',FAILED);
+                                    write_table2_line(logid2,[],[],[],sc{1},color_write(protected(Crash.message),Color.Failed));
+                                    emptyTable2 = false;
+                                    Crash = [];
                                 end
                             end
-                        else
-                            write_table_rule(logid2,Color)
                         end
-                        flush(logid2)
+                    else
+                        write_table_rule(logid2,Color)
                     end
-                    write_end_table(logid2,emptyTable2);
-                    drawnow
+                    flush(logid2)
                 end
+                write_end_table(logid2,emptyTable2);
+                drawnow
                 %
                 if isempty(logs)
                     write_rule(logid2);
