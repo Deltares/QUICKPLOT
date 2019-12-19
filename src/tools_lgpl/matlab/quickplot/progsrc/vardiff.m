@@ -203,14 +203,14 @@ elseif iscell(s1)  % & s2 is also cell! if cell -> check per element
             istr = sprintf('%i,',ivec{:});
             switch formatflag
                 case 'latex'
-                    str = sprintf('%s\{%s\}',substr,istr(1:end-1));
+                    str = sprintf('%s\\{%s\\}',substr,istr(1:end-1));
                 otherwise
                     str = sprintf('%s{%s}',substr,istr(1:end-1));
             end
         else
             switch formatflag
                 case 'latex'
-                    str = sprintf('%s\{%i\}',substr,i);
+                    str = sprintf('%s\\{%i\\}',substr,i);
                 otherwise
                     str = sprintf('%s{%i}',substr,i);
             end
