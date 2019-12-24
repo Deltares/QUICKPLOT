@@ -22,6 +22,7 @@ function average_trim(source,target,varargin)
 %           'min'   : Minimum value
 %           'max'   : Maximum value
 %           'median': Median value
+%           'select': Select a single time step (TimeSteps sould be scalar).
 %
 %    AVERAGE_TRIM(TRIM_Source,TRIM_Target,TimeSteps,Operation)
 %    Uses only the selected time steps and applies the selected operation.
@@ -101,7 +102,6 @@ if exist(targetdat,'file') || exist(targetdef,'file')
     errordlg({'The .DAT and .DEF files for processed data should not yet exist.',targetdat,targetdef},'Fatal Error','modal')
     return
 end
-T=vs_ini(targetdat,targetdef);
 
 average='unspecified';
 times = 'unspecified';
@@ -122,11 +122,11 @@ if strcmp(average,'unspecified')
         average = 'mean';
     end
 end
+Info = vs_disp(S,'map-series',[]);
+Tmax = Info.SizeDim;
 if isequal(times,'unspecified')
     if isstandalone
         accepted = 0;
-        Info = vs_disp(S,'map-series',[]);
-        Tmax = Info.SizeDim;
         times = [1 Tmax];
         while ~accepted
             prompt = {'First time step:','Last time step:'};
@@ -151,11 +151,17 @@ if isequal(times,'unspecified')
                 times(2) = Tmax;
             end
         end
+        times = times(1):times(2);
     else
-        times = 0;
+        times = 1:Tmax;
     end
 end
 
+if strcmp(average,'select')
+    if length(times)>1
+        error('The select option of average_trim works only for one selected time step!')
+    end
+end
 %
 % exclude the average transport groups
 %
@@ -184,6 +190,11 @@ for g=length(tgrps):-1:1
         tgrps(g)=[];
     end
 end
+
+%
+% create the new file
+%
+T=vs_ini(targetdat,targetdef);
 %
 % copy all fields of the groups that are not in the exclgrps list and not
 % in the time dependent group (tgrps) list.
@@ -196,7 +207,7 @@ T=vs_copy(S,T,excl_tgrps{:},exclgrps{:},'quiet');
 % to be overwritten by average
 %
 copy_tgrps=tgrps;
-copy_tgrps(2,:)={{1}};
+copy_tgrps(2,:)={{times(1)}};
 T=vs_copy(S,T,'*',[],copy_tgrps{:},'quiet');
 %
 % compute averages
@@ -221,7 +232,9 @@ for g=1:length(tgrps)
                 if ~Success
                     error('Didn''t get data for: %s',[tgrps{g} '/' elms{e}])
                 end
-                Data = feval(average,Data); % average in first (=time) direction
+                if ~strcmp(average,'select')
+                    Data = feval(average,Data); % average in first (=time) direction
+                end
             catch
                 [LASTMSG, LASTID] = lasterr;
                 switch LASTID
@@ -243,6 +256,8 @@ for g=1:length(tgrps)
                                         Data = min(Data,DataT);
                                     case 'mean'
                                         Data = Data+DataT;
+                                    case 'select'
+                                        Data = DataT;
                                     otherwise
                                         error('Command ''%s'' not supported',average);
                                 end
