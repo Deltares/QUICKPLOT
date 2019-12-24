@@ -278,8 +278,8 @@ else
             end
         end
     end
+    delete(hPB)
 end
-delete(hPB)
 
 if isstandalone
     fprintf('\nProcessing completed successfully.\n');
