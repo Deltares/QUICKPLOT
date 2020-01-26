@@ -465,6 +465,10 @@ if XYRead || XYneeded
                     end
                     % branch_id
                     [eBrNr, status] = qp_netcdf_get(FI,FI.Dataset(i_eBrNr));
+                    if any(eBrNr<0)
+                        ui_message('warning','Invalid %s data: negative branch ids encountered. Ignoring this data.',FI.Dataset(i_eBrNr).Name)
+                        eBrNr = [];
+                    end
                     break
                 end
                 si = strmatch('start_index',{FI.Dataset(i_eBrNr).Attribute.Name});
@@ -482,6 +486,7 @@ if XYRead || XYneeded
                 % networknode(i) = N if mesh node i coincides with network node N
                 % networknode(i) = -1 if mesh node i does not coincide with a network node
                 networknode = -ones(size(Ans.X));
+                networknode(Ans.Y==0 | Ans.Y==BrL(Ans.X)) = 1;
                 %
                 % reconstruct mesh_edge branch affinity
                 eBrNr = Ans.X(e2n);
@@ -505,8 +510,10 @@ if XYRead || XYneeded
                     %
                     if 1
                         % if one branch, select that one.
+                        1
                     else
                         % if multiple branches, select one and give warning.
+                        2
                     end
                 end
                 eBrNr = eBrNr(:,1);

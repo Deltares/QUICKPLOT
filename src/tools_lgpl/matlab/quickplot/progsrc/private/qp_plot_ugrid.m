@@ -259,6 +259,9 @@ switch NVal
                     NP = cellfun(@numel,data.EdgeGeometry.X);
                     uNP = unique(NP);
                     for i = length(uNP):-1:1
+                        if uNP(i)==1
+                            continue
+                        end
                         j = NP==uNP(i);
                         x = cat(2,data.EdgeGeometry.X{j});
                         y = cat(2,data.EdgeGeometry.Y{j});
@@ -266,6 +269,7 @@ switch NVal
                             case 'EDGE'
                                 v = data.Val(j);
                                 v = repmat(v',uNP(i),1);
+                                edgecolor = 'flat';
                             case 'NODE'
                                 j0 = find(j);
                                 v = zeros(size(x));
@@ -274,11 +278,12 @@ switch NVal
                                     dataNodes = data.Val(data.EdgeNodeConnect(j0(ij),:));
                                     v(:,ij) = interp1([0;d(end)],dataNodes,d);
                                 end
+                                edgecolor = 'interp';
                         end
                         faces = repmat(numel(x)+1,fliplr(size(x))+[0 1]);
                         faces(:,1:end-1) = reshape(1:numel(x),size(x))';
                         v = reshape(v,[numel(x) 1]);
-                        hNew(i) = patch('parent',Parent,'vertices',[x(:) y(:);NaN NaN],'faces',faces,'facevertexcdata',[v;NaN],'edgecolor','flat','facecolor','none','linewidth',Ops.linewidth,'linestyle',Ops.linestyle,'marker',Ops.marker,'markersize',Ops.markersize,'markeredgecolor',Ops.markercolour,'markerfacecolor',Ops.markerfillcolour);
+                        hNew(i) = patch('parent',Parent,'vertices',[x(:) y(:);NaN NaN],'faces',faces,'facevertexcdata',[v;NaN],'edgecolor',edgecolor,'facecolor','none','linewidth',Ops.linewidth,'linestyle',Ops.linestyle,'marker',Ops.marker,'markersize',Ops.markersize,'markeredgecolor',Ops.markercolour,'markerfacecolor',Ops.markerfillcolour);
                     end
                 else
                     hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'UGRID',data,Ops);

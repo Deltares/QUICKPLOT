@@ -239,9 +239,16 @@ end
 FirstFrame=isempty(hOldVec);
 
 if isfield(Ops,'plotcoordinate')
+    % TODO: take into account the EdgeGeometry length ...
     switch Ops.plotcoordinate
         case {'path distance','reverse path distance'}
-            if isfield(data,'Y')
+            if isfield(data,'EdgeNodeConnect')
+                iNode = data.EdgeNodeConnect([1 size(data.EdgeNodeConnect,1)+(1:size(data.EdgeNodeConnect,1))]);
+                data.X = data.X(iNode);
+                data.Y = data.Y(iNode);
+                x = data.X;
+                y = data.Y;
+            elseif isfield(data,'Y')
                 if size(data.X,2)==2 && size(data.X,1)>2
                     % The following lines are not valid for geographic coordinates!
                     data.X = (data.X(:,1,:) + data.X(:,2,:))/2;
