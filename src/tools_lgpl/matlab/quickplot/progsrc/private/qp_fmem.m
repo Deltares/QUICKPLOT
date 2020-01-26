@@ -1167,6 +1167,9 @@ else
 end
 if nDigits>0 && all(ismember(n(iOffset+(1:nDigits)),'0123456789'))
     iPOffset  = length(p)+1+iOffset;
+    if length(p)>=1 && p(end)==filesep
+        iPOffset = iPOffset-1;
+    end
     FileName1 = FileName(1:iPOffset);
     FileName2 = FileName(iPOffset+nDigits+1:end);
     %
