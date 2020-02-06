@@ -112,6 +112,12 @@ switch v_slice
                         renum = zeros(max(isel),1);
                         renum(isel) = 1:length(isel);
                         data.EdgeNodeConnect = renum(data.EdgeNodeConnect);
+                        % since data is defined at nodes, we can flip the
+                        % edges without needing to worry about signs or
+                        % directionality of the values.
+                        data.EdgeNodeConnect = sort(data.EdgeNodeConnect,2);
+                        [~,iOrder] = sort(data.EdgeNodeConnect(:,1));
+                        data.EdgeNodeConnect = data.EdgeNodeConnect(iOrder,:);
                     case 'EDGE'
                         iedge = isel;
                         data.EdgeNodeConnect = data.EdgeNodeConnect(iedge,:);
