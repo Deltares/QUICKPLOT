@@ -365,35 +365,84 @@ try
                             DiffMessage = 1; % Failed
                             localsave(WrkFile,Props,saveops);
                             if length(Props)~=length(PrevProps)
-                                write_log(logid2,'Number of domains differs.');
+                                write_log(logid2,'The number of domains differs.');
                                 write_log(logid2,'Reference data set contains %i domains.',length(PrevProps));
                                 write_log(logid2,'New data set contains %i domains.',length(Props));
                             else
                                 JustAddedData=1;
+                                JustAddedFields=1;
                                 for dm=1:length(Props)
+                                    %
+                                    % Check for differences in the datafields
                                     Prop = Props{dm};
                                     PropRef = PrevProps{dm};
-                                    pn={Prop.Name};
-                                    ppn={PropRef.Name};
-                                    dpn=setdiff(pn,ppn);
-                                    dppn=setdiff(ppn,pn);
+                                    pName = {Prop.Name};
+                                    pNameRef = {PropRef.Name};
+                                    pnAdded = setdiff(pName,pNameRef);
+                                    pnRemoved = setdiff(pNameRef,pName);
                                     if length(Props)>1
                                         write_log(logid2,'<b>Domain ''%s''</b>',Dms{dm});
                                     end
-                                    if ~isempty(dpn)
-                                        dpn = protected(dpn);
+                                    if ~isempty(pnAdded)
+                                        pnAdded = protected(pnAdded);
                                         write_log(logid2,'New datafields:');
-                                        write_list(logid2,dpn);
+                                        write_list(logid2,pnAdded);
+                                        Prop(ismember(pName,pnAdded)) = [];
+                                        pName = {Prop.Name};
                                     end
-                                    if ~isempty(dppn)
-                                        dppn = protected(dppn);
+                                    if ~isempty(pnRemoved)
+                                        JustAddedData=0;
+                                        pnRemoved = protected(pnRemoved);
                                         write_log(logid2,'Deleted datafields:');
-                                        write_list(logid2,dppn);
+                                        write_list(logid2,pnRemoved);
+                                        PropRef(ismember(pNameRef,pnRemoved)) = [];
+                                        pNameRef = {PropRef.Name};
                                     end
-                                    if ~isempty(dpn) || ~isempty(dppn)
-                                        [~,ipn,ippn]=intersect(pn,ppn);
-                                        Prop=Prop(ipn);
-                                        PropRef=PropRef(ippn);
+                                    %
+                                    % Make sure that the datafields are in the same order
+                                    if ~isequal(pName,pNameRef)
+                                        write_log(logid2,'Order of datafields changed.');
+                                        [~,iProp] = sort(pName);
+                                        [~,iPropRef] = sort(pNameRef);
+                                        Prop = Prop(iProp);
+                                        PropRef = PropRef(iPropRef);
+                                    end
+                                    %
+                                    % Check for differences in the property field names
+                                    fProp = fieldnames(Prop);
+                                    fPropRef = fieldnames(PropRef);
+                                    fAdded = setdiff(fProp,fPropRef);
+                                    fRemoved = setdiff(fPropRef,fProp);
+                                    if ~isempty(fAdded)
+                                        fAdded = protected(fAdded);
+                                        write_log(logid2,'New property fields:');
+                                        write_list(logid2,fAdded);
+                                        Prop = rmfield(Prop,fAdded);
+                                        fProp = fieldnames(Prop);
+                                    end
+                                    if ~isempty(fRemoved)
+                                        JustAddedFields=0;
+                                        fRemoved = protected(fRemoved);
+                                        write_log(logid2,'Deleted property fields:');
+                                        write_list(logid2,fRemoved);
+                                        PropRef = rmfield(PropRef,fRemoved);
+                                        fPropRef = fieldnames(PropRef);
+                                    end
+                                    %
+                                    % Make sure that the property fields are in the same order
+                                    if ~isequal(fProp,fPropRef)
+                                        write_log(logid2,'Order of property fields changed.');
+                                        [~,iProp] = sort(fProp);
+                                        [~,iPropRef] = sort(fPropRef);
+                                        fProp = fProp(iProp);
+                                        %
+                                        cProp = struct2cell(Prop);
+                                        cProp = cProp(iProp,:);
+                                        Prop = cell2struct(cProp,fProp,1);
+                                        %
+                                        cPropRef = struct2cell(PropRef);
+                                        cPropRef = cPropRef(iPropRef,:);
+                                        PropRef = cell2struct(cPropRef,fProp,1);
                                     end
                                     %
                                     if vardiff(Prop,PropRef)>1
@@ -402,7 +451,7 @@ try
                                     end
                                     drawnow
                                 end
-                                if JustAddedData
+                                if JustAddedData && JustAddedFields
                                     DiffMessage = 2; % Successful but still option to open reference folder
                                     DiffFound = 0;
                                     if strcmp(frcolor,Color.Success)
@@ -556,7 +605,7 @@ try
                                             write_table2_line(logid2,[],[],[],2,'');
                                             ChkOK = DiffFound<=0;
                                             if ~ChkOK
-                                                frresult=sprintf('%s: Data changed for ''%s''.',FAILED,P(p).Name);
+                                                frresult=sprintf('%s: Data changed for ''%s''.',FAILED,protected(P(p).Name));
                                             end
                                             localsave([PName,'.mat'],Data,saveops);
                                         else
@@ -881,15 +930,15 @@ switch log_style
             fprintf(logid,'%s\n','\input{common/program_names}');
             fprintf(logid,'\n');
             fprintf(logid,'%s\n','\title{\QUICKPLOT\ Testing}');
-            fprintf(logid,'%s\n','\subtitle{Automated regression testing report}');
-            fprintf(logid,'%s\n','\manualtype{Validation Document}');
+            fprintf(logid,'%s\n','\subtitle{Automated testing report}');
+            fprintf(logid,'%s\n','\manualtype{Regression Document}');
             fprintf(logid,'%s\n','\distribution{}');
             fprintf(logid,'%s{%s%s}\n','\version',versionstr,stalone);
             fprintf(logid,'%s\n','\deltarestitle');
             fprintf(logid,'%s%s%s%s%s\n','\rowcolors{1}{',Color.Table{1},'}{',Color.Table{2},'}');
             fprintf(logid,'\n');
             fprintf(logid,'%s\n','\begin{landscape}');
-            fprintf(logid,'%s{%s} %s{Chap:%s}\n','\chapter','Validation summary','\label','Summary');
+            fprintf(logid,'%s{%s} %s{Chap:%s}\n','\chapter','Summary of test results','\label','Summary');
             for fName = extlog.files
                 fprintf(logid,'\\input{"%s"}\n',extlog.(fName{1}).filename);
             end
