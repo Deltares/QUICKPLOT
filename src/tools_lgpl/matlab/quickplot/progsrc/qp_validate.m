@@ -381,7 +381,7 @@ try
                                     pnAdded = setdiff(pName,pNameRef);
                                     pnRemoved = setdiff(pNameRef,pName);
                                     if length(Props)>1
-                                        write_log(logid2,'<b>Domain ''%s''</b>',Dms{dm});
+                                        write_log_domain(logid2,Dms{dm});
                                     end
                                     if ~isempty(pnAdded)
                                         pnAdded = protected(pnAdded);
@@ -402,8 +402,8 @@ try
                                     % Make sure that the datafields are in the same order
                                     if ~isequal(pName,pNameRef)
                                         write_log(logid2,'Order of datafields changed.');
-                                        [~,iProp] = sort(pName);
-                                        [~,iPropRef] = sort(pNameRef);
+                                        [~,iProp] = unique(pName);
+                                        [~,iPropRef] = unique(pNameRef);
                                         Prop = Prop(iProp);
                                         PropRef = PropRef(iPropRef);
                                     end
@@ -1183,6 +1183,16 @@ switch log_style
         fprintf(logid,'%s\\newline\n',message{:});
     otherwise
         fprintf(logid,'%s<br>\n',message{:});
+end
+
+
+function write_log_domain(logid,domain)
+switch log_style
+    case 'latex'
+        fprintf(logid,'\\newline\n');
+        fprintf(logid,'\\textbf{Domain ''%s''}\\newline\n',domain);
+    otherwise
+        fprintf(logid,'<b>Domain ''%s''</b><br>\n',domain);
 end
 
 
