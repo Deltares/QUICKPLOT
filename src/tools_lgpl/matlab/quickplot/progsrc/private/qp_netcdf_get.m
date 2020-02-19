@@ -152,7 +152,7 @@ for d=1:Info.Rank
 end
 %
 if isempty(Info.Dimid) || nargin==3
-    Data = nc_varget(FI.Filename,FI.Dataset(varid+1).Name);
+    Data = nc_vargetr(FI.Filename,FI.Dataset(varid+1).Name);
     if length(FI.Dataset(varid+1).Size)>1 && ~isequal(size(Data),FI.Dataset(varid+1).Size)
         Data = reshape(Data,FI.Dataset(varid+1).Size);
     end
@@ -179,7 +179,7 @@ else
         end
     end
     %
-    Data = nc_varget(FI.Filename,FI.Dataset(varid+1).Name,start_coord,count_coord);
+    Data = nc_vargetr(FI.Filename,FI.Dataset(varid+1).Name,start_coord,count_coord);
     if length(count_coord)>1
         Data = reshape(Data,count_coord);
     end
@@ -200,8 +200,8 @@ if ~isempty(Info.Attribute)
     %
     missval = strmatch('missing_value',Attribs,'exact');
     if ~isempty(missval)
-        missval = Info.Attribute(missval).Value;
-        Data(Data==missval)=NaN;
+        missval = Info.Attribute(missval).Value; % might be a vector according to https://www.unidata.ucar.edu/software/netcdf/docs/attribute_conventions.html
+        Data(ismember(Data,missval))=NaN;
     end
     %
     missval = strmatch('valid_min',Attribs,'exact');
@@ -250,5 +250,21 @@ if ~isempty(Info.Attribute)
             case {'float','double'}
                 Data(Data>=9.9692099683868690e+36)=NaN;
         end
+    end
+    %
+    scale_factor = strmatch('scale_factor',Attribs,'exact');
+    add_offset   = strmatch('add_offset'  ,Attribs,'exact');
+    if ~isempty(scale_factor) || ~isempty(add_offset)
+        if ~isempty(scale_factor)
+            scale_factor = Info.Attribute(scale_factor).Value;
+        else
+            scale_factor = 1.0;
+        end
+        if ~isempty(add_offset)
+            add_offset = Info.Attribute(add_offset).Value;
+        else
+            add_offset = 0.0;
+        end
+        Data = Data*scale_factor + add_offset;
     end
 end
