@@ -4043,7 +4043,7 @@ switch cmd
             end
         end
         
-    case 'run'
+    case {'run','rerun'}
         PAR.X=[];
         PAR = rmfield(PAR,'X');
         blockcomment=0;
@@ -4121,6 +4121,9 @@ switch cmd
                 set(c(LogId),'label',sprintf('&1 %s',abbrevfn(filename)),'position',1);
             end
             set(OtherLog,'visible','on')
+            %
+            rerun=findobj(mfig,'tag','rerun');
+            set(rerun,'enable','on','ClickedCallback',LogCallBack,'TooltipString',sprintf('Run ''%s'' again.',filename))
         end
         %
         stop   = 0;
