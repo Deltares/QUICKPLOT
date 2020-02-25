@@ -1394,6 +1394,9 @@ switch cmd
         cmdargs={cmd};
         
     case 'selectfile'
+        if isempty(mfig)
+            return
+        end
         Handle_SelectFile=findobj(mfig,'tag','selectfile');
         if nargin>3
             FileName=varargin{1};

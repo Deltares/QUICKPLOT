@@ -653,6 +653,17 @@ switch cmd
                                 Tp=FI.FileType;
                             end
                         end
+                    case 'boxfile'
+                        DataFI=boxfile('read',FileName);
+                        FI = wlgrid('create',size(DataFI));
+                        FI.FileName = FileName;
+                        %
+                        FI.FileType = 'wlgrid';
+                        FI.Options = 0;
+                        FI.QP_Options = [];
+                        %
+                        FI = gridfil(FI,[],'options',[],'openfile',FileName);
+                        Tp = FI.FileType;
                     case 'mike0'
                         FI=mike('open',FileName);
                         if ~isempty(FI)

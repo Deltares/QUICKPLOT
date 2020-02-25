@@ -103,6 +103,9 @@ switch lcmd
         else
             varargout={Grid.X Grid.Y Grid.Enclosure Grid.CoordinateSystem Grid.MissingValue};
         end
+    case 'create'
+        Grid=Local_create_grid(varargin{:});
+        varargout{1}=Grid;
     case {'struct','write','newrgf','writeold','oldrgf','writeswan','swangrid'}
         switch lcmd
             case 'write'
@@ -122,6 +125,16 @@ switch lcmd
         error('Unknown command')
 end
 
+function GRID=Local_create_grid(sz)
+GRID.X                = repmat((1:sz(1))',1,sz(2));
+GRID.Y                = repmat(1:sz(2),sz(1),1);
+GRID.Enclosure        = [];
+GRID.FileName         = '';
+GRID.CoordinateSystem = 'Unknown';
+GRID.MissingValue     = 0;
+GRID.Attributes       = {};
+GRID.Type             = 'RGF';
+GRID.Orient           = 'anticlockwise';
 
 function GRID=Local_read_grid(filename)
 GRID.X                = [];
