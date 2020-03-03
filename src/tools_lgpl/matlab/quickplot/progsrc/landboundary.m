@@ -42,7 +42,7 @@ function varargout=landboundary(cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2020 Stichting Deltares.                                     
+%   Copyright (C) 2011-2019 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -180,6 +180,9 @@ while i<=nargin-1
         RemoveLengthOne=1;
     elseif ischar(varargin{i}) && strcmpi(varargin{i},'dosplit')
         DoSplit=1;
+    elseif ischar(varargin{i}) && strcmpi(varargin{i},'names') 
+        names=varargin{i+1};
+        i=i+1;
     elseif ischar(varargin{i}) && strcmpi(varargin{i},'format') && i<nargin-1
         Format=varargin{i+1};
         i=i+1;
@@ -191,7 +194,7 @@ while i<=nargin-1
             data2=varargin{i};
             XYSep=1; % x and y supplied separately?
         end
-    elseif iscell(varargin{i}) && (j==0 || j==1)
+    elseif iscell(varargin{i}) && (j==0 || j==1) && ischar(varargin{i}) 
         CellData=1;
         if j==0
            Data1=varargin{i};
@@ -266,7 +269,11 @@ for c = 1:Ncell
                     '*column 1 = x coordinate'
                     '*column 2 = y coordinate'};
             end
-            T.Field(j).Name = sprintf(Format,j);
+            if exist('names','var')
+                T.Field(j).Name=names{j};
+            else
+                T.Field(j).Name = sprintf(Format,j);
+            end
             T.Field(j).Size = [I(i+1)-I(i)-1 2];
             if XYSep
                 T.Field(j).Data = [data1((I(i)+1):(I(i+1)-1)) data2((I(i)+1):(I(i+1)-1))];
