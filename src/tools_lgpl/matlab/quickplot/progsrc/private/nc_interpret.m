@@ -133,6 +133,7 @@ nvars = length(nc.Dataset);
 [nc.Dataset(1:nvars).AuxTime    ] = deal([]);
 [nc.Dataset(1:nvars).Station    ] = deal([]);
 [nc.Dataset(1:nvars).SubField   ] = deal([]);
+[nc.Dataset(1:nvars).SubFieldChr] = deal(zeros(0,2));
 [nc.Dataset(1:nvars).TSMNK      ] = deal([NaN NaN NaN NaN NaN]);
 [nc.Dataset(1:nvars).SubFieldDim] = deal([]);
 [nc.Dataset(1:nvars).CharDim    ] = deal([]);
@@ -718,7 +719,19 @@ for ivar = 1:nvars
                 case 'aux-time'
                     Info.AuxTime = [Info.AuxTime sicvar];
                 case 'label'
-                    Info.Station = [Info.Station sicvar];
+                    AcceptedStationNames = {'cross_section_name','cross_section_id','station_name','station_id','dredge_area_name','dump_area_name'};
+                    if sicvar>0 % don't use auto detect label dimensions as station ... this will trigger sediment names to be used as station name for map-files
+                        Info.Station = [Info.Station sicvar];
+                    elseif ismember(nc.Dataset(-sicvar).Name,AcceptedStationNames)
+                        Info.Station = [Info.Station sicvar];
+                    else
+                        if CHARDIM==1
+                            sfdim = nc.Dataset(icvar).Dimid(2);
+                        else
+                            sfdim = nc.Dataset(icvar).Dimid(1);
+                        end
+                        Info.SubFieldChr = [Info.SubFieldChr; icvar sfdim];
+                    end
                 otherwise
                     Info.SubField = [Info.SubField sicvar];
             end
@@ -782,7 +795,9 @@ for ivar = 1:nvars
     end
     %
     xName = '';
-    if strcmp(Info.Type,'ugrid_mesh') && iscell(Info.Mesh) && strcmp(Info.Mesh{1},'ugrid1d_network')
+    if strcmp(Info.Type,'simple_geometry')
+        Info.TSMNK(3) = nc.Dataset(Info.Mesh{4}).Dimid;
+    elseif strcmp(Info.Type,'ugrid_mesh') && iscell(Info.Mesh) && strcmp(Info.Mesh{1},'ugrid1d_network')
         crds = Info.Coordinates;
         for i = 1:length(crds)
             crds{i} = nc.Dataset(find(strcmp(crds{i},varNames)));
@@ -945,7 +960,7 @@ for ivar = 1:nvars
             end
         end
     end
-    if ~isempty(Info.Y)
+    if ~isempty(Info.Y) && ~isequal(Info.Type,'simple_geometry')
         iY = abs(Info.Y);
         %
         iDim = {nc.Dataset(iY).Dimid};
@@ -1126,10 +1141,12 @@ end
 for ivar = 1:nvars
     Info = nc.Dataset(ivar);
     %
-    % SubField variables must be one-dimensional.
-    % Their dimension should not match any of time/coordinate dimensions.
+    % SubField dimensions should not match any of already assigned time/coordinate dimensions.
     %
     Info.SubFieldDim = setdiff(Info.Dimid,Info.TSMNK);
+    %
+    % Identify the character (i.e. string length) dimension - exclude it from subfield dimension list
+    %
     if strcmp(Info.Datatype,'char') && ~isempty(Info.SubFieldDim)
         if CHARDIM==1
             Info.CharDim = setdiff(Info.Dimid(1),Info.TSMNK);
@@ -1139,14 +1156,20 @@ for ivar = 1:nvars
         Info.SubFieldDim = setdiff(Info.SubFieldDim,Info.CharDim);
     end
     %
-    % reassign subfield dimensions to M, N, K
+    % reassign non-character subfield dimensions to M, N, K if they are all
+    % undefined. Usually that means that the variable is not a spatial data
+    % set. By assigning non-spatial dimensions to the M, N and K dimensions
+    % we enable 1D and 2D plots against simple axis.
     %
+    CharSubFieldDims    = setdiff(Info.SubFieldChr(:,2)',Info.TSMNK);
+    nonCharSubFieldDims = setdiff(Info.SubFieldDim,CharSubFieldDims);
     if all(isnan(Info.TSMNK(2:end)))
-        for i=1:min(3,length(Info.SubFieldDim))
-            Info.TSMNK(2+i) = Info.SubFieldDim(i);
+        for i = 1:min(3,length(nonCharSubFieldDims))
+            Info.TSMNK(2+i) = nonCharSubFieldDims(i);
         end
-        Info.SubFieldDim = Info.SubFieldDim(4:end);
+        nonCharSubFieldDims = nonCharSubFieldDims(4:end);
     end
+    Info.SubFieldDim = [CharSubFieldDims nonCharSubFieldDims];
     %
     nc.Dataset(ivar) = Info;
 end
@@ -1268,6 +1291,25 @@ if nargin<5
     Attribs = {Info.Attribute.Name};
 end
 Info.Type = 'simple_geometry';
+geometry  = 'simple_geometry';
+%
+gt = strmatch('geometry_type',Attribs,'exact');
+if ~isempty(gt)
+    type = Info.Attribute(gt).Value;
+    switch type
+        case 'multiline'
+            ui_message('error','The geometry_type "%s" for variable "%s" is invalid. Correcting to "%s".',type,Info.Name,'line')
+            type = 'line';
+    end
+else
+    type = 'undefined';
+end
+%
+nca = strmatch('node_count',Attribs,'exact');
+if ~isempty(nca)
+    node_count = Info.Attribute(nca).Value;
+    vnc = strmatch(node_count,{nc.Dataset.Name},'exact');
+end
 %
 cn = strmatch('node_coordinates',Attribs,'exact');
 if ~isempty(cn)
@@ -1276,6 +1318,9 @@ else
     node_coords = {};
 end
 Info.Coordinates = node_coords;
+%
+Info.Mesh = {geometry type ivar vnc};
+
 
 function [nc,Info] = parse_ugrid_contact(nc,varNames,dimNames,ivar,Info,Attribs)
 if nargin<5

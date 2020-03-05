@@ -560,7 +560,9 @@ elseif strfind(axestype,'Val')
 elseif strcmp(axestype,'Text') || (strcmp(axestype,'Time-Val') && ~multiple(T_))
     MultipleColors=0;
     ask_for_textprops=1;
-    ask_for_numformat=1;
+    if ~strcmp(nvalstr,'strings')
+        ask_for_numformat=1;
+    end
 end
 if nval==-1 || (nval>=0 && nval<1)
     lineproperties=1;
@@ -820,7 +822,10 @@ end
 %---- presentation type
 %
 extend2edge = 0;
-if ((nval==1 || nval==6) && TimeSpatial==2) || ...
+if strcmp(axestype,'Text')
+    % always text ...
+    Ops.presentationtype = 'labels';
+elseif ((nval==1 || nval==6) && TimeSpatial==2) || ...
         ((nval==1 || nval==6) && TimeSpatial==1 && vslice) || ...
         nval==1.9 || ...
         strcmp(nvalstr,'strings') || ...
@@ -1335,19 +1340,21 @@ if ask_for_textprops
     Ops.fontsize=get(hFontsize,'userdata');
     set(hFontsize,'enable','on','backgroundcolor',Active);
     
-    set(findobj(OH,'tag','alignment'),'enable','on');
-    set(findobj(OH,'tag','horizontalalignment'),'enable','on');
-    set(findobj(OH,'tag','verticalalignment'),'enable','on');
-    hHorAlign=findobj(OH,'tag','horizontalalignment=?');
-    iHorAlign=get(hHorAlign,'value');
-    strHorAlign=get(hHorAlign,'string');
-    Ops.horizontalalignment=strHorAlign{iHorAlign};
-    set(hHorAlign,'enable','on','backgroundcolor',Active);
-    hVerAlign=findobj(OH,'tag','verticalalignment=?');
-    iVerAlign=get(hVerAlign,'value');
-    strVerAlign=get(hVerAlign,'string');
-    Ops.verticalalignment=strVerAlign{iVerAlign};
-    set(hVerAlign,'enable','on','backgroundcolor',Active);
+    if ~strcmp(axestype,'Text')
+        set(findobj(OH,'tag','alignment'),'enable','on');
+        set(findobj(OH,'tag','horizontalalignment'),'enable','on');
+        set(findobj(OH,'tag','verticalalignment'),'enable','on');
+        hHorAlign=findobj(OH,'tag','horizontalalignment=?');
+        iHorAlign=get(hHorAlign,'value');
+        strHorAlign=get(hHorAlign,'string');
+        Ops.horizontalalignment=strHorAlign{iHorAlign};
+        set(hHorAlign,'enable','on','backgroundcolor',Active);
+        hVerAlign=findobj(OH,'tag','verticalalignment=?');
+        iVerAlign=get(hVerAlign,'value');
+        strVerAlign=get(hVerAlign,'string');
+        Ops.verticalalignment=strVerAlign{iVerAlign};
+        set(hVerAlign,'enable','on','backgroundcolor',Active);
+    end
 end
 
 if ask_for_thinningmode
@@ -1411,7 +1418,7 @@ if isfield(Props,'ClosedPoly')
 end
 
 if ask_for_textprops
-    if matlabversionnumber>=6.05
+    if matlabversionnumber>=6.05 && ~strcmp(axestype,'Text')
         hTextbox=findobj(OH,'tag','textbox=?');
         set(hTextbox,'enable','on');
         if get(hTextbox,'value')

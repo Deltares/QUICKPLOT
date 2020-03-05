@@ -538,7 +538,7 @@ try
                             end
                             if ~Chk
                                 frcolor=Color.Failed;
-                                frresult=sprintf('%s: Error retrieving data for ''%s''.',FAILED,P(p).Name);
+                                frresult=sprintf('%s: Error retrieving data for ''%s''.',FAILED,protected(P(p).Name));
                             else
                                 try
                                     if localexist(RefFile)

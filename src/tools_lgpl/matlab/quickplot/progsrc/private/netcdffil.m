@@ -136,13 +136,13 @@ fidx=find(DimFlag);
 [subf,rec]=getsubfields(FI,Props);
 if isempty(subf)
     % initialize and read indices ...
-    Props.SubFld=rec;
-    idx(fidx(1:length(varargin)))=varargin;
+    Props.SubFld = rec;
+    idx(fidx(1:length(varargin))) = varargin;
 else
     % initialize and read indices ...
     rec.Val = rec.Val(varargin{1},:);
-    Props.SubFld=rec;
-    idx(fidx(1:(length(varargin)-1)))=varargin(2:end);
+    Props.SubFld = rec;
+    idx(fidx(1:(length(varargin)-1))) = varargin(2:end);
 end
 
 % select appropriate dimensions ...
@@ -179,10 +179,8 @@ end
 
 % expand SubFld into higher order dimensions
 if ~isempty(Props.SubFld)
-    Props.DimName = cat(2,Props.DimName,Props.SubFld.Fld);
-    for i=1:length(Props.SubFld.Fld)
-        idx{end+1} = Props.SubFld.Val(i);
-    end
+    Props.DimName = cat(2,Props.DimName,Props.SubFld.Fld{:});
+    idx = cat(2,idx,num2cell(Props.SubFld.Val));
 end
 % read data ...
 ivar = get_varid(Props);
@@ -267,7 +265,7 @@ if DataRead && Props.NVal>0
                 cdim = Info.Dimension(Info.CharDim==Info.Dimid);
                 cidx = 1:FI.Dimension(Info.CharDim+1).Length;
                 [data, status] = qp_netcdf_get(FI,Props.varid(ii),[Props.DimName cdim],[idx {cidx}]);
-                data = num2cell(data,ndims(data));
+                data = deblank(num2cell(data,ndims(data)));
             else
                 [data, status] = qp_netcdf_get(FI,Props.varid(ii),Props.DimName,idx);
             end
@@ -554,7 +552,7 @@ if XYRead || XYneeded
                     minNode = min(Ans.FaceNodeConnect(Ans.FaceNodeConnect>=0));
                     if minNode==1 && maxNode==length(Ans.X)
                         start = 1;
-                        ui_message('warning','No start_index found on %s.\nDefault value is 0, but data suggests otherwise.\nUsing start_index=1.',meshInfo.Attribute(connect).Value)
+                        ui_message('warning','No start_index found on %s.\nDefault value is 0, but data suggest otherwise.\nUsing start_index=1.',meshInfo.Attribute(connect).Value)
                     else
                         start = 0;
                     end
@@ -584,7 +582,6 @@ if XYRead || XYneeded
                 Ans.EdgeNodeConnect = zeros(0,2);
             else
                 [Ans.EdgeNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
-                Ans.EdgeNodeConnect(Ans.EdgeNodeConnect<0) = NaN;
             end
         end
         if isfield(Ans,'EdgeNodeConnect') && ~isempty(iconnect)
@@ -598,7 +595,7 @@ if XYRead || XYneeded
                 minNode = min(Ans.EdgeNodeConnect(Ans.EdgeNodeConnect>=0));
                 if minNode==1 && maxNode==length(Ans.X)
                     start = 1;
-                    ui_message('warning','No start_index found on %s.\nDefault value is 0, but data suggests otherwise.\nUsing start_index=1.',meshInfo.Attribute(connect).Value)
+                    ui_message('warning','No start_index found on %s.\nDefault value is 0, but data suggest otherwise.\nUsing start_index=1.',meshInfo.Attribute(connect).Value)
                 else
                     start = 0;
                 end
@@ -606,7 +603,11 @@ if XYRead || XYneeded
                 start = FI.Dataset(iconnect).Attribute(istart).Value;
             end
             Ans.EdgeNodeConnect = Ans.EdgeNodeConnect - start + 1;
-            Ans.EdgeNodeConnect(Ans.EdgeNodeConnect<1) = NaN;
+            edgeInvalid = any(Ans.EdgeNodeConnect<1,2);
+            if any(edgeInvalid)
+                ui_message('warning','%i invalid edges detected in edge-node connectivity variable %s; edges removed.',sum(edgeInvalid),meshInfo.Attribute(connect).Value)
+                Ans.EdgeNodeConnect(edgeInvalid,:) = [];
+            end
         end
         if mesh_settings{2}==1 % also: if strncmp(Props.Geom,'UGRID1D',7)
             aEG = strcmp({meshInfo.Attribute.Name},'edge_geometry');
@@ -635,6 +636,13 @@ if XYRead || XYneeded
                 %    Ans.EdgeNodeConnect(~isnan(Ans.EdgeNodeConnect)) = renum(Ans.EdgeNodeConnect(~isnan(Ans.EdgeNodeConnect)));
                 %end
             case 'EDGE'
+                for fld = {'Val','XComp','YComp','Angle','Magnitude','NormalComp','TangentialComp'}
+                    Fld = fld{1};
+                    if isfield(Ans,Fld)
+                        Ans.(Fld)(edgeInvalid(idx{M_})) = [];
+                    end
+                end
+                idx{M_}(edgeInvalid(idx{M_})) = [];
                 Ans.EdgeNodeConnect = Ans.EdgeNodeConnect(idx{M_},:);
                 if isfield(Ans,'Edge')
                     Ans.EdgeGeometry.X = Ans.EdgeGeometry.X(idx{M_});
@@ -647,13 +655,25 @@ if XYRead || XYneeded
         %[Ans.XFace, status] = qp_netcdf_get(FI,'mesh2d_face_x');
         %[Ans.YFace, status] = qp_netcdf_get(FI,'mesh2d_face_y');
     elseif strcmp(Info.Type,'simple_geometry')
-        gt = ustrcmpi('geometry_type',Attribs);
-        switch Info.Attribute(gt).Value
-            case {'multiline'}
+        simpleType = Info.Mesh{2};
+        switch simpleType
+            case {'line'}
                 Ans.X = qp_netcdf_get(FI,FI.Dataset(Info.X));
                 Ans.Y = qp_netcdf_get(FI,FI.Dataset(Info.Y));
+                NodeCount = qp_netcdf_get(FI,Info.Mesh{4}-1);
+                Ans.X = mat2cell(Ans.X,NodeCount);
+                Ans.Y = mat2cell(Ans.Y,NodeCount);
+                Ans.X = Ans.X(idx{M_});
+                Ans.Y = Ans.Y(idx{M_});
+                %
+                Ans.X = Ans.X';
+                Ans.X(2,:) = {NaN};
+                Ans.X = cat(1,Ans.X{:});
+                Ans.Y = Ans.Y';
+                Ans.Y(2,:) = {NaN};
+                Ans.Y = cat(1,Ans.Y{:});
             otherwise
-                error('Simple geometry type "%s" not yet implemented.',Info.Attribute(gt).Value)
+                error('Simple geometry type "%s" not yet implemented.',simpleType)
         end
     else
         firstbound = 1;
@@ -1482,47 +1502,69 @@ else
         % Any extra dimensions are wrapped into the subfields.
         %
         if ~isempty(Info.SubFieldDim)
-            Insert.SubFld={};
-            for d = Info.SubFieldDim+1
-                Insert.SubFld(end+1,1:2) = {FI.Dimension(d).Name FI.Dimension(d).Length};
+            nsfd = length(Info.SubFieldDim);
+            Insert.SubFld=cell(nsfd,2);
+            for id = 1:nsfd
+                d = Info.SubFieldDim(id)+1;
+                [isStringDim,iVar] = ismember(d-1,Info.SubFieldChr(:,2));
+                Insert.SubFld(id,1:2) = {FI.Dimension(d).Name FI.Dimension(d).Length};
+                if isStringDim
+                    stcrd = Info.SubFieldChr(iVar,1);
+                    if FI.Dataset(stcrd).CharDim==FI.Dataset(stcrd).Dimid(1)
+                        % PRESERVE_FVD=true
+                        [labels, status] = qp_netcdf_get(FI,stcrd-1,fliplr(FI.Dataset(stcrd).Dimension));
+                    else
+                        [labels, status] = qp_netcdf_get(FI,stcrd-1,FI.Dataset(stcrd).Dimension);
+                    end
+                    Insert.SubFld{id,3} = cellstr(labels);
+                end
             end
         end
         %
         if ~isempty(Info.Mesh)
             nmesh = nmesh+1;
             switch Info.Mesh{1}
-                case 'ugrid'
+                case 'ugrid' %,'ugrid1d_network'}
                     tpd = Info.Mesh{2};
                     if tpd<0
                         Insert.Geom = 'UGRID-CONTACT';
                     else
                         Insert.Geom = sprintf('UGRID%iD',tpd);
                     end
+
+                case 'simple_geometry'
+                    switch Info.Mesh{2}
+                        case 'line'
+                            Insert.Geom = 'POLYL';
+                    end
                 otherwise
                     Insert.Geom = upper(Info.Mesh{1});
             end
+            BaseGeom = Insert.Geom;
+            if ~strcmp(Info.Mesh{1},'simple_geometry')
+                switch Info.Mesh{4}
+                    case -1 % the mesh itself
+                        Insert.SubFld = [];
+                        Insert.Geom = [Insert.Geom '-NODE'];
+                        Insert.DimFlag(3) = 6;
+                    case 0 % node
+                        Insert.Geom = [Insert.Geom '-NODE'];
+                        Insert.DimFlag(3) = 6;
+                    case 1 % edge
+                        Insert.Geom = [Insert.Geom '-EDGE'];
+                        Insert.DimFlag(3) = 6;
+                    case 2 % face
+                        Insert.Geom = [Insert.Geom '-FACE'];
+                        Insert.DimFlag(3) = 6;
+                        Insert.DataInCell = 1;
+                    case 3 % volume
+                        Insert.Geom = [Insert.Geom '-VOLUME'];
+                        Insert.DimFlag(3) = 6;
+                        Insert.DataInCell = 1;
+                end
+            end
             Insert.Coords = 'xy';
             Insert.hasCoords=1;
-            BaseGeom = Insert.Geom;
-            switch Info.Mesh{4}
-                case -1 % the mesh itself
-                    Insert.Geom = [Insert.Geom '-NODE'];
-                    Insert.DimFlag(3) = 6;
-                case 0 % node
-                    Insert.Geom = [Insert.Geom '-NODE'];
-                    Insert.DimFlag(3) = 6;
-                case 1 % edge
-                    Insert.Geom = [Insert.Geom '-EDGE'];
-                    Insert.DimFlag(3) = 6;
-                case 2 % face
-                    Insert.Geom = [Insert.Geom '-FACE'];
-                    Insert.DimFlag(3) = 6;
-                    Insert.DataInCell = 1;
-                case 3 % volume
-                    Insert.Geom = [Insert.Geom '-VOLUME'];
-                    Insert.DimFlag(3) = 6;
-                    Insert.DataInCell = 1;
-            end
             if strcmp(Info.Type,'ugrid_mesh')
                 Insert.NVal = 0;
             end
@@ -1557,13 +1599,13 @@ else
         %
         Insert.varid = Info.Varid;
         %
-        if ~isempty(Info.Mesh) && isequal(Info.Mesh{4},-1)
+        if ~isempty(Info.Mesh) && isequal(Info.Type,'ugrid_mesh') && isequal(Info.Mesh{4},-1)
             Insert.varid = {'node_index' Insert.varid};
         end
         %
         Out(end+1)=Insert;
         %
-        if ~isempty(Info.Mesh) && isequal(Info.Mesh{4},-1)
+        if ~isempty(Info.Mesh) && isequal(Info.Type,'ugrid_mesh') && isequal(Info.Mesh{4},-1)
             Nm = Insert.Name;
             %
             Insert.Name = [Nm ' - node indices'];
@@ -1882,45 +1924,57 @@ end
 
 
 % -----------------------------------------------------------------------------
-function [subf,rec]=getsubfields(FI,Props,f)
+function [Subf,rec]=getsubfields(FI,Props,f)
 if isempty(Props.SubFld)
-    subf={};
-    rec.Fld={};
-    rec.Val=[];
+    Subf = {};
+    rec  = [];
 else
-    subf={''};
-    Fld=Props.SubFld(:,1)';
-    Val=zeros(1,0);
-    for d = 1:length(Fld)
+    nSubFld = size(Props.SubFld,1);
+    Subf    = {''};
+    Val     = zeros(1,0);
+    for d = 1:nSubFld
         nval = Props.SubFld{d,2};
-        newsubf = {};
-        newVal = [];
-        for sf = 1:length(subf)
-            subf_f = subf{sf};
-            Val_f = Val(sf,:);
-            if ~isempty(subf_f)
-                subf_f = [subf_f ', '];
-            end
-            for v = 1:Props.SubFld{d,2}
-                if nval>1
-                    newsubf{end+1}=sprintf('%s%s=%i',subf_f,Fld{d},v);
-                else
-                    newsubf{end+1}=subf_f;
-                end
-                newVal(end+1,1:d)=[Val_f v];
-            end
+        sfld = Props.SubFld{d,1};
+        if size(Props.SubFld,2)==3
+            strs = Props.SubFld{d,3};
+        else
+            strs = [];
         end
-        subf = newsubf;
-        Val = newVal;
+        %
+        newSubf = cell(1,length(Subf)*nval);
+        newVal  = zeros(length(Subf)*nval,d);
+        v0      = 0;
+        for sf = 1:length(Subf)
+            subf_f = Subf{sf};
+            Val_f  = Val(sf,:);
+            if ~isempty(subf_f)
+                sep = ', ';
+            else
+                sep = '';
+            end
+            for v = 1:nval
+                if ~isempty(strs)
+                    newSubf{v0+v} = [subf_f sep strs{v}];
+                elseif nval>1
+                    newSubf{v0+v} = sprintf('%s%s%s=%i',subf_f,sep,sfld,v);
+                else
+                    newSubf{v0+v} = subf_f;
+                end
+                newVal(v0+v,:)=[Val_f v];
+            end
+            v0 = v0+nval;
+        end
+        Subf = newSubf;
+        Val  = newVal;
     end
-    if isequal(subf,{''})
-        subf={};
+    if isequal(Subf,{''})
+        Subf = {};
     end
-    rec.Fld=Fld;
-    rec.Val=Val;
+    rec.Fld = Props.SubFld(:,1)';
+    rec.Val = Val;
 end
 if nargin>2 && f~=0
-    subf = subf(f);
+    Subf = Subf(f);
 end
 % -----------------------------------------------------------------------------
 
@@ -2294,6 +2348,8 @@ switch cmd
                     C(cellfun(@isempty,C)) = {' '};
                     ui_message('message',C);
                 end
+            case 4
+                nc_dump(FI.FileName)
         end
     otherwise
         error(['Unknown option command: ',cmd])
@@ -2317,13 +2373,16 @@ uicontrol('Parent',h0, ...
     'Horizontalalignment','left', ...
     'Enable','off', ...
     'Tag','ncdump');
-uicontrol('Parent',h0, ...
+dumpto = uicontrol('Parent',h0, ...
     'Style','popupmenu', ...
     'BackgroundColor',Inactive, ...
     'Position',[161 voffset 170 20], ...
     'String',{'File','Clipboard','Message Window'}, ...
     'Enable','off', ...
     'Tag','ncdumpto=?');
+if ~isstandalone
+    set(dumpto, 'String',{'File','Clipboard','Message Window','MATLAB Command Window'})
+end
 % -----------------------------------------------------------------------------
 
 function C = getfile(file)

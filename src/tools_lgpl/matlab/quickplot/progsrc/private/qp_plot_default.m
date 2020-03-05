@@ -922,11 +922,16 @@ switch NVal
                 
         end
     case {4}
-        switch Ops.presentationtype
-            case {'markers'}
-                hNew=genmarkers(hNew,Ops,Parent,[],data.X,data.Y);
-            case {'labels'}
-                hNew=gentextfld(hNew,Ops,Parent,data.Val,data.X,data.Y);
+        switch axestype
+            case 'Text'
+                hNew=gentext(hNew,Ops,Parent,data.Val);
+            otherwise
+                switch Ops.presentationtype
+                    case {'markers'}
+                        hNew=genmarkers(hNew,Ops,Parent,[],data.X,data.Y);
+                    case {'labels'}
+                        hNew=gentextfld(hNew,Ops,Parent,data.Val,data.X,data.Y);
+                end
         end
 end
 

@@ -31,13 +31,20 @@ function hNew=gentext(hOld,Ops,Parent,Str)
 %   $HeadURL$
 %   $Id$
 
+Str = protected(Str);
+
 if ~isempty(hOld) & ishandle(hOld)
     hNew=hOld;
     set(hNew,'string',Str);
 else
     hNew=text(0.5,0.5,Str, ...
-        'color',Ops.colour, ...
+        Ops.FontParams{:}, ...
         'horizontalalignment','center', ...
         'parent',Parent);
     setaxesprops(Parent,'Text')
 end
+
+function S = protected(S)
+S = strrep(S,'\','\\');
+S = strrep(S,'_','\_');
+S = strrep(S,'^','\^');
