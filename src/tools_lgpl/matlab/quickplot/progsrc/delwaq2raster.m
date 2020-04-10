@@ -265,6 +265,7 @@ for ifld = 1:nchp
             info.ntskip = inifile('get',ini_info,ifld,'skipstep',ntskip);
             info.layer  = inifile('get',ini_info,ifld,'layer',layer);
             info.ldepth = inifile('get',ini_info,ifld,'localdepth','LocalDepth');
+            info.ogrid  = inifile('get',ini_info,ifld,'outputgrid','');
             if ischar(info.layer)
                 switch info.layer
                     case 'depth average'
@@ -817,7 +818,11 @@ for ifld = 1:nchp
                         data = flipud(data);
                     end
                     %
-                    filename = fullfile(outdir,sprintf('%s.%s',qstr{i},tmopstr));
+                    if strcmp(info.ogrid,'')
+                        filename = fullfile(outdir,sprintf('%s.%s',qstr{i},tmopstr));
+                    else
+                        filename = info.ogrid;
+                    end
                     switch raster_info.FileType
                         case 'HDR Raster File - BIP/BIL/BSQ'
                             bil('write',filename,raster_info,data);
