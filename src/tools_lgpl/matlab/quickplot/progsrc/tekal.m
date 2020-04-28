@@ -467,10 +467,15 @@ function [Data,ErrorFound,ExtraData] = read_numeric(fid,BlockName,dim,TryToCorre
 offset     = ftell(fid);
 ErrorFound = 0;
 try
-    if ~isfinite(dim(2))
-        d2 = textscan(fid,[repmat('%f%*[ ]',1,dim(1)-1) '%f%s'],'delimiter','','whitespace',''); % read until problem occurs (hopefully the name of the next block or eof)
+    if isenvironment('Octave')
+        prefix = '%*[ ]';
     else
-        d2 = textscan(fid,[repmat('%f%*[ ]',1,dim(1)-1) '%f%s'],dim(2),'delimiter','','whitespace','');
+        prefix = '';
+    end
+    if ~isfinite(dim(2))
+        d2 = textscan(fid,[prefix repmat('%f%*[ ]',1,dim(1)-1) '%f%s'],'delimiter','','whitespace',''); % read until problem occurs (hopefully the name of the next block or eof)
+    else
+        d2 = textscan(fid,[prefix repmat('%f%*[ ]',1,dim(1)-1) '%f%s'],dim(2),'delimiter','','whitespace','');
     end
     Data = cat(2,d2{1:dim(1)});
     ExtraData = strtrim(d2{end});
