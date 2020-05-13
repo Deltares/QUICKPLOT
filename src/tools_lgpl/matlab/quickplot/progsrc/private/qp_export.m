@@ -138,16 +138,6 @@ switch expType
             case {'patches','patches with lines'}
                 retrieve='gridcelldata';
         end
-        saveops={};
-        switch expType
-            case 'mat file (v6)'
-                if matlabversionnumber>=7
-                    saveops={'-v6'};
-                end
-            case 'mat file (v7)'
-            case 'mat file (v7.3/hdf5)'
-                saveops={'-v7.3'};
-        end
     otherwise
         ui_message('warning','Export type %s not implemented.',ExpType);
         filename='';
@@ -210,33 +200,47 @@ for f=1:ntim
     
     if strcmp(Ops.presentationtype,'vector') || ...
             strcmp(Ops.presentationtype,'markers') || ...
-            strcmp(Ops.presentationtype,'values')
+            strcmp(Ops.presentationtype,'values') || ...
+            strcmp(expType, 'sample file')
         % data = geom2pnt(data);
-        if isfield(data,'ValLocation')
-            if strcmp(data.ValLocation,'EDGE')
-                if isfield(data,'Geom') && strcmp(data.Geom,'sQUAD')
-                    data.EdgeNodeConnect = [1:length(data.X)-1;2:length(data.X)]';
+        for i = 1:length(data)
+            if isfield(data(i),'ValLocation')
+                if strcmp(data(i).ValLocation,'EDGE')
+                    if isfield(data(i),'Geom') && strcmp(data(i).Geom,'sQUAD')
+                        data(i).EdgeNodeConnect = [1:length(data(i).X)-1;2:length(data(i).X)]';
+                    end
+                    data(i).X = mean(data(i).X(data(i).EdgeNodeConnect),2);
+                    data(i).Y = mean(data(i).Y(data(i).EdgeNodeConnect),2);
+                elseif strcmp(data(i).ValLocation,'FACE')
+                    missing = isnan(data(i).FaceNodeConnect);
+                    nNodes = size(missing,2)-sum(missing,2);
+                    data(i).FaceNodeConnect(missing) = 1;
+                    data(i).X = data(i).X(data(i).FaceNodeConnect);
+                    data(i).X(missing) = 0;
+                    data(i).X = sum(data(i).X,2)./nNodes;
+                    data(i).Y = data(i).Y(data(i).FaceNodeConnect);
+                    data(i).Y(missing) = 0;
+                    data(i).Y = sum(data(i).Y,2)./nNodes;
                 end
-                data.X = mean(data.X(data.EdgeNodeConnect),2);
-                data.Y = mean(data.Y(data.EdgeNodeConnect),2);
-            elseif strcmp(data.ValLocation,'FACE')
-                missing = isnan(data.FaceNodeConnect);
-                nNodes = size(missing,2)-sum(missing,2);
-                data.FaceNodeConnect(missing) = 1;
-                data.X = data.X(data.FaceNodeConnect);
-                data.X(missing) = 0;
-                data.X = sum(data.X,2)./nNodes;
-                data.Y = data.Y(data.FaceNodeConnect);
-                data.Y(missing) = 0;
-                data.Y = sum(data.Y,2)./nNodes;
+                data(i).Geom = 'sSEG';
             end
-            for c = {'FaceNodeConnection','EdgeNodeConnection','ValLocation'}
-                s = c{1};
-                if isfield(data,s)
-                    data = rmfield(data,s);
+        end
+        if length(data)>1
+            data(1).X = cat(1,data.X);
+            data(1).Y = cat(1,data.Y);
+            for cfld = {'Val','CompX','CompY','CompZ'}
+                fld = cfld{1};
+                if isfield(data,fld)
+                    data(1).(fld) = cat(1,data.(fld));
                 end
             end
-            data.Geom = 'sSEG';
+            data(2:end) = [];
+        end
+        for c = {'FaceNodeConnection','EdgeNodeConnection','ValLocation'}
+            s = c{1};
+            if isfield(data,s)
+                data = rmfield(data,s);
+            end
         end
     end
     
@@ -901,6 +905,7 @@ for f=1:ntim
                     error('Unknown presentationtype "%s" during export of ArcView Shape',Ops.presentationtype)
             end
         case 'sample file'
+            writeHeader = true;
             x=0; y=0; z=0; sz=[];
             if isfield(data,'X')
                 x=1;
@@ -954,24 +959,39 @@ for f=1:ntim
             if fid<0
                 error(['Could not create or open: ',filename])
             end
-            fprintf(fid,'"%s" ',vars{:});
+            if writeHeader
+                fprintf(fid,'"%s" ',vars{:});
+            end
             fprintf(fid,'\n');
             Format=repmat(' %14.6f',1,size(expdata,1));
             Format=[Format(2:end) '\n'];
             fprintf(fid,Format,expdata);
             fclose(fid);
         case {'stl stereolithography file (ascii)','stl stereolithography file (binary)'}
+            writeAscii = strcmp(expType(strfind(expType,'('):end), '(ascii)');
             xyz = squeeze(data.XYZ);
             if size(xyz,2)==2
-                xyz  = [xyz data.Val'];
+                xyz(:,3) = data.Val(:);
             end
-            switch expType(strfind(expType,'('):end)
-                case '(ascii)'
-                    stl('write_ascii',filename,data.Name,data.TRI,xyz)
-                case '(binary)'
-                    stl('write',filename,data.Name,data.TRI,xyz)
+            if writeAscii
+                stl('write_ascii',filename,data.Name,data.TRI,xyz)
+            else
+                stl('write',filename,data.Name,data.TRI,xyz)
             end
         case {'mat file','mat file (v6)','mat file (v7)','mat file (v7.3/hdf5)'}
+            saveops={};
+            switch expType
+                case 'mat file (v6)'
+                    if matlabversionnumber>=7
+                        saveops={'-v6'};
+                    end
+                case 'mat file (v7)'
+                    if matlabversionnumber>=7.3
+                        saveops={'-v7'};
+                    end
+                case 'mat file (v7.3/hdf5)'
+                    saveops={'-v7.3'};
+            end
             if scalar && isfield(data,'XComp')
                 data.Name = [data.Name ', ' Ops.vectorcomponent];
                 if isfield(data,'XComp')

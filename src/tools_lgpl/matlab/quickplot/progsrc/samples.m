@@ -96,6 +96,9 @@ if exist(filename)~=2
 end
 try
     xyz0 = load(filename);
+    if isempty(xyz0)
+        error('Empty samples set returned: is this a valid sample file?');
+    end
     simplexyz = 1;
 catch
     try
