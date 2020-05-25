@@ -217,18 +217,23 @@ if DataRead && Props.NVal>0
                 Psi = NaN(sz(3),1);
                 Psi(1) = 0;
                 found = true;
+                nnodes = length(Psi);
+                hPB = progressbar(0, 'title', 'Computing stream function ...');
                 while found
+                    nnodes_done = sum(~isnan(Psi));
+                    progressbar(nnodes_done/nnodes, hPB);
                     found = false;
                     for i = 1:size(EdgeConnect,1)
-                        if ~isnan(Psi(EdgeConnect(i,1))) && isnan(Psi(EdgeConnect(i,2)))
+                        if ~isnan(Psi(EdgeConnect(i,1))) && isnan(Psi(EdgeConnect(i,2))) && ~isnan(Discharge(i))
                             Psi(EdgeConnect(i,2)) = Psi(EdgeConnect(i,1)) + Discharge(i);
                             found = true;
-                        elseif isnan(Psi(EdgeConnect(i,1))) && ~isnan(Psi(EdgeConnect(i,2)))
+                        elseif isnan(Psi(EdgeConnect(i,1))) && ~isnan(Psi(EdgeConnect(i,2))) && ~isnan(Discharge(i))
                             Psi(EdgeConnect(i,1)) = Psi(EdgeConnect(i,2)) - Discharge(i);
                             found = true;
                         end
                     end
                 end
+                delete(hPB)
                 Psi = Psi - min(Psi);
                 %
                 Ans.Val = Psi(idx{3});
