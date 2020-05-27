@@ -40,11 +40,14 @@ function delwaq2raster(ini_file)
 %   One or more [action] blocks containing the following keywords:
 %     time_op:  name of operation in time. The tool supports the following
 %               operations:
-%               max, mean, min, std, and ident (default)
+%               max, mean, min, std, percentile and ident (default)
 %               The default time operator "ident" will convert every time
 %               step in the specified period (from tstart until tstop). In
-%               the other cases, it will take the max, mean, min, std of
-%               all values in the selected time period.
+%               the other cases, it will take the max, mean, min, std or
+%               specified percentile of all values in the selected time
+%               period.
+%     percentile: percentile to be taken from the data of the selected
+%               time period (0-100%, required when time_op is percentile).
 %     tstart :  start index of time steps to include in processing (default
 %               value taken from [general] block).
 %     tstop  :  stop index of time steps to include in processing (default
@@ -85,6 +88,9 @@ function delwaq2raster(ini_file)
 %               variable is available on the delwaq MAP file.
 %     localdepth: specify the name of the variable to be used for the
 %               layer depth, by default this is: LocalDepth.
+%     outputgrid: user specified name for the output grid. By default a 
+%               name will be constructed from include, time_op, optionally
+%               percentile and timings.
 %
 %   One or more [<VarName>] blocks in which <VarName> matches the name of a
 %   variable specified in the "include" item of an [action] block. The
@@ -258,6 +264,7 @@ for ifld = 1:nchp
             chp{ifld,2} = inifile('get',ini_info,ifld,'include',{});
             [chp{ifld,3},chp{ifld,2}] = filter_qnt(chp{ifld,2},waq_qnt,flw_qnt);
             info = [];
+            info.prctl  = inifile('get',ini_info,ifld,'percentile',-999);
             info.tstart = inifile('get',ini_info,ifld,'tstart',tstart);
             info.tstop  = inifile('get',ini_info,ifld,'tstop' ,tstop);
             info.ntstep = inifile('get',ini_info,ifld,'ntstep',ntstep);
@@ -430,6 +437,16 @@ for ifld = 1:nchp
         end
     end
     chp{ifld,4} = info;
+end
+%
+fprintf(1,'Checking percentile information ...\n');
+for ifld = 1:nchp
+    info = chp{ifld,4};
+    if strcmp(chp{ifld,1},'percentile')
+        if any(info.prctl < 0 | info.prctl > 100) || ~isreal(info.prctl)
+            error('Invalid or missing percentile specification in block %i', ifld)
+        end
+    end
 end
 %
 fprintf(1,'Segment number mapping ...\n');
@@ -631,7 +648,7 @@ for ifld = 1:nchp
     end
     %
     switch tmop
-        case {'ident','max','min'}
+        case {'ident','max','min','percentile'}
             missing_value = NaN;
         otherwise
             missing_value = 0;
@@ -643,19 +660,26 @@ for ifld = 1:nchp
         itstep  = info.ntskip+1;
         ntim    = 0;
         %
+        if strcmp(tmop,'percentile')
+            tmopstr = sprintf('%s_%i',tmop,info.prctl);
+        else
+            tmopstr = tmop;
+        end
         if itstep==1
-            tmopstr = sprintf('%s_%i-%i',tmop,itstart,itstop);
+            tmopstr = sprintf('%s_%i-%i',tmopstr,itstart,itstop);
         else
             itstop = itstart + itstep*floor((itstop-itstart)/itstep);
             if itstop>itstart
-                tmopstr = sprintf('%s_%i-%i-step%i',tmop,itstart,itstop,itstep);
+                tmopstr = sprintf('%s_%i-%i-step%i',tmopstr,itstart,itstop,itstep);
             else
-                tmopstr = sprintf('%s_%i',tmop,itstart);
+                tmopstr = sprintf('%s_%i',tmopstr,itstart);
             end
         end
         switch tmop
             case {'max','min'}
                 DATA = NaN;
+            case 'percentile'
+                DATA  = [];
             otherwise
                 DATA  = 0;
                 DATA2 = 0;
@@ -800,6 +824,13 @@ for ifld = 1:nchp
                     ntim  = ntim  + iMissing;
                     if it==itstop
                         DATA = sqrt(DATA2 - (DATA.^2)./max(1,ntim))./max(1,ntim-1);
+                        DATA(ntim==0) = NaN;
+                    end
+                case 'percentile'
+                    DATA  = [DATA;DATA_t];
+                    ntim  = ntim  + ~iMissing;
+                    if it==itstop
+                        DATA = prctile(DATA, info.prctl, 1);
                         DATA(ntim==0) = NaN;
                     end
             end
