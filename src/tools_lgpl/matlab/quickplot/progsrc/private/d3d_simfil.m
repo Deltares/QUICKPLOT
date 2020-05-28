@@ -378,8 +378,13 @@ switch FI.FileType(9:end)
                     F.QP_Options.AttribFiles.QP_Options.DataLocation = 'TODO';
                     %
                     Props.VecType    = '';
-                    Props.Loc        = 'd';
-                    Props.ReqLoc     = 'd';
+                    if strcmp(F.QP_Options.AttribFiles.QP_Options.Dpsopt,'DP')
+                        Props.Loc        = 'z';
+                        Props.ReqLoc     = 'z';
+                    else
+                        Props.Loc        = 'd';
+                        Props.ReqLoc     = 'd';
+                    end
                     Props.Loc3D      = '';
                     Props.File       = 1;
                     Props.Fld        = -1;
