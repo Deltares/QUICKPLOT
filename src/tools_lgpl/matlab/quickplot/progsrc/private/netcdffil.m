@@ -369,8 +369,10 @@ if ~isnan(npolpnt)
     for f = {'Val','XComp','YComp','Angle','Magnitude','NormalComp','TangentialComp'}
         fc = f{1};
         if isfield(Ans,fc)
+            szV = size(Ans.(fc));
             Ans.(fc) = repmat(Ans.(fc)(:)',npolpnt,1);
-            Ans.(fc) = Ans.(fc)(:);
+            szV(1) = szV(1)*npolpnt;
+            Ans.(fc) = reshape(Ans.(fc),szV);
         end
     end
 end
@@ -1124,6 +1126,9 @@ if XYRead || XYneeded
                             ui_message('warning','Formula for %s not implemented',standard_name)
                         end
                         [Z, status] = qp_netcdf_get(FI,CoordInfo,Props.DimName,idx);
+                        if all(isnan(Z(:)))
+                            error('Vertical coordinate variable %s returned only missing values.',CoordInfo.Name)
+                        end
                         nZ = length(Z);
                         if signup<0
                             Z=-Z;
@@ -1283,6 +1288,18 @@ if XYRead || XYneeded
         end
         if Props.DimFlag(K_)
             Ans.Z = idx{K_};
+        end
+    end
+end
+
+if ~isnan(npolpnt)
+    for f = {'Z'}
+        fc = f{1};
+        if isfield(Ans,fc)
+            szV = size(Ans.(fc));
+            Ans.(fc) = repmat(Ans.(fc)(:)',npolpnt,1);
+            szV(1) = szV(1)*npolpnt;
+            Ans.(fc) = reshape(Ans.(fc),szV);
         end
     end
 end
@@ -1491,7 +1508,9 @@ else
         %
         for i=1:5
             if ~isnan(Info.TSMNK(i))
-                if i==ST_ && ~isempty(Info.Station)
+                if i==T_ && isempty(FI.Dataset(Info.Time).Info.RefDate)
+                    Insert.DimFlag(i)=3;
+                elseif i==ST_ && ~isempty(Info.Station)
                     Insert.DimFlag(i)=5;
                 else
                     Insert.DimFlag(i)=1;

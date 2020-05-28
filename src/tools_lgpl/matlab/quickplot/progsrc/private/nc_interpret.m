@@ -481,6 +481,8 @@ for ivar = 1:nvars
                 else
                     nc = setType(nc,ivar,idim,'aux-time');
                 end
+            elseif strcmp(nc.Dataset(ivar).Type,'coordinate')
+                nc = setType(nc,ivar,idim,'aux-time');
             end
             %
             nc.Dataset(ivar).Info.DT      = dt/86400;
