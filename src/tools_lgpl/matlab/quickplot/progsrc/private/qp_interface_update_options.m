@@ -167,6 +167,9 @@ PlotType='View';
 EnablePlot = false;
 EnableLoad = false;
 
+if isempty(Props)
+    return
+end
 [nval,nvalstr]=convertnval(Props.NVal);
 DimFlag = Props.DimFlag;
 if nval<0

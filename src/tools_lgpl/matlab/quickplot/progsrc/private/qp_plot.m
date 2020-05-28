@@ -339,14 +339,15 @@ if strcmp(Ops.presentationtype,'vector') || ...
                     data(i).Y = mean(shaped_subsref(data(i).Y,data(i).EdgeNodeConnect),2);
                 end
             case 'FACE'
-                missing = isnan(data(i).FaceNodeConnect);
+                FNC = data(i).FaceNodeConnect;
+                missing = isnan(FNC);
                 nNodes = size(missing,2)-sum(missing,2);
-                data(i).FaceNodeConnect(missing) = 1;
-                data(i).X = data(i).X(data(i).FaceNodeConnect);
+                FNC(missing) = 1;
+                data(i).X = reshape(data(i).X(FNC),size(FNC));
                 data(i).X(missing) = 0;
                 data(i).X = sum(data(i).X,2)./nNodes;
                 if isfield(data,'Y')
-                    data(i).Y = data(i).Y(data(i).FaceNodeConnect);
+                    data(i).Y = reshape(data(i).Y(FNC),size(FNC));
                     data(i).Y(missing) = 0;
                     data(i).Y = sum(data(i).Y,2)./nNodes;
                 end
@@ -424,6 +425,7 @@ end
 
 if isfield(Ops,'operator') && ~strcmp(Ops.operator,'none')
     flds = {'Val','XDamVal','YDamVal'};
+    % Ops.operator = 'isnan';
     for i = 1:length(flds)
         fldi = flds{i};
         if isfield(data,fldi)
