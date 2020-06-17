@@ -295,6 +295,7 @@ while 1
     end
     switch Typ
         case 1
+            % data block floating point single precision
             N=fread(fid,1,'int32');
             %fprintf('%i: %i float32\n',Typ,N);
             if loaddata==1
@@ -309,91 +310,136 @@ while 1
                 fread(fid,[1 N],'float32');
             end
         case 2
+            % data block floating point double precision
             N=fread(fid,1,'int32');
             %fprintf('%i: %i float64\n',Typ,N);
             Info.Data{end+1}=fread(fid,[1 N],'float64');
         case 3
+            % data block characters / string
             N=fread(fid,1,'int32');
             %fprintf('%i: %i uchar\n',Typ,N);
             Info.Data{end+1}=fread(fid,[1 N],'*char');
         case {4,5}
+            % data block integers 4 bytes (4 =signed, 5 = unsigned?)
             N=fread(fid,1,'int32');
             %fprintf('%i: %i int32\n',Typ,N);
             Info.Data{end+1}=fread(fid,[1 N],'int32');
         case 6
+            % data block integers 2 bytes
             N=fread(fid,1,'int32');
             %fprintf('%i: %i int16\n',Typ,N);
             Info.Data{end+1}=fread(fid,[1 N],'int16');
         case 7
+            % data block unsigned integers 2 bytes
             N=fread(fid,1,'int32');
             %fprintf('%i: %i ??\n',Typ,N);
             Info.Data{end+1}=fread(fid,[1 N],'uint16');
         case 254
+            % meta data block
             Opt=fread(fid,1,'uchar');
             X=fread(fid,1,'uchar');
             %fprintf('%i-%i-%i -->\n',Typ,Opt,X);
             i2.Data={};
             i2=read_info(fid,i2,1);
             switch Opt
-                case 1 % 'JOTIJA'    [         0]    'CURRENT'    '3'    
+                case 1
+                    % cross section information
+                    % 'JOTIJA'    [         0]    'CURRENT'    '3'    
                     crs=crs+1;
                     Info.CrossSection.Name{crs}    = deblank(i2.Data{4});
                     Info.CrossSection.Branch{crs}  = deblank(i2.Data{1});
                     Info.CrossSection.Offset(crs)  = i2.Data{2};
                     Info.CrossSection.Version{crs} = deblank(i2.Data{3});
-                case 2 % 25 int32  : 0 2 1 ? ? 0 0 0 0 1 50 0 0 0 0 0 ? 0 0 0 0 0 0 0 0
-                       %                   1 2            3           4
-                       % 1: unknown range 4-17
-                       % 2: NPnts in cross section (size in block 3)
-                       % 3: NLevels in tables (size in block 5)
-                       % 4: 2 (if block 6 present)
-                       % 23 float64: 0 0 0 0 0 ? ? ? ? 0 1 1 1 1 1 0.001 1 1 1 1 1 1 1
+                case 2
+                    % cross section flags
+                    % 25 int32  : 0 2 1 ? ? 0 0 0 0 1 50 0 0 0 0 0 ? 0 0 0 0 0 0 0 0
+                    %                   1 2            3           4
+                    % 1: unknown range 4-17
+                    % 2: NPnts in cross section (size in block 3)
+                    % 3: NLevels in tables (size in block 5)
+                    % 4: 2 (if block 6 present)
+                    % 23 float64: 0 0 0 0 0 ? ? ? ? 0 1 1 1 1 1 0.001 1 1 1 1 1 1 1
                     Info.CrossSection.Integers(crs,:) = i2.Data{1};
                     Info.CrossSection.Reals(crs,:)    = i2.Data{2};
                     Info.CrossSection.NPnts(crs)      = i2.Data{1}(5);
-                case 3 % 6 * NPnts float64
-                       % Y, Z, 1, 0, 0, 0
+                case 3
+                    % cross section coordinates
+                    % 6 * NPnts float64
+                    % Y, Z, 1, 0, 0, 0
                     Info.CrossSection.YZ{crs} = cat(1,i2.Data{1:2});
                     %Info.CrossSection.ones(crs,:) = i2.Data{3};
                     %Info.CrossSection.zeros(crs,:) = i2.Data{4/5/6};
-                case 5 % 6 * 50 float64
-                       % Z, Area(Z), Hydraulic Radius(Z), Wetted Perimeter(Z), 0, 1
+                case 5
+                    % cross section elevation, area, radius, perimeter
+                    % 6 * 50 float64
+                    % Z, Area(Z), Hydraulic Radius(Z), Wetted Perimeter(Z), 0, 1
                     Info.CrossSection.ZARP{crs} = cat(1,i2.Data{1:4});
-                case 6 % N * 
+                case 6
+                    % cross section georeferenced coordinates
+                    % N * 
                     Info.CrossSection.GeoLine{crs} = cat(1,i2.Data{:});
-                case 16 %39  {}
-                case 17 %39
+                case 16
+                    % X=39  {}
+                case 17
+                    % file label
+                    % X=39
                     Info.FileTitle=deblank(i2.Data{1});
-                case 18 %39
+                case 18
+                    % creating program
+                    % X=39
                     Info.CreatingProgram=deblank(i2.Data{1});
-                case 19 %39
+                case 19
+                    % X+39
                     %  [0], [1], [100]
-                case 20 %39
+                case 20
+                    % X=39
                     %  [1]
-                case 21 %39
+                case 21
+                    % X=39
                     %  [1], [2] --> It seems 2 correlates with the occurence of a 51/117 record
-                case 22 %39
+                case 22
+                    % X=39
                     Info.Clipping=i2.Data{1};
-                case 23 %39
+                case 23
+                    % X=39
                     %  [-1.0000e-030], [-1.0000e-077], [-1.0000e-255]
-                case 24 %39
+                case 24
+                    % X=39
                     %  ' '
-                case 25 %39
+                case 25
+                    % X=39
                     %  [-9876789], [2.1475e+009]
-                case 26 %39
+                case 26
+                    % X=39
                     %  [9876789], [2.1475e+009]
-                case 27 %39
+                case 27
+                    % projection information
+                    % X=39
                     Info.ProjectionName=deblank(i2.Data{1});
                     Info.ProjectionData=i2.Data{2};
-                case 28 %39
+                case 28
+                    % X=39
                     Info.NumItems=i2.Data{1}+1;
-                case 29 %39
+                case 29
+                    % X=39
                     Info.SparseStorage=i2.Data{1};
-                case 32 %78  {}
-                case 48 %117 {}
+                case 32
+                    % X=78  {}
+                case 48
+                    % X=117 {}
                 case 49
+                    % number of time dependent quantities
                     Info.NumTimDepItems=i2.Data{1};
+                case 51
+                    % per item
+                    % X=117: {[10.0085 10 3.6116e+003 3.6132e+004 3.6032e+004 10.0084 361 360 0]}
+                    % X=117: {[4611 -12364.1 -121720 1.59038e+09 1.52705e+09 -6156.77 21 20 0]}                    
+                    % 10.0085 10 = Max & Min of Item
+                    % 10.0084 = last value
+                    % 361 = NumTimeSteps
+                    %Info.Item(it).NumTimeSteps=i2.Data{1}(7);
                 case 53
+                    % quantity description
                     % {[100000]  'P(25,10): H Water Depth m '  [1000]  [1]  [10.0085 10.0000 0]  [0 0 0]  [0 0 0]}
                     % {[999]  'P(0,10)-P(50,10): Component 1 '  [0]  [1]  [4.5768 -2.3594e-005 1083]  [0 0 0]  [0 0 0]}
                     % {[100000]  'naam '  [1000] [1]  [-1.0000e-255 -1.0000e-255 30000]  [0 0 0]  [0 0 0]}
@@ -411,15 +457,24 @@ while 1
                     end
                     Info.Item(it).MatrixSize=1;
                     Info.Item(it).CellSize=0;
-                case 54 %117 per item
+                case 54
+                    % X=117
+                    % per item
                     % [0], [1]
                     %fprintf('54/117 -> %i\n',i2.Data{1});
-                case 64 %156
+                case 64
+                    % X+156
                     static=1;
-                case 65 %156
+                case 65
+                    % per item
+                    % X=156
                     sz=[Info.Item(it).MatrixSize 1];
                     Info.Item(it).Data=reshape(i2.Data{1},sz);
-                case {76,79,82} %121
+                case 75
+                    % per item
+                case {76,79,82}
+                    % per item
+                    % X=121
                     % 0: -
                     % 1: 76: {[1000 51]  [0 100]}
                     % 2: 79: {[1000 44 78]  [0 0 150 150]}
@@ -428,21 +483,26 @@ while 1
                     Info.Item(it).MatrixSize=i2.Data{1}(2:end);
                     %Info.Item(it).Offset=i2.Data{2}(1:NDim);
                     Info.Item(it).CellSize=i2.Data{2}((NDim+1):end);
-                case 80 %195 {} start time dependent data
+                case 80
+                    % X=195 {} start time dependent data
                     it=0;
-                case 81 %195 {} markers between time dependent datasets
+                case 81
+                    % X=195 {} markers between time dependent datasets
                     fld=fld+1;
                     it=0;
-                case 85 %78
+                case {85,86}
+                    % X=78
                     %  {'1990-01-01 '  '12:00:00 '  [1400]  [0 20]  [361 0]}
                     %  {'1990-01-01 '  '12:00:00 '  [1400]  [0 20]  [361 0]}
                     %  {'1990-01-01 '  '12:00:00 '  [1400]  [0 1800]  [1 0]}
                     %  {'1990-01-01 '  '00:00:00 '  [1400]  [0 30]  [30 0]}
+                    % {'2009-10-13 '  '07:02:00 '  [1400]  [0 39840]  [21 0]}
                     V=sscanf([i2.Data{1}(1:end-1),' ',i2.Data{2}],'%d-%d-%d %d:%d:%d');
                     Info.RefDate=datenum(V(1),V(2),V(3),V(4),V(5),V(6));
                     Info.TimeStep=i2.Data{4}(2)/(3600*24);
                     Info.NumTimeSteps=i2.Data{5}(1);
-                case 96 %234
+                case 96
+                    % X=234
                     % {'M21_Misc '  [327.8968 0.2000 -900 5 71 93 40]}
                     % 327.8968 = ProjectionData(3)
                     %
@@ -451,13 +511,11 @@ while 1
                     Info.Attrib(att).Name=deblank(i2.Data{1});
                     Info.Attrib(att).Data=i2.Data{2};
                 otherwise
-                    %51/117: {[10.0085 10 3.6116e+003 3.6132e+004 3.6032e+004 10.0084 361 360 0]}
-                    % 10.0085 10 = Max & Min of Item
-                    % 10.0084 = last value
-                    % 361 = NumTimeSteps
+                    % Opt=75, X=121: {[0]}
                     Fld=sprintf('Fld%i_%i',Opt,X);
                     if isfield(Info,Fld)
-                        Fld1=Fld; i=1;
+                        Fld1=Fld;
+                        i=1;
                         while isfield(Info,Fld1)
                             i=i+1;
                             Fld1=sprintf('%s_%i',Fld,i);
