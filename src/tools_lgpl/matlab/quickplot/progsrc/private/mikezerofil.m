@@ -455,7 +455,7 @@ switch FI.FileType
             if isequal(t,0)
                 t=1:FI.NumTimeSteps;
             end
-            T=FI.RefDate+(t-1)*FI.TimeStep;
+            T=FI.RefDate+FI.Times(t);
         end
 end
 % -----------------------------------------------------------------------------
