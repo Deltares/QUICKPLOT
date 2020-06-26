@@ -1315,7 +1315,7 @@ switch cmd
     case 'initialize'
         switch FI.FileType
             case 'Delft3D D-Flow2D3D'
-                OK = optfig_2D3D(FI,mfig);
+                OK = optfig_2D3D(mfig);
         end
     case {'save90', 'save180', 'save270'}
         if nargin>4
