@@ -1300,3 +1300,81 @@ elseif ischar(str)
     end
     str = deblank(str);
 end
+
+% -----------------------------------------------------------------------------
+function [NewFI,cmdargs]=options(FI,mfig,cmd,varargin)
+T_=1; ST_=2; M_=3; N_=4; K_=5;
+%======================== SPECIFIC CODE =======================================
+Inactive=get(0,'defaultuicontrolbackground');
+Active=[1 1 1];
+NewFI=FI;
+cmd=lower(cmd);
+cmdargs={};
+
+switch cmd
+    case 'initialize'
+        switch FI.FileType
+            case 'Delft3D D-Flow2D3D'
+                OK = optfig_2D3D(FI,mfig);
+        end
+    case {'save90', 'save180', 'save270'}
+        if nargin>4
+            pf = varargin{2};
+            [p,f] = fileparts(pf);
+        else
+            cwd = pwd;
+            p = fileparts(FI.mdf.FileName);
+            cd(p)
+            if matlabversionnumber<6
+                filterspec='*.mdf';
+            else
+                filterspec = {'*.mdf' 'Delft3D-FLOW Master Definition File(*.mdf)'};
+            end
+            [f,p]=uiputfile(filterspec,'Specify file name');
+            cd(cwd)
+        end
+        if ischar(f)
+            [~,f] = fileparts(f); % get rid of any remaining .mdf extension
+            angle = str2double(cmd(5:end));
+            FIR = mdf('rotate',FI,angle);
+            mdf('write',FIR,f,p)
+            cmdargs={cmd fullfile(p,[f '.mdf'])};
+        end
+end
+% -----------------------------------------------------------------------------
+
+
+% -----------------------------------------------------------------------------
+function OK = optfig_2D3D(h0)
+Inactive=get(0,'defaultuicontrolbackground');
+FigPos=get(h0,'position');
+FigPos(3:4) = getappdata(h0,'DefaultFileOptionsSize');
+set(h0,'position',FigPos)
+
+voffset=FigPos(4)-30;
+h1 = uicontrol('Parent',h0, ...
+    'BackgroundColor',Inactive, ...
+    'Position',[11 voffset 140 20], ...
+    'String','Save Rotated Input', ...
+    'HorizontalAlignment','left', ...
+    'Style','text');
+h1 = uicontrol('Parent',h0, ...
+    'BackgroundColor',Inactive, ...
+    'Callback','d3d_qp fileoptions save90', ...
+    'Position',[171 voffset 47 20], ...
+    'String','90', ...
+    'HorizontalAlignment','right');
+h1 = uicontrol('Parent',h0, ...
+    'BackgroundColor',Inactive, ...
+    'Callback','d3d_qp fileoptions save180', ...
+    'Position',[228 voffset 47 20], ...
+    'String','180', ...
+    'HorizontalAlignment','right');
+h1 = uicontrol('Parent',h0, ...
+    'BackgroundColor',Inactive, ...
+    'Callback','d3d_qp fileoptions save270', ...
+    'Position',[284 voffset 47 20], ...
+    'String','270', ...
+    'HorizontalAlignment','right');
+
+OK=1;

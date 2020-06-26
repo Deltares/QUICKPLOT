@@ -282,6 +282,8 @@ switch cmd
                                     f = strrep(f,'-','_');
                                     FI.(f) = delwaq('open',fullfile(po,d(i).name));
                                 end
+                            case 'Delft3D D-Flow2D3D'
+                                FI.Options=1;
                         end
                     case 'qpsession'
                         asciicheck(isASCII,REASON)
