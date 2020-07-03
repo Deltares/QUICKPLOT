@@ -1356,7 +1356,7 @@ switch cmd
                 end
             else
                 mstr(mstr>maxm)=[];
-                m=mstr;
+                m=mstr(:)';
             end
         catch
             lasterr('')
