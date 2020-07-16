@@ -34,9 +34,9 @@ function [NewFI,cmdargs]=options(FI,mfig,cmd,varargin)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
 Inactive=get(0,'defaultuicontrolbackground');
-FigPos=get(h0,'position');
-FigPos(3:4) = getappdata(h0,'DefaultFileOptionsSize');
-set(h0,'position',FigPos)
+FigPos=get(mfig,'position');
+FigPos(3:4) = getappdata(mfig,'DefaultFileOptionsSize');
+set(mfig,'position',FigPos)
 
 Active=[1 1 1];
 NewFI=FI;
