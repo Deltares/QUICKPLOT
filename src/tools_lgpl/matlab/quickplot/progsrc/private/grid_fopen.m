@@ -137,18 +137,16 @@ while isempty(DataFI)
             case 'wlfdep'
                 DataFI=wlfdep('read',FileName);
                 if ~isequal(size(DataFI),gridsize)
-                    error('Size of datafield does not match size of grid')
+                    error('Datafield dimensions [%d %d] do not match grid dimensions [%d %d]',size(DataFI),gridsize)
                 else
                     Tmp.Data={DataFI};
                     DataFI=Tmp; Tmp=[];
                 end
             case 'boxfile'
-                DataFI=boxfile('read',FileName,gridsize);
+                DataFI=boxfile('read',FileName,gridsize+1);
                 if ~isempty(DataFI)
-                    if ~isequal(size(DataFI),gridsize)
-                        %          ui_message('error','Size of datafield does not match size of grid');
-                        %          DataFI=[]; return
-                        DataFI=[];
+                    if ~isequal(size(DataFI),gridsize+1)
+                        error('Boxfile dimensions [%d %d] do not match extended grid dimensions [%d %d].',size(DataFI),gridsize+1);
                     else
                         Tmp.Data={DataFI};
                         DataFI=Tmp; Tmp=[];
