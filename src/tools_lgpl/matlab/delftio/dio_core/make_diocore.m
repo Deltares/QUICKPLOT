@@ -41,8 +41,17 @@ copycppfiles(delftio_folder)
 
 fprintf('Compiling and linking...\n');
 files = {'dio_core.cpp','dio_shm.cpp','dio_shm_datablock.cpp','dio_shm_f2c_c.cpp','dio_shm_handle.cpp','dio_shm_sync.cpp'};
-%mex('-R2018a','-DWIN32','-I../../../../utils_lgpl/delftio/packages/delftio_shm/include',files{:})
+%
+% compile the diocore mex file
+% add -v switch for verbose compilation process
+%
 mex('-DWIN32','-I../../../../utils_lgpl/delftio/packages/delftio_shm/include',files{:})
+%
+% Optionally include -R2018a switch to use new MX_HAS_INTERLEAVED_COMPLEX memory management
+%
+%mex('-R2018a','-DWIN32','-I../../../../utils_lgpl/delftio/packages/delftio_shm/include',files{:})
+
+% wait a second ...
 pause(1)
 
 fprintf('Cleaning up ...\n');
