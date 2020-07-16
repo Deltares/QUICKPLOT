@@ -384,8 +384,12 @@ for tpC = types
                         continue
                     end
                     i=i+1;
-                    Name{i,1}=deblank(Line(1:20));
-                    MN(i,1:2)=sscanf(Line(21:end),' %i %i',[1 2]);
+                    Name{i,1} = deblank(Line(1:20));
+                    mn = sscanf(Line(21:end),' %i %i',[1 2]);
+                    if any(mn <= 0)
+                        error('Invalid MN coordinates (%d,%d) for observation point "%s"',mn,Name{i,1})
+                    end
+                    MN(i,1:2) = mn;
                 end
                 fclose(fid);
                 Out.Name=Name;
