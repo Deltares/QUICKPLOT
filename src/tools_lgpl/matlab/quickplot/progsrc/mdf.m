@@ -656,7 +656,7 @@ if isequal(Program,UNSPECIFIED)
     end
 else
     switch Program
-        case 'D-Flow FM'
+        case {'D-Flow FM', 'D-Flow Flexible Mesh', 'Unstruc', 'UNSTRUC'}
             MFile.FileType = 'Delft3D D-Flow FM';
             MFile.mdu = master;
             MFile.general = block;
@@ -878,22 +878,12 @@ for i = 1:size(attfiles,1)
             switch key
                 case 'BedLevel'
                     F = samples('read',filename);
-                case {'Mor','Sed'}
-                    F = inifile('open',filename);
                 case 'Crs'
                     try
                         F = tekal('open',filename,'loaddata');
                     catch
                         F = inifile('open',filename);
                     end
-                case 'Obs'
-                    try
-                        F = samples('read',filename);
-                    catch
-                        F = inifile('open',filename);
-                    end
-                case 'Structure'
-                    F = inifile('open',filename);
                 case 'ExtForce'
                     ext_path = fileparts(filename);
                     %
@@ -1041,6 +1031,24 @@ for i = 1:size(attfiles,1)
                     else
                         F.Bnd.Types = {};
                     end
+                case 'Mor'
+                    F = inifile('open',filename);
+                case 'Obs'
+                    try
+                        F = samples('read',filename);
+                    catch
+                        F = inifile('open',filename);
+                    end
+                case 'Profdef'
+                    F = profdefparser(filename);
+                case 'Profdefxyz'
+                    F = tekal('read',filename);
+                case 'Profloc'
+                    F = samples('read',filename);
+                case 'Sed'
+                    F = inifile('open',filename);
+                case 'Structure'
+                    F = inifile('open',filename);
                 otherwise
                     F = filename;
             end
@@ -1054,6 +1062,52 @@ for i = 1:size(attfiles,1)
         MF.(key) = Files;
     end
 end
+
+
+function F = profdefparser(filename)
+keys = {'PROFNR=','TYPE=','WIDTH=','HEIGHT=','ZMIN=','BASE=','TALUD=','FRCTP=','FRCCF='};
+lkeys = cellfun(@length,keys);
+N = zeros(100,9);
+n = 0;
+fid = fopen(filename);
+while ~feof(fid)
+    Line = fgetl(fid);
+    if isempty(Line)
+        continue
+    elseif Line(1) == '*'
+        continue
+    end
+    n = n+1;
+    if n > size(N,1)
+        N(2*size(N,1),:) = 0;
+    end
+    %
+    for i = 1:9
+        key = keys{i};
+        ik = strfind(Line,key);
+        if ~isempty(ik)
+            N(n,i) = sscanf(Line(ik(1)+lkeys(i):end),'%f',1);
+        elseif i == 4 % default height
+            N(n,i) = 3000;
+        elseif i == 5 || i == 8 || i == 9 % default zmin, frctp, frccf
+            N(n,i) = -999;
+        end
+    end
+end
+fclose(fid);
+N = N(1:n,:);
+F.ProfNr = N(:,1);
+F.ProfTp = N(:,2);
+F.Width = N(:,3);
+F.Height = N(:,4);
+F.ZMin = N(:,5);
+F.Base = N(:,6);
+Taluds = (F.ProfTp == 6 | F.ProfTp == 7) & F.Base == 0 & N(:,7) > 0;
+if any(Taluds)
+    F.Base(Taluds) = max(0, F.Width(Taluds) - 2 * F.Height(Taluds) * N(Taluds,7));
+end
+F.FrcTp = N(:,8);
+F.FrcCf = N(:,9);
 
 
 function SNames = get_standard_names(F)
@@ -1187,7 +1241,7 @@ if ~isempty(ininame)
     idate = propget(MF.mdf,'','Itdate');
     idate = idate([1:4 6:7 9:10]);
     %
-    tunit = propgetval(MF.mdf,'','Tunit');
+    tunit = propget(MF.mdf,'','Tunit');
     switch lower(tunit)
         case 'w'
             tunit = 7;
@@ -1409,7 +1463,11 @@ if iscell(str)
         val{i} = getval(str{i});
     end
 elseif isnumeric(str)
-    val = str;
+    if isempty(str) && length(varargin)>3
+        val = varargin{4};
+    else
+        val = str;
+    end
 else
     val = sscanf(str,'%f',[1 inf]);
 end
