@@ -110,16 +110,18 @@ switch file_ext
     case {'.ct0','.dt0'}
         S.Def = '.ct0';
         S.Dat = '.dt0';
-    case {'.dfs0','.dfs1','.dfs2','.dfs3','.dfsu'}
-        S.FileType = 'MikeDFS';
-        S.Dat = file_ext;
-        S.Def = '';
-    case {'.xns11'}
-        S.FileType = 'MikeXFS';
-        S.Dat = file_ext;
-        S.Def = '';
     otherwise
-        error('Invalid filename or unknown MIKE file type')
+        fid = fopen([filename file_ext],'r');
+        str = fread(fid,20,'*char');
+        fclose(fid);
+        typ = sscanf(str,'DHI_%[^_]',1);
+        if ~isempty(typ)
+            S.FileType = ['Mike' typ];
+            S.Dat = file_ext;
+            S.Def = '';
+        else
+            error('Invalid filename or unknown MIKE file format.')
+        end
 end
 
 S.FileName = absfullfile(filename);
@@ -266,6 +268,9 @@ switch lower(S.Dat)
     case { '.xns11'}
         S.NumCoords = 'x';
         S.DataType = 'crosssections';
+    otherwise
+        S.NumCoords = 0;
+        S.DataType = 'unknown';
 end
 
 S.SparseStorage = 0;
