@@ -158,7 +158,7 @@ NewFI=FI;
 cmd=lower(cmd);
 cmdargs={};
 
-switch cmd,
+switch cmd
     case 'initialize'
         OK=optfig(mfig);
         xminh=findobj(mfig,'tag','xmin');
@@ -211,6 +211,7 @@ switch cmd,
         xlim = sort(get(hNew,'xdata'));
         ylim = sort(get(hNew,'ydata'));
         set(Ax,'xlim',xlim,'ylim',ylim)
+        setaxesprops(Ax,'X-Y')
         %
         cmdargs={cmd};
     otherwise
