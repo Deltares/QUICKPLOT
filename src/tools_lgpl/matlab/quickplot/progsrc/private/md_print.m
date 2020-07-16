@@ -308,7 +308,25 @@ while i<length(figlist)
                                         add_bookmark(fn,figname{1},pagenr>1)
                                 end
                                 if ~MoreToCome
-                                    ps2pdf('psfile',fn,'pdffile',pdfname,'gspapersize','a4','deletepsfile',1)
+                                    papertype = get(figlist(i),'papertype');
+                                    switch papertype
+                                        case 'usletter'
+                                            papertype = 'letter';
+                                        case 'uslegal'
+                                            papertype = 'legal';
+                                        case {'A1', 'A2', 'A3', 'A4', 'A5'}
+                                            papertype = lower(papertype);
+                                        case {'arch-A', 'arch-B', 'arch-C', 'arch-D', 'arch-E'}
+                                            papertype(5) = [];
+                                        case 'tabloid'
+                                            papertype = '11x17';
+                                        otherwise % custom, A-E, B0-B5
+                                            pu = get(figlist(i),'paperunits');
+                                            set(figlist(i), 'paperunits', 'inches');
+                                            papertype = get(figlist(i), 'papersize');
+                                            set(figlist(i), 'paperunits', pu)
+                                    end
+                                    ps2pdf('psfile',fn,'pdffile',pdfname,'gspapersize',papertype,'deletepsfile',1)
                                     fn = pdfname;
                                 end
                                 pagenr = pagenr+1;
@@ -362,8 +380,7 @@ while i<length(figlist)
                         end
                         switch Printer
                             case {'other Windows printer','default Windows printer','Windows printer'}
-                                paperpos=get(figlist(i),'paperposition');
-                                %set(figlist(i),'paperposition',paperpos-[0.5 0 0.5 0]);
+                                %paperpos=get(figlist(i),'paperposition');
                                 if isdeployed && strcmp(Printer,'default Windows printer')
                                     deployprint(figlist(i))
                                 elseif isdeployed && strcmp(Printer,'other Windows printer')
@@ -375,7 +392,7 @@ while i<length(figlist)
                                     end
                                     print(FigStr,dvr,PrtMth{:});
                                 end
-                                set(figlist(i),'paperposition',paperpos);
+                                %set(figlist(i),'paperposition',paperpos);
                             case 'Bitmap to clipboard'
                                 set(figlist(i),'inverthardcopy','off');
                                 print(FigStr,'-dbitmap');
