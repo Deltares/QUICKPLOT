@@ -229,11 +229,22 @@ else
 end
 %
 flw_qnt        = qpread(flw_info1);
-if isfield(flw_qnt,'varid')
+flw_is_structured = false;
+flw_use_mask = false;
+if isfield(flw_qnt,'Name')
     for i = length(flw_qnt):-1:1
-        idm = flw_qnt(i).varid;
-        if isempty(idm) || iscell(idm) || ~ismember('nFlowElem',flw_info1.Dataset(idm(1)+1).Dimension)
+        idm = flw_qnt(i).Name;
+        if isempty(idm) || iscell(idm) %|| ~ismember('nFlowElem',flw_info1.Dataset(idm(1)+1).Dimension)
             flw_qnt(i) = [];
+        end
+    end
+    if strcmp(flw_info1.QP_FileType, 'Delft3D-trim')
+        flw_is_structured = true;
+        maskid = filter_qnt('1/-1 Active/Non-active water level point (w.r.t. coordinates )',waq_qnt,flw_qnt)
+        if maskid < 0
+            flw_data = qpread(flw_info,flw_qnt(-maskid),'data',1,0);
+            flw_mask = reshape(flw_data.Val',[],1)';
+            flw_use_mask = true;
         end
     end
 else
@@ -779,8 +790,42 @@ for ifld = 1:nchp
                             val(GlobNr(PartNr==ipar-1)) = X.Val(PartNr==ipar-1);
                         end
                     else
-                        X = qpread(flw_info,flw_qnt(iqnt_flw(i)),'data',it,0);
-                        val = X.Val';
+                        flw_data = qpread(flw_info,flw_qnt(iqnt_flw(i)),'data',it,0);
+                        if isfield(flw_data,'XComp') || isfield(flw_data,'YComp')
+                            val = sqrt(power(flw_data.XComp, 2) + power(flw_data.XComp, 2));
+                        elseif isfield(flw_data,'Val')
+                            val = flw_data.Val;
+                        else
+                            error('Error reading Flow data')
+                        end
+                        % check if it is 3D data
+                        % no 3D depth/active/inactive info, s use a simple approach
+                        flw_ndims = ndims(val);
+                        if flw_is_structured || flw_ndims == 3
+                            if info.layer == LAYER_BOTTOM_MOST
+                                val = val(:,:,1);
+                            elseif info.layer == LAYER_DEPTH_AVERAGE
+                                % just a non weighted average
+                                val = mean(val,3);
+                            else
+                                val = val(:,:,info.layer);
+                            end
+                        else ~flw_is_structured || flw_ndims == 2
+                            if info.layer == LAYER_BOTTOM_MOST
+                                val = val(:,1);
+                            elseif info.layer == LAYER_DEPTH_AVERAGE
+                                % just a non weighted average
+                                val = mean(val,1);
+                            else
+                                val = val(:,info.layer);
+                            end
+                        end
+                        % reshape data to N columns, 1 row
+                        val = reshape(val',[],1)';
+                        % apply active cells mask in case it was found (structured only)
+                        if (flw_use_mask)
+                            val = val(~isnan(flw_mask));
+                        end
                     end
                     %
                     iMissing(iflw(i),:) = isnan(val);
