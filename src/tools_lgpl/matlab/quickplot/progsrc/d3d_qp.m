@@ -391,7 +391,7 @@ switch cmd
         
     case 'difffiles'
         pos = get(mfig,'position');
-        pos(4) = 190;
+        pos(4) = 220;
         dfig = qp_uifigure('Diff Files','','Diff Files',pos);
         %
         voffset=pos(4)-29;
@@ -449,6 +449,18 @@ switch cmd
             'Callback','d3d_qp openfile2', ...
             'Tooltip','Open a data file', ...
             'Tag','openfile2');
+        %
+        voffset=voffset-30;
+        DTp = uicontrol('Parent',dfig, ...
+            'Enable','on', ...
+            'Position',[11 voffset pos(3)-40 20], ...
+            'Style','popupmenu', ...
+            'String',{'Difference by Index', 'Correct for Renumbering'}, ...
+            'BackgroundColor',Active, ...
+            'HorizontalAlignment','left', ...
+            'Tag','difftype', ...
+            'Tooltip','Select the method of differencing');
+        DTpStr = {'index','renum'};
         %
         voffset=voffset-30;
         uicontrol('Parent',dfig, ...
@@ -525,6 +537,12 @@ switch cmd
             if nargin>3
                 d3d_qp('difflabel',cmdargs{3})
             end
+            if nargin>4
+                iTp = ustrcmpi(varargin{4},DTpStr);
+                if iTp > 0
+                    set(DTp,'value',iTp)
+                end
+            end
         end
         %
         if interactive
@@ -537,13 +555,15 @@ switch cmd
         Label = get(Lb,'string');
         Indices = get(dfig,'userdata');
         DiffFile = get(L1,'userdata');
+        DiffType = DTpStr{get(DTp,'value')};
         delete(dfig)
         %
         if ~isempty(Indices)
             FileName=Label;
             NewRecord.QPF=1;
             NewRecord.Name=FileName;
-            NewRecord.Data=DiffFile(Indices);
+            NewRecord.Data.Files=DiffFile(Indices);
+            NewRecord.Data.DiffType = DiffType;
             NewRecord.FileType='diff';
             NewRecord.Options=0;
             NewRecord.Otherargs={};
@@ -565,7 +585,7 @@ switch cmd
             d3d_qp selectfile*
             %
             if logfile
-                writelog(logfile,logtype,cmd,NewRecord.Data(1).Name,NewRecord.Data(2).Name,Label);
+                writelog(logfile,logtype,cmd,NewRecord.Data(1).Name,NewRecord.Data(2).Name,Label,DiffType);
             end
         end
         

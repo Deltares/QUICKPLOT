@@ -50,6 +50,13 @@ function varargout=difffil(FI,domain,field,cmd,varargin)
 
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
+if ~isfield(FI,'Files')
+    FIo = FI;
+    FI = [];
+    FI.Files = FIo;
+    FI.DiffType = 'index';
+end
+
 if nargin<2
     error('Not enough input arguments')
 elseif nargin==2
@@ -98,25 +105,85 @@ switch cmd
         [XYRead,DataRead,DataInCell]=gridcelldata(cmd);
 end
 
-[success,Ans,FI(1)] = qp_getdata(FI(1),domain,Props.Q1,cmd,varargin{:});
+checkgrids = strcmp(FI.DiffType,'renum');
+if Props.NVal>0 && checkgrids
+    [success,Grid1,FI.Files(1)] = qp_getdata(FI.Files(1),domain,Props.Q1,'grid');
+    [success,Grid2,FI.Files(2)] = qp_getdata(FI.Files(2),domain,Props.Q2,'grid');
+    if isfield(Grid1,'ValLocation')
+        switch Grid1.ValLocation
+            case 'NODE'
+                X1 = Grid1.X;
+                Y1 = Grid1.Y;
+                %
+                X2 = Grid2.X;
+                Y2 = Grid2.Y;
+            case 'EDGE'
+                X1 = mean(Grid1.X(Grid1.EdgeNodeConnect),2);
+                Y1 = mean(Grid1.Y(Grid1.EdgeNodeConnect),2);
+                %
+                X2 = mean(Grid2.X(Grid2.EdgeNodeConnect),2);
+                Y2 = mean(Grid2.Y(Grid2.EdgeNodeConnect),2);
+            case 'FACE'
+                FNC = Grid1.FaceNodeConnect;
+                Mask = isnan(FNC);
+                N = sum(~Mask,2);
+                FNC(Mask) = 1;
+                X1 = Grid1.X(FNC); X1(Mask) = 0; X1 = sum(X1,2)./N;
+                Y1 = Grid1.Y(FNC); Y1(Mask) = 0; Y1 = sum(Y1,2)./N;
+                %
+                FNC = Grid2.FaceNodeConnect;
+                Mask = isnan(FNC);
+                N = sum(~Mask,2);
+                FNC(Mask) = 1;
+                X2 = Grid2.X(FNC); X2(Mask) = 0; X2 = sum(X2,2)./N;
+                Y2 = Grid2.Y(FNC); Y2(Mask) = 0; Y2 = sum(Y2,2)./N;
+        end
+        [~,I1] = sort(Y1);
+        [~,I2] = sort(X1(I1));
+        I = I1(I2);
+        [~,RI] = sort(I);
+        %
+        [~,J1] = sort(Y2);
+        [~,J2] = sort(X2(J1));
+        J = J1(J2);
+        %
+        if isequal(X1(I),X2(J)) && isequal(Y1(I),Y2(J))
+            JRI = J(RI);
+        else
+            error('The %s coordinates are not equal after sorting.',lower(Grid1.ValLocation))
+        end
+    end
+end
+
+[success,Ans,FI.Files(1)] = qp_getdata(FI.Files(1),domain,Props.Q1,cmd,varargin{:});
 if ~success
     error(lasterr)
 end
 
 if Props.NVal>0
     cmd = strrep(cmd,'grid','');
-    [success,Data2,FI(2)] = qp_getdata(FI(2),domain,Props.Q2,cmd,varargin{:});
+    args = varargin;
+    if checkgrids
+        i = sum(Props.DimFlag(1:M_)~=0);
+        if isequal(args{i},0)
+            args{i} = JRI;
+        else
+            args{i} = JRI(args{i});
+        end
+    end
+    [success,Data2,FI.Files(2)] = qp_getdata(FI.Files(2),domain,Props.Q2,cmd,args{:});
     if ~success
         error(lasterr)
     end
     %
-    fld = {'Val','XComp','YComp','ZComp','XDamVal','YDamVal'};
-    for i=1:length(fld)
-        if isfield(Data2,fld{i})
-            v1 = getfield(Ans,fld{i});
-            v2 = getfield(Data2,fld{i});
-            v1 = v1-v2;
-            Ans = setfield(Ans,fld{i},v1);
+    cflds = {'Val','XComp','YComp','ZComp','XDamVal','YDamVal'};
+    for cfld = cflds
+        fld = cfld{1};
+        if isfield(Data2,fld)
+            v1 = Ans.(fld);
+            v2 = Data2.(fld);
+            v1 = v1 - v2;
+            Ans.(fld) = v1;
         end
     end
     %
@@ -142,8 +209,8 @@ varargout={Ans FI};
 
 % -----------------------------------------------------------------------------
 function Domains=domains(FI)
-[success,D1] = qp_getdata(FI(1),'domains');
-[success,D2] = qp_getdata(FI(2),'domains');
+[success,D1] = qp_getdata(FI.Files(1),'domains');
+[success,D2] = qp_getdata(FI.Files(2),'domains');
 if isempty(D1) && isempty(D2)
     Domains = {};
 elseif isequal(D1,D2)
@@ -164,11 +231,11 @@ end
 
 % -----------------------------------------------------------------------------
 function Out=infile(FI,domain)
-[success,Q1] = qp_getdata(FI(1),domain);
+[success,Q1] = qp_getdata(FI.Files(1),domain);
 if ~success
     error(lasterr)
 end
-[success,Q2] = qp_getdata(FI(2),domain);
+[success,Q2] = qp_getdata(FI.Files(2),domain);
 if ~success
     error(lasterr)
 end
@@ -202,11 +269,11 @@ for i=1:length(Q1)
         % no match found
         continue
     end
-    [success,sz] = qp_getdata(FI(1),domain,Q1(i),'size');
+    [success,sz] = qp_getdata(FI.Files(1),domain,Q1(i),'size');
     if ~success
         error(lasterr)
     end
-    [success,sf] = qp_getdata(FI(1),domain,Q1(i),'subfields');
+    [success,sf] = qp_getdata(FI.Files(1),domain,Q1(i),'subfields');
     if ~success
         error(lasterr)
     end
@@ -220,7 +287,7 @@ for i=1:length(Q1)
             % dependence and stations might be acceptable in the future.
             i2(k)=[];
         else
-            [success,sz2] = qp_getdata(FI(2),domain,Q2(i2(k)),'size');
+            [success,sz2] = qp_getdata(FI.Files(2),domain,Q2(i2(k)),'size');
             if ~success
                 error(lasterr)
             end
@@ -229,7 +296,7 @@ for i=1:length(Q1)
                 % future?
                 i2(k)=[];
             else
-                [success,sf2] = qp_getdata(FI(2),domain,Q2(i2(k)),'subfields');
+                [success,sf2] = qp_getdata(FI.Files(2),domain,Q2(i2(k)),'subfields');
                 if ~success
                     error(lasterr)
                 end
@@ -310,7 +377,7 @@ TimeNr = {};
 if nargin>3
     TimeNr = {t};
 end
-[success,T] = qp_getdata(FI(1),domain,Props.Q1,'times',TimeNr{:});
+[success,T] = qp_getdata(FI.Files(1),domain,Props.Q1,'times',TimeNr{:});
 if ~success
     error(lasterr)
 end
@@ -323,7 +390,7 @@ StationNr = {};
 if nargin>3
     StationNr = {t};
 end
-[success,S] = qp_getdata(FI(1),domain,Props.Q1,'stations',StationNr{:});
+[success,S] = qp_getdata(FI.Files(1),domain,Props.Q1,'stations',StationNr{:});
 if ~success
     error(lasterr)
 end
