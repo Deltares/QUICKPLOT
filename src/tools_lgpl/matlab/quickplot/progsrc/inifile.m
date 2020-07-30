@@ -20,26 +20,42 @@ function varargout=inifile(cmd,varargin)
 %   ListOfKeywords=INIFILE('keywords',Info,Chapter)
 %   Retrieve list of Keywords in specified Chapter (cell array of strings).
 %
-%   BOOL = INIFILE('exists',Info,Chapter,Keyword)
-%   Check whether a Chapter/Keyword exists in the the Info data set.
+%   [BOOL,iChap] = INIFILE('exists',Info,Chapter)
+%   Check whether a Chapter name exists in the the Info data set, and
+%   return the index or indices of the chapters matching the specified
+%   name.
+%
+%   N = INIFILE('exists',Info,Chapter,Keyword)
+%   Check whether a Chapter name/Keyword name combination exists in the
+%   Info data set. If the chapter name occurs once, N will be the number of
+%   occurrences of the Keyword in that chapter. If the chapter name occurs
+%   multiple times, N will be a M-by-1 array where M is the number of times
+%   that the chapter name occurs in the Info data set. Each element of N
+%   equals the number of times the keyword name occurs in these chapters.
 %
 %   Val=INIFILE('get',Info,Chapter,Keyword,Default)
 %   Retrieve Chapter/Keyword from the Info data set. The Default value is
 %   optional. If the Chapter ID is '*', the Keyword is searched for in
 %   all chapters in the file.
 %
+%   [Info,iChap]=INIFILE('add',Info,Chapter)
+%   Add a new chapter with specified Chapter name to the data set. The
+%   updated data set is returned. You may use 'set' instead of 'add'.
+%
 %   Info=INIFILE('set',Info,Chapter,Keyword,Value)
 %   Set Chapter/Keyword in the data set to the indicated value. The
-%   updated data set is returned. Data is not written to file. If the
-%   chapter and/or keyword do not exist, they are created. If Value equals
-%   [], the keyword is deleted (see below). Use the 'write' option to
-%   write the data to file.
+%   updated data set is returned. If the chapter and/or keyword do not
+%   exist, they are created. If Value equals [], the keyword is deleted
+%   (see below). You may use 'add' instead of 'set'.
+%
+%   Info=INIFILE('delete',Info,Chapter)
+%   Info=INIFILE('set',Info,Chapter,[])
+%   Delete Chapter from the data set. The updated data set is returned.
 %
 %   Info=INIFILE('delete',Info,Chapter,Keyword)
 %   Info=INIFILE('set',Info,Chapter,Keyword,[])
-%   Delete Chapter/Keyword from the data set. The updated data set is
-%   returned. Data is not written to file. Use the 'write' option to
-%   write the data to file.
+%   Delete the specified Keyword from the specified Chapter in the data
+%   set. The updated data set is returned.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -76,9 +92,9 @@ switch lcmd
     case 'open'
         varargout{1} = readfile(varargin{:});
     case {'chapters','chaptersi'}
-        varargout{1} = chapfile(lcmd,varargin{:});
+        varargout{1} = getChaptersInFile(lcmd,varargin{:});
     case {'keywords','keywordsi'}
-        varargout{1} = chapkeys(lcmd,varargin{:});
+        varargout{1} = getKeysInChapter(lcmd,varargin{:});
     case {'exists','existsi'}
         try
             if nargin==3
@@ -90,7 +106,7 @@ switch lcmd
                     lcmd = 'chaptersi';
                     chap = lower(varargin{2});
                 end
-                A = chapfile(lcmd,varargin{1});
+                A = getChaptersInFile(lcmd,varargin{1});
                 Amatch = strcmp(chap,A);
                 varargout{1} = sum(Amatch);
                 if nargout>1
@@ -110,7 +126,7 @@ switch lcmd
                 %
                 M = zeros(size(iChap));
                 for i = 1:length(iChap)
-                    A = chapkeys(lcmd,varargin{1},iChap(i));
+                    A = getKeysInChapter(lcmd,varargin{1},iChap(i));
                     M(i) = sum(strcmp(keyw,A));
                 end
                 varargout{1} = M;
@@ -121,8 +137,8 @@ switch lcmd
         end
     case {'get','getstring','geti','getstringi','cget','cgetstring','cgeti','cgetstringi'}
         [varargout{1:max(nargout,1)}] = getfield(lcmd,varargin{:});
-    case {'set','seti'}
-        varargout{1} = setfield(lcmd,varargin{:});
+    case {'set','seti','add','addi'}
+        [varargout{1:max(nargout,1)}] = setfield(lcmd,varargin{:});
     case {'delete','remove','deletei','removei'}
         varargout{1} = setfield(lcmd,varargin{:},[]);
     case 'write'
@@ -287,7 +303,7 @@ end
 fclose(fid);
 
 
-function Chapters = chapfile(cmd,FI,grpS)
+function Chapters = getChaptersInFile(cmd,FI,grpS)
 CaseInsensitive = cmd(end)=='i';
 Chapters = FI.Data(:,1);
 if nargin>2
@@ -301,7 +317,7 @@ elseif CaseInsensitive
 end
 
 
-function Keywords = chapkeys(cmd,FI,grpS)
+function Keywords = getKeysInChapter(cmd,FI,grpS)
 S = FI.Data;
 CaseInsensitive = cmd(end)=='i';
 if ischar(grpS)
@@ -422,13 +438,22 @@ if ~isempty(iGRP)
 end
 
 
-function FI=setfield(cmd,FI,grpS,varargin)
+function [FI,iGRP]=setfield(cmd,FI,grpS,varargin)
 S = FI.Data;
 CaseInsensitive = cmd(end)=='i';
-if nargin<4
-    error('Not enough input arguments.')
-end
-if ischar(grpS)
+if nargin==3
+    % create the group ...
+    if ischar(grpS)
+        grp = size(FI.Data,1)+1;
+        FI.Data(grp,:) = {grpS cell(0,2)};
+        if nargout>1
+            iGRP = grp;
+        end
+        return
+    else
+        error('Invalid group name %s -- expecting string -- while trying to add a group.',var2str(grpS))
+    end
+elseif ischar(grpS)
     % find a group by name
     if isequal(grpS,'*')
         grp = 1:size(S,1);
@@ -450,7 +475,7 @@ elseif isnumeric(grpS)
     grp = grpS;
 else
     % unrecognized group identifier
-    error('Unrecognized group indentifier specified as 3rd argument to INIFILE call.')
+    error('Unrecognized group indentifier %s specified as 3rd argument to INIFILE call.',var2str(grpS))
 end
 if isempty(grp)
     if isempty(varargin{1}) && isnumeric(varargin{1})
