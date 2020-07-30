@@ -809,7 +809,11 @@ for ivar = 1:nvars
         for i = 1:length(crds)
             if strcmp(crds{i}.Type,'unknown')
                 Att = crds{i}.Attribute;
-                j = strcmp('units',{Att.Name});
+                if isempty(Att)
+                    j = 0;
+                else
+                    j = strcmp('units',{Att.Name});
+                end
                 if any(j)
                     is_offset(i) = true;
                 else

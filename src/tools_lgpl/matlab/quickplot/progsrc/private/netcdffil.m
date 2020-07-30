@@ -442,15 +442,17 @@ if XYRead || XYneeded
             csp = strmatch(meshInfo.Attribute(attcsp).Value,{FI.Dataset.Name},'exact');
             [BrX,BrY,xUnit,BrL] = get_edge_geometry(FI,csp);
             %
-            si = strmatch('start_index',{FI.Dataset(meshInfo.X).Attribute.Name});
-            if ~isempty(si)
-                start_index = FI.Dataset(meshInfo.X).Attribute(si).Value;
+            if isempty(FI.Dataset(meshInfo.X).Attribute)
+                istart = [];
             else
+                istart = strmatch('start_index',{FI.Dataset(meshInfo.X).Attribute.Name});
+            end
+            if isempty(istart)
                 start_index = 0;
+            else
+                start_index = FI.Dataset(meshInfo.X).Attribute(istart).Value;
             end
-            if min(Ans.X)~=start_index
-                % trigger warning ...?
-            end
+            start_index = verify_start_index(istart, start_index, min(Ans.X), max(Ans.X), length(BrX), 'branch', FI.Dataset(meshInfo.X).Name);
             Ans.X = Ans.X-start_index+1;
             %
             % Get edge_node_connectivity
@@ -463,7 +465,11 @@ if XYRead || XYneeded
                 ecoords = strsplit(meshInfo.Attribute(attECO).Value);
                 for iec = 1:length(ecoords)
                     i_eBrNr = strmatch(ecoords{iec},{FI.Dataset.Name});
-                    ecAtt = {FI.Dataset(i_eBrNr).Attribute.Name};
+                    if isempty(FI.Dataset(i_eBrNr).Attribute)
+                        ecAtt = {};
+                    else
+                        ecAtt = {FI.Dataset(i_eBrNr).Attribute.Name};
+                    end
                     if ismember('units',ecAtt) || ismember('standard_name',ecAtt)
                         % x-coordinate, y-coordinate, offset
                         continue
@@ -476,12 +482,17 @@ if XYRead || XYneeded
                     end
                     break
                 end
-                si = strmatch('start_index',{FI.Dataset(i_eBrNr).Attribute.Name});
-                if ~isempty(si)
-                    start_index = FI.Dataset(i_eBrNr).Attribute(si).Value;
+                if isempty(FI.Dataset(i_eBrNr).Attribute)
+                    istart = [];
+                else
+                    istart = strmatch('start_index',{FI.Dataset(i_eBrNr).Attribute.Name});
+                end
+                if ~isempty(istart)
+                    start_index = FI.Dataset(i_eBrNr).Attribute(istart).Value;
                 else
                     start_index = 0;
                 end
+                start_index = verify_start_index(istart, start_index, min(eBrNr), max(eBrNr), length(BrX), 'branch',FI.Dataset(i_eBrNr).Name);
                 eBrNr = eBrNr-start_index+1;
             else
                 eBrNr = [];
@@ -555,24 +566,11 @@ if XYRead || XYneeded
                     istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name},'exact');
                 end
                 if isempty(istart)
-                    maxNode = max(Ans.FaceNodeConnect(:));
-                    minNode = min(Ans.FaceNodeConnect(Ans.FaceNodeConnect>=0));
-                    if minNode==1 && maxNode==length(Ans.X)
-                        start = 1;
-                        ui_message('warning','No start_index found on %s.\nDefault value is 0, but data suggest otherwise.\nUsing start_index=1.',meshInfo.Attribute(connect).Value)
-                    else
-                        start = 0;
-                    end
+                    start = 0;
                 else
                     start = FI.Dataset(iconnect).Attribute(istart).Value;
-                    maxNode = max(Ans.FaceNodeConnect(:));
-                    minNode = min(Ans.FaceNodeConnect(Ans.FaceNodeConnect>=0));
-                    if minNode-start+1<1
-                        error('File specifies start_index %g, but lowest node index in file is %g.',start,minNode)
-                    elseif maxNode-start+1>length(Ans.X)
-                        error('File specifies start_index %g and the largest node index in file is %g, but the number of nodes is only %g.',start,maxNode,length(Ans.X))
-                    end
                 end
+                start = verify_start_index(istart, start, min(Ans.FaceNodeConnect(Ans.FaceNodeConnect>=0)), max(Ans.FaceNodeConnect(:)), length(Ans.X), 'node', meshInfo.Attribute(connect).Value);
                 Ans.FaceNodeConnect = Ans.FaceNodeConnect - start + 1;
                 Ans.FaceNodeConnect(Ans.FaceNodeConnect<1) = NaN;
             end
@@ -598,17 +596,11 @@ if XYRead || XYneeded
                 istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name},'exact');
             end
             if isempty(istart)
-                maxNode = max(Ans.EdgeNodeConnect(:));
-                minNode = min(Ans.EdgeNodeConnect(Ans.EdgeNodeConnect>=0));
-                if minNode==1 && maxNode==length(Ans.X)
-                    start = 1;
-                    ui_message('warning','No start_index found on %s.\nDefault value is 0, but data suggest otherwise.\nUsing start_index=1.',meshInfo.Attribute(connect).Value)
-                else
-                    start = 0;
-                end
+                start = 0;
             else
                 start = FI.Dataset(iconnect).Attribute(istart).Value;
             end
+            start = verify_start_index(istart, start, min(Ans.EdgeNodeConnect(Ans.EdgeNodeConnect>=0)), max(Ans.EdgeNodeConnect(:)), length(Ans.X), 'node', meshInfo.Attribute(connect).Value);
             Ans.EdgeNodeConnect = Ans.EdgeNodeConnect - start + 1;
             edgeInvalid = any(Ans.EdgeNodeConnect<1,2);
             if any(edgeInvalid)
@@ -1378,6 +1370,25 @@ else
     TZshift = FI.Dataset(timevar).Info.TZshift;
 end
 % -------------------------------------------------------------------------
+
+% -----------------------------------------------------------------------------
+function start_index = verify_start_index(istart, start_index, minIndex, maxIndex, limitIndex, location, variable)
+if isempty(istart)
+    if minIndex == 1 && maxIndex == limitIndex
+        start_index = 1;
+        ui_message('warning','No start_index found on %s.\nDefault value is 0, but data suggest otherwise.\nUsing start_index=1.', variable)
+    else
+        start_index = 0;
+    end
+else
+    if minIndex-start_index+1 < 1
+        error('File specifies start_index %g for %s, but lowest %s index in file is %g.', start_index, variable, location, minIndex)
+    elseif maxIndex-start_index+1 > limitIndex
+        error('File specifies start_index %g for %s and the largest %s index in file is %g, but the last %s is only %g.', start_index, variable, location, maxIndex, location, limitIndex)
+    end
+end
+% -----------------------------------------------------------------------------
+
 
 % -----------------------------------------------------------------------------
 function Out=infile(FI,domain)
