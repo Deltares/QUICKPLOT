@@ -810,7 +810,7 @@ for ifld = 1:nchp
                             else
                                 val = val(:,:,info.layer);
                             end
-                        else ~flw_is_structured || flw_ndims == 2
+                        else % ~flw_is_structured && flw_ndims == 2
                             if info.layer == LAYER_BOTTOM_MOST
                                 val = val(:,1);
                             elseif info.layer == LAYER_DEPTH_AVERAGE
