@@ -481,6 +481,8 @@ switch geometry
 end
 if isequal(axestype,{'noplot'})
     MultipleColors = 0;
+elseif DimFlag(T_) ~= 0 && ~isempty(axestype{end})
+    axestype{end+1} = 'Time';
 end
 
 Inactive=UD.Inactive;
@@ -527,6 +529,14 @@ else
     i=1;
 end
 axestype=axestype{i};
+if strcmp(axestype,'Time')
+    multiple(:) = 0;
+    vslice = 0;
+    hslice = 0;
+    nval = -1;
+    usesmarker = 0;
+    MultipleColors = 0;
+end
 %
 if (multiple(M_) && ~multiple(N_) && DimFlag(N_)) || (~multiple(M_) && DimFlag(M_) && multiple(N_)) || vslice
     if isempty(strfind(axestype,'Time')) && (~multiple(K_) || hslice) && isempty(strfind(axestype,'Z'))

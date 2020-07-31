@@ -136,10 +136,15 @@ end
 switch cmd
     case {'slider','startanim','animselect','animpush','stopanim'}
         qck_anim(cmd,cmdargs{:});
+
     case 'set'
         if length(cmdargs)==2
             qp_settings(cmdargs{:})
         end
+        
+    case 'debug'
+        error('Insert a break point HERE for debugging!')
+
     case {'gridviewpoint','gridviewline','gridviewlineseg', ...
             'gridviewpiecewise','gridviewarbline','gridviewrange', ...
             'gridviewall','gridviewarbrect','gridviewarbarea', ...
@@ -1832,48 +1837,12 @@ switch cmd
                     writelog(logfile,logtype,cmd,FileName);
                 end
                 
-            case 'loaddata'
-                if logfile
-                    writelog(logfile,logtype,cmd);
-                end
-                lasterr('');
-                try
-                    Ops=qp_state_version(Ops);
-                    if isfield(Props,'MNK') && Props.MNK
-                        Props.MNK = xyz_or_mnk(Ops,selected,Props.MNK);
-                    end
-                    %
-                    selected(~Props.DimFlag)=[];
-                    set(mfig,'pointer','watch')
-                    switch Ops.presentationtype
-                        case {'patches','patches with lines','polygons'}
-                            [Chk,data,Info]=qp_getdata(Info,DomainNr,Props,'gridcelldata',subf{:},selected{:});
-                        otherwise
-                            [Chk,data,Info]=qp_getdata(Info,DomainNr,Props,'griddata',subf{:},selected{:});
-                    end
-                    data = qp_thinning(data,Ops);
-                    % reset pointer ...
-                    set(mfig,'pointer','arrow')
-                    if Chk
-                        % update FileInfo ...
-                        File(NrInList)=Info;
-                        set(Handle_SelectFile,'userdata',File);
-                        % return data ...
-                        if nargout>0
-                            outdata=data;
-                        else
-                            assignin('base','data',data)
-                        end
-                    end
-                catch Ex
-                    set(mfig,'pointer','arrow')
-                    qp_error('Catch in d3d_qp\loaddata',Ex)
-                end
-                
-            case {'quickview','addtoplot','addtoplot_left','addtoplot_right'}
+            case {'quickview','addtoplot','addtoplot_left','addtoplot_right','loaddata'}
                 set(mfig,'pointer','watch')
                 % minimal addpath d:\src\trunk_os\src\tools_lgpl\matlab\quickplot\progsrc\drawnow needed for updating pointer
-                if matlabversionnumber>=7.06 % 'update' option available as of 2008a
+                if strcmp(cmd,'loaddata')
+                    % no drawnow
+                elseif matlabversionnumber>=7.06 % 'update' option available as of 2008a
                     drawnow('update')
                 else
                     drawnow
@@ -1895,7 +1864,9 @@ switch cmd
                     %
                     T=1;
                     Animate = getappdata(findobj(mfig,'tag','quickview'),'animate');
-                    if Animate && Props.DimFlag(T_)
+                    if strcmp(cmd,'loaddata')
+                        % keep all selected times
+                    elseif Animate && Props.DimFlag(T_)
                         if selected{T_}==0
                             maxt=get(findobj(mfig,'tag','max_t'),'userdata');
                             T=1:maxt;
@@ -1905,7 +1876,7 @@ switch cmd
                         selected{T_}=T(1);
                     end
                     
-                    if Props.NVal==-2
+                    if strcmp(cmd,'loaddata') || isequal(Props.NVal, -2)
                         % selfplotfig will create its own figure
                         Parent=0;
                         pfig=[];
@@ -1950,22 +1921,41 @@ switch cmd
                         PS.Props=Props;
                         PS.SubField=subf;
                         PS.Selected=selected;
-                        PS.Parent=Parent;
+                        if strcmp(cmd,'loaddata')
+                            PS.Parent='loaddata';
+                        else
+                            PS.Parent=Parent;
+                        end
                         PS.Handles=hNew;
                         PS.Stations=stats;
                         PS.Ops=Ops;
                         [hNew,Error,Info]=qp_plot(PS);
                     end
                     
-                    if ~isempty(pfig)
-                        set(UD.PlotMngr.FigList,'value',1,'string',listnames(pfig,'showType','no','showHandle','no','showTag','no'),'userdata',pfig);
-                        set(UD.PlotMngr.ItList,'value',[]) % clear item selection such that new item will be selected
-                        d3d_qp refreshfigs
-                    end
-                    qp_updatescroller(hNew,pfig)
-                    
-                    if Animate
-                        qck_anim('start',pfig,T);
+                    if strcmp(cmd,'loaddata')
+                        % hNew contains the data ...
+                        if ~Error
+                            % update FileInfo ...
+                            File(NrInList)=Info;
+                            set(Handle_SelectFile, 'userdata', File);
+                            % return data ...
+                            if nargout>0
+                                outdata = hNew;
+                            else
+                                assignin('base', 'data', hNew)
+                            end
+                        end
+                    else
+                        if ~isempty(pfig)
+                            set(UD.PlotMngr.FigList,'value',1,'string',listnames(pfig,'showType','no','showHandle','no','showTag','no'),'userdata',pfig);
+                            set(UD.PlotMngr.ItList,'value',[]) % clear item selection such that new item will be selected
+                            d3d_qp refreshfigs
+                        end
+                        qp_updatescroller(hNew,pfig)
+                        
+                        if Animate
+                            qck_anim('start',pfig,T);
+                        end
                     end
                 catch Ex
                     qp_error('Catch in d3d_qp\quickview',Ex)
@@ -2404,7 +2394,16 @@ switch cmd
                 axestype=strrep(axestype,'Lon-Lat','X-Y');
             end
             %
-            if ~ischar(axestype) || strcmp(axestype,UD.State.axestype)
+            if strcmp(UD.State.axestype,'Time')
+                %
+                % a time line needs a time axis
+                %
+                if isempty(strfind(axestype,'Time'))
+                    set(atp,'enable','off','foregroundcolor','k')
+                else
+                    set(atp,'enable','on','foregroundcolor','k')
+                end
+            elseif ~ischar(axestype) || strcmp(axestype,UD.State.axestype)
                 %
                 % perfect match of axes types (including units in case of Val)
                 %

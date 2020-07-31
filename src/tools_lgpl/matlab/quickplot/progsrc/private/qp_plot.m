@@ -35,6 +35,7 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 hNewVec=0;
 Error=1;
+specialplot='';
 
 if isfield(PlotState,'FI')
     FileInfo=PlotState.FI;
@@ -60,11 +61,28 @@ if isfield(PlotState,'FI')
     if Props.NVal<0
         data=[];
     else
-        if isfield(Ops,'extend2edge') && Ops.extend2edge
+        if isfield(Ops,'axestype') && strcmp(Ops.axestype,'Time')
+            [Chk,data.Time]=qp_getdata(FileInfo,Domain,Props,'times',Selected{T_});
+            specialplot = 'time';
+        elseif isfield(Ops,'extend2edge') && Ops.extend2edge
             [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'griddefdata',SubField{:},SubSelected{:});
         else
-            switch Ops.presentationtype
-                case {'patches','patches with lines','patch centred vector','polygons'}%,'edges'} %--> edges needed for slice through patches
+            vslice = 0;
+            for i = 1:length(SubSelected)
+                if iscell(SubSelected{i})
+                    tp = SubSelected{i}{1};
+                    if strcmp(tp,'XY') || strcmp(tp,'MN')
+                        vslice = 1;
+                        break
+                    end
+                end
+            end
+            presentationtype = Ops.presentationtype;
+            if vslice && strcmp(presentationtype,'edges')
+                presentationtype = 'patch_slices';
+            end
+            switch presentationtype
+                case {'patches','patches with lines','patch centred vector','polygons','patch_slices'}
                     [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'gridcelldata',SubField{:},SubSelected{:});
                     DataInCell=1;
                 otherwise
@@ -92,75 +110,77 @@ else
     hOld={hOld};
 end
 
-%
-% Determine all objects in the axes. If this is a new plot then the new
-% object will be added on top, but if this is an update of an existing
-% object then the new object will be located at the location of the old
-% object in the object stack.
-%
-hNewTag='';
-lParents=get(hOldVec(ishandle(hOldVec)),'Parent');
-if iscell(lParents)
-    lParents=unique([lParents{:}]);
-end
-nParents = length(lParents);
-%
-% PchildBefore lists objects plotted on top of this object.
-% PchildAfter lists objects plotted below this object.
-%
-PchildBefore = cell(1,nParents);
-PchildAfter = cell(1,nParents);
-SortObjs=1;
-for lP=1:nParents
-    Pchild=allchild(lParents(lP));
-    if isempty(hOldVec) || ~ishandle(hOldVec(1))
-        %
-        % If there is no old object, then plot new object on top.
-        %
-        PchildBefore{lP}=[];
-        PchildAfter{lP}=Pchild;
-    else
-        hNewTag=get(hOldVec(1),'tag');
-        IdxObj=find(Pchild==hOldVec(1));
-        if isempty(IdxObj)
+if ~strcmp(Parent,'loaddata')
+    %
+    % Determine all objects in the axes. If this is a new plot then the new
+    % object will be added on top, but if this is an update of an existing
+    % object then the new object will be located at the location of the old
+    % object in the object stack.
+    %
+    hNewTag='';
+    lParents=get(hOldVec(ishandle(hOldVec)),'Parent');
+    if iscell(lParents)
+        lParents=unique([lParents{:}]);
+    end
+    nParents = length(lParents);
+    %
+    % PchildBefore lists objects plotted on top of this object.
+    % PchildAfter lists objects plotted below this object.
+    %
+    PchildBefore = cell(1,nParents);
+    PchildAfter = cell(1,nParents);
+    SortObjs=1;
+    for lP=1:nParents
+        Pchild=allchild(lParents(lP));
+        if isempty(hOldVec) || ~ishandle(hOldVec(1))
             %
-            % If there is an old object, but not in the current Parent then
-            % switch off object sorting.
+            % If there is no old object, then plot new object on top.
             %
-            SortObjs=0;
             PchildBefore{lP}=[];
-            PchildAfter{lP}=[];
+            PchildAfter{lP}=Pchild;
         else
-            %
-            % Old object exists in current axes, identify objects before
-            % and after this object.
-            %
-            PchildBefore{lP}=Pchild(1:IdxObj);
-            PchildBefore{lP}=PchildBefore{lP}(~ismember(PchildBefore{lP},hOldVec));
-            PchildAfter{lP}=Pchild(IdxObj:end);
-            PchildAfter{lP}=PchildAfter{lP}(~ismember(PchildAfter{lP},hOldVec));
+            hNewTag=get(hOldVec(1),'tag');
+            IdxObj=find(Pchild==hOldVec(1));
+            if isempty(IdxObj)
+                %
+                % If there is an old object, but not in the current Parent then
+                % switch off object sorting.
+                %
+                SortObjs=0;
+                PchildBefore{lP}=[];
+                PchildAfter{lP}=[];
+            else
+                %
+                % Old object exists in current axes, identify objects before
+                % and after this object.
+                %
+                PchildBefore{lP}=Pchild(1:IdxObj);
+                PchildBefore{lP}=PchildBefore{lP}(~ismember(PchildBefore{lP},hOldVec));
+                PchildAfter{lP}=Pchild(IdxObj:end);
+                PchildAfter{lP}=PchildAfter{lP}(~ismember(PchildAfter{lP},hOldVec));
+            end
         end
     end
-end
-Level = -1;
-for i = 1:length(hOldVec)
-    if ishandle(hOldVec(i))
-        iLevel = getappdata(hOldVec(i),'Level');
-        if ~isempty(iLevel)
-            Level = iLevel;
+    Level = -1;
+    for i = 1:length(hOldVec)
+        if ishandle(hOldVec(i))
+            iLevel = getappdata(hOldVec(i),'Level');
+            if ~isempty(iLevel)
+                Level = iLevel;
+            end
         end
     end
-end
-if Level<0
-    Level = 0;
-    Pchild=allchild(Parent);
-    for i = 1:length(Pchild)
-        iLevel = getappdata(Pchild(i),'Level');
-        if ~isempty(iLevel)
-            Level = max(Level,iLevel);
+    if Level<0
+        Level = 0;
+        Pchild=allchild(Parent);
+        for i = 1:length(Pchild)
+            iLevel = getappdata(Pchild(i),'Level');
+            if ~isempty(iLevel)
+                Level = max(Level,iLevel);
+            end
         end
+        Level = Level+500;
     end
-    Level = Level+500;
 end
 Thresholds=[]; % Thresholds is predefined to make sure that Thresholds always exists when its value is checked at the end of this routine
 
@@ -181,7 +201,7 @@ end
 
 Quant=Props.Name;
 Units='';
-if ~isempty(data)
+if ~isempty(data) && isfield(data,'Units')
     Units=data(1).Units;
 end
 %
@@ -874,14 +894,8 @@ end
 %
 if isfield(data,'XUnits') && ...
         (strcmp(data(1).XUnits,'deg') || strcmp(data(1).XUnits,'degree'))
-    switch Ops.axestype
-        case 'X-Y'
-            Ops.axestype='Lon-Lat';
-        case 'X-Y-Z'
-            Ops.axestype='Lon-Lat-Z';
-        case 'X-Y-Val'
-            Ops.axestype='Lon-Lat-Val';
-    end
+    Ops.axestype = strrep(Ops.axestype,'X-Y','Lon-Lat');
+    Ops.axestype = strrep(Ops.axestype,'X-','Lon-');
 end
 %
 % If it the plot contains a Z co-ordinate.
@@ -961,8 +975,36 @@ end
 % Begin of actual plotting
 %==========================================================================
 Quant = protectstring(Quant);
-if NVal==-2
+if isequal(Parent,'loaddata')
+    % load data
+    hNewVec = data;
+    Error = 0;
+    return
+elseif ~isempty(specialplot)
+    switch specialplot
+        case 'time'
+            axtype = getappdata(Parent, 'BasicAxesType');
+            hNewVec = hOld{1};
+            if strncmp(axtype, 'Time', 4)
+                ylim = get(Parent, 'ylim');
+                if isempty(hNewVec)
+                    hNewVec = line(data.Time*[1 1], ylim, Ops.LineParams{:});
+                else
+                    set(hNewVec, 'xdata', data.Time*[1 1], 'ydata', ylim)
+                end
+            else
+                xlim = get(Parent, 'xlim');
+                if isempty(hNewVec)
+                    hNewVec = line(xlim, data.Time*[1 1], Ops.LineParams{:});
+                else
+                    set(hNewVec, 'xdata', xlim, 'ydata',  data.Time*[1 1])
+                end
+            end
+            hNew{1} = hNewVec;
+    end
+elseif NVal==-2
     [Chk,hNewVec,FileInfo]=qp_getdata(FileInfo,Domain,Props,'plot',Parent,Ops,hOld,SubField{:},SubSelected{:});
+    Error = ~Chk;
     return
 elseif NVal==-1
     [Chk,hNewVec,FileInfo]=qp_getdata(FileInfo,Domain,Props,'plot',Parent,Ops,hOld,SubField{:},SubSelected{:});
@@ -1036,7 +1078,7 @@ else
     hNewVec=cat(1,hNew{:});
 end
 
-if isfield(Ops,'basicaxestype') && ~isempty(Ops.basicaxestype) && length(Parent)==1
+if isempty(specialplot) && isfield(Ops,'basicaxestype') && ~isempty(Ops.basicaxestype) && length(Parent)==1
     axestype = multiline(strtok(Ops.basicaxestype),'-','cell');
     nAxes = length(axestype);
     %
