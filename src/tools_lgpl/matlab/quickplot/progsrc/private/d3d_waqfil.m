@@ -809,9 +809,12 @@ else
             ival = Props.Val1;
         end
         [T,val1]=delwaq('read',LocFI,ival,idx{st_},idx{T_});
+        if length(Props.Val1)>1 && strcmp(ValVecReason,'fraction_sum')
+            val1 = sum(val,1);
+        end
         val1=permute(val1,[3 2 1]);
     else
-        if iscell(Props.Val1) && DimFlag(K_)
+        if strcmp(ValVecReason,'layers') && iscell(Props.Val1)
             %
             % Multiple layers stored in different substances.
             %
@@ -820,6 +823,15 @@ else
             for s=idx{K_}
                 i_s = i_s+1;
                 [val1(:,:,i_s),Chk]=vs_let(LocFI,Props.Group,idx(T_),Props.Val1{s},idx(st_),'quiet'); % load station
+            end
+        elseif iscell(Props.Val1)
+            for ip = 1:length(Props.Val1)
+                [val1p,Chk]=vs_let(LocFI,Props.Group,idx(T_),Props.Val1{ip},idx(st_),'quiet'); % load station
+                if ip == 1
+                    val1 = val1p;
+                else
+                    val1 = val1 + val1p;
+                end
             end
         else
             [val1,Chk]=vs_let(LocFI,Props.Group,idx(T_),Props.Val1,idx(st_),'quiet'); % load station
@@ -1633,8 +1645,8 @@ if ~isempty(icnst)
     [sorted_names,reorder] = sort({Ins.Name}');
     Ins = Ins(reorder);
     %
-    names=substdb;
-    onenames = names(wildstrmatch('*01',names),:);
+    names = cellstr(substdb);
+    onenames = names(wildstrmatch('*01',names));
     j=1;
     while j<=length(Ins)
         nm = Ins(j).Name;
