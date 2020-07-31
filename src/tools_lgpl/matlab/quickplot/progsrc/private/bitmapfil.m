@@ -193,7 +193,12 @@ switch cmd
         set(xminh,'string',sprintf('%g',x))
         cmdargs={cmd x};
     case 'bitmapfig'
-        sz=[FI.FileInfo.Width FI.FileInfo.Height];
+        % get size in pixels
+        pxsz = [FI.FileInfo.Width FI.FileInfo.Height];
+        % get size in map units
+        sz = FI.Loc(3:4);
+        % requested size is such that lowest resolution just matches pixels
+        sz = min(pxsz./sz) * sz;
         ssz=qp_getscreen;
         fac=max(sz./ssz(3:4));
         if fac>1
