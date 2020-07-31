@@ -834,6 +834,7 @@ if logid1>0
     end
     fclose(logid1);
 end
+fclose('all');
 if AnyFail
     ui_message('error','Testbank failed on %i out of %i cases! Check log file.\n',NFailed,NTested)
     %
@@ -871,6 +872,7 @@ switch log_style
             str = strrep(str,'$','\$');
             str = strrep(str,'&','\&');
             str = strrep(str,'%','\%');
+            str = strrep(str,'^','\^');
             str = strrep(str,'³','$^3$');
         end
 end
