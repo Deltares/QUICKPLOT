@@ -1253,7 +1253,7 @@ switch Type
         return
     case {'delft3d-waq-history','delwaqhis','delft3d-par-his','delft3d-par-history'}
         DataProps={'--constituents'       ''      '' ''    [1 5 0 0 0]  0         1     ''       'z'   'z'       'c'     casemod('DELWAQ_RESULTS') casemod('SUBST_001')     ''    []       0 0};
-        if isequal(qp_option(FI,'treatas1d'),'default',1)
+        if isequal(qp_option(FI,'treatas1d'),1)
             DataProps{5}=[1 0 1 0 0];
         end
         mass_per='cell';
@@ -1341,7 +1341,8 @@ end
 %======================== SPECIFIC CODE ADD ===================================
 icnst=strmatch('--constituents',{Out.Name});
 ii=0;
-FI=qp_option(FI,'balancefile','ifnew',0);
+FI = qp_option(FI,'balancefile','ifnew',0);
+FI = qp_option(FI,'showfractions','ifnew','subfield');
 minlen=20;
 if ~isempty(icnst)
     [Out.BedLayer]=deal(0);
@@ -1623,7 +1624,7 @@ if ~isempty(icnst)
         end
     end
     %
-    showfractions = qp_option(FI,'showfractions','default','subfield');
+    showfractions = qp_option(FI,'showfractions');
     %
     % check whether substance names were expanded by adding 001,002,...
     % the following algorithm requires fractions to be numbered
@@ -1759,9 +1760,9 @@ if ~isempty(icnst)
             Ins(j).Units = [Ins(j).Units '/d'];
             Out(1).BalSubFld=[];
         end
-        if isequal(Ins(j).Name,'Limit Chlo') || isequal(Ins(j).Name,'total chlorophyll in algae')
+        if isequal(Ins(j).ShortName,'Limit Chlo')
             Ins(end+1)=Ins(j);
-            Ins(end).Name = 'total chlorophyll in algae (limiting factors)';
+            Ins(end).Name = [Ins(j).Name ' (limiting factors)'];
             Ins(end).NVal = -1;
             %Ins(end).DimFlag(T_) = 0;
         end

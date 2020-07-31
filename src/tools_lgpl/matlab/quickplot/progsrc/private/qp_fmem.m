@@ -355,7 +355,7 @@ switch cmd
                         
                         if isfield(FI,'SubType')
                             switch lower(FI.SubType)
-                                case {'delft3d-trim','delft3d-com','delft3d-trih','delft3d-waq-map','delft3d-waq-his','delft3d-par-map'}
+                                case {'delft3d-trim','delft3d-com','delft3d-trih','delft3d-waq-map','delft3d-waq-his','delft3d-waq-history','delft3d-par-map'}
                                     FI.Options=1;
                             end
                         end
