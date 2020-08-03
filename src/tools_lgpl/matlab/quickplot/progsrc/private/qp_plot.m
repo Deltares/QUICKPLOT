@@ -665,7 +665,11 @@ if isfield(Ops,'presentationtype') && strcmp(Ops.presentationtype,'coloured cont
 end
 
 if Props.NVal==6
-    Ops.Thresholds = 0.5:1:length(data(1).Classes);
+    if isfield(data,'ClassVal')
+        Ops.Thresholds = data(1).ClassVal;
+    else
+        Ops.Thresholds = 1:length(data(1).Classes);
+    end
 elseif isfield(Ops,'thresholds') && ~strcmp(Ops.thresholds,'none')
     miv = inf;
     mv  = -inf;

@@ -253,9 +253,13 @@ switch NVal
                 else
                     data = qp_dimsqueeze(data,Ops.axestype,multiple,DimFlag,Props);
                     if strcmp(Ops.presentationtype,'labels') && isfield(data,'Classes')
-                        miss = isnan(data.Val);
+                        if isfield(data,'ClassVal')
+                            [~, data.Val] = ismember(data.Val, data.ClassVal);
+                            miss = data.Val == 0;
+                        else
+                            miss = isnan(data.Val);
+                        end
                         data.Val(miss) = 1;
-                        data.Classes(data.Val);
                         data.Val = data.Classes(data.Val);
                         data.Val(miss) = {''};
                     end

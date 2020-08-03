@@ -314,17 +314,18 @@ if DataRead && Props.NVal>0
     end
     %
     if Props.NVal==6
-        fm = ustrcmpi('flag_meanings',Attribs);
-        Ans.Classes = strsplit(Info.Attribute(fm).Value,' ');
-        fv = ustrcmpi('flag_values',Attribs);
+        fm = ustrcmpi('flag_meanings', Attribs);
+        Ans.Classes = strsplit(Info.Attribute(fm).Value, ' ');
+        fv = ustrcmpi('flag_values', Attribs);
         if fv>0
-            [dummy,Ans.Val] = ismember(Ans.Val,Info.Attribute(fv).Value);
+            Ans.ClassVal = double(Info.Attribute(fv).Value);
+            %[~, Ans.Val] = ismember(Ans.Val, Info.Attribute(fv).Value);
         else
-            fm = ustrcmpi('flag_masks',Attribs);
+            fm = ustrcmpi('flag_masks', Attribs);
             if fm>0
-                ui_message('warning','The quantity %s uses ''flag_masks'' which are not yet supported.',Info.Name)
+                ui_message('warning', 'The quantity %s uses ''flag_masks'' which are not yet supported.', Info.Name)
             else
-                ui_message('warning','The quantity %s uses ''flag_meanings'' attribute,\nbut the associated ''flag_values'' or ''flag_masks'' attribute can''t be found.', Info.Name)
+                ui_message('warning', 'The quantity %s uses ''flag_meanings'' attribute,\nbut the associated ''flag_values'' or ''flag_masks'' attribute can''t be found.', Info.Name)
             end
         end
     end
