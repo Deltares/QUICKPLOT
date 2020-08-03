@@ -984,23 +984,30 @@ elseif ~isempty(specialplot)
     switch specialplot
         case 'time'
             axtype = getappdata(Parent, 'BasicAxesType');
-            hNewVec = hOld{1};
-            if strncmp(axtype, 'Time', 4)
-                ylim = get(Parent, 'ylim');
-                if isempty(hNewVec)
-                    hNewVec = line(data.Time*[1 1], ylim, Ops.LineParams{:});
-                else
-                    set(hNewVec, 'xdata', data.Time*[1 1], 'ydata', ylim)
-                end
-            else
-                xlim = get(Parent, 'xlim');
-                if isempty(hNewVec)
-                    hNewVec = line(xlim, data.Time*[1 1], Ops.LineParams{:});
-                else
-                    set(hNewVec, 'xdata', xlim, 'ydata',  data.Time*[1 1])
-                end
+            hNew = hOld;
+            switch axtype
+                case {'analog clock','digital clock','calendar page'}
+                    md_clock(Parent, data.Time)
+                    hNewVec = [hNew{:}];
+                otherwise
+                    hNewVec = hOld{1};
+                    if strncmp(axtype, 'Time', 4)
+                        ylim = get(Parent, 'ylim');
+                        if isempty(hNewVec)
+                            hNewVec = line(data.Time*[1 1], ylim, Ops.LineParams{:});
+                        else
+                            set(hNewVec, 'xdata', data.Time*[1 1], 'ydata', ylim)
+                        end
+                    else
+                        xlim = get(Parent, 'xlim');
+                        if isempty(hNewVec)
+                            hNewVec = line(xlim, data.Time*[1 1], Ops.LineParams{:});
+                        else
+                            set(hNewVec, 'xdata', xlim, 'ydata',  data.Time*[1 1])
+                        end
+                    end
+                    hNew{1} = hNewVec;
             end
-            hNew{1} = hNewVec;
     end
 elseif NVal==-2
     [Chk,hNewVec,FileInfo]=qp_getdata(FileInfo,Domain,Props,'plot',Parent,Ops,hOld,SubField{:},SubSelected{:});
@@ -1230,7 +1237,7 @@ if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
 end
 
 if isempty(hNewVec)
-    hNewVec=line('xdata',[],'ydata',[],'zdata',[]);
+    hNewVec=line('parent',Parent(1),'xdata',[],'ydata',[],'zdata',[]);
     hNew{end+1}=hNewVec;
 end
 if isempty(hNewTag)

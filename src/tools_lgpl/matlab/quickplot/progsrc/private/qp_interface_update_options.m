@@ -1793,7 +1793,7 @@ end
 if animate
     PlotType='Animate';
 end
-EnablePlot = ~strcmp(axestype,'noplot');
+EnablePlot = ~strcmp(axestype,'noplot') && ~strcmp(axestype,'Time');
 EnableLoad = nval~=-1;
 
 %---- Ops Version

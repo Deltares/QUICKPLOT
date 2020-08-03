@@ -2380,53 +2380,71 @@ switch cmd
         end
         
     case 'update_addtoplot'
-        qv=findobj(mfig,'tag','quickview');
-        atp= findobj(mfig,'tag','addtoplot');
-        multi = get(UD.PlotMngr.FigAll,'value') | get(UD.PlotMngr.AxAll,'value');
+        qv=findobj(mfig, 'tag', 'quickview');
+        atp = findobj(mfig, 'tag', 'addtoplot');
+        multi = get(UD.PlotMngr.FigAll, 'value') | get(UD.PlotMngr.AxAll, 'value');
         if ~multi && ~isempty(UD.PlotMngr.CurrentAxes) ...
                 && ishandle(UD.PlotMngr.CurrentAxes) ...
-                && strcmp(get(qv,'enable'),'on')
-            axestype=getappdata(UD.PlotMngr.CurrentAxes,'AxesType');
+                && (strcmp(get(qv, 'enable'), 'on') || strcmp(UD.State.axestype, 'Time'))
+            axestype=getappdata(UD.PlotMngr.CurrentAxes, 'BasicAxesType');
             %
             % Temporarily replace Lon-Lat by X-Y.
             %
             if ischar(axestype)
-                axestype=strrep(axestype,'Lon-Lat','X-Y');
+                axestype=strrep(axestype, 'Lon-Lat', 'X-Y');
             end
             %
-            if strcmp(UD.State.axestype,'Time')
+            if ~ischar(axestype)
+                atp_on = 0;
+            elseif strcmp(UD.State.axestype, 'Time')
                 %
                 % a time line needs a time axis
                 %
-                if isempty(strfind(axestype,'Time'))
-                    set(atp,'enable','off','foregroundcolor','k')
-                else
-                    set(atp,'enable','on','foregroundcolor','k')
+                switch axestype
+                    case {'analog clock', 'digital clock', 'calendar page'}
+                        % only one data set can be added to these types of axes
+                        atp_on = isempty(get(UD.PlotMngr.ItList, 'userdata'));
+                    otherwise
+                        atp_on = ~isempty(strfind(axestype, 'Time'));
                 end
-            elseif ~ischar(axestype) || strcmp(axestype,UD.State.axestype)
+            elseif ~ischar(axestype) || strcmp(axestype, UD.State.axestype)
                 %
                 % perfect match of axes types (including units in case of Val)
                 %
-                set(atp,'enable','on','foregroundcolor','k')
+                atp_on = 1;
             else
                 %
                 % no exact match
                 %
-                if strcmp(strtok(axestype),strtok(UD.State.axestype)) && ...
-                        (isempty(strfind(axestype,' ')) || ...
-                        isempty(strfind(UD.State.axestype,' ')))
+                if strcmp(strtok(axestype), strtok(UD.State.axestype)) && ...
+                        (isempty(strfind(axestype, ' ')) || ...
+                        isempty(strfind(UD.State.axestype, ' ')))
                     %
                     % if one of the two axes types lacks a unit specifier,
                     % and the axes types without unit specifier match, then
                     % still okay to combine plots.
                     %
-                    set(atp,'enable','on','foregroundcolor','k')
+                    atp_on = 1;
                 else
-                    set(atp,'enable','on','foregroundcolor','r')
+                    switch axestype
+                        case {'analog clock', 'digital clock', 'calendar page'}
+                            % only Time quantity can be added
+                            atp_on = 0;
+                        otherwise
+                            atp_on = 0.5;
+                    end
                 end
             end
         else
-            set(atp,'enable','off','foregroundcolor','k')
+            atp_on = 0;
+        end
+        switch atp_on
+            case 1   % yes!
+                set(atp, 'enable', 'on', 'foregroundcolor', 'k')
+            case 0.5 % not wise, but maybe ...
+                set(atp, 'enable', 'on', 'foregroundcolor', 'r')
+            case 0   % no!
+                set(atp, 'enable', 'off', 'foregroundcolor', 'k')
         end
         
     case 'close'
@@ -3143,6 +3161,7 @@ switch cmd
             tp = tps{itp};
             setaxesprops(ax,tp)
             d3d_qp refreshaxes
+            d3d_qp update_addtoplot
             %
             if logfile
                 writelog(logfile,logtype,cmd,tp);

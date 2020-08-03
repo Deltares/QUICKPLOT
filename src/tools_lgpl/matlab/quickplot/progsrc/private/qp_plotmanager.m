@@ -143,8 +143,11 @@ switch cmd
         iList = find(strcmp(List,sList));
         if isempty(iList)
             iList = 1;
+            set(PM.ShowList,'string',List,'value',iList)
+            qp_plotmanager pmshowselect
+        else
+            set(PM.ShowList,'string',List,'value',iList)
         end
-        set(PM.ShowList,'string',List,'value',iList)
         %
         shiftcontrol(PM.ItTxt,aligntop+fgprop_shf+axprop_shf)
         shiftcontrol(PM.ItList,stretchhor+stretchitm)
@@ -810,6 +813,7 @@ switch cmd
         end
         qp_plotmanager updatearrows
         qp_plotmanager refreshitemprop
+        d3d_qp update_addtoplot
 
     case 'updatearrows'
         Ax = getAx(UD);
@@ -1671,7 +1675,7 @@ switch cmd
             axt = getappdata(ax,'BasicAxesType');
             set(PM.AxTypeTxt,'enable','on')
             if isempty(axt) || strcmp(axt,'undefined')
-                axt = {'undefined','Time-Val','Time-Z','Time-X','X-Time','Distance-Val','X-Y','X-Y-Z','Lon-Lat','legend'};
+                axt = {'undefined','Time-Val','Time-Z','Time-X','X-Time','Distance-Val','X-Y','X-Y-Z','Lon-Lat','analog clock','digital clock','calendar page','legend'};
                 set(PM.AxType, ...
                     'backgroundcolor',Active, ...
                     'value',1, ...
