@@ -1166,6 +1166,23 @@ if isempty(specialplot) && isfield(Ops,'basicaxestype') && ~isempty(Ops.basicaxe
         end
     end
     setaxesprops(Parent,Ops.axestype,dimension,unit)
+    xyz = 'xyz';
+    for d = 1:nAxes
+        x = xyz(d);
+        switch axestype{d}
+            case 'Val'
+                if isfield(data, 'Classes')
+                    if isfield(data, 'ClassVal')
+                        cv = data(1).ClassVal;
+                    else
+                        cv = 1:length(data(1).Classes);
+                    end
+                    set(Parent, ...
+                        [x 'tick'], cv, ...
+                        [x 'ticklabel'], data(1).Classes)
+                end
+        end
+    end
 end
 %==========================================================================
 % End of actual plotting
