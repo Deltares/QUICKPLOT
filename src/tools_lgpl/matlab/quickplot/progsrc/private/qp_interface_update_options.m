@@ -1282,6 +1282,18 @@ if nval>0 && nval<2
     end
 end
 
+if MultipleColors ...
+        && (strcmp(Ops.presentationtype,'patches') ...
+            || strcmp(Ops.presentationtype,'edges'))
+    cun = findobj(OH,'tag','unicolour');
+    set(cun,'enable','on')
+    Ops.unicolour = get(cun,'value');
+    if Ops.unicolour
+        SingleColor = 1;
+        MultipleColors = 0;
+    end
+end
+
 if vectors && ~isempty(strmatch(axestype,{'X-Y','X-Y-Z','X-Y-Val','X-Z'},'exact'))
     set(findobj(OH,'tag','vectorstyle'),'enable','on')
     vstyle=findobj(OH,'tag','vectorstyle=?');

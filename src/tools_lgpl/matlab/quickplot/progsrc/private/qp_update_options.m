@@ -131,6 +131,11 @@ if isfield(Ops,'operator')
     set(oper,'enable','on','backgroundcolor',Active)
 end
 
+if isfield(Ops,'unicolour')
+    cun=findobj(OH,'tag','unicolour');
+    set(cun,'enable','on','value',Ops.unicolour)
+end
+
 if isfield(Ops,'vectorstyle')
     set(findobj(OH,'tag','vectorstyle'),'enable','on')
     vstyle=findobj(OH,'tag','vectorstyle=?');

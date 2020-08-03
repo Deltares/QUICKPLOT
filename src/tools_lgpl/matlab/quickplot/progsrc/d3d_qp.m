@@ -2126,7 +2126,7 @@ switch cmd
         end
         
     case {'colourvectors','usemarkercolour','usemarkerfillcolour','colclassify','colourbar','colourdams','textbox','fillpolygons', ...
-            'colvector','coldams'}
+            'colvector','coldams','unicolour'}
         % commands require an input logical
         %
         % nothing do except refreshing the options
