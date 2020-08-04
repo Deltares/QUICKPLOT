@@ -239,12 +239,17 @@ end
 
 function [MNu,MNv]=Local_enc2uv(MN)
 % * [MNu,MNv]=ENCLOSURE('thindam',MN)
-Ind=Local_mask_WL(MN);
-%imagesc(Ind)
-[m,n]=find(Ind(1:end-1,:)~=Ind(2:end,:));
-MNu=[m n m n];
-[m,n]=find(Ind(:,1:end-1)~=Ind(:,2:end));
-MNv=[m n m n];
+if isempty(MN)
+    MNu = zeros(0,4);
+    MNv = zeros(0,4);
+else
+    Ind=Local_mask_WL(MN);
+    %imagesc(Ind)
+    [m,n]=find(Ind(1:end-1,:)~=Ind(2:end,:));
+    MNu=[m n m n];
+    [m,n]=find(Ind(:,1:end-1)~=Ind(:,2:end));
+    MNv=[m n m n];
+end
 
 
 function MN=Local_encextract(X,Y)
@@ -345,20 +350,24 @@ function [X,Y]=Local_encapply(MN,Xorg,Yorg)
 % * [X,Y]=ENCLOSURE('apply',ENC,Xorg,Yorg)
 %   % can be implemented using inpolygon
 %   % in=inpolygon(XI,YI,x-0.5,y-0.5)
-Ind = Local_mask_DP(MN);
-if size(Ind,1)>size(Xorg,1)
-    Ind=Ind(1:size(Xorg,1),:);
-else
-    Ind(size(Xorg,1),1)=0;
+X = Xorg;
+Y = Yorg;
+if ~isempty(MN)
+    Ind = Local_mask_DP(MN);
+    if size(Ind,1)>size(X,1)
+        Ind=Ind(1:size(X,1),:);
+    else
+        Ind(size(X,1),1)=0;
+    end
+    if size(Ind,2)>size(X,2)
+        Ind=Ind(:,1:size(X,2));
+    else
+        Ind(1,size(X,2))=0;
+    end
+    Ind=Ind~=1;
+    X(Ind)=NaN;
+    Y(Ind)=NaN;
 end
-if size(Ind,2)>size(Xorg,2)
-    Ind=Ind(:,1:size(Xorg,2));
-else
-    Ind(1,size(Xorg,2))=0;
-end
-Ind=Ind~=1;
-X=Xorg; X(Ind)=NaN;
-Y=Yorg; Y(Ind)=NaN;
 
 
 function XY=Local_coordinates(MNall,X,Y)

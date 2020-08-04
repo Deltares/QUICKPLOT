@@ -670,7 +670,7 @@ switch cmd
                         end
                     case 'boxfile'
                         DataFI=boxfile('read',FileName);
-                        FI = wlgrid('create',size(DataFI));
+                        FI = wlgrid('create',DataFI);
                         FI.FileName = FileName;
                         %
                         FI.FileType = 'wlgrid';

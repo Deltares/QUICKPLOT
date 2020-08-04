@@ -125,10 +125,22 @@ switch lcmd
         error('Unknown command')
 end
 
-function GRID=Local_create_grid(sz)
+function GRID=Local_create_grid(szOrFld)
+if isequal(size(szOrFld),[1 2])
+    sz = szOrFld;
+    Fld = [];
+else
+    Fld = szOrFld;
+    sz = size(Fld);
+end
 GRID.X                = repmat((1:sz(1))',1,sz(2));
 GRID.Y                = repmat(1:sz(2),sz(1),1);
-GRID.Enclosure        = [];
+if ~isempty(Fld)
+    Mask = isnan(Fld);
+    GRID.X(Mask) = NaN;
+    GRID.Y(Mask) = NaN;
+end
+GRID.Enclosure        = enclosure('extract',GRID.X,GRID.Y);
 GRID.FileName         = '';
 GRID.CoordinateSystem = 'Unknown';
 GRID.MissingValue     = 0;
