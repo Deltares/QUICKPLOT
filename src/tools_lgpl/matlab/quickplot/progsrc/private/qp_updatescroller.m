@@ -104,13 +104,18 @@ for i = 1:length(UDs)
             DimStr(3:length(Props.DimName)+1)  = Props.DimName(2:end);
         end
         %
+        if CanAnim(2)
+            animdim = 2;
+        else
+            animdim = min(find(CanAnim));
+        end
         for m_ = 1:length(sz)
             if CanAnim(m_)
                 Anim.Dim=m_-1; %! CONVERT from 1:6 back to AnimLoc (0=subf, 1=time, ...]
                 Anim.Label=DimStr{m_};
                 Anim.Values=Values{m_};
                 hMenu=uimenu('label',DimMenu{m_},'parent',it,'userdata',Anim,'callback','d3d_qp animselect');
-                if isempty(AnimSel)
+                if m_ == animdim
                     AnimSel=Anim;
                     hAnimSel=hMenu;
                 end
