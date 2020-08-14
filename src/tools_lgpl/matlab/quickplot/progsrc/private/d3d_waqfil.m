@@ -1765,7 +1765,7 @@ if ~isempty(icnst)
             Ins(j).Name=[Ins(j).Name ' (bed layer)'];
             Ins(j).Units='kg/m^2';
         end
-        if qp_option(FI,'balancefile')
+        if qp_option(FI,'balancefile') && isfield(Ins,'BalSubFld')
             %
             % balance file
             %
@@ -2322,11 +2322,20 @@ switch cmd
         for cellfld = cellflds
             Fld = cellfld{1};
             f = findobj(mfig,'tag',Fld);
+            enable = 'on';
             switch Fld
                 case {'showfractions'}
                     defval = showfractions{1};
                 case {'clipwherezundefined','reducebedto2d','reducedptstatto2d'}
                     defval = 1;
+                case 'treatas1d'
+                    defval = 0;
+                    if isfield(FI,'Grid') && ~isempty(FI.Grid)
+                        enable = 'off';
+                    end
+                case 'balancefile'
+                    defval = 0;
+                    1
                 otherwise
                     defval = 0;
             end
@@ -2334,7 +2343,7 @@ switch cmd
             if ischar(value)
                 value = ustrcmpi(value,showfractions);
             end
-            set(f,'value',value,'enable','on')
+            set(f,'value',value,'enable',enable)
             %
             switch Fld
                 case 'balancefile'

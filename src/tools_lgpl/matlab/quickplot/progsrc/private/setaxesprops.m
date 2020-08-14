@@ -93,7 +93,7 @@ if nAxes>=2
     if isequal(Axes(1:2),{'Lon','Lat'})
         setappdata(hAx,'LonLat',1)
         sethscale_lonlat(hAx)
-    elseif isequal(Axes(1:2),{'X','Y'})
+    elseif isequal(Axes(1:2),{'X','Y'}) && numel(unit)>=2 && isequal(unit{1},unit{2})
         sethscale(hAx,1)
     end
 end

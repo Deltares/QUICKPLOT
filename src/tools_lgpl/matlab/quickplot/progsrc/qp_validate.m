@@ -335,16 +335,30 @@ try
                 for dm=1:dmx
                     [Chk,P]=qp_getdata(FI,dm);
                     write_log(logid2,'Reading fields of domain ''%s'': %s',protected(Dms{dm}),sc{Chk+1});
-                    ChkOK=Chk&ChkOK;
+                    ChkOK = Chk & ChkOK;
+                    if ~Chk
+                        continue
+                    end
+                    %
+                    szFail = {};
+                    szChkOK = true;
                     for p=1:length(P)
                         if strcmp(P(p).Name,'-------')
                             P(p).Size=[0 0 0 0 0];
                         else
                             [Chk,P(p).Size]=qp_getdata(FI,dm,P(p),'size');
-                            drawnow
-                            ChkOK=Chk&ChkOK;
+                            if ~Chk
+                                szFail{end+1} = P(p).Name;
+                            end
+                            szChkOK = Chk & szChkOK;
                         end
                     end
+                    write_log(logid2,'Reading sizes of data fields of domain ''%s'': %s',protected(Dms{dm}),sc{szChkOK+1});
+                    if ~szChkOK
+                        szFail = sprintf('''%s'', ',szFail{:});
+                        write_log(logid2,'Problem encountered while determining the size of %s',szFail(1:end-2));
+                    end
+                    ChkOK = szChkOK & ChkOK;
                     Props{dm}=P;
                 end
                 write_log(logid2,'');
@@ -511,7 +525,7 @@ try
                             WrkFile=[swrk CmpFile];
                             idx={};
                             subf={};
-                            if P(p).DimFlag(ST_)
+                            if ~isempty(P(p).DimFlag) && P(p).DimFlag(ST_)
                                 idx={1};
                                 if P(p).DimFlag(T_)
                                     if P(p).DimFlag(M_) || P(p).DimFlag(N_)

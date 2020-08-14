@@ -100,7 +100,7 @@ switch cmd
         hOld=varargin{3};
         hNew=lddplot(FI,Parent);
         set(hNew,'color',Ops.colour);
-        setaxesprops(Parent,'X-Y')
+        setaxesprops(Parent,'X-Y',{},{'',''})
         if nargout>1
             varargout={hNew FI};
         else
