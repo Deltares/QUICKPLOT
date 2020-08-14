@@ -111,22 +111,6 @@ switch cmd
         [XYRead,DataRead,DataInCell]=gridcelldata(cmd);
 end
 
-if FI.NumDomains>1
-    for i = 1:FI.NumDomains
-        Data2 = netcdffil(FI,i,field,cmd,varargin{:});
-        if i==1
-            Data = Data2;
-        else
-            flds = fieldnames(Data2);
-            for j = 1:length(flds)
-                Data(i).(flds{j}) = Data2.(flds{j});
-            end
-        end
-    end
-    varargout = {Data OrigFI};
-    return
-end
-
 DimFlag=Props.DimFlag;
 
 % initialize and read indices ...
@@ -136,13 +120,150 @@ fidx=find(DimFlag);
 [subf,rec]=getsubfields(FI,Props);
 if isempty(subf)
     % initialize and read indices ...
-    Props.SubFld = rec;
     idx(fidx(1:length(varargin))) = varargin;
+    marg = find(fidx==M_);
+else
+    % initialize and read indices ...
+    idx(fidx(1:(length(varargin)-1))) = varargin(2:end);
+    marg = 1 + find(fidx==M_);
+end
+
+if FI.NumDomains>1
+    args = varargin;
+    spatial = false;
+    if ~isempty(marg) && ~isempty(Props.Geom)
+        spatial = strncmp(Props.Geom,'UGRID2D',7);
+    end
+    if domain == FI.NumDomains+2
+        % merged partitions
+        cmd = strrep(cmd, 'grid', '');
+        if marg <= numel(args)
+            args{marg} = 0;
+        end
+        %
+        if iscell(Props.varid) && strcmp(Props.varid{1},'stream_function')
+            % select all M_
+            Props.Geom = 'UGRID2D-EDGE';
+            Props.varid = Props.varid{2};
+            Props.DimName{M_} = FI.Dataset(FI.Dataset(Props.varid+1).Mesh{2}).Mesh{6};
+        end
+    else
+        % all partitions - unmerged - only "all m" allowed ...
+    end
+    if isempty(cmd)
+        Data = [];
+    elseif ~spatial
+        % read non-spatial data from the first file ... should be consistent across all files and no way to merge anyway
+        Data = netcdffil(FI,1,Props,cmd,args{:});
+    else
+        for i = 1:FI.NumDomains
+            Data2 = netcdffil(FI,i,Props,cmd,args{:});
+            if i==1
+                Data = Data2;
+            else
+                flds = fieldnames(Data2);
+                for j = 1:length(flds)
+                    Data(i).(flds{j}) = Data2.(flds{j});
+                end
+            end
+        end
+    end
+    if spatial && domain == FI.NumDomains+2
+        % merged partitions
+        partData = Data;
+        Data = [];
+        valLoc = Props.Geom(end-3:end);
+        switch valLoc
+            case 'NODE'
+                nloc = FI.MergedPartitions.nNodes;
+                domainMask = FI.MergedPartitions.nodeDMask;
+                globalIndex = FI.MergedPartitions.nodeGIndex;
+            case 'EDGE'
+                nloc = FI.MergedPartitions.nEdges;
+                domainMask = FI.MergedPartitions.edgeDMask;
+                globalIndex = FI.MergedPartitions.edgeGIndex;
+            case 'FACE'
+                nloc = FI.MergedPartitions.nFaces;
+                domainMask = FI.MergedPartitions.faceDMask;
+                globalIndex = FI.MergedPartitions.faceGIndex;
+        end
+        if XYRead
+            m = 1;
+            Data.X = FI.MergedPartitions(m).X;
+            Data.XUnits = FI.MergedPartitions(m).XYUnits;
+            Data.Y = FI.MergedPartitions(m).Y;
+            Data.YUnits = FI.MergedPartitions(m).XYUnits;
+            Data.EdgeNodeConnect = FI.MergedPartitions(m).EdgeNodeConnect;
+            Data.FaceNodeConnect = FI.MergedPartitions(m).FaceNodeConnect;
+            Data.ValLocation = valLoc;
+            if isfield(partData,'Time')
+                Data.Time = partData(1).Time;
+            end
+        end
+        for v = {'Val','XComp','YComp','NormalComp','TangentialComp'}
+            fld = v{1};
+            if isfield(partData,fld)
+                Data.(fld) = NaN(nloc,1);
+                for p = 1:length(partData)
+                    masked = domainMask{p};
+                    Data.(fld)(globalIndex{p}(masked)) = partData(p).(fld)(masked);
+                end
+            end
+        end
+        %
+        if iscell(field.varid) && strcmp(field.varid{1},'stream_function') % note field is the original copy of Props
+            Data.Val = compute_stream_function(Data.Val, Data.EdgeNodeConnect, FI.MergedPartitions(m).nNodes);
+            Data.ValLocation = 'NODE';
+        end
+        if ~isequal(idx{M_},0)
+            if XYRead
+                switch Data.ValLocation
+                    case 'NODE'
+                        newINode = zeros(size(Data.X));
+                        newINode(idx{M_}) = 1:length(idx{M_});
+                        %
+                        FNC = Data.FaceNodeConnect;
+                        Mask = isnan(FNC);
+                        FNC(Mask) = 1;
+                        FNC = newINode(FNC);
+                        FNC(Mask) = NaN;
+                        FNC(any(FNC==0,2),:) = [];
+                        %
+                        ENC = Data.EdgeNodeConnect;
+                        ENC = newINode(ENC);
+                        ENC(any(ENC==0,2),:) = [];
+                        %
+                        Data.X = Data.X(idx{M_});
+                        Data.Y = Data.Y(idx{M_});
+                        Data.EdgeNodeConnect = ENC;
+                        Data.FaceNodeConnect = FNC;
+                    case 'EDGE'
+                        Data.EdgeNodeConnect = Data.EdgeNodeConnect(idx{M_},:);
+                    case 'FACE'
+                        Data.FaceNodeConnect = Data.FaceNodeConnect(idx{M_},:);
+                end
+            end
+            %
+            for v = {'Val','XComp','YComp','NormalComp','TangentialComp'}
+                fld = v{1};
+                if isfield(partData,fld)
+                    Data.(fld) = Data.(fld)(idx{M_});
+                end
+            end
+        end
+    end
+    varargout = {Data OrigFI};
+    return
+end
+
+% modify SubFld content for reading ...
+if isempty(subf)
+    % initialize and read indices ...
+    Props.SubFld = rec;
 else
     % initialize and read indices ...
     rec.Val = rec.Val(varargin{1},:);
     Props.SubFld = rec;
-    idx(fidx(1:(length(varargin)-1))) = varargin(2:end);
 end
 
 % select appropriate dimensions ...
@@ -201,6 +322,7 @@ if DataRead && Props.NVal>0
             case 'stream_function'
                 edge_idx = idx;
                 edge_idx{3} = 1:FI.Dimension(Info.TSMNK(3)+1).Length;
+                Props.DimName{M_} = FI.Dataset(FI.Dataset(ivar+1).Mesh{3}).Mesh{6};
                 [Discharge, status] = qp_netcdf_get(FI,ivar,Props.DimName,edge_idx);
                 %
                 meshInfo    = FI.Dataset(Info.Mesh{3});
@@ -214,27 +336,7 @@ if DataRead && Props.NVal>0
                 EdgeConnect(EdgeConnect<0) = NaN;
                 %
                 % Compute stream function psi (u = dpsi/dy, v = -dpsi/dx)
-                Psi = NaN(sz(3),1);
-                Psi(1) = 0;
-                found = true;
-                nnodes = length(Psi);
-                hPB = progressbar(0, 'title', 'Computing stream function ...');
-                while found
-                    nnodes_done = sum(~isnan(Psi));
-                    progressbar(nnodes_done/nnodes, hPB);
-                    found = false;
-                    for i = 1:size(EdgeConnect,1)
-                        if ~isnan(Psi(EdgeConnect(i,1))) && isnan(Psi(EdgeConnect(i,2))) && ~isnan(Discharge(i))
-                            Psi(EdgeConnect(i,2)) = Psi(EdgeConnect(i,1)) + Discharge(i);
-                            found = true;
-                        elseif isnan(Psi(EdgeConnect(i,1))) && ~isnan(Psi(EdgeConnect(i,2))) && ~isnan(Discharge(i))
-                            Psi(EdgeConnect(i,1)) = Psi(EdgeConnect(i,2)) - Discharge(i);
-                            found = true;
-                        end
-                    end
-                end
-                delete(hPB)
-                Psi = Psi - min(Psi);
+                Psi = compute_stream_function(Discharge, EdgeConnect, sz(3));
                 %
                 Ans.Val = Psi(idx{3});
             case 'erosion_sedimentation'
@@ -574,6 +676,13 @@ if XYRead || XYneeded
                 start = verify_start_index(istart, start, min(Ans.FaceNodeConnect(Ans.FaceNodeConnect>=0)), max(Ans.FaceNodeConnect(:)), length(Ans.X), 'node', meshInfo.Attribute(connect).Value);
                 Ans.FaceNodeConnect = Ans.FaceNodeConnect - start + 1;
                 Ans.FaceNodeConnect(Ans.FaceNodeConnect<1) = NaN;
+                % check for indices after missing value
+                dFNC = diff(isnan(Ans.FaceNodeConnect),1,2);
+                if any(dFNC(:)<0)
+                    dFNC = max(dFNC,0);
+                    Mask = [zeros(size(dFNC(:,1))), cumsum(dFNC,2)];
+                    Ans.FaceNodeConnect(Mask==1) = NaN;
+                end
             end
         end
         %
@@ -1676,6 +1785,7 @@ else
             Insert.Name = 'stream function'; % previously: discharge potential
             Insert.Geom = 'UGRID2D-NODE';
             Insert.varid = {'stream_function' Insert.varid};
+            Insert.DimName{M_} = FI.Dataset(FI.Dataset(Insert.varid{2}+1).Mesh{3}).Mesh{5};
             %
             Out(end+1)=Insert;
         else
@@ -1825,6 +1935,9 @@ for loop = 1:2
     end
 end
 %
+% all partitions ... no index across all partitions ... set DimFlag to inf
+% to display dimension size as ?
+%
 if domain==FI.NumDomains+1
     for i =1 :length(Out)
         if Out(i).DimFlag(M_)
@@ -1869,6 +1982,7 @@ while i<length(varid_Out)
     y=[];
     ncmp = strfind(Out(i).Name,', n-component');
     xcmp = strfind(Out(i).Name,', x-component');
+    xcmp2 = strfind(Out(i).Name,' (x-component)');
     if ~isempty(ncmp)
         Ystr = Out(i).Name; Ystr(ncmp+2)='t';
         Name = Out(i).Name([1:ncmp-1 ncmp+13:end]);
@@ -1880,9 +1994,14 @@ while i<length(varid_Out)
         if length(y)>1
             y = [];
         end
-    elseif ~isempty(xcmp)
-        Ystr = Out(i).Name; Ystr(xcmp+2)='y';
-        Name = Out(i).Name([1:xcmp-1 xcmp+13:end]);
+    elseif ~isempty(xcmp) || ~isempty(xcmp2)
+        if ~isempty(xcmp)
+            Ystr = Out(i).Name; Ystr(xcmp+2)='y';
+            Name = Out(i).Name([1:xcmp-1 xcmp+13:end]);
+        else
+            Ystr = Out(i).Name; Ystr(xcmp2+2)='y';
+            Name = Out(i).Name([1:xcmp2-1 xcmp2+14:end]);
+        end
         j=1; j2=2;
         VectorDef = 0; % x and y
         %
@@ -2017,36 +2136,42 @@ end
 
 % -----------------------------------------------------------------------------
 function sz=getsize(FI,Props)
+M_ = 3;
 ndims = length(Props.DimFlag);
 sz = zeros(1,ndims);
-if iscell(Props.varid)
-    switch Props.varid{1}
+%
+% single partition value
+%
+varid = Props.varid;
+loc = [];
+if iscell(varid)
+    switch varid{1}
         case 'stream_function'
             % get underlying discharge on edge variable
-            Info = FI.Dataset(Props.varid{2}+1);
+            Info = FI.Dataset(varid{2}+1);
             sz(1) = FI.Dimension(Info.TSMNK(1)+1).Length;
             % get the x-coordinates variable for the nodes of the mesh
             XVar = FI.Dataset(Info.Mesh{3}).X;
             % get the node dimension
             dimNodes = FI.Dataset(XVar).TSMNK(3)+1;
-            sz(3) = FI.Dimension(dimNodes).Length;
+            sz(M_) = FI.Dimension(dimNodes).Length;
         case 'node_index'
-            Info = FI.Dataset(Props.varid{2}+1);
-            if Info.Mesh{2}<0
-                sz(3) = 123;
-            else
-                sz(3) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{5})).Length;
-            end
+            Info = FI.Dataset(varid{2}+1);
+            sz(M_) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{5})).Length;
+            loc = 0;
         case 'edge_index'
-            Info = FI.Dataset(Props.varid{2}+1);
-            sz(3) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{6})).Length;
+            Info = FI.Dataset(varid{2}+1);
+            sz(M_) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{6})).Length;
+            loc = 1;
         case 'face_index'
-            Info = FI.Dataset(Props.varid{2}+1);
-            sz(3) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{7})).Length;
+            Info = FI.Dataset(varid{2}+1);
+            sz(M_) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{7})).Length;
+            loc = 2;
         otherwise
             Props.varid = Props.varid{2};
             sz = getsize(FI,Props);
     end
+    varid = varid{2};
 elseif ~isempty(Props.varid)
     for q = 1:length(Props.varid)
         Info=FI.Dataset(Props.varid(q)+1);
@@ -2054,6 +2179,28 @@ elseif ~isempty(Props.varid)
             if Props.DimFlag(d_) && Info.TSMNK(d_)>=0
                 sz(d_) = FI.Dimension(Info.TSMNK(d_)+1).Length;
             end
+        end
+    end
+end
+%
+% in case of merged partitions overrule the previous value
+%
+if isfield(FI,'MergedPartitions') && ...
+        Props.DimFlag(M_) && ...
+        isfinite(Props.DimFlag(M_)) && ...
+        ~isempty(varid)
+    M = FI.Dataset(varid+1).Mesh;
+    if iscell(M) && strcmp(M{1},'ugrid')
+        if isempty(loc)
+            loc = M{4};
+        end
+        switch loc
+            case {0,-1} % nodes
+                sz(M_) = FI.MergedPartitions.nNodes;
+            case 1 % edges
+                sz(M_) = FI.MergedPartitions.nEdges;
+            case 2 % faces
+                sz(M_) = FI.MergedPartitions.nFaces;
         end
     end
 end
@@ -2065,6 +2212,9 @@ if FI.NumDomains > 1
     format = sprintf('%%%d.%dd-',FI.DomainCount.Digits,FI.DomainCount.Digits);
     Domains = multiline(sprintf(['partition ' format],FI.DomainCount.Offset+(0:FI.NumDomains-1)),'-','cell');
     Domains{end} = 'all partitions';
+    if isfield(FI,'MergedPartitions')
+        Domains{end+1} = 'merged partitions';
+    end
 else
     Domains = {};
 end
@@ -2447,3 +2597,26 @@ C = C(1:i);
 if localfopen
     fclose(fid);
 end
+
+function Psi = compute_stream_function(Discharge, EdgeConnect, nNodes)
+Psi = NaN(nNodes,1);
+Psi(1) = 0;
+found = true;
+nnodes = length(Psi);
+hPB = progressbar(0, 'title', 'Computing stream function ...');
+while found
+    nnodes_done = sum(~isnan(Psi));
+    progressbar(nnodes_done/nnodes, hPB);
+    found = false;
+    for i = 1:size(EdgeConnect,1)
+        if ~isnan(Psi(EdgeConnect(i,1))) && isnan(Psi(EdgeConnect(i,2))) && ~isnan(Discharge(i))
+            Psi(EdgeConnect(i,2)) = Psi(EdgeConnect(i,1)) + Discharge(i);
+            found = true;
+        elseif isnan(Psi(EdgeConnect(i,1))) && ~isnan(Psi(EdgeConnect(i,2))) && ~isnan(Discharge(i))
+            Psi(EdgeConnect(i,1)) = Psi(EdgeConnect(i,2)) - Discharge(i);
+            found = true;
+        end
+    end
+end
+delete(hPB)
+Psi = Psi - min(Psi);

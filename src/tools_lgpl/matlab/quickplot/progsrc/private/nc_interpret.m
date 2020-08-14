@@ -82,6 +82,17 @@ if nargin>1
         nc.DomainCount.Digits = nDigits;
         nc.DomainCount.Offset = Part1;
         nc.Filename(PartNr_StrOffset+(1:nDigits)) = sprintf(partNrFormat,Part1);
+        %
+        try
+            merged_mesh = nc_mapmerge(Partitions);
+        catch
+            merged_mesh = [];
+        end
+        if numel(merged_mesh)>1
+            ui_message('warning','Multiple unstructured meshes in file. Not yet supported for merging.')
+        elseif ~isempty(merged_mesh)
+            nc.MergedPartitions = merged_mesh;
+        end
     end
     return
 else
@@ -1564,4 +1575,162 @@ if ~isempty(face_dim)
 end
 if nargout<2
     nc.Dataset(ivar) = Info;
+end
+
+
+function merged_mesh = nc_mapmerge(Partitions)
+P1 = Partitions{1};
+nData = length(P1.Dataset);
+nPart = length(Partitions);
+ugrids = zeros(nData,1);
+for i = 1:nData
+    M = P1.Dataset(i).Mesh;
+    if iscell(M) && numel(M)>=4 && isequal(M{1},'ugrid') && isequal(M{4},-1)
+        ugrids(i) = i;
+    end
+end
+ugrids(ugrids == 0) = [];
+dims = {P1.Dimension.Name};
+merged_mesh = [];
+for mesh = numel(ugrids):-1:1
+    i = ugrids(mesh);
+    M = P1.Dataset(i);
+    %
+    nodeDim = M.Mesh{5};
+    iNodeDim = strcmp(nodeDim,dims);
+    edgeDim = M.Mesh{6};
+    iEdgeDim = strcmp(edgeDim,dims);
+    faceDim = M.Mesh{7};
+    iFaceDim = strcmp(faceDim,dims);
+    %
+    xNodeVar = P1.Dataset(M.X).Name;
+    yNodeVar = P1.Dataset(M.Y).Name;
+    %
+    MeshAttribs = P1.Dataset(M.Varid+1).Attribute;
+    MeshAttNames = {MeshAttribs.Name};
+    fncVar = MeshAttribs(strcmp(MeshAttNames,'face_node_connectivity')).Value;
+    encVar = MeshAttribs(strcmp(MeshAttNames,'edge_node_connectivity')).Value;
+    %
+    nNodes = zeros(nPart,1);
+    nEdges = zeros(nPart,1);
+    nFaces = zeros(nPart,1);
+    xNodes = cell(nPart,1);
+    yNodes = cell(nPart,1);
+    iFaces = cell(nPart,1);
+    faceMask = cell(nPart,1);
+    for p = 1:nPart
+        nNodes(p) = Partitions{p}.Dimension(iNodeDim).Length;
+        nEdges(p) = Partitions{p}.Dimension(iEdgeDim).Length;
+        nFaces(p) = Partitions{p}.Dimension(iFaceDim).Length;
+        %
+        file = Partitions{p}.Filename;
+        xNodes{p} = nc_varget(file,xNodeVar);
+        yNodes{p} = nc_varget(file,yNodeVar);
+        iFaces{p} = nc_varget(file,'mesh2d_flowelem_globalnr');
+        faceMask{p} = nc_varget(file,'mesh2d_flowelem_domain') == p-1;
+    end
+    nGlbFaces = sum(cellfun(@sum,faceMask));
+    glbFNC = NaN(nGlbFaces,6);
+    %
+    xyNodes = [cat(1,xNodes{:}) cat(1,yNodes{:})];
+    [xyUNodes,~,RI] = unique(xyNodes,'rows');
+    nGlbNodes = size(xyUNodes,1);
+    iNodes = cell(nPart,1);
+    offset = 0;
+    fnc = cell(nPart,1);
+    enc = cell(nPart,1);
+    for p = 1:nPart
+        iNodes{p} = RI(offset + (1:nNodes(p)));
+        offset = offset + nNodes(p);
+        file = Partitions{p}.Filename;
+        %
+        FNC = nc_varget(file,fncVar); % todo start_index
+        Mask = isnan(FNC);
+        FNC(Mask) = 1;
+        FNC = iNodes{p}(FNC);
+        FNC(Mask) = NaN;
+        fnc{p} = FNC;
+        %
+        ENC = nc_varget(file,encVar); % todo start_index
+        ENC = iNodes{p}(ENC);
+        enc{p} = ENC;
+        %
+        glbInternal = iFaces{p}(faceMask{p});
+        ncol = size(FNC,2);
+        if size(glbFNC,2) >= size(FNC,2)
+            glbFNC(glbInternal,1:ncol) = FNC(faceMask{p},1:ncol);
+        else
+            glbFNC(end+1:ncol) = NaN;
+            glbFNC(glbInternal,:) = FNC(faceMask{p},:);
+        end
+    end
+    %
+    % nodes are assigned to the same domain as the connected face with the
+    % lowest domain number
+    %
+    nodeDomain  = NaN(nGlbNodes,1);
+    for p = nPart:-1:1
+        masked = faceMask{p};
+        %
+        inodes = fnc{p}(masked,:);
+        inodes(isnan(inodes))=[];
+        %
+        nodeDomain(inodes) = p-1;
+    end
+    nodeMask = cell(nPart,1);
+    for p = 1:nPart
+        nodeMask{p} = nodeDomain(iNodes{p}) == p-1;
+    end
+    %
+    % edges are assigned to the same domain as the connected face with the
+    % lowest domain number.
+    %
+    % todo implement the previous concept. current implementation assigns
+    % based on connected nodes, but that may give erroneous results in
+    % corners of domains since both nodes may be associated to domains with
+    % lower index than the edge.
+    %
+    [glbENC,~,RI] = unique(cat(1,enc{:}),'rows');
+    nGlbEdges = size(glbENC,1);
+    edgeDomain  = max(nodeDomain(glbENC),[],2);
+    offset = 0;
+    iEdges = cell(nPart,1);
+    edgeMask = cell(nPart,1);
+    for p = 1:nPart
+        iEdges{p} = RI(offset + (1:nEdges(p)));
+        offset = offset + nEdges(p);
+        %
+        edgeMask{p} = edgeDomain(iEdges{p}) == p-1;
+    end
+    %
+    merged_mesh(mesh).Name = M.Name;
+    merged_mesh(mesh).Index = i;
+    %
+    merged_mesh(mesh).nNodes = nGlbNodes;
+    merged_mesh(mesh).X = xyUNodes(:,1);
+    merged_mesh(mesh).Y = xyUNodes(:,2);
+    merged_mesh(mesh).nodeDMask = nodeMask;
+    merged_mesh(mesh).nodeGIndex = iNodes;
+    %
+    unit = [];
+    coordAttribs = P1.Dataset(M.X).Attribute;
+    j = strcmp('units',{coordAttribs.Name});
+    if sum(j) == 1
+        unit = coordAttribs(j).Value;
+        units = {'degrees_east','degree_east','degreesE','degreeE'};
+        if ismember(unit,units)
+            unit = 'deg';
+        end
+    end
+    merged_mesh(mesh).XYUnits = unit;
+    %
+    merged_mesh(mesh).nEdges = nGlbEdges;
+    merged_mesh(mesh).EdgeNodeConnect = glbENC;
+    merged_mesh(mesh).edgeDMask = edgeMask;
+    merged_mesh(mesh).edgeGIndex = iEdges;
+    %
+    merged_mesh(mesh).nFaces = nGlbFaces;
+    merged_mesh(mesh).FaceNodeConnect = glbFNC;
+    merged_mesh(mesh).faceDMask  = faceMask;
+    merged_mesh(mesh).faceGIndex = iFaces;
 end

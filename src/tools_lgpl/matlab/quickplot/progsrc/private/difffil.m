@@ -105,57 +105,89 @@ switch cmd
         [XYRead,DataRead,DataInCell]=gridcelldata(cmd);
 end
 
+if ~isfield(FI,'DiffDomain') || isempty(FI.DiffDomain)
+    domain1 = 1;
+    domain2 = 1;
+else
+    domain1 = FI.DiffDomain(1);
+    domain2 = FI.DiffDomain(2);
+end
+
 checkgrids = strcmp(FI.DiffType,'renum');
 if Props.NVal>0 && checkgrids
-    [success,Grid1,FI.Files(1)] = qp_getdata(FI.Files(1),domain,Props.Q1,'grid');
-    [success,Grid2,FI.Files(2)] = qp_getdata(FI.Files(2),domain,Props.Q2,'grid');
+    [success,Grid1,FI.Files(1)] = qp_getdata(FI.Files(1),domain1,Props.Q1,'grid');
+    [success,Grid2,FI.Files(2)] = qp_getdata(FI.Files(2),domain2,Props.Q2,'grid');
     if isfield(Grid1,'ValLocation')
-        switch Grid1.ValLocation
-            case 'NODE'
-                X1 = Grid1.X;
-                Y1 = Grid1.Y;
-                %
-                X2 = Grid2.X;
-                Y2 = Grid2.Y;
-            case 'EDGE'
-                X1 = mean(Grid1.X(Grid1.EdgeNodeConnect),2);
-                Y1 = mean(Grid1.Y(Grid1.EdgeNodeConnect),2);
-                %
-                X2 = mean(Grid2.X(Grid2.EdgeNodeConnect),2);
-                Y2 = mean(Grid2.Y(Grid2.EdgeNodeConnect),2);
-            case 'FACE'
-                FNC = Grid1.FaceNodeConnect;
-                Mask = isnan(FNC);
-                N = sum(~Mask,2);
-                FNC(Mask) = 1;
-                X1 = Grid1.X(FNC); X1(Mask) = 0; X1 = sum(X1,2)./N;
-                Y1 = Grid1.Y(FNC); Y1(Mask) = 0; Y1 = sum(Y1,2)./N;
-                %
-                FNC = Grid2.FaceNodeConnect;
-                Mask = isnan(FNC);
-                N = sum(~Mask,2);
-                FNC(Mask) = 1;
-                X2 = Grid2.X(FNC); X2(Mask) = 0; X2 = sum(X2,2)./N;
-                Y2 = Grid2.Y(FNC); Y2(Mask) = 0; Y2 = sum(Y2,2)./N;
-        end
+        X1 = Grid1.X;
+        Y1 = Grid1.Y;
+        %
+        X2 = Grid2.X;
+        Y2 = Grid2.Y;
+        %
         [~,I1] = sort(Y1);
         [~,I2] = sort(X1(I1));
         I = I1(I2);
-        [~,RI] = sort(I);
         %
         [~,J1] = sort(Y2);
         [~,J2] = sort(X2(J1));
         J = J1(J2);
         %
-        if isequal(X1(I),X2(J)) && isequal(Y1(I),Y2(J))
-            JRI = J(RI);
-        else
-            error('The %s coordinates are not equal after sorting.',lower(Grid1.ValLocation))
+        if ~isequal(X1(I),X2(J)) || ~isequal(Y1(I),Y2(J))
+            error('The node coordinates of the two meshes are not equal.')
         end
+        %
+        switch Grid1.ValLocation
+            case 'NODE'
+                [~,RI] = sort(I);
+                JRI = J(RI);
+            case 'EDGE'
+                ENC1 = Grid1.EdgeNodeConnect;
+                [ENC1,eI] = sortrows(ENC1);
+                %
+                ENC2 = Grid2.EdgeNodeConnect;
+                [ENC2,eJ] = sortrows(ENC2);
+                %
+                if ~isequal(ENC1,ENC2)
+                    dENC = ~all(ENC1==ENC2,2);
+                    ei = eI(dENC);
+                    ej = eJ(dENC);
+                    error('The edge-node connectivity of the two meshes are not equal.\nCheck edge %i of mesh 1, and face %i of mesh 2.',ei(1),ej(1))
+                end
+                %
+                [~,eRI] = sort(eI);
+                JRI = eJ(eRI);
+            case 'FACE'
+                [~,RI] = sort(I);
+                FNC1 = Grid1.FaceNodeConnect;
+                Mask = isnan(FNC1);
+                FNC1(Mask) = 1;
+                FNC1 = RI(FNC1);
+                FNC1(Mask) = 0;
+                [FNC1,fI] = sortrows(FNC1);
+                %
+                [~,RJ] = sort(J);
+                FNC2 = Grid2.FaceNodeConnect;
+                Mask = isnan(FNC2);
+                FNC2(Mask) = 1;
+                FNC2 = RJ(FNC2);
+                FNC2(Mask) = 0;
+                [FNC2,fJ] = sortrows(FNC2);
+                %
+                if ~isequal(FNC1,FNC2)
+                    dFNC = ~all(FNC1==FNC2,2);
+                    fi = fI(dFNC);
+                    fj = fJ(dFNC);
+                    error('The face-node connectivity of the two meshes are not equal.\nCheck face %i of mesh 1, and face %i of mesh 2.',fi(1),fj(1))
+                end
+                %
+                [~,fRI] = sort(fI);
+                JRI = fJ(fRI);
+        end
+
     end
 end
 
-[success,Ans,FI.Files(1)] = qp_getdata(FI.Files(1),domain,Props.Q1,cmd,varargin{:});
+[success,Ans,FI.Files(1)] = qp_getdata(FI.Files(1),domain1,Props.Q1,cmd,varargin{:});
 if ~success
     error(lasterr)
 end
@@ -171,7 +203,7 @@ if Props.NVal>0
             args{i} = JRI(args{i});
         end
     end
-    [success,Data2,FI.Files(2)] = qp_getdata(FI.Files(2),domain,Props.Q2,cmd,args{:});
+    [success,Data2,FI.Files(2)] = qp_getdata(FI.Files(2),domain2,Props.Q2,cmd,args{:});
     if ~success
         error(lasterr)
     end
@@ -211,31 +243,59 @@ varargout={Ans FI};
 function Domains=domains(FI)
 [success,D1] = qp_getdata(FI.Files(1),'domains');
 [success,D2] = qp_getdata(FI.Files(2),'domains');
-if isempty(D1) && isempty(D2)
-    Domains = {};
-elseif isequal(D1,D2)
-    Domains = D1;
-elseif length(D1)<=1 && length(D2)<=1
-    if length(D1)==1 && isempty(D2)
+
+if ~isfield(FI,'DiffDomain') || isempty(FI.DiffDomain)
+    if isempty(D1) && isempty(D2)
+        Domains = {};
+    elseif isequal(D1,D2)
         Domains = D1;
-    elseif isempty(D1) && length(D2)==1
-        Domains = D2;
-    else % length(D1)==1 && length(D2)==1
-        Domains = { sprintf('%s/%s',D1{1},D2{1}) };
+    elseif length(D1)<=1 && length(D2)<=1
+        if length(D1)==1 && isempty(D2)
+            Domains = D1;
+        elseif isempty(D1) && length(D2)==1
+            Domains = D2;
+        else % length(D1)==1 && length(D2)==1
+            Domains = { sprintf('%s/%s',D1{1},D2{1}) };
+        end
+    else
+        error('Multiple different domains not supported.')
     end
 else
-    error('Multiple different domains not supported.')
+    if isempty(D1) && isempty(D2)
+        Domains = {};
+    elseif isempty(D1)
+        Domains = D2(FI.DiffDomain(2));
+    else
+        D1 = D1(FI.DiffDomain(1));
+        if isempty(D2)
+            Domains = D1;
+        else
+            D2 = D2(FI.DiffDomain(2));
+            if isequal(D1,D2)
+                Domains = D1;
+            else
+                Domains = { sprintf('%s/%s',D1{1},D2{1}) };
+            end
+        end
+    end
 end
 % -----------------------------------------------------------------------------
 
 
 % -----------------------------------------------------------------------------
 function Out=infile(FI,domain)
-[success,Q1] = qp_getdata(FI.Files(1),domain);
+if ~isfield(FI,'DiffDomain') || isempty(FI.DiffDomain)
+    domain1 = 1;
+    domain2 = 1;
+else
+    domain1 = FI.DiffDomain(1);
+    domain2 = FI.DiffDomain(2);
+end
+[success,Q1] = qp_getdata(FI.Files(1),domain1);
 if ~success
     error(lasterr)
 end
-[success,Q2] = qp_getdata(FI.Files(2),domain);
+[success,Q2] = qp_getdata(FI.Files(2),domain2);
 if ~success
     error(lasterr)
 end
@@ -269,11 +329,11 @@ for i=1:length(Q1)
         % no match found
         continue
     end
-    [success,sz] = qp_getdata(FI.Files(1),domain,Q1(i),'size');
+    [success,sz] = qp_getdata(FI.Files(1),domain1,Q1(i),'size');
     if ~success
         error(lasterr)
     end
-    [success,sf] = qp_getdata(FI.Files(1),domain,Q1(i),'subfields');
+    [success,sf] = qp_getdata(FI.Files(1),domain1,Q1(i),'subfields');
     if ~success
         error(lasterr)
     end
@@ -287,7 +347,7 @@ for i=1:length(Q1)
             % dependence and stations might be acceptable in the future.
             i2(k)=[];
         else
-            [success,sz2] = qp_getdata(FI.Files(2),domain,Q2(i2(k)),'size');
+            [success,sz2] = qp_getdata(FI.Files(2),domain2,Q2(i2(k)),'size');
             if ~success
                 error(lasterr)
             end
@@ -296,7 +356,7 @@ for i=1:length(Q1)
                 % future?
                 i2(k)=[];
             else
-                [success,sf2] = qp_getdata(FI.Files(2),domain,Q2(i2(k)),'subfields');
+                [success,sf2] = qp_getdata(FI.Files(2),domain2,Q2(i2(k)),'subfields');
                 if ~success
                     error(lasterr)
                 end
@@ -373,11 +433,16 @@ sz = Props.Size;
 
 % -----------------------------------------------------------------------------
 function T=readtim(FI,domain,Props,t)
+if ~isfield(FI,'DiffDomain') || isempty(FI.DiffDomain)
+    domain1 = 1;
+else
+    domain1 = FI.DiffDomain(1);
+end
 TimeNr = {};
 if nargin>3
     TimeNr = {t};
 end
-[success,T] = qp_getdata(FI.Files(1),domain,Props.Q1,'times',TimeNr{:});
+[success,T] = qp_getdata(FI.Files(1),domain1,Props.Q1,'times',TimeNr{:});
 if ~success
     error(lasterr)
 end
@@ -386,11 +451,16 @@ end
 
 % -----------------------------------------------------------------------------
 function S=readsts(FI,domain,Props,t)
+if ~isfield(FI,'DiffDomain') || isempty(FI.DiffDomain)
+    domain1 = 1;
+else
+    domain1 = FI.DiffDomain(1);
+end
 StationNr = {};
 if nargin>3
     StationNr = {t};
 end
-[success,S] = qp_getdata(FI.Files(1),domain,Props.Q1,'stations',StationNr{:});
+[success,S] = qp_getdata(FI.Files(1),domain1,Props.Q1,'stations',StationNr{:});
 if ~success
     error(lasterr)
 end
