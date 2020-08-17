@@ -2335,7 +2335,6 @@ switch cmd
                     end
                 case 'balancefile'
                     defval = 0;
-                    1
                 otherwise
                     defval = 0;
             end
