@@ -59,9 +59,11 @@ if nargin>1
     %
     FileName2  = nc.Filename;
     Partitions = cell(1,NumPartitions);
+    hPB = progressbar(0, 'title', sprintf('Scanning %i files ...',NumPartitions));
     for i = 1:NumPartitions
         FileName2(PartNr_StrOffset+(1:nDigits)) = sprintf(partNrFormat,i+Part1-1);
         nc2 = nc_info(FileName2);
+        progressbar(i/NumPartitions, hPB);
         Partitions{i} = nc_interpret(nc2);
         nc2 = rmfield(nc2,'Filename');
         nc2.Dimension = rmfield(nc2.Dimension,'Length');
@@ -73,6 +75,7 @@ if nargin>1
             break
         end
     end
+    delete(hPB)
     %
     nc = Partitions{1};
     nc.NumDomains = NumPartitions;
@@ -83,11 +86,14 @@ if nargin>1
         nc.DomainCount.Offset = Part1;
         nc.Filename(PartNr_StrOffset+(1:nDigits)) = sprintf(partNrFormat,Part1);
         %
+        hPB = progressbar(0, 'title', 'Merging partitions ...');
         try
-            merged_mesh = nc_mapmerge(Partitions);
-        catch
+            merged_mesh = nc_mapmerge(Partitions, hPB);
+        catch Ex
+            qp_error(sprintf('Unable to merge the partitions'),Ex,'nc_interpret')
             merged_mesh = [];
         end
+        delete(hPB)
         if numel(merged_mesh)>1
             ui_message('warning','Multiple unstructured meshes in file. Not yet supported for merging.')
         elseif ~isempty(merged_mesh)
@@ -1578,7 +1584,7 @@ if nargout<2
 end
 
 
-function merged_mesh = nc_mapmerge(Partitions)
+function merged_mesh = nc_mapmerge(Partitions, hPB)
 P1 = Partitions{1};
 nData = length(P1.Dataset);
 nPart = length(Partitions);
@@ -1592,7 +1598,8 @@ end
 ugrids(ugrids == 0) = [];
 dims = {P1.Dimension.Name};
 merged_mesh = [];
-for mesh = numel(ugrids):-1:1
+NumMeshes = numel(ugrids);
+for mesh = NumMeshes:-1:1
     i = ugrids(mesh);
     M = P1.Dataset(i);
     %
@@ -1608,8 +1615,25 @@ for mesh = numel(ugrids):-1:1
     %
     MeshAttribs = P1.Dataset(M.Varid+1).Attribute;
     MeshAttNames = {MeshAttribs.Name};
-    fncVar = MeshAttribs(strcmp(MeshAttNames,'face_node_connectivity')).Value;
-    encVar = MeshAttribs(strcmp(MeshAttNames,'edge_node_connectivity')).Value;
+    isFNC = strcmp(MeshAttNames,'face_node_connectivity');
+    if any(isFNC)
+        fncVar = MeshAttribs(isFNC).Value;
+    else
+        % should only occur for 1D mesh
+        fncVar = '';
+    end
+    isENC = strcmp(MeshAttNames,'edge_node_connectivity');
+    if any(isENC)
+        encVar = MeshAttribs(isENC).Value;
+    else
+        encVar = '';
+    end
+    isEFC = strcmp(MeshAttNames,'edge_face_connectivity');
+    if any(isEFC)
+        efcVar = MeshAttribs(isEFC).Value;
+    else
+        efcVar = '';
+    end
     %
     nNodes = zeros(nPart,1);
     nEdges = zeros(nPart,1);
@@ -1618,6 +1642,7 @@ for mesh = numel(ugrids):-1:1
     yNodes = cell(nPart,1);
     iFaces = cell(nPart,1);
     faceMask = cell(nPart,1);
+    faceDomain = cell(nPart,1);
     for p = 1:nPart
         nNodes(p) = Partitions{p}.Dimension(iNodeDim).Length;
         nEdges(p) = Partitions{p}.Dimension(iEdgeDim).Length;
@@ -1627,7 +1652,10 @@ for mesh = numel(ugrids):-1:1
         xNodes{p} = nc_varget(file,xNodeVar);
         yNodes{p} = nc_varget(file,yNodeVar);
         iFaces{p} = nc_varget(file,'mesh2d_flowelem_globalnr');
-        faceMask{p} = nc_varget(file,'mesh2d_flowelem_domain') == p-1;
+        faceDomain{p} = nc_varget(file,'mesh2d_flowelem_domain');
+        faceMask{p} = faceDomain{p} == p-1;
+        %
+        progressbar((NumMeshes-mesh)/NumMeshes + (p/(2*nPart))/NumMeshes, hPB);
     end
     nGlbFaces = sum(cellfun(@sum,faceMask));
     glbFNC = NaN(nGlbFaces,6);
@@ -1639,30 +1667,50 @@ for mesh = numel(ugrids):-1:1
     offset = 0;
     fnc = cell(nPart,1);
     enc = cell(nPart,1);
+    efc = cell(nPart,1);
+    edgeMask = cell(nPart,1);
     for p = 1:nPart
         iNodes{p} = RI(offset + (1:nNodes(p)));
         offset = offset + nNodes(p);
         file = Partitions{p}.Filename;
         %
-        FNC = nc_varget(file,fncVar); % todo start_index
-        Mask = isnan(FNC);
-        FNC(Mask) = 1;
-        FNC = iNodes{p}(FNC);
-        FNC(Mask) = NaN;
-        fnc{p} = FNC;
-        %
-        ENC = nc_varget(file,encVar); % todo start_index
-        ENC = iNodes{p}(ENC);
-        enc{p} = ENC;
-        %
-        glbInternal = iFaces{p}(faceMask{p});
-        ncol = size(FNC,2);
-        if size(glbFNC,2) >= size(FNC,2)
-            glbFNC(glbInternal,1:ncol) = FNC(faceMask{p},1:ncol);
-        else
-            glbFNC(end+1:ncol) = NaN;
-            glbFNC(glbInternal,:) = FNC(faceMask{p},:);
+        if ~isempty(fncVar)
+            FNC = nc_varget_start_at_one(file,P1,fncVar);
+            Mask = isnan(FNC);
+            FNC(Mask) = 1;
+            FNC = iNodes{p}(FNC);
+            FNC(Mask) = NaN;
+            fnc{p} = FNC;
+            %
+            glbInternal = iFaces{p}(faceMask{p});
+            ncol = size(FNC,2);
+            if size(glbFNC,2) >= size(FNC,2)
+                glbFNC(glbInternal,1:ncol) = FNC(faceMask{p},1:ncol);
+            else
+                glbFNC(end+1:ncol) = NaN;
+                glbFNC(glbInternal,:) = FNC(faceMask{p},:);
+            end
         end
+        %
+        if ~isempty(encVar)
+            ENC = nc_varget_start_at_one(file,P1,encVar);
+            ENC = iNodes{p}(ENC);
+            enc{p} = ENC;
+        end
+        %
+        if ~isempty(efcVar)
+            EFC = nc_varget_start_at_one(file,P1,efcVar);
+            Mask = isnan(EFC) | EFC==0;
+            EFC(Mask) = 1;
+            eDom = faceDomain{p}(EFC);
+            EFC = iFaces{p}(EFC);
+            EFC(Mask) = NaN;
+            efc{p} = EFC;
+            %
+            eDom(Mask) = NaN;
+            edgeMask{p} = all(eDom>=p-1 | isnan(eDom),2) & any(eDom==p-1,2);
+        end
+        progressbar((NumMeshes-mesh)/NumMeshes + ((nPart + p)/(2*nPart))/NumMeshes, hPB);
     end
     %
     % nodes are assigned to the same domain as the connected face with the
@@ -1685,22 +1733,13 @@ for mesh = numel(ugrids):-1:1
     % edges are assigned to the same domain as the connected face with the
     % lowest domain number.
     %
-    % todo implement the previous concept. current implementation assigns
-    % based on connected nodes, but that may give erroneous results in
-    % corners of domains since both nodes may be associated to domains with
-    % lower index than the edge.
-    %
     [glbENC,~,RI] = unique(cat(1,enc{:}),'rows');
     nGlbEdges = size(glbENC,1);
-    edgeDomain  = max(nodeDomain(glbENC),[],2);
     offset = 0;
     iEdges = cell(nPart,1);
-    edgeMask = cell(nPart,1);
     for p = 1:nPart
         iEdges{p} = RI(offset + (1:nEdges(p)));
         offset = offset + nEdges(p);
-        %
-        edgeMask{p} = edgeDomain(iEdges{p}) == p-1;
     end
     %
     merged_mesh(mesh).Name = M.Name;
@@ -1734,3 +1773,15 @@ for mesh = numel(ugrids):-1:1
     merged_mesh(mesh).faceDMask  = faceMask;
     merged_mesh(mesh).faceGIndex = iFaces;
 end
+
+
+function FNC = nc_varget_start_at_one(file,P1,fncVar)
+FNC = nc_varget(file,fncVar);
+f = P1.Dataset(strcmp({P1.Dataset.Name},fncVar)).Attribute;
+si = strcmp({f.Name},'start_index');
+if any(si)
+    start_index = f(si).Value;
+else
+    start_index = 0;
+end
+FNC = FNC - start_index + 1;
