@@ -397,6 +397,10 @@ switch cmd
     case {'difffiles','diff_files','diff_files_one_domain'}
         pos = get(mfig,'position');
         pos(4) = 310;
+        %
+        dfig = findall(0,'type','figure','tag','Diff Files');
+        delete(dfig);
+        %
         dfig = qp_uifigure('Diff Files','','Diff Files',pos);
         %
         voffset=pos(4)-29;
@@ -652,9 +656,17 @@ switch cmd
         if strcmp(get(h1D,'enable'),'on') && get(h1D,'value')
             Domains = [get(dom1,'value') get(dom2,'value')];
             domList = get(dom1,'userdata');
-            Domain1 = domList{Domains(1)};
+            if isempty(domList)
+                Domain1 = '';
+            else
+                Domain1 = domList{Domains(1)};
+            end
             domList = get(dom2,'userdata');
-            Domain2 = domList{Domains(2)};
+            if isempty(domList)
+                Domain2 = '';
+            else
+                Domain2 = domList{Domains(2)};
+            end
             cmd = 'diff_files_one_domain';
         else
             Domains = [];
@@ -726,7 +738,7 @@ switch cmd
             for filnr = '12'
                 hDomText = findobj(hDiff,'tag',['txt_diffdomain' filnr]);
                 hDom     = findobj(hDiff,'tag',['diffdomain' filnr]);
-                Domains  = get(hDom,'userdata');
+                Domains  = get(hDomText,'userdata');
                 if ~isempty(Domains) && ~strcmp(get(hDomText,'enable'),'on')
                     set(hDomText,'enable','on')
                     set(hDom, ...
@@ -940,11 +952,12 @@ switch cmd
         hDomSelAll  = findobj(hDiff,'tag','all_domains');
         hDomSelOne  = findobj(hDiff,'tag','one_domain');
         hDomText    = findobj(hDiff,'tag',['txt_diffdomain' filnr]);
-        filnr2 = char(sum('12')-'1');
+        filnr2 = char(sum('12')-filnr);
         hDomText2   = findobj(hDiff,'tag',['txt_diffdomain' filnr2]);
         hDom = findobj(hDiff,'tag',['diffdomain' filnr]);
         if ~Success || isempty(Domains)
-            set(hDomText,'enable','off')
+            set(hDomText,'enable','off', ...
+                'userdata',{})
             set(hDom,'enable','off', ...
                 'value',1, ...
                 'string','-- none defined --', ...
@@ -954,7 +967,7 @@ switch cmd
                 set([hDomSelText,hDomSelAll,hDomSelOne],'enable','off')
             end
         else
-            set(hDom,'userdata',Domains)
+            set(hDomText,'userdata',Domains)
             set([hDomSelText,hDomSelAll,hDomSelOne],'enable','on')
             if get(hDomSelAll,'value')
                 set(hDom,'enable','off', ...
@@ -985,6 +998,7 @@ switch cmd
         d3d_qp difflabel
         
     case {'diffdomain1','diffdomain2'}
+        % nothing to do yet
         
     case 'diffcancel'
         hDiff = findall(0,'tag','Diff Files');

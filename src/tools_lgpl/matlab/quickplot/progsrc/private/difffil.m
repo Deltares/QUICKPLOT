@@ -114,6 +114,7 @@ else
 end
 
 checkgrids = strcmp(FI.DiffType,'renum');
+JRI = [];
 if Props.NVal>0 && checkgrids
     [success,Grid1,FI.Files(1)] = qp_getdata(FI.Files(1),domain1,Props.Q1,'grid');
     [success,Grid2,FI.Files(2)] = qp_getdata(FI.Files(2),domain2,Props.Q2,'grid');
@@ -141,10 +142,13 @@ if Props.NVal>0 && checkgrids
                 [~,RI] = sort(I);
                 JRI = J(RI);
             case 'EDGE'
-                ENC1 = Grid1.EdgeNodeConnect;
+                [~,RI]=sort(I);
+                [~,RJ]=sort(J);
+                %
+                ENC1 = RI(Grid1.EdgeNodeConnect);
                 [ENC1,eI] = sortrows(ENC1);
                 %
-                ENC2 = Grid2.EdgeNodeConnect;
+                ENC2 = RJ(Grid2.EdgeNodeConnect);
                 [ENC2,eJ] = sortrows(ENC2);
                 %
                 if ~isequal(ENC1,ENC2)
@@ -158,6 +162,8 @@ if Props.NVal>0 && checkgrids
                 JRI = eJ(eRI);
             case 'FACE'
                 [~,RI] = sort(I);
+                [~,RJ] = sort(J);
+                %
                 FNC1 = Grid1.FaceNodeConnect;
                 Mask = isnan(FNC1);
                 FNC1(Mask) = 1;
@@ -165,7 +171,6 @@ if Props.NVal>0 && checkgrids
                 FNC1(Mask) = 0;
                 [FNC1,fI] = sortrows(FNC1);
                 %
-                [~,RJ] = sort(J);
                 FNC2 = Grid2.FaceNodeConnect;
                 Mask = isnan(FNC2);
                 FNC2(Mask) = 1;
@@ -174,10 +179,23 @@ if Props.NVal>0 && checkgrids
                 [FNC2,fJ] = sortrows(FNC2);
                 %
                 if ~isequal(FNC1,FNC2)
-                    dFNC = ~all(FNC1==FNC2,2);
-                    fi = fI(dFNC);
-                    fj = fJ(dFNC);
-                    error('The face-node connectivity of the two meshes are not equal.\nCheck face %i of mesh 1, and face %i of mesh 2.',fi(1),fj(1))
+                    nPnt = min(size(FNC1,2),size(FNC2,2));
+                    if isequal(FNC1(:,1:nPnt),FNC2(:,1:nPnt)) && ...
+                            all(all(FNC1(:,nPnt+1:end)==0)) && ...
+                            all(all(FNC2(:,nPnt+1:end)==0))
+                        % still okay
+                    else
+                        nPnt = max(size(FNC1,2),size(FNC2,2));
+                        if nPnt > size(FNC1,2)
+                            FNC1(:,end+1:nPnt) = 0;
+                        else
+                            FNC2(:,end+1:nPnt) = 0;
+                        end
+                        dFNC = ~all(FNC1==FNC2,2);
+                        fi = fI(dFNC);
+                        fj = fJ(dFNC);
+                        error('The face-node connectivity of the two meshes are not equal.\nCheck face %i of mesh 1, and face %i of mesh 2.',fi(1),fj(1))
+                    end
                 end
                 %
                 [~,fRI] = sort(fI);
@@ -195,7 +213,7 @@ end
 if Props.NVal>0
     cmd = strrep(cmd,'grid','');
     args = varargin;
-    if checkgrids
+    if checkgrids && ~isempty(JRI)
         i = sum(Props.DimFlag(1:M_)~=0);
         if isequal(args{i},0)
             args{i} = JRI;

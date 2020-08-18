@@ -212,7 +212,9 @@ if FI.NumDomains>1
         end
         %
         if iscell(field.varid) && strcmp(field.varid{1},'stream_function') % note field is the original copy of Props
-            Data.Val = compute_stream_function(Data.Val, Data.EdgeNodeConnect, FI.MergedPartitions(m).nNodes);
+            if DataRead
+                Data.Val = compute_stream_function(Data.Val, Data.EdgeNodeConnect, FI.MergedPartitions(m).nNodes);
+            end
             Data.ValLocation = 'NODE';
         end
         if ~isequal(idx{M_},0)
@@ -1762,6 +1764,7 @@ else
                 Insert.Name = [Nm ' - edge indices'];
                 Insert.Geom = [BaseGeom '-EDGE'];
                 Insert.varid{1} = 'edge_index';
+                Insert.DimName{M_} = Info.Mesh{6};
                 Out(end+1) = Insert;
             end
             %
@@ -1770,6 +1773,7 @@ else
                 Insert.Geom = [BaseGeom '-FACE'];
                 Insert.DataInCell = 1;
                 Insert.varid{1} = 'face_index';
+                Insert.DimName{M_} = Info.Mesh{7};
                 Out(end+1) = Insert;
             end
         end
@@ -2155,6 +2159,7 @@ if iscell(varid)
             % get the node dimension
             dimNodes = FI.Dataset(XVar).TSMNK(3)+1;
             sz(M_) = FI.Dimension(dimNodes).Length;
+            varid{2} = XVar;
         case 'node_index'
             Info = FI.Dataset(varid{2}+1);
             sz(M_) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{5})).Length;
