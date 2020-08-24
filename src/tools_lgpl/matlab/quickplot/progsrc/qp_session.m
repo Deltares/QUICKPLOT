@@ -50,6 +50,22 @@ switch cmd
         local_save(varargin{:})
 end
 
+function v = current_version(cmd,version)
+switch cmd
+    case 'writes'
+        v = '1.1';
+    case 'supports'
+        vn = sscanf(version,'%d.'); % 1.10 gives minor = 10, 1.01 accepted as alternative to 1.1
+        major = vn(1);
+        if length(vn) >= 2
+            minor = vn(2);
+        else
+            minor = 0;
+        end
+        v = (major == 1) & (minor <= 1);
+        
+end
+
 function S = local_make_expandables(S,explist)
 values = repmat({{}},size(explist));
 for i = 1:length(S)
@@ -167,9 +183,12 @@ while ~isempty(Str)
                 || ~isnumeric(args{3})
             fclose(fid);
             error('First line of session file should read:\nDelft3D-QUICKPLOT ''session file'' <versionnumber>\nHowever, first line of %s reads:\n%s',filename,Str)
-        elseif args{3}>1
-            fclose(fid);
-            error('Version %g of session file not supported.',args{3})
+        else
+            args{3} = sscanf(Str,'%*[^'']''%*[^'']'' %s',1);
+            if ~current_version('supports',args{3})
+                fclose(fid);
+                error('Version %s of session file not supported.',args{3})
+            end
         end
         Line=2;
     end
@@ -197,6 +216,7 @@ while ~isempty(Str)
             axi = length(S(fgi).axes)+1;
             S(fgi).axes(axi).name = args{2};
             S(fgi).axes(axi).position = [];
+            S(fgi).axes(axi).type = [];
             S(fgi).axes(axi).colour = [255 255 255];
             S(fgi).axes(axi).box = 'off';
             S(fgi).axes(axi).linewidth = 0.5;
@@ -333,7 +353,7 @@ C{i} = sprintf(varargin{:});
 C{1} = i;
 
 function C = local_serialize(S)
-C = addline({},'Delft3D-QUICKPLOT ''session file'' 1.0');
+C = addline({},'Delft3D-QUICKPLOT ''session file'' %s',current_version('writes'));
 for fgi = 1:length(S)
     C = addline(C,'');
     C = addline(C,'Figure             ''%s''',quote_protect(S(fgi).name));
@@ -373,6 +393,9 @@ for fgi = 1:length(S)
         C = addline(C,'');
         C = addline(C,'  Axes        ''%s''',quote_protect(S(fgi).axes(axi).name));
         C = addline(C,'    Position  [%g %g %g %g]',S(fgi).axes(axi).position);
+        if ~isempty(S(fgi).axes(axi).type)
+            C = addline(C,'    Type      ''%s''',quote_protect(S(fgi).axes(axi).type));
+        end
         if ~strcmp(S(fgi).axes(axi).title,'<automatic>')
             C = addline(C,'    Title     ''%s''',quote_protect(S(fgi).axes(axi).title));
         end
@@ -504,6 +527,9 @@ for fgi = length(S):-1:1
     for axi = length(S(fgi).axes):-1:1
         d3d_qp('newaxes_specloc',S(fgi).axes(axi).position,'normalized')
         d3d_qp('axesname',S(fgi).axes(axi).name)
+        if ~isempty(S(fgi).axes(axi).type)
+            d3d_qp('setaxestype',S(fgi).axes(axi).type)
+        end
         if ischar(S(fgi).axes(axi).colour)
             d3d_qp('axescolour',S(fgi).axes(axi).colour)
         else
@@ -824,6 +850,7 @@ for fgi = length(H):-1:1
             else
                 S(fgi).axes(axi).colour = round(AInfo.Color*255);
             end
+            S(fgi).axes(axi).type      = getappdata(A,'BasicAxesType');
             S(fgi).axes(axi).box       = AInfo.Box;
             S(fgi).axes(axi).linewidth = AInfo.LineWidth;
             %
@@ -947,7 +974,7 @@ function [liA,locB] = ismember(A,B)
 if ischar(A)
     A = {A};
 end
-liA  = logical(zeros(size(A)));
+liA  = false(size(A));
 locB = zeros(size(A));
 for j = 1:numel(A)
     for i = 1:numel(B)
