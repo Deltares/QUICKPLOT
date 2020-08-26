@@ -2637,7 +2637,10 @@ switch cmd
             end
             %
             if ~ischar(axestype)
-                atp_on = 0;
+                %
+                % new axes type without type assigned.
+                %
+                atp_on = 1;
             elseif strcmp(UD.State.axestype, 'Time')
                 %
                 % a time line needs a time axis
