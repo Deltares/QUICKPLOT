@@ -801,7 +801,7 @@ for ifld = 1:nchp
                         % check if it is 3D data
                         % no 3D depth/active/inactive info, s use a simple approach
                         flw_ndims = ndims(val);
-                        if flw_is_structured || flw_ndims == 3
+                        if flw_is_structured && flw_ndims == 3
                             if info.layer == LAYER_BOTTOM_MOST
                                 val = val(:,:,1);
                             elseif info.layer == LAYER_DEPTH_AVERAGE
@@ -809,15 +809,6 @@ for ifld = 1:nchp
                                 val = mean(val,3);
                             else
                                 val = val(:,:,info.layer);
-                            end
-                        else % ~flw_is_structured && flw_ndims == 2
-                            if info.layer == LAYER_BOTTOM_MOST
-                                val = val(:,1);
-                            elseif info.layer == LAYER_DEPTH_AVERAGE
-                                % just a non weighted average
-                                val = mean(val,1);
-                            else
-                                val = val(:,info.layer);
                             end
                         end
                         % reshape data to N columns, 1 row
