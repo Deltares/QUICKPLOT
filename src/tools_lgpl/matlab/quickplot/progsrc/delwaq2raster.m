@@ -240,7 +240,7 @@ if isfield(flw_qnt,'Name')
     end
     if strcmp(flw_info1.QP_FileType, 'Delft3D-trim')
         flw_is_structured = true;
-        maskid = filter_qnt('1/-1 Active/Non-active water level point (w.r.t. coordinates )',waq_qnt,flw_qnt)
+        maskid = filter_qnt('1/-1 Active/Non-active water level point (w.r.t. coordinates )',waq_qnt,flw_qnt);
         if maskid < 0
             flw_data = qpread(flw_info,flw_qnt(-maskid),'data',1,0);
             flw_mask = reshape(flw_data.Val',[],1)';
