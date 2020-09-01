@@ -624,6 +624,10 @@ switch method
             warning('Raster cell centre coincides with simulation cell edge: using average value');
         end
 end
+% check if there is any overlap between input grid and output raster
+if sum(Wght) == 0
+    error('No overlap between the input grid and output raster found!')
+end
 %
 % process data sets
 %
