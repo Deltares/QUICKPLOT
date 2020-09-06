@@ -363,7 +363,8 @@ end
 if ~isempty(FI.Item)
     for i=1:length(FI.Item)
         Out(i)=Out(1);
-        Out(i).Name=strtrim(FI.Item(i).Name);
+        Out(i).Name=[strtrim(FI.Item(i).Name) ' <' FI.Item(i).EUMTypeStr '>'];
+        Out(i).Units=FI.Item(i).EUMUnitStr;
         Out(i).Index=i;
     end
 else
