@@ -57,13 +57,15 @@ if isfield(data,'XY') && iscell(data.XY)
     if NeedsCell
         % no change
     else
-        len = cellfun('length',data.XY);
+        len = cellfun(@(a)size(a,1), data.XY);
         tlen = sum(len+1)-1;
         XY = NaN(tlen,2);
         offset = 0;
         for i = 1:length(data.XY)
-            XY(offset+(1:len(i)),:) = data.XY{i}(:,1:2); % quick fix: just copy the first two columns if XY contains Z
-            offset = offset+len(i)+1;
+            if ~isempty(data.XY{i})
+                XY(offset+(1:len(i)),:) = data.XY{i}(:,1:2); % quick fix: just copy the first two columns if XY contains Z
+                offset = offset+len(i)+1;
+            end
         end
         data.XY = XY;
     end
@@ -104,11 +106,17 @@ if isfield(Ops,'presentationtype')
     switch Ops.presentationtype
         case {'markers','values','labels'}
             if iscell(data.XY)
-                XY = zeros(length(data.XY),2);
+                XY = NaN(length(data.XY),2);
                 for i = 1:length(data.XY)
-                    d = pathdistance(data.XY{i}(:,1),data.XY{i}(:,2));
-                    uNode = d~=[NaN;d(1:end-1)];
-                    XY(i,:) = interp1(d(uNode),data.XY{i}(uNode,1:2),d(end)/2);
+                    if ~isempty(data.XY{i})
+                        if size(data.XY{i},1)==1
+                            XY(i,:) = data.XY{i};
+                        else
+                            d = pathdistance(data.XY{i}(:,1),data.XY{i}(:,2));
+                            uNode = d~=[NaN;d(1:end-1)];
+                            XY(i,:) = interp1(d(uNode),data.XY{i}(uNode,1:2),d(end)/2);
+                        end
+                    end
                 end
                 data.XY = XY;
             end

@@ -346,8 +346,27 @@ if strcmp(Ops.presentationtype,'vector') || ...
             data(i).EdgeNodeConnect = data(i).SEG;
         end
         if isfield(data,'XY')
-            data(i).X = data(i).XY(:,1);
-            data(i).Y = data(i).XY(:,2);
+            if iscell(data(i).XY)
+                data(i).X = NaN(size(data(i).XY));
+                data(i).Y = data(i).X;
+                for j = 1:numel(data(i).XY)
+                    if ~isempty(data(i).XY{j})
+                        if size(data(i).XY{j},1)==1
+                            data(i).X(j) = data(i).XY{j}(1);
+                            data(i).Y(j) = data(i).XY{j}(2);
+                        else
+                            d = pathdistance(data(i).XY{j}(:,1),data(i).XY{j}(:,2));
+                            uNode = d~=[NaN;d(1:end-1)];
+                            XY = interp1(d(uNode),data(i).XY{j}(uNode,1:2),d(end)/2);
+                            data(i).X(j) = XY(1);
+                            data(i).Y(j) = XY(2);
+                        end
+                    end
+                end
+            else
+                data(i).X = data(i).XY(:,1);
+                data(i).Y = data(i).XY(:,2);
+            end
         end
         switch LOC
             case 'EDGE'

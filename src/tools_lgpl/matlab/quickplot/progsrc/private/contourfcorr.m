@@ -160,6 +160,8 @@ end
 draw_min = any(nv <= minz) & style>2;
 
 % Get the unique levels
+largest_value_LE_minz = max(nv(nv<=minz));
+no_lower_bound = largest_value_LE_minz == -realmax;
 nv = sort([minz nv(:)']);
 zi = [1, find(diff(nv))+1];
 nv = nv(zi);
@@ -372,7 +374,22 @@ for jj=IA
             H(iH) = patch(xp,yp,lev,'facecolor',bg,'edgecolor',edgec, ...
                 'linestyle',edgestyle,'userdata',CS(1,I(jj)));
         end
-        
+        iLevel = find(nv==lev);
+        if nv(iLevel) == minz
+            if no_lower_bound
+                setappdata(H(iH),'MinThreshold',NaN);
+            else
+                setappdata(H(iH),'MinThreshold',largest_value_LE_minz);
+            end
+        else
+            setappdata(H(iH),'MinThreshold',nv(iLevel));
+        end
+        if iLevel == length(nv)
+            setappdata(H(iH),'MaxThreshold',NaN);
+        else
+            setappdata(H(iH),'MaxThreshold',nv(iLevel+1));
+        end
+
         if nargout>0
             xp(abs(xp - lims(1)) < xtol | abs(xp - lims(2)) < xtol) = NaN;
             yp(abs(yp - lims(3)) < ytol | abs(yp - lims(4)) < ytol) = NaN;
