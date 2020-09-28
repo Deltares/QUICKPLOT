@@ -314,10 +314,8 @@ switch geometry
                 else
                     axestype={'X-Y','Time-Val','Text'};
                 end
-            elseif DimFlag(T_)
-                axestype={'Time-Val','Text'};
             else
-                axestype={'Text'};
+                axestype={'Time-Val','Text'};
             end
         end
     case 'PNT+'
@@ -482,7 +480,11 @@ end
 if isequal(axestype,{'noplot'})
     MultipleColors = 0;
 elseif DimFlag(T_) ~= 0 && ~isempty(axestype{end})
+    % if there is a time dimension, add axestype 'Time' for time sliders and clocks
     axestype{end+1} = 'Time';
+elseif DimFlag(T_) == 0
+    % if there is no time dimension, remove all axestypes that include Time
+    axestype(~cellfun(@isempty, strfind(axestype, 'Time'))) = [];
 end
 
 Inactive=UD.Inactive;
@@ -1734,6 +1736,7 @@ if nval>=0
         elseif  ~isequal(Ops.presentationtype,'continuous shades')
             ExpTypes{end+1}='ARCview shape';
             if isequal(Ops.presentationtype,'contour patches') || isequal(Ops.presentationtype,'contour patches with lines')
+                ExpTypes{end+1}='GeoJSON file';
                 ExpTypes{end+1}='polygon file';
             end
         end
@@ -1743,6 +1746,7 @@ if nval>=0
     elseif strcmp(geometry,'POLYL') || strcmp(geometry,'POLYG')
         ExpTypes{end+1}='ARCview shape';
         if strcmp(geometry,'POLYG')
+            ExpTypes{end+1}='GeoJSON file';
             ExpTypes{end+1}='polygon file';
         end
         ExpTypes{end+1}='landboundary file';

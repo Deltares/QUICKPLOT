@@ -102,9 +102,14 @@ switch expType
     case 'tecplot file'
         ext={'*.plt' 'Binary Tecplot File'
             '*.dat' 'ASCII Tecplot File'};
-    case 'arcview shape'
+    case {'arcview shape', 'geojson file'}
         % assumptions: 2D, one timestep
-        ext='shp';
+        switch expType
+            case 'arcview shape'
+                ext='shp';
+            case 'geojson file'
+                ext='json';
+        end
         if strcmp(Ops.presentationtype,'')
             if Props.NVal==0
                 Ops.presentationtype='grid';
@@ -360,21 +365,41 @@ for f=1:ntim
                 fprintf(fid,Format,datevec(data.Time)');
             end
             %
-            Format = [repmat('%.15g,',1,nCrd+nVal*nTim-1) '%.15g\n'];
-            Val = zeros(nCrd+nVal*nTim,numel(data.(flds{1}))/nTim);
+            if nVal==1 && isequal(flds{1},'Val') && iscellstr(data.Val)
+                charOutput = true;
+                Format = [repmat('%.15g,',1,nCrd) repmat('%s,',1,nTim-1) '%s\n'];
+            else
+                charOutput = false;
+                Format = [repmat('%.15g,',1,nCrd) repmat('%.15g,',1,nVal*nTim-1) '%.15g\n'];
+            end
+            Val = zeros(nCrd + nVal*nTim,numel(data.(flds{1}))/nTim);
             for i = 1:nCrd
                 Val(i,:) = data.(crds{i})(:)';
             end
-            if nTim>1
-                for i = 1:nVal
-                    Val(nCrd+i:nVal:end,:) = data.(flds{i})(:,:);
+            if charOutput
+                Val = num2cell(Val);
+                if nTim>1
+                    for i = 1:nVal
+                        Val(nCrd+i:nVal:end,:) = data.(flds{i})(:,:);
+                    end
+                else
+                    for i = 1:nVal
+                        Val(nCrd+i,:) = data.(flds{i})(:)';
+                    end
                 end
+                fprintf(fid,Format,Val{:});
             else
-                for i = 1:nVal
-                    Val(nCrd+i,:) = data.(flds{i})(:)';
+                if nTim>1
+                    for i = 1:nVal
+                        Val(nCrd+i:nVal:end,:) = data.(flds{i})(:,:);
+                    end
+                else
+                    for i = 1:nVal
+                        Val(nCrd+i,:) = data.(flds{i})(:)';
+                    end
                 end
+                fprintf(fid,Format,Val);
             end
-            fprintf(fid,Format,Val);
             %
             if f==ntim
                 fclose(fid);
@@ -589,7 +614,7 @@ for f=1:ntim
             if lastfield
                 tecplot('write',filename,xx);
             end
-        case {'arcview shape','polygon file'}
+        case {'arcview shape','polygon file','geojson file'}
             if isfield(data,'XDam')
                 Ops.presentationtype = 'thin dams';
             end
@@ -617,13 +642,19 @@ for f=1:ntim
                         else
                            shp_type = 'polygon';
                         end
+                        featureLabels = {};
+                        for i = length(xy):-1:1
+                            featureLabels{i} = sprintf('polygon %i',i);
+                        end
                         switch expType
                             case 'arcview shape'
                                 shapewrite(filename,shp_type,xy,vals{:})
+                            case 'geojson file'
+                                geojson('write', filename, 'polygon', featureLabels, xy)
                             case 'polygon file'
                                 DATA = [];
                                 for i = length(xy):-1:1
-                                    DATA.Field(i).Name = sprintf('polygon %i',i);
+                                    DATA.Field(i).Name = featureLabels{i};
                                     DATA.Field(i).Data = xy{i};
                                 end
                                 tekal('write',filename,DATA);
@@ -838,19 +869,29 @@ for f=1:ntim
                             %
                             [xy,cLabels,cv] = process_polygons(xy,fc,cv,minmax);
                             %
+                            featureLabels = {};
+                            for i = length(xy):-1:1
+                                if isnan(cv(i,1))
+                                    featureLabels{i} = sprintf('values smaller than %g',cv(i,2));
+                                elseif isnan(cv(i,2))
+                                    featureLabels{i} = sprintf('values larger than %g',cv(i,1));
+                                else
+                                    featureLabels{i} = sprintf('values between %g and %g',cv(i,:));
+                                end
+                            end
                             switch expType
                                 case 'arcview shape'
                                     shapewrite(filename,xy,cLabels,cv)
+                                case 'geojson file'
+                                    properties = [];
+                                    for p = 1:length(cLabels)
+                                        properties.(cLabels{p}) = cv(:,p);
+                                    end
+                                    geojson('write', filename, 'polygon', featureLabels, xy, properties)
                                 case 'polygon file'
                                     DATA = [];
                                     for i = length(xy):-1:1
-                                        if isnan(cv(i,1))
-                                            DATA.Field(i).Name = sprintf('values smaller than %g',cv(i,2));
-                                        elseif isnan(cv(i,2))
-                                            DATA.Field(i).Name = sprintf('values larger than %g',cv(i,1));
-                                        else
-                                            DATA.Field(i).Name = sprintf('values between %g and %g',cv(i,:));
-                                        end
+                                        DATA.Field(i).Name = featureLabels{i};
                                         DATA.Field(i).Data = xy{i};
                                     end
                                     tekal('write',filename,DATA);
