@@ -208,12 +208,14 @@ set(Parent,'NextPlot','add')
 unknown_ValLocation = 0;
 Val = data.Val(:);
 
-if isfield(data,'TRI')
-    FaceNodeConnect = data.TRI;
-elseif isfield(data,'FaceNodeConnect')
+if isfield(data,'FaceNodeConnect')
     FaceNodeConnect = data.FaceNodeConnect;
+elseif isfield(data,'TRI')
+    FaceNodeConnect = data.TRI;
 elseif isfield(data,'Connect')
     FaceNodeConnect = data.Connect;
+else
+    FaceNodeConnect = [];
 end
 
 if isfield(data,'EdgeNodeConnect')
@@ -267,7 +269,7 @@ switch data.ValLocation
                 
             case 'continuous shades'
                 XY = [data.X data.Y];
-                if exist('FaceNodeConnect','var')
+                if ~isempty(FaceNodeConnect)
                     nNodes = sum(~isnan(FaceNodeConnect),2);
                     uNodes = unique(nNodes);
                     first = isempty(hNew);

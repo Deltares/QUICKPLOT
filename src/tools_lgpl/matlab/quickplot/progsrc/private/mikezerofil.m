@@ -248,10 +248,6 @@ val1=mike('read',FI,Props.Index,idx{T_});
 if triangular
     if sz(K_)==0
         val1 = reshape(val1,[length(idx{T_}) 1 sz(M_)]);
-    elseif sz(M_)==FI.NumCells
-        val1 = reshape(val1,[length(idx{T_}) sz(K_) sz(M_)]);
-        val1 = val1(:,idx{K_},:);
-        val1 = permute(val1,[1 3 2]);
     else
         val1 = reshape(val1,[length(idx{T_}) sz(K_) sz(M_)]);
         val1 = val1(:,idx{K_},:);
@@ -282,11 +278,11 @@ end
 % generate output ...
 if XYRead
     if triangular
-        Ans.TRI=TRI;
+        Ans.FaceNodeConnect=TRI;
+        Ans.X = x;
+        Ans.Y = y;
         if ~isempty(z)
-            Ans.XYZ=reshape([x(:) y(:) z(:)],[1 size(x) 3]);
-        else
-            Ans.XYZ=reshape([x y],[1 length(x) 1 2]);
+            Ans.Z = z;
         end
     else
         if ~isempty(x)
@@ -308,6 +304,13 @@ switch Props.NVal
     case 0
     case 1
         Ans.Val=val1;
+        if triangular
+            if sz(M_)==FI.NumCells
+                Ans.ValLocation = 'FACE';
+            else
+                Ans.ValLocation = 'NODE';
+            end
+        end
 end
 
 % read time ...
@@ -321,22 +324,30 @@ varargout={Ans FI};
 function Out=infile(FI,domain)
 %
 %======================== SPECIFIC CODE =======================================
-PropNames={'Name'                         'DimFlag'    'NVal' 'DataInCell' 'Index' 'UseGrid' 'Tri'};
-DataProps={'data field'                    [1 0 0 0 0]  1           1       0          1       0};
+PropNames={'Name'                         'DimFlag'    'NVal' 'DataInCell' 'Index' 'UseGrid'};
+DataProps={'data field'                    [1 0 0 0 0]  1           1       0          1    };
 Out=cell2struct(DataProps,PropNames,2);
 if isfield(FI,'DataType')
     DT = FI.DataType;
 else
     DT = 'structured';
 end
+unstructured = false;
 switch DT
     case 'unstructured'
-        Out(1).Tri=1;
+        unstructured = true;
+        %
+        iElmType = strcmp('Element type',{FI.Item.Name});
+        nElements = FI.Item(iElmType).MatrixSize;
+        %
         fm=strmatch('MIKE_FM',{FI.Attrib.Name},'exact');
+        Out(1).Geom = 'UGRID2D-FACE';
         if FI.Attrib(fm).Data(3)==3
             Out(1).DimFlag=[1 0 1 1 1];
+            Out(1).Coords = 'xyz';
         else
-            Out(1).DimFlag=[1 0 1 1 0];
+            Out(1).DimFlag=[1 0 1 0 0];
+            Out(1).Coords = 'xy';
         end
     case 'crosssections'
         Out(1).Name = 'cross sectional profile';
@@ -361,7 +372,14 @@ switch DT
         end
 end
 if ~isempty(FI.Item)
-    for i=1:length(FI.Item)
+    for i = length(FI.Item):-1:1
+        if strcmp(FI.Item(i).Name,'Connectivity')
+            if i < length(FI.Item)
+                Out(i) = [];
+            end
+            continue
+        end
+        %
         Out(i)=Out(1);
         if isfield(FI.Item,'EUMTypeStr') && ~strcmp(FI.Item(i).EUMTypeStr,'Undefined')
             if 0
@@ -369,10 +387,16 @@ if ~isempty(FI.Item)
             else
                 Out(i).Name  = strtrim(FI.Item(i).Name);
             end
-            Out(i).Units = FI.Item(i).EUMUnitStr;
+            Out(i).Units = FI.Item(i).UnitStr;
         else
             Out(i).Name  = strtrim(FI.Item(i).Name);
             Out(i).Units = '';
+        end
+        if unstructured
+            if FI.Item(i).MatrixSize ~= nElements
+                Out(i).Geom = 'UGRID2D-NODE';
+                Out(i).DataInCell = 0;
+            end
         end
         Out(i).Index=i;
     end
@@ -404,7 +428,7 @@ switch FI.FileType
         end
     case 'MikeDFS'
         idx=Props.Index;
-        if Props.Tri
+        if isfield(Props,'Geom')
             szM = FI.Item(Props.Index).MatrixSize;
             sz(N_)=1;
             if szM == FI.NumCells*FI.NumLayers

@@ -55,19 +55,26 @@ DimFlag=Props.DimFlag;
 Thresholds=Ops.Thresholds;
 axestype=Ops.basicaxestype;
 
-if isfield(data,'TRI')
-    FaceNodeConnect = data.TRI;
-elseif isfield(data,'FaceNodeConnect')
-    FaceNodeConnect = data.FaceNodeConnect;
+if isfield(data,'FaceNodeConnect')
+    % perfect
+elseif isfield(data,'TRI')
+    data.FaceNodeConnect = data.TRI;
+    data = rmfield(data,'TRI');
 elseif isfield(data,'Connect')
-    FaceNodeConnect = data.Connect;
+    data.FaceNodeConnect = data.Connect;
+    data = rmfield(data,'Connect');
 else
-    FaceNodeConnect = [];
+    data.FaceNodeConnect = [];
 end
+FaceNodeConnect = data.FaceNodeConnect;
 nc = size(FaceNodeConnect,2);
 if isfield(data,'XYZ')
     data.X = data.XYZ(:,:,:,1);
     data.Y = data.XYZ(:,:,:,2);
+    if size(data.XYZ,4)==3
+        data.Z = data.XYZ(:,:,:,3);
+    end
+    data = rmfield(data,'XYZ');
 end
 
 switch NVal
