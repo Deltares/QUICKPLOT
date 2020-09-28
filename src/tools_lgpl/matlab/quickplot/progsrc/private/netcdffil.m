@@ -561,8 +561,21 @@ if XYRead || XYneeded
             Ans.X = Ans.X-start_index+1;
             %
             % Get edge_node_connectivity
-            attENC= strmatch('edge_node_connectivity',{meshInfo.Attribute.Name});
-            [e2n, status] = qp_netcdf_get(FI,meshInfo.Attribute(attENC).Value);
+            attENC = strmatch('edge_node_connectivity',{meshInfo.Attribute.Name});
+            [e2n, status] = qp_netcdf_get(FI, meshInfo.Attribute(attENC).Value);
+            i_e2n = strmatch(meshInfo.Attribute(attENC).Value, {FI.Dataset.Name});
+            if isempty(FI.Dataset(i_e2n).Attribute)
+                istart = [];
+            else
+                istart = strmatch('start_index',{FI.Dataset(i_e2n).Attribute.Name});
+            end
+            if ~isempty(istart)
+                start_index = FI.Dataset(i_e2n).Attribute(istart).Value;
+            else
+                start_index = 0;
+            end
+            start_index = verify_start_index(istart, start_index, min(e2n(:)), max(e2n(:)), length(Ans.X), 'node',FI.Dataset(i_e2n).Name);
+            e2n = e2n-start_index+1;
             %
             % Get mesh_edge branch affinity (read from edge_coordinates or reconstructed)
             attECO = strmatch('edge_coordinates',{meshInfo.Attribute.Name});
