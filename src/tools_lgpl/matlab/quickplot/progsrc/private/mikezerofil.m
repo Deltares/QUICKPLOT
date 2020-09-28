@@ -363,8 +363,17 @@ end
 if ~isempty(FI.Item)
     for i=1:length(FI.Item)
         Out(i)=Out(1);
-        Out(i).Name=[strtrim(FI.Item(i).Name) ' <' FI.Item(i).EUMTypeStr '>'];
-        Out(i).Units=FI.Item(i).EUMUnitStr;
+        if isfield(FI.Item,'EUMTypeStr') && ~strcmp(FI.Item(i).EUMTypeStr,'Undefined')
+            if 0
+                Out(i).Name  = [strtrim(FI.Item(i).Name) ' <' FI.Item(i).EUMTypeStr '>'];
+            else
+                Out(i).Name  = strtrim(FI.Item(i).Name);
+            end
+            Out(i).Units = FI.Item(i).EUMUnitStr;
+        else
+            Out(i).Name  = strtrim(FI.Item(i).Name);
+            Out(i).Units = '';
+        end
         Out(i).Index=i;
     end
 else
