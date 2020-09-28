@@ -453,6 +453,7 @@ iniFormat = 'pretty';
 %
 if isfield(MDU,'ExtForce') && ~isempty(MDU.ExtForce)
     filename = [caseid '_old_format.ext'];
+    MDU.ExtForce = mdu_extold_write(MDU.ExtForce, fullfile(path, filename), iniFormat);
 else
     filename = '';
 end
@@ -460,6 +461,7 @@ MDU.mdu = inifile('seti', MDU.mdu, 'external forcing', 'ExtForceFile', filename)
 %
 if isfield(MDU,'ExtForceNew') && ~isempty(MDU.ExtForceNew)
     filename = [caseid '_new_format.ext'];
+    MDU.ExtForceNew = mdu_extnew_write(MDU.ExtForceNew, fullfile(path, filename), iniFormat);
 else
     filename = '';
 end
@@ -483,11 +485,19 @@ MDU.mdu = inifile('seti', MDU.mdu, 'output', 'CrsFile', filename);
 %
 if isfield(MDU,'Crossdef')
     filename = [caseid '_crossdef.ini'];
-    MDU.Crossdef = inifile('write', fullfile(path, filename), MDU.Crossdef, iniFormat);
+    MDU.Crossdef = mdu_crossdef_write(MDU.Crossdef, fullfile(path, filename), iniFormat);
 else
     filename = '';
 end
 MDU.mdu = inifile('seti', MDU.mdu, 'geometry', 'CrossDefFile', filename);
+%
+if isfield(MDU,'Crossloc')
+    filename = [caseid '_crossloc.ini'];
+    MDU.Crossloc = mdu_crossloc_write(MDU.Crossloc, fullfile(path, filename), iniFormat);
+else
+    filename = '';
+end
+MDU.mdu = inifile('seti', MDU.mdu, 'geometry', 'CrossLocFile', filename);
 %
 if isfield(MDU,'Fric1d')
     filename = mdu_frc1d_write(MDU.Fric1d, path, caseid, iniFormat);
@@ -500,6 +510,78 @@ filename = [caseid '.mdu'];
 inifile('write', fullfile(path,filename), MDU.mdu, iniFormat);
 
 
+function Ext = mdu_extold_write(Ext, filename, iniFormat)
+fprintf('Writing old ExtForce is not yet implemented.\n')
+
+
+function Ext = mdu_extnew_write(Ext, filename, iniFormat)
+fprintf('Writing NewExtForce is not yet implemented.\n')
+
+
+function XDef = mdu_crossdef_write(XDef, filename, iniFormat)
+XDef.FileName = filename;
+xFile = inifile('new');
+xFile = inifile('add', xFile, 'General');
+xFile = inifile('set', xFile, 'General', 'fileVersion', '3.00');
+xFile = inifile('set', xFile, 'General', 'fileType', 'crossDef');
+for i = 1:length(XDef.Name)
+    [xFile,igrp] = inifile('add', xFile, 'Definition');
+    xFile = inifile('set', xFile, igrp, 'id', XDef.Name{i});
+    xFile = inifile('set', xFile, igrp, 'type', XDef.Type{i});
+    xFile = inifile('set', xFile, igrp, 'thalweg', sprintf('%.13g', XDef.Thalweg(i)));
+    xDef = XDef.Definition{i};
+    switch XDef.Type{i}
+        case 'circle'
+            xFile = inifile('set', xFile, igrp, 'diameter'  , xDef.Diameter);
+        case 'rectangle'
+            xFile = inifile('set', xFile, igrp, 'width' , xDef.Width);
+            xFile = inifile('set', xFile, igrp, 'height', xDef.Height);
+        case 'yz'
+            if xDef.SingleZ
+                xFile = inifile('set', xFile, igrp, 'singleValuedZ' , 'true');
+            else
+                xFile = inifile('set', xFile, igrp, 'singleValuedZ' , 'false');
+            end
+            xFile = inifile('set', xFile, igrp, 'yzCount'     , sprintf('%i', size(xDef.YZ, 1)));
+            xFile = inifile('set', xFile, igrp, 'yCoordinates', sprintf('%.13g ', xDef.YZ(:,1)));
+            xFile = inifile('set', xFile, igrp, 'zCoordinates', sprintf('%.13g ', xDef.YZ(:,2)));
+            xFile = inifile('set', xFile, igrp, 'conveyance'  , xDef.Conveyance);
+            xFile = inifile('set', xFile, igrp, 'sectionCount', sprintf('%i', length(xDef.fricPos)-1));
+            xFile = inifile('set', xFile, igrp, 'frictionPositions', sprintf('%.13g ', xDef.fricPos));
+            xFile = inifile('set', xFile, igrp, 'frictionIds', sprintf('%s ', xDef.fricIds{:}));
+        case 'xyz'
+            xFile = inifile('set', xFile, igrp, 'conveyance'  , xDef.Conveyance);
+            xFile = inifile('set', xFile, igrp, 'xyzCount'    , sprintf('%i', size(xDef.XYZ, 1)));
+            xFile = inifile('set', xFile, igrp, 'xCoordinates', sprintf('%.13g ', xDef.XYZ(:,1)));
+            xFile = inifile('set', xFile, igrp, 'yCoordinates', sprintf('%.13g ', xDef.XYZ(:,2)));
+            xFile = inifile('set', xFile, igrp, 'zCoordinates', sprintf('%.13g ', xDef.XYZ(:,3)));
+            xFile = inifile('set', xFile, igrp, 'sectionCount', sprintf('%i', length(xDef.fricPos)-1));
+            xFile = inifile('set', xFile, igrp, 'frictionPositions', sprintf('%.13g ', xDef.fricPos));
+            xFile = inifile('set', xFile, igrp, 'frictionIds', sprintf('%s ', xDef.fricIds{:}));
+        otherwise
+            fprintf('Writing cross section definition "%s" not yet implemented.\n',XDef.Type{i});
+    end
+end
+inifile('write', filename, xFile, iniFormat);
+
+
+function XLoc = mdu_crossloc_write(XLoc, filename, iniFormat)
+XLoc.FileName = filename;
+xFile = inifile('new');
+xFile = inifile('add', xFile, 'General');
+xFile = inifile('set', xFile, 'General', 'fileVersion', '1.01');
+xFile = inifile('set', xFile, 'General', 'fileType', 'crossLoc');
+for i = 1:length(XLoc.Name)
+    [xFile,igrp] = inifile('add', xFile, 'CrossSection');
+    xFile = inifile('set', xFile, igrp, 'id', XLoc.Name{i});
+    xFile = inifile('set', xFile, igrp, 'branchId', XLoc.BranchId{i});
+    xFile = inifile('set', xFile, igrp, 'chainage', sprintf('%.13g',XLoc.Offset(i)));
+    xFile = inifile('set', xFile, igrp, 'shift', sprintf('%.13g',XLoc.Shift(i)));
+    xFile = inifile('set', xFile, igrp, 'definitionId', XLoc.XDefName{i});
+end
+inifile('write', filename, xFile, iniFormat);
+
+
 function Obs = mdu_obs_write(Obs, filename, iniFormat)
 obsFile = inifile('new');
 obsFile = inifile('add', obsFile, 'General');
@@ -507,15 +589,16 @@ obsFile = inifile('set', obsFile, 'General', 'fileVersion', '2.00');
 obsFile = inifile('set', obsFile, 'General', 'fileType', 'obsPoints');
 for c = 1:length(Obs)
     obsList = Obs{c};
-    if iscell(obsList)
-        obsLocs = obsList{1};
-        obsNames = obsList{2};
-        for i = 1:length(obsNames)
-            [obsFile,iChap] = inifile('add', obsFile, 'ObservationPoint');
-            obsFile = inifile('set', obsFile, iChap, 'name', obsNames{i});
-            obsFile = inifile('set', obsFile, iChap, 'locationType', 'all');
-            obsFile = inifile('set', obsFile, iChap, 'x', sprintf('%.11g',obsLocs(i,1)));
-            obsFile = inifile('set', obsFile, iChap, 'y', sprintf('%.11g',obsLocs(i,2)));
+    for i = 1:length(obsList.Name)
+        [obsFile,iChap] = inifile('add', obsFile, 'ObservationPoint');
+        obsFile = inifile('set', obsFile, iChap, 'name', obsList.Name{i});
+        if isempty(obsList.SnapTo{i})
+            obsFile = inifile('set', obsFile, iChap, 'branchId', obsList.BranchId{i});
+            obsFile = inifile('set', obsFile, iChap, 'chainage', sprintf('%.11g',obsList.Offset(i)));
+        else
+            obsFile = inifile('set', obsFile, iChap, 'locationType', obsList.SnapTo{i});
+            obsFile = inifile('set', obsFile, iChap, 'x', sprintf('%.11g',obsList.XY(i,1)));
+            obsFile = inifile('set', obsFile, iChap, 'y', sprintf('%.11g',obsList.XY(i,2)));
         end
     end
 end
@@ -530,20 +613,22 @@ crsFile = inifile('set', crsFile, 'General', 'fileVersion', '2.00');
 crsFile = inifile('set', crsFile, 'General', 'fileType', 'obsCross');
 for c = 1:length(Crs)
     obsList = Crs{c};
-    if isfield(obsList,'Field')
-        for i = 1:length(obsList.Field)
-            fld = obsList.Field(i);
-            [crsFile,iChap] = inifile('add', crsFile, 'ObservationCrossSection');
-            %
-            csName = fld.Name;
-            if length(csName) > 40
-                fprintf('Clipping name of cross section "%s" to "%s".\n', csName, csName(1:40))
-                csName = csName(1:40);
-            end
-            crsFile = inifile('set', crsFile, iChap, 'name', csName);
-            crsFile = inifile('set', crsFile, iChap, 'numCoordinates', sprintf('%i', size(fld.Data,1)));
-            crsFile = inifile('set', crsFile, iChap, 'xCoordinates', sprintf('%.11g ',fld.Data(:,1)));
-            crsFile = inifile('set', crsFile, iChap, 'yCoordinates', sprintf('%.11g ',fld.Data(:,2)));
+    for i = 1:length(obsList.Name)
+        [crsFile,iChap] = inifile('add', crsFile, 'ObservationCrossSection');
+        %
+        csName = obsList.Name{i};
+        if length(csName) > 40
+            fprintf('Clipping name of cross section "%s" to "%s".\n', csName, csName(1:40))
+            csName = csName(1:40);
+        end
+        crsFile = inifile('set', crsFile, iChap, 'name', csName);
+        if isempty(obsList.BranchId{i})
+            crsFile = inifile('set', crsFile, iChap, 'numCoordinates', sprintf('%i', size(obsList.XY{i},1)));
+            crsFile = inifile('set', crsFile, iChap, 'xCoordinates', sprintf('%.11g ',obsList.XY{i}(:,1)));
+            crsFile = inifile('set', crsFile, iChap, 'yCoordinates', sprintf('%.11g ',obsList.XY{i}(:,2)));
+        else
+            crsFile = inifile('set', crsFile, iChap, 'branchId', obsList.BranchId{i});
+            crsFile = inifile('set', crsFile, iChap, 'chainage', sprintf('%.11g ',obsList.Offset(i)));
         end
     end
 end
@@ -569,8 +654,11 @@ for f = 1:size(Frc,1)
         [frcFile, iChap] = inifile('add', frcFile, 'Branch');
         frcFile = inifile('set', frcFile, iChap, 'branchId', bFrc.Id);
         frcFile = inifile('set', frcFile, iChap, 'frictionType', bFrc.Type);
+        frcFile = inifile('set', frcFile, iChap, 'functionType', 'constant');
         if isempty(bFrc.Locs)
             frcFile = inifile('set', frcFile, iChap, 'frictionValues', sprintf('%.11g',bFrc.Values));
+            frcFile = inifile('set', frcFile, iChap, 'numLocations', '1');
+            frcFile = inifile('set', frcFile, iChap, 'chainage', '0.0');
         else
             frcFile = inifile('set', frcFile, iChap, 'numLocations', length(bFrc.Locs));
             frcFile = inifile('set', frcFile, iChap, 'chainage', sprintf('%.11g ',bFrc.Locs));
@@ -584,26 +672,30 @@ end
 frcNames = sprintf('%s ',frcNames{:});
 
 
+function str = hstr(str)
+str = ['#' str '#'];
+
+
 function mdfwrite(MDF,caseid,path)
 if isfield(MDF,'grd')
     filename = [caseid '.grd'];
     wlgrid('write',fullfile(path,filename),MDF.grd);
-    MDF.mdf = inifile('seti',MDF.mdf,'','Filcco',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Filcco',hstr(filename));
     %
     filename = [caseid '.enc'];
-    MDF.mdf = inifile('seti',MDF.mdf,'','Filgrd',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Filgrd',hstr(filename));
 end
 %
 if isfield(MDF,'dep')
     filename = [caseid '.dep'];
     wldep('write',fullfile(path,filename),'',MDF.dep);
-    MDF.mdf = inifile('seti',MDF.mdf,'','Fildep',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Fildep',hstr(filename));
 end
 %
 if isfield(MDF,'rgh')
     filename = [caseid '.rgh'];
     wldep('write',fullfile(path,filename),MDF.rgh);
-    MDF.mdf = inifile('seti',MDF.mdf,'','Filrgh',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Filrgh',hstr(filename));
 end
 %
 if isfield(MDF,'ini')
@@ -611,56 +703,56 @@ if isfield(MDF,'ini')
         % plain binary restart file (flow only)
         filename = ['tri-rst.' caseid];
         trirst('write',fullfile(path,filename),MDF.ini);
-        MDF.mdf = inifile('seti',MDF.mdf,'','Restid',['#' caseid '#']);
+        MDF.mdf = inifile('seti',MDF.mdf,'','Restid',hstr(caseid));
     else
         % NEFIS map-file
         filename = ['trim-restart-for-' caseid];
         TRIMnew = vs_ini(fullfile(path,[filename '.dat']),fullfile(path,[filename '.def']));
         vs_copy(MDF.ini,TRIMnew);
-        MDF.mdf = inifile('seti',MDF.mdf,'','Restid',['#' filename '#']);
+        MDF.mdf = inifile('seti',MDF.mdf,'','Restid',hstr(filename));
     end
 end
 %
 if isfield(MDF,'dry')
     filename = [caseid '.dry'];
     d3d_attrib('write',fullfile(path,filename),MDF.dry);
-    MDF.mdf = inifile('seti',MDF.mdf,'','Fildry',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Fildry',hstr(filename));
 end
 %
 if isfield(MDF,'thd')
     filename = [caseid '.thd'];
     d3d_attrib('write',fullfile(path,filename),MDF.thd);
-    MDF.mdf = inifile('seti',MDF.mdf,'','Filtd',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Filtd',hstr(filename));
 end
 %
 if isfield(MDF,'bnd')
     filename = [caseid '.bnd'];
     d3d_attrib('write',fullfile(path,filename),MDF.bnd);
-    MDF.mdf = inifile('seti',MDF.mdf,'','Filbnd',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Filbnd',hstr(filename));
 end
 %
 if isfield(MDF,'bct')
     filename = [caseid '.bct'];
     bct_io('write',fullfile(path,filename),MDF.bct);
-    MDF.mdf = inifile('seti',MDF.mdf,'','FilbcT',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','FilbcT',hstr(filename));
 end
 %
 if isfield(MDF,'bch')
     filename = [caseid '.bch'];
     bch_io('write',fullfile(path,filename),MDF.bch);
-    MDF.mdf = inifile('seti',MDF.mdf,'','FilbcH',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','FilbcH',hstr(filename));
 end
 %
 if isfield(MDF,'bcc')
     filename = [caseid '.bcc'];
     bct_io('write',fullfile(path,filename),MDF.bcc);
-    MDF.mdf = inifile('seti',MDF.mdf,'','FilbcC',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','FilbcC',hstr(filename));
 end
 %
 if isfield(MDF,'sed')
     filename = [caseid '.sed'];
     inifile('write',fullfile(path,filename),MDF.sed);
-    MDF.mdf = inifile('seti',MDF.mdf,'','Filsed',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Filsed',hstr(filename));
 end
 %
 if isfield(MDF,'morini')
@@ -670,37 +762,37 @@ if isfield(MDF,'morini')
             Fld = MDF.morini.field(f);
             filename = sprintf('%s_layer%i_key%i.frc',caseid,Fld.lyr,Fld.key);
             wldep('write',fullfile(path,filename),'',Fld.data);
-            MDF.morini.inb = inifile('seti',MDF.morini.inb,Fld.chp,Fld.key,['#' filename '#']);
+            MDF.morini.inb = inifile('seti',MDF.morini.inb,Fld.chp,Fld.key,hstr(filename));
         end
     end
     %
     filename = [caseid '.inb'];
     inifile('write',fullfile(path,filename),MDF.morini.inb);
-    MDF.mor = inifile('seti',MDF.mor,'Underlayer','IniComp',['#' filename '#']);
+    MDF.mor = inifile('seti',MDF.mor,'Underlayer','IniComp',hstr(filename));
 end
 %
 if isfield(MDF,'mor')
     filename = [caseid '.mor'];
     inifile('write',fullfile(path,filename),MDF.mor);
-    MDF.mdf = inifile('seti',MDF.mdf,'','Filmor',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Filmor',hstr(filename));
 end
 %
 if isfield(MDF,'tra')
     filename = [caseid '.tra'];
     inifile('write',fullfile(path,filename),MDF.tra);
-    MDF.mdf = inifile('seti',MDF.mdf,'','TraFrm',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','TraFrm',hstr(filename));
 end
 %
 if isfield(MDF,'sta')
     filename = [caseid '.obs'];
     d3d_attrib('write',fullfile(path,filename),MDF.sta);
-    MDF.mdf = inifile('seti',MDF.mdf,'','Filsta',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Filsta',hstr(filename));
 end
 %
 if isfield(MDF,'crs')
     filename = [caseid '.crs'];
     d3d_attrib('write',fullfile(path,filename),MDF.crs);
-    MDF.mdf = inifile('seti',MDF.mdf,'','Filcrs',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Filcrs',hstr(filename));
 end
 %
 keys = {'Filbar' 'bar' 'bar'
@@ -718,14 +810,14 @@ for i = 1:size(keys,1)
     if isfield(MDF,fld)
         filename = [caseid '.' ext];
         d3d_attrib('write',fullfile(path,filename),MDF.(fld));
-        MDF.mdf = inifile('seti',MDF.mdf,'',key,['#' filename '#']);
+        MDF.mdf = inifile('seti',MDF.mdf,'',key,hstr(filename));
     end
 end
 %
 if isfield(MDF,'fls')
     filename = [caseid '.fls'];
     wldep('write',fullfile(path,filename),'',MDF.fls);
-    MDF.mdf = inifile('seti',MDF.mdf,'','Filfls',['#' filename '#']);
+    MDF.mdf = inifile('seti',MDF.mdf,'','Filfls',hstr(filename));
 end
 %
 filename = [caseid '.mdf'];
@@ -733,18 +825,18 @@ inifile('write',fullfile(path,filename),MDF.mdf);
 
 
 function Val = propget(varargin)
-Val = rmhash(inifile('geti',varargin{:}));
+Val = rmhash(inifile('geti',varargin{:})); %hgeti
 
 
 function MFile = masterread(filename)
 %MFile = ddbread(filename);
-master = inifile('open',filename);
+master = inifile('open',filename,'blank','default');
 master_path = fileparts(filename);
 %
 UNSPECIFIED = 'UNSPECIFIED';
 block = 'model';
 Program = propget(master,block,'Program',UNSPECIFIED);
-if isequal(Program,UNSPECIFIED)
+if iscell(Program) || isequal(Program,UNSPECIFIED)
     block = 'general';
     Program = propget(master,block,'Program',UNSPECIFIED);
 end
@@ -923,7 +1015,10 @@ if ~isempty(mshname)
     mshname = relpath(md_path,mshname);
     [F,Q] = getmesh(mshname);
     MF.mesh.nc_file = F;
-    MF.mesh.quant = Q(1);
+    MF.mesh.quant = Q(([Q.NVal]==0 & ~strcmp({Q.Name},'-------') & [Q.UseGrid]~=0) | [Q.NVal]==4);
+    % meshes are the fields with "mesh" in their name (Topology data of ?D mesh) and NVal == 0
+    nQuant = numel(Q);
+    MF.mesh.meshes = find([Q.UseGrid]==1:nQuant & [Q.NVal]==0);
     %
     FirstPoint = netcdffil(F,1,Q(1),'grid',1);
     MF.mesh.XYUnits = FirstPoint.XUnits;
@@ -1033,8 +1128,10 @@ for i = 1:size(attfiles,1)
                 case 'Crs'
                     try
                         F = tekal('open',filename,'loaddata');
+                        F = tekal2crs(F);
                     catch
                         F = inifile('open',filename);
+                        F = ini2crs(F);
                     end
                 case 'ExtForce'
                     ext_path = fileparts(filename);
@@ -1113,8 +1210,8 @@ for i = 1:size(attfiles,1)
                     if inifile('exists',F.File,'boundary')>0
                         BndQuant = inifile('cgetstring',F.File,'boundary','quantity');
                         %
-                        [BndLines,pliBnd]  = inifile('cgetstring',F.File,'boundary','locationfile',{});
-                        [BndNodes,nodBnd] = inifile('cgetstring',F.File,'boundary','nodeId',{});
+                        [BndLines,pliBnd]  = inifile('cgetstring',F.File,'boundary','locationfile');
+                        [BndNodes,nodBnd] = inifile('cgetstring',F.File,'boundary','nodeId');
                         BndLocs = cell(size(BndQuant));
                         BndType = BndLocs;
                         BndLocs(pliBnd) = BndLines;
@@ -1188,8 +1285,10 @@ for i = 1:size(attfiles,1)
                 case 'Obs'
                     try
                         F = samples('read',filename);
+                        F = samples2obs(F);
                     catch
                         F = inifile('open',filename);
+                        F = ini2obs(F);
                     end
                 case 'Profdef'
                     F = profdefparser(filename);
@@ -1214,6 +1313,44 @@ for i = 1:size(attfiles,1)
         MF.(key) = Files;
     end
 end
+
+
+function F2 = samples2obs(F)
+F2.Name = F{2};
+sz = size(F2.Name);
+F2.SnapTo = repmat({'all'}, sz);
+F2.XY = F{1};
+F2.BranchId = cell(sz);
+F2.Offset = zeros(sz);
+
+
+function F2 = ini2obs(F)
+[~,igrp]=inifile('exists',F,'ObservationPoint');
+F2.Name = inifile('getstringi',F,igrp,'Name','');
+F2.SnapTo = inifile('getstringi',F,igrp,'locationType','');
+x = inifile('geti',F,igrp,'x',NaN);
+y = inifile('geti',F,igrp,'y',NaN);
+F2.XY = [x y];
+F2.BranchId = inifile('getstringi',F,igrp,'branchId','');
+F2.Offset = inifile('geti',F,igrp,'chainage',NaN);
+
+
+function F2 = tekal2crs(F)
+F2.Name = {F.Field.Name}';
+sz = size(F2.Name);
+F2.BranchId = cell(sz);
+F2.Offset = zeros(sz);
+F2.XY = {F.Field.Data}';
+
+
+function F2 = ini2crs(F)
+[~,igrp]=inifile('exists',F,'ObservationCrossSection');
+F2.Name = inifile('getstringi',F,igrp,'Name','');
+F2.BranchId = inifile('getstringi',F,igrp,'branchId','');
+F2.Offset = inifile('geti',F,igrp,'chainage',NaN);
+x = inifile('cgeti',F,igrp,'xCoordinates',[]);
+y = inifile('cgeti',F,igrp,'yCoordinates',[]);
+F2.XY = cellfun(@(a,b)[a' b'],x,y,'UniformOutput',false);
 
 
 function F = profdefparser(filename)

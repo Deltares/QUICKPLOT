@@ -622,7 +622,7 @@ while anychange && any(~identified)
     for i=i_notidentified
         j=size(table{4},1);
         Def=inifile('get',UNIT,i,'definition','');
-        Names=inifile('get',UNIT,i,'name','');
+        Names=inifile('cgetstring',UNIT,i,'name','');
         if isempty(Names)
             identified(i)=1;
             if ~strcmpi(units{i},'general')
@@ -636,9 +636,6 @@ while anychange && any(~identified)
                 'No definition for %s in chapter #%i: %s', ...
                 list2string(Names),i,units{i})
         else
-            if ~iscell(Names)
-                Names={Names};
-            end
             if ischar(Def)
                 try
                     [factor,si]=parse(Def,true);

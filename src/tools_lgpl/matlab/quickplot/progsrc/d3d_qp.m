@@ -268,7 +268,7 @@ switch cmd
             end
             %
             if ~isstandalone
-                cmdx = qp_settings('autoruncmd',{});
+                cmdx = qp_settings('autoruncmd','');
                 for i = 1:length(cmdx)
                     try
                         eval(cmdx{i});

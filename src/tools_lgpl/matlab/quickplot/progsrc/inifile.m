@@ -1,61 +1,116 @@
 function varargout=inifile(cmd,varargin)
 %INIFILE Read/write INI files.
-%   Info=INIFILE('open',FileName)
-%   Open and read the INI file; return the data to the workspace in a
-%   set of nested cell arrays.
+%   Info = INIFILE('open', FileName)
+%   Open and read the INI file; return the data to the workspace in a set of
+%   nested cell arrays.
 %
-%   Info=INIFILE('new')
-%   Create a new INI file structure.
+%   Info = INIFILE('new')
+%   Create a new INI file structure in memory.
 %
-%   Info=INIFILE('write',FileName,Info)
-%   Open and write the INI file; the data in the file is overwritten
-%   without asking.
+%   Info = INIFILE('write', FileName, Info)
+%   Open and write the INI file; the data in the file is overwritten without
+%   asking.
 %
-%   ListOfChapters=INIFILE('chapters',Info)
-%   Retrieve list of Chapter names (cell array of strings).
 %
-%   IndexChapter=INIFILE('chapters',Info,Chapter)
-%   Retrieve the chapter indices that match the specified chapter name.
+%   ListOfChapters = INIFILE('chapters', Info)
+%   Retrieve the list of Chapter names as a cell array of strings.
 %
-%   ListOfKeywords=INIFILE('keywords',Info,Chapter)
-%   Retrieve list of Keywords in specified Chapter (cell array of strings).
+%   IndexChapter = INIFILE('chapters', Info, C)
+%   Retrieve the chapter indices that match the specified chapter name C. Use
+%   'chaptersi' for a case insensitive match of the chapter name.
 %
-%   [BOOL,iChap] = INIFILE('exists',Info,Chapter)
-%   Check whether a Chapter name exists in the the Info data set, and
-%   return the index or indices of the chapters matching the specified
-%   name.
+%   [BOOL, iChap] = INIFILE('exists', Info, C)
+%   Check whether a chapter named C exists in the the Info data set, and return
+%   return the index or indices of the chapters matching the specified name.
+%   Use 'existsi' for a case insensitive match of the Chapter name.
 %
-%   N = INIFILE('exists',Info,Chapter,Keyword)
-%   Check whether a Chapter name/Keyword name combination exists in the
-%   Info data set. If the chapter name occurs once, N will be the number of
-%   occurrences of the Keyword in that chapter. If the chapter name occurs
+%   [Info, iChap] = INIFILE('add', Info, C)
+%   Add a new chapter with name C to the data set. The updated data set is
+%   returned, as well as the index iChap of the newly created group. Calling
+%   this function repeatedly with the same chapter name will  create multiple
+%   instances of chapters C.
+%
+%   Info = INIFILE('delete', Info, C)
+%   Info = INIFILE('delete', Info, C, CN)
+%   Delete the chapter(s) with name C from the data set. The updated data set
+%   is returned. If there are multiple instances use CN to specify the index
+%   or indices of the group(s) to be removed. Use 'deletei' for a case
+%   insensitive match of the chapter name.
+%
+%
+%   ListOfKeywords = INIFILE('keywords', Info, C)
+%   Retrieve the list of keywords in specified chapter C as a cell array of
+%   strings. Use 'keywordsi' for a case insensitive match of the Chapter name.
+%
+%   N = INIFILE('exists', Info, C, K)
+%   Check whether a chapter C and keyword K combination exists in the Info
+%   data set. If the chapter name occurs once, N will be the number of
+%   occurrences of the keyword in that chapter. If the chapter name occurs
 %   multiple times, N will be a M-by-1 array where M is the number of times
 %   that the chapter name occurs in the Info data set. Each element of N
-%   equals the number of times the keyword name occurs in these chapters.
+%   equals the number of times the keyword name occurs in each chapter.
 %
-%   Val=INIFILE('get',Info,Chapter,Keyword,Default)
-%   Retrieve Chapter/Keyword from the Info data set. The Default value is
-%   optional. If the Chapter ID is '*', the Keyword is searched for in
-%   all chapters in the file.
+%   [Val, iChap] = INIFILE('cgetstring', Info, C, K, DefS)
+%   Retrieve the value of the keyword K of chapter C from the Info data set.
+%   The return variable Val is an M x 1 cell array of strings where M equals
+%   the total number of occurrences of the keyword keyword K in a chapter C.
+%   Use 'cgetstringi' for a case insensitive match of the chapter and keyword
+%   names. The chapter and keyword may also be specified by their index instead
+%   of their name. The optional second argument returns the index of the chapter
+%   number for which the keyword K was retrieved.
+%   If the chapter/keyword pair does not exist, the default string DefS will be
+%   returned; if DefS is not specified, an error will be raised. If multiple
+%   chapters match C, and some of those chapters don't include K then an error
+%   will be raised if DefS is not specified unless the second output argument
+%   iChap is requested.
 %
-%   [Info,iChap]=INIFILE('add',Info,Chapter)
-%   Add a new chapter with specified Chapter name to the data set. The
-%   updated data set is returned. You may use 'set' instead of 'add'.
+%   Variations (all come with '...i' alternatives):
+%      'getstring'   returns a string if the chapter/keyword pair occurs once,
+%                    and a cell array of strings otherwise.
+%      'cget'        returns a cell array in which strings that represent
+%                    numbers have been replaced by those numbers.
+%      'get'         as 'cget' but returns a numerical array if all strings
+%                    could be converted to numbers, and returns a string if the
+%                    chapter/keyword pair occurs once.
+%      'hcgetstring' returns a cell array of strings which are:
+%                     * equal to the original strings if the strings don't
+%                       contain any hash signs
+%                     * equal to the string between the first two # signs if
+%                       the string contains multiple hash signs and the first
+%                       hash sign is the first non-space character, and
+%                     * equal to the string before the first # sign in all
+%                       other cases.
+%      'hgetstring'  equal to 'getstring' except for the initial parsing of the
+%                    hash signs.
+%      'hcget'       equal to 'cget' except for the initial parsing of the hash
+%                    signs.
+%      'hget'        equal to 'get' except for the initial parsing of the hash
+%                    signs.
 %
-%   Info=INIFILE('set',Info,Chapter,Keyword,Value)
-%   Set Chapter/Keyword in the data set to the indicated value. The
-%   updated data set is returned. If the chapter and/or keyword do not
-%   exist, they are created. If Value equals [], the keyword is deleted
-%   (see below). You may use 'add' instead of 'set'.
 %
-%   Info=INIFILE('delete',Info,Chapter)
+%   Info = INIFILE('set', Info, C, K, Value)
+%   Set the keyword K in chapter C to the indicated Value. The updated data set
+%   is returned. If the chapter and/or keyword do not exist, they are created.
+%   Use 'seti' for a case insensitive match of the chapter and keyword names.
+%   The chapter and keyword may also be specified by their index instead of
+%   their name.
+%   NOTE: If Value equals [], the keyword is deleted but use 'delete' instead.
+%
+%   Info = INIFILE('delete', Info, C, K)
+%   Delete the specified keyword K from the specified chapter C. The updated
+%   data set is returned. Use 'deletei' for a case insensitive match of the
+%   chapter and keyword names. The chapter and keyword may also be specified
+%   by their index instead of their name.
+
+%   Old behavior to be removed.
+%
 %   Info=INIFILE('set',Info,Chapter,[])
 %   Delete Chapter from the data set. The updated data set is returned.
+%   Superseeded by 'delete'.
 %
-%   Info=INIFILE('delete',Info,Chapter,Keyword)
 %   Info=INIFILE('set',Info,Chapter,Keyword,[])
-%   Delete the specified Keyword from the specified Chapter in the data
-%   set. The updated data set is returned.
+%   Delete the specified Keyword from the specified Chapter in the data set.
+%   The updated data set is returned. Superseeded by 'delete'.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -135,7 +190,8 @@ switch lcmd
         catch
             varargout{1} = false;
         end
-    case {'get','getstring','geti','getstringi','cget','cgetstring','cgeti','cgetstringi'}
+    case {'hget' ,'get' ,'hgetstring' ,'getstring' ,'hcget' ,'cget' ,'hcgetstring' ,'cgetstring' , ...
+          'hgeti','geti','hgetstringi','getstringi','hcgeti','cgeti','hcgetstringi','cgetstringi'}
         [varargout{1:max(nargout,1)}] = getfield(lcmd,varargin{:});
     case {'set','seti','add','addi'}
         [varargout{1:max(nargout,1)}] = setfield(lcmd,varargin{:});
@@ -160,7 +216,7 @@ FI.FileType='INI file';
 FI.Data=S;
 
 
-function FI=readfile(filename)
+function FI=readfile(filename,varargin)
 fid=fopen(filename,'rt');
 if fid<0
     error('Error opening %s.',filename)
@@ -227,7 +283,18 @@ S = S(1:ichp,:);
 %
 FI.FileName=filename;
 FI.FileType='INI file';
+FI.Blank = 'valid';
 FI.Data=S;
+%
+i = 1;
+while i < length(varargin)
+    if strcmpi(varargin{i},'blank')
+        FI.Blank = varargin{i+1};
+        i = i+2;
+    else
+        i = i+1;
+    end
+end
 
 
 function FI = writefile(filename,FI,formatStyle)
@@ -348,7 +415,13 @@ end
 
 
 function [val,iGRP]=getfield(cmd,FI,grpS,keyS,def)
-S = FI.Data;
+BlankIsEmpty = nargin>=5 && isfield(FI,'Blank') && strcmp(FI.Blank,'default');
+if cmd(1)=='h'
+    ProcessHashes = 1;
+    cmd = cmd(2:end);
+else
+    ProcessHashes = 0;
+end
 CaseInsensitive = cmd(end)=='i';
 if CaseInsensitive
     cmd = cmd(1:end-1);
@@ -357,6 +430,7 @@ CellOutput = cmd(1)=='c';
 if CellOutput
     cmd = cmd(2:end);
 end
+S = FI.Data;
 if ischar(grpS)
     if isequal(grpS,'*')
         grp = 1:size(S,1);
@@ -385,17 +459,15 @@ if isempty(grp)
     error('Chapter ''%s'' does not exist',var2str(grpS))
 end
 Keywords = cat(1,S{grp,2});
-if nargout>1
-    iGRP = zeros(length(Keywords),1);
-    o = 0;
-    for i = 1:length(grp)
-        nKeyw = size(S{grp(i),2},1);
-        iGRP(o+(1:nKeyw)) = grp(i);
-        o = o+nKeyw;
-    end
-else
-    iGRP = [];
+%
+iGRP = zeros(length(Keywords),1);
+o = 0;
+for i = 1:length(grp)
+    nKeyw = size(S{grp(i),2},1);
+    iGRP(o+(1:nKeyw)) = grp(i);
+    o = o+nKeyw;
 end
+%
 if ischar(keyS)
     keyS = deblank(keyS);
     if CaseInsensitive
@@ -410,40 +482,84 @@ else
         error('Keyword indexing not supported for multiple chapters at once.')
     end
 end
-if isempty(key) && nargin>=5
-    val=def;
-elseif isequal(size(key),[1 1]) && ~CellOutput
-    val=Keywords{key,2};
-    if ischar(val) && ~strcmp(cmd,'getstring')
-        [lni,n,err,SF2i]=sscanf(val,'%f',[1 inf]);
-        if isempty(err) && SF2i>length(val)
-            val=lni;
-        end
+vgrp = iGRP(key);
+%
+if nargin >= 5
+    mgrp = grp(~ismember(grp,vgrp));
+    val = repmat({def},size(vgrp) + [length(mgrp) 0]);
+    val(1:length(key)) = Keywords(key,2);
+    iGRP = cat(1,vgrp,mgrp);
+elseif any(~ismember(grp,vgrp))
+    if nargout > 1
+        iGRP = vgrp;
+        val = Keywords(key,2);
+    elseif length(grp) == 1
+        error('Keyword ''%s'' not found in Chapter ''%s''.',keyS,grpS)
+    else
+        error('Keyword ''%s'' not found in %i of the selected chapters.',keyS,sum(~ismember(grp,vgrp)))
     end
-elseif ~isempty(key)
-    val=Keywords(key,2);
-    if ~strcmp(cmd,'getstring')
-        for i=1:length(val)
-            [lni,n,err,SF2i]=sscanf(val{i},'%f',[1 inf]);
+else
+    iGRP = vgrp;
+    val = Keywords(key,2);
+end
+%
+if ProcessHashes
+    val = rmhash(val);
+end
+%
+if ~strcmp(cmd,'getstring')
+    anychar = false;
+    for i = 1:length(val)
+        if isempty(val{i}) && BlankIsEmpty
+            val{i} = def;
+        end
+        if ischar(val{i})
+            [lni,~,err,SF2i]=sscanf(val{i},'%f',[1 inf]);
             if isempty(err) && SF2i>length(val{i})
                 val{i} = lni;
             end
+            anychar = anychar | ischar(val{i});
         end
     end
-else
-    error('Keyword ''%s'' not found in Chapter ''%s''.',keyS,grpS)
+    if ~CellOutput && (length(val) == 1 || ~anychar)
+        val = cat(1,val{:});
+    end
+elseif ~CellOutput && length(val) == 1
+    val = val{1};
 end
-if ~isempty(iGRP)
-    iGRP = iGRP(key);
+
+
+function str = rmhash(str)
+if iscell(str)
+    for i = 1:length(str)
+        str{i} = rmhash(str{i});
+    end
+elseif ischar(str)
+    hashes = strfind(str,'#');
+    if length(hashes)>1
+        str1 = deblank(str(1:hashes(1)-1));
+        if isempty(str1)
+            str = str(hashes(1)+1:hashes(2)-1);
+        else
+            str = str1;
+        end
+    elseif length(hashes)==1
+        str = str(1:hashes(1)-1);
+    end
+    str = deblank(str);
 end
 
 
 function [FI,iGRP]=setfield(cmd,FI,grpS,varargin)
 S = FI.Data;
 CaseInsensitive = cmd(end)=='i';
+AddCommand = strncmp(cmd,'add',3);
 if nargin==3
     % create the group ...
     if ischar(grpS)
+        %if ~AddCommand
+        %    warning('Use the ''add'' command to add new groups.')
+        %end
         grp = size(FI.Data,1)+1;
         FI.Data(grp,:) = {grpS cell(0,2)};
         if nargout>1
@@ -482,6 +598,7 @@ if isempty(grp)
         % remove a non-existing group. Done!
         return
     end
+    % create group and keyword ...
     S(end+1,1:2) = {grpS cell(0,2)};
     grp = size(S,1);
 end

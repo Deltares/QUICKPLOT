@@ -139,8 +139,8 @@ switch FI.FileType(9:end)
     case '1D2D mapping'
         switch Props.Name
             case {'1D2D links','1D2D link numbers'}
-                XY1D = inifile('geti',FI.mapping,'1d2dLink','XY_1D');
-                XY2D = inifile('geti',FI.mapping,'1d2dLink','XY_2D');
+                XY1D = inifile('cgeti',FI.mapping,'1d2dLink','XY_1D');
+                XY2D = inifile('cgeti',FI.mapping,'1d2dLink','XY_2D');
                 for i = 1:length(XY1D)
                     XY1D{i}(2,:) = XY2D{i};
                 end
@@ -172,35 +172,21 @@ switch FI.FileType(9:end)
                 end
                 Ans.XY = FI.ntwXY(idx{M_});
             case 'nodes'
-                X = inifile('geti',FI.ntw,'Node','x');
-                Y = inifile('geti',FI.ntw,'Node','y');
+                X = inifile('cgeti',FI.ntw,'Node','x');
+                Y = inifile('cgeti',FI.ntw,'Node','y');
                 Ans.X = [X{idx{M_}}];
                 Ans.Y = [Y{idx{M_}}];
                 Ans.Val = inifile('geti',FI.ntw,'Node','id');
                 Ans.Val = Ans.Val(idx{M_});
             case 'xyz cross section lines'
-                % only xyz cross section definitions seem to have xCoors
-                % and yCoors, so just request those.
+                CDx = inifile('cgeti', FI.crsDef, 'Definition', 'xCoors', []);
+                CDy = inifile('cgeti', FI.crsDef, 'Definition', 'yCoors', []);
+                isXYZ = ~cellfun(@isempty, CDx);
+                CDx = CDx(isXYZ);
+                CDy = CDy(isXYZ);
                 %
-                %CT = inifile('geti',FI.crsLoc,'CrossSection','type');
-                %CT = find(strcmp(CT,Props.varid));
-                %iM = CT(idx{M_});
-                %
-                %CD = inifile('geti',FI.crsLoc,'CrossSection','definition');
-                %CD = CD(iM);
-                %
-                %CDi = inifile('geti',FI.crsDef,'Definition','id');
-                % the length of CDx and CDy will be shorter than CDi since
-                % every cross section has an id, but not every cross
-                % section has x/yCoors. Need to use the second output
-                % argument of inifile('get' to figure out which coordinates
-                % belong to which id.
-                CDx = inifile('geti',FI.crsDef,'Definition','xCoors');
-                CDy = inifile('geti',FI.crsDef,'Definition','yCoors');
-                %
-                %[isDef,iDef] = ismember(CD,CDi);
-                %CDx = CDx(iDef);
-                %CDy = CDy(iDef);
+                CDx = CDx(idx{M_});
+                CDy = CDy(idx{M_});
                 for i = 1:length(CDx)
                     CDx{i} = [CDx{i}' CDy{i}'];
                 end
@@ -249,8 +235,8 @@ switch FI.FileType(9:end)
                 ni = zeros(size(BNI));
                 ni(iBNI)=iNI;
                 %
-                x = inifile('geti',FI.ntw,'Node','x');
-                y = inifile('geti',FI.ntw,'Node','y');
+                x = inifile('cgeti',FI.ntw,'Node','x');
+                y = inifile('cgeti',FI.ntw,'Node','y');
                 Ans.X   = [x{ni}]';
                 Ans.Y   = [y{ni}]';
                 Ans.Val = NI(ni);
@@ -271,8 +257,8 @@ switch FI.FileType(9:end)
                         FI = check_gpXY(FI);
                         %
                         % first N1 points are internal nodes
-                        X = inifile('geti',FI.ntw,'Node','x');
-                        Y = inifile('geti',FI.ntw,'Node','y');
+                        X = inifile('cgeti',FI.ntw,'Node','x');
+                        Y = inifile('cgeti',FI.ntw,'Node','y');
                         N = inifile('getstringi',FI.ntw,'Node','id');
                         nodXY = [cat(1,X{:}) cat(1,Y{:})];
                         %
@@ -283,7 +269,7 @@ switch FI.FileType(9:end)
                         % order of the branches
                         bNodes = [inifile('cgetstringi',FI.ntw,'Branch','FromNode') inifile('cgetstringi',FI.ntw,'Branch','ToNode')]';
                         bNodes = bNodes(:);
-                        B = inifile('getstringi',FI.bndLoc,'Boundary','nodeId');
+                        B = inifile('cgetstringi',FI.bndLoc,'Boundary','nodeId');
                         B = bNodes(ismember(bNodes,B));
                         [~,locB]=ismember(B,N);
                         bndXY = nodXY(locB,:);
@@ -445,12 +431,14 @@ switch FI.FileType(9:end)
         end
     case 'D-Flow FM'
         switch Props.Name
-            case 'mesh'
-                Ans = netcdffil(FI.mesh.nc_file,idom,FI.mesh.quant,'grid',idx{M_});
+            case {FI.mesh.quant.Name}
+                j = Props.varid;
+                Ans = netcdffil(FI.mesh.nc_file,idom,FI.mesh.quant(j),'griddata',idx{M_});
             case 'bed levels'
                 Ans = netcdffil(FI.mesh.nc_file,idom,FI.BedLevel,'griddata',idx{M_});
-            case 'bed level'
-                Ans = netcdffil(FI.mesh.nc_file,idom,FI.mesh.quant,'grid',idx{M_});
+            case {'bed level','bed level on 1D mesh','bed level on 2D mesh'}
+                j = Props.varid;
+                Ans = netcdffil(FI.mesh.nc_file,idom,FI.mesh.quant(j),'grid',idx{M_});
                 Ans.Val = repmat(FI.BedLevel,size(Ans.X));
             case 'bed level samples'
                 Ans.XY  = FI.BedLevel(idx{M_},1:2);
@@ -459,14 +447,23 @@ switch FI.FileType(9:end)
                 Ans.XY  = zeros(sz(M_),2);
                 Ans.Val = cell(sz(M_),1);
                 offset = 0;
+                network_loaded = false;
                 for i = 1:length(FI.Obs)
-                    % switch file type
-                    nobj = size(FI.Obs{i}{1},1);
+                    nobj = length(FI.Obs{i}.Name);
                     Mask = idx{M_}>offset & idx{M_}<=offset+nobj;
                     if any(Mask)
                         iObj = idx{M_}(Mask)-offset;
-                        Ans.XY(Mask,:) = FI.Obs{i}{1}(iObj,1:2);
-                        Ans.Val(Mask)  = FI.Obs{i}{2}(iObj);
+                        Ans.Val(Mask)  = FI.Obs{i}.Name(iObj);
+                        Ans.XY(Mask,:) = FI.Obs{i}.XY(iObj,:);
+                        hasBranchId    = ~cellfun(@isempty, FI.Obs{i}.BranchId(iObj));
+                        if any(hasBranchId)
+                            if ~network_loaded
+                                Network = netcdffil(FI.mesh.nc_file, idom, FI.mesh.quant(4), 'griddata'); % XXX shouldn't be hardcoded 4: 'ID of branch geometries'
+                                network_loaded = true;
+                            end
+                            iObj = iObj(hasBranchId);
+                            Ans.XY(offset+iObj, :) = branch_idoffset2xy(Network, FI.Obs{i}.BranchId(iObj), FI.Obs{i}.Offset(iObj));
+                        end
                     end
                     offset = offset+nobj;
                 end
@@ -474,14 +471,24 @@ switch FI.FileType(9:end)
                 Ans.XY  = cell(sz(M_),1);
                 Ans.Val = cell(sz(M_),1);
                 offset = 0;
+                network_loaded = false;
                 for i = 1:length(FI.Crs)
-                    % switch file type
-                    nobj = length(FI.Crs{i}.Field);
+                    nobj = length(FI.Crs{i}.Name);
                     Mask = idx{M_}>offset & idx{M_}<=offset+nobj;
                     if any(Mask)
                         iObj = idx{M_}(Mask)-offset;
-                        Ans.XY(Mask)  = {FI.Crs{i}.Field(iObj).Data};
-                        Ans.Val(Mask) = {FI.Crs{i}.Field(iObj).Name};
+                        Ans.Val(Mask) = FI.Crs{i}.Name(iObj);
+                        Ans.XY(Mask)  = FI.Crs{i}.XY(iObj);
+                        hasBranchId   = ~cellfun(@isempty, FI.Crs{i}.BranchId(iObj));
+                        if any(hasBranchId)
+                            if ~network_loaded
+                                Network = netcdffil(FI.mesh.nc_file, idom, FI.mesh.quant(4), 'griddata'); % XXX shouldn't be hardcoded 4: 'ID of branch geometries'
+                                network_loaded = true;
+                            end
+                            iObj = iObj(hasBranchId);
+                            XYvec = branch_idoffset2xy(Network, FI.Crs{i}.BranchId(iObj), FI.Crs{i}.Offset(iObj));
+                            Ans.XY(offset+iObj) = mat2cell(XYvec,ones(1,size(XYvec,1)),2);
+                        end
                     end
                 end
             otherwise
@@ -571,7 +578,7 @@ switch FI.FileType
         Out(2).NVal = 1;
     case 'Delft3D D-Flow1D'
         if isfield(FI,'bndLoc')
-            F=inifile('geti',FI.bndLoc,'Boundary','type');
+            F=inifile('cgeti',FI.bndLoc,'Boundary','type');
             BT=[F{:}];
             uBT=unique(BT);
         else
@@ -888,14 +895,20 @@ switch FI.FileType
                 nfld = nfld+1;
             elseif isfield(FI,flds{i})
                 switch flds{i}
+                    case 'mesh'
+                        nfld = nfld + length(FI.mesh.quant);
                     case 'BedLevel'
-                        nfld = nfld+1;
+                        if isscalar(FI.BedLevel)
+                            nfld = nfld + length(FI.mesh.meshes);
+                        else
+                            nfld = nfld + 1;
+                        end
                     case 'ExtForce'
-                        nfld = nfld+length(unique({FI.ExtForce.Quantity}));
+                        nfld = nfld + length(unique({FI.ExtForce.Quantity}));
                     case 'ExtForceNew'
-                        nfld = nfld+length(FI.ExtForceNew.Bnd.Types);
+                        nfld = nfld + length(FI.ExtForceNew.Bnd.Types);
                         for iBT = 1:length(FI.ExtForceNew.Bnd.Types) % return 0 for non-time series
-                            nfld = nfld+sum(cellfun(@(f)lentim(f),FI.ExtForceNew.Bnd.Forcing{iBT}));
+                            nfld = nfld + sum(cellfun(@(f)lentim(f),FI.ExtForceNew.Bnd.Forcing{iBT}));
                         end
                     otherwise
                         nfld = nfld+1;
@@ -912,11 +925,15 @@ switch FI.FileType
             elseif isfield(FI,flds{i})
                 switch flds{i}
                     case 'mesh'
-                        ifld = ifld+1;
-                        Out(ifld).Name = 'mesh';
-                        Out(ifld).Geom = 'UGRID1D-NODE';
-                        Out(ifld).Coords = 'xy';
-                        Out(ifld).DimFlag(M_) = 6;
+                        for j = 1:length(FI.mesh.quant)
+                            ifld = ifld+1;
+                            Out(ifld).Name = FI.mesh.quant(j).Name;
+                            Out(ifld).Geom = FI.mesh.quant(j).Geom;
+                            Out(ifld).NVal = FI.mesh.quant(j).NVal;
+                            Out(ifld).Coords = 'xy';
+                            Out(ifld).DimFlag(M_) = 6;
+                            Out(ifld).varid = j;
+                        end
                     case 'BedLevel'
                         ifld = ifld+1;
                         BL = FI.(flds{i});
@@ -928,12 +945,22 @@ switch FI.FileType
                             Out(ifld).DimFlag(M_) = 6;
                             Out(ifld).NVal = 1;
                         elseif isscalar(BL)
-                            Out(ifld).Name = 'bed level';
-                            Out(ifld).Units = 'm';
-                            Out(ifld).Geom = 'UGRID1D-NODE';
-                            Out(ifld).Coords = 'xy';
-                            Out(ifld).DimFlag(M_) = 6;
-                            Out(ifld).NVal = 1;
+                            for j = FI.mesh.meshes(:)'
+                                Out(ifld).Name = 'bed level';
+                                if length(FI.mesh.meshes) > 1
+                                    if ~isempty(strfind(FI.mesh.quant(j).Name,'1D'))
+                                        Out(ifld).Name = [Out(ifld).Name ' on 1D mesh'];
+                                    else
+                                        Out(ifld).Name = [Out(ifld).Name ' on 2D mesh'];
+                                    end
+                                end
+                                Out(ifld).Units = 'm';
+                                Out(ifld).Geom = 'UGRID1D-NODE';
+                                Out(ifld).Coords = 'xy';
+                                Out(ifld).DimFlag(M_) = 6;
+                                Out(ifld).NVal = 1;
+                                Out(ifld).varid = j;
+                            end
                         else
                             Out(ifld).Name = 'bed level samples';
                             Out(ifld).Units = 'm';
@@ -1104,14 +1131,14 @@ switch FI.FileType
             otherwise
                 if strcmp(Props.Name,'xyz cross section lines') || ...
                         ~isempty(strfind(Props.Name,'cross section points'))
-                    CT=inifile('geti',FI.crsLoc,'CrossSection','type');
+                    CT=inifile('cgeti',FI.crsLoc,'CrossSection','type');
                     sz(M_)=sum(strcmp(Props.varid,CT));
                 elseif ~isempty(strfind(Props.Name,'boundary points'))
-                    F=inifile('geti',FI.bndLoc,'Boundary','type');
+                    F=inifile('cgeti',FI.bndLoc,'Boundary','type');
                     BT = [F{:}];
                     sz(M_) = sum(BT==Props.varid);
                 elseif strncmp(Props.Name,'structure points',16)
-                    ST=inifile('geti',FI.strucLoc,'Structure','type');
+                    ST=inifile('cgeti',FI.strucLoc,'Structure','type');
                     sz(M_)=sum(strcmp(Props.varid,ST));
                 elseif ~iscell(Props.varid)
                     % for development purposes only ...
@@ -1132,8 +1159,13 @@ switch FI.FileType
         end
     case 'Delft3D D-Flow FM'
         switch Props.Name
-            case {'mesh','bed level'}
-                grdSz = netcdffil(FI.mesh.nc_file,idom,FI.mesh.quant,'size');
+            case {FI.mesh.quant.Name}
+                j = Props.varid;
+                grdSz = netcdffil(FI.mesh.nc_file,idom,FI.mesh.quant(j),'size');
+                sz(M_) = grdSz(M_);
+            case {'bed level','bed level on 1D mesh','bed level on 2D mesh'}
+                j = Props.varid;
+                grdSz = netcdffil(FI.mesh.nc_file,idom,FI.mesh.quant(j),'size');
                 sz(M_) = grdSz(M_);
             case 'bed levels'
                 grdSz = netcdffil(FI.mesh.nc_file,idom,FI.BedLevel,'size');
@@ -1143,15 +1175,13 @@ switch FI.FileType
             case 'observation points'
                 szM = 0;
                 for i = 1:length(FI.Obs)
-                    % switch based ob Obs file type
-                    szM = szM + size(FI.Obs{i}{1},1);
+                    szM = szM + length(FI.Obs{i}.Name);
                 end
                 sz(M_) = szM;
             case 'observation cross sections'
                 szM = 0;
                 for i = 1:length(FI.Crs)
-                    % switch based ob Obs file type
-                    szM = szM + length(FI.Crs{i}.Field);
+                    szM = szM + length(FI.Crs{i}.Name);
                 end
                 sz(M_) = szM;
             otherwise
@@ -1194,6 +1224,36 @@ for i = 1:length(uBId)
         %
         xyCS = interp1(d,XY,cCS);
         xy(iOut,:) = xyCS;
+    end
+end
+% -----------------------------------------------------------------------------
+
+% -----------------------------------------------------------------------------
+function xy = branch_idoffset2xy(Network, bId, bCh)
+nPnt = length(bId);
+xy = NaN(nPnt,2);
+%
+[uBId,~,ic] = unique(bId);
+for i = 1:length(uBId)
+    Branch = uBId(i);
+    iBranch = ustrcmpi(Branch,Network.Val);
+    if iBranch>0
+        X = Network.EdgeGeometry.X{iBranch};
+        Y = Network.EdgeGeometry.Y{iBranch};
+        d     = pathdistance(X, Y);
+        db    = diff(d)==0;
+        d(db) = [];
+        X(db) = [];
+        Y(db) = [];
+        iOut  = ic==i;
+        cCS   = bCh(iOut);
+        %
+        bLen = d(end); % Need access to the branch length!
+        d = d*bLen/d(end);
+        %
+        xCS = interp1(d, X, cCS);
+        yCS = interp1(d, Y, cCS);
+        xy(iOut,:) = [xCS yCS];
     end
 end
 % -----------------------------------------------------------------------------

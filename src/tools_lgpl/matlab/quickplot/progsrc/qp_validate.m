@@ -244,7 +244,7 @@ try
         NTested=NTested+1;
         DiffFound=0;
         color    = '';
-        frcolor  = Color.Success; 
+        frcolor  = Color.Success;
         lgcolor  = Color.Font;
         result   = '';
         frresult = PASSED;
@@ -308,8 +308,8 @@ try
                     error('No work directory?')
                 end
                 delete('*')
-                FileName=inifile('get',CaseInfo,'*','FileName','');
-                FileName2=inifile('get',CaseInfo,'*','FileName2','');
+                FileName=inifile('getstring',CaseInfo,'','FileName','');
+                FileName2=inifile('getstring',CaseInfo,'','FileName2','');
                 if isempty(FileName2)
                     FileName2={};
                     write_section(logid2,'Opening ''%s''',protected(FileName));
@@ -497,157 +497,161 @@ try
                 write_begin_table(logid2,Color)
                 datacheck=inifile('get',CaseInfo,'datacheck','default',1);
                 P=Props{dmx};
-                for p=1:NP
-                    if progressbar((acc_dt+case_dt(i)*(p-1)/NT)/tot_dt,Hpb)<0
-                        write_table2_line(logid2,Color.Table{TC2},'','','',''); % at least one line needed in table
-                        write_end_table(logid2,emptyTable2);
-                        UserInterrupt=1;
-                        error('User interrupt');
-                    end
-                    if ~strcmp(P(p).Name,'-------')
-                        if P(p).NVal<0
-                            write_table2_line(logid2,Color.Table{TC2},P(p).Name,NOTAPP,'','Check not applicable.');
-                            emptyTable2 = false;
-                            TC2=3-TC2;
-                        elseif ~inifile('get',CaseInfo,'datacheck',P(p).Name,datacheck)
-                            write_table2_line(logid2,Color.Table{TC2},P(p).Name,NOTAPP,NOTAPP,'Check skipped.');
-                            emptyTable2 = false;
-                            TC2=3-TC2;
-                        else
-                            PName=P(p).Name;
-                            PName_double = strmatch(PName,{P(1:p-1).Name},'exact');
-                            PName=str2file(PName);
-                            CmpFile=[PName '.mat'];
-                            if PName_double
-                                CmpFile=[PName sprintf('.(%i).mat',PName_double+1)];
-                            end
-                            RefFile=[sref CmpFile];
-                            WrkFile=[swrk CmpFile];
-                            idx={};
-                            subf={};
-                            if ~isempty(P(p).DimFlag) && P(p).DimFlag(ST_)
-                                idx={1};
-                                if P(p).DimFlag(T_)
-                                    if P(p).DimFlag(M_) || P(p).DimFlag(N_)
-                                        idx={P(p).Size(T_) idx{:}};
-                                    else
-                                        idx={1:min(10,P(p).Size(T_)) idx{:}};
+                try
+                    for p=1:NP
+                        if progressbar((acc_dt+case_dt(i)*(p-1)/NT)/tot_dt,Hpb)<0
+                            write_table2_line(logid2,Color.Table{TC2},'','','',''); % at least one line needed in table
+                            write_end_table(logid2,emptyTable2);
+                            UserInterrupt=1;
+                            error('User interrupt');
+                        end
+                        if ~strcmp(P(p).Name,'-------')
+                            if P(p).NVal<0
+                                write_table2_line(logid2,Color.Table{TC2},P(p).Name,NOTAPP,'','Check not applicable.');
+                                emptyTable2 = false;
+                                TC2=3-TC2;
+                            elseif ~inifile('get',CaseInfo,'datacheck',P(p).Name,datacheck)
+                                write_table2_line(logid2,Color.Table{TC2},P(p).Name,NOTAPP,NOTAPP,'Check skipped.');
+                                emptyTable2 = false;
+                                TC2=3-TC2;
+                            else
+                                PName=P(p).Name;
+                                PName_double = strmatch(PName,{P(1:p-1).Name},'exact');
+                                PName=str2file(PName);
+                                CmpFile=[PName '.mat'];
+                                if PName_double
+                                    CmpFile=[PName sprintf('.(%i).mat',PName_double+1)];
+                                end
+                                RefFile=[sref CmpFile];
+                                WrkFile=[swrk CmpFile];
+                                idx={};
+                                subf={};
+                                if ~isempty(P(p).DimFlag) && P(p).DimFlag(ST_)
+                                    idx={1};
+                                    if P(p).DimFlag(T_)
+                                        if P(p).DimFlag(M_) || P(p).DimFlag(N_)
+                                            idx={P(p).Size(T_) idx{:}};
+                                        else
+                                            idx={1:min(10,P(p).Size(T_)) idx{:}};
+                                        end
                                     end
                                 end
-                            end
-                            [Chk,subfields]=qp_getdata(FI,dm,P(p),'subfields');
-                            if Chk && ~isempty(subfields)
-                                subf={length(subfields)};
-                            end
-                            [Chk,Data]=qp_getdata(FI,dm,P(p),'griddata',subf{:},idx{:});
-                            if ~Chk && isempty(Data)
-                                write_table2_line(logid2,Color.Table{TC2},P(p).Name,color_write(FAILED,Color.Failed),'','Failed to get data');
-                                emptyTable2 = false;
-                                TC2=3-TC2;
-                                Chk = 0;
-                            else
-                                write_table2_line(logid2,Color.Table{TC2},P(p).Name,sc{Chk+1},[],'');
-                                emptyTable2 = false;
-                                TC2=3-TC2;
-                            end
-                            if ~Chk
-                                frcolor=Color.Failed;
-                                frresult=sprintf('%s: Error retrieving data for ''%s''.',FAILED,protected(P(p).Name));
-                            else
-                                try
-                                    if localexist(RefFile)
-                                        cmpFile=localload(RefFile);
-                                        PrevData=cmpFile.Data;
-                                    else
-                                        PrevData=[];
-                                    end
-                                    if isstruct(PrevData)
-                                        if isfield(Data,'TRI')
-                                            Data.TRI = sortrows(sort(Data.TRI')'); %#ok<TRSRT>
+                                [Chk,subfields]=qp_getdata(FI,dm,P(p),'subfields');
+                                if Chk && ~isempty(subfields)
+                                    subf={length(subfields)};
+                                end
+                                [Chk,Data]=qp_getdata(FI,dm,P(p),'griddata',subf{:},idx{:});
+                                if ~Chk && isempty(Data)
+                                    write_table2_line(logid2,Color.Table{TC2},P(p).Name,color_write(FAILED,Color.Failed),'','Failed to get data');
+                                    emptyTable2 = false;
+                                    TC2=3-TC2;
+                                    Chk = 0;
+                                else
+                                    write_table2_line(logid2,Color.Table{TC2},P(p).Name,sc{Chk+1},[],'');
+                                    emptyTable2 = false;
+                                    TC2=3-TC2;
+                                end
+                                if ~Chk
+                                    frcolor=Color.Failed;
+                                    frresult=sprintf('%s: Error retrieving data for ''%s''.',FAILED,protected(P(p).Name));
+                                else
+                                    try
+                                        if localexist(RefFile)
+                                            cmpFile=localload(RefFile);
+                                            PrevData=cmpFile.Data;
+                                        else
+                                            PrevData=[];
                                         end
-                                        if isfield(PrevData,'TRI')
-                                            PrevData.TRI = sortrows(sort(PrevData.TRI')'); %#ok<TRSRT>
-                                        end
-                                        %
-                                        DiffFound=vardiff(Data,PrevData);
-                                        addedfields = {};
-                                        if DiffFound==2
-                                            newfields=fields(Data);
-                                            oldfields=fields(PrevData);
-                                            if all(ismember(oldfields,newfields))
-                                                addedfields = setdiff(newfields,oldfields);
-                                                newData = Data;
-                                                for f = 1:length(addedfields)
-                                                    newData = rmfield(newData,addedfields{f});
-                                                end
-                                                DiffFound=vardiff(newData,PrevData)>1;
-                                                if ~DiffFound
-                                                    DiffFound = -1;
+                                        if isstruct(PrevData)
+                                            if isfield(Data,'TRI')
+                                                Data.TRI = sortrows(sort(Data.TRI')'); %#ok<TRSRT>
+                                            end
+                                            if isfield(PrevData,'TRI')
+                                                PrevData.TRI = sortrows(sort(PrevData.TRI')'); %#ok<TRSRT>
+                                            end
+                                            %
+                                            DiffFound=vardiff(Data,PrevData);
+                                            addedfields = {};
+                                            if DiffFound==2
+                                                newfields=fields(Data);
+                                                oldfields=fields(PrevData);
+                                                if all(ismember(oldfields,newfields))
+                                                    addedfields = setdiff(newfields,oldfields);
+                                                    newData = Data;
+                                                    for f = 1:length(addedfields)
+                                                        newData = rmfield(newData,addedfields{f});
+                                                    end
+                                                    DiffFound=vardiff(newData,PrevData)>1;
+                                                    if ~DiffFound
+                                                        DiffFound = -1;
+                                                    end
+                                                else
+                                                    % new data structure misses some fields
+                                                    % that were included in the old
+                                                    % (reference) data structure
+                                                    DiffFound = 1;
                                                 end
                                             else
-                                                % new data structure misses some fields
-                                                % that were included in the old
-                                                % (reference) data structure
-                                                DiffFound = 1;
+                                                newfields='';
+                                                DiffFound=DiffFound>1;
                                             end
-                                        else
-                                            newfields='';
-                                            DiffFound=DiffFound>1;
-                                        end
-                                        if DiffFound
-                                            localsave(WrkFile,Data,saveops);
-                                            write_table2_line(logid2,[],[],[],1,sc3{2-DiffFound});
-                                            emptyTable2 = false;
-                                            if ~isempty(addedfields)
-                                                write_log(logid2,'New Fields:');
-                                                write_log(logid2,addedfields);
-                                                if isequal(frcolor,Color.Success) % switch to black colour only if no real error has occurred
-                                                    frcolor=Color.Font;
+                                            if DiffFound
+                                                localsave(WrkFile,Data,saveops);
+                                                write_table2_line(logid2,[],[],[],1,sc3{2-DiffFound});
+                                                emptyTable2 = false;
+                                                if ~isempty(addedfields)
+                                                    write_log(logid2,'New Fields:');
+                                                    write_log(logid2,addedfields);
+                                                    if isequal(frcolor,Color.Success) % switch to black colour only if no real error has occurred
+                                                        frcolor=Color.Font;
+                                                    end
+                                                    if DiffFound>0
+                                                        write_log(logid2,'');
+                                                    end
                                                 end
                                                 if DiffFound>0
-                                                    write_log(logid2,'');
+                                                    if ~isempty(addedfields)
+                                                        vardiff(newData,PrevData,logid2,log_style,'Current Data','Reference Data');
+                                                    else
+                                                        vardiff(Data,PrevData,logid2,log_style,'Current Data','Reference Data');
+                                                    end
+                                                    frcolor=Color.Failed;
                                                 end
-                                            end
-                                            if DiffFound>0
-                                                if ~isempty(addedfields)
-                                                    vardiff(newData,PrevData,logid2,log_style,'Current Data','Reference Data');
-                                                else
-                                                    vardiff(Data,PrevData,logid2,log_style,'Current Data','Reference Data');
+                                                write_table2_line(logid2,[],[],[],2,'');
+                                                ChkOK = DiffFound<=0;
+                                                if ~ChkOK
+                                                    frresult=sprintf('%s: Data changed for ''%s''.',FAILED,protected(P(p).Name));
                                                 end
-                                                frcolor=Color.Failed;
+                                                localsave([PName,'.mat'],Data,saveops);
+                                            else
+                                                write_table2_line(logid2,[],[],[],sc{2-DiffFound},'');
+                                                emptyTable2 = false;
                                             end
-                                            write_table2_line(logid2,[],[],[],2,'');
-                                            ChkOK = DiffFound<=0;
-                                            if ~ChkOK
-                                                frresult=sprintf('%s: Data changed for ''%s''.',FAILED,protected(P(p).Name));
-                                            end
-                                            localsave([PName,'.mat'],Data,saveops);
                                         else
-                                            write_table2_line(logid2,[],[],[],sc{2-DiffFound},'');
+                                            localsave(RefFile,Data,saveops);
+                                            write_table2_line(logid2,[],[],[],CREATED,'');
                                             emptyTable2 = false;
+                                            if isequal(frresult,PASSED)
+                                                frcolor=Color.Font;
+                                                frresult=CREATED;
+                                            end
                                         end
-                                    else
-                                        localsave(RefFile,Data,saveops);
-                                        write_table2_line(logid2,[],[],[],CREATED,'');
+                                    catch Crash
+                                        frcolor=Color.Failed;
+                                        frresult=sprintf('%s: Error checking one or more data fields.',FAILED);
+                                        write_table2_line(logid2,[],[],[],sc{1},color_write(protected(Crash.message),Color.Failed));
                                         emptyTable2 = false;
-                                        if isequal(frresult,PASSED)
-                                            frcolor=Color.Font;
-                                            frresult=CREATED;
-                                        end
+                                        Crash = [];
                                     end
-                                catch Crash
-                                    frcolor=Color.Failed;
-                                    frresult=sprintf('%s: Error checking one or more data fields.',FAILED);
-                                    write_table2_line(logid2,[],[],[],sc{1},color_write(protected(Crash.message),Color.Failed));
-                                    emptyTable2 = false;
-                                    Crash = [];
                                 end
                             end
+                        else
+                            write_table_rule(logid2,Color)
                         end
-                    else
-                        write_table_rule(logid2,Color)
+                        flush(logid2)
                     end
-                    flush(logid2)
+                catch e
+                    % no good example yet ...
                 end
                 write_end_table(logid2,emptyTable2);
                 drawnow
@@ -873,13 +877,13 @@ qp_settings('boundingbox',DefFigProp.boundingbox)
 
 
 function str = protected(str)
-switch log_style
-    case 'latex'
-        if iscell(str)
-            for i = 1:numel(str)
-                str{i} = protected(str{i});
-            end
-        else
+if iscell(str)
+    for i = 1:numel(str)
+        str{i} = protected(str{i});
+    end
+else
+    switch log_style
+        case 'latex'
             str = strrep(str,'\','\char`\\');
             str = strrep(str,'_','\_');
             str = strrep(str,'#','\#');
@@ -888,7 +892,13 @@ switch log_style
             str = strrep(str,'%','\%');
             str = strrep(str,'^','\^');
             str = strrep(str,'³','$^3$');
-        end
+        otherwise
+            str = strrep(str,'&','&#38;'); % &amp;
+            str = strrep(str,'<','&#60;'); % &lt;
+            str = strrep(str,'>','&#62;'); % &gt;
+            str = strrep(str,'"','&#34;'); % &quot;
+            str = strrep(str,'''','&#39;'); % &apos;
+    end
 end
 
 
@@ -1111,9 +1121,9 @@ switch log_style
                 fprintf(logid,'<td>%s</td><td>%s</td></tr>\n',Compare,Message);
             end
         elseif ~ischar(Compare)
-            fprintf(logid,'<tr bgcolor=%s><td>%s</td><td>%s</td>',bgcolor,Name,Read);
+            fprintf(logid,'<tr bgcolor=%s><td>%s</td><td>%s</td>',bgcolor,protected(Name),Read);
         else
-            fprintf(logid,'<tr bgcolor=%s><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n',bgcolor,Name,Read,Compare,Message);
+            fprintf(logid,'<tr bgcolor=%s><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n',bgcolor,protected(Name),Read,Compare,Message);
         end
 end
 
@@ -1164,6 +1174,8 @@ switch log_style
         fprintf(logid,'\\begin{Verbatim}[frame=single, framesep=5pt]\n');
         fprintf(logid,'%s\n',C{:});
         fprintf(logid,'\\end{Verbatim}\n');
+    otherwise
+        fprintf(logid,'%s<br>\n',C{:});
 end
 
 
@@ -1243,7 +1255,7 @@ switch log_style
         if bold
             str = sprintf('<font color=%s><b>%s</b></font>',color,str);
         else
-            str = sprintf('<font color=%s>%</font>',color,str);
+            str = sprintf('<font color=%s>%s</font>',color,str);
         end
 end
 
@@ -1286,7 +1298,7 @@ switch log_style
     case 'latex'
         fprintf(logid,'\\hline\n');
     otherwise
-        fprintf(logid,'<tr><td colspan=3 bgcolor=%s></td></tr>\n',Color.Titlebar);
+        fprintf(logid,'<tr><td colspan=4 bgcolor=%s></td></tr>\n',Color.Titlebar);
 end
 
 

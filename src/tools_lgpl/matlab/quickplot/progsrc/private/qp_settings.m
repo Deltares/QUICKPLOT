@@ -57,16 +57,19 @@ end
 if nargout==1
     % retrieve value
     if length(param)>6 && strcmpi(param(end-5:end),'string')
-        cmd='getstring';
+        cmd='cgetstring';
     else
-        cmd='get';
+        cmd='cget';
     end
-    valo=inifile(cmd,Settings,grp,param,{});
-    if iscell(valo) && (nargin==1 || ~iscell(val))
-        if nargin==1
-            val={};
-        end
-        valo=qp_settings_default(param,val);
+    if nargin>1
+        dval = val;
+    else
+        dval = {};
+    end
+    dval = qp_settings_default(param, dval);
+    valo = inifile(cmd, Settings, grp, param, dval);
+    if length(valo)==1
+        valo = valo{1};
     end
 elseif isequal(param,'<SAVE>')
     Settings=qp_write_settings(Settings,qppref);

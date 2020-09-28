@@ -271,8 +271,8 @@ for ifld = 1:nchp
             blockprocessed(ifld) = true;
         case 'action'
             blockprocessed(ifld) = true;
-            chp{ifld,1} = inifile('get',ini_info,ifld,'time_op','ident');
-            chp{ifld,2} = inifile('get',ini_info,ifld,'include',{});
+            chp{ifld,1} = inifile('getstring',ini_info,ifld,'time_op','ident');
+            [chp{ifld,2},ifldout] = inifile('cgetstring',ini_info,ifld,'include'); % ifldout needed to avoid error when no 'include' statement is found
             [chp{ifld,3},chp{ifld,2}] = filter_qnt(chp{ifld,2},waq_qnt,flw_qnt);
             info = [];
             info.prctl  = inifile('get',ini_info,ifld,'percentile',-999);
@@ -282,8 +282,8 @@ for ifld = 1:nchp
             info.tshift = inifile('get',ini_info,ifld,'tshift',NaN);
             info.ntskip = inifile('get',ini_info,ifld,'skipstep',ntskip);
             info.layer  = inifile('get',ini_info,ifld,'layer',layer);
-            info.ldepth = inifile('get',ini_info,ifld,'localdepth','LocalDepth');
-            info.ogrid  = inifile('get',ini_info,ifld,'outputgrid','');
+            info.ldepth = inifile('getstring',ini_info,ifld,'localdepth','LocalDepth');
+            info.ogrid  = inifile('getstring',ini_info,ifld,'outputgrid','');
             if ischar(info.layer)
                 switch info.layer
                     case 'depth average'
