@@ -900,6 +900,7 @@ for ifld = 1:nchp
                         case 'arcgrid'
                             FD = raster_info;
                             FD.Data = data';
+                            FD.Comment = [];
                             arcgrid('write',FD,[filename '.asc']);
                     end
                     idataset = idataset+1;
