@@ -870,14 +870,24 @@ for f=1:ntim
                             [xy,cLabels,cv] = process_polygons(xy,fc,cv,minmax);
                             %
                             featureLabels = {};
+                            remove = false(size(xy));
                             for i = length(xy):-1:1
                                 if isnan(cv(i,1))
-                                    featureLabels{i} = sprintf('values smaller than %g',cv(i,2));
+                                    if isnan(cv(i,2))
+                                        remove(i) = true;
+                                    else
+                                        featureLabels{i} = sprintf('values smaller than %g',cv(i,2));
+                                    end
                                 elseif isnan(cv(i,2))
                                     featureLabels{i} = sprintf('values larger than %g',cv(i,1));
                                 else
                                     featureLabels{i} = sprintf('values between %g and %g',cv(i,:));
                                 end
+                            end
+                            if any(remove)
+                                xy(remove) = [];
+                                cv(remove,:) = [];
+                                featureLabels(remove) = [];
                             end
                             switch expType
                                 case 'arcview shape'
