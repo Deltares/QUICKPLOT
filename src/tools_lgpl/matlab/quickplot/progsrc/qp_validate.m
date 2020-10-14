@@ -34,7 +34,7 @@ function qp_validate(varargin)
 log_style('latex')
 baseini='validation.ini';
 val_dir = '';
-openlog = true;
+finish = 'openlog';
 extra_files = {'summary','failed_cases','all_cases'};
 sametype('');
 
@@ -44,7 +44,17 @@ while i<nargin
     switch lower(varargin{i})
         case 'openlog'
             i = i+1;
-            openlog = varargin{i};
+            if varargin{i}
+                finish = 'openlog';
+            else
+                finish = 'none';
+            end
+        case 'finish'
+            i = i+1;
+            switch lower(varargin{i});
+                case {'openlog','none','buildpdf'}
+                    finish = lower(varargin{i});
+            end
         case {'latex','html'}
             log_style(lower(varargin{i}))
         otherwise
@@ -856,16 +866,17 @@ fclose('all');
 if AnyFail
     ui_message('error','Testbank failed on %i out of %i cases! Check log file.\n',NFailed,NTested)
     %
-    if openlog
-        if matlabversionnumber>5
-            ops={'-browser'};
-        else
-            ops={};
-        end
-        try
-            web(full_ln,ops{:});
-        catch
-        end
+    switch finish
+        case 'openlog'
+            if matlabversionnumber>5
+                ops={'-browser'};
+            else
+                ops={};
+            end
+            try
+                web(full_ln,ops{:});
+            catch
+            end
     end
 else
     ui_message('','Testbank completed successfully (%i cases).\n',NTested)
@@ -874,6 +885,29 @@ qp_settings('defaultfigure',DefFigProp.defaultfigure)
 qp_settings('defaultfigurecolor',DefFigProp.defaultfigurecolor)
 qp_settings('defaultaxescolor',DefFigProp.defaultaxescolor)
 qp_settings('boundingbox',DefFigProp.boundingbox)
+switch finish
+    case 'buildpdf'
+        try
+            ui_message('','Building PDF of validation report.')
+            cd(val_dir);
+            pdflatex = '"C:\Program Files\MiKTeX 2.9\miktex\bin\x64\pdflatex"';
+            ui_message('','Build iteration 1 of 2.')
+            [status,result] = system([pdflatex,' ',logname]);
+            if status==0
+                ui_message('','Build iteration 2 of 2.')
+                [status,result] = system([pdflatex,' ',logname]);
+            end
+            if status ~= 0
+                ui_message('error',result)
+            else
+                ui_message('','PDF file created.')
+            end
+        catch Ex
+            ui_message('error',e)
+            qp_error('Catch while building PDF of validation report:',Ex,'qp_validate')
+        end
+        cd(currdir)
+end
 
 
 function str = protected(str)
