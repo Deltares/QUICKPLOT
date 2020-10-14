@@ -449,11 +449,15 @@ else
     grp = [];
 end
 if isempty(grp)
-    if CellOutput
-        val = {};
+    if nargin>=5
+        if CellOutput
+            val = {def};
+        else
+            val = def;
+        end
         return
-    elseif nargin>=5
-        val = def;
+    elseif CellOutput
+        val = {};
         return
     end
     error('Chapter ''%s'' does not exist',var2str(grpS))
@@ -486,7 +490,7 @@ vgrp = iGRP(key);
 %
 if nargin >= 5
     mgrp = grp(~ismember(grp,vgrp));
-    val = repmat({def},size(vgrp) + [length(mgrp) 0]);
+    val = repmat({def},[numel(vgrp)+numel(mgrp) 1]);
     val(1:length(key)) = Keywords(key,2);
     iGRP = cat(1,vgrp,mgrp);
 elseif any(~ismember(grp,vgrp))
