@@ -194,6 +194,16 @@ if DataRead
 
     if Props.NVal~=0
         [val1,Chk]=vs_let(FI,Props.Group,{idx{T_}},Props.Val1,elidx,'quiet');
+        switch Props.Name
+            case {'total wave energy'}
+                ! val1 = significant wave height
+                rho = 1000;
+                g   = 9.8;
+                val1 = (1/16) * rho * g * val1.^2;
+            case {'total wave variance'}
+                ! val1 = significant wave height
+                val1 = (1/16) * val1.^2;
+        end
     end
     if ~isempty(Props.Val2)
         [val2,Chk]=vs_let(FI,Props.Group,{idx{T_}},Props.Val2,elidx,'quiet');
@@ -419,6 +429,8 @@ DataProps={'wave grid'          ''       [0 0 1 1 0]  0         0     ''       '
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'wind velocity'             'm/s'    [1 0 1 1 0]  1         2     'x'      'd'   'd'       ''      'WIND'           'WINDU'    'WINDV'    []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    'total wave energy'         'J/m^2'  [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'HSIGN'    ''         []       0
+    'total wave variance'       'm2'     [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'HSIGN'    ''         []       0
     'hsig wave height'          'm'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'HSIGN'    ''         []       0
     'hsig wave vector (mean direction)' ...
                                 'm'      [1 0 1 1 0]  1         2     'm'      'd'   'd'       ''      'map-series'     'HSIGN'    'DIR'      []       0
