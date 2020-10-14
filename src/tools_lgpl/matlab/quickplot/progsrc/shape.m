@@ -90,8 +90,8 @@ switch lower(cmd)
         Info=Local_open_shape(varargin{:});
         varargout={Info};
     case {'read'}
-        [Data,Obj]=Local_read_shape(varargin{:});
-        varargout={Data,Obj};
+        Data = Local_read_shape(varargin{:});
+        varargout = {Data};
     case {'write'}
         shapewrite(varargin{:})
     otherwise
@@ -300,23 +300,22 @@ else
 end
 
 
-function [Out,Obj]=Local_read_shape(S,shapes,datatype)
-if ~isfield(S,'FileType') || ~strcmp(S.FileType,'ESRI-Shape')
+function Out = Local_read_shape(S, shapes, datatype)
+if ~isfield(S, 'FileType') || ~strcmp(S.FileType, 'ESRI-Shape')
     error('No shape file specified.')
 end
 if isempty(shapes)
-    Out=zeros(0,2);
-    Obj=zeros(0,1);
+    Out = cell(0,1);
     return
-elseif isequal(shapes,0)
-    shapes=1:S.NShapes;
-elseif min(shapes(:))<1 || max(shapes(:))>S.NShapes || ~isequal(shapes,round(shapes))
+elseif isequal(shapes, 0)
+    shapes = 1:S.NShapes;
+elseif min(shapes(:))<1 || max(shapes(:))>S.NShapes || ~isequal(shapes, round(shapes))
     error('Invalid shape number.')
 else
-    shapes=shapes(:)'; % make sure shapes is a row vector, otherwise Matlab will do just one step in the loop!
+    shapes = shapes(:)'; % make sure shapes is a row vector, otherwise MATLAB will do just one step in the loop!
 end
 switch datatype
-    case {'point','points'}
+    case {'point', 'points'}
         fid=fopen([S.FileBase S.ShapeExt],'r','l');
         fseek(fid,S.Idx(1,shapes(1)),-1);
         TNPnt=0;
@@ -392,102 +391,94 @@ switch datatype
                     fread(fid,NrSize(2)-2,'int16');
             end
         end
-    case {'polyline','lines'}
-        fid=fopen([S.FileBase S.ShapeExt],'r','l');
-        fseek(fid,S.Idx(1,shapes(1)),-1);
-        TNPnt=0;
-        if S.ShapeTpName(end)=='z'
-            Out=repmat(NaN,S.NPnt+S.NPrt-1,3);
-        else
-            Out=repmat(NaN,S.NPnt+S.NPrt-1,2);
-        end
-        Obj=repmat(NaN,S.NPnt+S.NPrt-1,1);
-        for shp=shapes
+    case {'polyline', 'lines'}
+        fid = fopen([S.FileBase S.ShapeExt], 'r', 'l');
+        fseek(fid, S.Idx(1,shapes(1)), -1);
+        Out = cell(length(shapes), 1);
+        i = 0;
+        for shp = shapes
+            i = i + 1;
             fseek(fid,S.Idx(1,shp),-1);
             [NrSize,k]=fread(fid,2,'int32','b');
             ShapeTp=fread(fid,1,'int32');
             switch ShapeTp
                 case 0 % null shape
                     % nothing to read
+                    
                 case 1 % point
                     % x,y
-                    Out(TNPnt+1,1:2)=fread(fid,[1 2],'float64');
-                    Obj(TNPnt+1)=shp;
-                    TNPnt=TNPnt+2;
+                    Out{i} = fread(fid, [1, 2], 'float64');
+                    
                 case {3,5} % polyline, polygon
                     % box, NPrt, NPnt, {iprt}, {x,y}
-                    fread(fid,4,'float64');
-                    NPrt=fread(fid,1,'int32');
-                    NPnt=fread(fid,1,'int32');
-                    PSz=fread(fid,[1 NPrt],'int32');
-                    PSz=diff([PSz NPnt]);
-                    for p=PSz
-                        Out(TNPnt+(1:p),1:2)=fread(fid,[2 p],'float64')';
-                        Obj(TNPnt+(1:p))=shp;
-                        TNPnt=TNPnt+p+1;
-                    end
+                    fread(fid, 4, 'float64');
+                    NPrt = fread(fid, 1, 'int32');
+                    NPnt = fread(fid, 1, 'int32');
+                    PSz = fread(fid, [1, NPrt], 'int32');
+                    PSz = diff([PSz, NPnt]);
+                    Data = NaN(NPnt+NPrt-1, 2);
+                    %
+                    ii = 1:(NPnt+NPrt-1);
+                    ii(cumsum(PSz(1:end-1)+1)) = [];
+                    Data(ii,:) = fread(fid, [2, NPnt], 'float64')';
+                    Out{i} = Data;
+                    
                 case 8 % multipoint
                     % box, N, {x,y}
-                    fread(fid,4,'float64');
-                    NPnt=fread(fid,1,'int32');
-                    Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
-                    Obj(TNPnt+(1:NPnt))=shp;
-                    TNPnt=TNPnt+NPnt+1;
+                    fread(fid, 4, 'float64');
+                    NPnt=fread(fid, 1, 'int32');
+                    Out{i} = fread(fid, [2, NPnt], 'float64')';
+                    
                 case {11,21} % pointz, pointm
                     % x,y,z or x,y,m
-                    Out(TNPnt+1,1:3)=fread(fid,[1 3],'float64');
-                    Obj(TNPnt+1)=shp;
-                    TNPnt=TNPnt+2;
+                    Out{i} = fread(fid, [1, 3], 'float64');
+                    
                 case {13,15,23,25} % polylinez, polygonz, polylinem, polygonm
                     % box, NPrt, NPnt, {iprt}, {x,y} zrange, {z} or mrange, {m}
-                    fread(fid,4,'float64');
-                    NPrt=fread(fid,1,'int32');
-                    NPnt=fread(fid,1,'int32');
-                    PSz=fread(fid,[1 NPrt],'int32');
-                    PSz=diff([PSz NPnt]);
-                    TNPnt0=TNPnt;
-                    for p=PSz
-                        Out(TNPnt+(1:p),1:2)=fread(fid,[2 p],'float64')';
-                        Obj(TNPnt+(1:p))=shp;
-                        TNPnt=TNPnt+p+1;
-                    end
-                    fread(fid,2,'float64');
-                    TNPnt=TNPnt0;
-                    for p=PSz
-                        Out(TNPnt+(1:p),3)=fread(fid,[p 1],'float64');
-                        TNPnt=TNPnt+p+1;
-                    end
+                    fread(fid, 4, 'float64');
+                    NPrt = fread(fid, 1, 'int32');
+                    NPnt = fread(fid,1,'int32');
+                    PSz = fread(fid,[1 NPrt],'int32');
+                    PSz = diff([PSz NPnt]);
+                    Data = NaN(NPnt+NPrt-1, 3);
+                    %
+                    ii = 1:(NPnt+NPrt-1);
+                    ii(cumsum(PSz(1:end-1)+1)) = [];
+                    Data(ii,1:2) = fread(fid, [2, NPnt], 'float64')';
+                    fread(fid, 2, 'float64');
+                    Data(ii,3) = fread(fid, [NPnt, 1], 'float64');
+                    Out{i} = Data;
+                    
                 case {18,28} % multipointz, multipointm
                     % box, N, {x,y}, zrange, {z} or mrange, {m}
-                    fread(fid,4,'float64');
-                    NPnt=fread(fid,1,'int32');
-                    Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
-                    fread(fid,2,'float64');
-                    Out(TNPnt+(1:NPnt),3)=fread(fid,[NPnt 1],'float64');
-                    Obj(TNPnt+(1:NPnt))=shp;
-                    TNPnt=TNPnt+NPnt+1;
+                    fread(fid, 4, 'float64');
+                    NPnt = fread(fid, 1, 'int32');
+                    Data = NaN(NPnt, 3);
+                    Data(:, 1:2) = fread(fid, [2, NPnt], 'float64')';
+                    fread(fid, 2, 'float64');
+                    Data(:, 3) = fread(fid, [NPnt, 1], 'float64');
+                    Out{i} = Data;
+                    
                 case 31 % multipatch
                     % box, NPrt, NPnt, {iprt}, {prttyp}, {x,y}, zrange, {z} or mrange, {m}
-                    PrtTyps={'trianglestrip','trianglefan','outerring','innerring','firstring','ring'}; % 0 -- 5
-                    fread(fid,4,'float64');
-                    NPrt=fread(fid,1,'int32');
-                    NPnt=fread(fid,1,'int32');
-                    fread(fid,[1 NPrt],'int32');
-                    fread(fid,[1 NPrt],'int32');
-                    Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
-                    fread(fid,2,'float64');
-                    Out(TNPnt+(1:NPnt),3)=fread(fid,[NPnt 1],'float64');
-                    fread(fid,2,'float64');
-                    TNPnt=TNPnt+NPnt+1;
+                    PrtTyps = {'trianglestrip','trianglefan','outerring','innerring','firstring','ring'}; % 0 -- 5
+                    fread(fid, 4, 'float64');
+                    NPrt = fread(fid, 1, 'int32');
+                    NPnt = fread(fid, 1, 'int32');
+                    fread(fid, [1, NPrt], 'int32');
+                    fread(fid, [1, NPrt], 'int32');
+                    Data = NaN(NPnt, 3);
+                    Data(:,1:2) = fread(fid, [2, NPnt], 'float64')';
+                    fread(fid, 2, 'float64');
+                    Data(:, 3) = fread(fid, [NPnt 1], 'float64');
+                    fread(fid, 2, 'float64');
+                    Out{i} = Data;
+                    
                 otherwise % skip unknown
                     fread(fid,NrSize(2)-2,'int16');
             end
         end
     otherwise
-    end
-    if TNPnt>0 && TNPnt<size(Out,1)
-        Out(TNPnt+1:end,:)=[];
-        Obj(TNPnt+1:end,:)=[];
     end
 try
     fclose(fid);

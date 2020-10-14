@@ -280,28 +280,28 @@ switch FI.FileType
     case 'ESRI-Shape'
         already_selected = 1;
         if strcmp(Props.Geom,'PNT')
-            [Data,Obj]=shape('read',FI,idx{M_},'points');
+            Data = shape('read',FI,idx{M_},'points');
         else
-            [Data,Obj]=shape('read',FI,idx{M_},'lines');
+            Data = shape('read',FI,idx{M_},'lines');
         end
         if Props.NVal>0
-            val1=dbase('read',FI.dBase,idx{M_},Props.Select);
-            val1=val1{1};
+            val1 = dbase('read',FI.dBase,idx{M_},Props.Select);
+            val1 = val1{1};
             % miss=isnan(Obj);
             % expand val1 array to match size of Obj/Data.
-            [lia,idxM] = ismember(Obj,idx{M_});
-            miss = ~lia;
-            idxM(miss) = 1;
-            val1 = val1(idxM);
-            if iscell(val1)
-                % cell array of strings
-                val1(miss)={''};
-            elseif ischar(val1)
-                % array of characters
-                val1(miss)=' ';
-            else
-                val1(miss)=NaN;
-            end
+%             [lia,idxM] = ismember(Obj,idx{M_});
+%             miss = ~lia;
+%             idxM(miss) = 1;
+%             val1 = val1(idxM);
+%             if iscell(val1)
+%                 % cell array of strings
+%                 val1(miss)={''};
+%             elseif ischar(val1)
+%                 % array of characters
+%                 val1(miss)=' ';
+%             else
+%                 val1(miss)=NaN;
+%             end
         end
     case {'DelwaqTimFile','LexYacc_TimeTable'}
         Data=repmat(NaN,sz(T_),sz(ST_)+1);
