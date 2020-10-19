@@ -622,7 +622,7 @@ while anychange && any(~identified)
     for i=i_notidentified
         j=size(table{4},1);
         Def=inifile('get',UNIT,i,'definition','');
-        Names=inifile('cgetstring',UNIT,i,'name','');
+        [Names,iChap]=inifile('cgetstring',UNIT,i,'name');
         if isempty(Names)
             identified(i)=1;
             if ~strcmpi(units{i},'general')
