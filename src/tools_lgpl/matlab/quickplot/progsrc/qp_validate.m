@@ -979,7 +979,13 @@ switch log_style
             % insert QUICKPLOT revision number into SVN revision string of the report
             fn = fopen(logid);
             [~,f,e] = fileparts(fn);
-            fprintf(logid,'%s%d%s\n',['\svnid{$Id$}']);
+            str = '$Id$';
+            if str(1) == '$'
+                dollar = '';
+            else
+                dollar = '$';
+            end
+            fprintf(logid,'%s%s%s%s%s\n','\svnid{', dollar, str, dollar, '}');
             fprintf(logid,'\n');
             fprintf(logid,'%s\n','\begin{document}');
             fprintf(logid,'%% %s\n','\pagestyle{empty}');
@@ -1562,4 +1568,12 @@ if isequal(type,previous_type)
     type = '';
 else
     previous_type = type;
+end
+
+function str = getsvnline()
+str = '$Id$';
+if str(1) == '$' % the original svn version
+    str = str(2:end-1);
+else % the distributed version
+    % str is as needed
 end
