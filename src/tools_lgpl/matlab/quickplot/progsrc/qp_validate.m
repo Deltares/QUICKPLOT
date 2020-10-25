@@ -1386,7 +1386,7 @@ switch log_style
 	fprintf(sumid,'\\item For every quantity contained in the file: read the data of the final time step, and compared with reference data.\n');
 	fprintf(sumid,'Changed data or meta data is reported as an error.\n');
 	fprintf(sumid,'\\end{itemize}\n');
-	fprintf(sumid,'All steps above are summarized in the column "Read".');
+	fprintf(sumid,'All steps above are summarized in the column "Read".\n');
 	fprintf(sumid,'While this first step guarantees that most of the reading works fine, it doesn''t check whether the plotting or exporting works properly.\n');
 	fprintf(sumid,'Therefore the testing continues ...\n\n');
 	
@@ -1429,10 +1429,10 @@ switch log_style
         else
             fprintf(sumid,'The overall time spent on the test cases has decreased by about %.0f \\%% from %s to %s;',(1-TotTime/TotTimeRef)*100,dTTR,dTT);
         end
-        if NSlower>0
-            fprintf(sumid,' %i test cases were slower than before, the other %i test cases had similar or better timing than before.\n',NSlower,NTested-NSlower);
-        elseif NSlower==NTested
+        if NSlower==NTested
             fprintf(sumid,' all test cases had slower timing than before.\n');
+        elseif NSlower>0
+            fprintf(sumid,' %i test cases were slower than before, the other %i test cases had similar or better timing than before.\n',NSlower,NTested-NSlower);
         else
             fprintf(sumid,' all test cases had similar or better timing than before.\n');
         end
