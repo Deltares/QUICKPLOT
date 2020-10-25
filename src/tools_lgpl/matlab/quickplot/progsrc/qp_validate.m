@@ -1377,15 +1377,43 @@ switch log_style
     case 'latex'
         sumid = extlog.summary.fid;
         fprintf(sumid,'This document reports on the regression testing of QUICKPLOT.\n');
+        fprintf(sumid,'Each test consists of the following steps:.\n');
+	fprintf(sumid,'\\begin{itemize}\n');
+	fprintf(sumid,'\\item Opening the data file.\n');
+	fprintf(sumid,'Read failure is reported as an error.\n');
+	fprintf(sumid,'\\item Determining the quantities contained in the file, and compare this against the reference content.\n');
+	fprintf(sumid,'Missing quantities and changed meta data are reported as errors.\n');
+	fprintf(sumid,'\\item For every quantity contained in the file: read the data of the final time step, and compared with reference data.\n');
+	fprintf(sumid,'Changed data or meta data is reported as an error.\n');
+	fprintf(sumid,'\\end{itemize}\n');
+	fprintf(sumid,'All steps above are summarized in the column "Read".');
+	fprintf(sumid,'While this first step guarantees that most of the reading works fine, it doesn''t check whether the plotting or exporting works properly.\n');
+	fprintf(sumid,'Therefore the testing continues ...\n\n');
+	
+	fprintf(sumid,'\\begin{itemize}\n');
+	fprintf(sumid,'\\item For most files a script is executed that triggers various variable selection, plotting, and data export options.\n');
+	fprintf(sumid,'\\end{itemize}\n');
+	fprintf(sumid,'All execution errors and changes in the created (data or figure) files will be reported as errors (missing data files are currently not reported as error, but are typically the result of a reported execution error).\n');
+	fprintf(sumid,'See the report per file for a listing of the script executed and the resulting data tested.\n');
+	fprintf(sumid,'The result of this step is reported in the column "Script".\n');
+	fprintf(sumid,'The graphics part of this second step is more sensitive to hardware changes.\n');
+	fprintf(sumid,'A change in screen resolution may, for instance, trigger slight changes in the figures created and hence many tests to fail; therefore, consistent testing hardware is required for this step.\n\n');
+	
+        fprintf(sumid,'The reported timing results compare the timing of the new run against the timing of a reference run.\n');
+        fprintf(sumid,'The reference timing is not updated, so the overall performance does not necessarily improve with each "faster than before" release.\n');
+        fprintf(sumid,'Depending on the other (background) processes running the timing of tests may vary substantially: repeating the same test will result in slightly different timing results (some tests will become faster while other tests will become slower) -- so we typically don''t look at the individual numbers.\n');
+        fprintf(sumid,'This also means that you won''t be able to match the reported performance under normal working circumstances with many other programs opened.\n\n');
+
         if NFailed==0
             fprintf(sumid,'The software was successfully run on %d cases; none of them failed.\n',NTested);
+        elseif NFailed==1
+            fprintf(sumid,'The software was run on %d cases of which 1 case failed.\n',NTested);
+            fprintf(sumid,'The failed case is shown in Table \\ref{Tab:FailedSummary}.\n');
         else
             fprintf(sumid,'The software was run on %d cases of which %d cases failed.\n',NTested,NFailed);
-        end
-        %
-        if NFailed>0
             fprintf(sumid,'The failed cases are summarized in Table \\ref{Tab:FailedSummary}.\n');
         end
+        %
         if NTested>0
             fprintf(sumid,'All tested cases are reported in Table \\ref{Tab:Summary}.\n');
         else
