@@ -265,9 +265,14 @@ while ~feof(fid)
             Info.Table(i).Parameter(NPar).Unit=remainder;
             %
             if strcmp(Info.Table(i).Parameter(NPar).Name,'time')
-                Time = sscanf(remainder,'%s since %d-%d-%d %d:%d:%d');
-                Info.Table(i).ReferenceTime = [[10000 100 1]*Time(end-5:end-3) [10000 100 1]*Time(end-2:end)];
-                Info.Table(i).TimeUnit = char(Time(1:end-6))';
+                [Info.Table(i).TimeUnit, remainder] = strtok(remainder);
+                Time = sscanf(remainder,' since %d-%d-%d %d:%d:%d');
+                if length(Time) >= 3
+                    Time(7) = 0;
+                    Info.Table(i).ReferenceTime = [[10000 100 1]*Time(1:3) [10000 100 1]*Time(4:6)];
+                else
+                    error(['Unable to determine reference time from ' Info.Table(i).Parameter(NPar).Unit])
+                end
             end
     end
 end
