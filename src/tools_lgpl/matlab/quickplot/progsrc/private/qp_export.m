@@ -1,4 +1,4 @@
-function filename=qp_export(ExpType,filenm1,DataState)
+function cmdargs = qp_export(ExpType,DataState,cmdargs)
 %QP_EXPORT Export data set from a QuickPlot support data source.
 
 %----- LGPL --------------------------------------------------------------------
@@ -40,7 +40,6 @@ elseif ~isempty(savedir)
     end
 end
 T_=1; ST_=2; M_=3; N_=4; K_=5;
-filename=filenm1;
 scalar=1;
 
 FileInfo=DataState.FI;
@@ -81,9 +80,11 @@ switch expType
         % assumptions: 2D, one timestep
         ext='grd';
     case {'netcdf3 file'}
-        ext='nc';
+        ext={'*.nc' 'Generic netCDF file (*.nc)'
+            '*_net.nc' 'D-Flow FM grid file (*_net.nc)'};
     case {'netcdf4 file'}
-        ext='nc';
+        ext={'*.nc' 'Generic netCDF file (*.nc)'
+            '*_net.nc' 'D-Flow FM grid file (*_net.nc)'};
     case {'quickin file','morsys field file','delft3d-mor field file','box file','simona box file'}
         % assumptions: 2D, one timestep
         % morsys field file: NVal=1
@@ -100,8 +101,8 @@ switch expType
     case 'landboundary file'
         ext='ldb';
     case 'tecplot file'
-        ext={'*.plt' 'Binary Tecplot File'
-            '*.dat' 'ASCII Tecplot File'};
+        ext={'*.plt' 'Binary Tecplot File (*.plt)'
+            '*.dat' 'ASCII Tecplot File (*.dat)'};
     case {'arcview shape', 'geojson file'}
         % assumptions: 2D, one timestep
         switch expType
@@ -145,28 +146,52 @@ switch expType
         end
     otherwise
         ui_message('warning','Export type %s not implemented.',ExpType);
-        filename='';
+        cmdargs={};
         return
 end
 
+if isempty(cmdargs)
+    filename = '';
+else
+    filename = cmdargs{1};
+end
 if isempty(filename)
     BaseName = Props.Name;
     BaseName = str2file(BaseName);
     if iscell(ext)
-        [f,p] = uiputfile(ext, 'Save As', [savedir BaseName]);
+        filename = [savedir BaseName];
+        while 1
+            [f,p,i] = uiputfile(ext, 'Save As', filename);
+            if ~ischar(f)
+                break
+            end
+            filename = [p,f];
+            if ~wildstrmatch(ext{i,1},f)
+                question = sprintf('The specified file name doesn''t match the typical file name filter (%s). Are you sure to use the name: %s?', ext{i,1}, f);
+                answer = questdlg(question,'Please confirm ...','Yes','No','Yes');
+                if strcmp(answer, 'Yes')
+                    break
+                end
+            else
+                break
+            end
+        end
+        cmdargs{2} = ext{i,2};
     else
         [f,p] = uiputfile([savedir BaseName '.' ext], 'Save As');
     end
     if ~ischar(f)
+        cmdargs={};
         return
     end
-    filename=[p f];
+    filename=[p,f];
 end
 [p,f,e]=fileparts(filename);
 savedir=p;
-if isempty(e)
+if isempty(e) && ischar(ext)
     filename=cat(2,filename,'.',ext);
 end
+cmdargs{1} = filename;
 
 SelTim='*';
 HasTime = Props.DimFlag(T_);
@@ -250,7 +275,7 @@ for f=1:ntim
     end
     
     if ~Chk
-        filename='';
+        cmdargs={};
         return
     end
     componentof='';
@@ -294,7 +319,7 @@ for f=1:ntim
         flds={};
         vars{1,end+1}='x coordinate';
         crds{1}='X';
-        ypres=isfield(data,'Y');
+        ypres=isfield(data,'Y') || isfield(data,'XY');
         if ypres
             crds{1,end+1}='Y';
             vars{1,end+1}='y coordinate';
@@ -518,7 +543,7 @@ for f=1:ntim
                     wlgrid('writeold',filename,G);
             end
         case {'netcdf3 file','netcdf4 file'}
-            export_netcdf(filename,expType,data)
+            export_netcdf(expType,data,cmdargs{:})
         case {'quickin file','morsys field file','delft3d-mor field file','box file','simona box file'}
             for fld=1:length(flds)
                 Temp=getfield(data,flds{fld});
@@ -542,40 +567,48 @@ for f=1:ntim
             for i = 1:nVar
                 cmnt{i} = sprintf('column %i = %s',i,vars{i});
             end
-            if isfield(data,'XDam')
-                [x,y] = thindam(data.X,data.Y,data.XDam,data.YDam);
-                expdata = [x y];
+            if isfield(data,'XY')
+                for i = 1:length(data.XY)
+                    xx.Field(i).Comments=cmnt;
+                    xx.Field(i).Name=sprintf('F%3.3i',i);
+                    xx.Field(i).Data=data.XY{i};
+                end
             else
-                expdata=zeros([size(data.X) nVar]);
-                dims(1:ndims(data.X))={':'};
-                locflds=cat(2,crds,flds);
-                for fld=1:length(locflds)
-                    expdata(dims{:},fld)=getfield(data,locflds{fld});
+                if isfield(data,'XDam')
+                    [x,y] = thindam(data.X,data.Y,data.XDam,data.YDam);
+                    expdata = [x, y];
+                else
+                    expdata=zeros([size(data.X), nVar]);
+                    dims(1:ndims(data.X))={':'};
+                    locflds=cat(2,crds,flds);
+                    for fld=1:length(locflds)
+                        expdata(dims{:},fld)=getfield(data,locflds{fld});
+                    end
+                    switch expType
+                        case 'spline'
+                            expdata=squeeze(expdata);
+                            expdata=expdata(:,1:2); % don't write data or z coordinates ro spline file
+                            %
+                            % the following line initially made sense when skipping
+                            % over small gaps in grid lines, but it doesn't work in
+                            % the cases of (a) big gaps in grid lines and (b) lines
+                            % from shape files.
+                            %
+                            %expdata(any(isnan(expdata),2),:)=[];
+                        case 'landboundary file'
+                            expdata=squeeze(expdata);
+                            expdata(any(isnan(expdata(:,1:2)),2),:)=999.999;
+                        otherwise
+                            expdata(isnan(expdata))=-999;
+                    end
                 end
-                switch expType
-                    case 'spline'
-                        expdata=squeeze(expdata);
-                        expdata=expdata(:,1:2); % don't write data or z coordinates ro spline file
-                        %
-                        % the following line initially made sense when skipping
-                        % over small gaps in grid lines, but it doesn't work in
-                        % the cases of (a) big gaps in grid lines and (b) lines
-                        % from shape files.
-                        %
-                        %expdata(any(isnan(expdata),2),:)=[];
-                    case 'landboundary file'
-                        expdata=squeeze(expdata);
-                        expdata(any(isnan(expdata(:,1:2)),2),:)=999.999;
-                    otherwise
-                        expdata(isnan(expdata))=-999;
+                if isfield(data,'Time') && ~isempty(data.Time) && ~isnan(data.Time)
+                    cmnt={sprintf('time     = %s',datestr(data.Time,0)),cmnt{:}};
                 end
+                xx.Field(f).Comments=cmnt;
+                xx.Field(f).Name=sprintf('F%3.3i',f);
+                xx.Field(f).Data=expdata;
             end
-            if isfield(data,'Time') && ~isempty(data.Time) && ~isnan(data.Time)
-                cmnt={sprintf('time     = %s',datestr(data.Time,0)),cmnt{:}};
-            end
-            xx.Field(f).Comments=cmnt;
-            xx.Field(f).Name=sprintf('F%3.3i',f);
-            xx.Field(f).Data=expdata;
             if lastfield
                 if strcmp(expType,'spline')
                     landboundary('write',filename,{xx.Field.Data},'dosplit','-1','format','S%3.3i');
@@ -1081,7 +1114,12 @@ for f=1:ntim
     end
 end
 
-function export_netcdf(filename,expType,data)
+function export_netcdf(expType,data,filename,varargin)
+if nargin>3 && strcmp(varargin{1},'D-Flow FM grid file (*_net.nc)')
+    writeNetFile = true;
+else
+    writeNetFile = false;
+end
 mode = netcdf.getConstant('CLOBBER');
 switch expType
     case 'netcdf4 file'
@@ -1101,6 +1139,10 @@ try
         %
         if isfield(DATA,'FaceNodeConnect')
             % save as UGRID
+            % EdgeNodeConnect is required for a D-Flow FM mesh or network file
+            if writeNetFile && ~isfield(DATA,'EdgeNodeConnect')
+                DATA.EdgeNodeConnect = fnc2enc(DATA.FaceNodeConnect);
+            end
             nNodes = [prefix 'nNodes'];
             nEdges = [prefix 'nEdges'];
             nFaces = [prefix 'nFaces'];
@@ -1113,7 +1155,7 @@ try
                 dim_2 = netcdf.defDim(ncid,'TWO',2);
             end
             %
-            X = [prefix 'X'];
+            X = [prefix 'NodeX'];
             var_X = netcdf.defVar(ncid,X,'double',dim_nNodes);
             if isfield(DATA,'XUnits') && strcmp(DATA.XUnits,'deg')
                 netcdf.putAtt(ncid,var_X,'standard_name','longitude')
@@ -1125,7 +1167,7 @@ try
                 end
             end
             %
-            Y = [prefix 'Y'];
+            Y = [prefix 'NodeY'];
             var_Y = netcdf.defVar(ncid,Y,'double',dim_nNodes);
             if isfield(DATA,'YUnits') && strcmp(DATA.YUnits,'deg')
                 netcdf.putAtt(ncid,var_Y,'standard_name','latitude');
