@@ -239,6 +239,23 @@ elseif isstruct(s1) || isobject(s1)
     nf=length(fn1);
     [sfn1,i1] = sort(fn1);
     [sfn2,i2] = sort(fn2);
+    if ~isequal(fn1,fn2) && ~isequal(sfn1,sfn2) % fieldnames the same?
+        DiffFound=1;
+        printdiff(fid,br,'fieldnames',fn1,fn2,substr);
+        rfn1 = setdiff(fn1,fn2);
+        rfn2 = setdiff(fn2,fn1);
+        s1 = rmfield(s1,rfn1);
+        s2 = rmfield(s2,rfn2);
+        if fid == 0
+            return
+        end
+        myfprintf(fid,'Checking other fields ...\n')
+        fn1=fieldnames(s1);
+        fn2=fieldnames(s2);
+        nf=length(fn1);
+        [sfn1,i1] = sort(fn1);
+        [sfn2,i2] = sort(fn2);
+    end
     if ~isequal(fn1,fn2) && isequal(sfn1,sfn2)
         s1=struct2cell(s1);
         s2=struct2cell(s2);
@@ -246,10 +263,6 @@ elseif isstruct(s1) || isobject(s1)
         s2 = s2(i2,:);
         fields = sfn1;
         printdiff(fid,br,'fieldnames',fn1,fn2,substr);
-    elseif ~isequal(fn1,fn2)  % fieldnames the same?
-        DiffFound=1;
-        printdiff(fid,br,'fieldnames',fn1,fn2,substr);
-        return
     else
         s1=struct2cell(s1);
         s2=struct2cell(s2);
@@ -269,6 +282,7 @@ elseif isstruct(s1) || isobject(s1)
         if ~isequal(s1{i},s2{i})
             Diff=detailedcheck(s1{i},s2{i},fid,formatflag,br,Nsubstr);
             if Diff
+                Diff = Diff+1;
                 if ~DiffFound
                     DiffFound=Diff;
                 else
@@ -276,9 +290,6 @@ elseif isstruct(s1) || isobject(s1)
                 end
             end
         end
-    end
-    if DiffFound
-        DiffFound=DiffFound+1;
     end
 else  % some numeric type of equal size
     if isempty(s1)  % same size, numeric, empty -> no difference
