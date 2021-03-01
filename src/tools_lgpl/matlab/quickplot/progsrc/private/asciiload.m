@@ -227,16 +227,10 @@ while ~feof(fid)
                     values=cat(2,values,values2);
                 end
             else
-                % --- end of "obsolete code" ---
-                %
                 spaces=repmat(' ',1,cni);
                 fclose(fid);
                 error('Unknown text on line number %i of ASCII file %s:\n%s\n%s^',i,filename,txt,spaces)
-                %
-                % --- begin of "obsolete code" ---
             end
-            % --- end of "obsolete code" ---
-            %
         end
     end
     if prevcomma
