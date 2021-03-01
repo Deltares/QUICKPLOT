@@ -890,7 +890,7 @@ switch finish
         try
             ui_message('','Building PDF of validation report.')
             cd(val_dir);
-            pdflatex = '"C:\Program Files\MiKTeX 2.9\miktex\bin\x64\pdflatex"';
+            pdflatex = '"C:\Program Files\MiKTeX\miktex\bin\x64\pdflatex"';
             ui_message('','Build iteration 1 of 2.')
             [status,result] = system([pdflatex,' ',logname]);
             if status==0
