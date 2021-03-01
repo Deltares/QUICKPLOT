@@ -356,7 +356,8 @@ end
 
 if strcmp(Ops.presentationtype,'vector') || ...
         strcmp(Ops.presentationtype,'markers') || ...
-        strcmp(Ops.presentationtype,'values')
+        strcmp(Ops.presentationtype,'values') || ...
+        strcmp(Ops.presentationtype,'labels')
     % data = geom2pnt(data);
     for i = length(data):-1:1
         if isfield(data,'ValLocation')
@@ -378,7 +379,7 @@ if strcmp(Ops.presentationtype,'vector') || ...
                             data(i).Y(j) = data(i).XY{j}(2);
                         else
                             d = pathdistance(data(i).XY{j}(:,1),data(i).XY{j}(:,2));
-                            uNode = d~=[NaN;d(1:end-1)];
+                            uNode = d~=[-1;d(1:end-1)] & ~isnan(d);
                             XY = interp1(d(uNode),data(i).XY{j}(uNode,1:2),d(end)/2);
                             data(i).X(j) = XY(1);
                             data(i).Y(j) = XY(2);
@@ -395,9 +396,18 @@ if strcmp(Ops.presentationtype,'vector') || ...
                 if isfield(data,'Geom') && strcmp(data(i).Geom,'sQUAD')
                     data(i).EdgeNodeConnect = [1:length(data(i).X)-1;2:length(data(i).X)]';
                 end
-                data(i).X = mean(shaped_subsref(data(i).X,data(i).EdgeNodeConnect),2);
-                if isfield(data,'Y')
-                    data(i).Y = mean(shaped_subsref(data(i).Y,data(i).EdgeNodeConnect),2);
+                if isfield(data,'EdgeGeometry') && ~isempty(data(i).EdgeGeometry)
+                    if isfield(data, 'XUnits')
+                        Units = data.XUnits;
+                    else
+                        Units = '';
+                    end
+                    [data(i).X, data(i).Y] = geometry_midpoints(data(i).EdgeGeometry, Units);
+                else
+                    data(i).X = mean(shaped_subsref(data(i).X,data(i).EdgeNodeConnect),2);
+                    if isfield(data,'Y')
+                        data(i).Y = mean(shaped_subsref(data(i).Y,data(i).EdgeNodeConnect),2);
+                    end
                 end
             case 'FACE'
                 FNC = data(i).FaceNodeConnect;
@@ -415,7 +425,7 @@ if strcmp(Ops.presentationtype,'vector') || ...
         end
         data(i).Geom = 'sSEG';
     end
-    for c = {'FaceNodeConnect','EdgeNodeConnect','ValLocation','SEG','XY'}
+    for c = {'FaceNodeConnect','EdgeNodeConnect','ValLocation','SEG','XY','EdgeGeometry'}
         s = c{1};
         if isfield(data,s)
             data = rmfield(data,s);
@@ -1378,3 +1388,20 @@ function y = shaped_subsref(x,ind)
 % are vectors. In that case x(ind) is a similar (row or column) vector as
 % x. This function reshapes it to the shape of ind.
 y = reshape(x(ind),size(ind));
+
+
+function [x, y] = geometry_midpoints(EdgeGeometry, Units)
+X = EdgeGeometry.X;
+Y = EdgeGeometry.Y;
+x = zeros(size(X));
+y = zeros(size(X));
+for i = 1:numel(X)
+    xg = X{i};
+    yg = Y{i};
+    d = pathdistance(xg, yg, Units);
+    dmid = d(end)/2;
+    j = sum(d<dmid);
+    fac = (dmid - d(j)) / (d(j+1) - d(j));
+    x(i) = xg(j) + fac * (xg(j+1) - xg(j));
+    y(i) = yg(j) + fac * (yg(j+1) - yg(j));
+end

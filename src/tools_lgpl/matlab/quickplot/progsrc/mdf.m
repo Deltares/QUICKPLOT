@@ -1015,10 +1015,12 @@ if ~isempty(mshname)
     mshname = relpath(md_path,mshname);
     [F,Q] = getmesh(mshname);
     MF.mesh.nc_file = F;
-    MF.mesh.quant = Q(([Q.NVal]==0 & ~strcmp({Q.Name},'-------') & [Q.UseGrid]~=0) | [Q.NVal]==4);
+    imeshquant = find(([Q.NVal]==0 & ~strcmp({Q.Name},'-------') & [Q.UseGrid]~=0) | [Q.NVal]==4);
+    MF.mesh.quant = Q(imeshquant);
     % meshes are the fields with "mesh" in their name (Topology data of ?D mesh) and NVal == 0
     nQuant = numel(Q);
-    MF.mesh.meshes = find([Q.UseGrid]==1:nQuant & [Q.NVal]==0);
+    imesh = find([Q.UseGrid]==1:nQuant & [Q.NVal]==0 & cellfun(@(x)~isempty(strfind(x,'mesh')),{Q.Name}));
+    [~,MF.mesh.meshes] = ismember(imesh,imeshquant);
     %
     FirstPoint = netcdffil(F,1,Q(1),'grid',1);
     MF.mesh.XYUnits = FirstPoint.XUnits;
@@ -1499,7 +1501,15 @@ end
 lstsci = salin + tempa + secfl + consti;
 nturb  = 0;
 if mnkmax(3)>1
-    %TODO: determine number of turbulent state variables
+    TURB = propget(MF.mdf,'','Tkemod','Algebraic');
+    switch lower(TURB)
+        case 'k-l'
+            nturb = 1;
+        case 'k-epsilon'
+            nturb = 2;
+        otherwise % algebraic or constant
+            nturb = 0;
+    end
 end
 %
 grdname = propget(MF.mdf,'','Filcco','');

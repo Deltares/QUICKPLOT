@@ -247,7 +247,7 @@ if nargin>1 && ~isempty(V)
     hasval = true;
 end
 inew = 0;
-XYnew = cell(1,1000);
+XYnew = cell(1000,1);
 if hasval
     Vnew = zeros(1,1000);
 end
@@ -342,12 +342,12 @@ for iobj = 1:length(XY)
             inew = inew+1;
             XYnew{inew} = xyr;
             if hasval
-                Vnew(inew) = V(ipol);
+                Vnew(inew) = V(iobj);
             end
         end
     end
 end
-XY = [XY XYnew(1:inew)];
+XY = [XY; XYnew(1:inew)];
 if hasval
     if size(V,2)==1
         V = [V;Vnew(1:inew)'];
