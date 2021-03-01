@@ -3356,6 +3356,32 @@ switch cmd
             end
         end
         
+    case 'figurerenderer'
+        fig = qpsf;
+        PM = UD.PlotMngr;
+        %
+        rdrs = get(PM.FigRendererType, 'string');
+        if ~isempty(cmdargs)
+            rdr = cmdargs{1};
+            rdri = ustrcmpi(rdr, rdrs);
+            if rdri<0
+                if ischar(rdr)
+                    error('Invalid renderer: %s', rdr)
+                else
+                    error('Invalid renderer: <non string>')
+                end
+            end
+        else
+            rdri = get(PM.FigRendererType, 'value');
+            rdr  = rdrs{rdri};
+        end
+        %
+        set(fig, 'renderer', rdr)
+        d3d_qp refreshfigprop
+        if logfile
+            writelog(logfile, logtype, cmd, rdr);
+        end
+        
     case 'axesname'
         ax = qpsa;
         PM = UD.PlotMngr;
@@ -4692,7 +4718,7 @@ switch cmd
             'organizationname','filefilterselection','colorbar_ratio', ...
             'showinactiveopt', 'defaultfigurepos','timezonehandling', ...
             'enforcedtimezone', 'netcdf_use_fillvalue','export_max_ntimes', ...
-            'update_showversion'}
+            'update_showversion', 'defaultrenderer'}
         qp_prefs(UD,mfig,cmd,cmdargs);
         
     case {'deltaresweb','deltaresweboss'}

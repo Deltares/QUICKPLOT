@@ -94,10 +94,15 @@ if isequal(figtype,'quick')
 end
 %
 if isempty(fig)
-    if ismember('zbuffer',set(0,'defaultfigurerenderer'))
+    Renderers = set(0, 'defaultfigurerenderer');
+    if ismember('zbuffer', Renderers)
        renderer = 'zbuffer';
     else
        renderer = 'opengl';
+    end
+    usr_renderer = qp_settings('defaultrenderer', renderer);
+    if ismember(usr_renderer, Renderers)
+        renderer = usr_renderer;
     end
     fig=figure('closerequestfcn','d3d_qp closefigure', ...
         'inverthardcopy','off', ...

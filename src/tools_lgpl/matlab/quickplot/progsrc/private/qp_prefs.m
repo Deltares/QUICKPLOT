@@ -169,6 +169,13 @@ switch cmd
                 'backgroundcolor',Inactive)
         end
         
+    case 'defaultrenderer'
+        dfr = findobj(gcbf,'tag','defaultrenderer');
+        Renderers = get(dfr,'string');
+        rval = get(dfr,'value');
+        rndr = Renderers{rval};
+        qp_settings('defaultrenderer', rndr)
+        
     case {'gridviewbackgroundcolor','gridviewgridcolor', ...
             'gridviewselectioncolor','gridviewlandboundarycolor', ...
             'defaultfigurecolor','defaultaxescolor'}

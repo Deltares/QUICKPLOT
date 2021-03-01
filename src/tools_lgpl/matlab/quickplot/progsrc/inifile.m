@@ -19,16 +19,16 @@ function varargout=inifile(cmd,varargin)
 %   Retrieve the chapter indices that match the specified chapter name C. Use
 %   'chaptersi' for a case insensitive match of the chapter name.
 %
-%   [BOOL, iChap] = INIFILE('exists', Info, C)
+%   [BOOL, IndexChapter] = INIFILE('exists', Info, C)
 %   Check whether a chapter named C exists in the the Info data set, and return
 %   return the index or indices of the chapters matching the specified name.
 %   Use 'existsi' for a case insensitive match of the Chapter name.
 %
-%   [Info, iChap] = INIFILE('add', Info, C)
+%   [Info, IndexChapter] = INIFILE('add', Info, C)
 %   Add a new chapter with name C to the data set. The updated data set is
-%   returned, as well as the index iChap of the newly created group. Calling
-%   this function repeatedly with the same chapter name will  create multiple
-%   instances of chapters C.
+%   returned, as well as the index IndexChapter of the newly created group.
+%   Calling this function repeatedly with the same chapter name will  create
+%   multiple chapter instances with name C.
 %
 %   Info = INIFILE('delete', Info, C)
 %   Info = INIFILE('delete', Info, C, CN)
@@ -50,14 +50,14 @@ function varargout=inifile(cmd,varargin)
 %   that the chapter name occurs in the Info data set. Each element of N
 %   equals the number of times the keyword name occurs in each chapter.
 %
-%   [Val, iChap] = INIFILE('cgetstring', Info, C, K, DefS)
+%   [Val, CN] = INIFILE('cgetstring', Info, C, K, DefS)
 %   Retrieve the value of the keyword K of chapter C from the Info data set.
 %   The return variable Val is an M x 1 cell array of strings where M equals
 %   the total number of occurrences of the keyword keyword K in a chapter C.
 %   Use 'cgetstringi' for a case insensitive match of the chapter and keyword
 %   names. The chapter and keyword may also be specified by their index instead
-%   of their name. The optional second argument returns the index of the chapter
-%   number for which the keyword K was retrieved.
+%   of their name. The optional second argument CN returns the index of the
+%   chapter (or indices of the chapters) from which the keyword K was retrieved.
 %   If the chapter/keyword pair does not exist, the default string DefS will be
 %   returned; if DefS is not specified, an error will be raised. If multiple
 %   chapters match C, and some of those chapters don't include K then an error
@@ -490,6 +490,7 @@ vgrp = iGRP(key);
 %
 if nargin >= 5
     mgrp = grp(~ismember(grp,vgrp));
+    mgrp = mgrp(:);
     val = repmat({def},[numel(vgrp)+numel(mgrp) 1]);
     val(1:length(key)) = Keywords(key,2);
     iGRP = cat(1,vgrp,mgrp);
@@ -506,6 +507,10 @@ else
     iGRP = vgrp;
     val = Keywords(key,2);
 end
+%
+% convert global group index to index within selected groups
+%
+[~,iGRP] = ismember(iGRP,grp);
 %
 if ProcessHashes
     val = rmhash(val);
@@ -557,7 +562,6 @@ end
 function [FI,iGRP]=setfield(cmd,FI,grpS,varargin)
 S = FI.Data;
 CaseInsensitive = cmd(end)=='i';
-AddCommand = strncmp(cmd,'add',3);
 if nargin==3
     % create the group ...
     if ischar(grpS)
@@ -642,7 +646,6 @@ if length(varargin)>=kS+1
         end
         if any(key)
             % key exists
-            ingrp(i)=1;
             if DeleteKey
                 S{grp,2}(key,:)=[];
             elseif iscell(val)

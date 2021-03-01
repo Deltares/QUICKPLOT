@@ -173,6 +173,8 @@ switch cmd
         shiftcontrol(PM.FigBorderStyleTxt,aligntop+axprop_shf+fgprop_shw)
         shiftcontrol(PM.FigBorderStyle,aligntop+axprop_shf+fgprop_shw)
         shiftcontrol(PM.FigBorder,aligntop+axprop_shf+fgprop_shw)
+        shiftcontrol(PM.FigRendererTxt,aligntop+stretch2+axprop_shf+fgprop_shw)
+        shiftcontrol(PM.FigRendererType,aligntop+shift2+stretch2+axprop_shf+fgprop_shw)
         %
         if axprop_shw(2)>0
             set(PM.AxHandles,'visible','on')
@@ -1523,15 +1525,22 @@ switch cmd
                 set(PM.FigBorderStyle,'value',find(strcmp(hBrdr.Name,get(PM.FigBorderStyle,'string'))))
                 set(PM.FigBorder,'enable','on')
             end
+            %
+            set(PM.FigRendererTxt, 'enable', 'on')
+            set(PM.FigRendererType, 'enable', 'on', 'backgroundcolor', Active)
+            iRenderer = find(strcmp(get(fig,'Renderer'), get(PM.FigRendererType,'string')));
+            set(PM.FigRendererType, 'value', iRenderer)
         else
             set(PM.FigName,'string','')
             set(PM.FigColor,'backgroundcolor',Inactive, ...
                 'enable','off')
             set([PM.FigNameTxt PM.FigColorTxt ...
-                PM.FigPaperTypeTxt PM.FigBorderStyleTxt PM.FigPaperX],'enable','off')
+                PM.FigPaperTypeTxt PM.FigBorderStyleTxt PM.FigPaperX ...
+                PM.FigRendererTxt],'enable','off')
             set([PM.FigName ...
                 PM.FigPaperType PM.FigBorderStyle PM.FigPaperOrientation ...
-                PM.FigPaperWidth PM.FigPaperHeight PM.FigPaperUnit], ...
+                PM.FigPaperWidth PM.FigPaperHeight PM.FigPaperUnit ...
+                PM.FigRendererType], ...
                 'enable','off', ...
                 'backgroundcolor',Inactive)
             set(PM.FigBorder,'enable','off')
