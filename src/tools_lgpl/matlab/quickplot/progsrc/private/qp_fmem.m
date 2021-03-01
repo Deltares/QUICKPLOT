@@ -192,6 +192,8 @@ switch cmd
                     try_next='JSPost';
                 case {'.jpg','.jpeg','.bmp','.tif','.tiff','.png','.pcx','.xwd'}
                     try_next='bitmap';
+                case {'.avi','.mp4'}
+                    try_next='video';
                 case {'.slf','.out','.res'}
                     try_next='telemac';
                 case '.bna'
@@ -1018,6 +1020,13 @@ switch cmd
                             end
                             Tp=try_next;
                         end
+                    case 'video'
+                        FI.vidObj = VideoReader(FileName);
+                        FI.FileType=try_next;
+                        FI.FileName=FileName;
+                        FI.Options=1;
+                        FI.Loc=[0 0 FI.vidObj.Width FI.vidObj.Height];
+                        Tp=try_next;
                     case 'telemac'
                         FI=telemac('open',FileName);
                         if ~isempty(FI)
