@@ -1313,7 +1313,6 @@ if nargin<5
     Info = nc.Dataset(ivar);
     Attribs = {Info.Attribute.Name};
 end
-Info.Type = 'simple_geometry';
 geometry  = 'simple_geometry';
 %
 gt = strmatch('geometry_type',Attribs,'exact');
@@ -1323,6 +1322,9 @@ if ~isempty(gt)
         case 'multiline'
             ui_message('error','The geometry_type "%s" for variable "%s" is invalid. Correcting to "%s".',type,Info.Name,'line')
             type = 'line';
+        case 'multipolygon'
+            ui_message('error','The geometry_type "%s" for variable "%s" is invalid. Correcting to "%s".',type,Info.Name,'polygon')
+            type = 'polygon';
     end
 else
     type = 'undefined';
@@ -1332,6 +1334,10 @@ nca = strmatch('node_count',Attribs,'exact');
 if ~isempty(nca)
     node_count = Info.Attribute(nca).Value;
     vnc = strmatch(node_count,{nc.Dataset.Name},'exact');
+    if isempty(vnc)
+        ui_message('error','Can''t locate the node_count variable "%s" for variable "%s".',node_count,Info.Name)
+        return
+    end
 end
 %
 cn = strmatch('node_coordinates',Attribs,'exact');
@@ -1340,8 +1346,9 @@ if ~isempty(cn)
 else
     node_coords = {};
 end
-Info.Coordinates = node_coords;
 %
+Info.Type = geometry;
+Info.Coordinates = node_coords;
 Info.Mesh = {geometry type ivar vnc};
 
 

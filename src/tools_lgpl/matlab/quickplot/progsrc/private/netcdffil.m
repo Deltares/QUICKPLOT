@@ -108,7 +108,7 @@ switch cmd
         varargout={getsubfields(FI,Props,varargin{:})};
         return
     otherwise
-        [XYRead,DataRead,DataInCell]=gridcelldata(cmd);
+        [XYRead, DataRead, DataInCell, ZRead]=gridcelldata(cmd);
 end
 
 DimFlag=Props.DimFlag;
@@ -136,7 +136,11 @@ if FI.NumDomains>1
     end
     if domain == FI.NumDomains+2
         % merged partitions
-        cmd = strrep(cmd, 'grid', '');
+        if DimFlag(K_)
+            cmd = strrep(cmd, 'grid', 'z');
+        else
+            cmd = strrep(cmd, 'grid', '');
+        end
         if marg <= numel(args)
             args{marg} = 0;
         end
@@ -172,7 +176,52 @@ if FI.NumDomains>1
         % merged partitions
         partData = Data;
         Data = [];
+        
+        % XY values i.e. mesh
+        if XYRead
+            m = 1;
+            Data.X = FI.MergedPartitions(m).X;
+            Data.XUnits = FI.MergedPartitions(m).XYUnits;
+            Data.Y = FI.MergedPartitions(m).Y;
+            Data.YUnits = FI.MergedPartitions(m).XYUnits;
+            Data.EdgeNodeConnect = FI.MergedPartitions(m).EdgeNodeConnect;
+            Data.FaceNodeConnect = FI.MergedPartitions(m).FaceNodeConnect;
+        end
+        
+        % z values
+        if ZRead
+            zLoc = partData(1).ZLocation;
+            switch zLoc
+                case 'NODE'
+                    nloc = FI.MergedPartitions.nNodes;
+                    domainMask = FI.MergedPartitions.nodeDMask;
+                    globalIndex = FI.MergedPartitions.nodeGIndex;
+                case 'EDGE'
+                    nloc = FI.MergedPartitions.nEdges;
+                    domainMask = FI.MergedPartitions.edgeDMask;
+                    globalIndex = FI.MergedPartitions.edgeGIndex;
+                case 'FACE'
+                    nloc = FI.MergedPartitions.nFaces;
+                    domainMask = FI.MergedPartitions.faceDMask;
+                    globalIndex = FI.MergedPartitions.faceGIndex;
+            end
+            Data.ZLocation = zLoc;
+            Data.ZUnits = partData(1).ZUnits;
+            sz = size(partData(1).Z);
+            sz(1) = nloc;
+            Data.Z = NaN(sz);
+            for p = 1:length(partData)
+                masked = domainMask{p};
+                Data.Z(globalIndex{p}(masked),:) = partData(p).Z(masked,:);
+            end
+        end
+        
+        % data values 
         valLoc = Props.Geom(end-3:end);
+        Data.ValLocation = valLoc;
+        if isfield(partData,'Time')
+            Data.Time = partData(1).Time;
+        end
         switch valLoc
             case 'NODE'
                 nloc = FI.MergedPartitions.nNodes;
@@ -187,26 +236,15 @@ if FI.NumDomains>1
                 domainMask = FI.MergedPartitions.faceDMask;
                 globalIndex = FI.MergedPartitions.faceGIndex;
         end
-        if XYRead
-            m = 1;
-            Data.X = FI.MergedPartitions(m).X;
-            Data.XUnits = FI.MergedPartitions(m).XYUnits;
-            Data.Y = FI.MergedPartitions(m).Y;
-            Data.YUnits = FI.MergedPartitions(m).XYUnits;
-            Data.EdgeNodeConnect = FI.MergedPartitions(m).EdgeNodeConnect;
-            Data.FaceNodeConnect = FI.MergedPartitions(m).FaceNodeConnect;
-            Data.ValLocation = valLoc;
-            if isfield(partData,'Time')
-                Data.Time = partData(1).Time;
-            end
-        end
         for v = {'Val','XComp','YComp','NormalComp','TangentialComp'}
             fld = v{1};
             if isfield(partData,fld)
-                Data.(fld) = NaN(nloc,1);
+                sz = size(partData(1).(fld));
+                sz(1) = nloc;
+                Data.(fld) = NaN(sz);
                 for p = 1:length(partData)
                     masked = domainMask{p};
-                    Data.(fld)(globalIndex{p}(masked)) = partData(p).(fld)(masked);
+                    Data.(fld)(globalIndex{p}(masked),:) = partData(p).(fld)(masked,:);
                 end
             end
         end
@@ -483,8 +521,10 @@ if ~isnan(npolpnt)
 end
 
 getOptions = {};
-if XYRead || XYneeded
-    if strncmp(Props.Geom,'UGRID',5)
+if XYRead || XYneeded || ZRead
+    if ~XYRead && ~XYneeded
+        % just ZRead
+    elseif strncmp(Props.Geom,'UGRID',5)
         %ugrid
         mesh_settings = Info.Mesh;
         msh = mesh_settings{3};
