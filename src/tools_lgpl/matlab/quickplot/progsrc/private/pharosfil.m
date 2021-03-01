@@ -404,7 +404,7 @@ DataProps={'grid'             ''         'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0 
     'bed level'                'm'       'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'H_depth'        ''           1         ''
     'water depth'              'm'       'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'H_depth'        ''           1         ''
     'velocity'                 'm/s'     'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          2     ''        ''    ''       'CURRENT'    'Ux_veloc'       'Uy_veloc'   1         ''
-    %'relative radiation freqency' '1/s' 'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'CURRENT'    'Omega_rel'      ''           1         ''
+    %'relative radiation frequency' '1/s' 'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'CURRENT'    'Omega_rel'      ''           1         ''
     '-------'                  ''        ''             ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''
     'relative breaking intensity' ''     'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'BREAKING'   'Gamma_b'        ''           1         'nfreq'
     'weighted mean wave height dir.' 'm' 'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'HS_dir'     'HS_directional' ''           1         'md'
