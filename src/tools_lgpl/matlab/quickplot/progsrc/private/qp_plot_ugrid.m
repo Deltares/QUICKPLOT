@@ -103,12 +103,7 @@ switch NVal
                     if isfield(data,'EdgeNodeConnect')
                         EdgeNodeConnect = data.EdgeNodeConnect;
                     else
-                        iConnect = ceil(([0 0:2*nc-2])/2+0.1);
-                        EdgeNodeConnect = FaceNodeConnect(:,iConnect);
-                        ncP = sum(~isnan(FaceNodeConnect),2);
-                        EdgeNodeConnect(:,1) = FaceNodeConnect(sub2ind(size(FaceNodeConnect),(1:size(FaceNodeConnect,1))',ncP));
-                        EdgeNodeConnect = unique(sort(reshape(EdgeNodeConnect',[2 numel(FaceNodeConnect)]),1)','rows');
-                        EdgeNodeConnect(any(isnan(EdgeNodeConnect),2),:) = [];
+                        EdgeNodeConnect = fnc2enc(FaceNodeConnect);
                     end
                     %
                     xy = EdgeNodeConnect(:,[1 2 2])';
