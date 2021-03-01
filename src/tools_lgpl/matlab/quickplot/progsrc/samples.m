@@ -110,6 +110,10 @@ catch
 end
 
 if simplexyz
+    %
+    % relatively simple sample file without header, data alrady read by the
+    % load or asciiload call above. We may have to add a bit of metadata.
+    %
     switch readtype
         case {'simple','default'}
             xyz = xyz0;
@@ -166,9 +170,19 @@ if simplexyz
                 end
             end
     end
-else % readtype always forced to 'struct'
+else
+    %
+    % So far unable to read the file. It probably contains some comments,
+    % header or labels. Let's analyze the content in more detail; the
+    % readtype is always forced to 'struct'
+    %
     fid=fopen(filename,'r');
+    csv = false;
     try
+        %
+        % All non-empty lines starting with * or # are considered to be
+        % header lines.
+        %
         skiplines=0;
         Line=fgetl(fid);
         xyz.Header={};
@@ -178,35 +192,84 @@ else % readtype always forced to 'struct'
             Line=fgetl(fid);
         end
         if ~ischar(Line)
+            %
+            % End of file read while skipping the header lines ...
+            % ... fail because we didn't find any data.
+            %
             fclose(fid);
             error('%s does not contain samples.',filename);
         end
         %
+        % First non-header line ... check for column labels ...
+        %
         Params = {};
-        firstitem = strtok(Line);
-        while firstitem(1)=='"'
-            try
-                X = textscan(Line,' "%[^"]"','returnonerror',0);
-                Params = [Params X{1}'];
-            catch
-                error('Reading line: %s\nAll parameter names should be enclosed by double quotes.',Line);
-            end
-            skiplines=skiplines+1;
-            Line=fgetl(fid);
+        first_token = strtok(Line);
+        if first_token(1) == '"'
+            %
+            % Column labels on one or more lines surrounded by double
+            % quotes separated by spaces.
+            %
             firstitem = strtok(Line);
+            while firstitem(1)=='"'
+                try
+                    X = textscan(Line,' "%[^"]"','returnonerror',0);
+                    Params = [Params X{1}'];
+                catch
+                    error('Reading line: %s\nAll parameter names should be enclosed by double quotes.',Line);
+                end
+                skiplines=skiplines+1;
+                Line=fgetl(fid);
+                firstitem = strtok(Line);
+            end
+        else
+            %
+            % Column labels may occur on one line separated by commas.
+            %
+            try
+                X = textscan(Line,' %[^,],','returnonerror',0);
+                if length(X{1}) < 2
+                    error('Too few columns for a sample file.')
+                else
+                    csv = true;
+                    Params = X{1}';
+                    skiplines=skiplines+1;
+                    Line=fgetl(fid);
+                end
+            catch
+            end
         end
         %
-        X = textscan(Line,' %[^ \t]','returnonerror',0);
+        % First data line ... may contain more data columns than the number
+        % of column labels read (e.g. in case of a file without column
+        % labels), or fewer (should we really support this?)
+        %
+        if csv
+            X = textscan(Line,' %[^,],','returnonerror',0);
+        else
+            X = textscan(Line,' %[^ \t]','returnonerror',0);
+        end
         n = length(X{1});
         if n<3
             error('Not enough values for sample data (X,Y,Value1,...)')
         end
+        %
+        % Second data line ... should contain the same number of data
+        % columns.
+        %
         Line=fgetl(fid);
-        X  = textscan(Line,' %[^ \t]','returnonerror',0);
+        if csv
+            X = textscan(Line,' %[^,],','returnonerror',0);
+        else
+            X  = textscan(Line,' %[^ \t]','returnonerror',0);
+        end
         n2 = length(X{1});
         if n2~=n && ~feof(fid)
-            error('Number of values per line should be consistent.')
+            error('Number of values per data line should be consistent.')
         end
+        %
+        % Correct any mismatch between the number of data columns and the
+        % number of column labels on the label side ...
+        %
         if length(Params)<n
             for i=n:-1:(length(Params)+1)
                 Params{i}=sprintf('Parameter %i',i);

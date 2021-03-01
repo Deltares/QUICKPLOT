@@ -184,23 +184,28 @@ if XYRead
             nPnt=size(xyz,1)/nTim;
             nCrd=size(xyz,2);
             Ans.XYZ=reshape(xyz,[nTim nPnt 1 nCrd]);
-            if strcmp(Props.Geom,'TRI')
-                if isfield(FI,'TRI')
-                    Ans.TRI=FI.TRI;
-                elseif ~isempty(FI.X) && ~isempty(FI.Y)
-                    try
-                        [xy,I]=unique(xyz,'rows');
-                        tri=delaunay(xy(:,1),xy(:,2));
-                        Ans.TRI=I(tri);
-                        if length(FI.nLoc)==1
-                            FI.TRI=Ans.TRI;
+            switch Props.Geom
+                case 'TRI'
+                    if isfield(FI,'TRI')
+                        Ans.TRI=FI.TRI;
+                    elseif ~isempty(FI.X) && ~isempty(FI.Y)
+                        try
+                            [xy,I]=unique(xyz,'rows');
+                            tri=delaunay(xy(:,1),xy(:,2));
+                            Ans.TRI=I(tri);
+                            if length(FI.nLoc)==1
+                                FI.TRI=Ans.TRI;
+                            end
+                        catch
+                            Ans.TRI=zeros(0,3);
                         end
-                    catch
-                        Ans.TRI=zeros(0,3);
                     end
-                end
-            else
-                Ans.TRI=zeros(0,3);
+                case 'sSEG'
+                    Ans.X = Ans.XYZ(:,:,1,1);
+                    Ans.Y = Ans.XYZ(:,:,1,2);
+                    Ans = rmfield(Ans, 'XYZ');
+                case 'PNT'
+                    Ans.TRI=zeros(0,3);
             end
     end
     %
@@ -304,11 +309,12 @@ varargout={Ans FI};
 % -----------------------------------------------------------------------------
 function Out=infile(FI,domain)
 
-PropNames={'Name'                       'Units' 'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc' 'Geom' 'Coords' 'SubFld'};
-DataProps={'locations'                  ''       [0 0 1 0 0]  0          0     ''        ''    ''     'PNT'  'xy'      []
-    'triangulated locations'              ''       [0 0 1 0 0]  0          0     ''        ''    ''     'TRI'  'xy'      []
-    '-------'                             ''       [0 0 0 0 0]  0          0     ''        ''    ''     ''     ''        []
-    'sample data'                         ''       [0 0 1 0 0]  0          1     ''        ''    ''     'TRI'  'xy'      -999};
+PropNames={'Name'                       'Units' 'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc' 'Geom'  'Coords' 'SubFld'};
+DataProps={'locations'                  ''       [0 0 1 0 0]  0          0     ''        ''    ''      'PNT'   'xy'      []
+    'locations as line'                 ''       [0 0 1 0 0]  0          0     ''        ''    ''      'sSEG'  'xy'      []
+    'triangulated locations'            ''       [0 0 1 0 0]  0          0     ''        ''    ''      'TRI'   'xy'      []
+    '-------'                           ''       [0 0 0 0 0]  0          0     ''        ''    ''      ''      ''        []
+    'sample data'                       ''       [0 0 1 0 0]  0          1     ''        ''    ''      'TRI'   'xy'      -999};
 
 Out=cell2struct(DataProps,PropNames,2);
 
@@ -330,19 +336,20 @@ end
 % Expand parameters
 NPar=length(params);
 if NPar>0
-    Out=cat(1,Out(1:3),repmat(Out(4),NPar,1));
+    NFixed = length(Out)-1;
+    Out = cat(1,Out(1:end-1),repmat(Out(end),NPar,1));
     for i = 1:NPar
-        Out(i+3).SubFld = params(i);
-        Out(i+3).Name   = FI.Params{params(i)};
+        Out(NFixed+i).SubFld = params(i);
+        Out(NFixed+i).Name   = FI.Params{params(i)};
         if isfield(FI,'ParamUnits')
-            Out(i+3).Units  = FI.ParamUnits{params(i)};
+            Out(NFixed+i).Units  = FI.ParamUnits{params(i)};
         end
         if iscell(FI.XYZ) % TODO: check which column contains chars.
-            Out(i+3).NVal = 4;
+            Out(NFixed+i).NVal = 4;
         end
     end
 else
-    Out=Out(1:2);
+    Out=Out(1:end-2);
 end
 
 % No triangulation possible if only one or two points, or only one
