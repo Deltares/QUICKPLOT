@@ -561,7 +561,7 @@ end
 if strcmp(get(MW.HSelType,'enable'),'on')
     vis = {'visible','off'};
     if v==2
-        vis = {'visible','on'};
+        vis = {'enable','on','visible','on'};
     end
     set(MW.MN,'enable','on',vis{:})
     set(MW.EditMN,'enable','on','backgroundcolor',Active,vis{:})
@@ -618,7 +618,7 @@ end
 if ~isempty(strmatch('(X,Y) ',get(MW.HSelType,'string'))) && strcmp(get(MW.HSelType,'enable'),'on')
     vis = {'visible','off'};
     if v==3
-        vis = {'visible','on'};
+        vis = {'enable','on','visible','on'};
     end
     set(MW.XY,'enable','on',vis{:})
     set(MW.EditXY,'enable','on','backgroundcolor',Active,vis{:})

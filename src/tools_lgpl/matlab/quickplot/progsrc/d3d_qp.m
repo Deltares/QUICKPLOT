@@ -2251,8 +2251,9 @@ switch cmd
     case {'selectiontype','axestype','plotcoordinate','component','plottype', ...
             'climmode','presenttype','vecscalem','vertscalem','thinfld', ...
             'linestyle','marker','threshdistr','horizontalalignment', ...
-            'verticalalignment','exporttype','vectorcolour','dataunits', ...
-            'vectorstyle','angleconvention','axestimezone','operator'}
+            'verticalalignment','exporttype','trackcolour','vectorcolour', ...
+            'dataunits','vectorstyle','angleconvention','axestimezone', ...
+            'operator'}
         % commands require an input string
         %
         % nothing to do except refreshing the options
@@ -2360,8 +2361,9 @@ switch cmd
             writelog(logfile,logtype,cmd,clr);
         end
         
-    case {'colourvectors','usemarkercolour','usemarkerfillcolour','colclassify','colourbar','colourdams','textbox','fillpolygons', ...
-            'colvector','coldams','unicolour'}
+    case {'colourtracks','colourvectors','usemarkercolour', ...
+            'usemarkerfillcolour','colclassify','colourbar','colourdams', ...
+            'textbox','fillpolygons','colvector','coldams','unicolour'}
         % commands require an input logical
         %
         % nothing do except refreshing the options
@@ -3486,24 +3488,24 @@ switch cmd
         zdr = {};
         zlm = [];
         PM = UD.PlotMngr;
-        if strcmp(get(PM.ZLimitMin,'enable'),'on')
+        if strcmp(get(PM.Z.LimitMin,'enable'),'on')
             zdr = {'zdir','normal'};
-            zlm(1,1) = str2double(get(PM.ZLimitMin,'string'));
-            zlm(1,2) = str2double(get(PM.ZLimitMax,'string'));
+            zlm(1,1) = str2double(get(PM.Z.LimitMin,'string'));
+            zlm(1,2) = str2double(get(PM.Z.LimitMax,'string'));
             if zlm(1)>zlm(2)
                 zlm = fliplr(zlm);
                 zdr{2} = 'reverse';
             end
         end
         if isempty(cmdargs)
-            xlm(1,1) = str2double(get(PM.XLimitMin,'string'));
-            xlm(1,2) = str2double(get(PM.XLimitMax,'string'));
+            xlm(1,1) = str2double(get(PM.X.LimitMin,'string'));
+            xlm(1,2) = str2double(get(PM.X.LimitMax,'string'));
             if xlm(1)>xlm(2)
                 xlm = fliplr(xlm);
                 xdr{2} = 'reverse';
             end
-            ylm(1,1) = str2double(get(PM.YLimitMin,'string'));
-            ylm(1,2) = str2double(get(PM.YLimitMax,'string'));
+            ylm(1,1) = str2double(get(PM.Y.LimitMin,'string'));
+            ylm(1,2) = str2double(get(PM.Y.LimitMax,'string'));
             if ylm(1)>ylm(2)
                 ylm = fliplr(ylm);
                 ydr{2} = 'reverse';
@@ -3616,9 +3618,9 @@ switch cmd
     case 'axesgrid'
         ax = qpsa;
         PM = UD.PlotMngr;
-        xgrid = get(PM.XGrid,'value');
-        ygrid = get(PM.YGrid,'value');
-        zgrid = get(PM.ZGrid,'value');
+        xgrid = get(PM.X.Grid,'value');
+        ygrid = get(PM.Y.Grid,'value');
+        zgrid = get(PM.Z.Grid,'value');
         if ~isempty(cmdargs)
             xgrid = cmdargs{1};
             ygrid = cmdargs{2};
@@ -3631,7 +3633,7 @@ switch cmd
             ygr = valuemap(ygrid,[1 0],{'on' 'off'});
             zgr = valuemap(zgrid,[1 0],{'on' 'off'});
             set(ax,'xgrid',xgr,'ygrid',ygr,'zgrid',zgr);
-            if strcmp(get(PM.ZGrid,'enable'),'off')
+            if strcmp(get(PM.Z.Grid,'enable'),'off')
                 zgr = [];
             end
             d3d_qp refreshaxprop
@@ -3644,14 +3646,93 @@ switch cmd
             end
         end
         
+    case 'axesaspect'
+        ax = qpsa;
+        PM = UD.PlotMngr;
+        if strcmp(get(PM.Y.AspectTxt,'enable'),'off')
+            yaspect = '';
+        elseif get(PM.Y.AspectAuto,'value')
+            yaspect = 'auto';
+        else
+            yaspect = str2double(get(PM.Y.AspectValue,'string'));
+            if yaspect>0
+                % ok
+            else
+                yaspect = get(PM.Y.AspectValue,'userdata');
+            end
+        end
+        if strcmp(get(PM.Z.AspectTxt,'enable'),'off')
+            zaspect = '';
+        elseif get(PM.Z.AspectAuto,'value')
+            zaspect = 'auto';
+        else
+            zaspect = str2double(get(PM.Z.AspectValue,'string'));
+            if zaspect>0
+                % ok
+            else
+                zaspect = get(PM.Z.AspectValue,'userdata');
+            end
+            if isempty(zaspect)
+                zaspect = 1;
+            end
+        end
+        if ~isempty(cmdargs)
+            if getappdata(ax,'haspectenforced')
+                % ok
+            else
+                y = cmdargs{1};
+                if strcmpi(y,'auto')
+                    yaspect = 'auto';
+                elseif isscalar(y) && isnumeric(y) && y>0
+                    yaspect = y;
+                end
+            end
+            if length(cmdargs)>1
+                z = cmdargs{2};
+                if strcmpi(z,'auto')
+                    zaspect = 'auto';
+                elseif isscalar(z) && isnumeric(z) && z>0
+                    zaspect = z;
+                end
+            end
+        end
+        if getappdata(ax,'axes2d')
+            zaspect = [];
+        end
+        if strcmp(yaspect,'auto')
+            set(ax,'dataAspectratioMode','auto');
+            if ~getappdata(ax,'axes2d')
+                zaspect = 'auto';
+            end
+        else
+            y = yaspect;
+            if getappdata(ax,'axes2d')
+                z = 1;
+            elseif strcmp(zaspect,'auto')
+                zaspect = 1;
+                z = 1;
+            else
+                z = zaspect;
+            end
+            set(ax,'dataaspectratio',[1 1/y 1/z]);
+        end
+        d3d_qp refreshaxprop
+        if logfile
+            if isempty(zaspect)
+                writelog(logfile,logtype,cmd,yaspect);
+            else
+                writelog(logfile,logtype,cmd,yaspect,zaspect);
+            end
+        end
+        
     case 'axesloc'
         ax = qpsa;
         PM = UD.PlotMngr;
-        xlcs = get(PM.XLoc,'string');
-        ylcs = get(PM.YLoc,'string');
+        xlcs = get(PM.X.Loc,'string');
+        ylcs = get(PM.Y.Loc,'string');
         if isempty(cmdargs)
-            xlc = xlcs{get(PM.XLoc,'value')};
-            ylc = ylcs{get(PM.YLoc,'value')};
+            xlc = xlcs{get(PM.X.Loc,'value')};
+            ylc = ylcs{get(PM.Y.Loc,'value')};
         else
             xlc = cmdargs{1};
             ylc = cmdargs{2};
@@ -3666,24 +3747,57 @@ switch cmd
             end
         end
         
+    case 'axesdir'
+        ax = qpsa;
+        PM = UD.PlotMngr;
+        xdirs = get(PM.X.Dir,'string');
+        ydirs = get(PM.Y.Dir,'string');
+        zdirs = get(PM.Z.Dir,'string');
+        if isempty(cmdargs)
+            xdr = xdirs{get(PM.X.Dir,'value')};
+            ydr = ydirs{get(PM.Y.Dir,'value')};
+            zdr = ydirs{get(PM.Z.Dir,'value')};
+        else
+            xdr = cmdargs{1};
+            ydr = cmdargs{2};
+            zdr = cmdargs{3};
+        end
+        ixdr = ustrcmpi(xdr,xdirs);
+        iydr = ustrcmpi(ydr,ydirs);
+        izdr = ustrcmpi(zdr,zdirs);
+        if ixdr>0 && iydr>0 && izdr>0
+            set(ax,'xdir',xdr,'ydir',ydr,'zdir',zdr);
+            d3d_qp refreshaxprop
+            if logfile
+                writelog(logfile,logtype,cmd,xdr,ydr,zdr);
+            end
+        end
+        
     case 'axesscale'
         ax = qpsa;
         PM = UD.PlotMngr;
-        scales = get(PM.XScale,'string');
+        scales = get(PM.X.Scale,'string');
         if isempty(cmdargs)
-            xsc = scales{get(PM.XScale,'value')};
-            ysc = scales{get(PM.YScale,'value')};
+            xsc = scales{get(PM.X.Scale,'value')};
+            ysc = scales{get(PM.Y.Scale,'value')};
+            zsc = scales{get(PM.Z.Scale,'value')};
         else
             xsc = cmdargs{1};
             ysc = cmdargs{2};
+            if length(cmdargs)>2
+                zsc = cmdargs{3};
+            else
+                zsc = scales{get(PM.Z.Scale,'value')};
+            end
         end
         ixsc = ustrcmpi(xsc,scales);
         iysc = ustrcmpi(ysc,scales);
-        if ixsc>0 && iysc>0
-            set(ax,'xscale',xsc,'yscale',ysc);
+        izsc = ustrcmpi(zsc,scales);
+        if ixsc>0 && iysc>0 && izsc>0
+            set(ax,'xscale',xsc,'yscale',ysc,'zscale',zsc);
             d3d_qp refreshaxprop
             if logfile
-                writelog(logfile,logtype,cmd,xsc,ysc);
+                writelog(logfile,logtype,cmd,xsc,ysc,zsc);
             end
         end
         
@@ -4534,12 +4648,12 @@ switch cmd
                 set([MW.M MW.AllM MW.EditM],'visible','off')
                 set([MW.N MW.AllN MW.EditN],'visible','off')
                 set([MW.XY MW.EditXY MW.LoadXY MW.SaveXY],'visible','off')
-                set([MW.MN MW.EditMN MW.MNrev MW.MN2XY],'visible','on')
+                set([MW.MN MW.EditMN MW.MNrev MW.MN2XY],'enable','on','visible','on')
                 %
                 Props=get(MW.Field,'userdata');
                 fld=get(MW.Field,'value');
                 if ~isempty(Props) && isfield(Props,'DimFlag') && Props(fld).DimFlag(M_) && ~Props(fld).DimFlag(N_)
-                    set(MW.MN2M,'visible','on')
+                    set(MW.MN2M,'enable','on','visible','on')
                 else
                     set(MW.MN2M,'visible','off')
                 end
@@ -4548,7 +4662,7 @@ switch cmd
                 set([MW.M MW.AllM MW.EditM MW.MaxM],'visible','off')
                 set([MW.N MW.AllN MW.EditN MW.MaxN],'visible','off')
                 set([MW.MN MW.EditMN MW.MNrev MW.MN2XY MW.MN2M],'visible','off')
-                set([MW.XY MW.EditXY MW.LoadXY MW.SaveXY],'visible','on')
+                set([MW.XY MW.EditXY MW.LoadXY MW.SaveXY],'enable','on','visible','on')
             case 'K range'
                 set([MW.Z MW.EditZ],'visible','off')
                 set([MW.K MW.AllK MW.EditK MW.MaxK],'visible','on')

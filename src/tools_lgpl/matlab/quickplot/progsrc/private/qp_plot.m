@@ -258,6 +258,28 @@ end
 
 FirstFrame=isempty(hOldVec);
 
+% in case of track colour make sure to save a coordinate before it's lost.
+if isfield(Ops,'trackcolour')
+    data.Name = Ops.trackcolour;
+    Quant = data.Name;
+    switch Ops.trackcolour
+        case 'x coordinate'
+            data.Val = data.X;
+            data.Units = data.XUnits;
+        case 'y coordinate'
+            data.Val = data.Y;
+            data.Units = data.YUnits;
+        case 'z coordinate'
+            data.Val = data.Z;
+            data.Units = data.ZUnits;
+        case 'time'
+            data.Val = repmat(data.Time,1,size(data.X,2));
+            data.Units = '<matlab_time>';
+    end
+    Props.NVal = 1;
+    Units = data.Units;
+end
+
 if isfield(Ops,'plotcoordinate')
     % TODO: take into account the EdgeGeometry length ...
     switch Ops.plotcoordinate
@@ -1243,7 +1265,17 @@ if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
     Ax   =Chld(isAx);
     h=qp_colorbar(Ops.colourbar,'peer',Parent);
     if ~isempty(Units)
-        PName = sprintf('%s (%s)',Quant,Units);
+        if isequal(Units,'<matlab_time>')
+            switch Ops.colourbar
+                case 'vert'
+                    tick(h,'y','autodate')
+                case 'horiz'
+                    tick(h,'x','autodate')
+            end
+            PName = Quant;
+        else
+            PName = sprintf('%s (%s)',Quant,Units);
+        end
     else
         PName = Quant;
     end

@@ -213,7 +213,6 @@ ask_for_angleconvention = 0;
 for i=5:-1:1
     multiple(i) = (length(selected{i})>1) | isequal(selected{i},0);
 end
-animate = multiple(T_);
 
 VectorDef=0;
 VectorReq=0;
@@ -291,13 +290,23 @@ switch geometry
                 axestype={'X-Val'};
                 lineproperties=1;
             else
-                axestype={'X-Y'};
+                switch coordinates
+                    case 'xyz'
+                        axestype={'X-Y','X-Z','X-Y-Z'};
+                    otherwise
+                        axestype={'X-Y'};
+                end
             end
         elseif multiple(T_)
             if isequal(coordinates,'d')
                 axestype={'Time-Val','Distance-Val'};
-            elseif nval==0
-                axestype={'X-Y'};
+            elseif nval==0 
+                switch coordinates
+                    case 'xyz'
+                        axestype={'X-Y','X-Z','X-Y-Z'};
+                    otherwise
+                        axestype={'X-Y'};
+                end
             elseif isempty(coordinates)
                 axestype={'Time-Val'};
             else
@@ -307,7 +316,12 @@ switch geometry
             if isequal(coordinates,'d')
                 axestype={'Time-Val','Distance-Val','Text'};
             elseif nval==0
-                axestype={'X-Y'};
+                switch coordinates
+                    case 'xyz'
+                        axestype={'X-Y','X-Z','X-Y-Z'};
+                    otherwise
+                        axestype={'X-Y'};
+                end
             elseif ~isempty(strfind(coordinates,'xy'))
                 if nval==4 || nval==6
                     axestype={'X-Y','Text'};
@@ -582,14 +596,21 @@ end
 if nval==-1 || (nval>=0 && nval<1)
     lineproperties=1;
 end
-if nval<0
+if ~multiple(T_)
+    animate = 0;
+elseif nval<0 % works for the time being, but might not be appropriate always
     animate = 0;
 elseif ~isempty(strfind(axestype,'Time'))
     animate = 0;
-elseif ~multiple(M_) && ~multiple (N_) && (~multiple(K_) || hslice) && strcmp(axestype,'X-Y')
+elseif ~multiple(M_) && ...
+        ~multiple (N_) && ...
+        (~multiple(K_) || hslice) && ...
+        (strcmp(axestype,'X-Y') || strcmp(axestype,'X-Z') || strcmp(axestype,'X-Y-Z'))
     animate = 0;
 elseif strcmp(axestype,'Distance-Val')
     animate = 0;
+else
+    animate = 1;
 end
 
 if DimFlag(T_)
@@ -632,11 +653,6 @@ end
 %
 Spatial=SpatialH+SpatialV;
 TimeSpatial=Spatial+TimeDim;
-
-if strcmp(axestype,'X-Y-Z') % cannot plot 3D volumes
-    %won't plot
-    axestype='noplot';
-end
 
 if strfind(axestype,'Y')
     %if isfield(Props,'MName') && ~isempty(Props.MName)
@@ -1082,6 +1098,50 @@ end
 
 %--------------------------------------------------------------------------
 
+if isequal(geometry,'PNT') && multiple(T_)
+    coltrack=findobj(OH,'tag','colourtracks');
+    set(coltrack,'enable','on')
+    if get(coltrack,'value')
+        coltrkm=findobj(OH,'tag','trackcolour=?');
+        ptrkCLR=get(coltrkm,'string');
+        coltrki=get(coltrkm,'value');
+        %
+        if strcmp(axestype,'X-Z')
+            % the X may not be the x coordinate; it's determined by Ops.plotcoordinate
+            switch Ops.plotcoordinate
+                case {'x coordinate','y coordinate'}
+                    crds_notplotted = coordinates(~ismember(coordinates,['z',Ops.plotcoordinate(1)]));
+                otherwise
+                    crds_notplotted = coordinates(~ismember(coordinates,'z'));
+            end
+        else
+            crds_notplotted = coordinates(~ismember(coordinates,lower(axestype)));
+        end
+        trkCLR = strcat(num2cell(crds_notplotted),' coordinate');
+        if isempty(strfind('Time',axestype))
+            trkCLR{end+1} = 'time';
+        end
+        if ~isequal(trkCLR,ptrkCLR)
+            % try to find an exact match when switching vector colouring strings
+            if isempty(ptrkCLR) || length(ptrkCLR)<coltrki
+                coltrki=1;
+            else
+                coltrki=strmatch(ptrkCLR{coltrki},trkCLR,'exact');
+                if isempty(coltrki)
+                    coltrki=1;
+                end
+            end
+            set(coltrkm,'value',1,'string',trkCLR,'value',coltrki)
+        end
+        if length(trkCLR)>1
+            set(coltrkm,'enable','on','backgroundcolor',Active)
+        end
+        Ops.trackcolour=trkCLR{coltrki};
+        MultipleColors=1;
+        SingleColor=0;
+    end
+end
+
 if vectors && ~strcmp(axestype,'Time-Val')
     colvect=findobj(OH,'tag','colourvectors');
     set(colvect,'enable','on')
@@ -1473,11 +1533,6 @@ elseif lineproperties || nval==0
     set(lns,'enable','on','backgroundcolor',Active)
     lnstls=get(lns,'string');
     Ops.linestyle=lnstls{get(lns,'value')};
-    
-    set(findobj(OH,'tag','linewidth'),'enable','on')
-    lnw=findobj(OH,'tag','linewidth=?');
-    set(lnw,'enable','on','backgroundcolor',Active)
-    Ops.linewidth=get(lnw,'userdata');
     usesmarker=1;
 elseif vectors
     set(findobj(OH,'tag','linewidth'),'enable','on')
@@ -1508,7 +1563,15 @@ if usesmarker
         set(mrk,'value',imrk);
     end
     Ops.marker=mrkrs{get(mrk,'value')};
-    %
+end
+if (lineproperties && ~strcmp(Ops.linestyle,'none')) || ...
+        (usesmarker && (~strcmp(Ops.marker,'none') && ~strcmp(Ops.marker,'.')))
+    set(findobj(OH,'tag','linewidth'),'enable','on')
+    lnw=findobj(OH,'tag','linewidth=?');
+    set(lnw,'enable','on','backgroundcolor',Active)
+    Ops.linewidth=get(lnw,'userdata');
+end
+if usesmarker
     Ops.markersize=6;
     if ~strcmp(Ops.marker,'none') && ~strcmp(Ops.marker,'.')
         set(findobj(OH,'tag','markersize'),'enable','on')

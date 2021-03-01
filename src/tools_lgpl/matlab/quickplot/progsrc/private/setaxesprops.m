@@ -62,9 +62,11 @@ end
 switch AxesType
     case 'legend'
         set_2d_axes_behavior(hAx)
+        sethscale(hAx,1)
         legendbox('init',hAx)
     case {'analog clock','digital clock','calendar page'}
         set_2d_axes_behavior(hAx)
+        sethscale(hAx,1)
         md_clock(hAx,AxesType,floor(now))
         set(hAx,'tag',AxesType)
     case 'text'
@@ -182,6 +184,7 @@ set(hAx,'ylim',ylimv,'xlim',xlim)
 
 
 function sethscale(hAx,ratio)
+setappdata(hAx,'haspectenforced',true)
 if strcmp(get(hAx,'dataaspectratiomode'),'auto')
     set(hAx,'dataaspectratio',[1 ratio 1/30])
 else
@@ -202,9 +205,6 @@ end
 
 
 function update_axesprops(hAx)
-for d = 'xyz'
-    update_axticks(hAx,d)
-end
 if isequal(getappdata(hAx,'LonLat'),1)
     sethscale_lonlat(hAx)
 end
@@ -214,21 +214,19 @@ end
 % else
 %     alldims = 'xyz';
 % end
+% dar = get(hAx,'dataaspectratio');
+% dar = dar/dar(1);
+% buf = 1000;
 % for d = alldims
 %     dlimmode = getappdata(hAx,[d 'limmode']);
-%     if isempty(dlimmode) || strcmp(dlimmode,'auto')
-%         set(hAx,[d 'limmode'],'auto')
+%     if strcmp(dlimmode,'auto')
+%        lim = limits(hAx,d);
+%        set(hAx,[d 'lim'],lim + [-buf buf]*dar(d-'w'))
 %     end
 % end
-% for d = alldims
-%     update_axticks(hAx,d)
-% end
-% if isequal(getappdata(hAx,'LonLat'),1)
-%     sethscale_lonlat(hAx)
-% end
-% if axes2d
-%     set_2d_axes_behavior(hAx)
-% end
+for d = 'xyz'
+    update_axticks(hAx,d)
+end
 
 
 function setlabel(ax,dir,quantity,unit,type)
