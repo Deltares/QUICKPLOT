@@ -189,7 +189,7 @@ if FI.NumDomains>1
         end
         
         % z values
-        if ZRead
+        if ZRead && isfield(partData, 'ZLocation')
             zLoc = partData(1).ZLocation;
             switch zLoc
                 case 'NODE'

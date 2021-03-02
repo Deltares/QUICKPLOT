@@ -3901,8 +3901,8 @@ switch cmd
         else
             x        = cmd(1);
             X        = upper(x);
-            XLblAuto = PM.([X 'LabelAuto']);
-            XLbl     = PM.([X 'Label']);
+            XLblAuto = PM.(X).LabelAuto;
+            XLbl     = PM.(X).Label;
             xlbl     = [x 'label'];
         end
         %
