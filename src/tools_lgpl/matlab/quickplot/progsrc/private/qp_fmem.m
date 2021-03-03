@@ -431,8 +431,31 @@ switch cmd
                         end
                         FI = nc_interpret(FileName,Opt{:});
                         %nc_dump(FileName)
-                        FI.FileName = FI.Filename;
+                        %
+                        ihistory = ustrcmpi('history',{FI.Attribute.Name});
+                        if ihistory > 0
+                            if ~isempty(strfind(FI.Attribute(ihistory).Value, 'PHAROS'))
+                                try_next = 'NetCDF-PHAROS';
+                                nDir = ustrcmpi('nDir',{FI.Dimension.Name});
+                                if FI.Dimension(nDir).Length > 1
+                                    % directional spreading or spectral
+                                    if ustrcmpi('SPEC_PHI_R',{FI.Dataset.Name}) > 0
+                                        FI.simtype = 'spectral';
+                                    else
+                                        FI.simtype = 'dir_spread';
+                                    end
+                                else
+                                    % long crested or seiching
+                                    if ustrcmpi('SEICHDEF_IRL', {FI.Dataset.Name}) > 0
+                                        FI.simtype = 'seiching';
+                                    else
+                                        FI.simtype = 'long_crest';
+                                    end
+                                end
+                            end
+                        end
                         FI.Options=1;
+                        FI.FileName = FI.Filename;
                         Tp = try_next;
                     case 'HDF5'
                         FI = hdf5info(FileName);
