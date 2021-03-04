@@ -436,6 +436,8 @@ switch FI.FileType(9:end)
                 Ans = netcdffil(FI.mesh.nc_file,idom,FI.mesh.quant(j),'griddata',idx{M_});
             case 'bed levels'
                 Ans = netcdffil(FI.mesh.nc_file,idom,FI.BedLevel,'griddata',idx{M_});
+                % use uniform value for locations without value assigned.
+                Ans.Val(isnan(Ans.Val)) = FI.BedLevelUni;
             case {'bed level','bed level on 1D mesh','bed level on 2D mesh'}
                 j = Props.varid;
                 Ans = netcdffil(FI.mesh.nc_file,idom,FI.mesh.quant(j),'grid',idx{M_});
@@ -938,12 +940,21 @@ switch FI.FileType
                         ifld = ifld+1;
                         BL = FI.(flds{i});
                         if isstruct(BL) % quantity on mesh
-                            Out(ifld).Name = 'bed levels';
-                            Out(ifld).Units = 'm';
-                            Out(ifld).Geom = 'UGRID1D-NODE';
-                            Out(ifld).Coords = 'xy';
-                            Out(ifld).DimFlag(M_) = 6;
-                            Out(ifld).NVal = 1;
+                            if FI.BedLevelType == 1
+                                Out(ifld).Name = 'bed levels';
+                                Out(ifld).Units = 'm';
+                                Out(ifld).Geom = 'UGRID2D-FACE';
+                                Out(ifld).Coords = 'xy';
+                                Out(ifld).DimFlag(M_) = 6;
+                                Out(ifld).NVal = 1;
+                            else
+                                Out(ifld).Name = 'bed levels';
+                                Out(ifld).Units = 'm';
+                                Out(ifld).Geom = 'UGRID2D-NODE';
+                                Out(ifld).Coords = 'xy';
+                                Out(ifld).DimFlag(M_) = 6;
+                                Out(ifld).NVal = 1;
+                            end
                         elseif isscalar(BL)
                             for j = FI.mesh.meshes(:)'
                                 Out(ifld).Name = 'bed level';

@@ -1257,8 +1257,7 @@ end
 function write_log_domain(logid,domain)
 switch log_style
     case 'latex'
-        fprintf(logid,'\\newline\n');
-        fprintf(logid,'\\textbf{Domain ''%s''}\\newline\n',domain);
+        fprintf(logid,'\n\\textbf{Domain ''%s''}\\newline\n',domain);
     otherwise
         fprintf(logid,'<b>Domain ''%s''</b><br>\n',domain);
 end

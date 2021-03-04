@@ -200,7 +200,7 @@ if XYRead
         %
         switch Props.Name
             case {'closed boundaries','open boundary','transmission boundaries'}
-                LELNR=ph_let(FI,'GRID_adm',{1},'LELNR','quiet');
+                LELNR=ph_let(FI,'GRID_adm',{1},'LELNR',{0},'quiet');
                 LELNR=LELNR(cumsum(INELEM))';
                 elm={};
                 ind=0;
@@ -540,7 +540,7 @@ else
         %
         Freqs = ph_let(FI,'SPECTRAL-INFO',{0},'SPECTRAL-RPAR',{1},'quiet');
     else
-        Freqs = ph_let(FI,'INFO',{0},'RPAR','quiet');
+        Freqs = ph_let(FI,'INFO','RPAR',{1},'quiet');
     end
     iszero = Freqs==0;
     Freqs(iszero) = 1;
@@ -731,7 +731,9 @@ function varargout = ph_get(FI, varargin)
 if isfield(FI, 'GrpDat')
     [varargout{1:nargout}] = vs_get(FI, varargin{:});
 else
-    varargout = {ph_ncget(FI, varargin{:})};
+    from_let = ph_ncget(FI, varargin{:});
+    sz_let = size(from_let);
+    varargout = {reshape(from_let, sz_let(2:end))};
 end
 
 function varargout = ph_let(FI, varargin)
@@ -767,7 +769,7 @@ switch ncVar
         gDim = {};
     otherwise
         switch Grp
-            case {'HS_dir','GRID'}
+            case {'HS_dir','GRID','GRID_adm'}
                 gDim= {};
         end
 end
@@ -799,9 +801,9 @@ for i = length(gDim):-1:1
 end
 iVar = ustrcmpi(ncVar,{FI.Dataset.Name});
 szVar = FI.Dataset(iVar).Size;
-fprintf('%s: %s -> %s (%i)\n',Grp,Elm,ncVar,iVar);
-fprintf('size = %s\n', vec2str(szVar));
-fprintf('index = %s %s\n', vec2str(gCount), vec2str(eCount));
+%fprintf('%s: %s -> %s (%i)\n',Grp,Elm,ncVar,iVar);
+%fprintf('size = %s\n', vec2str(szVar));
+%fprintf('index = %s %s\n', vec2str(gCount), vec2str(eCount));
 if ismember(ncVar,{'SPECTRAL-RPAR','RPAR','PHI_R','PHI_I'})
     % variables with group dimension last
     start = [eStart gStart];
@@ -811,6 +813,7 @@ if ismember(ncVar,{'SPECTRAL-RPAR','RPAR','PHI_R','PHI_I'})
         data = reshape(data, count);
     end
     data = data(eDim{:},gDim{:});
+    % make sure to return data with group dimension first
     if length(count) > 1
         data = permute(data, [length(eDim)+(1:length(gDim)) 1:length(eDim)]); % group dimensions should go first
     end
@@ -827,6 +830,11 @@ end
 switch ncVar
     case 'SPECTRAL-WEIGHTS'
         data = permute(data, [2:ndims(data) 1]);
+    otherwise
+        % if group dimension was dropped, add it again.
+        if isempty(gDim)
+            data = reshape(data, [1, size(data)]);
+        end
 end
 
 function varargout = ph_disp(FI, varargin)

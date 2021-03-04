@@ -1017,9 +1017,31 @@ if ~isempty(mshname)
     MF.mesh.nc_file = F;
     imeshquant = find(([Q.NVal]==0 & ~strcmp({Q.Name},'-------') & [Q.UseGrid]~=0) | [Q.NVal]==4);
     MF.mesh.quant = Q(imeshquant);
-    % meshes are the fields with "mesh" in their name (Topology data of ?D mesh) and NVal == 0
-    nQuant = numel(Q);
-    imesh = find([Q.UseGrid]==1:nQuant & [Q.NVal]==0 & cellfun(@(x)~isempty(strfind(x,'mesh')),{Q.Name}));
+    %
+    ismesh = cellfun(@iscell,{Q.varid}) & [Q.NVal]==0;
+    for i = 1:length(ismesh)
+        if ismesh(i)
+            ismesh(i) = isequal(Q(i).varid{1},'node_index');
+            if ismesh(i)
+                if strcmp(Q(i).Geom, 'UGRID1D_NETWORK-NODE')
+                    mesh1d_id = Q(i).varid{2};
+                    Mesh1D = F.Dataset(mesh1d_id+1);
+                    csp = ustrcmpi('coordinate_space', {Mesh1D.Attribute.Name});
+                    Network = Mesh1D.Attribute(csp).Value;
+                    network_id = ustrcmpi(Network,{F.Dataset.Name})-1;
+                    for j = 1:length(ismesh)
+                        if ismesh(j)
+                            if isequal(Q(j).varid{2}, network_id)
+                                ismesh(j) = false;
+                                break
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    imesh = find(ismesh);
     [~,MF.mesh.meshes] = ismember(imesh,imeshquant);
     %
     FirstPoint = netcdffil(F,1,Q(1),'grid',1);
@@ -1089,8 +1111,14 @@ for i = 1:size(attfiles,1)
                 ibl2d = find(ibl2d)-1;
                 if ~isempty(ibl2d)
                     % use bed level from mesh file
-                    iq = cellfun(@(x) isequal(x,ibl2d),{Q.varid}');
+                    iq = false(size(Q));
+                    for j = 1:length(iq)
+                        if isnumeric(Q(j).varid) & ~isempty(Q(j).varid) & isscalar(Q(j).varid) & strcmp(Q(j).Geom,'UGRID2D-FACE')
+                            iq(j) = ismember(Q(j).varid,ibl2d);
+                        end
+                    end
                     MF.BedLevel = Q(iq);
+                    MF.BedLevelUni = zkuni;
                 else
                     % use uniform bed level
                     MF.BedLevel = zkuni;
@@ -1108,8 +1136,14 @@ for i = 1:size(attfiles,1)
             ibl2d = find(ibl2d)-1;
             if ~isempty(ibl2d)
                 % use bed level from mesh file
-                iq = cellfun(@(x) isequal(x,ibl2d),{Q.varid}');
+                    iq = false(size(Q));
+                    for j = 1:length(iq)
+                        if isnumeric(Q(j).varid) & ~isempty(Q(j).varid) & isscalar(Q(j).varid) & strcmp(Q(j).Geom,'UGRID2D-NODE')
+                            iq(j) = ismember(Q(j).varid,ibl2d);
+                        end
+                    end
                 MF.BedLevel = Q(iq);
+                MF.BedLevelUni = zkuni;
             else
                 % use uniform bed level
                 MF.BedLevel = zkuni;
