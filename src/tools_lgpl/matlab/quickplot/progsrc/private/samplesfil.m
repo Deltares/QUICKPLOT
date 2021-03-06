@@ -355,7 +355,7 @@ end
 % No triangulation possible if only one or two points, or only one
 % coordinate, or if all data are strings
 if (length(FI.nLoc)==1 && FI.nLoc<2) || isempty(FI.Y) || isempty(FI.X) || iscell(FI.XYZ)
-    Out(2)=[];
+    Out(2:3)=[];
     for i=1:NPar
         if isempty(FI.X)
             if isempty(FI.Y)

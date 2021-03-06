@@ -251,7 +251,7 @@ switch Props.Name
         idx{M_}=0;
 end
 
-RPAR=ph_get(FI,'INFO','RPAR',{0},'quiet');
+RPAR=ph_get(FI,'INFO',{1},'RPAR',{0},'quiet');
 WL = RPAR(4);
 switch Props.NVal
     case 0
@@ -733,7 +733,7 @@ if isfield(FI, 'GrpDat')
 else
     from_let = ph_ncget(FI, varargin{:});
     sz_let = size(from_let);
-    varargout = {reshape(from_let, sz_let(2:end))};
+    varargout = {reshape(from_let, [sz_let(2:end), 1])};
 end
 
 function varargout = ph_let(FI, varargin)
@@ -767,9 +767,13 @@ switch ncVar
         gDim = [{1} gDim];
     case 'QH_incident'
         gDim = {};
+    case 'LELNR'
+        gDim = {};
+    case 'RPAR'
+        gDim = {};
     otherwise
         switch Grp
-            case {'HS_dir','GRID','GRID_adm'}
+            case {'HS_dir','GRID'}
                 gDim= {};
         end
 end
@@ -801,9 +805,11 @@ for i = length(gDim):-1:1
 end
 iVar = ustrcmpi(ncVar,{FI.Dataset.Name});
 szVar = FI.Dataset(iVar).Size;
-%fprintf('%s: %s -> %s (%i)\n',Grp,Elm,ncVar,iVar);
-%fprintf('size = %s\n', vec2str(szVar));
-%fprintf('index = %s %s\n', vec2str(gCount), vec2str(eCount));
+% if strcmp(Grp, 'GRID_adm')
+%     fprintf('%s: %s -> %s (%i)\n',Grp,Elm,ncVar,iVar);
+%     fprintf('size = %s\n', vec2str(szVar));
+%     fprintf('index = %s %s\n', vec2str(gCount), vec2str(eCount));
+% end
 if ismember(ncVar,{'SPECTRAL-RPAR','RPAR','PHI_R','PHI_I'})
     % variables with group dimension last
     start = [eStart gStart];
