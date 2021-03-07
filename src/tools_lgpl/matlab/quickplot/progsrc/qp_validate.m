@@ -1422,7 +1422,7 @@ switch log_style
         dTTR = duration(TotTimeRef);
         dTT  = duration(TotTime);
         if abs(TotTime-TotTimeRef)<0.005*TotTimeRef
-            fprintf(sumid,'The overall time spent on the test cases (%s) is similar to the reference time (%f);',dTT,dTTR);
+            fprintf(sumid,'The overall time spent on the test cases (%s) is similar to the reference time (%s);',dTT,dTTR);
         elseif TotTime>TotTimeRef
             fprintf(sumid,'The overall time spent on the test cases has increased by about %.0f \\%% from %s to %s;',(TotTime/TotTimeRef-1)*100,dTTR,dTT);
         else
