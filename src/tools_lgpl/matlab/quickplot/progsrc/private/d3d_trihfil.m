@@ -673,6 +673,13 @@ DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     '' 
     'free convection of latent heat'   'W/m^2'  [1 5 0 0 0]  0  1     ''       'z'   'z'       ''      'his-series'     'ZEFREE'   ''         []       0
 %    'computed minus derived heat flux' 'W/m^2'  [1 5 0 0 0]  0  1     ''       'z'   'z'       ''      'his-series'     'ZQMIS'    ''         []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    'significant wave height'   'm'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-wav-series' 'ZHS'      ''         []       0
+    'peak wave period'          's'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-wav-series' 'ZTP'      ''         []       0
+    'wave direction'            'deg'    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-wav-series' 'ZDIR'     ''         []       0
+    'wave length'               'm'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-wav-series' 'ZRLABD'   ''         []       0
+    'peak near-bed orbital velocity' 'm/s' [1 5 0 0 0] 0        1     ''       'z'   'z'       ''      'his-wav-series' 'ZUORB'    ''         []       0
+    'peak near-bed orbital velocity' 'm/s' [1 5 0 0 0] 0        1     ''       'z'   'z'       ''      'his-wav-series' 'ZUWB'     ''         []       0
+    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'water level'               'm'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZWL'      ''         []       0
     'water depth'               'm'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-series'     'ZWL'      ''         []       0
     'depth averaged velocity'   'm/s'    [1 5 0 0 0]  0         2     'u'      'z'   'z'       ''      'his-series'     'ZCURU'    'ZCURV'    []       1
@@ -691,13 +698,6 @@ DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     '' 
     'vertical eddy diffusivity' 'm^2/s'  [1 5 0 0 1]  0         1     ''       'z'   'z'       'i'     'his-series'     'ZDICWW'   ''         []       0
     'richardson number'         '-'      [1 5 0 0 1]  0         1     ''       'z'   'z'       'i'     'his-series'     'ZRICH'    ''         []       0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
-    'significant wave height'   'm'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-wav-series' 'ZHS'      ''         []       0
-    'peak wave period'          's'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-wav-series' 'ZTP'      ''         []       0
-    'wave direction'            'deg'    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-wav-series' 'ZDIR'     ''         []       0
-    'wave length'               'm'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-wav-series' 'ZRLABD'   ''         []       0
-    'peak near-bed orbital velocity' 'm/s' [1 5 0 0 0] 0        1     ''       'z'   'z'       ''      'his-wav-series' 'ZUORB'    ''         []       0
-    'peak near-bed orbital velocity' 'm/s' [1 5 0 0 0] 0        1     ''       'z'   'z'       ''      'his-wav-series' 'ZUWB'     ''         []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'settling velocity'         'm/s'    [1 5 0 0 1]  0         1     ''       'z'   'z'       'i'     'his-sed-series' 'ZWS'      ''         's1'     0
     'equilibrium concentrations' 'kg/m^3' [1 5 0 0 1] 0         1     ''       'z'   'z'       'c'     'his-sed-series' 'ZRSDEQ'   ''         'sb'     0
     'available mass in fluff layer' 'kg/m^2' [1 5 0 0 0]  0     1    ''        'z'   'z'       ''      'his-sed-series' 'MFLUFF'   ''         's'      0
@@ -705,11 +705,23 @@ DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     '' 
     'bed load transport'        'm^3/s/m' [1 5 0 0 0]  0        2     'u'      'z'   'z'       ''      'his-sed-series' 'ZSBU'     'ZSBV'     'sb'     1
     'd.a. suspended transport'  'm^3/s/m' [1 5 0 0 0]  0        2     'u'      'z'   'z'       ''      'his-sed-series' 'ZSSU'     'ZSSV'     'sb'     1
     'total transport'           'm^3/s/m' [1 5 0 0 0]  0        2     'u'      'z'   'z'       ''      'his-sed-series' 'ZSUU'     'ZSSV'     'sb'     1
+    'source term suspended sediment fractions' ...
+                                'kg/m^3/s' [1 5 0 0 0] 0        1     ''       'z'   'z'       ''      'his-sed-series' 'ZSOURSE'  ''         's'      0
+    'sink term suspended sediment fractions'   ...
+                                '1/s'    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sed-series' 'ZSINKSE'  ''         's'      0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'bed shear stress'          'N/m^2'  [1 5 0 0 0]  0         2     'u'      'z'   'z'       ''      'his-series'     'ZTAUKS'   'ZTAUET'   []       1
+    'bed shear stress for morphology' 'N/m^2'  [1 5 0 0 0]  0   1     ''       'z'   'z'       ''      'his-sed-series' 'ZTAUB'    ''         []       0
     'bed level'                  'm'     [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-const'      'DPS'      ''         []       0
     'cum. erosion/sedimentation' 'm'     [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sed-series' 'ZDPS'     ''         []       0
     'morphological acceleration factor' '-' [1 0 0 0 0] 0       1     ''       'NA'  ''        ''    'his-infsed-serie' 'MORFAC'   ''         []       0
+    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    'sediment fraction in top layer'  '-'  [1 5 0 0 0]  0       1     ''       'z'   'z'       ''      'his-sed-series' 'ZFRAC'    ''         'sb1'    0
+    'mud fraction in top layer'       '-'  [1 5 0 0 0]  0       1     ''       'z'   'z'       ''      'his-sed-series' 'ZMUDFRAC' ''         []       0
+    'sand fraction in top layer'      '-'  [1 5 0 0 0]  0       1     ''       'z'   'z'       ''      'his-sed-series' 'ZSANDFRAC' ''        []       0
+    'hiding and exposure'             '-'  [1 5 0 0 0]  0       1     ''       'z'   'z'       ''      'his-sed-series' 'ZHIDEXP'  ''         'sb1'    0
+    'reduction factor due to limited sediment thickness' ...
+                                      '-'  [1 5 0 0 0]  0       1     ''       'z'   'z'       ''      'his-sed-series' 'ZFIXFAC'  ''         'sb1'    0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'instantaneous discharge'   'm^3/s'  [1 5 0 0 0]  0         1     ''       ''    ''        ''      'his-series'     'CTR'      ''         []       0
     'cumulative discharge'      'm^3'    [1 5 0 0 0]  0         1     ''       ''    ''        ''      'his-series'     'FLTR'     ''         []       0
@@ -728,43 +740,45 @@ DataProps={'location observation points'   ''   [1 6 0 0 0]  0         4     '' 
     'cumulative total transport'     '*' [1 5 0 0 0]  0         1     ''       ''    ''        ''      'his-sed-series' 'SSTRC'    'SBTRC'    's'      0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         's'      0
     'dimensionless sediment diameter' '-' ...
-    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZDSTAR'   ''         's'      0
+                                         [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZDSTAR'   ''         's'      0
     'current-related bed roughness height' 'm' ...
-    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZRC'      ''         's'      0
+                                         [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZRC'      ''         's'      0
     'wave-related bed roughness height' 'm' ...
-    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZRW'      ''         's'      0
+                                         [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZRW'      ''         's'      0
     'critical bed shear stress' 'N/m^2'  [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZTAUCR'   ''         's'      0
     'current-related bed shear stress' 'N/m^2' ...
-    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZTAUC'    ''         's'      0
+                                         [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZTAUC'    ''         's'      0
     'wave-related bed shear stress' 'N/m^2' ...
-    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZTAUWV'   ''         's'      0
+                                         [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZTAUWV'   ''         's'      0
     'efficiency factor - current' '-' ...
-    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZMUC'     ''         's'      0
+                                         [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZMUC'     ''         's'      0
     'efficiency factor - waves' '-' ...
-    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZMUWA'    ''         's'      0
+                                         [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZMUWA'    ''         's'      0
     'thickness of near-bed sediment mixing layer' 'm' ...
-    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZDELM'    ''         's'      0
+                                         [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZDELM'    ''         's'      0
     'sediment reference height' 'm'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZAKS'     ''         's'      0
     'dimensionless sediment suspension parameter' '-' ...
-    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZTA'      ''         's'      0
+                                         [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZTA'      ''         's'      0
     'near-bed reference concentration of sediment' 'kg/m^3' ...
-    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZRCA'     ''         's'      0
+                                         [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZRCA'     ''         's'      0
+    'near-bed reference concentration of sediment' 'kg/m^3' ...
+                                         [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZRCA'     ''         's'      0                                         
     'suspended sediment particle size' 'm' ...
-    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZDSS'     ''         's'      0
+                                         [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZDSS'     ''         's'      0
     'vertical sediment diffusion coefficient' 'm^2/s' ...
-    [1 5 0 0 1]  0         1     ''       'z'   'z'       'i'     'his-sdx-series' 'ZSEDDF'   ''         's'      0
+                                         [1 5 0 0 1]  0         1     ''       'z'   'z'       'i'     'his-sdx-series' 'ZSEDDF'   ''         's'      0
     'wave orbital velocity in onshore direction' 'm/s' ...
-    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZUON'     ''         's'      0
+                                         [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZUON'     ''         's'      0
     'wave orbital velocity in offshore direction' 'm/s' ...
-    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZUOFF'    ''         's'      0
+                                         [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZUOFF'    ''         's'      0
     'magnitude of (unadjusted) bedload transport vector' 'm^3/m/s' ...
-    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZQBT'     ''         's'      0
+                                         [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZQBT'     ''         's'      0
     'magnitude of current-related bedload transport vector' 'm^3/m/s' ...
-    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZQBC'     ''         's'      0
+                                         [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZQBC'     ''         's'      0
     'magnitude of wave-related bedload transport vector' 'm^3/m/s' ...
-    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZQBW'     ''         's'      0
+                                         [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZQBW'     ''         's'      0
     'magnitude of wave-related near-bed transport vector' 'm^3/m/s' ...
-    [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZQSW'     ''         's'      0
+                                         [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'his-sdx-series' 'ZQSW'     ''         's'      0
     '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'area'                      'm^2'    [1 5 0 0 0]  0         1     ''       'NA'  ''        ''      'his-bal-const'  'BALAREAS' ''         []       0
     'volume'                    'm^3'    [1 5 0 0 0]  0         1     ''       'NA'  ''        ''      'his-bal-series' 'BALVOLUME' ''        []       0

@@ -1421,6 +1421,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    'sQU
     'bed shear stress'                 'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-series'     'TAUKSI'  'TAUETA' []       1
     'staggered bed shear stress'       'N/m^2'  [1 0 1 1 0]  1         1.9  'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-series'     'TAUKSI'  'TAUETA' []       1
     'maximum bed shear stress'         'N/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'TAUMAX'  ''       []       0
+    'bed shear stress for morphology'  'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-sed-series' 'TAUB'    ''       []       0
     'excess bed shear ratio'           '-'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'TAURAT'  ''       'sb1'    0
     'initial bed level'                'm'      [0 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-const'      'DP0'     ''       []       0
     'bed level in water level points'  'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'd'   'z'       ''      'map-const'      'DP0'     ''       []       0
