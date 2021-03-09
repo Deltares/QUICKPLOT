@@ -92,7 +92,7 @@ for i = 1:length(ch)
     chtype = get(ch(i), 'type');
     if strcmp(chtype, 'text')
         p = get(ch(i), 'position');
-        for j = 1, ndim
+        for j = 1:ndims
             switch dlim(j)
                 case 'x'
                     lim{j}(1) = min(lim{j}(1), p(1));
