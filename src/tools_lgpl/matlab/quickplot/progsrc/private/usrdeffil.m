@@ -266,15 +266,21 @@ if isequal(Props.FileInfo,'operator')
             if isfield(Ans,'Val')
                 sz1=size(Ans.Val);
                 vec1=0;
-            else
+            elseif isfield(Ans,'XComp')
                 sz1=size(Ans.XComp);
+                vec1=1;
+            elseif isfield(Ans,'XDamVal')
+                sz1=size(Ans.XDamVal);
                 vec1=1;
             end
             if isfield(Ans2,'Val')
                 sz2=size(Ans2.Val);
                 vec2=0;
-            else
+            elseif isfield(Ans2,'XComp')
                 sz2=size(Ans2.XComp);
+                vec2=1;
+            elseif isfield(Ans2,'XDamVal')
+                sz2=size(Ans2.XDamVal);
                 vec2=1;
             end
             if length(sz1)~=length(sz2)
@@ -292,6 +298,8 @@ if isequal(Props.FileInfo,'operator')
                     Ans.XComp=repmat(Ans.XComp,res1);
                     if isfield(Ans,'YComp');
                         Ans.YComp=repmat(Ans.YComp,res1);
+                    elseif isfield(Ans,'YDamVal');
+                        Ans.YComp=repmat(Ans.YDamVal,res1);
                     end
                     if isfield(Ans,'ZComp');
                         Ans.ZComp=repmat(Ans.ZComp,res1);
@@ -306,6 +314,8 @@ if isequal(Props.FileInfo,'operator')
                     Ans2.XComp=repmat(Ans2.XComp,res2);
                     if isfield(Ans2,'YComp');
                         Ans2.YComp=repmat(Ans2.YComp,res2);
+                    elseif isfield(Ans2,'YDamVal');
+                        Ans2.YComp=repmat(Ans2.YDamVal,res2);
                     end
                     if isfield(Ans2,'ZComp');
                         Ans2.ZComp=repmat(Ans2.ZComp,res2);
@@ -729,7 +739,14 @@ else
     end
     [Chk,sz]=qp_getdata(Props.FileInfo,DomainNr,Props.Props,'size');
     for i=1:5
-        if ~isempty(Props.Selected{i}) && ~isequal(Props.Selected{i},0)
+        if iscell(Props.Selected{i})
+            if i == 3
+                sz(i) = 111;
+                sz(i+1) = 1;
+            elseif i == 5
+                sz(i) = 1;
+            end
+        elseif ~isempty(Props.Selected{i}) && ~isequal(Props.Selected{i},0)
             sz(i)=length(Props.Selected{i});
         end
     end

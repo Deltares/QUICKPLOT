@@ -2025,6 +2025,12 @@ switch cmd
                     File(NrInList).Data(i).Selected=selected;
                     File(NrInList).Data(i).SubField=subf;
                     File(NrInList).Data(i).DimFlag=Props.DimFlag;
+                    if iscell(selected{3})
+                        File(NrInList).Data(i).DimFlag(3) = inf;
+                        File(NrInList).Data(i).DimFlag(4) = 0;
+                    elseif iscell(selected{5})
+                        File(NrInList).Data(i).DimFlag(5) = 0;
+                    end
                     File(NrInList).Data(i).DataInCell=0;
                     if isfield(Props,'DataInCell')
                         File(NrInList).Data(i).DataInCell=Props.DataInCell;
