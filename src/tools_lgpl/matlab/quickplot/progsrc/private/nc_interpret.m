@@ -1658,8 +1658,13 @@ for mesh = NumMeshes:-1:1
         file = Partitions{p}.Filename;
         xNodes{p} = nc_varget(file,xNodeVar);
         yNodes{p} = nc_varget(file,yNodeVar);
-        iFaces{p} = nc_varget(file,'mesh2d_flowelem_globalnr');
-        faceDomain{p} = nc_varget(file,'mesh2d_flowelem_domain');
+        try
+            iFaces{p} = nc_varget(file,'mesh2d_flowelem_globalnr');
+            faceDomain{p} = nc_varget(file,'mesh2d_flowelem_domain');
+        catch
+            iFaces{p} = nc_varget(file,'iglobal_s');
+            faceDomain{p} = nc_varget(file,'idomain');
+        end
         faceMask{p} = faceDomain{p} == p-1;
         %
         progressbar((NumMeshes-mesh)/NumMeshes + (p/(2*nPart))/NumMeshes, hPB);
