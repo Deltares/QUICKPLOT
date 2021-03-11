@@ -328,8 +328,10 @@ if ~isempty(FI.Times)
     end
     %
     Out(end).DimFlag(1) = 1;
-    for i = [1 2 4]
-        Out(i).DimFlag(3) = f3;
+    for i = 1:length(Out)
+        if ~strcmp(Out(i).Name, '-------')
+            Out(i).DimFlag(3) = f3;
+        end
     end
 end
 
