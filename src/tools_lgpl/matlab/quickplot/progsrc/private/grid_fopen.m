@@ -121,6 +121,14 @@ while isempty(DataFI)
                 catch err1
                     try
                         DataFI=wldep('read',FileName,gridsize-1,'multiple');
+                        % if the array matches the grid size minus one then expand the
+                        % array read by one such that the indexing works consistently.
+                        for i = 1:length(DataFI)
+                            df = DataFI(i).Data;
+                            df(1:end+1,end+1) = NaN;
+                            df(end,:) = NaN;
+                            DataFI(i).Data = df;
+                        end
                     catch
                         rethrow(err1)
                     end
