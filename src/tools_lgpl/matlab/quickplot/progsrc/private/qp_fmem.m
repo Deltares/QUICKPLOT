@@ -643,7 +643,8 @@ switch cmd
                             Tp=FI.FileType;
                         end
                         if FI.Header.n_quantity==1 && ...
-                                strcmp(FI.Header.quantity{1}(2:end),'_wind')
+                                strcmp(FI.Header.quantity{1}(2:end),'_wind') && ...
+                                ~isfield(FI,'Vector')
                             if FileFromCall
                                 if nargin>2
                                     veccomp2=absfullfile(varargin{2});

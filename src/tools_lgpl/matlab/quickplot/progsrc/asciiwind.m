@@ -569,10 +569,16 @@ if isequal(S2.Check,'OK')
             ui_message('','Grid locations in wind files for x and y don''t match.')
         elseif (isfield(S2.Header,'value_pos') || isfield(S.Header,'value_pos')) && ~isequal(S2.Header.value_pos,S.Header.value_pos)
             ui_message('','Data locations in wind files for x and y don''t match.')
-        elseif  ~isequal(S2.Data,S.Data)
-            ui_message('','Times in wind files for x and y don''t match.')
         else
-            S.Vector = S2;
+            % checcking whether the times are the same should not include the
+            % offset, i.e. the starting byte location within the file
+            T = rmfield(S.Data,'offset');
+            T2 = rmfield(S2.Data,'offset');
+            if  ~isequal(T2,T)
+                ui_message('','Times in wind files for x and y don''t match.')
+            else
+                S.Vector = S2;
+            end
         end
     elseif strcmp(S2.Header.filetype,'meteo_on_curvilinear_grid')
         if ~isequal(S2.Header.grid_file,S.Header.grid_file)
