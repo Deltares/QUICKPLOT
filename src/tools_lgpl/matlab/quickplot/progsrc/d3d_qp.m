@@ -599,18 +599,26 @@ switch cmd
                     d3d_qp('difffile1',cmdargs{1})
                     d3d_qp('one_domain')
                     if nargin>2
-                        domList = get(dom1,'userdata');
-                        idom = find(strcmp(domList,cmdargs{2}));
-                        set(dom1,'value',idom)
+                        domList = get(dom1,'string');
+                        idom = ustrcmpi(cmdargs{2},domList);
+                        if idom<0
+                            ui_message('warning','Unable to identify domain ''%s'' in file %s.',cmdargs{2},cmdargs{1})
+                        else
+                            set(dom1,'value',idom)
+                        end
                     end
                     if nargin>3
                         d3d_qp('difffile2',cmdargs{3})
                         interactive = isequal(cmdargs{1},cmdargs{3});
                     end
                     if nargin>4
-                        domList = get(dom2,'userdata');
-                        idom = find(strcmp(domList,cmdargs{4}));
-                        set(dom2,'value',idom)
+                        domList = get(dom2,'string');
+                        idom = ustrcmpi(cmdargs{4},domList);
+                        if idom<0
+                            ui_message('warning','Unable to identify domain ''%s'' in file %s.',cmdargs{4},cmdargs{3})
+                        else
+                            set(dom2,'value',idom)
+                        end
                     end
                     if nargin>5
                         d3d_qp('difflabel',cmdargs{5})
@@ -655,17 +663,17 @@ switch cmd
         DiffType = DTpStr{get(DTp,'value')};
         if strcmp(get(h1D,'enable'),'on') && get(h1D,'value')
             Domains = [get(dom1,'value') get(dom2,'value')];
-            domList = get(dom1,'userdata');
-            if isempty(domList)
-                Domain1 = '';
-            else
+            domList = get(dom1,'string');
+            if iscell(domList)
                 Domain1 = domList{Domains(1)};
-            end
-            domList = get(dom2,'userdata');
-            if isempty(domList)
-                Domain2 = '';
             else
+                Domain1 = '';
+            end
+            domList = get(dom2,'string');
+            if iscell(domList)
                 Domain2 = domList{Domains(2)};
+            else
+                Domain2 = '';
             end
             cmd = 'diff_files_one_domain';
         else
