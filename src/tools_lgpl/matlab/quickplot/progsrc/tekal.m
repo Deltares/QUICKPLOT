@@ -467,18 +467,43 @@ function [Data,ErrorFound,ExtraData] = read_numeric(fid,BlockName,dim,TryToCorre
 offset     = ftell(fid);
 ErrorFound = 0;
 try
-    if isenvironment('Octave')
-        prefix = '%*[ ]';
-    else
-        prefix = '';
+    % read until problem occurs (hopefully the name of the next block or eof)
+    Data = [];
+    ExtraData = [];
+    found = true;
+    while found
+        found = false;
+        % unfortunately lines starting with tab and without any blanks
+        % cannot be read by one textscan statement.
+        for pre = 1:2
+            if pre == 1
+                prefix = '';
+            else
+                prefix = '%*[ \t]';
+            end
+            if ~isfinite(dim(2))
+                d2 = textscan(fid,[prefix repmat('%f%*[ \t]',1,dim(1)-1) '%f%s'],'delimiter','','whitespace','');
+            else
+                d2 = textscan(fid,[prefix repmat('%f%*[ \t]',1,dim(1)-1) '%f%s'],dim(2)-size(Data,1),'delimiter','','whitespace','');
+            end
+            Data2 = cat(2,d2{1:dim(1)});
+            if ~isempty(Data2)
+                found = true;
+                Data = cat(1,Data,Data2);
+                ExtraData2 = strtrim(d2{end});
+                ExtraData = cat(1,ExtraData,ExtraData2);
+                if size(Data,1) == dim(2)
+                    break
+                end
+            end
+        end
+        if size(Data,1) == dim(2)
+            break
+        end
     end
-    if ~isfinite(dim(2))
-        d2 = textscan(fid,[prefix repmat('%f%*[ ]',1,dim(1)-1) '%f%s'],'delimiter','','whitespace',''); % read until problem occurs (hopefully the name of the next block or eof)
-    else
-        d2 = textscan(fid,[prefix repmat('%f%*[ ]',1,dim(1)-1) '%f%s'],dim(2),'delimiter','','whitespace','');
+    if isfinite(dim(2)) && size(Data,1) ~= dim(2)
+        error('Incomplete data block')
     end
-    Data = cat(2,d2{1:dim(1)});
-    ExtraData = strtrim(d2{end});
     textscan_failed = 0;
 catch
     textscan_failed = 1;
