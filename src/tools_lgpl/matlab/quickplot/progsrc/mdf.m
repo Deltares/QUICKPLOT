@@ -1159,7 +1159,7 @@ for i = 1:size(attfiles,1)
         for ifile = length(filenames):-1:1
             filename = relpath(md_path,filenames{ifile});
             switch key
-                case 'BedLevel'
+                case {'BedLevel','WaterLevIni'}
                     F = samples('read',filename);
                 case 'Crs'
                     try
@@ -1336,6 +1336,8 @@ for i = 1:size(attfiles,1)
                     F = inifile('open',filename);
                 case 'Structure'
                     F = inifile('open',filename);
+                case 'FixedWeir'
+                    F = landboundary('read',filename);
                 otherwise
                     F = filename;
             end
