@@ -163,7 +163,7 @@ if isempty(filename)
         while 1
             [f,p,i] = uiputfile(ext, 'Save As', filename);
             if ~ischar(f)
-                break
+                return
             end
             filename = [p,f];
             if ~wildstrmatch(ext{i,1},f)
@@ -227,7 +227,8 @@ for f=1:ntim
             Chk=1;
             data=[];
     end
-    
+    data = qp_clipvalues(data, Ops);
+
     if strcmp(Ops.presentationtype,'vector') || ...
             strcmp(Ops.presentationtype,'markers') || ...
             strcmp(Ops.presentationtype,'values') || ...
@@ -1137,7 +1138,64 @@ try
         end
         DATA = data(g);
         %
+        if isfield(DATA,'Val') && isfield(DATA, 'ValLocation')
+            switch DATA.ValLocation
+                case 'FACE'
+                    % remove any faces with NaN values
+                    if isfield(DATA,'FaceNodeConnect')
+                        fMask = isnan(DATA.Val);
+                        DATA.FaceNodeConnect(fMask,:) = [];
+                        DATA.Val(fMask) = [];
+                    end
+                    % if there is an EdgeNodeConnect, we have to filter out
+                    % the edges that only belonged to the faces removed.
+                    % Quick solution: remove the EdgeNodeConnect and
+                    % regenerate.
+                    if isfield(DATA,'EdgeNodeConnect')
+                        DATA = rmfield(DATA,'EdgeNodeConnect');
+                    end
+                case 'EDGE'
+                    if isfield(DATA,'FaceNodeConnect')
+                        % to remove edges, we have to identify which faces
+                        % are bounded by those edges.
+                    elseif isfield(DATA,'EdgeNodeConnect')
+                        % just remove the edges.
+                        eMask = any(ismember(DATA.FaceNodeConnect,nMask),2);
+                        DATA.EdgeNodeConnect(eMask,:) = [];
+                    end
+                case 'NODE'
+                    % remove all faces/edges connected to nodes with NaN
+                    % values
+                    nMask = find(isnan(DATA.Val));
+                    if isfield(DATA,'FaceNodeConnect')
+                        fMask = any(ismember(DATA.FaceNodeConnect,nMask),2);
+                        DATA.FaceNodeConnect(fMask,:) = [];
+                    end
+                    if isfield(DATA,'EdgeNodeConnect')
+                        eMask = any(ismember(DATA.FaceNodeConnect,nMask),2);
+                        DATA.EdgeNodeConnect(eMask,:) = [];
+                    end
+            end
+        end
         if isfield(DATA,'FaceNodeConnect')
+            allNodes = 1:length(DATA.X);
+            keepNodes = ismember(allNodes,DATA.FaceNodeConnect);
+            if ~all(keepNodes)
+                DATA.X = DATA.X(keepNodes);
+                DATA.Y = DATA.Y(keepNodes);
+                numNodes = length(DATA.X);
+                %
+                renum = zeros(1,numNodes);
+                renum(keepNodes) = 1:numNodes;
+                Mask = isnan(DATA.FaceNodeConnect);
+                DATA.FaceNodeConnect(Mask) = 1;
+                DATA.FaceNodeConnect = renum(DATA.FaceNodeConnect);
+                DATA.FaceNodeConnect(Mask) = NaN;
+                %
+                if isfield(DATA,'EdgeNodeConnect')
+                    DATA.EdgeNodeConnect = renum(DATA.EdgeNodeConnect);
+                end
+            end
             % save as UGRID
             % EdgeNodeConnect is required for a D-Flow FM mesh or network file
             if writeNetFile && ~isfield(DATA,'EdgeNodeConnect')
