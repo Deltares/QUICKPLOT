@@ -988,7 +988,7 @@ if ~all(lDF)
     error('Missing cross section definitions: %s',sprintf('%s ',missingDF{:}))
 else
     % copy CrossSection type to CrossSection location data structure
-    MF.crsLoc=inifile('set',MF.crsLoc,'CrossSection','type',CT(iDF));
+    MF.crsLoc=inifile('seti',MF.crsLoc,'CrossSection','type',CT(iDF));
 end
 %
 strname = propget(MF.md1d,'Files','structureFile');
@@ -1193,7 +1193,7 @@ for i = 1:size(attfiles,1)
                     q = 0;
                     F(nQ).Quantity = '';
                     for k = 1:length(K1)
-                        val = inifile('get',F1,1,Ks(k));
+                        val = inifile('geti',F1,1,Ks(k));
                         switch lower(K1{k})
                             case 'quantity'
                                 q = q+1;
@@ -1243,11 +1243,11 @@ for i = 1:size(attfiles,1)
                     F = [];
                     F.File = inifile('open',filename);
                     ext_path = fileparts(filename);
-                    if inifile('exists',F.File,'boundary')>0
-                        BndQuant = inifile('cgetstring',F.File,'boundary','quantity');
+                    if inifile('existsi',F.File,'boundary')>0
+                        BndQuant = inifile('cgetstringi',F.File,'boundary','quantity');
                         %
-                        [BndLines,pliBnd]  = inifile('cgetstring',F.File,'boundary','locationfile');
-                        [BndNodes,nodBnd] = inifile('cgetstring',F.File,'boundary','nodeId');
+                        [BndLines,pliBnd]  = inifile('cgetstringi',F.File,'boundary','locationfile');
+                        [BndNodes,nodBnd] = inifile('cgetstringi',F.File,'boundary','nodeId');
                         BndLocs = cell(size(BndQuant));
                         BndType = BndLocs;
                         BndLocs(pliBnd) = BndLines;
@@ -1255,7 +1255,7 @@ for i = 1:size(attfiles,1)
                         BndLocs(nodBnd) = BndNodes;
                         BndType(nodBnd) = {'node'};
                         %
-                        BndForce = inifile('cgetstring',F.File,'boundary','forcingfile');
+                        BndForce = inifile('cgetstringi',F.File,'boundary','forcingFile');
                         uBndQuant = unique(BndQuant);
                         F.Bnd.Types = uBndQuant;
                         BndInd = cellfun(@(f)find(strcmp(f,BndQuant)),F.Bnd.Types,'uniformoutput',false);
@@ -1296,7 +1296,7 @@ for i = 1:size(attfiles,1)
                                 if strcmp(ForceFile,'REALTIME')
                                     continue
                                 end
-                                [nForcings,iQ]=inifile('exists',ForceFile,'forcing');
+                                [nForcings,iQ]=inifile('existsi',ForceFile,'forcing');
                                 forcesThisLocAndType = false(size(ForceFile.Data,1));
                                 for iFQ = 1:nForcings
                                     Name = inifile('getstringi',ForceFile,iQ(iFQ),'Name');
@@ -1363,7 +1363,7 @@ F2.Offset = zeros(sz);
 
 
 function F2 = ini2obs(F)
-[~,igrp]=inifile('exists',F,'ObservationPoint');
+[~,igrp]=inifile('existsi',F,'ObservationPoint');
 F2.Name = inifile('getstringi',F,igrp,'Name','');
 F2.SnapTo = inifile('getstringi',F,igrp,'locationType','');
 x = inifile('geti',F,igrp,'x',NaN);
@@ -1382,7 +1382,7 @@ F2.XY = {F.Field.Data}';
 
 
 function F2 = ini2crs(F)
-[~,igrp]=inifile('exists',F,'ObservationCrossSection');
+[~,igrp]=inifile('existsi',F,'ObservationCrossSection');
 F2.Name = inifile('getstringi',F,igrp,'Name','');
 F2.BranchId = inifile('getstringi',F,igrp,'branchId','');
 F2.Offset = inifile('geti',F,igrp,'chainage',NaN);
@@ -1729,7 +1729,7 @@ if isfield(MF,'mor')
         for c = 1:length(Chaps)
             if strcmpi(Chaps{c},'layer')
                 l = l+1;
-                Keys = inifile('keywords',MF.morini.inb,c);
+                Keys = inifile('keywordsi',MF.morini.inb,c);
                 for k = 1:length(Keys)
                     if ~strcmpi(Keys{k},'Type')
                         val = propget(MF.morini.inb,c,k);
