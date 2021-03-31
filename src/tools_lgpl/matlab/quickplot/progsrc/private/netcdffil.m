@@ -128,6 +128,13 @@ else
     marg = 1 + find(fidx==M_);
 end
 
+gAtts = {FI.Attribute.Name};
+iSource = ustrcmpi('source',gAtts);
+if iSource > 0
+    is_dflowfm = ~isempty(strfind(FI.Attribute(iSource).Value,'D-Flow FM'));
+else
+    is_dflowfm = false;
+end
 if FI.NumDomains>1
     args = varargin;
     spatial = false;
@@ -1000,13 +1007,22 @@ if XYRead || XYneeded || ZRead
         vCoordExtended = false;
         vdimid = Info.Z;
         CoordInfo = FI.Dataset(vdimid);
-        if ~isempty(strfind(CoordInfo.Name,'_layer_'))
-            iName  = strrep(CoordInfo.Name,'_layer_','_interface_');
-            iDimid = ustrcmpi(iName,{FI.Dataset.Name});
-            CoordInfo = FI.Dataset(iDimid);
-            idx{K_} = unique([idx{K_} idx{K_}+1]);
-            Props.DimName{K_} = CoordInfo.Dimension{1};
-            vCoordExtended = true;
+        if is_dflowfm
+            if strend(CoordInfo.Name,'_zcc')
+                iName  = strrep(CoordInfo.Name,'_zcc','_zw');
+                iDimid = ustrcmpi(iName,{FI.Dataset.Name});
+                CoordInfo = FI.Dataset(iDimid);
+                idx{K_} = unique([idx{K_} idx{K_}+1]);
+                Props.DimName{K_} = CoordInfo.Dimension{3};
+                vCoordExtended = true;
+            elseif strend(CoordInfo.Name,'_layer_z')
+                iName  = strrep(CoordInfo.Name,'_layer_','_interface_');
+                iDimid = ustrcmpi(iName,{FI.Dataset.Name});
+                CoordInfo = FI.Dataset(iDimid);
+                idx{K_} = unique([idx{K_} idx{K_}+1]);
+                Props.DimName{K_} = CoordInfo.Dimension{1};
+                vCoordExtended = true;
+            end
         end
         %
         if isempty(CoordInfo.Attribute)
@@ -1163,11 +1179,13 @@ if XYRead || XYneeded || ZRead
                         zLocVar  = FormulaTerms{2,2}; % eta
                         szZData  = updateSize(szData,size(eta),hdims);
                         %
-                        % some hacks for D-Flow FM
-                        if strcmp(FormulaTerms{3,1},'bedlevel:')
-                            depth = -depth;
-                        elseif length(FormulaTerms{3,2})>10 && strcmp(FormulaTerms{3,2}(end-9:end),'waterdepth')
-                            depth = depth-eta;
+                        if is_dflowfm
+                            % some hacks for D-Flow FM
+                            if strcmp(FormulaTerms{3,1},'bedlevel:')
+                                depth = -depth;
+                            elseif length(FormulaTerms{3,2})>10 && strcmp(FormulaTerms{3,2}(end-9:end),'waterdepth')
+                                depth = depth-eta;
+                            end
                         end
                         Z = zeros(szZData);
                         for t=1:size(Z,1)
@@ -1291,50 +1309,56 @@ if XYRead || XYneeded || ZRead
                             Z=-Z;
                         end
                         %
-                        % hack for z-layers in FM
-                        %
-                        us = strfind(CoordInfo.Name,'_');
-                        if ~isempty(us)
-                            waterlevel = [CoordInfo.Name(1:us(1)) 's1'];
-                            izw = strmatch(waterlevel,{FI.Dataset.Name});
+                        if is_dflowfm
                             %
-                            zb_t_dependent = true;
-                            bedlevel   = [CoordInfo.Name(1:us(1)) 'mor_bl'];
-                            izb = strmatch(bedlevel,{FI.Dataset.Name});
-                            if isempty(izb)
-                                zb_t_dependent = false;
-                                bedlevel   = [CoordInfo.Name(1:us(1)) 'flowelem_bl'];
+                            % hack for 1D z-layers in FM
+                            %
+                            if strend(CoordInfo.Name,'_layer_z') || strend(CoordInfo.Name,'_interface_z')
+                                us = strfind(CoordInfo.Name,'_');
+                                waterlevel = [CoordInfo.Name(1:us(1)) 's1'];
+                                izw = strmatch(waterlevel,{FI.Dataset.Name});
+                                %
+                                zb_t_dependent = true;
+                                bedlevel   = [CoordInfo.Name(1:us(1)) 'mor_bl'];
                                 izb = strmatch(bedlevel,{FI.Dataset.Name});
-                            end
-                            %
-                            if ~isempty(izw) && ~isempty(izb)
-                                [zw, status] = qp_netcdf_get(FI,FI.Dataset(izw),Props.DimName,idx,getOptions{:});
-                                %
-                                szZwData = size(zw);
-                                szZData = szData;
-                                szZData(hdims) = szZwData(hdims);
-                                Z = expand_hdim(Z,szZData,hdim);
-                                %
-                                for k=1:nZ
-                                    Z(:,HDIMS{:},k) = min(Z(:,HDIMS{:},k),zw);
+                                if isempty(izb)
+                                    zb_t_dependent = false;
+                                    bedlevel   = [CoordInfo.Name(1:us(1)) 'flowelem_bl'];
+                                    izb = strmatch(bedlevel,{FI.Dataset.Name});
                                 end
                                 %
-                                [zb, status] = qp_netcdf_get(FI,FI.Dataset(izb),Props.DimName,idx,getOptions{:});
-                                if zb_t_dependent
+                                if ~isempty(izw) && ~isempty(izb)
+                                    [zw, status] = qp_netcdf_get(FI,FI.Dataset(izw),Props.DimName,idx,getOptions{:});
+                                    %
+                                    szZwData = size(zw);
+                                    szZData = szData;
+                                    szZData(hdims) = szZwData(hdims);
+                                    Z = expand_hdim(Z,szZData,hdim);
+                                    %
                                     for k=1:nZ
-                                        Z(:,HDIMS{:},k) = max(Z(:,HDIMS{:},k),zb);
+                                        Z(:,HDIMS{:},k) = min(Z(:,HDIMS{:},k),zw);
                                     end
-                                else
-                                    for t=1:size(Z,1)
+                                    %
+                                    [zb, status] = qp_netcdf_get(FI,FI.Dataset(izb),Props.DimName,idx,getOptions{:});
+                                    if zb_t_dependent
                                         for k=1:nZ
-                                            Z(t,HDIMS{:},k) = max(Z(t,HDIMS{:},k),zb(1,HDIMS{:}));
+                                            Z(:,HDIMS{:},k) = max(Z(:,HDIMS{:},k),zb);
+                                        end
+                                    else
+                                        for t=1:size(Z,1)
+                                            for k=1:nZ
+                                                Z(t,HDIMS{:},k) = max(Z(t,HDIMS{:},k),zb(1,HDIMS{:}));
+                                            end
                                         end
                                     end
+                                    %
+                                    zLocVar = waterlevel;
+                                else
+                                    Z = expand_hdim(Z,szData,hdim);
                                 end
-                                %
-                                zLocVar = waterlevel;
                             else
-                                Z = expand_hdim(Z,szData,hdim);
+                               % full grid _zcc and _zw coordinates don't
+                               % need special treatment.
                             end
                         else
                             Z = expand_hdim(Z,szData,hdim);
@@ -2678,3 +2702,11 @@ while found
 end
 delete(hPB)
 Psi = Psi - min(Psi);
+
+function check = strend(Str,SubStr)
+len_ss = length(SubStr);
+if length(Str) <  len_ss
+    check = false;
+else
+    check = strcmp(Str(end-len_ss+1:end), SubStr);
+end
