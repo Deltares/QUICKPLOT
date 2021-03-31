@@ -1330,9 +1330,13 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    'sQU
     'roller force'                     'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-rol-series'   'WSU'     'WSV'    []       0
     'roller force'                     'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-trit-series'  'ROLLER_FORCE_X' 'ROLLER_FORCE_Y'  [] 0
     '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''                 ''         ''      []       0
+    'snow thickness on ice cover'      'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'H_SNOW'   ''      []       0
     'area fraction covered by ice'     '-'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-ice-series'   'ICEFRAC'  ''      []       0
+    'area fraction covered by ice'     '-'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'A_ICE'    ''      []       0
     'thickness of ice cover'           'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-ice-series'   'ICETHCK'  ''      []       0
+    'thickness of ice cover'           'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'H_ICE'    ''      []       0
     'pressure of ice cover'            'Pa'     [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-ice-series'   'ICEPRESS' ''      []       0
+    'ice drift velocity'               'm/s'    [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-series'       'U_ICE'    'V_ICE' []       0
     '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
     'water level (when dry: bed level)' 'm'     [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'S1'      ''       []       0
     'water level'                      'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'S1'      ''       []       0
