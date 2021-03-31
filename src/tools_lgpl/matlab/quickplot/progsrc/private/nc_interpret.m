@@ -571,7 +571,9 @@ for ivar = 1:nvars
         % not mesh2d_flowelem_bl or mesh2d_node_z. 
         %
         if ~isempty(strfind(Info.Name,'_interface_z')) || ...
-                ~isempty(strfind(Info.Name,'_layer_z'))
+                ~isempty(strfind(Info.Name,'_layer_z')) || ...
+                ~isempty(strfind(Info.Name,'_zcc')) || ...
+                ~isempty(strfind(Info.Name,'_zw'))
             nc = setType(nc,ivar,idim,'z-coordinate');
         end
         continue
