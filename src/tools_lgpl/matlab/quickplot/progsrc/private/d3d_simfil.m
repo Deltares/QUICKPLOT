@@ -609,7 +609,7 @@ switch FI.FileType
         end
         nBT=length(uBT);
         %
-        if isfield(FI,'strucLoc') && inifile('hexists',FI.strucLoc,'Structure')
+        if isfield(FI,'strucLoc') && inifile('exists',FI.strucLoc,'Structure')
             ST=inifile('hcgetstringi',FI.strucLoc,'Structure','type');
             uST=unique(ST);
         else
@@ -1170,15 +1170,15 @@ ndims = length(Props.DimFlag);
 sz = zeros(1,ndims);
 switch FI.FileType
     case 'Delft3D 1D2D mapping'
-        F=inifile('hchapters',FI.mapping);
+        F=inifile('chapters',FI.mapping);
         sz(M_) = sum(strcmp(F,'1d2dLink'));
     case 'Delft3D D-Flow1D'
         switch Props.Name
             case 'network'
-                F=inifile('hchapters',FI.ntw);
+                F=inifile('chapters',FI.ntw);
                 sz(M_) = sum(strcmp(F,'Branch'));
             case 'nodes'
-                F=inifile('hchapters',FI.ntw);
+                F=inifile('chapters',FI.ntw);
                 sz(M_) = sum(strcmp(F,'Node'));
             case 'grid points'
                 F=inifile('hcgeti',FI.ntw,'Branch','gridPointsCount');
