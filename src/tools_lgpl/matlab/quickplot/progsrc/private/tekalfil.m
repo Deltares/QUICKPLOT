@@ -845,7 +845,7 @@ switch FI.FileType
             end
         end
     case {'BNA File','ArcInfoUngenerate','AutoCAD DXF'}
-        if isfield(FI,'Seg') && ismember(FI.SubType,{'line','polygon'})
+        if isfield(FI,'SubType') && ismember(FI.SubType,{'line','polygon'})
             ncoords = size(FI.Seg(1).Coord,2);
         elseif isfield(FI,'Lines')
             ncoords = size(FI.Lines,1);
