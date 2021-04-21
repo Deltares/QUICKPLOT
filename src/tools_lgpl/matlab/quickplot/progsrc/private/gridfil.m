@@ -564,7 +564,7 @@ if Props.File~=0
             y=y(linidx);
             val{1}=Attrib.Name; % (idx{M_}) indexing done after this switch statement
         case {'drypoint'}
-            val{1}=zeros(size(FI.X));
+            val{1}=NaN(size(FI.X));
             for i=1:size(Attrib.MN,1)
                 i1 = Attrib.MN(i,[1 3]);
                 i2 = Attrib.MN(i,[2 4]);
