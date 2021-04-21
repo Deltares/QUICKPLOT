@@ -630,99 +630,35 @@ switch NVal
                     set(hNew,Ops.LineParams{:});
                 end
             case 'X-Z'
-                s = min(data.X,[],3);
+                n = ndims(data.XComp);
+                s = min(data.X,[],n);
+                [~,s,z] = resize2data(data.XComp,s,data.Z,Ops);
                 if strcmp(Ops.plotcoordinate,'reverse path distance')
                     xsign=-1;
                 else
                     xsign=1;
                 end
                 %
-                if isequal(size(s),size(data.XComp))
-                    %
-                    % data provided at (X,Y,Z) locations
-                    %
-                    % (1) determine sign and size correction for horizontal
-                    % component in case of x/y coordinate projection
-                    %
-                    if xsign==0
-                        if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
-                            t=pathdistance(x,y,'geographic');
-                        else
-                            t=pathdistance(x,y);
-                        end
-                        dt1 = t-t([1 1:end-1]);
-                        dt1(dt1==0)=NaN;
-                        dx1 = (x-x([1 1:end-1]))./dt1;
-                        dy1 = (y-y([1 1:end-1]))./dt1;
-                        dt2 = t([2:end end])-t;
-                        dt2(dt2==0)=NaN;
-                        dx2 = (x([2:end end])-x)./dt2;
-                        dy2 = (y([2:end end])-y)./dt2;
-                        nan1 = isnan(dx1) | isnan(dy1);
-                        nan2 = isnan(dx2) | isnan(dy2);
-                        dx1(nan1) = 0;
-                        dy1(nan1) = 0;
-                        dx2(nan2) = 0;
-                        dy2(nan2) = 0;
-                        dx = (dx1+dx2)./max(~nan1+~nan2,1);
-                        dy = (dy1+dy2)./max(~nan1+~nan2,1);
-                        dx(nan1+nan2==2)=NaN;
-                        dy(nan1+nan2==2)=NaN;
-                        switch Ops.plotcoordinate
-                            case 'x coordinate'
-                                xsign = dx./sqrt(dx.^2+dy.^2);
-                            case 'y coordinate'
-                                xsign = dy./sqrt(dx.^2+dy.^2);
-                        end
-                        xsign = reshape(repmat(xsign,[1 1 size(data.XComp,3)]),size(data.XComp));
-                    end
-                    %
-                    % (2) set horizontal coordinate of vector points
-                    %
-                    % s has already been set correctly
-                    %
-                    % (3) set vertical coordinate of vector points
-                    %
-                    Zvector=data.Z;
-                    %
-                else
-                    %
-                    % data provided in cell centres
-                    %
-                    % (1) determine sign and size correction for horizontal
-                    % component in case of x/y coordinate projection
-                    %
-                    if xsign==0
-                        xsign = diff(s(:,:,1))./sqrt(diff(x).^2+diff(y).^2);
-                        xsign = reshape(repmat(xsign,[1 1 size(data.XComp,3)]),size(data.XComp));
-                    end
-                    %
-                    % (2) determine horizontal coordinate of cell centres
-                    %
-                    s=squeeze(s);
-                    s=(s(1:end-1,1:end-1)+s(2:end,1:end-1)+s(1:end-1,2:end)+s(2:end,2:end))/4;
-                    s=reshape(s,size(data.XComp));
-                    %
-                    % (3) determine vertical coordinate of cell centres
-                    %
-                    Zvector=squeeze(data.Z);
-                    data.Z=[];
-                    Zvector=(Zvector(:,1:end-1)+Zvector(:,2:end))/2;
-                    Zvector=reshape(Zvector,size(data.XComp));
-                end
-                
-                %
                 % get right component to plot: select the component in the plane
                 % to be plotted.
                 %
                 if isfield(data,'dX_tangential')
                     % arbcross
-                    ex=data.dX_tangential([1:end end]);
-                    ey=data.dY_tangential([1:end end]);
-                    ex(data.dX_tangential([1:end end])~=data.dX_tangential([1 1:end]))=NaN;
-                    ey(isnan(ex))=NaN;
-                    ex = repmat(ex,[1 1 size(data.XComp,3)]);
-                    ey = repmat(ey,[1 1 size(data.XComp,3)]);
+                    if length(data.dX_tangential) == length(s)
+                        ex=data.dX_tangential;
+                        ey=data.dY_tangential;
+                    else
+                        ex=data.dX_tangential([1:end end]);
+                        ey=data.dY_tangential([1:end end]);
+                        ex(ex~=ex([1 1:end-1]))=NaN;
+                        ey(isnan(ex))=NaN;
+                    end
+                    %
+                    repSize = [1 1];
+                    repSize(n) = size(data.XComp,n);
+                    %
+                    ex = repmat(ex,repSize);
+                    ey = repmat(ey,repSize);
                     planecomp=ex.*data.XComp + ey.*data.YComp;
                 elseif multiple(M_)
                     planecomp=data.XComp;
@@ -742,7 +678,7 @@ switch NVal
                             set(gca,'dataaspectratio',[1 1/ScaleFacZ 1]);
                         case 'automatic'
                             if FirstFrame
-                                c1=max(max(Zvector(:))-min(Zvector(:)),1e-6);
+                                c1=max(max(z(:))-min(z(:)),1e-6);
                                 c2=max(s(:))-min(s(:));
                                 ScaleFacZ=c2/c1/10;
                                 set(gca,'dataaspectratio',[1 1/ScaleFacZ 1]);
@@ -752,7 +688,7 @@ switch NVal
                             end
                         otherwise % unrestricted, same as automatic per timestep without actually setting dataaspectratio
                             
-                            c1=max(max(Zvector(:))-min(Zvector(:)),1e-6);
+                            c1=max(max(z(:))-min(z(:)),1e-6);
                             c2=max(s(:))-min(s(:));
                             ScaleFacZ=c2/c1/10;
                             if ScaleFacZ==0
@@ -760,7 +696,7 @@ switch NVal
                             end
                     end
                     if ScaleFacZ==1
-                        hNew=qp_vector(Parent,Ops.vectorstyle,s,Zvector,[],planecomp,data.ZComp,[],quivopt{:});
+                        hNew=qp_vector(Parent,Ops.vectorstyle,s,z,[],planecomp,data.ZComp,[],quivopt{:});
                     else
                         
                         %       ----------
@@ -775,7 +711,7 @@ switch NVal
                         %        mfac=mag1./mag2;
                         %        hNew=qp_vector(Parent,Ops.vectorstyle,s,ScaleFacZ*Zvector,[],mfac.*planecomp,ScaleFacZ*mfac.*data.ZComp,[],quivopt{:});
                         %       ----------
-                        hNew=qp_vector(Parent,Ops.vectorstyle,s,ScaleFacZ*Zvector,[],planecomp,ScaleFacZ*data.ZComp,[],quivopt{:});
+                        hNew=qp_vector(Parent,Ops.vectorstyle,s,ScaleFacZ*z,[],planecomp,ScaleFacZ*data.ZComp,[],quivopt{:});
                         for i=1:length(hNew)
                             set(hNew(i),'ydata',get(hNew(i),'ydata')/ScaleFacZ)
                         end
@@ -1050,7 +986,9 @@ nV = size(val,2);
 if size(s,1)==nH+1
     s = (s(1:end-1,:)+s(2:end,:))/2;
 end
-if size(s,2)==nV+1
+if size(s,2)==1
+    s = repmat(s,[1,nV]);
+elseif size(s,2)==nV+1
     s = (s(:,1:end-1)+s(:,2:end))/2;
 end
 if size(z,1)==nH+1

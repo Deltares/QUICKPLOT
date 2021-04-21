@@ -164,6 +164,7 @@ qp_settings('defaultaxescolor',[255 255 255])
 DefFigProp.boundingbox = qp_settings('boundingbox',-999);
 qp_settings('boundingbox',0)
 current_procdef='';
+inTable2 = false;
 try
     full_ln=fullfile(val_dir,logname);
     if ~localexist(fullfile(val_dir,baseini))
@@ -333,7 +334,7 @@ try
                 d3d_qp('openfile',FileName,FileName2{:});
                 FI=qpfile;
                 if ~isstruct(FI)
-                    error('Error opening file.');
+                    error('Error opening file ''%s''.',FileName);
                 end
                 [ChkOK,Dms]=qp_getdata(FI,'domains');
                 write_log(logid2,'Reading domains: %s',sc{ChkOK+1});
@@ -505,6 +506,7 @@ try
                 NT=NP+NL;
                 %
                 write_begin_table(logid2,Color)
+                inTable2 = true;
                 datacheck=inifile('get',CaseInfo,'datacheck','default',1);
                 P=Props{dmx};
                 try
@@ -512,6 +514,7 @@ try
                         if progressbar((acc_dt+case_dt(i)*(p-1)/NT)/tot_dt,Hpb)<0
                             write_table2_line(logid2,Color.Table{TC2},'','','',''); % at least one line needed in table
                             write_end_table(logid2,emptyTable2);
+                            inTable2 = false;
                             UserInterrupt=1;
                             error('User interrupt');
                         end
@@ -664,6 +667,7 @@ try
                     % no good example yet ...
                 end
                 write_end_table(logid2,emptyTable2);
+                inTable2 = false;
                 drawnow
                 %
                 if isempty(logs)
@@ -779,6 +783,10 @@ try
                 frresult=[FAILED ': case.ini missing.'];
             end
         catch Crash
+            if inTable2
+                write_end_table(logid2,emptyTable2);
+                inTable2  = false;
+            end
             color=Color.Failed;
             AnyFail=1;
             if UserInterrupt

@@ -288,6 +288,9 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 PropNames={'Name'                   'Units'   'DimFlag' 'DataInCell' 'NVal' 'Group'          'Val1'    'Val2'  'SubFld'};
 %
 dms = domains(FI);
+if domain == 0
+    domain = length(dms);
+end
 switch dms{domain}
     case 'grid'
         DataProps={...

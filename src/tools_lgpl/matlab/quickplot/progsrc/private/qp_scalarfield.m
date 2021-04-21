@@ -414,6 +414,9 @@ switch data.ValLocation
                 delete(hNew)
                 hNew = {};
                 for i = length(uNodes):-1:1
+                    if uNodes(i)<3
+                        continue
+                    end
                     I = nNodes == uNodes(i);
                     hOld = [];
                     hNew{i} = genfaces(hOld,Ops,Parent,data.Val(I),XY,FaceNodeConnect(I,1:uNodes(i)));

@@ -4765,64 +4765,176 @@ switch cmd
         set(MW.QuickV,'enable','off')
         set(MW.Add2Plot,'enable','off')
         set(UOH,'enable','off','visible','off','backgroundcolor',Inactive)
+        %
+        % ------ axes type ...
+        %
         set(findobj(UOH,'tag','axestype=?'),'value',1,'string',{''})
-        set(findobj(UOH,'tag','dataunits=?'),'value',1)
-        set(findobj(UOH,'tag','angleconvention=?'),'value',1)
+        %
+        % ------ time axis - time zone ...
+        %
+        set(findobj(UOH,'tag','axestimezone=?'),'value',1)
+        %
+        % ------ plot coordinate ...
+        %
         set(findobj(UOH,'tag','plotcoordinate=?'),'value',1,'string',{' '})
+        %
+        % ------ component ...
+        %
         set(findobj(UOH,'tag','component=?'),'value',1,'string',{' '})
-        set(findobj(UOH,'tag','numformat=?'),'string','%.2f')
-        set(findobj(UOH,'tag','fontsize=?'),'userdata',6,'string','6')
-        set(findobj(UOH,'tag','horizontalalignment=?'),'value',2)
-        set(findobj(UOH,'tag','verticalalignment=?'),'value',3)
-        set(findobj(UOH,'tag','textbox=?'),'value',0)
-        set(findobj(UOH,'tag','textboxfacecolour=?'),'backgroundcolor',State.textboxfacecolour,'userdata',State.textboxfacecolour)
-        set(findobj(UOH,'tag','vecscalem=?'),'value',1)
-        set(findobj(UOH,'tag','vectorstyle=?'),'value',1)
-        set(findobj(UOH,'tag','1vecunit=?'),'userdata',1,'string','1')
-        set(findobj(UOH,'tag','fillpolygons'),'value',0)
-        
-        set(findobj(UOH,'tag','linewidth=?'),'userdata',0.5,'string','0.5')
-        set(findobj(UOH,'tag','vertscalem=?'),'value',1)
-        set(findobj(UOH,'tag','vscale=?'),'userdata',1,'string','1')
+        %
+        % ------ presenttype ...
+        %
         set(findobj(UOH,'tag','presenttype=?'),'value',1,'string',{' '})
         set(findobj(UOH,'tag','extend2edge'),'value',0)
-        set(findobj(UOH,'tag','thinfld=?'),'value',1)
-        set(findobj(UOH,'tag','thinfact=?'),'userdata',1,'string','1')
-        set(findobj(UOH,'tag','thindist=?'),'userdata',50,'string','50')
-        set(findobj(UOH,'tag','colourvectors'),'value',0)
-        set(findobj(UOH,'tag','colourdams'),'value',0)
-        set(findobj(UOH,'tag','operator'),'value',1)
+        %
+        % ------ colour tracks ...
+        %
+        set(findobj(UOH,'tag','trackcolour=?'),'value',1,'string',{' '})
+        %
+        % ------ colour vectors ...
+        %
         set(findobj(UOH,'tag','vectorcolour=?'),'value',1,'string',{' '})
-        set(findobj(UOH,'tag','colclassify'),'value',0)
-        set(findobj(UOH,'tag','thresholds=?'),'string','','userdata',[])
-        set(findobj(UOH,'tag','threshdistr=?'),'value',1)
-        set(findobj(UOH,'tag','climmode=?'),'value',1)
-        set(findobj(UOH,'tag','climmax=?'),'userdata',1,'string','1')
-        set(findobj(UOH,'tag','climmax=?'),'userdata',0,'string','0')
+        set(findobj(UOH,'tag','colourvectors'),'value',0)
+        %
+        % ------ data units ...
+        %
+        set(findobj(UOH,'tag','dataunits=?'),'value',1)
+        %
+        % ------ angle convention ...
+        %
+        set(findobj(UOH,'tag','angleconvention=?'),'value',1)
+        %
+        % ------ vector style ...
+        %
+        set(findobj(UOH,'tag','vectorstyle=?'),'value',1)
+        %
+        % ------ vector scaling ...
+        %
+        set(findobj(UOH,'tag','vecscalem=?'),'value',1)
+        set(findobj(UOH,'tag','1vecunit=?'),'userdata',1,'string','1')
+        %
+        % ------ vertical scaling ...
+        %
+        set(findobj(UOH,'tag','vertscalem=?'),'value',1)
+        set(findobj(UOH,'tag','vscale=?'),'userdata',1,'string','1')
+        %
+        % ------ format string
+        %
+        set(findobj(UOH,'tag','numformat=?'),'string','%.2f')
+        %
+        % ------ font characteristics
+        %
+        set(findobj(UOH,'tag','fontsize=?'),'userdata',6,'string','6')
+        %
+        % ------ label alignment
+        %
+        set(findobj(UOH,'tag','horizontalalignment=?'),'value',2)
+        set(findobj(UOH,'tag','verticalalignment=?'),'value',3)
+        %
+        % ------ colour dams ...
+        %
+        set(findobj(UOH,'tag','colourdams'),'value',0)
+        %
+        % ------ value operator ...
+        %
+        set(findobj(UOH,'tag','operator'),'value',1)
+        %
+        % ------ uniform colours ...
+        %
+        set(findobj(UOH,'tag','unicolour'),'value',0)
+        %
+        % ------ colour ...
+        %
         set(findobj(UOH,'tag','colour=?'),'backgroundcolor',State.colour,'userdata',State.colour)
+        %
+        % ------ face colour ...
+        %
         set(findobj(UOH,'tag','fillpolygons'),'value',0)
         set(findobj(UOH,'tag','facecolour=?'),'backgroundcolor',State.facecolour,'userdata',State.facecolour)
-        L=set(mfig,'defaultlinelinestyle');
-        Li=strmatch('-',L,'exact');
-        if isempty(Li)
-            Li=1;
-        end
-        set(findobj(UOH,'tag','linestyle=?'),'value',Li)
+        %
+        % ------ text box colour ...
+        %
+        set(findobj(UOH,'tag','textbox=?'),'value',0)
+        set(findobj(UOH,'tag','textboxfacecolour=?'),'backgroundcolor',State.textboxfacecolour,'userdata',State.textboxfacecolour)
+        %
+        % ------ marker ...
+        %
         L=set(mfig,'defaultlinemarker');
         Li=strmatch('none',L,'exact');
         if isempty(Li)
             Li=1;
         end
         set(findobj(UOH,'tag','marker=?'),'value',Li)
+        %
+        % ------ linestyle ...
+        %
+        L=set(mfig,'defaultlinelinestyle');
+        Li=strmatch('-',L,'exact');
+        if isempty(Li)
+            Li=1;
+        end
+        set(findobj(UOH,'tag','linestyle=?'),'value',Li)
+        set(findobj(UOH,'tag','linewidth=?'),'userdata',0.5,'string','0.5')
+        %
+        % ------ markersize ...
+        %
         set(findobj(UOH,'tag','markersize=?'),'userdata',6,'string','6')
+        %
+        % ------ marker colour ...
+        %
         set(findobj(UOH,'tag','usemarkercolour'),'value',0)
         set(findobj(UOH,'tag','markercolour=?'),'backgroundcolor',State.markercolour,'userdata',State.markercolour)
+        %
+        % ------ marker fill colour ...
+        %
         set(findobj(UOH,'tag','usemarkerfillcolour'),'value',0)
         set(findobj(UOH,'tag','markerfillcolour=?'),'backgroundcolor',State.markerfillcolour,'userdata',State.markerfillcolour)
+        %
+        % ------ classify colours ...
+        %
+        set(findobj(UOH,'tag','colclassify'),'value',0)
+        %
+        % ------ thresholds ...
+        %
+        set(findobj(UOH,'tag','thresholds=?'),'string','','userdata',[])
+        set(findobj(UOH,'tag','threshdistr=?'),'value',1)
+        %
+        % ------ colour limits ...
+        %
+        set(findobj(UOH,'tag','climmode=?'),'value',1)
+        set(findobj(UOH,'tag','climmax=?'),'userdata',1,'string','1')
+        set(findobj(UOH,'tag','climmax=?'),'userdata',0,'string','0')
+        %
+        % ------ colour map ...
+        %
         d3d_qp('colourmap*','jet')
+        %
+        % ------ colourbar ...
+        %
         set(findobj(UOH,'tag','colourbar'),'value',1)
         set(findobj(UOH,'tag','colbarhorz'),'value',0)
+        %
+        % ------ thin vector/value field ...
+        %
+        set(findobj(UOH,'tag','thinfld=?'),'value',1)
+        set(findobj(UOH,'tag','thinfact=?'),'userdata',1,'string','1')
+        set(findobj(UOH,'tag','thindist=?'),'userdata',50,'string','50')
+        %
+        % ------ data clipping values ...
+        %
         set(findobj(UOH,'tag','clippingvals=?'),'userdata',-999,'string','-999')
+        %
+        % ------ clip NaNs ...
+        %
+        set(findobj(UOH,'tag','clipnans'),'value',1)
+        %
+        % ------ x/y clipping values ...
+        %
+        set(findobj(UOH,'tag','xclipping'),'string','')
+        set(findobj(UOH,'tag','yclipping'),'string','')
+        %
+        % ------ export data ...
+        %
         set(findobj(UOH,'tag','exporttype=?'),'value',1,'string',{' '})
         set(findobj(UOH,'tag','expformat=?'),'string','%16.7e')
         
