@@ -63,7 +63,7 @@ if isfield(data,'XY') && iscell(data.XY)
         offset = 0;
         for i = 1:length(data.XY)
             if ~isempty(data.XY{i})
-                XY(offset+(1:len(i)),:) = data.XY{i}(:,1:2); % quick fix: just copy the first two columns if XY contains Z
+                XY(offset+(1:len(i)),:) = data.XY{i}(:,1:2);
                 offset = offset+len(i)+1;
             end
         end

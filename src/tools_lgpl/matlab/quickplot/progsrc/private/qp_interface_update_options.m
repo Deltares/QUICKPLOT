@@ -1098,7 +1098,7 @@ end
 
 %--------------------------------------------------------------------------
 
-if isequal(geometry,'PNT') && multiple(T_)
+if (isequal(geometry,'PNT') && multiple(T_)) || (isequal(geometry,'POLYL') && strcmp(coordinates,'xyz'))
     coltrack=findobj(OH,'tag','colourtracks');
     set(coltrack,'enable','on')
     if get(coltrack,'value')
@@ -1118,7 +1118,7 @@ if isequal(geometry,'PNT') && multiple(T_)
             crds_notplotted = coordinates(~ismember(coordinates,lower(axestype)));
         end
         trkCLR = strcat(num2cell(crds_notplotted),' coordinate');
-        if isempty(strfind('Time',axestype))
+        if multiple(T_) && isempty(strfind('Time',axestype))
             trkCLR{end+1} = 'time';
         end
         if ~isequal(trkCLR,ptrkCLR)

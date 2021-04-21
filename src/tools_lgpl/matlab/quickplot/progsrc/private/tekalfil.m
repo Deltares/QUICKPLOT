@@ -270,13 +270,17 @@ switch FI.FileType
             end
         end
     case 'AutoCAD DXF'
-        Data=FI.Lines(1:2,:)';
+        if strcmp(Props.Coords,'xyz')
+            Data=FI.Lines(1:3,:)';
+        else
+            Data=FI.Lines(1:2,:)';
+        end
     case 'BNA File'
         already_selected = 1;
-        Data=bna('readc',FI,idx{M_});
+        Data = bna('readc',FI,idx{M_});
     case 'ArcInfoUngenerate'
         already_selected = 1;
-        Data=ai_ungen('readc',FI,idx{M_});
+        Data = ai_ungen('readc',FI,idx{M_});
     case 'ESRI-Shape'
         already_selected = 1;
         if strcmp(Props.Geom,'PNT')
@@ -399,6 +403,9 @@ if XYRead
             x=Data(idx{M_},1);
             if strcmp(Props.Coords,'xy')
                 y=Data(idx{M_},2);
+            elseif strcmp(Props.Coords,'xyz')
+                y=Data(idx{M_},2);
+                z=Data(idx{M_},3);
             elseif isempty(Props.Coords)
                 xname=FI.Field(blck).ColLabels{1};
             end
@@ -838,7 +845,18 @@ switch FI.FileType
             end
         end
     case {'BNA File','ArcInfoUngenerate','AutoCAD DXF'}
-        DataProps={'line'                      'POLYL' 'xy' [0 0 1 0 0]  0          0       0       0       1          []      {}  };
+        if isfield(FI,'Seg') && ismember(FI.SubType,{'line','polygon'})
+            ncoords = size(FI.Seg(1).Coord,2);
+        elseif isfield(FI,'Lines')
+            ncoords = size(FI.Lines,1);
+        else
+            ncoords = 2;
+        end
+        if ncoords == 3
+            DataProps={'line'                      'POLYL' 'xyz' [0 0 1 0 0]  0          0       0       0       1          []      {}  };
+        else
+            DataProps={'line'                      'POLYL' 'xy'  [0 0 1 0 0]  0          0       0       0       1          []      {}  };
+        end
     case 'ESRI-Shape'
         DataProps={'line'                      'POLYL' 'xy' [0 0 6 0 0]  0          0       0       0       1          []      {}  };
         switch FI.ShapeTpName

@@ -260,21 +260,41 @@ FirstFrame=isempty(hOldVec);
 
 % in case of track colour make sure to save a coordinate before it's lost.
 if isfield(Ops,'trackcolour')
-    data.Name = Ops.trackcolour;
+    data.Name = [data.Name, ': ', Ops.trackcolour];
     Quant = data.Name;
-    switch Ops.trackcolour
-        case 'x coordinate'
-            data.Val = data.X;
-            data.Units = data.XUnits;
-        case 'y coordinate'
-            data.Val = data.Y;
-            data.Units = data.YUnits;
-        case 'z coordinate'
-            data.Val = data.Z;
-            data.Units = data.ZUnits;
-        case 'time'
-            data.Val = repmat(data.Time,1,size(data.X,2));
-            data.Units = '<matlab_time>';
+    if isfield(data,'XY')
+        data.Val = cell(size(data.XY));
+        for i = 1:length(data.XY)
+            data.Val{i} = data.XY{i}(:,3);
+            data.XY{i} = data.XY{i}(:,1:2);
+        end
+    else
+        switch Ops.trackcolour
+            case 'x coordinate'
+                data.Val = data.X;
+                if isfield(data,'XUnits')
+                    data.Units = data.XUnits;
+                else
+                    data.Units = '';
+                end
+            case 'y coordinate'
+                data.Val = data.Y;
+                if isfield(data,'YUnits')
+                    data.Units = data.YUnits;
+                else
+                    data.Units = '';
+                end
+            case 'z coordinate'
+                data.Val = data.Z;
+                if isfield(data,'ZUnits')
+                    data.Units = data.ZUnits;
+                else
+                    data.Units = '';
+                end
+            case 'time'
+                data.Val = repmat(data.Time,1,size(data.X,2));
+                data.Units = '<matlab_time>';
+        end
     end
     Props.NVal = 1;
     Units = data.Units;
