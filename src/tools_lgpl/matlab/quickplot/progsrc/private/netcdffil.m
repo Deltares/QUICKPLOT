@@ -716,7 +716,7 @@ if XYRead || XYneeded || ZRead
         if ~isempty(connect)
             iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name},'exact');
             if isempty(iconnect)
-                ui_message('error','Face_node_connectivity not found!')
+                ui_message('warning','The face_node_connectivity variable "%s" could not be found! Using empty set.',meshInfo.Attribute(connect).Value)
             else
                 [Ans.FaceNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
                 nNodes = sum(~isnan(Ans.FaceNodeConnect),2);
@@ -755,7 +755,7 @@ if XYRead || XYneeded || ZRead
             % "~DataRead" is a hack to load EdgeNodeConnect if available for use in GridView
             iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name},'exact');
             if isempty(iconnect)
-                ui_message('warning','EDGE-NODE connectivity variable %s not found! Using empty set.',meshInfo.Attribute(connect).Value)
+                ui_message('warning','The edge_node_connectivity variable "%s" could not be found! Using empty set.',meshInfo.Attribute(connect).Value)
                 Ans.EdgeNodeConnect = zeros(0,2);
             else
                 [Ans.EdgeNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
@@ -1015,7 +1015,7 @@ if XYRead || XYneeded || ZRead
                 idx{K_} = unique([idx{K_} idx{K_}+1]);
                 Props.DimName{K_} = CoordInfo.Dimension{3};
                 vCoordExtended = true;
-            elseif strend(CoordInfo.Name,'_layer_z')
+            elseif strend(CoordInfo.Name,'_layer_z') || strend(CoordInfo.Name,'_layer_sigma')
                 iName  = strrep(CoordInfo.Name,'_layer_','_interface_');
                 iDimid = ustrcmpi(iName,{FI.Dataset.Name});
                 CoordInfo = FI.Dataset(iDimid);
@@ -2061,6 +2061,7 @@ while i<length(varid_Out)
     % methods).
     %
     y=[];
+    z=[];
     ncmp = strfind(Out(i).Name,', n-component');
     xcmp = strfind(Out(i).Name,', x-component');
     xcmp2 = strfind(Out(i).Name,' (x-component)');
@@ -2078,9 +2079,11 @@ while i<length(varid_Out)
     elseif ~isempty(xcmp) || ~isempty(xcmp2)
         if ~isempty(xcmp)
             Ystr = Out(i).Name; Ystr(xcmp+2)='y';
+            Zstr = Out(i).Name; Zstr(xcmp+2)='z';
             Name = Out(i).Name([1:xcmp-1 xcmp+13:end]);
         else
             Ystr = Out(i).Name; Ystr(xcmp2+2)='y';
+            Zstr = Out(i).Name; Zstr(xcmp2+2)='z';
             Name = Out(i).Name([1:xcmp2-1 xcmp2+14:end]);
         end
         j=1; j2=2;
@@ -2090,6 +2093,11 @@ while i<length(varid_Out)
         y = find(strcmp(names,Ystr) & strcmp({Out.AppendName},Out(i).AppendName));
         if length(y)>1
             y = [];
+        end
+        %
+        z = find(strcmp(names,Zstr) & strcmp({Out.AppendName},Out(i).AppendName));
+        if length(z)>1
+            z = [];
         end
     end
     %
@@ -2132,9 +2140,15 @@ while i<length(varid_Out)
         else
             Out(i).varid=[Out(y).varid Out(i).varid];
         end
-        Out(y)=[];
-        varid_Out(y) = [];
-        if y<i
+        if ~isempty(z)
+            Out(i).NVal = 3;
+            Out(i).varid(3) = Out(z).varid;
+        end
+        Out([y,z])=[];
+        varid_Out([y,z]) = [];
+        if y<i && ~isempty(z) && z<i
+            i=i-2;
+        elseif y<i || (~isempty(z) && z<i)
             i=i-1;
         end
     end
@@ -2426,7 +2440,12 @@ if strcmp(xUnit,'deg')
 else
     cUnit = {};
 end
-uBrNr = unique(eBrNr);
+% need to loop over all branches on which at least one edge or one node is
+% located. An edge may be located on a branch without nodes if the edge
+% matches the whole branch. A node may be located on a branch without edge
+% in case of the mesh covers only a part of the network (parallel
+% partition).
+uBrNr = unique([eBrNr;BrNr]);
 doublePoints = false(size(uBrNr));
 for i = 1:length(uBrNr)
     bN = uBrNr(i);

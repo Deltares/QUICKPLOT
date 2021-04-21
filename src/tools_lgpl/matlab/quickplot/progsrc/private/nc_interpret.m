@@ -240,8 +240,8 @@ for ivar = 1:nvars
         end
     end
     if ~isempty(j) 
-        if strcmp(Info.Attribute(j).Value,'mesh_topology')
-            [nc,Info] = parse_ugrid_mesh(nc,varNames,dimNames,ivar,Info,Attribs);
+        if strcmp(Info.Attribute(j).Value,'mesh_topology') || strcmp(Info.Attribute(j).Value,'grid_topology')
+            [nc,Info] = parse_ugrid_or_sgrid_mesh(nc,varNames,dimNames,ivar,Info,Attribs);
         elseif strcmp(Info.Attribute(j).Value,'mesh_topology_contact')
             [nc,Info] = parse_ugrid_contact(nc,varNames,dimNames,ivar,Info,Attribs);
         end
@@ -632,25 +632,38 @@ end
 %
 % Try to detect x/y/z/time coordinates.
 %
+iSGrid = strcmp({nc.Dataset.Type}','sgrid_mesh');
 iUGrid = strcmp({nc.Dataset.Type}','ugrid_mesh') | strcmp({nc.Dataset.Type}','ugrid_mesh_contact');
+SGrid  = {nc.Dataset(iSGrid).Name};
 UGrid  = {nc.Dataset(iUGrid).Name};
+iSGrid = find(iSGrid);
 iUGrid = find(iUGrid);
-ugridLoc = {'node','edge','face','volume'};
+gridLoc = {'node','edge','face','volume'};
 for ivar = 1:nvars
     Info = nc.Dataset(ivar);
     % fprintf('%i: %s\n',ivar,Info.Name);
     if ~isempty(Info.Attribute)
         Attribs = {Info.Attribute.Name};
         j1 = strmatch('mesh',Attribs,'exact');
+        TYPE='UGRID';
+        if isempty(j1)
+            j1 = strmatch('grid',Attribs,'exact');
+            TYPE='SGRID';
+        end
         j2 = strmatch('location',Attribs,'exact');
         if ~isempty(j1) && ~isempty(j2)
             nameMesh = Info.Attribute(j1).Value;
             % We hve identified a mesh and location attribute, so it looks
             % like a UGRID reference to a mesh variable and location.
-            j3 = strmatch(nameMesh,UGrid,'exact');
+            switch TYPE
+                case 'UGRID'
+                    j3 = strmatch(nameMesh,UGrid,'exact');
+                case 'SGRID'
+                    j3 = strmatch(nameMesh,SGrid,'exact');
+            end
             if isempty(j3)
                 % The mesh variable referred to is not yet in list of known
-                % UGRID meshes.
+                % meshes.
                 v3 = strmatch(nameMesh,varNames,'exact');
                 if ~isempty(v3)
                     nc = parse_ugrid_mesh_or_contact(nc,varNames,dimNames,v3);
@@ -663,32 +676,50 @@ for ivar = 1:nvars
                 end
             end
             if ~isempty(j3)
-                switch nc.Dataset(iUGrid(j3)).Type
-                    case 'ugrid_mesh'
-                        j4 = strmatch(Info.Attribute(j2).Value,ugridLoc,'exact')-1;
-                    case 'ugrid_mesh_contact'
-                        j4 = strmatch(Info.Attribute(j2).Value,{'contact'},'exact')-1;
+                switch TYPE
+                    case 'UGRID'
+                        switch nc.Dataset(iUGrid(j3)).Type
+                            case 'ugrid_mesh'
+                                j4 = strmatch(Info.Attribute(j2).Value,gridLoc,'exact')-1;
+                            case 'ugrid_mesh_contact'
+                                j4 = strmatch(Info.Attribute(j2).Value,{'contact'},'exact')-1;
+                        end
+                    case 'SGRID'
+                        loc = Info.Attribute(j2).Value;
+                        switch loc(end)
+                            case '1'
+                                loc = loc(1:end-1);
+                            case '2'
+                                loc = loc(1:end-1);
+                            case '3'
+                                loc = loc(1:end-1);
+                        end
+                        j4 = strmatch(loc,gridLoc,'exact')-1;
                 end
             end
             if isempty(j3)
                 if any(strcmp(nameMesh,varNames))
-                    ui_message('error','Variable "%s" does not comply to UGRID conventions for a mesh.\nIgnoring mesh/location attributes on "%s".',nameMesh,Info.Name)
+                    ui_message('error','Variable "%s" does not comply to %s conventions for a mesh.\nIgnoring mesh/location attributes on "%s".',nameMesh,TYPE,Info.Name)
                 else
                     ui_message('error','Cannot find mesh "%s"; ignoring mesh/location attributes on "%s".',nameMesh,Info.Name)
                 end
             elseif isempty(j4)
                 ui_message('error','Invalid location type "%s"; ignoring mesh/location attributes on "%s".',Info.Attribute(j2).Value,Info.Name)
-            elseif strcmp(nc.Dataset(iUGrid(j3)).Type,'ugrid_mesh')
-                topoDim   = nc.Dataset(iUGrid(j3)).Mesh{j4+5};
-                if isempty(strmatch(topoDim,Info.Dimension,'exact'))
-                    dims = sprintf('%s, ',Info.Dimension{:});
-                    ui_message('error','Variable "%s" points to UGRID mesh "%s" location "%s"\nbut the variable''s dimensions {%s}\ndon''t include the %s dimension "%s".\nIgnoring the mesh/location attributes.',...
-                        Info.Name, Info.Attribute(j1).Value, Info.Attribute(j2).Value, dims(1:end-2), Info.Attribute(j2).Value, topoDim)
-                else
-                    ugrid = nc.Dataset(iUGrid(j3)).Mesh(1:2);
-                    Info.Mesh = {ugrid{:} iUGrid(j3) j4};
-                    Info.TSMNK(3) = strmatch(topoDim,dimNames,'exact')-1;
+            elseif strcmp(TYPE,'UGRID')
+                if strcmp(nc.Dataset(iUGrid(j3)).Type,'ugrid_mesh')
+                    topoDim   = nc.Dataset(iUGrid(j3)).Mesh{j4+5};
+                    if isempty(strmatch(topoDim,Info.Dimension,'exact'))
+                        dims = sprintf('%s, ',Info.Dimension{:});
+                        ui_message('error','Variable "%s" points to UGRID mesh "%s" location "%s"\nbut the variable''s dimensions {%s}\ndon''t include the %s dimension "%s".\nIgnoring the mesh/location attributes.',...
+                            Info.Name, Info.Attribute(j1).Value, Info.Attribute(j2).Value, dims(1:end-2), Info.Attribute(j2).Value, topoDim)
+                    else
+                        ugrid = nc.Dataset(iUGrid(j3)).Mesh(1:2);
+                        Info.Mesh = {ugrid{:} iUGrid(j3) j4};
+                        Info.TSMNK(3) = strmatch(topoDim,dimNames,'exact')-1;
+                    end
                 end
+            else % SGRID
+                % ...
             end
         end
     end
@@ -753,6 +784,8 @@ for ivar = 1:nvars
                         end
                         Info.SubFieldChr = [Info.SubFieldChr; icvar sfdim];
                     end
+                case {'ugrid_mesh'}
+                    % never a coordinate
                 otherwise
                     Info.SubField = [Info.SubField sicvar];
             end
@@ -1151,7 +1184,7 @@ for ivar = 1:nvars
                     if ~isnan(Info.TSMNK(4))
                         Info.TSMNK(4) = NaN;
                     end
-                    auto_ugrid(:,ivar) = {Info.Name, udim{1}, nc.Dataset(u).Name, ugridLoc{ib}}';
+                    auto_ugrid(:,ivar) = {Info.Name, udim{1}, nc.Dataset(u).Name, gridLoc{ib}}';
                 end
                 break
             end
@@ -1390,7 +1423,7 @@ j = strmatch('cf_role',Attribs,'exact');
 if isempty(j) || (~strcmp(Info.Attribute(j).Value,'mesh_topology') && ~strcmp(Info.Attribute(j).Value,'mesh_topology_contact'))
     ui_message('error','Unable to interpret "%s" as UGRID variable the ''cf_role'' attribute should equal ''mesh_topology'' or ''mesh_topology_contact''.',Info.Name)
 elseif strcmp(Info.Attribute(j).Value,'mesh_topology')
-    [nc,Info] = parse_ugrid_mesh(nc,varNames,dimNames,ivar);
+    [nc,Info] = parse_ugrid_or_sgrid_mesh(nc,varNames,dimNames,ivar);
 elseif strcmp(Info.Attribute(j).Value,'mesh_topology_contact')
     [nc,Info] = parse_ugrid_contact(nc,varNames,dimNames,ivar);
 end
@@ -1398,27 +1431,31 @@ if nargout<2
     nc.Dataset(ivar) = Info;
 end
 
-function [nc,Info] = parse_ugrid_mesh(nc,varNames,dimNames,ivar,Info,Attribs)
+function [nc,Info] = parse_ugrid_or_sgrid_mesh(nc,varNames,dimNames,ivar,Info,Attribs)
 if nargin<5
     Info = nc.Dataset(ivar);
     Attribs = {Info.Attribute.Name};
 end
 % ugrid mesh
-Info.Type = 'ugrid_mesh';
-%
-j = strmatch('cf_role',Attribs,'exact');
-if isempty(j) || ~strcmp(Info.Attribute(j).Value,'mesh_topology')
-    ui_message('error','Attribute ''cf_role'' should be set to ''mesh_topology'' for UGRID mesh variable %s.',Info.Name)
+j = strmatch('node_dimensions',Attribs,'exact');
+if isempty(j)
+    % ugrid mesh
+    Info.Type = 'ugrid_mesh';
+    TYPE = 'UGRID';
+else
+    % sgrid mesh
+    Info.Type = 'sgrid_mesh';
+    TYPE = 'SGRID';
 end
 %
 tpd = strmatch('topology_dimension',Attribs,'exact');
 if isempty(tpd)
-    ui_message('error','Missing attribute ''topology_dimension'' for UGRID mesh variable %s.',Info.Name)
+    ui_message('error','Missing attribute ''topology_dimension'' for %s mesh variable %s.',TYPE,Info.Name)
     tpd = -1;
 else
     tpd = Info.Attribute(tpd).Value;
     if ischar(tpd)
-        ui_message('error','Invalid value ''%s'' for attribute ''topology_dimension'' for UGRID mesh variable %s: should be integer 1, 2 or 3.',tpd,Info.Name)
+        ui_message('error','Invalid value ''%s'' for attribute ''topology_dimension'' for %s mesh variable %s: should be integer 1, 2 or 3.',tpd,TYPE,Info.Name)
         % try to convert string to number
         tpd = sscanf(tpd,'%i',1);
         if isempty(tpd) || tpd<1 || tpd>3
@@ -1436,161 +1473,261 @@ end
 Info.Coordinates = node_coords;
 %AuxCoordVars = union(AuxCoordVars,Info.Coordinates);
 %
-nd = strmatch('node_dimension',Attribs,'exact');
-if ~isempty(nd)
-    set_node_dim = Info.Attribute(nd).Value;
-else
-    set_node_dim = '';
-end    
-if ~isempty(node_coords)
-    ndc = find(strcmp(node_coords{1},varNames));
-    node_dim = nc.Dataset(ndc).Dimension{1};
-else
-    node_dim = '';
-end
-if ~isempty(set_node_dim)
-    id = strmatch(set_node_dim,dimNames,'exact');
-    if isempty(id)
-        ERR = 'Attribute node_dimension of UGRID mesh %s points to ''%s''. This is not a NetCDF dimension in the file. ';
-        if isempty(node_dim)
-            ui_message('error',[ERR 'No alternative found.'],Info.Name,set_node_dim)
-        else
-            ui_message('error',[ERR 'Using ''%s'' instead.'],Info.Name,set_node_dim,node_dim)
+switch TYPE
+    case 'UGRID'
+        j = strmatch('cf_role',Attribs,'exact');
+        if isempty(j) || ~strcmp(Info.Attribute(j).Value,'mesh_topology')
+            ui_message('error','Attribute ''cf_role'' should be set to ''mesh_topology'' for %s mesh variable %s.',TYPE,Info.Name)
         end
-    end
-end
-%
-ed  = strmatch('edge_dimension',Attribs,'exact');
-ce  = strmatch('edge_coordinates',Attribs,'exact');
-enc = strmatch('edge_node_connectivity',Attribs,'exact');
-if ~isempty(ed)
-    set_edge_dim = Info.Attribute(ed).Value;
-else
-    set_edge_dim = '';
-end
-if ~isempty(ce)
-    edge_coords = multiline(Info.Attribute(ce).Value,' ','cellrow');
-    edc = find(strcmp(edge_coords{1},varNames));
-    edge_dim = nc.Dataset(edc).Dimension{1};
-elseif ~isempty(enc)
-    encv = find(strcmp(Info.Attribute(enc).Value,varNames));
-    if isempty(encv)
-        ui_message('error','The edge_node_connectivity "%s" of %s is not available in the file.',Info.Attribute(enc).Value,Info.Name)
-        edge_dim = '';
-    else
-        edge_dim = nc.Dataset(encv).Dimension; % 2 dimensional
-        edge_dim = edge_dim{1};
-    end
-else
-    edge_dim = '';
-end
-if ~isempty(set_edge_dim)
-    id = strmatch(set_edge_dim,dimNames,'exact');
-    if isempty(id)
-        ERR = 'Attribute edge_dimension of UGRID mesh %s points to ''%s''. This is not a NetCDF dimension in the file. ';
-        if isempty(edge_dim)
-            ui_message('error',[ERR 'No alternative found.'],Info.Name,set_edge_dim)
+        %
+        nd = strmatch('node_dimension',Attribs,'exact');
+        if ~isempty(nd)
+            set_node_dim = Info.Attribute(nd).Value;
         else
-            ui_message('error',[ERR 'Using ''%s'' instead.'],Info.Name,set_edge_dim,edge_dim)
+            set_node_dim = '';
         end
-    end
-end
-%
-fd  = strmatch('face_dimension',Attribs,'exact');
-cf  = strmatch('face_coordinates',Attribs,'exact');
-fnc = strmatch('face_node_connectivity',Attribs,'exact');
-if ~isempty(fd)
-    set_face_dim = Info.Attribute(fd).Value;
-else
-    set_face_dim = '';
-end
-if ~isempty(cf)
-    face_coords = multiline(Info.Attribute(cf).Value,' ','cellrow');
-    fcc = find(strcmp(face_coords{1},varNames));
-    face_dim = nc.Dataset(fcc).Dimension{1};
-elseif ~isempty(fnc)
-    fncv = find(strcmp(Info.Attribute(fnc).Value,varNames));
-    if isempty(fncv)
-        ui_message('error','The face_node_connectivity "%s" of %s is not available in the file.',Info.Attribute(fnc).Value,Info.Name)
-        face_dim = '';
-    else
-        face_dim = nc.Dataset(fncv).Dimension; % 2 dimensional
-        face_dim = face_dim{1};
-    end
-else
-    if tpd==2
-        ui_message('error','No face_node_connectivity specified for mesh topology %s.',Info.Name)
-    end
-    face_dim = '';
-end
-if ~isempty(set_face_dim)
-    id = strmatch(set_face_dim,dimNames,'exact');
-    if isempty(id)
-        ERR = 'Attribute face_dimension of UGRID mesh %s points to ''%s''. This is not a NetCDF dimension in the file. ';
-        if isempty(face_dim)
-            ui_message('error',[ERR 'No alternative found.'],Info.Name,set_face_dim)
+        if ~isempty(node_coords)
+            ndc = find(strcmp(node_coords{1},varNames));
+            node_dim = nc.Dataset(ndc).Dimension{1};
         else
-            ui_message('error',[ERR 'Using ''%s'' instead.'],Info.Name,set_face_dim,face_dim)
+            node_dim = '';
         end
-    end
-end
-%
-if tpd<0
-    if ~isempty(face_dim)
-        tpd = 2;
-    elseif ~isempty(edge_dim)
-        tpd = 1;
-    else
-        ui_message('error','Unable to detect dimensionality of mesh %s.',Info.Name)
-    end
-else
-    switch tpd
-        case 1
-            if isempty(enc)
-                ui_message('error','No edge_node_connectivity attribute specified for 1D UGRID mesh %s.',Info.Name)
-            elseif isempty(edge_dim)
-                ui_message('error','Unable to identify the edge dimension for 1D UGRID mesh %s.',Info.Name)
+        if ~isempty(set_node_dim)
+            id = strmatch(set_node_dim,dimNames,'exact');
+            if isempty(id)
+                ERR = 'Attribute node_dimension of UGRID mesh %s points to ''%s''. This is not a NetCDF dimension in the file. ';
+                if isempty(node_dim)
+                    ui_message('error',[ERR 'No alternative found.'],Info.Name,set_node_dim)
+                else
+                    ui_message('error',[ERR 'Using ''%s'' instead.'],Info.Name,set_node_dim,node_dim)
+                end
             end
-        case 2
-            if isempty(fnc)
-                ui_message('error','No face_node_connectivity attribute specified for 2D UGRID mesh %s.',Info.Name)
-            elseif isempty(face_dim)
-                ui_message('error','Unable to identify the face dimension for 2D UGRID mesh %s.',Info.Name)
+        end
+        %
+        ed  = strmatch('edge_dimension',Attribs,'exact');
+        ce  = strmatch('edge_coordinates',Attribs,'exact');
+        enc = strmatch('edge_node_connectivity',Attribs,'exact');
+        if ~isempty(ed)
+            set_edge_dim = Info.Attribute(ed).Value;
+        else
+            set_edge_dim = '';
+        end
+        if ~isempty(ce)
+            edge_coords = multiline(Info.Attribute(ce).Value,' ','cellrow');
+            edc = find(strcmp(edge_coords{1},varNames));
+            edge_dim = nc.Dataset(edc).Dimension{1};
+        elseif ~isempty(enc)
+            encv = find(strcmp(Info.Attribute(enc).Value,varNames));
+            if isempty(encv)
+                ui_message('error','The edge_node_connectivity "%s" of %s is not available in the file.',Info.Attribute(enc).Value,Info.Name)
+                edge_dim = '';
+            else
+                edge_dim = nc.Dataset(encv).Dimension; % 2 dimensional
+                edge_dim = edge_dim{1};
             end
-        case 3
-            ui_message('error','3D UGRID mesh %s not yet supported.',Info.Name)
-    end
-end
-%
-coordspace = strmatch('coordinate_space',Attribs,'exact');
-ugrid = 'ugrid';
-if ~isempty(coordspace)
-    if tpd==1
-        ugrid = 'ugrid1d_network';
-    else
-        ui_message('error','Attribute ''coordinate_space'' not supported for %i-dimensional UGRID mesh %s',tpd,Info.Name)
-    end
-end
-%
-Info.Mesh = {ugrid tpd ivar -1 node_dim edge_dim face_dim}; % vol_dim
-%
-if ~isempty(node_dim)
-    id = strmatch(node_dim,dimNames,'exact');
-    nc.Dimension(id).Type = 'ugrid_node';
-end
-%
-if ~isempty(edge_dim)
-    id = strmatch(edge_dim,dimNames,'exact');
-    nc.Dimension(id).Type = 'ugrid_edge';
-end
-%
-if ~isempty(face_dim)
-    id = strmatch(face_dim,dimNames,'exact');
-    nc.Dimension(id).Type = 'ugrid_face';
+        else
+            edge_dim = '';
+        end
+        if ~isempty(set_edge_dim)
+            id = strmatch(set_edge_dim,dimNames,'exact');
+            if isempty(id)
+                ERR = 'Attribute edge_dimension of UGRID mesh %s points to ''%s''. This is not a NetCDF dimension in the file. ';
+                if isempty(edge_dim)
+                    ui_message('error',[ERR 'No alternative found.'],Info.Name,set_edge_dim)
+                else
+                    ui_message('error',[ERR 'Using ''%s'' instead.'],Info.Name,set_edge_dim,edge_dim)
+                end
+            end
+        end
+        %
+        fd  = strmatch('face_dimension',Attribs,'exact');
+        cf  = strmatch('face_coordinates',Attribs,'exact');
+        fnc = strmatch('face_node_connectivity',Attribs,'exact');
+        if ~isempty(fd)
+            set_face_dim = Info.Attribute(fd).Value;
+        else
+            set_face_dim = '';
+        end
+        if ~isempty(cf)
+            face_coords = multiline(Info.Attribute(cf).Value,' ','cellrow');
+            fcc = find(strcmp(face_coords{1},varNames));
+            face_dim = nc.Dataset(fcc).Dimension{1};
+        elseif ~isempty(fnc)
+            fncv = find(strcmp(Info.Attribute(fnc).Value,varNames));
+            if isempty(fncv)
+                ui_message('error','The face_node_connectivity "%s" of %s is not available in the file.',Info.Attribute(fnc).Value,Info.Name)
+                face_dim = '';
+            else
+                face_dim = nc.Dataset(fncv).Dimension; % 2 dimensional
+                face_dim = face_dim{1};
+            end
+        else
+            if tpd==2
+                ui_message('error','No face_node_connectivity specified for mesh topology %s.',Info.Name)
+            end
+            face_dim = '';
+        end
+        if ~isempty(set_face_dim)
+            id = strmatch(set_face_dim,dimNames,'exact');
+            if isempty(id)
+                ERR = 'Attribute face_dimension of UGRID mesh %s points to ''%s''. This is not a dimension in the file. ';
+                if isempty(face_dim)
+                    ui_message('error',[ERR 'No alternative found.'],Info.Name,set_face_dim)
+                else
+                    ui_message('error',[ERR 'Using ''%s'' instead.'],Info.Name,set_face_dim,face_dim)
+                end
+            end
+        end
+        %
+        if tpd<0
+            if ~isempty(face_dim)
+                tpd = 2;
+            elseif ~isempty(edge_dim)
+                tpd = 1;
+            else
+                ui_message('error','Unable to detect dimensionality of mesh %s.',Info.Name)
+            end
+        else
+            switch tpd
+                case 1
+                    if isempty(enc)
+                        ui_message('error','No edge_node_connectivity attribute specified for 1D UGRID mesh %s.',Info.Name)
+                    elseif isempty(edge_dim)
+                        ui_message('error','Unable to identify the edge dimension for 1D UGRID mesh %s.',Info.Name)
+                    end
+                case 2
+                    if isempty(fnc)
+                        ui_message('error','No face_node_connectivity attribute specified for 2D UGRID mesh %s.',Info.Name)
+                    elseif isempty(face_dim)
+                        ui_message('error','Unable to identify the face dimension for 2D UGRID mesh %s.',Info.Name)
+                    end
+                case 3
+                    ui_message('error','3D UGRID mesh %s not yet supported.',Info.Name)
+            end
+        end
+        %
+        coordspace = strmatch('coordinate_space',Attribs,'exact');
+        ugrid = 'ugrid';
+        if ~isempty(coordspace)
+            if tpd==1
+                ugrid = 'ugrid1d_network';
+            else
+                ui_message('error','Attribute ''coordinate_space'' not supported for %i-dimensional UGRID mesh %s',tpd,Info.Name)
+            end
+        end
+        %
+        Info.Mesh = {ugrid tpd ivar -1 node_dim edge_dim face_dim}; % vol_dim
+        %
+        if ~isempty(node_dim)
+            id = strmatch(node_dim,dimNames,'exact');
+            nc.Dimension(id).Type = 'ugrid_node';
+        end
+        %
+        if ~isempty(edge_dim)
+            id = strmatch(edge_dim,dimNames,'exact');
+            nc.Dimension(id).Type = 'ugrid_edge';
+        end
+        %
+        if ~isempty(face_dim)
+            id = strmatch(face_dim,dimNames,'exact');
+            nc.Dimension(id).Type = 'ugrid_face';
+        end
+
+    case 'SGRID'
+        j = strmatch('cf_role',Attribs,'exact');
+        if isempty(j) || ~strcmp(Info.Attribute(j).Value,'grid_topology')
+            ui_message('error','Attribute ''cf_role'' should be set to ''grid_topology'' for %s mesh variable %s.',TYPE,Info.Name)
+        end
+        %
+        nd = strmatch('node_dimensions',Attribs,'exact');
+        if ~isempty(nd)
+            set_node_dim = multiline(Info.Attribute(nd).Value,' ','cellrow');
+        else
+            set_node_dim = {};
+        end
+        if ~isempty(node_coords)
+            ndc = find(strcmp(node_coords{1},varNames));
+            node_dim = nc.Dataset(ndc).Dimension;
+        else
+            node_dim = {};
+        end
+        if ~isempty(set_node_dim)
+            for j = 1:length(set_node_dim)
+                id = strmatch(set_node_dim{j},dimNames,'exact');
+                if isempty(id)
+                    ERR = 'Attribute node_dimensions of SGRID mesh %s includes ''%s''. This is not a dimension in the file. ';
+                    if isempty(node_dim)
+                        ui_message('error',[ERR 'No alternative found.'],Info.Name,set_node_dim)
+                    else
+                        ui_message('error',[ERR 'Using ''%s'' instead.'],Info.Name,set_node_dim{j},node_dim{j})
+                        set_node_dim{j} = node_dim{j};
+                    end
+                end
+            end
+        end
+        %
+        fd = strmatch('face_dimensions',Attribs,'exact');
+        cf  = strmatch('face_coordinates',Attribs,'exact');
+        if ~isempty(nd)
+            set_face_dim = parse_facedims(Info.Attribute(fd).Value);
+        else
+            set_face_dim = {};
+        end
+        if ~isempty(cf)
+            face_coords = multiline(Info.Attribute(cf).Value,' ','cellrow');
+        end
+        if ~isempty(face_coords)
+            fcc = find(strcmp(face_coords{1},varNames));
+            face_dim = nc.Dataset(fcc).Dimension;
+        else
+            face_dim = {};
+        end
+        if ~isempty(set_face_dim)
+            for j = 1:length(set_face_dim)
+                id = strmatch(set_face_dim{j}{1},dimNames,'exact');
+                if isempty(id)
+                    ERR = 'Attribute face_dimensions of SGRID mesh %s includes ''%s''. This is not a dimension in the file. ';
+                    if isempty(node_dim)
+                        ui_message('error',[ERR 'No alternative found.'],Info.Name,set_face_dim{j}{1})
+                    else
+                        ui_message('error',[ERR 'Using ''%s'' instead.'],Info.Name,set_face_dim{j}{1},face_dim{j}{1})
+                        set_face_dim{j}{1} = face_dim{j}{1};
+                    end
+                end
+            end
+        end
+        %
+        sgrid = 'sgrid';
+        Info.Mesh = {sgrid tpd ivar -1 set_node_dim set_face_dim}; % vol_dim
 end
 if nargout<2
     nc.Dataset(ivar) = Info;
 end
+
+
+function facedims = parse_facedims(facedimstr)
+facedims = {[],[],[]};
+id = 0;
+while ~isempty(facedimstr)
+    id = id+1;
+    [fd,~,~,i] = sscanf(facedimstr,'%[^:]');
+    [nd,~,~,i2] = sscanf(facedimstr(i+1:end),'%[^ (]');
+    [pd,~,~,i3] = sscanf(facedimstr(i+1+i2:end),' (padding:%[^)]');
+    pd = strtrim(pd);
+    facedimstr = strtrim(facedimstr(i+i2+i3+2:end));
+    switch lower(pd)
+        case 'none'
+            pd = 0;
+        case 'low'
+            pd = -1;
+        case 'high'
+            pd = 1;
+        case 'both'
+            pd = 2;
+    end
+    facedims{id} = {fd nd pd};
+end
+facedims(id+1:end) = [];
 
 
 function merged_mesh = nc_mapmerge(Partitions, hPB)
@@ -1747,13 +1884,20 @@ for mesh = NumMeshes:-1:1
     % edges are assigned to the same domain as the connected face with the
     % lowest domain number.
     %
-    [glbENC,~,RI] = unique(cat(1,enc{:}),'rows');
+    % first sort the edge connectivities to determine the edges uniquely
+    [glbENC,~,RI] = unique(sort(cat(1,enc{:}),2),'rows');
     nGlbEdges = size(glbENC,1);
-    offset = 0;
     iEdges = cell(nPart,1);
-    for p = 1:nPart
+    % loop in reverse order to make sure that the update of glbENC contains
+    % in the end the result of the lowest domain number.
+    for p = nPart:-1:1
+        offset = sum(nEdges(1:p-1));
         iEdges{p} = RI(offset + (1:nEdges(p)));
-        offset = offset + nEdges(p);
+        % due to the sorting of the node indices, the order of the nodes
+        % may not correspond to the order of the nodes in the source
+        % domain. We need to copy the original order to avoid messing up
+        % the normal and tangential directions.
+        glbENC(iEdges{p},:) = enc{p};
     end
     %
     merged_mesh(mesh).Name = M.Name;
