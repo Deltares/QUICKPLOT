@@ -1411,28 +1411,30 @@ switch field
         Y=repmat(Y,[1 1 num_k]);
         varargout={X Y Z refdate+data.SimTime/1440};
         
-    case {'depth','height','depth_wl_points'}
+    case {'depth','height','depth_wl_points','height_wl_points'}
         [n,m]=local_argin(argin);
         nm=nm(n,m);
-        if strcmp(field,'depth_wl_points')
-            %DPS_FLOW only for Waqua
-            data=waqua('readsds',sds,exper,'DPS_FLOW');
-            data(inact)=NaN;
-            data(data==-999)=NaN;
-            Dep=data(nm);
-            Dep(~sact)=NaN;
-        else
-            sact = sact(n,m);
-            dact = sact | sact([2:end end],:) | ...
-                sact(:,[2:end end]) | sact([2:end end],[2:end end]);
-            data=waqua('readsds',sds,exper,'MESH_H');
-            data(inact)=NaN;
-            data(data==-999)=NaN;
-            Dep=data(nm);
-            Dep(~dact)=NaN;
+        switch field
+            case {'height_wl_points','depth_wl_points'}
+                sact = sact(n,m);
+                %DPS_FLOW only for Waqua
+                data=waqua('readsds',sds,exper,'DPS_FLOW');
+                data(inact)=NaN;
+                data(data==-999)=NaN;
+                Dep=data(nm);
+                Dep(~sact)=NaN;
+            otherwise
+                sact = sact(n,m);
+                dact = sact | sact([2:end end],:) | ...
+                    sact(:,[2:end end]) | sact([2:end end],[2:end end]);
+                data=waqua('readsds',sds,exper,'MESH_H');
+                data(inact)=NaN;
+                data(data==-999)=NaN;
+                Dep=data(nm);
+                Dep(~dact)=NaN;
         end
         switch field
-            case 'height'
+            case {'height','height_wl_points'}
                 varargout={-Dep};
             otherwise
                 varargout={Dep};

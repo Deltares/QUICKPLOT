@@ -236,6 +236,12 @@ if DataRead
     ThinDam=0;
     ThinDamVal_in_same_call=0;
     switch Name
+        case 'bed level'
+            if DataInCell && waqua('exists',FI,Props.Exper,'DPS_FLOW')
+                Props.WaqIO = 'height_wl_points';
+                Props.Loc = 'z';
+                Props.ReqLoc = 'z';
+            end
         case 'thin dams'
             Props.NVal=2;
             ThinDam=1;
