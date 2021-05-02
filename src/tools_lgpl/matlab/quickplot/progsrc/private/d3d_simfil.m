@@ -466,7 +466,7 @@ switch FI.FileType(9:end)
                         hasBranchId    = ~cellfun(@isempty, FI.Obs{i}.BranchId(iObj));
                         if any(hasBranchId)
                             if ~network_loaded
-                                Network = netcdffil(FI.mesh.nc_file, idom, FI.mesh.quant(4), 'griddata'); % XXX shouldn't be hardcoded 4: 'ID of branch geometries'
+                                Network = netcdffil(FI.mesh.nc_file, idom, FI.mesh.quant(4), 'griddata');
                                 network_loaded = true;
                             end
                             iObj = iObj(hasBranchId);
@@ -490,7 +490,7 @@ switch FI.FileType(9:end)
                         hasBranchId   = ~cellfun(@isempty, FI.Crs{i}.BranchId(iObj));
                         if any(hasBranchId)
                             if ~network_loaded
-                                Network = netcdffil(FI.mesh.nc_file, idom, FI.mesh.quant(4), 'griddata'); % XXX shouldn't be hardcoded 4: 'ID of branch geometries'
+                                Network = netcdffil(FI.mesh.nc_file, idom, FI.mesh.quant(4), 'griddata');
                                 network_loaded = true;
                             end
                             iObj = iObj(hasBranchId);
@@ -528,13 +528,33 @@ switch FI.FileType(9:end)
                     IndexChapter = IndexChapter(idx{ST_});
                     %
                     % location could be:
-                    % - polylinefile: v1.00 structure file
                     % - branchId, chainage: 1D structure
+                    branchIds = inifile('hcgetstringi',FI.Structure,IndexChapter,'branchId','');
+                    chainage = 'toread';
                     % - numCoordinates, xCoordinates, yCoordinates
+                    nCoords = inifile('hgeti',FI.Structure,IndexChapter,'numCoordinates',NaN);
+                    xCoords = 'toread';
+                    % - polylinefile: v1.00 structure file
                     pli_files = inifile('hcgetstringi',FI.Structure,IndexChapter,'polylinefile','');
                     path_str = fileparts(FI.Structure.FileName);
-                    for j = length(pli_files):-1:1
-                        Ans.XY{j} = landboundary('read',relpath(path_str,pli_files{j}));
+                    for j = length(IndexChapter):-1:1
+                        if ~isempty(branchIds{j})
+                            % branchId, chainage
+                            if isequal(chainage,'toread')
+                                chainage = inifile('hgeti',FI.Structure,IndexChapter,'chainage',NaN);
+                                Network = netcdffil(FI.mesh.nc_file, idom, FI.mesh.quant(4), 'griddata');
+                            end
+                            Ans.XY{j} = branch_idoffset2xy(Network, branchIds{j}, chainage(j));
+                        elseif ~isnan(nCoords(j))
+                            % numCoordinates, xCoordinates, yCoordinates
+                            if isequal(xCoords,'toread')
+                                xCoords = inifile('hcgeti',FI.Structure,IndexChapter,'xCoordinates',NaN);
+                                yCoords = inifile('hcgeti',FI.Structure,IndexChapter,'yCoordinates',NaN);
+                            end
+                            Ans.XY{j} = [xCoords{j}' yCoords{j}'];
+                        else
+                            Ans.XY{j} = landboundary('read',relpath(path_str,pli_files{j}));
+                        end
                     end
                 else
                     Ans = [];
