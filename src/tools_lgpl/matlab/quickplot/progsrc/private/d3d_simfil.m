@@ -409,8 +409,8 @@ switch FI.FileType(9:end)
                 F.QP_Options.AttribFiles.FileType = 'drypoint';
                 %
                 Props.VecType    = '';
-                Props.Loc        = 'd';
-                Props.ReqLoc     = 'd';
+                Props.Loc        = '';
+                Props.ReqLoc     = '';
                 Props.Loc3D      = '';
                 Props.File       = 1;
                 Props.Fld        = 1;
@@ -499,6 +499,16 @@ switch FI.FileType(9:end)
                         end
                     end
                 end
+            case 'dambreak start points'
+                [~,IndexChapter] = inifile('existsi',FI.Structure,'structure');
+                types = inifile('hcgetstringi',FI.Structure,IndexChapter,'type');
+                IndexChapter = IndexChapter(strcmp(types,'dambreak'));
+                IndexChapter = IndexChapter(idx{ST_});
+                %
+                x = inifile('hcgeti',FI.Structure,IndexChapter,'startLocationX',NaN);
+                y = inifile('hcgeti',FI.Structure,IndexChapter,'startLocationY',NaN);
+                Ans.X = [x{:}];
+                Ans.Y = [y{:}];
             otherwise
                 if ~isempty(strfind(Props.Name,'open boundaries'))
                     ibtp = strcmp(FI.ExtForceNew.Bnd.Types,strtok(Props.Name));
@@ -512,8 +522,8 @@ switch FI.FileType(9:end)
                     end
                     Ans.Val = bnds;
                 elseif length(Props.Name)>11 && strcmp(Props.Name(end-10:end),' structures')
-                    [~,IndexChapter] = inifile('exists',FI.Structure,'structure');
-                    types = inifile('hcgetstring',FI.Structure,IndexChapter,'type');
+                    [~,IndexChapter] = inifile('existsi',FI.Structure,'structure');
+                    types = inifile('hcgetstringi',FI.Structure,IndexChapter,'type');
                     IndexChapter = IndexChapter(strcmp(types,Props.Name(1:end-11)));
                     IndexChapter = IndexChapter(idx{ST_});
                     %
@@ -521,7 +531,7 @@ switch FI.FileType(9:end)
                     % - polylinefile: v1.00 structure file
                     % - branchId, chainage: 1D structure
                     % - numCoordinates, xCoordinates, yCoordinates
-                    pli_files = inifile('hcgetstring',FI.Structure,IndexChapter,'polylinefile','');
+                    pli_files = inifile('hcgetstringi',FI.Structure,IndexChapter,'polylinefile','');
                     path_str = fileparts(FI.Structure.FileName);
                     for j = length(pli_files):-1:1
                         Ans.XY{j} = landboundary('read',relpath(path_str,pli_files{j}));
@@ -927,7 +937,7 @@ switch FI.FileType
                             nfld = nfld + 1;
                         end
                     case 'Structure'
-                        types = inifile('hcgetstring',FI.Structure,'structure','type');
+                        types = inifile('hcgetstringi',FI.Structure,'structure','type');
                         utypes = unique(types);
                         nfld = nfld + length(utypes);
                     case 'ExtForce'
@@ -1030,6 +1040,14 @@ switch FI.FileType
                             Out(ifld).DimFlag(ST_) = 3;
                             Out(ifld).NVal = 0;
                         end
+                        if ismember('dambreak',utypes)
+                            ifld = ifld+1;
+                            Out(ifld).Name = 'dambreak start points';
+                            Out(ifld).Geom = 'PNT';
+                            Out(ifld).Coords = 'xy';
+                            Out(ifld).DimFlag(ST_) = 3;
+                            Out(ifld).NVal = 0;
+                        end
                     case 'TOBEIMPLEMENTED_ExtForce'
                         forces = unique({FI.ExtForce.Quantity});
                         translate = {'lowergatelevel'               'lower gate level'                          'm'
@@ -1058,7 +1076,7 @@ switch FI.FileType
                             fName = forces{iforce};
                             switch fName
                                 case 'frictioncoefficient'
-                                    frctyp = inifile('hget',FI.mdu,'physics','UnifFrictType',1);
+                                    frctyp = inifile('hgeti',FI.mdu,'physics','UnifFrictType',1);
                                     switch frctyp
                                         case 0
                                             ForceName  = 'Chezy C';
@@ -1103,11 +1121,11 @@ switch FI.FileType
                                     continue
                                 end
                                 for ipnt = 1:size(Force.Data,1)
-                                    if ~strcmp(inifile('hget',Force,ipnt,'Function'),'timeseries')
+                                    if ~strcmp(inifile('hgeti',Force,ipnt,'Function'),'timeseries')
                                         continue
                                     end
                                     ifld = ifld+1;
-                                    Loc = inifile('hget',Force,ipnt,'Name');
+                                    Loc = inifile('hgeti',Force,ipnt,'Name');
                                     Out(ifld).Name = [FI.ExtForceNew.Bnd.Types{itype} ' time series at ' Loc];
                                     Out(ifld).Geom = 'PNT';
                                     Out(ifld).Coords = 'xy';
@@ -1170,16 +1188,16 @@ ndims = length(Props.DimFlag);
 sz = zeros(1,ndims);
 switch FI.FileType
     case 'Delft3D 1D2D mapping'
-        F=inifile('chapters',FI.mapping);
-        sz(M_) = sum(strcmp(F,'1d2dLink'));
+        F=inifile('chaptersi',FI.mapping);
+        sz(M_) = sum(strcmpi(F,'1d2dLink'));
     case 'Delft3D D-Flow1D'
         switch Props.Name
             case 'network'
-                F=inifile('chapters',FI.ntw);
-                sz(M_) = sum(strcmp(F,'Branch'));
+                F=inifile('chaptersi',FI.ntw);
+                sz(M_) = sum(strcmpi(F,'Branch'));
             case 'nodes'
-                F=inifile('chapters',FI.ntw);
-                sz(M_) = sum(strcmp(F,'Node'));
+                F=inifile('chaptersi',FI.ntw);
+                sz(M_) = sum(strcmpi(F,'Node'));
             case 'grid points'
                 F=inifile('hcgeti',FI.ntw,'Branch','gridPointsCount');
                 sz(M_) = sum([F{:}]);
@@ -1249,13 +1267,16 @@ switch FI.FileType
                     szM = szM + length(FI.Crs{i}.Name);
                 end
                 sz(M_) = szM;
+            case 'dambreak start points'
+                types = inifile('hcgetstringi',FI.Structure,'structure','type');
+                sz(ST_) = sum(strcmpi(types,'dambreak'));
             otherwise
                 if ~isempty(strfind(Props.Name,'open boundaries'))
                     ibtp = strcmp(FI.ExtForceNew.Bnd.Types,strtok(Props.Name));
                     sz(ST_) = length(FI.ExtForceNew.Bnd.Locs{ibtp});
                 elseif length(Props.Name)>11 && strcmp(Props.Name(end-10:end),' structures')
-                    types = inifile('hcgetstring',FI.Structure,'structure','type');
-                    sz(ST_) = sum(strcmp(types,Props.Name(1:end-11)));
+                    types = inifile('hcgetstringi',FI.Structure,'structure','type');
+                    sz(ST_) = sum(strcmpi(types,Props.Name(1:end-11)));
                 end
         end
     case 'Delft3D D-Wave'
@@ -1272,11 +1293,18 @@ S={};
 switch FI.FileType
     case 'Delft3D D-Flow FM'
         switch Props.Name
+            case 'dambreak start points'
+                ids = inifile('hcgetstringi',FI.Structure,'structure','id');
+                types = inifile('hcgetstringi',FI.Structure,'structure','type');
+                S = ids(strcmpi(types,'dambreak'));
+                if ~isequal(t,0)
+                    S = S(t);
+                end
             otherwise
                 if length(Props.Name)>11 && strcmp(Props.Name(end-10:end),' structures')
-                    ids = inifile('hcgetstring',FI.Structure,'structure','id');
-                    types = inifile('hcgetstring',FI.Structure,'structure','type');
-                    S = ids(strcmp(types,Props.Name(1:end-11)));
+                    ids = inifile('hcgetstringi',FI.Structure,'structure','id');
+                    types = inifile('hcgetstringi',FI.Structure,'structure','type');
+                    S = ids(strcmpi(types,Props.Name(1:end-11)));
                     if ~isequal(t,0)
                         S = S(t);
                     end

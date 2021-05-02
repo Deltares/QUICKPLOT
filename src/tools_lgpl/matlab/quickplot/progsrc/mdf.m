@@ -1155,6 +1155,18 @@ for i = 1:size(attfiles,1)
     end
     if ~isempty(filename)
         filenames = strsplit(filename,';');
+        if length(filenames) == 1
+            filename1 = relpath(md_path,filenames{1});
+            if ~exist(filename1, 'file')
+                filenames = strsplit(filename,' ');
+            end
+        end
+        for ifile = 1:length(filenames)
+            filename1 = relpath(md_path,filenames{ifile});
+            if ~exist(filename1,'file')
+                error('Unable to locate file(s) referred to by:%s',filename);
+            end
+        end
         Files = [];
         for ifile = length(filenames):-1:1
             filename = relpath(md_path,filenames{ifile});
@@ -1307,7 +1319,7 @@ for i = 1:size(attfiles,1)
                                     if ~strncmp(Qnts{end},BTp,length(BTp))
                                         continue
                                     end
-                                    forcesThisLocAndType(iQ(iFQ)) = true;
+                                   forcesThisLocAndType(iQ(iFQ)) = true;
                                 end
                                 ForceFile.Data = ForceFile.Data(forcesThisLocAndType,:);
                                 F.Bnd.Forcing{iBT}{iBL} = ForceFile;
@@ -1320,8 +1332,18 @@ for i = 1:size(attfiles,1)
                     F = inifile('open',filename);
                 case 'Obs'
                     try
-                        F = samples('read',filename);
-                        F = samples2obs(F);
+                        fid = fopen(filename,'r');
+                        XYName = textscan(fid,'%f %f %s');
+                        fclose(fid);
+                        for n = 1:length(XYName{3})
+                            name = XYName{3}{n};
+                            if length(name)<=1
+                                continue
+                            elseif name(1)=='''' && name(end)==''''
+                                XYName{3}{n} = name(2:end-1);
+                            end
+                        end
+                        F = xyn2obs(XYName{:});
                     catch
                         F = inifile('open',filename);
                         F = ini2obs(F);
@@ -1353,11 +1375,11 @@ for i = 1:size(attfiles,1)
 end
 
 
-function F2 = samples2obs(F)
-F2.Name = F{2};
+function F2 = xyn2obs(X,Y,Name)
+F2.Name = Name;
 sz = size(F2.Name);
 F2.SnapTo = repmat({'all'}, sz);
-F2.XY = F{1};
+F2.XY = cat(2,X,Y);
 F2.BranchId = cell(sz);
 F2.Offset = zeros(sz);
 
@@ -1654,7 +1676,12 @@ end
 thdname = propget(MF.mdf,'','Filtd','');
 if ~isempty(thdname)
     thdname = relpath(md_path,thdname);
-    MF.thd = d3d_attrib('read',thdname);
+    thd = d3d_attrib('read',thdname);
+    if ~isempty(thd.MNu) || ~isempty(thd.MNv)
+        MF.thd = thd;
+    else
+        warning('Filtd file specified, but it doesn''t specify and thin dams.')
+    end
 end
 %
 wndname = propget(MF.mdf,'','Filwnd','');
@@ -1682,27 +1709,55 @@ if ~isempty(bndname)
     bndname = relpath(md_path,bndname);
     MF.bnd = d3d_attrib('read',bndname);
     %
+    forcing_types = unique(upper(MF.bnd.Forcing));
+    %
     bctname = propget(MF.mdf,'','FilbcT','');
-    if ~isempty(bctname)
-        bctname = relpath(md_path,bctname);
-        MF.bct = bct_io('read',bctname);
+    if ismember('T',forcing_types)
+        if ~isempty(bctname)
+            bctname = relpath(md_path,bctname);
+            MF.bct = bct_io('read',bctname);
+        end
+    elseif ~isempty(bctname)
+        warning('FilbcT name specified, but no boundary with time series forcing specified. Skipping file.')
     end
     %
     bcaname = propget(MF.mdf,'','Filana','');
-    if ~isempty(bcaname)
-        warning('Support for Filana not yet implemented.')
+    if ismember('A',forcing_types)
+        if ~isempty(bcaname)
+            warning('Support for Filana not yet implemented.')
+        end
+    elseif ~isempty(bcaname)
+        warning('Filana name specified, but no boundary with astronomic forcing specified. Skipping file.')
     end
     %
     bchname = propget(MF.mdf,'','FilbcH','');
-    if ~isempty(bchname)
-        bchname = relpath(md_path,bchname);
-        MF.bch = bch_io('read',bchname);
+    if ismember('H',forcing_types)
+        if ~isempty(bchname)
+            bchname = relpath(md_path,bchname);
+            MF.bch = bch_io('read',bchname);
+        end
+    elseif ~isempty(bchname)
+        warning('FilbcH name specified, but no boundary with harmonic forcing specified. Skipping file.')
     end
     %
-    bccname = propget(MF.mdf,'','FilbcC','');
-    if ~isempty(bccname)
-        bccname = relpath(md_path,bccname);
-        MF.bcc = bct_io('read',bccname);
+    bcqname = propget(MF.mdf,'','FilbcQ','');
+    if ismember('Q',forcing_types)
+        if ~isempty(bcqname)
+            bcqname = relpath(md_path,bcqname);
+            MF.bcq = bct_io('read',bcqname);
+        end
+    elseif ~isempty(bcqname)
+        warning('FilbcQ name specified, but no boundary with QH forcing specified. Skipping file.')
+    end
+    %
+    if salin || tempa || consti > 0
+        bccname = propget(MF.mdf,'','FilbcC','');
+        if ~isempty(bccname)
+            bccname = relpath(md_path,bccname);
+            MF.bcc = bct_io('read',bccname);
+        end
+    elseif ~isempty(bcqname)
+        warning('FilbcC name specified, but no salinity, temperature or constituent specified. Skipping file.')
     end
 end
 %
@@ -1757,13 +1812,23 @@ end
 staname = propget(MF.mdf,'','Filsta','');
 if ~isempty(staname)
     staname = relpath(md_path,staname);
-    MF.sta = d3d_attrib('read',staname);
+    sta = d3d_attrib('read',staname);
+    if ~isempty(sta.MN)
+        MF.sta = sta;
+    else
+        warning('Filsta file specified, but it doesn''t define any observation points.')
+    end
 end
 %
 crsname = propget(MF.mdf,'','Filcrs','');
 if ~isempty(crsname)
     crsname = relpath(md_path,crsname);
-    MF.crs = d3d_attrib('read',crsname);
+    crs = d3d_attrib('read',crsname);
+    if ~isempty(crs.MNMN)
+        MF.crs = crs;
+    else
+        warning('Filcrs file specified, but it doesn''t define any observation cross sections.')
+    end
 end
 %
 keys = {'Filbar' 'bar'

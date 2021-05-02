@@ -337,8 +337,12 @@ for tpC = types
                 i=0;
                 while 1
                     Line=fgetl(fid);
-                    if (~ischar(Line) || isempty(deblank(Line)) ) && feof(fid)
-                        break
+                    if ~ischar(Line) || isempty(deblank(Line))
+                        if feof(fid)
+                            break
+                        else % skip empty lines (mostly at the end of the file)
+                            continue
+                        end
                     end
                     i=i+1;
                     Name{i,1}=deblank(Line(1:20));

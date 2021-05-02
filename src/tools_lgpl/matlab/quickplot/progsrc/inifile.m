@@ -269,6 +269,9 @@ for i = 1:length(Line)
         if ~isempty(eq)
             K{ikey,1} = ln(1:eq(1)-1);
             K{ikey,2} = ln(eq(1)+1:end);
+        elseif ikey>1 && K{ikey-1,2}(end) == '\'
+            ikey = ikey-1;
+            K{ikey,2} = [K{ikey,2}(1:end-1) ' ' ln];
         else
             K{ikey,1} = '';
             K{ikey,2} = ln;

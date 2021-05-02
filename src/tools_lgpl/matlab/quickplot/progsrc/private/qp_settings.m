@@ -99,6 +99,7 @@ Set.UIFontUnits        = get(0,'DefaultUicontrolFontUnits');
 Set.UIFontSize         = get(0,'DefaultUicontrolFontSize');
 Set.UIFontWeight       = get(0,'DefaultUicontrolFontWeight');
 Set.figuredir          = '';
+Set.graphicssmoothing  = 0;
 Set.gridviewbackgroundcolor   = [230 230 230];
 Set.gridviewgridcolor         = [0 153 153];
 Set.gridviewselectioncolor    = [255 0 0];

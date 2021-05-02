@@ -2800,15 +2800,21 @@ switch cmd
             currentstatus='on';
         else
             try
-                warnJF = warning('query','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
-                warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame')
-                jFrame = get(handle(UD.PlotMngr.Fig),'JavaFrame');
-                warning(warnJF);
-                if jFrame.isMinimized
-                    jFrame.setMinimized(0)
-                    return
+                if strcmp(get(UD.PlotMngr.Fig,'windowState'),'minimized')
+                    set(UD.PlotMngr.Fig,'windowState','normal')
                 end
             catch
+                try % before 2018a
+                    warnJF = warning('query','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
+                    warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame')
+                    jFrame = get(handle(UD.PlotMngr.Fig),'JavaFrame');
+                    warning(warnJF);
+                    if jFrame.isMinimized
+                        jFrame.setMinimized(0)
+                        return
+                    end
+                catch
+                end
             end
         end
         switch currentstatus
@@ -3396,6 +3402,24 @@ switch cmd
         d3d_qp refreshfigprop
         if logfile
             writelog(logfile, logtype, cmd, rdr);
+        end
+        
+    case 'figuresmoothing'
+        fig = qpsf;
+        %
+        if isempty(cmdargs)
+            PM = UD.PlotMngr;
+            smo = get(PM.FigSmoothing,'value');
+        else
+            smo = cmdargs{1};
+        end
+        if isequal(size(smo),[1 1])
+            smotext = valuemap(smo,[1 0],{'on' 'off'});
+            set(fig,'graphicssmoothing',smotext)
+            d3d_qp refreshfigprop
+            if logfile
+                writelog(logfile,logtype,cmd,smo);
+            end
         end
         
     case 'axesname'
@@ -4958,7 +4982,7 @@ switch cmd
             'organizationname','filefilterselection','colorbar_ratio', ...
             'showinactiveopt', 'defaultfigurepos','timezonehandling', ...
             'enforcedtimezone', 'netcdf_use_fillvalue','export_max_ntimes', ...
-            'update_showversion', 'defaultrenderer'}
+            'update_showversion', 'defaultrenderer','defaultsmoothing'}
         qp_prefs(UD,mfig,cmd,cmdargs);
         
     case {'deltaresweb','deltaresweboss'}

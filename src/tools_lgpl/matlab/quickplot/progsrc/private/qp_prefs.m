@@ -176,6 +176,11 @@ switch cmd
         rndr = Renderers{rval};
         qp_settings('defaultrenderer', rndr)
         
+    case 'defaultsmoothing'
+        dfs = findobj(gcbf,'tag','defaultsmoothing');
+        smo = get(dfs,'value');
+        qp_settings('graphicssmoothing', smo)
+        
     case {'gridviewbackgroundcolor','gridviewgridcolor', ...
             'gridviewselectioncolor','gridviewlandboundarycolor', ...
             'defaultfigurecolor','defaultaxescolor'}

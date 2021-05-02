@@ -137,22 +137,51 @@ try
         end
         switch type
             case 'cell'
-                Data = {T.Field.Data}';
+                if iscell(T.Field(1).Data) % e.g. fixed weir pliz file
+                    Data = cat(1,T.Field.Data);
+                else % most common case
+                    Data = {T.Field.Data}';
+                end
                 for i = 1:length(Data)
                     Data{i}( (Data{i}(:,1)==999.999) & (Data{i}(:,2)==999.999) ,:)=NaN;
                 end
             case 'plain'
-                Sz=[sum(Sz(:,1))+size(Sz,1)-1 Sz(1,2)];
-                offset=0;
-                Data=NaN(Sz);
-                for i=1:length(T.Field)
-                    Data(offset+(1:T.Field(i).Size(1)),:)=tekal('read',T,i);
-                    offset=offset+T.Field(i).Size(1)+1;
+                SzTot = sum(Sz(:,1)) + size(Sz,1) - 1;
+                if iscell(T.Field(1).Data) % e.g. fixed weir pliz file
+                    Field1 = T.Field(1).Data;
+                    nColumns = length(Field1);
+                    Data = cell(1,nColumns);
+                    for c = 1:nColumns
+                        cSz = size(Field1{c});
+                        if iscell(Field1{c})
+                            Data{c} = cell(SzTot,cSz(2));
+                            offset = 0;
+                            for i = 1:length(T.Field)
+                                Data{c}(offset+(1:Sz(i,1)),:) = T.Field(i).Data{c};
+                                offset = offset + Sz(i,1) + 1;
+                            end
+                        else
+                            Data{c} = NaN(Sz(1),cSz(2));
+                            offset = 0;
+                            for i = 1:length(T.Field)
+                                Data{c}(offset+(1:Sz(i,1)),:) = T.Field(i).Data{c};
+                                offset = offset + Sz(i,1) + 1;
+                            end
+                        end
+                    end
+                    Data{1}( (Data{1}(:,1)==999.999) & (Data{1}(:,2)==999.999) ,:)=NaN;
+                else % most common case
+                    Data = NaN(SzTot, Sz(1,2));
+                    offset = 0;
+                    for i = 1:length(T.Field)
+                        Data(offset+(1:Sz(i,1)),:) = T.Field(i).Data;
+                        offset = offset + Sz(i,1) + 1;
+                    end
+                    Data( (Data(:,1)==999.999) & (Data(:,2)==999.999) ,:)=NaN;
                 end
-                Data( (Data(:,1)==999.999) & (Data(:,2)==999.999) ,:)=NaN;
         end
     end
-catch
+catch e
     fprintf(1,'ERROR: Error extracting landboundary from tekal file:\n%s\n',lasterr);
 end
 
