@@ -104,12 +104,6 @@ if isempty(fig)
     if ismember(usr_renderer, Renderers)
         renderer = usr_renderer;
     end
-    if true
-        usr_smooth = qp_settings('graphicssmoothing');
-        smooth = {'graphicssmoothing', usr_smooth};
-    else
-        smooth = {};
-    end
     fig=figure('closerequestfcn','d3d_qp closefigure', ...
         'inverthardcopy','off', ...
         'tag','QuickPlot - figure', ...
@@ -117,8 +111,11 @@ if isempty(fig)
         'renderer',renderer, ...
         'visible','off', ...
         'userdata',figoptions, ...
-        smooth{:}, ...
         xtraprops{:});
+    try
+        usr_smooth = qp_settings('graphicssmoothing');
+        set(fig, 'graphicssmoothing', usr_smooth)
+    end
     qp_figurebars(fig)
 end
 

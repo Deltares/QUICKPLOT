@@ -413,9 +413,13 @@ switch NVal
                             x = data.X(FNC);
                             x(Skip) = 0;
                             x = sum(x,2)./nNd;
-                            y = data.Y(FNC);
-                            y(Skip) = 0;
-                            y = sum(y,2)./nNd;
+                            if isfield(data,'Y')
+                                y = data.Y(FNC);
+                                y(Skip) = 0;
+                                y = sum(y,2)./nNd;
+                            else
+                                y = 0*x;
+                            end
                             val = data.Val;
                         case 'EDGE'
                             inode = zeros(length(data.EdgeNodeConnect)+1,1);

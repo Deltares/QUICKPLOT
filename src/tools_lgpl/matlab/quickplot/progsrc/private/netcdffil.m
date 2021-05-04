@@ -2447,6 +2447,10 @@ end
 % partition).
 uBrNr = unique([eBrNr;BrNr]);
 doublePoints = false(size(uBrNr));
+%
+% first check all the nodes such that they are all available when checking
+% whether an edge with one node on the branch is at the beginning or the
+% end of the branch.
 for i = 1:length(uBrNr)
     bN = uBrNr(i);
     bX = BrX{bN};
@@ -2456,6 +2460,10 @@ for i = 1:length(uBrNr)
         doublePoints(i) = true;
         bX(Mask)=[];
         bY(Mask)=[];
+        % Update BrX/Y such that we don't need to perform this check again
+        % when processing the edges.
+        BrX{bN} = bX;
+        BrY{bN} = bY;
     end
     bS = pathdistance(bX,bY,cUnit{:});
     %
@@ -2470,6 +2478,13 @@ for i = 1:length(uBrNr)
         X(j) = x;
         Y(j) = y;
     end
+end
+%
+% now we can check all the edges
+for i = 1:length(uBrNr)
+    bN = uBrNr(i);
+    bX = BrX{bN};
+    bY = BrY{bN};
     %
     for j = find(eBrNr==bN)'
         n = EdgeNode(j,:);
@@ -2486,27 +2501,51 @@ for i = 1:length(uBrNr)
             % both nodes on other branches, select the whole branch
             EdgeX{j} = bX;
             EdgeY{j} = bY;
-        elseif nBranches(1)==bN
-            % second node on other branch ...
-            % assume we need the end part of the branch
-            n = n(1);
-            s  = (BrOffset(n)/BrL(bN))*bS(end);
-            I = bS>s;
+            x1 = X(n(1));
+            y1 = Y(n(1));
+            x2 = X(n(2));
+            y2 = Y(n(2));
+            dist1 = min(sqrt((bX([1 end])-x1).^2 + (bY([1 end])-y1).^2));
+            dist2 = min(sqrt((bX([1 end])-x2).^2 + (bY([1 end])-y2).^2));
+            if min(dist1) > 0 && min(dist2) > 0
+                ui_message('warning','The edge %i connecting node %i to %i is supposed to lie on branch %i,\nbut both nodes don''t seem to lie on that branch (mismatch = %g).\n',j,n(1),n(2),bN,max(dist1,dist2))
+            elseif min(dist1) > 0
+                ui_message('warning','The edge %i connecting node %i to %i is supposed to lie on branch %i,\nbut node %i doesn''t seem to lie on that branch (mismatch = %g).\n',j,n(1),n(2),bN,n(1),dist1)
+            elseif min(dist2) > 0
+                ui_message('warning','The edge %i connecting node %i to %i is supposed to lie on branch %i,\nbut node %i doesn''t seem to lie on that branch (mismatch = %g).\n',j,n(1),n(2),bN,n(2),dist2)
+            end
+        else
+            % one branch on this branch, one on another branch
+            if nBranches(1)==bN
+                n1 = n(1);
+                n2 = n(2);
+            else
+                n2 = n(1);
+                n1 = n(2);
+            end
+            s  = (BrOffset(n1)/BrL(bN))*bS(end);
             x = interp1(bS,bX,s);
             y = interp1(bS,bY,s);
-            EdgeX{j} = [x;bX(I)];
-            EdgeY{j} = [y;bY(I)];
-        else % nBranches(2)==bN
-            % first node on other branch ...
-            % assume we need the beginning of the branch
-            n = n(2);
-            s  = (BrOffset(n)/BrL(bN))*bS(end);
-            I = bS<s;
-            x = interp1(bS,bX,s);
-            y = interp1(bS,bY,s);
-            EdgeX{j} = [bX(I);x];
-            EdgeY{j} = [bY(I);y];
-            % first node on other branch ...
+            x2 = X(n2);
+            y2 = Y(n2);
+            dist = sqrt((bX([1 end])-x2).^2 + (bY([1 end])-y2).^2);
+            if dist(1) == 0
+                % second node seems to match the beginning node of the
+                % branch
+                I = bS<s;
+                EdgeX{j} = [bX(I);x];
+                EdgeY{j} = [bY(I);y];
+            elseif dist(2) == 0
+                % second node seems to match the end node of the branch
+                I = bS>s;
+                EdgeX{j} = [x;bX(I)];
+                EdgeY{j} = [y;bY(I)];
+            else
+                % second node doesn't seem to match either node ...
+                ui_message('warning','The edge %i connecting node %i to %i is supposed to lie on branch %i,\nbut node %i doesn''t seem to lie on that branch (mismatch = %.3f).\n',j,n(1),n(2),bN,n2,min(dist))
+                EdgeX{j} = bX;
+                EdgeY{j} = bY;
+            end
         end
     end
 end

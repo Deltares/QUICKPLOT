@@ -175,6 +175,7 @@ switch cmd
         shiftcontrol(PM.FigBorder,aligntop+axprop_shf+fgprop_shw)
         shiftcontrol(PM.FigRendererTxt,aligntop+stretch2+axprop_shf+fgprop_shw)
         shiftcontrol(PM.FigRendererType,aligntop+shift2+stretch2+axprop_shf+fgprop_shw)
+        shiftcontrol(PM.FigSmoothing,aligntop+shift2+stretch2+axprop_shf+fgprop_shw)
         %
         if axprop_shw(2)>0
             set(PM.AxHandles,'visible','on')
@@ -1521,9 +1522,14 @@ switch cmd
             iRenderer = find(strcmp(get(fig,'Renderer'), get(PM.FigRendererType,'string')));
             set(PM.FigRendererType, 'value', iRenderer)
             %
-            set(PM.FigSmoothing, 'enable', 'on')
-            smo  = valuemap(get(fig,'GraphicsSmoothing'),{'on' 'off'},[1 0]);
-            set(PM.FigSmoothing, 'value', smo)
+            try
+                gsmo = get(fig,'GraphicsSmoothing');
+                set(PM.FigSmoothing, 'enable', 'on')
+                smo  = valuemap(gsmo,{'on' 'off'},[1 0]);
+                set(PM.FigSmoothing, 'value', smo)
+            catch
+                set(PM.FigSmoothing, 'enable', 'off', 'value', 0)
+            end
         else
             set(PM.FigName,'string','')
             set(PM.FigColor,'backgroundcolor',Inactive, ...

@@ -1098,7 +1098,7 @@ end
 
 %--------------------------------------------------------------------------
 
-if (isequal(geometry,'PNT') && multiple(T_)) || (isequal(geometry,'POLYL') && strcmp(coordinates,'xyz'))
+if (isequal(geometry,'PNT') && multiple(T_) && ~isempty(coordinates)) || (isequal(geometry,'POLYL') && strcmp(coordinates,'xyz'))
     coltrack=findobj(OH,'tag','colourtracks');
     set(coltrack,'enable','on')
     if get(coltrack,'value')
