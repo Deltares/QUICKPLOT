@@ -79,6 +79,8 @@ function varargout=waquaio(sds,exper,field,varargin)
 %                    NO_BACKTRANSFORM keyword in SIMINP file)
 %   * flowcrs-u   : u-discharge crosssection names
 %   * flowcrs-v   : v-discharge crosssection names
+%   * mq-stat     : instantaneous discharge
+%   * cq-stat     : cumulative discharge
 %
 %   * substances  : substance names,substance units
 %   * transtat    : concentration station names
@@ -526,6 +528,9 @@ switch field
                 % the instaneous v cross-sections follow after the
                 % cumulative u cross-sections. Add the ntra skip to
                 % the indices for v cross-sections.
+                if isequal(stationi,':')
+                    stationi = 1:ntra+ntrav;
+                end
                 stationi(stationi>ntra) = stationi(stationi>ntra)+ntra;
                 statmax=ntra+ntrav;
             case 'cq-stat'
@@ -539,6 +544,9 @@ switch field
                 % the cumulative v cross-sections follow after the
                 % instaneous v cross-sections. Add the ntrav skip to
                 % the indices for v cross-sections.
+                if isequal(stationi,':')
+                    stationi = 1:ntra+ntrav;
+                end
                 stationi(stationi>ntra) = stationi(stationi>ntra)+ntrav;
                 statmax=ntra+ntrav;
             case barrierfields
@@ -592,7 +600,7 @@ switch field
                 statmax=nopol;
         end
         if ~isequal(stationi_org,':')
-            if stationi_org<1 || stationi_org>statmax || stationi_org~=round(stationi_org)
+            if any(stationi_org<1 | stationi_org>statmax | stationi_org~=round(stationi_org))
                 if statmax<0
                     error('The variable statmax has not been set for ''%s''',field)
                 elseif statmax==0
