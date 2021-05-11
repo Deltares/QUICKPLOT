@@ -335,7 +335,7 @@ switch data.ValLocation
                 switch Ops.presentationtype
                     case 'contour lines'
                         hNew=tricontour(TRI,data.X,data.Y,Val,Ops.Thresholds,'k');
-                        set(hNew,'color',Ops.colour,'linestyle',Ops.linestyle,'marker',Ops.marker,'markeredgecolor',Ops.markercolour,'markerfacecolor',Ops.markerfillcolour)
+                        set(hNew,Ops.LineParams{:})
                     case 'coloured contour lines'
                         hNew=tricontour(TRI,data.X,data.Y,Val,Ops.Thresholds);
                         for i=1:length(hNew)

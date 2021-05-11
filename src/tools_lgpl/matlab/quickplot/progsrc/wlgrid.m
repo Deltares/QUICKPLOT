@@ -181,7 +181,7 @@ GRID.Attributes = cell(0,2);
 gridtype='RGF';
 fid=fopen(filename);
 if fid<0
-    error('Couldn''t open file: %s.',filename)
+    error('Can''t open file: %s.',filename)
 end
 %
 try
@@ -258,9 +258,22 @@ try
                     end
                     %
                     line = fgetl(fid); % read xori,yori,alfori
-                    pars = sscanf(line,'%f');
+                    [pars,cnt,err,next] = sscanf(line,'%f');
                     if length(pars)>3
-                        error('Too many parameters on origin line: %s',line)
+                        error('Too many numbers encountered on origin line: %s',line)
+                    elseif ~isempty(err)
+                        % some other text on the line ... maybe Missing Value
+                        line2 = line(next:end);
+                        EqualSign = strfind(line2,'=');
+                        keyword = strtrim(line2(1:EqualSign(1)-1));
+                        value   = strtrim(line2(EqualSign(1)+1:end));
+                        GRID.Attributes(end+1,:) = {keyword value};
+                        switch keyword
+                            case 'Coordinate System'
+                                GRID.CoordinateSystem = value;
+                            case 'Missing Value'
+                                GRID.MissingValue     = str2double(value);
+                        end
                     end
                     if length(grdsize)>2 % the possible third element contains the number of subgrids
                         if grdsize(3)>1
@@ -297,7 +310,7 @@ try
                     GRID.Y=-999*ones(grdsize);
                     for c=1:grdsize(2)
                         if readETA
-                            fscanf(fid,' %*[Ee]%*[Tt]%*[Aa] = %i',1); % skip line header ETA= and read c
+                            fscanf(fid,' %*[EeKk]%*[TtSs]%*[AaIi] = %i',1); % skip line header ETA= and read c
                         else
                             fscanf(fid,'%11c',1); % this does not include the preceding EOL
                         end

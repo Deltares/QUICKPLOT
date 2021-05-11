@@ -1575,25 +1575,55 @@ if ~isempty(grdname)
     grdname = relpath(md_path,grdname);
     MF.grd = wlgrid('read',grdname);
 else
-    error('Filcco is empty: grid in mdf file not yet supported.');
+    dxdy = propget(MF.mdf,'','DxDy');
+    spherical = propget(MF.mdf,'','Sphere','N');
+    GRD.X = dxdy(1) * repmat((1:mnkmax(1)-1)' - 0.5,1,mnkmax(2)-1);
+    GRD.Y = dxdy(2) * repmat((1:mnkmax(2)-1) - 0.5,mnkmax(1)-1,1);
+    GRD.Enclosure = [1 1; mnkmax(1) 1; mnkmax(1:2); 1 mnkmax(2); 1 1];
+    GRD.FileName = '';
+    GRD.CoordinateSystem = 'Cartesian';
+    GRD.MissingValue = 0;
+    GRD.Attributes = {};
+    GRD.Type = 'RGF';
+    GRD.Orient = 'anticlockwise';
+    if strcmpi(spherical,'y')
+        error('Can''t combine constant DxDy grid with Sphere = #Y#');
+    end
+    MF.grd = GRD;
+end
+if strcmp(MF.grd.CoordinateSystem,'Spherical')
+   if inifile('existsi',MF.mdf,'','Grdang')
+       MF.mdf = inifile('deletei',MF.mdf,'','Grdang');
+   end
+   if inifile('existsi',MF.mdf,'','Anglat')
+       MF.mdf = inifile('deletei',MF.mdf,'','Anglat');
+   end
+   if inifile('existsi',MF.mdf,'','Anglon')
+       MF.mdf = inifile('deletei',MF.mdf,'','Anglon');
+   end
+end
+encname = get_single_key(MF.mdf, '', 'Filgrd', '');
+if ~isempty(encname)
+    encname = relpath(md_path,encname);
+    MF.grd.Enclosure = enclosure('read',encname);
 end
 %
-depname = propget(MF.mdf,'','Fildep','');
+depname = get_single_key(MF.mdf, '', 'Fildep', '');
 if ~isempty(depname)
     depname = relpath(md_path,depname);
     MF.dep = wldep('read',depname,MF.grd);
 end
 %
-rghname = propget(MF.mdf,'','Filrgh','');
+rghname = get_single_key(MF.mdf, '', 'Filrgh', '');
 if ~isempty(rghname)
     rghname = relpath(md_path,rghname);
     MF.rgh = wldep('read',rghname,MF.grd,'multiple');
     if length(MF.rgh)~=2
-        error('Unexpected length of roughness file');
+        warning('Unexpected length of roughness file');
     end
 end
 %
-ininame = propget(MF.mdf,'','Restid','');
+ininame = get_single_key(MF.mdf, '', 'Restid', '');
 if ~isempty(ininame)
     idate = propget(MF.mdf,'','Itdate');
     idate = idate([1:4 6:7 9:10]);
@@ -1631,28 +1661,39 @@ if ~isempty(ininame)
         try
             MF.ini = trirst('read',inicond,MF.grd,'all');
         catch
-            %
-            % try restid as trim-dat/def
-            inicond = relpath(md_path,ininame);
-            MF.ini = vs_use(inicond,'quiet');
-            %
-            times = qpread(MF.ini,'water level','times');
-            iMAP  = find(times==rdate);
-            %
-            for ig = 1:length(MF.ini.GrpDat)
-                g = MF.ini.GrpDat(ig).Name;
-                g_ = strrep(g,'-','_');
-                if MF.ini.GrpDat(ig).SizeDim>1
-                    MF.ini.Data.(g_) = vs_let(MF.ini,g,{iMAP},'*','quiet');
-                    MF.ini.GrpDat(ig).SizeDim=1;
-                else
-                    MF.ini.Data.(g_) = vs_let(MF.ini,g,{1},'*','quiet');
+            try
+                %
+                % try restid as trim-nc
+                inicond = relpath(md_path,[ininame '.nc']);
+                ncid = netcdf.open(inicond);
+                MF.ini.FileName = inicond;
+                MF.ini.FileType = 'netCDF';
+                netcdf.close(ncid)
+            catch
+                %
+                % try restid as trim-dat/def
+                inicond = relpath(md_path,ininame);
+                MF.ini = vs_use(inicond,'quiet');
+                %
+                times = qpread(MF.ini,'water level','times');
+                iMAP  = find(times==rdate);
+                %
+                for ig = 1:length(MF.ini.GrpDat)
+                    g = MF.ini.GrpDat(ig).Name;
+                    g_ = strrep(g,'-','_');
+                    if MF.ini.GrpDat(ig).SizeDim>1
+                        MF.ini.Data.(g_) = vs_let(MF.ini,g,{iMAP},'*','quiet');
+                        MF.ini.GrpDat(ig).SizeDim=1;
+                    else
+                        MF.ini.Data.(g_) = vs_let(MF.ini,g,{1},'*','quiet');
+                    end
                 end
+                %
+                MF.ini.FileName = 'IN MEMORY';
+                MF.ini.FileType = 'NEFIS';
+                MF.ini.DatExt = '';
+                MF.ini.DefExt = '';
             end
-            %
-            MF.ini.FileName = 'IN MEMORY';
-            MF.ini.DatExt = '';
-            MF.ini.DefExt = '';
         end
     end
     %
@@ -1667,13 +1708,13 @@ if ~isempty(ininame)
     end
 end
 %
-dryname = propget(MF.mdf,'','Fildry','');
+dryname = get_single_key(MF.mdf, '', 'Fildry', '');
 if ~isempty(dryname)
     dryname = relpath(md_path,dryname);
     MF.dry = d3d_attrib('read',dryname);
 end
 %
-thdname = propget(MF.mdf,'','Filtd','');
+thdname = get_single_key(MF.mdf,'','Filtd','');
 if ~isempty(thdname)
     thdname = relpath(md_path,thdname);
     thd = d3d_attrib('read',thdname);
@@ -1684,34 +1725,38 @@ if ~isempty(thdname)
     end
 end
 %
-wndname = propget(MF.mdf,'','Filwnd','');
+wndname = get_single_key(MF.mdf,'','Filwnd','');
 if ~isempty(wndname)
-    warning('Support for Filwnd not yet implemented.')
+    wndname = relpath(md_path,wndname);
+    MF.wnd = readwnd(wndname);
 end
 %
-wndname = propget(MF.mdf,'','Filwp','');
+wndname = get_single_key(MF.mdf,'','Filwp','');
 if ~isempty(wndname)
-    warning('Support for Filwp not yet implemented.')
+    wndname = relpath(md_path,wndname);
+    MF.grid_pres = asciiwind('open',wndname);
 end
 %
-wndname = propget(MF.mdf,'','Filwu','');
+wndname = get_single_key(MF.mdf,'','Filwu','');
 if ~isempty(wndname)
-    warning('Support for Filwu not yet implemented.')
+    wndname = relpath(md_path,wndname);
+    MF.grid_windu = asciiwind('open',wndname);
 end
 %
-wndname = propget(MF.mdf,'','Filwv','');
+wndname = get_single_key(MF.mdf,'','Filwv','');
 if ~isempty(wndname)
-    warning('Support for Filwv not yet implemented.')
+    wndname = relpath(md_path,wndname);
+    MF.grid_windv = asciiwind('open',wndname);
 end
 %
-bndname = propget(MF.mdf,'','Filbnd','');
+bndname = get_single_key(MF.mdf,'','Filbnd','');
 if ~isempty(bndname)
     bndname = relpath(md_path,bndname);
     MF.bnd = d3d_attrib('read',bndname);
     %
     forcing_types = unique(upper(MF.bnd.Forcing));
     %
-    bctname = propget(MF.mdf,'','FilbcT','');
+    bctname = get_single_key(MF.mdf,'','FilbcT','');
     if ismember('T',forcing_types)
         if ~isempty(bctname)
             bctname = relpath(md_path,bctname);
@@ -1721,16 +1766,17 @@ if ~isempty(bndname)
         warning('FilbcT name specified, but no boundary with time series forcing specified. Skipping file.')
     end
     %
-    bcaname = propget(MF.mdf,'','Filana','');
+    bcaname = get_single_key(MF.mdf,'','Filana','');
     if ismember('A',forcing_types)
         if ~isempty(bcaname)
-            warning('Support for Filana not yet implemented.')
+            bcaname = relpath(md_path,bcaname);
+            MF.ana = readbca(bcaname);
         end
     elseif ~isempty(bcaname)
         warning('Filana name specified, but no boundary with astronomic forcing specified. Skipping file.')
     end
     %
-    bchname = propget(MF.mdf,'','FilbcH','');
+    bchname = get_single_key(MF.mdf,'','FilbcH','');
     if ismember('H',forcing_types)
         if ~isempty(bchname)
             bchname = relpath(md_path,bchname);
@@ -1740,7 +1786,7 @@ if ~isempty(bndname)
         warning('FilbcH name specified, but no boundary with harmonic forcing specified. Skipping file.')
     end
     %
-    bcqname = propget(MF.mdf,'','FilbcQ','');
+    bcqname = get_single_key(MF.mdf,'','FilbcQ','');
     if ismember('Q',forcing_types)
         if ~isempty(bcqname)
             bcqname = relpath(md_path,bcqname);
@@ -1751,30 +1797,31 @@ if ~isempty(bndname)
     end
     %
     if salin || tempa || consti > 0
-        bccname = propget(MF.mdf,'','FilbcC','');
+        bccname = get_single_key(MF.mdf,'','FilbcC','');
         if ~isempty(bccname)
             bccname = relpath(md_path,bccname);
             MF.bcc = bct_io('read',bccname);
         end
     elseif ~isempty(bcqname)
-        warning('FilbcC name specified, but no salinity, temperature or constituent specified. Skipping file.')
+        %warning('FilbcC name specified, but no salinity, temperature or constituent specified. Skipping file.')
+        MF.mdf = inifile('deletei',MF.mdf,'','FilbcC');
     end
 end
 %
-sedname = propget(MF.mdf,'','Filsed','');
+sedname = get_single_key(MF.mdf,'','Filsed','');
 if ~isempty(sedname)
     sedname = relpath(md_path,sedname);
     MF.sed = inifile('open',sedname);
 end
 %
-morname = propget(MF.mdf,'','Filmor','');
+morname = get_single_key(MF.mdf,'','Filmor','');
 if ~isempty(morname)
     morname = relpath(md_path,morname);
     MF.mor = inifile('open',morname);
 end
 %
 if isfield(MF,'mor')
-    morininame = propget(MF.mor,'Underlayer','IniComp','');
+    morininame = get_single_key(MF.mor,'Underlayer','IniComp','');
     if ~isempty(morininame)
         morininame = relpath(md_path,morininame);
         MF.morini.inb = inifile('open',morininame);
@@ -1803,13 +1850,13 @@ if isfield(MF,'mor')
     end
 end
 %
-traname = propget(MF.mdf,'','TraFrm','');
+traname = get_single_key(MF.mdf,'','TraFrm','');
 if ~isempty(traname)
     traname = relpath(md_path,traname);
     MF.tra = readtra(traname);
 end
 %
-staname = propget(MF.mdf,'','Filsta','');
+staname = get_single_key(MF.mdf,'','Filsta','');
 if ~isempty(staname)
     staname = relpath(md_path,staname);
     sta = d3d_attrib('read',staname);
@@ -1820,7 +1867,7 @@ if ~isempty(staname)
     end
 end
 %
-crsname = propget(MF.mdf,'','Filcrs','');
+crsname = get_single_key(MF.mdf,'','Filcrs','');
 if ~isempty(crsname)
     crsname = relpath(md_path,crsname);
     crs = d3d_attrib('read',crsname);
@@ -1841,19 +1888,26 @@ keys = {'Filbar' 'bar'
 for i = 1:size(keys,1)
     key = keys{i,1};
     fld = keys{i,2};
-    fldname = propget(MF.mdf,'',key,'');
+    fldname = get_single_key(MF.mdf,'',key,'');
     if ~isempty(fldname)
         fldname = relpath(md_path,fldname);
         MF.(fld) = d3d_attrib('read',fldname);
     end
 end
 %
-flsname = propget(MF.mdf,'','Filfls','');
+flsname = get_single_key(MF.mdf,'','Filfls','');
 if ~isempty(flsname)
     flsname = relpath(md_path,flsname);
     MF.fls = wldep('read',flsname,MF.grd);
 end
 
+
+function filename = get_single_key(mdf, grp, key, varargin)
+filename = propget(mdf, grp, key, varargin{:});
+if iscell(filename)
+    %warning('The key ''%s'' appears %i times in %s. Using only the first entry.',key,length(filename),mdf.FileName)
+    filename = filename{1};
+end
 
 function val = propgetval(varargin)
 str = propget(varargin{:});
@@ -1902,6 +1956,82 @@ else
 end
 
 
+function data = readwnd(filename)
+fid = fopen(filename,'r');
+if fid<0
+    error('Can''t open file: %s.',filename)
+end
+try
+    data = fscanf(fid,'%f %f %f\n',[3  inf]);
+    fclose(fid);
+catch e
+    if fid>0
+        fclose(fid);
+    end
+    rethrow(e)
+end
+
+function S = readbca(filename)
+fid = fopen(filename,'r');
+S.FileName = filename;
+S.FileType = 'Delft3D-FLOW BCA-file';
+S.Location.Name = '';
+S.Location.Components = cell(0,2);
+Components = {'A0', 'SA', 'SSA', 'MSM', 'MM', 'MSF', 'MS0', 'MF', 'KO0', ...
+    'MK0', 'SNU', 'SN', 'MSTM', 'MFM', '2SM', 'MSQM', 'MQM', '2SMN', '2OK1', ...
+    '2Q1', 'NJ1', 'SIGMA1', 'MUK1', 'NUJ1', 'Q1', 'NK1', 'RO1', 'NUK1', 'O1', ...
+    'TAU1', 'MP1', 'M1B', 'M1C', 'M1A', 'M1', 'NO1', 'CHI1', 'LP1', 'PI1', 'TK1', ...
+    'P1', 'SK1', 'S1', 'K1', 'MO1', 'SP1', 'PSI1', 'RP1', 'FI1', 'KP1', 'THETA1', ...
+    'LABDAO1', 'J1', 'MQ1', '2PO1', 'SO1', 'OO1', '2KO1', 'UPSILON1', 'KQ1', '2MN2S2', ...
+    '3MKS2', '2NS2', '3MS2', 'OQ2', 'MNK2', 'EPSILON2', 'MNS2', '2ML2S2', 'MNUS2', ...
+    'MNK2S2', '2MS2K2', 'O2', 'NLK2', '2MK2', '2N2', 'MU2', '2MS2', 'SNK2', 'NA2', ...
+    'N2', 'KQ2', 'NB2', 'NU2', '3MSN2', '2KN2S2', 'OP2', 'MSK2', 'GAMMA2', 'ALFA2', ...
+    'MPS2', 'MA2', 'M2', 'KO2', 'MSP2', 'MB2', 'DELTA2', 'MKS2', 'M2(KS)2', '2SN(MK)2', ...
+    'LABDA2', 'SNM2', '2MN2', 'L2', 'L2A', 'L2B', '2SK2', 'T2', 'S2', 'KP2', 'R2', ...
+    'K2', 'MSNU2', 'MSN2', 'ZETA2', 'ETA2', 'KJ2', 'MKN2', '2KM(SN)2', '2SM2', 'SKM2', ...
+    '2MS2N2', '2SNU2', '2SN2', 'SKN2', 'MQ3', 'NO3', 'MO3', '2MK3', '2MP3', 'M3', 'NK3', ...
+    'SO3', 'MP3', 'MK3', 'SP3', '2MQ3', 'SK3', '2SO3', 'K3', '4MS4', '2MNS4', '3MK4', ...
+    'MNLK4', '3MS4', 'MSNK4', 'MN4', 'MNU4', '2MLS4', '2MSK4', 'M4', '2MKS4', 'SN4', ...
+    '3MN4', '2SMK4', 'MS4', 'MK4', '2SNM4', '2MSN4', 'SL4', 'S4', 'SK4', '2SMN4', ...
+    '3SM4', '2SKM4', 'MNO5', '3MK5', '3MP5', 'M5', 'MNK5', '2MP5', 'MSO5', '3MO5', ...
+    'MSK5', '3KM5', '2(MN)S6', '3MNS6', '4MK6', '2NM6', '4MS6', '2MSNK6', '2MN6', ...
+    '2MNU6', '3MSK6', 'M6', 'MSN6', 'MNK6', '4MN6', 'MKNU6', '2(MS)K6', '2MS6', ...
+    '2MK6', '2SN6', '3MSN6', 'MKL6', '2SM6', 'MSK6', 'S6', '2MNO7', '2NMK7', ...
+    'M7', '2MSO7', 'MSKO7', '2(MN)8', '3MN8', '3MNKS8', 'M8', '2MSN8', '2MNK8', ...
+    '3MS8', '3MK8', '2SNM8', 'MSNK8', '2(MS)8', '2MSK8', '3SM8', '2SMK8', 'S8', ...
+    '2(MN)K9', '3MNK9', '4MK9', '3MSK9', '4MN10', 'M10', '3MSN10', '4MS10', ...
+    '2(MS)N10', '2MNSK10', '3M2S10', '4MSK11', 'M12', '4MSN12', '5MS12', ...
+    '3MNKS12', '4M2S12'};
+try
+    i = 0;
+    Line = fgetl(fid);
+    while ischar(Line)
+        Line = deblank(Line);
+        if ~isempty(deblank(Line))
+            [comp,Rem] = strtok(Line);
+            if ~isempty(Rem)
+                val = sscanf(Rem,'%f',[1 2]);
+            else
+                val = [];
+            end
+            if i == 0 || length(val) ~= 2
+                i = i+1;
+                S.Location(i).Name = Line;
+            else
+                S.Location(i).Components(end+1,1:2) = {comp, val};
+            end
+        end
+        Line = fgetl(fid);
+    end
+    fclose(fid);
+catch e
+    if fid>0
+        fclose(fid);
+    end
+    rethrow(e)
+end
+
+
 function varargout = bch_io(cmd,varargin)
 switch lower(cmd)
     case 'read'
@@ -1932,53 +2062,98 @@ S.FileName = filename;
 S.FileType = 'Delft3D-FLOW BCH-file';
 fid = fopen(filename,'r');
 %
+lNr = 1;
 Line = fgetl(fid);
-[S.Freq,nFreq,err] = sscanf(Line,'%f');
-if ~isempty(err)
-    fclose(fid);
-    error('Only values expected in first line of BCH file: "%s"',Line)
-end
-%
-Line = fgetl(fid);
-if ~isempty(Line)
-    fclose(fid);
-    error('Unexpected data on second line of BCH file: "%s". This line should be empty.',Line)
-end
-%
-Line = fgetl(fid);
-lNr = 3;
-Data = zeros(0,nFreq);
-while ~isempty(Line)
-    [DataRow,nVal2,err] = sscanf(Line,'%f');
-    if ~isempty(err) || nVal2~=nFreq
+Freq = {};
+nFreq = [];
+while 1
+    [Fr,nF,err] = sscanf(Line,'%f');
+    if ~isempty(err)
         fclose(fid);
-        error('%i values expected in line %i "%s"',nFreq,lNr,Line)
+        error('Only values expected in line %i of BCH file: "%s"',lNr,Line)
+    elseif isempty(deblank(Line))
+        break
+    else
+        Freq{lNr}  = Fr;
+        nFreq(lNr) = nF;
     end
-    Data(end+1,:) = DataRow;
-    Line = fgetl(fid);
+    %
     lNr = lNr+1;
+    Line = fgetl(fid);
 end
-nLines = size(Data,1);
+S.Freq = cat(1,Freq{:});
+hasZeroFreq = S.Freq(1) == 0;
+if hasZeroFreq
+    phaseCorr = 1;
+else
+    phaseCorr = 0;
+end
+nFreqTot = sum(nFreq);
+%
+Data = zeros(0,nFreqTot);
+iBnd = 0;
+while 1
+    nRem = nFreqTot;
+    offset = 0;
+    iBnd = iBnd+1;
+    while nRem > 0
+        lNr = lNr+1;
+        Line = fgetl(fid);
+        if isempty(deblank(Line)) && nRem == nFreqTot
+            break
+        end
+        %
+        [DataRow,nVal2,err] = sscanf(Line,'%f');
+        if ~isempty(err)
+            fclose(fid);
+            error('Only values expected in line %i of BCH file: "%s"',lNr,Line)
+        elseif nVal2 > nRem
+            fclose(fid);
+            error('Only %i values expected in line %i "%s"',nRem,lNr,Line)
+        end
+        Data(iBnd,offset+(1:nVal2)) = DataRow;
+        offset = offset + nVal2;
+        nRem = nRem - nVal2;
+    end
+    if isempty(deblank(Line))
+        break
+    end
+end
+nBnd = size(Data,1);
 S.Amplitudes = Data;
 %
 Data(:) = NaN;
-Line = fgetl(fid);
-lNr = lNr+1;
-for i = 1:nLines
-    [DataRow,nVal2,err] = sscanf(Line,'%f');
-    if ~isempty(err) || nVal2~=nFreq-1
-        fclose(fid);
-        error('%i values expected in line %i "%s"',nFreq-1,lNr,Line)
+if nFreqTot > phaseCorr
+    for iBnd = 1:nBnd
+        nRem = nFreqTot - phaseCorr;
+        offset = phaseCorr;
+        while nRem > 0
+            lNr = lNr+1;
+            Line = fgetl(fid);
+            %
+            [DataRow,nVal2,err] = sscanf(Line,'%f');
+            if ~isempty(err)
+                fclose(fid);
+                error('Only values expected in line %i of BCH file: "%s"',lNr,Line)
+            elseif nVal2 > nRem
+                fclose(fid);
+                error('Only %i values expected in line %i "%s"',nRem,lNr,Line)
+            end
+            Data(iBnd,offset+(1:nVal2)) = DataRow;
+            offset = offset + nVal2;
+            nRem = nRem - nVal2;
+        end
     end
-    Data(i,2:end) = DataRow;
-    Line = fgetl(fid);
-    lNr = lNr+1;
 end
 S.Phases = Data;
 %
-if ~feof(fid) || (ischar(Line) && ~isempty(Line))
-    fclose(fid);
-    error('More data lines in file than expected.')
+while ~feof(fid)
+    lNr = lNr+1;
+    Line = fgetl(fid);
+    if ischar(Line) && ~isempty(deblank(Line))
+        fclose(fid);
+        error('Unexpected data "%s" on line %i in file %s.',deblank(Line),lNr,filename)
+    end
 end
 fclose(fid);
 

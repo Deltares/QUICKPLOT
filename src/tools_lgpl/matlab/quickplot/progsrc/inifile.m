@@ -219,7 +219,7 @@ FI.Data=S;
 function FI=readfile(filename,varargin)
 fid=fopen(filename,'rt');
 if fid<0
-    error('Error opening %s.',filename)
+    error('Can''t open file: %s.',filename)
 end
 Line = textscan(fid,'%s','delimiter','\n','whitespace','');
 Line = Line{1};
@@ -269,7 +269,7 @@ for i = 1:length(Line)
         if ~isempty(eq)
             K{ikey,1} = ln(1:eq(1)-1);
             K{ikey,2} = ln(eq(1)+1:end);
-        elseif ikey>1 && K{ikey-1,2}(end) == '\'
+        elseif ikey>1 && ~isempty(K{ikey-1,2}) && K{ikey-1,2}(end) == '\'
             ikey = ikey-1;
             K{ikey,2} = [K{ikey,2}(1:end-1) ' ' ln];
         else
@@ -493,10 +493,12 @@ vgrp = iGRP(key);
 %
 if nargin >= 5
     mgrp = grp(~ismember(grp,vgrp));
+    iGRP = cat(1,vgrp,mgrp);
+    [iGRP,ordered] = sort(iGRP);
     mgrp = mgrp(:);
     val = repmat({def},[numel(vgrp)+numel(mgrp) 1]);
     val(1:length(key)) = Keywords(key,2);
-    iGRP = cat(1,vgrp,mgrp);
+    val = val(ordered);
 elseif any(~ismember(grp,vgrp))
     if nargout > 1
         iGRP = vgrp;
