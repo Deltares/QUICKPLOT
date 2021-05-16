@@ -453,6 +453,7 @@ switch subtype
                 end
             end
             wlflag=strmatch('zcoordwaterlevel',lower(names));
+            dpsflag = false;
             if DataInCell
                 idxK_=[idx{K_} idx{K_}(end)+1];
             else
@@ -480,6 +481,9 @@ switch subtype
                     if ~isempty(wlflag)
                         [T,wl]=delwaq('read',LocFI,wlflag,0,idx{T_});
                         wl=permute(wl,[3 2 1]);
+                    elseif isfield(FI,'Grid') && isfield(FI.Grid,'DPS');
+                        dpsflag = true;
+                        dps = FI.Grid.DPS;
                     end
                 else
                     if iscell(ld)
@@ -524,6 +528,11 @@ switch subtype
                     if wlflag
                         wl=wl(:,max(FI.Grid.Index(:,:,1),1));
                         wl=reshape(wl,[size(z,1) size(FI.Grid.Index(:,:,1))]);
+                    elseif dpsflag
+                        wlflag = true;
+                        dps = -dps(max(FI.Grid.Index(:,:,1),1));
+                        dps = reshape(dps, [1 size(dps)]);
+                        wl = max(z,[],4) + repmat(dps,size(z,1),1);
                     end
                     %
                     if strcmp(subtype,'map')
@@ -555,31 +564,31 @@ switch subtype
                 %end
                 %
                 if isempty(wlflag)
-                    szz=[size(z) 1];
-                    wl=repmat(0,szz([1 2 3]));
-                    wl(all(isnan(z(:,:,:,:)),4))=NaN;
+                    szz = [size(z) 1];
+                    wl = repmat(0,szz([1 2 3]));
+                    wl(all(isnan(z(:,:,:,:)),4)) = NaN;
                 end
                 if DataInCell
-                    kmax=size(z,4);
-                    for i=1:size(z,1)
-                        for k=kmax+1:-1:2
-                            z(i,:,:,k)=z(i,:,:,k-1)+wl(i,:,:);
+                    kmax = size(z,4);
+                    for i = 1:size(z,1)
+                        for k = kmax+1:-1:2
+                            z(i,:,:,k) = wl(i,:,:) - z(i,:,:,k-1);
                         end
-                        z(i,:,:,1)=wl(i,:,:);
+                        z(i,:,:,1) = wl(i,:,:);
                     end
                 else
-                    for i=1:size(z,1)
-                        for k=size(z,4):-1:2
-                            z(i,:,:,k)=(z(i,:,:,k)+z(i,:,:,k-1))/2+wl(i,:,:);
+                    for i = 1:size(z,1)
+                        for k = size(z,4):-1:2
+                            z(i,:,:,k) = wl(i,:,:) - (z(i,:,:,k) + z(i,:,:,k-1))/2;
                         end
-                        z(i,:,:,1)=z(i,:,:,1)/2+wl(i,:,:);
+                        z(i,:,:,1) = wl(i,:,:) - z(i,:,:,1)/2;
                     end
                 end
                 %
                 if isequal(idx{N_},0) % unstructured data sets
-                    z=-z(:,idx{M_},1,idxK_);
+                    z = z(:,idx{M_},1,idxK_);
                 else
-                    z=-z(:,idx{[M_ N_]},idxK_);
+                    z = z(:,idx{[M_ N_]},idxK_);
                 end
             end
             %      cthk=-(0:(FI.Grid.MNK(3)-1));
