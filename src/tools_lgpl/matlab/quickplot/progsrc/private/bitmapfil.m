@@ -267,6 +267,9 @@ if isfield(FI,'vidObj')
     Data = read(FI.vidObj, t);
     Alpha = [];
 else
+    if t == 0
+        t = length(FI.FileInfo.times);
+    end
     if isfield(FI.FileInfo,'times')
         tstr = sprintf(FI.FileInfo.format,FI.FileInfo.times(t));
         FileName=[FI.FileInfo.prefix tstr FI.FileInfo.postfix];
