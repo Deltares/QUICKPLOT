@@ -1131,6 +1131,9 @@ if isempty(specialplot) && isfield(Ops,'basicaxestype') && ~isempty(Ops.basicaxe
                 end
             case 'Z'
                 dimension{d} = 'elevation';
+                if isfield(data,'ZName')
+                    dimension{d} = data(1).ZName;
+                end
                 if isfield(data,'ZUnits')
                     if ~isempty(data(1).ZUnits)
                         unit{d} = data(1).ZUnits;

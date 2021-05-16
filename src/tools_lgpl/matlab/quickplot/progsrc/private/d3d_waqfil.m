@@ -301,7 +301,8 @@ end
 x=[];
 y=[];
 z=[];
-ZUnits='';
+ZUnits='-';
+ZQuantity = 'minus layer number';
 XUnits='';
 %if XYRead || strcmp(subtype,'plot')
 %
@@ -463,9 +464,15 @@ switch subtype
                 cthk=-(0:sz(K_));
                 cthk=cthk(idxK_);
                 cthk=reshape(cthk,[1 1 1 length(cthk)]);
-                z=repmat(cthk,[1 size(x) 1]);
+                if isempty(x)
+                    szx = [length(idx{M_}), 1];
+                else
+                    szx = size(x);
+                end
+                z=repmat(cthk,[1 szx 1]);
             else
                 ZUnits = 'm';
+                ZQuantity = 'elevation relative to water level';
                 if isbinary
                     if iscell(ld)
                         for k=length(ld):-1:1
@@ -567,6 +574,8 @@ switch subtype
                     szz = [size(z) 1];
                     wl = repmat(0,szz([1 2 3]));
                     wl(all(isnan(z(:,:,:,:)),4)) = NaN;
+                else
+                    ZQuantity = 'elevation';
                 end
                 if DataInCell
                     kmax = size(z,4);
@@ -1076,7 +1085,14 @@ end
 if XYRead
     switch Props.Geom
         case {'UGRID2D-FACE','UGRID2D-EDGE','UGRID2D-NODE'}
-            % Ans already filled with geometry information
+            % Ans already filled with geometry information except for
+            % z coordinates
+            if DimFlag(K_)
+                Ans.ZName = ZQuantity;
+                Ans.ZUnits = ZUnits;
+                Ans.ZLocation = Ans.ValLocation;
+                Ans.Z = z;
+            end
         case 'POLYG'
             if size(x,2)==2 % segments
                 x(:,end+1) = NaN;
@@ -1126,8 +1142,9 @@ if XYRead
                 Ans.Y=y;
             end
             if DimFlag(K_)
-                Ans.Z=z;
-                Ans.ZUnits=ZUnits;
+                Ans.ZName = ZQuantity;
+                Ans.ZUnits = ZUnits;
+                Ans.Z = z;
             end
     end
     %
