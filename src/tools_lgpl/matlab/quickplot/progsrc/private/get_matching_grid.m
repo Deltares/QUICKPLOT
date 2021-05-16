@@ -426,6 +426,15 @@ while 1
                             end
                         end
                     end
+                    %
+                    try
+                        if strcmp(G.Filename(end-10:end),'_waqgeom.nc')
+                            dpsfil = [G.Filename(1:end-11) '.dps'];
+                            dps = waqfil('open',dpsfil);
+                            G.DPS = dps.Srf;
+                        end
+                    catch
+                    end
                     CouldReadGridData = 1;
                 catch Ex
                     if GetError

@@ -1681,7 +1681,7 @@ if ~isempty(icnst)
         k = j+1;
         while 1
             nm2 = sprintf(f, nm(1:end-n), k-j+1);
-            if ~strcmp(Ins(k).Name, nm2)
+            if k>length(Ins) || ~strcmp(Ins(k).Name, nm2)
                 k = k-1;
                 break
             elseif k == length(Ins)
