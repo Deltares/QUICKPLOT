@@ -164,6 +164,7 @@ try
             % [Success,StNames   ]            = QP_GETDATA(FI,Domain,DataFld,'stations',S)
             % [Success,SubFields ]            = QP_GETDATA(FI,Domain,DataFld,'subfields',F)
             % [Success,hNew      ]            = QP_GETDATA(FI,Domain,DataFld,'plot',Parent,Ops,hOld,subf,t,station,m,n,k)
+            % [Success,Options   ]            = QP_GETDATA(FI,Domain,DataFld,'plotoptions',subf,t,station,m,n,k)
             % [Success,Data      ]            = QP_GETDATA(FI,Domain,DataFld,'data',subf,t,station,m,n,k)
             %
             % Check for domain index ... add if necessary

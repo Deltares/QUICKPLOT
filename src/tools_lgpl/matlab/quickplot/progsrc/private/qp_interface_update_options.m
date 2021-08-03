@@ -32,7 +32,20 @@ function [DomainNr,Props,subf,selected,stats,Ops]=qp_interface_update_options(mf
 %   $Id$
 
 [DomainNr,Props,subf,selected,stats,vslice,hslice] = get_basics(mfig,UD.MainWin);
-[Ops,PlotType,EnablePlot,EnableLoad] = get_options(Props,selected,vslice,hslice,UD);
+if isnumeric(Props.NVal) && Props.NVal < 0
+    try
+        Handle_SelectFile=findobj(mfig,'tag','selectfile');
+        File=get(Handle_SelectFile,'userdata');
+        NrInList=get(Handle_SelectFile,'value');
+        FI=File(NrInList);
+        [Success,PlotOps] = qp_getdata(FI,DomainNr,Props,'plotoptions',subf{:},selected{:});
+    catch
+        PlotOps = [];
+    end
+else
+    PlotOps = [];
+end
+[Ops,PlotType,EnablePlot,EnableLoad] = get_options(Props,selected,vslice,hslice,UD,PlotOps);
 
 %
 %---- Rename "Quick View" button to "Quick Animate" if appropriate
@@ -160,7 +173,7 @@ for m = 6:length(DimFlag)
     end
 end
 
-function [Ops,PlotType,EnablePlot,EnableLoad] = get_options(Props,selected,vslice,hslice,UD)
+function [Ops,PlotType,EnablePlot,EnableLoad] = get_options(Props,selected,vslice,hslice,UD,PlotOps)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 Ops = [];
 PlotType='View';
@@ -280,6 +293,10 @@ switch geometry
             elseif multiple(T_)
                 axestype={'Time-Val','X-Y'};
             else
+                switch geometry
+                    case {'UGRID1D_NETWORK-NODE','UGRID1D-NODE','UGRID2D-NODE'}
+                        geometry = 'PNT';
+                end
                 axestype={'Time-Val','X-Y','Text'};
             end
         end
@@ -362,7 +379,7 @@ switch geometry
                     if isequal(coordinates,'d')
                         axestype={'Distance-Val'};
                     else
-                        axestype={'X-Val'};
+                        axestype={'X-Val','Time-X','X-Time'};
                     end
             end
         elseif multiple(T_)
@@ -597,19 +614,31 @@ if nval==-1 || (nval>=0 && nval<1)
     lineproperties=1;
 end
 if ~multiple(T_)
+    % if only one time step is selected, there is no animation period.
     animate = 0;
-elseif nval<0 % works for the time being, but might not be appropriate always
+elseif isfield(PlotOps,'animate')
+    animate = PlotOps.animate;
+elseif nval<0
+    % a self-plot that didn't specify any plotoptions, should be able to
+    % handle multiple selected times
     animate = 0;
 elseif ~isempty(strfind(axestype,'Time'))
+    % if the axestype includes a time dimension, we're going to plot
+    % the time dependent data along that axis rather than animating it
     animate = 0;
 elseif ~multiple(M_) && ...
         ~multiple (N_) && ...
         (~multiple(K_) || hslice) && ...
         (strcmp(axestype,'X-Y') || strcmp(axestype,'X-Z') || strcmp(axestype,'X-Y-Z'))
+    % if it's a single point in a spatial plot, we'll plot it as a track,
+    % so don't animate
     animate = 0;
 elseif strcmp(axestype,'Distance-Val')
+    % this is probably also a track and we'll plot the value as function of
+    % the distance moved
     animate = 0;
 else
+    % in all other cases, we animate the time dimension
     animate = 1;
 end
 

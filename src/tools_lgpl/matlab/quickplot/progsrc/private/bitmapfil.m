@@ -82,7 +82,7 @@ cmd=lower(cmd);
 switch cmd
     case 'size'
         varargout={getsize(FI,Props)};
-        return;
+        return
     case 'times'
         varargout={readtim(FI,Props,varargin{:})};
         return
@@ -91,6 +91,15 @@ switch cmd
         return
     case 'subfields'
         varargout={{}};
+        return
+    case 'plotoptions'
+        if isempty(varargin)
+            t = 1;
+        else
+            t = varargin{1};
+        end
+        PlotOps.animate = isequal(t,0) || length(t)>1;
+        varargout = {PlotOps};
         return
     case 'plot'
     otherwise
@@ -211,13 +220,7 @@ switch cmd
         cmdargs={cmd x};
     case 'bitmapfig'
         % get size in pixels
-        if isfield(FI,'vidObj')
-            Width = FI.vidObj.Width;
-            Height = FI.vidObj.Height;
-        else
-            Width = FI.FileInfo.Width;
-            Height = FI.FileInfo.Height;
-        end
+        [xlim,ylim,Width,Height] = getlims(FI);
         pxsz = [Width Height];
         % get size in map units
         sz = FI.Loc(3:4);
@@ -233,14 +236,9 @@ switch cmd
         set(Fg,'units','pixels','position',pos,'resize','off');
         %
         Ax=axes('parent',Fg,'units','normalized','position',[0 0 1 1],'visible','off');
+        set(Ax,'xlim',xlim,'ylim',ylim)
         d3d_qp('refreshfigs',Fg)
         d3d_qp('addtoplot')
-        %
-        hNew = findall(Ax,'type','image');
-        xlim = sort(get(hNew,'xdata'));
-        ylim = sort(get(hNew,'ydata'));
-        set(Ax,'xlim',xlim,'ylim',ylim)
-        setaxesprops(Ax,'X-Y',{},{'',''})
         %
         cmdargs={cmd};
     otherwise
@@ -248,9 +246,7 @@ switch cmd
 end
 % -----------------------------------------------------------------------------
 
-
-% -----------------------------------------------------------------------------
-function [hNew,xlim,ylim]=showimage(FI,Parent,t)
+function [xlim,ylim,Width,Height] = getlims(FI)
 if isfield(FI,'vidObj')
     Width = FI.vidObj.Width;
     Height = FI.vidObj.Height;
@@ -262,6 +258,10 @@ dx=abs(FI.Loc(3))/Width/2;
 dy=abs(FI.Loc(4))/Height/2;
 xlim=sort(FI.Loc(1)+[0 FI.Loc(3)])+[dx -dx];
 ylim=sort(FI.Loc(2)+[0 FI.Loc(4)])+[dy -dy];
+
+% -----------------------------------------------------------------------------
+function [hNew,xlim,ylim]=showimage(FI,Parent,t)
+[xlim,ylim] = getlims(FI);
 
 if isfield(FI,'vidObj')
     Data = read(FI.vidObj, t);
