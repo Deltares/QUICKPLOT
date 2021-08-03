@@ -787,24 +787,29 @@ if isfield(item,'domain') && ~isempty(item.domain)
 end
 
 
-function S = local_extract(H)
+function S = local_extract(H, S)
+if nargin>1
+    offset = length(S);
+end
+
 for fgi = length(H):-1:1
     HInfo = get(H(fgi));
+    fgi1 = offset + fgi;
     
-    S(fgi).name        = HInfo.Name;
-    S(fgi).papertype   = HInfo.PaperType;
-    S(fgi).paperorientation = HInfo.PaperOrientation;
-    S(fgi).papersize   = HInfo.PaperSize;
-    S(fgi).paperunits  = HInfo.PaperUnits;
-    S(fgi).windowsize  = HInfo.Position(3:4); % Units = pixels
-    S(fgi).colour      = round(HInfo.Color*255);
-    S(fgi).expandpar   = [];
-    ExpandP = getappdata(H(fgi),'ExpandPAR');
+    S(fgi1).name        = HInfo.Name;
+    S(fgi1).papertype   = HInfo.PaperType;
+    S(fgi1).paperorientation = HInfo.PaperOrientation;
+    S(fgi1).papersize   = HInfo.PaperSize;
+    S(fgi1).paperunits  = HInfo.PaperUnits;
+    S(fgi1).windowsize  = HInfo.Position(3:4); % Units = pixels
+    S(fgi1).colour      = round(HInfo.Color*255);
+    S(fgi1).expandpar   = [];
+    ExpandP = getappdata(H(fgi1),'ExpandPAR');
     if ~isempty(ExpandP)
-        S(fgi).expandpar.filename = ExpandP.FileName;
-        S(fgi).expandpar.domain   = ExpandP.Domain;
+        S(fgi1).expandpar.filename = ExpandP.FileName;
+        S(fgi1).expandpar.domain   = ExpandP.Domain;
     end
-    S(fgi).frame.style = 'none';
+    S(fgi1).frame.style = 'none';
     
     for i = 1:length(HInfo.Children)
         A = HInfo.Children(i);
@@ -817,19 +822,19 @@ for fgi = length(H):-1:1
     end
     
     axi = 0;
-    S(fgi).axes = [];
+    S(fgi1).axes = [];
     for i = 1:length(HInfo.Children)
         A = HInfo.Children(i);
         AInfo = get(A);
         if strcmp(AInfo.Type,'axes') && strcmp(AInfo.Tag,'border')
             % use A.UserData;
             AInfo = md_paper(A,'getprops');
-            S(fgi).frame.style = AInfo.Name;
+            S(fgi1).frame.style = AInfo.Name;
             ibt = 1;
             btxt = 'BorderText1';
             ftxt = 'frametext1';
             while isfield(AInfo,btxt)
-                S(fgi).frame.(ftxt) = AInfo.(btxt);
+                S(fgi1).frame.(ftxt) = AInfo.(btxt);
                 ibt  = ibt+1;
                 btxt = sprintf('BorderText%i',ibt);
                 ftxt = sprintf('frametext%i',ibt);
@@ -839,50 +844,50 @@ for fgi = length(H):-1:1
         elseif strcmp(AInfo.Type,'axes')
             % normal axes
             axi = axi+1;
-            S(fgi).axes(axi).name      = AInfo.Tag;
-            S(fgi).axes(axi).position  = AInfo.Position;
+            S(fgi1).axes(axi).name      = AInfo.Tag;
+            S(fgi1).axes(axi).position  = AInfo.Position;
             if isappdata(A,'origPos_before_Colorbar')
-                S(fgi).axes(axi).position = getappdata(A,'origPos_before_Colorbar');
+                S(fgi1).axes(axi).position = getappdata(A,'origPos_before_Colorbar');
                 rmappdata(A,'origPos_before_Colorbar')
             end
             if ischar(AInfo.Color)
-                S(fgi).axes(axi).colour = AInfo.Color;
+                S(fgi1).axes(axi).colour = AInfo.Color;
             else
-                S(fgi).axes(axi).colour = round(AInfo.Color*255);
+                S(fgi1).axes(axi).colour = round(AInfo.Color*255);
             end
-            S(fgi).axes(axi).type      = getappdata(A,'BasicAxesType');
-            S(fgi).axes(axi).box       = AInfo.Box;
-            S(fgi).axes(axi).linewidth = AInfo.LineWidth;
+            S(fgi1).axes(axi).type      = getappdata(A,'BasicAxesType');
+            S(fgi1).axes(axi).box       = AInfo.Box;
+            S(fgi1).axes(axi).linewidth = AInfo.LineWidth;
             %
             if isappdata(A,'title')
-                S(fgi).axes(axi).title = getappdata(A,'title');
+                S(fgi1).axes(axi).title = getappdata(A,'title');
             else
-                S(fgi).axes(axi).title = '<automatic>';
+                S(fgi1).axes(axi).title = '<automatic>';
             end
             for x = 'xyz'
                 X = upper(x);
                 if isappdata(A,[x 'label'])
-                    S(fgi).axes(axi).([x 'label']) = getappdata(A,[x 'label']);
+                    S(fgi1).axes(axi).([x 'label']) = getappdata(A,[x 'label']);
                 else
-                    S(fgi).axes(axi).([x 'label']) = '<automatic>';
+                    S(fgi1).axes(axi).([x 'label']) = '<automatic>';
                 end
-                S(fgi).axes(axi).([x 'colour']) = round(AInfo.([X 'Color'])*255);
-                S(fgi).axes(axi).([x 'grid']) = AInfo.([X 'Grid']);
+                S(fgi1).axes(axi).([x 'colour']) = round(AInfo.([X 'Color'])*255);
+                S(fgi1).axes(axi).([x 'grid']) = AInfo.([X 'Grid']);
                 if X < 'Z'
-                    S(fgi).axes(axi).([x 'loc']) = AInfo.([X 'AxisLocation']);
+                    S(fgi1).axes(axi).([x 'loc']) = AInfo.([X 'AxisLocation']);
                 end
-                S(fgi).axes(axi).([x 'scale']) = AInfo.([X 'Scale']);
+                S(fgi1).axes(axi).([x 'scale']) = AInfo.([X 'Scale']);
                 if strcmp(AInfo.([X 'LimMode']),'manual')
                     xlm = AInfo.([X 'Lim']);
                     if strcmp(AInfo.([X 'Dir']),'reverse')
                         xlm = fliplr(xlm);
                     end
-                    S(fgi).axes(axi).([x 'lim']) = xlm;
+                    S(fgi1).axes(axi).([x 'lim']) = xlm;
                 else
                     if strcmp(AInfo.([X 'Dir']),'reverse')
-                        S(fgi).axes(axi).([x 'lim']) = 'auto-reverse';
+                        S(fgi1).axes(axi).([x 'lim']) = 'auto-reverse';
                     else
-                        S(fgi).axes(axi).([x 'lim']) = 'auto';
+                        S(fgi1).axes(axi).([x 'lim']) = 'auto';
                     end
                 end
             end
@@ -901,16 +906,16 @@ for fgi = length(H):-1:1
             else
                 u = {u};
             end
-            S(fgi).axes(axi).items = [];
+            S(fgi1).axes(axi).items = [];
             for itm = length(u):-1:1
                 IInfo = u{itm};
-                S(fgi).axes(axi).items(itm).name     = IInfo.PlotState.Props.Name;
+                S(fgi1).axes(axi).items(itm).name     = IInfo.PlotState.Props.Name;
                 if isfield(IInfo.PlotState.FI,'Otherargs') && ~isempty(IInfo.PlotState.FI.Otherargs)
-                    S(fgi).axes(axi).items(itm).filename = [{IInfo.PlotState.FI.Name} IInfo.PlotState.FI.Otherargs];
+                    S(fgi1).axes(axi).items(itm).filename = [{IInfo.PlotState.FI.Name} IInfo.PlotState.FI.Otherargs];
                 elseif isfield(IInfo.PlotState.FI,'Name')
-                    S(fgi).axes(axi).items(itm).filename = IInfo.PlotState.FI.Name;
+                    S(fgi1).axes(axi).items(itm).filename = IInfo.PlotState.FI.Name;
                 else
-                    S(fgi).axes(axi).items(itm).filename = IInfo.PlotState.FI.FileType;
+                    S(fgi1).axes(axi).items(itm).filename = IInfo.PlotState.FI.FileType;
                 end
                 %
                 dom = qpread(IInfo.PlotState.FI,'domains');
@@ -919,7 +924,7 @@ for fgi = length(H):-1:1
                 else
                     dom = dom{IInfo.PlotState.Domain};
                 end
-                S(fgi).axes(axi).items(itm).domain   = dom;
+                S(fgi1).axes(axi).items(itm).domain   = dom;
                 %
                 sub = qpread(IInfo.PlotState.FI,IInfo.PlotState.Props,'subfields');
                 if isempty(sub)
@@ -927,9 +932,9 @@ for fgi = length(H):-1:1
                 else
                     sub = sub{IInfo.PlotState.SubField{1}};
                 end
-                S(fgi).axes(axi).items(itm).subfield = sub;
+                S(fgi1).axes(axi).items(itm).subfield = sub;
                 %
-                S(fgi).axes(axi).items(itm).dimensions = [];
+                S(fgi1).axes(axi).items(itm).dimensions = [];
                 dim0 = {'time' 'station' 'm' 'n' 'k'};
                 if length(IInfo.PlotState.Props.DimFlag)>5
                     dims = [dim0 lower(IInfo.PlotState.Props.DimName)];
@@ -942,7 +947,7 @@ for fgi = length(H):-1:1
                         if isequal(val,0)
                             val = 'all';
                         end
-                        S(fgi).axes(axi).items(itm).dimensions.(dims{dim}) = val;
+                        S(fgi1).axes(axi).items(itm).dimensions.(dims{dim}) = val;
                     end
                 end
                 Ops = IInfo.PlotState.Ops;
@@ -964,7 +969,7 @@ for fgi = length(H):-1:1
                 if isfield(Ops,'version')
                     Ops = rmfield(Ops,'version');
                 end
-                S(fgi).axes(axi).items(itm).options  = Ops;
+                S(fgi1).axes(axi).items(itm).options  = Ops;
             end
         end
     end

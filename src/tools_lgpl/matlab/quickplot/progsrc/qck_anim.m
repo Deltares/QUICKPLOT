@@ -828,20 +828,29 @@ switch OPS.Type
             end
             n = '';
             while length(f)>0 && ismember(f(end), '0123456789')
-                n = [f(end),n];,
+                n = [f(end),n];
                 f = f(1:end-1);
             end
             if isempty(n)
                 n = 0;
-                ndig = 3;
+                if strcmp(e,'.pdf')
+                    ndig = 0;
+                    streamObj.printObj.CloseFile = true;
+                else
+                    ndig = 3;
+                end
             else
                 ndig = length(n);
                 n = str2num(n);
             end
             streamObj.BaseStr = fullfile(pn,f);
             streamObj.NextNr = n;
-            ndigstr = num2str(ndig);
-            streamObj.FrmtNr = strcat('%',ndigstr,'.',ndigstr,'i');
+            if ndig>0
+                ndigstr = num2str(ndig);
+                streamObj.FrmtNr = strcat('%',ndigstr,'.',ndigstr,'i');
+            else
+                streamObj.FrmtNr = '';
+            end
             streamObj.ExtStr = e;
         end
 
@@ -929,7 +938,7 @@ switch streamObj.Type
                     SubCase = char(64+ifig);
                 end
                 filename = [streamObj.BaseStr sprintf(streamObj.FrmtNr, streamObj.NextNr) SubCase streamObj.ExtStr];
-                md_print(figures(ifig), streamObj.printObj, filename);
+                streamObj.printObj = md_print(figures(ifig), streamObj.printObj, filename, 'keepopen');
             end
             streamObj.NextNr = streamObj.NextNr + 1;
         else % to printer ...
@@ -975,6 +984,11 @@ end
 
 function streamFinalize(streamObj)
 switch streamObj.Type
+    case 'print/export'
+        if isfield(streamObj,'BaseStr') % close print file if open ...
+            streamObj.printObj = md_print([], streamObj.printObj);
+        end
+        
     case 'avi file'
         avi('finalize',streamObj.aviObj);
         
