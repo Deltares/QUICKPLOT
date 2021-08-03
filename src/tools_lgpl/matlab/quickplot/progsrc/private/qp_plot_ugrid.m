@@ -85,7 +85,7 @@ switch NVal
                 %
                 % edges
                 %
-                if isfield(data,'EdgeGeometry') && ~isempty(data.EdgeGeometry)
+                if isfield(data,'EdgeGeometry') && isfield(data.EdgeGeometry,'X')
                     NP = cellfun(@numel,data.EdgeGeometry.X);
                     TNP = sum(NP+1)-1;
                     X = NaN(TNP,1);
@@ -97,8 +97,7 @@ switch NVal
                         offset = offset+NP(i)+1;
                     end
                     %
-                    Xp = [];
-                    Yp = [];
+                    ip = find(~ismember(1:length(data.X),data.EdgeNodeConnect(:)));
                 else
                     if isfield(data,'EdgeNodeConnect')
                         EdgeNodeConnect = data.EdgeNodeConnect;
@@ -116,9 +115,9 @@ switch NVal
                     % points without edge
                     %
                     ip = find(~ismember(1:length(data.X),xy));
-                    Xp = data.X(ip);
-                    Yp = data.Y(ip);
                 end
+                Xp = data.X(ip);
+                Yp = data.Y(ip);
                 if FirstFrame
                     hNew=line(1,1, ...
                         'color',Ops.colour, ...
@@ -281,6 +280,9 @@ switch NVal
                                     v(:,ij) = interp1([0;d(end)],dataNodes,d);
                                 end
                                 edgecolor = 'interp';
+                        end
+                        if isfield(Ops,'unicolour') && Ops.unicolour
+                            edgecolor = Ops.colour;
                         end
                         faces = repmat(numel(x)+1,fliplr(size(x))+[0 1]);
                         faces(:,1:end-1) = reshape(1:numel(x),size(x))';

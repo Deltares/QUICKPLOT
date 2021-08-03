@@ -800,12 +800,16 @@ if XYRead || XYneeded || ZRead
                     Ans.FaceNodeConnect = Ans.FaceNodeConnect(Cnct,:);
                     Ans.FaceNodeConnect(~isnan(Ans.FaceNodeConnect)) = renum(Ans.FaceNodeConnect(~isnan(Ans.FaceNodeConnect)));
                 end
-                %if isfield(Ans,'EdgeNodeConnect')
-                %    Cnct = all(ismember(Ans.EdgeNodeConnect,idx{M_}),2);
-                %    renum(idx{M_}) = 1:length(idx{M_});
-                %    Ans.EdgeNodeConnect = Ans.EdgeNodeConnect(Cnct,:);
-                %    Ans.EdgeNodeConnect(~isnan(Ans.EdgeNodeConnect)) = renum(Ans.EdgeNodeConnect(~isnan(Ans.EdgeNodeConnect)));
-                %end
+                if isfield(Ans,'EdgeNodeConnect')
+                    Cnct = all(ismember(Ans.EdgeNodeConnect,idx{M_}),2);
+                    renum(idx{M_}) = 1:length(idx{M_});
+                    Ans.EdgeNodeConnect = Ans.EdgeNodeConnect(Cnct,:);
+                    Ans.EdgeNodeConnect(~isnan(Ans.EdgeNodeConnect)) = renum(Ans.EdgeNodeConnect(~isnan(Ans.EdgeNodeConnect)));
+                    if isfield(Ans,'EdgeGeometry')
+                        Ans.EdgeGeometry.X = Ans.EdgeGeometry.X(Cnct);
+                        Ans.EdgeGeometry.Y = Ans.EdgeGeometry.Y(Cnct);
+                    end
+                end
             case 'EDGE'
                 for fld = {'Val','XComp','YComp','Angle','Magnitude','NormalComp','TangentialComp'}
                     Fld = fld{1};
@@ -815,7 +819,7 @@ if XYRead || XYneeded || ZRead
                 end
                 idx{M_}(edgeInvalid(idx{M_})) = [];
                 Ans.EdgeNodeConnect = Ans.EdgeNodeConnect(idx{M_},:);
-                if isfield(Ans,'Edge')
+                if isfield(Ans,'EdgeGeometry')
                     Ans.EdgeGeometry.X = Ans.EdgeGeometry.X(idx{M_});
                     Ans.EdgeGeometry.Y = Ans.EdgeGeometry.Y(idx{M_});
                 end
@@ -2485,6 +2489,7 @@ for i = 1:length(uBrNr)
     bN = uBrNr(i);
     bX = BrX{bN};
     bY = BrY{bN};
+    bS = pathdistance(bX,bY,cUnit{:});
     %
     for j = find(eBrNr==bN)'
         n = EdgeNode(j,:);

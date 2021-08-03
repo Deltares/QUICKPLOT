@@ -1797,12 +1797,25 @@ for mesh = NumMeshes:-1:1
         file = Partitions{p}.Filename;
         xNodes{p} = nc_varget(file,xNodeVar);
         yNodes{p} = nc_varget(file,yNodeVar);
-        try
-            iFaces{p} = nc_varget(file,'mesh2d_flowelem_globalnr');
-            faceDomain{p} = nc_varget(file,'mesh2d_flowelem_domain');
-        catch
-            iFaces{p} = nc_varget(file,'iglobal_s');
-            faceDomain{p} = nc_varget(file,'idomain');
+        for partinfo = 1:3
+            try
+                switch partinfo
+                    case 1
+                        % for map files ...
+                        iFaces{p} = nc_varget(file,'mesh2d_flowelem_globalnr');
+                        faceDomain{p} = nc_varget(file,'mesh2d_flowelem_domain');
+                    case 2
+                        % for net files ...
+                        iFaces{p} = nc_varget(file,'iglobal_s');
+                        faceDomain{p} = nc_varget(file,'idomain');
+                    case 3
+                        % for com files ...
+                        iFaces{p} = nc_varget(file,'FlowElemGlobalNr');
+                        faceDomain{p} = nc_varget(file,'FlowElemDomain');
+                end
+                break
+            catch
+            end
         end
         faceMask{p} = faceDomain{p} == p-1;
         %
