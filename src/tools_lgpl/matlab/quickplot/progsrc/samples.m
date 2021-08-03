@@ -211,12 +211,29 @@ else
             %
             firstitem = strtok(Line);
             while firstitem(1)=='"'
-                try
-                    X = textscan(Line,' "%[^"]"','returnonerror',0);
-                    Params = [Params X{1}'];
-                catch
-                    error('Reading line: %s\nAll parameter names should be enclosed by double quotes.',Line);
+                X = strsplit(Line,'"');
+                for i = 1:2:length(X)
+                    sep = strtrim(X{i});
+                    if isequal(sep,',')
+                        if i == 3
+                            csv = true;
+                        elseif csv
+                            % OK, comma when expecting comma
+                        else
+                            error('Reading line: %s\nInconsistent separation cf column labels: initial column lables were separated by space or new line, but now comma encountered.',Line);
+                        end
+                    elseif isempty(sep)
+                        if csv && i ~= length(X)
+                            error('Reading line: %s\nInconsistent separation cf column labels:initial column labels were separated by comma, but now there is no comma.',Line);
+                        else
+                            % OK, no comma when expecting no comma
+                        end
+                    else
+                        % separator not empty and not comma
+                        error('Reading line: %s\nInvalid separator "%s" encountered.',Line,sep);
+                    end
                 end
+                Params = [Params X(2:2:end)];
                 skiplines=skiplines+1;
                 Line=fgetl(fid);
                 firstitem = strtok(Line);
