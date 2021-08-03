@@ -93,7 +93,7 @@ if nargout~=0
         return
     elseif isstandalone % allow standalone auto start ...
         outdata = [];
-    elseif none(strcmp(cmd,{'loaddata','selectedfigure','selectedaxes','selecteditem','selectfield','selectedfield','qpmanual','matlabmanual'}))
+    elseif none(strcmp(cmd,{'loaddata','selected','selectedfigure','selectedaxes','selecteditem','selectfield','selectedfield','qpmanual','matlabmanual'}))
         error('Too many output arguments.')
     end
 end
@@ -1919,7 +1919,7 @@ switch cmd
             writelog(logfile,logtype,cmd,z);
         end
         
-    case {'defvariable','loaddata','quickview','updateoptions','exportdata','addtoplot','addtoplot_left','addtoplot_right'}
+    case {'selected','defvariable','loaddata','quickview','updateoptions','exportdata','addtoplot','addtoplot_left','addtoplot_right'}
         Handle_SelectFile=findobj(mfig,'tag','selectfile');
         File=get(Handle_SelectFile,'userdata');
         NrInList=get(Handle_SelectFile,'value');
@@ -1961,6 +1961,17 @@ switch cmd
         switch cmd
             case 'error'
                 
+            case 'selected'
+                outdata.Domain = DomainNr;
+                outdata.Quantity = Props;
+                outdata.Subfield = subf;
+                outdata.Time = selected{1};
+                outdata.Station = selected{2};
+                outdata.M = selected{3};
+                outdata.N = selected{4};
+                outdata.K = selected{5};
+                return
+            
             case 'defvariable'
                 Handle_SelectFile=findobj(mfig,'tag','selectfile');
                 File=get(Handle_SelectFile,'userdata');
@@ -4638,15 +4649,7 @@ switch cmd
         end
         
     case 'closeallfig'
-        h=allchild(0);
-        for i=1:length(h)
-            hUD=get(h(i),'userdata');
-            if isstruct(hUD) && isfield(hUD,'ProgID')
-                if strcmp(hUD.ProgID,'QuickPlot')
-                    delete(h(i));
-                end
-            end
-        end
+        delete(get_nondialogs)
         d3d_qp refreshfigs
         
     case {'hselectiontype','vselectiontype','hselectiontype*'}
