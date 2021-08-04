@@ -107,6 +107,9 @@ switch cmd
     case 'subfields'
         varargout={getsubfields(FI,Props,varargin{:})};
         return
+    case 'plotoptions'
+        varargout = {[]};
+        return
     case 'plot'
         Parent = varargin{1};
         Ops = varargin{2};

@@ -94,6 +94,9 @@ switch cmd
     case 'subfields'
         varargout={{}};
         return
+    case 'plotoptions'
+        varargout = {[]};
+        return
     case 'plot'
         selfplot(FI,Props);
         varargout={[] FI};

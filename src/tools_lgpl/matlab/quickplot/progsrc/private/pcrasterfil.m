@@ -93,6 +93,9 @@ switch cmd
     case 'subfields'
         varargout={{}};
         return
+    case 'plotoptions'
+        varargout = {[]};
+        return
     case 'plot'
         PlotIt=1;
         Parent=varargin{1};

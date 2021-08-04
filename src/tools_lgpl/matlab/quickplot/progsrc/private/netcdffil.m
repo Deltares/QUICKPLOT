@@ -107,6 +107,9 @@ switch cmd
     case 'subfields'
         varargout={getsubfields(FI,Props,varargin{:})};
         return
+    case 'plotoptions'
+        varargout = {[]};
+        return
     otherwise
         [XYRead, DataRead, DataInCell, ZRead]=gridcelldata(cmd);
 end

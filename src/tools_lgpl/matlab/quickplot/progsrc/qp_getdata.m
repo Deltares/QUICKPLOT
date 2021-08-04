@@ -44,6 +44,7 @@ function [varargout]=qp_getdata(varargin)
 %      [Success]                       = QP_GETDATA(FI,'options',OptionsFigure,'initialize')
 %      [Success,NewFI     ,cmdargs]    = QP_GETDATA(FI,'options',OptionsFigure,OptionsCommand, ...)
 %      [Success,hNew      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'plot',Parent,Ops,hOld,subf,t,station,m,n,k)
+%      [Success,Options   ]            = QP_GETDATA(FI,Domain,DataFld,'plotoptions',subf,t,station,m,n,k)
 
 %----- LGPL --------------------------------------------------------------------
 %

@@ -93,6 +93,9 @@ switch cmd
     case 'subfields'
         varargout={getsubfields(FI,Props,varargin{:})};
         return
+    case 'plotoptions'
+        varargout = {[]};
+        return
     case 'plot'
         if isfield(Props,'BalSubFld')
             % balance plot

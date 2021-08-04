@@ -87,6 +87,9 @@ switch cmd
     case 'subfields'
         varargout={{}};
         return
+    case 'plotoptions'
+        varargout = {[]};
+        return
     case 'plot'
     otherwise
         error('''%s'' option not defined for MorfTree',cmd)

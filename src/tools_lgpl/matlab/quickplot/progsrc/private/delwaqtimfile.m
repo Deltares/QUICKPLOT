@@ -1,8 +1,8 @@
 function Struct = delwaqtimfile(FileName);
 %DELWAQTIMFILE Reads in a Delwaq .tim input file (Lex Yacc type).
 
-%   Any spaces, tabs and comma's (outside strings) should be ignored. For the
-%   time being I assume that there are no comma's; the rest is handled
+%   Any spaces, tabs and commas (outside strings) should be ignored. For the
+%   time being I assume that there are no commas; the rest is handled
 %   correctly I think.
 
 %----- LGPL --------------------------------------------------------------------
