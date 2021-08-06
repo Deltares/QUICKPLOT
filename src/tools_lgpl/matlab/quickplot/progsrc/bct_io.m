@@ -129,6 +129,10 @@ end
 T=T0+Tab.Data(t,1)/f;
 
 function Info = Local_read_bct(filename)
+
+if exist(filename,'file')~=2
+    error('File does not exist: %s',filename)
+end
 fid=fopen(filename,'r');
 Info.Check='NotOK';
 Info.FileName=filename;
@@ -136,9 +140,20 @@ Info.NTables=0;
 
 floc=ftell(fid);
 Line=fgetl(fid);
-if strcmp(Line,'[forcing]')
-    Info = Local_read_bc(Info,fid);
-    return
+line=lower(Line);
+switch line
+    case '[forcing]'
+        Info = Local_read_bc(Info,fid);
+        return
+    case '[general]' %SOBEK-3 header, we cycle until we get to [boundary];
+        while ~strcmp(line,'[boundary]')
+            line=lower(fgetl(fid));
+            if feof(fid)
+                error('The file seems to be from SOBEK-3. I could not find the [boundary] block')
+            end
+        end
+        Info = Local_read_bc(Info,fid);
+        return
 end
 %
 while ischar(Line) && ~isempty(Line) && Line(1)=='#'
@@ -219,7 +234,10 @@ while ~feof(fid)
     [key,remainder] = strtok(Line);
     [eq,remainder] = strtok(remainder);
     remainder = strtrim(remainder);
-    if ~strcmp(eq,'=')
+    if any(strcmpi(key,{'[boundary]','[lateraldischarge]'}))
+        continue
+    end
+    if ~strcmp(eq,'=') 
         Data = sscanf(Line,'%f',inf);
         if length(Data)==NPar
             % data
@@ -227,7 +245,14 @@ while ~feof(fid)
             Data = fscanf(fid,'%f',[NPar inf]);
             Info.Table(i).Data = Data';
             Info.NTables=Info.NTables+1;
-            %
+            
+            %display
+            fprintf('Table for bc read: %s \n',Info.Table(i).Location)
+            
+            %update
+            if isempty(Info.Table(i).Data)
+                warning('Empty data. Probably an error in reading.')
+            end
             i=i+1;
             NPar=0;
         else
