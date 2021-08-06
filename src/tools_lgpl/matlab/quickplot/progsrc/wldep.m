@@ -250,10 +250,18 @@ function OK=Local_depwrite(filename,varargin)
 %    or: depwrite('filename',Struct)
 %        where Struct is a structure vector with one field: Data
 
+format_def = '%15.8f';
+parin=inputParser;
+addOptional(parin,'format',format_def);
+
+parse(parin,varargin{:});
+
+format=parin.Results.format;
+
 fid=fopen(filename,'w');
 Keyword='';
 interactive = length(varargin)==1;
-format = '%15.8f';
+
 idp = 0;
 while idp<length(varargin)
     idp = idp+1;
