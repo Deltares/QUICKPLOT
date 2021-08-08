@@ -340,9 +340,9 @@ if XYRead || compute_unitvalue || computeDZ
             end
         end
         x=reshape(x,[1 size(x)]);
-        x=repmat(x,[1 1 1 length(idxK_)]);
+        x=repmat(x,[1 1 1 size(z,4)]);
         y=reshape(y,[1 size(y)]);
-        y=repmat(y,[1 1 1 length(idxK_)]);
+        y=repmat(y,[1 1 1 size(z,4)]);
     elseif DimFlag(K_) || computeDZ
         dp=readdps(FI,idx);
         [h,Chk_h]=vs_let(FI,'map-series',idx(T_),'S1',idx([M_ N_]),'quiet');
