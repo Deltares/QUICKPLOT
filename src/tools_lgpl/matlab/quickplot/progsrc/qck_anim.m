@@ -948,14 +948,14 @@ switch streamObj.Type
     case 'avi file'
         if streamObj.First
             Fig = getframe(figures(1));
-            [streamObj, OK] = avi('addvideo', streamObj.aviObj, streamObj.maxfps, Fig.cdata);
+            [streamObj.aviObj, OK] = avi('addvideo', streamObj.aviObj, streamObj.maxfps, Fig.cdata);
             if ~OK
                 error('Cannot add video stream to output file.')
             end
             streamObj.First = false;
         end
         Fig = getframe(figures(1));
-        streamObj = avi('addframe', streamObj.aviObj, Fig.cdata);
+        streamObj.aviObj = avi('addframe', streamObj.aviObj, Fig.cdata);
         
     case 'video file'
         Fig = getframe(figures(1));

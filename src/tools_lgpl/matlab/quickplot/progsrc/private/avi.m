@@ -59,10 +59,10 @@ switch cmd
         else
             AVIHandle = varargin{1};
             FileName = varargin{2};
-            if ~isstruct(AVIHandle) | ~isfield(AVIHandle,'CPointer') ...
-                    | AVIHandle.CPointer==0
+            if ~isstruct(AVIHandle) || ~isfield(AVIHandle,'CPointer') ...
+                    || AVIHandle.CPointer==0
                 error('First argument is not a valid AVI handle.')
-            elseif ~ischar(FileName) | ~isequal(size(FileName),[1 length(FileName)])
+            elseif ~ischar(FileName) || ~isequal(size(FileName),[1 length(FileName)])
                 error('Second argument is not a valid file name.')
             end
             fid=fopen(FileName,'w');
