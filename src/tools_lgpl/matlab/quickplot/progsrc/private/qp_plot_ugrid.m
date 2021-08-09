@@ -287,7 +287,11 @@ switch NVal
                         faces = repmat(numel(x)+1,fliplr(size(x))+[0 1]);
                         faces(:,1:end-1) = reshape(1:numel(x),size(x))';
                         v = reshape(v,[numel(x) 1]);
-                        hNew(i) = patch('parent',Parent,'vertices',[x(:) y(:);NaN NaN],'faces',faces,'facevertexcdata',[v;NaN],'edgecolor',edgecolor,'facecolor','none','linewidth',Ops.linewidth,'linestyle',Ops.linestyle,'marker',Ops.marker,'markersize',Ops.markersize,'markeredgecolor',Ops.markercolour,'markerfacecolor',Ops.markerfillcolour);
+                        if FirstFrame
+                           hNew(i) = patch('parent',Parent,'vertices',[x(:) y(:);NaN NaN],'faces',faces,'facevertexcdata',[v;NaN],'edgecolor',edgecolor,'facecolor','none','linewidth',Ops.linewidth,'linestyle',Ops.linestyle,'marker',Ops.marker,'markersize',Ops.markersize,'markeredgecolor',Ops.markercolour,'markerfacecolor',Ops.markerfillcolour);
+                        else
+                           set(hNew(i),'vertices',[x(:) y(:);NaN NaN],'faces',faces,'facevertexcdata',[v;NaN]);
+                        end
                     end
                 else
                     hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'UGRID',data,Ops);
