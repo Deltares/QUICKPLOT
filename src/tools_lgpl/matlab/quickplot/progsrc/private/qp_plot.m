@@ -103,6 +103,16 @@ else
     Parent = gca;
 end
 
+hCLIMSYMM = [];
+if isfield(Ops,'symmetriccolourlimits') && Ops.symmetriccolourlimits
+    if iscell(hOld) && length(hOld{end}) == 1 && ishandle(hOld{end})
+        xde = get(hOld{end}, 'xdata');
+        if isequal(size(xde),[1 2]) & all(isnan(xde(:)))
+            hCLIMSYMM = hOld{end};
+            hOld(end) = [];
+        end
+    end
+end
 if iscell(hOld)
     hOldVec=cat(1,hOld{:});
 else
@@ -1203,17 +1213,14 @@ if isfield(Ops,'colourlimits') && ~isempty(Ops.colourlimits)
         set(Parent,'clim',Ops.colourlimits)
     end
 elseif isfield(Ops,'symmetriccolourlimits') && Ops.symmetriccolourlimits
-    lastCLIMSYMM=0;
-    if ~isempty(hOldVec)
-        xde=get(hOldVec(end),'xdata');
-        lastCLIMSYMM=isequal(size(xde),[1 2]) & all(isnan(xde(:)));
-    end
-    clim=limits(hNewVec,'clim'); clim=max(abs(clim));
-    if lastCLIMSYMM
-        set(hOldVec(end),'cdata',[-1 1;-1 1]*clim)
-        hNew{end+1}=hOldVec(end);
+    clim = limits(hNewVec,'clim');
+    clim = max(abs(clim));
+    if isempty(hCLIMSYMM)
+        hNew{end+1} = surface([NaN NaN], [NaN NaN], [NaN NaN;NaN NaN], ...
+                              'cdata', [-1 1;-1 1]*clim);
     else
-        hNew{end+1}=surface([NaN NaN],[NaN NaN],[NaN NaN;NaN NaN],'cdata',[-1 1;-1 1]*clim);
+        set(hCLIMSYMM, 'cdata', [-1 1;-1 1]*clim)
+        hNew{end+1} = hCLIMSYMM;
     end
 end
 
