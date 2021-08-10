@@ -279,6 +279,7 @@ while i < length(figlist)
     fig = figlist(i);
     if ~printObj.Append || i == 1
         printObj = printInitialize(printObj);
+        fileNameArg = printObj.FileName;
     end
     if ~ischar(printObj.FileName)
         break
