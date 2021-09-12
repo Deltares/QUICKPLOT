@@ -292,69 +292,84 @@ if isfield(MDF2,'rgh')
 end
 %
 if isfield(MDF2,'ini')
-    if ~isfield(MDF2.ini,'FileType')
-        % plain binary restart file (flow only)
-        % 
-        % water level: data at cell centres
-        MDF2.ini(1).Data = fldrotate('center',MDF2.ini(1).Data);
-        % velocities: data at velocity points
-        for k = 1:mnkmax(3)
-            iu = 1+k;
-            iv = iu + mnkmax(3);
-            [MDF2.ini(iu).Data,MDF2.ini(iv).Data] = fldrotate('veloc',MDF2.ini(iu).Data,MDF2.ini(iv).Data);
-        end
-        % constituents and turbulent quantities: data at cell centres
-        for f = 2+2*mnkmax(3):length(MDF2.ini)-2
-            MDF2.ini(f).Data = fldrotate('center',MDF2.ini(f).Data);
-        end
-        % u/v mnldf: data at velocity points
-        iu = length(MDF2.ini)-1;
-        iv = length(MDF2.ini);
-        [MDF2.ini(iu).Data,MDF2.ini(iv).Data] = fldrotate('veloc',MDF2.ini(iu).Data,MDF2.ini(iv).Data);
-    else
-        % NEFIS map-file
-        oldsz = [MDF2.ini.Data.map_const.NMAX MDF2.ini.Data.map_const.MMAX];
-        newsz = oldsz([2 1]);
-        for i = 1:length(MDF2.ini.ElmDef)
-            if length(MDF2.ini.ElmDef(i).Size)>2 && isequal(MDF2.ini.ElmDef(i).Size(2:3),oldsz)
-                MDF2.ini.ElmDef(i).Size(2:3) = newsz;
+    switch MDF2.ini.FileType
+        case {'trirst','ini'}
+            % plain binary restart file or ascii initial conditions file
+            %
+            % water level: data at cell centres
+            MDF2.ini.Data(1).Data = fldrotate('center',MDF2.ini.Data(1).Data);
+            % velocities: data at velocity points
+            for k = 1:mnkmax(3)
+                iu = 1+k;
+                iv = iu + mnkmax(3);
+                [MDF2.ini.Data(iu).Data,MDF2.ini.Data(iv).Data] = fldrotate('veloc',MDF2.ini.Data(iu).Data,MDF2.ini.Data(iv).Data);
             end
-        end
-        %
-        MDF2.ini.Data.map_const.NMAX = newsz(1);
-        MDF2.ini.Data.map_const.MMAX = newsz(2);
-        %
-        for gc = fieldnames(MDF2.ini.Data)'
-            g = gc{1};
-            for ec = fieldnames(MDF2.ini.Data.(g))'
-                e = ec{1};
-                sz = size(MDF2.ini.Data.(g).(e));
-                if length(sz)>2 && isequal(sz(2:3),oldsz)
-                    switch e
-                        case {'XCOR','YCOR','DP0','CODB'} % DP0 only if not dpsopt=DP
-                            % data at cell corners
-                            MDF2.ini.Data.(g).(e) = fldrotateX('corner',MDF2.ini.Data.(g).(e));
-                        case {'KFU','KCU'}
-                            % data at cell edges
-                            e2 = strrep(e,'U','V');
-                            [MDF2.ini.Data.(g).(e),MDF2.ini.Data.(g).(e2)] = fldrotateX('edges',MDF2.ini.Data.(g).(e),MDF2.ini.Data.(g).(e2));
-                        case {'U1','TAUKSI','UMNLDF','SBUU','SSUU','SBUUA','SSUUA'}
-                            % data at cell edges - velocity components
-                            if strcmp(e,'TAUKSI')
-                                e2 = 'TAUETA';
-                            else
+            %
+            if strcmp(MDF2.ini.FileType,'ini')
+                % constituents: data at cell centres
+                last3D = length(MDF2.ini);
+                has_umean = false;
+            else
+                % constituents and turbulent quantities: data at cell centres
+                last3D = length(MDF2.ini)-2;
+                has_umean = true;
+            end
+            % constituents and turbulent quantities: data at cell centres
+            for f = 2+2*mnkmax(3):last3D
+                MDF2.ini.Data(f).Data = fldrotate('center',MDF2.ini.Data(f).Data);
+            end
+            % u/v mnldf: data at velocity points
+            if has_umean
+                iu = length(MDF2.ini)-1;
+                iv = length(MDF2.ini);
+                [MDF2.ini.Data(iu).Data,MDF2.ini.Data(iv).Data] = fldrotate('veloc',MDF2.ini.Data(iu).Data,MDF2.ini.Data(iv).Data);
+            end
+        case 'NEFIS'
+            % NEFIS map-file
+            oldsz = [MDF2.ini.Data.map_const.NMAX MDF2.ini.Data.map_const.MMAX];
+            newsz = oldsz([2 1]);
+            for i = 1:length(MDF2.ini.ElmDef)
+                if length(MDF2.ini.ElmDef(i).Size)>2 && isequal(MDF2.ini.ElmDef(i).Size(2:3),oldsz)
+                    MDF2.ini.ElmDef(i).Size(2:3) = newsz;
+                end
+            end
+            %
+            MDF2.ini.Data.map_const.NMAX = newsz(1);
+            MDF2.ini.Data.map_const.MMAX = newsz(2);
+            %
+            for gc = fieldnames(MDF2.ini.Data)'
+                g = gc{1};
+                for ec = fieldnames(MDF2.ini.Data.(g))'
+                    e = ec{1};
+                    sz = size(MDF2.ini.Data.(g).(e));
+                    if length(sz)>2 && isequal(sz(2:3),oldsz)
+                        switch e
+                            case {'XCOR','YCOR','DP0','CODB'} % DP0 only if not dpsopt=DP
+                                % data at cell corners
+                                MDF2.ini.Data.(g).(e) = fldrotateX('corner',MDF2.ini.Data.(g).(e));
+                            case {'KFU','KCU'}
+                                % data at cell edges
                                 e2 = strrep(e,'U','V');
-                            end
-                            [MDF2.ini.Data.(g).(e),MDF2.ini.Data.(g).(e2)] = fldrotateX('veloc',MDF2.ini.Data.(g).(e),MDF2.ini.Data.(g).(e2));
-                        case {'KFV','KCV','V1','TAUETA','VMNLDF','SBVV','SSVV','SBVVA','SSVVA'}
-                            % skip - treated with U component
-                        otherwise
-                            % data at cell centres
-                            MDF2.ini.Data.(g).(e) = fldrotateX('center',MDF2.ini.Data.(g).(e));
+                                [MDF2.ini.Data.(g).(e),MDF2.ini.Data.(g).(e2)] = fldrotateX('edges',MDF2.ini.Data.(g).(e),MDF2.ini.Data.(g).(e2));
+                            case {'U1','TAUKSI','UMNLDF','SBUU','SSUU','SBUUA','SSUUA'}
+                                % data at cell edges - velocity components
+                                if strcmp(e,'TAUKSI')
+                                    e2 = 'TAUETA';
+                                else
+                                    e2 = strrep(e,'U','V');
+                                end
+                                [MDF2.ini.Data.(g).(e),MDF2.ini.Data.(g).(e2)] = fldrotateX('veloc',MDF2.ini.Data.(g).(e),MDF2.ini.Data.(g).(e2));
+                            case {'KFV','KCV','V1','TAUETA','VMNLDF','SBVV','SSVV','SBVVA','SSVVA'}
+                                % skip - treated with U component
+                            otherwise
+                                % data at cell centres
+                                MDF2.ini.Data.(g).(e) = fldrotateX('center',MDF2.ini.Data.(g).(e));
+                        end
                     end
                 end
             end
-        end
+        otherwise
+            warning('Rotating %i data not yet supported',MDF2.ini.FileType)
     end
 end
 %
@@ -699,17 +714,23 @@ if isfield(MDF,'rgh')
 end
 %
 if isfield(MDF,'ini')
-    if ~isfield(MDF.ini,'FileType')
-        % plain binary restart file (flow only)
-        filename = ['tri-rst.' caseid];
-        trirst('write',fullfile(path,filename),MDF.ini);
-        MDF.mdf = inifile('seti',MDF.mdf,'','Restid',hstr(caseid));
-    else
-        % NEFIS map-file
-        filename = ['trim-restart-for-' caseid];
-        TRIMnew = vs_ini(fullfile(path,[filename '.dat']),fullfile(path,[filename '.def']));
-        vs_copy(MDF.ini,TRIMnew);
-        MDF.mdf = inifile('seti',MDF.mdf,'','Restid',hstr(filename));
+    switch MDF.ini.FileType
+        case 'trirst'
+            % plain binary restart file (flow only)
+            filename = ['tri-rst.' caseid];
+            trirst('write',fullfile(path,filename),MDF.ini.Data);
+            MDF.mdf = inifile('seti',MDF.mdf,'','Restid',hstr(caseid));
+        case 'ini'
+            % plain ascii initial conditions file (flow only)
+            filename = [caseid '.ini'];
+            wldep('write',fullfile(path,filename),MDF.ini.Data);
+            MDF.mdf = inifile('seti',MDF.mdf,'','Filic',hstr(caseid));
+        case 'NEFIS'
+            % NEFIS map-file
+            filename = ['trim-restart-for-' caseid];
+            TRIMnew = vs_ini(fullfile(path,[filename '.dat']),fullfile(path,[filename '.def']));
+            vs_copy(MDF.ini,TRIMnew);
+            MDF.mdf = inifile('seti',MDF.mdf,'','Restid',hstr(filename));
     end
 end
 %
@@ -1653,13 +1674,15 @@ if ~isempty(ininame)
     % try tri-rst.restid.YYYYMMDD.HHMMSS
     inicond = relpath(md_path,['tri-rst.' ininame '.' idate '.' itime]);
     try
-        MF.ini = trirst('read',inicond,MF.grd,'all');
+        MF.ini.Data = trirst('read',inicond,MF.grd,'all');
+        MF.ini.FileType = 'trirst';
     catch
         %
         % try tri-rst.restid
         inicond = relpath(md_path,['tri-rst.' ininame]);
         try
-            MF.ini = trirst('read',inicond,MF.grd,'all');
+            MF.ini.Data = trirst('read',inicond,MF.grd,'all');
+            MF.ini.FileType = 'trirst';
         catch
             try
                 %
@@ -1697,13 +1720,28 @@ if ~isempty(ininame)
         end
     end
     %
-    if ~isfield(MF.ini,'FileType')
+    if strcmp(MF.ini.FileType,'trirst')
         % plain binary restart file (flow only)
-        nfields = length(MF.ini);
+        nfields = length(MF.ini.Data);
         % water level, velocity, constituents, turbulent quantities, u/v mnldf
         nf_req  = 1 + 2*mnkmax(3) + lstsci*mnkmax(3) + nturb*(mnkmax(3)+1) + 2;
         if nfields ~= nf_req
             error('Number of fields in restart file (%i) does not match expect number of fields (%i)',nfields,nf_req)
+        end
+    end
+else
+    ininame = get_single_key(MF.mdf, '', 'Filic', '');
+    if ~isempty(ininame)
+        ininame = relpath(md_path,ininame);
+        MF.ini.FileType = 'ini';
+        MF.ini.Data = wldep('read',ininame,MF.grd,'multiple');
+        %
+        % plain ASCII initial conditions file (flow only)
+        nfields = length(MF.ini.Data);
+        % water level, velocity, constituents
+        nf_req  = 1 + 2*mnkmax(3) + lstsci*mnkmax(3);
+        if nfields ~= nf_req
+            error('Number of fields in initial conditions file (%i) does not match expect number of fields (%i)',nfields,nf_req)
         end
     end
 end
