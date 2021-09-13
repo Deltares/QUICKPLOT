@@ -37,7 +37,7 @@ if iscell(tooltip)
 end
 switch get(H(1),'type')
     case 'uicontrol'
-        set(H,'tooltip',tooltip);
+        set(H,'tooltip',tooltip)
     case {'uipushtool','uitoggletool'}
-        set(H,'tooltipstring',tooltip);
+        set(H,'tooltipstring',tooltip)
 end
