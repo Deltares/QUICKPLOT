@@ -1192,7 +1192,8 @@ qp_settings('LastFileType',lasttp)
 
 function [isASCII,REASON] = verifyascii(arg)
 fid = fopen(arg,'r');
-S = fread(fid,[1 100],'char');
+S = fread(fid,[1 100],'uint8');
+fclose(fid);
 if isempty(S)
     isASCII = false;
     REASON  = 'the file is empty';
@@ -1206,8 +1207,6 @@ else
         REASON  = '';
     end
 end
-fclose(fid);
-
 
 
 function asciicheck(ASCII,REASON)

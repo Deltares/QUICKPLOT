@@ -110,7 +110,7 @@ if nargin==0
     end
     filename=[fp fn];
 end
-fid=fopen(filename,'rt');
+fid=fopen(filename,'rt','n','US-ASCII');
 
 Line=fgetl(fid);
 i=1;
@@ -1442,7 +1442,7 @@ for i=1:nr
     if NrLines(i)==0
         Message(i).Txt = '';
     else
-        Message(i).Txt = char(fread(fid,[80 NrLines(i)],'char'))';
+        Message(i).Txt = char(fread(fid,[80 NrLines(i)],'uchar'))';
     end
 end
 fclose(fid);
