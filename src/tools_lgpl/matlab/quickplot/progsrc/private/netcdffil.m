@@ -2664,13 +2664,13 @@ switch cmd
             case 1
                 [f,p] = uiputfile('*.ncdump','Specify Dump File');
                 if ischar(f)
-                    fid = fopen([p,f],'w');
+                    fid = fopen([p,f],'w','n','US-ASCII');
                     nc_dump(FI.FileName,fid)
                     fclose(fid);
                 end
             case {2,3}
                 f = tempname;
-                fid = fopen(f,'w');
+                fid = fopen(f,'w','n','US-ASCII');
                 nc_dump(FI.FileName,fid);
                 fclose(fid);
                 C = getfile(f);
@@ -2722,7 +2722,7 @@ end
 function C = getfile(file)
 if ischar(file)
     localfopen = true;
-    fid = fopen(file,'r');
+    fid = fopen(file,'r','n','US-ASCII');
 else
     localfopen = false;
     fid = file;

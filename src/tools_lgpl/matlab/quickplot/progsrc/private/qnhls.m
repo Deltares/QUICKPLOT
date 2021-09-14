@@ -56,7 +56,7 @@ end
 
 
 function [CMap,Label]=Local_read_hls(filename)
-fid=fopen(filename,'r');
+fid=fopen(filename,'r','n','US-ASCII');
 if fid<0
     error('Unable to open %s',filename)
 end
@@ -106,7 +106,7 @@ if nargin<2
 elseif nargin<3
     Label='';
 end
-fid=fopen(filename,'w');
+fid=fopen(filename,'w','n','US-ASCII');
 if fid<0
     return
 end

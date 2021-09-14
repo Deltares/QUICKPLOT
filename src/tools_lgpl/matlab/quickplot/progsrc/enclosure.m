@@ -98,7 +98,7 @@ if (nargin==0) | strcmp(filename,'?')
 end
 
 % Grid enclosure file
-fid=fopen(filename);
+fid=fopen(filename,'r','n','US-ASCII');
 err=[];
 ln = 0;
 if fid>0
@@ -707,7 +707,7 @@ if size(MN,1)>2
     MN=transpose(MN);
 end
 
-fid=fopen(filename,'w');
+fid=fopen(filename,'w','n','US-ASCII');
 if fid<0
     error('Error opening output file.')
 end

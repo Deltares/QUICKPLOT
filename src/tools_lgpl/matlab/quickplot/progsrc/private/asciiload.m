@@ -34,7 +34,7 @@ function z=asciiload(filename,varargin)
 %   $HeadURL$
 %   $Id$
 
-fid=fopen(filename,'r');
+fid=fopen(filename,'r','n','US-ASCII');
 comment='%';
 i=0; % line number in file
 if nargin>2

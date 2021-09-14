@@ -53,7 +53,7 @@ function Struct=Local_arearead(filename,grid)
 if nargin==0
     error('Missing file name.')
 end
-fid=fopen(filename,'r');
+fid=fopen(filename,'r','n','US-ASCII');
 if fid<0
     return
 end
@@ -112,7 +112,7 @@ Struct.Records=Record;
 Struct.RoughnessIDs=unique(Record(:,5));
 
 function OK=Local_areawrite(filename,Struct)
-fid=fopen(filename,'w');
+fid=fopen(filename,'w','n','US-ASCII');
 idx4=[1:2 5:6];
 for line=1:size(Struct.Records,1)
     if Struct.Records(line,3)==0

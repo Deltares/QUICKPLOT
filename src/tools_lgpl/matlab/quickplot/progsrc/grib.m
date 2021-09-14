@@ -1208,7 +1208,7 @@ end
 
 %% readNamesTable
 function Names = readNamesTable(File)
-fid = fopen([basedir filesep 'grib' filesep File],'r');
+fid = fopen([basedir filesep 'grib' filesep File],'r','n','US-ASCII');
 Names = {};
 if fid>0
     Line = fgetl(fid);
@@ -1237,7 +1237,7 @@ end
 
 %% readTables
 function Codes = readTables
-fid = fopen([basedir filesep 'grib' filesep 'tablelookup.lst'],'r');
+fid = fopen([basedir filesep 'grib' filesep 'tablelookup.lst'],'r','n','US-ASCII');
 Codes.TableID=zeros(0,3);
 Codes.Names=cell(0,1);
 if fid>0

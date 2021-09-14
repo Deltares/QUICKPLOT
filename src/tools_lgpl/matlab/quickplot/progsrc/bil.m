@@ -81,7 +81,7 @@ if ~isequal(size(Data),[Structure.nRows Structure.nCols])
 end
 %
 Structure.FileBase = filename;
-fidhdr = fopen([filename '.hdr'],'w');
+fidhdr = fopen([filename '.hdr'],'w','n','US-ASCII');
 if fidhdr<0
     error('Cannot open header file ''%s''.',filename)
 end
@@ -143,7 +143,7 @@ Structure.Layout = 'BIL';
 Structure.PixelType = 'undefined';
 %
 filename = Structure.FileName;
-fid=fopen(filename,'r');
+fid=fopen(filename,'r','n','US-ASCII');
 if fid<0
     error('Cannot open header file ''%s''.',filename)
 end

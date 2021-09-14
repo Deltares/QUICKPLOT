@@ -3185,7 +3185,7 @@ switch cmd
                     fn=[fn ftype(2:end)];
                 end
                 try
-                    logfile=fopen([pn fn],'w');
+                    logfile=fopen([pn fn],'w','n','UTF-8');
                 catch Ex
                     qp_error('Catch in d3d_qp\logfile',Ex)
                 end
@@ -4517,7 +4517,7 @@ switch cmd
         if isempty(cmdargs)
             [fn,pn]=uigetfile('*.qplog;*.m');
             if ischar(fn)
-                runfil=fopen([pn fn],'r');
+                runfil=fopen([pn fn],'r','n','UTF-8');
             else
                 runfil=-1;
             end
@@ -4538,14 +4538,14 @@ switch cmd
                     break
                 end
             end
-            runfil=fopen(cmdargs{1},'r');
+            runfil=fopen(cmdargs{1},'r','n','UTF-8');
         end
         cmdargs={};
         if runfil<0
             cmd='';
         end
         if ~isempty(cmd)
-            [pn,fn,ex]=fileparts(fopen(runfil));
+            [pn,fn,ex]=fileparts(fopen(runfil,'r','n','UTF-8'));
             runningtype= ex(2:end);
             logfilerun=findobj(mfig,'tag','run','type','uimenu');
             if ~isempty(get(logfilerun,'callback'))
@@ -4554,7 +4554,7 @@ switch cmd
             else
                 OtherLog=findobj(logfilerun,'label','&other ...');
             end
-            filename=fopen(runfil);
+            filename=fopen(runfil,'r','n','UTF-8');
             %
             c=setdiff(get(logfilerun,'children'),OtherLog);
             LogCallBack=sprintf('d3d_qp run ''%s''',filename);
@@ -5195,7 +5195,7 @@ else
     qpversion = qpversionbase;
 end
 Str = ['@(#)Deltares, Delft3D-QUICKPLOT, Version ' qpversion ', ' qpcreationdate ];
-fid = fopen(whatfile,'r');
+fid = fopen(whatfile,'r','n','UTF-8');
 if fid>0
     % file exists, read its contents
     Str2 = fgetl(fid);
@@ -5211,14 +5211,14 @@ if fid>0
 end
 if fid<0
     % file does not exist, try to write it
-    fid = fopen(whatfile,'w');
+    fid = fopen(whatfile,'w','n','UTF-8');
     if fid>0
         % file can be opened for writing, write string
         try
             fprintf(fid,'%s\n',Str);
             fclose(fid);
             % reopen the file to check whether string was written correctly
-            fid = fopen(whatfile,'r');
+            fid = fopen(whatfile,'r','n','UTF-8');
             Str2 = fgetl(fid);
             if ~ischar(Str2)
                 Str2 = '';

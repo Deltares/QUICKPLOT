@@ -134,7 +134,7 @@ if simplexyz
             xyz.FileType = 'samples';
             xyz.FileName = filename;
             %
-            fid=fopen(filename,'r');
+            fid=fopen(filename,'r','n','US-ASCII');
             Line=fgetl(fid);
             xyz.Header = {};
             while ~isempty(Line) && Line(1)=='%'
@@ -176,7 +176,7 @@ else
     % header or labels. Let's analyze the content in more detail; the
     % readtype is always forced to 'struct'
     %
-    fid=fopen(filename,'r');
+    fid=fopen(filename,'r','n','US-ASCII');
     csv = false;
     try
         %
@@ -387,7 +387,7 @@ if strcmp(filename,'?')
     end
     filename=[fp fn];
 end
-fid=fopen(filename,'wt');
+fid=fopen(filename,'wt','n','US-ASCII');
 if fid<0
     error(['Could not create or open: ',filename])
 end
