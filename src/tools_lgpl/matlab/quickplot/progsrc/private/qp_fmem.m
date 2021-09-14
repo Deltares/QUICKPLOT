@@ -621,26 +621,27 @@ switch cmd
                         elseif strcmp(FI.Check,'NotOK')
                             FI=[];
                         else
-                            if strcmp(FI.Header.filetype,'meteo_on_computational_grid')
-                                if FileFromCall
-                                    if nargin>2
-                                        gridspec=absfullfile(varargin{2});
+                            switch FI.Header.filetype
+                                case {'meteo_on_computational_grid','field_on_computational_grid'}
+                                    if FileFromCall
+                                        if nargin>2
+                                            gridspec=absfullfile(varargin{2});
+                                        else
+                                            gridspec='';
+                                        end
                                     else
-                                        gridspec='';
+                                        mpn=fileparts(FI.FileName);
+                                        [gfn,gpn]=uigetfile([mpn filesep '*.grd'],'Select matching grid file ...');
+                                        gridspec = [gpn gfn];
                                     end
-                                else
-                                    mpn=fileparts(FI.FileName);
-                                    [gfn,gpn]=uigetfile([mpn filesep '*.grd'],'Select matching grid file ...');
-                                    gridspec = [gpn gfn];
-                                end
-                                if ~ischar(gridspec) || isempty(gridspec)
-                                    error('ASCIIWIND of type ''meteo_on_flow_grid'' requires grid specification.')
-                                end
-                                FI.Header.grid_file=wlgrid('open',gridspec);
-                                if prod(size(FI.Header.grid_file.X)+1)~=FI.NVal
-                                    error('Number of data values in grid file does not match number of grid points.')
-                                end
-                                Otherargs{1}=gridspec;
+                                    if ~ischar(gridspec) || isempty(gridspec)
+                                        error('ASCIIWIND of type ''field_on_computational_grid'' requires grid specification.')
+                                    end
+                                    FI.Header.grid_file=wlgrid('open',gridspec);
+                                    if prod(size(FI.Header.grid_file.X)+1)~=FI.NVal
+                                        error('Number of data values in grid file does not match number of grid points.')
+                                    end
+                                    Otherargs{1}=gridspec;
                             end
                             Tp=FI.FileType;
                         end

@@ -127,10 +127,10 @@ for i = 1:length(t)
     fscanf(fid,'%f',[Quant-1 Structure.NVal]);
     OneTime = fscanf(fid,'%f',[Structure.NVal 1]);
     switch lower(Structure.Header.filetype)
-        case 'meteo_on_equidistant_grid'
+        case {'meteo_on_equidistant_grid','field_on_equidistant_grid'}
             OneTime = reshape(OneTime,[Structure.Header.n_cols Structure.Header.n_rows])';
             OneTime = flipud(OneTime);
-        case 'meteo_on_curvilinear_grid'
+        case {'meteo_on_curvilinear_grid','field_on_curvilinear_grid'}
             switch Structure.Header.data_row
                 case 'grid_row' % which corresponds to column here
                     sz = size(Structure.Header.grid_file.X);
@@ -150,7 +150,7 @@ for i = 1:length(t)
                 case 'grid_urcorner' % (MMAX,NMAX) coordinate
                     OneTime = rot90(OneTime,2);
             end
-        case 'meteo_on_spiderweb_grid'
+        case {'meteo_on_spiderweb_grid','field_on_spiderweb_grid'}
             OneTime = reshape(OneTime,[Structure.Header.n_cols Structure.Header.n_rows])';
             OneTime = OneTime([1 1:end],[1:end 1]);
             if isfield(Structure.Data(t(i)),QuantName)
@@ -158,7 +158,7 @@ for i = 1:length(t)
             else
                 OneTime(1,:) = 0;
             end
-        case 'meteo_on_computational_grid'
+        case {'meteo_on_computational_grid','field_on_computational_grid'}
             if isfield(Structure.Header,'grid_file')
                 OneTime = reshape(OneTime,size(Structure.Header.grid_file.X)+1);
             end
@@ -204,7 +204,7 @@ end
 grid_unit = '';
 for i = 1:length(t)
     switch lower(Header.filetype)
-        case 'meteo_on_equidistant_grid'
+        case {'meteo_on_equidistant_grid','field_on_equidistant_grid'}
             x = Header.x_llcorner + ...
                 repmat((cols-1)*Header.dx,length(rows),1);
             y = Header.y_llcorner + ...
@@ -213,7 +213,7 @@ for i = 1:length(t)
                 grid_unit = Header.grid_unit;
             end
             t = 1;
-        case {'meteo_on_curvilinear_grid','meteo_on_computational_grid'}
+        case {'meteo_on_curvilinear_grid','field_on_curvilinear_grid','meteo_on_computational_grid','field_on_computational_grid'}
             x = Header.grid_file.X(rows,cols);
             y = Header.grid_file.Y(rows,cols);
             if isfield(Header.grid_file,'CoordinateSystem')
@@ -225,7 +225,7 @@ for i = 1:length(t)
                 end
             end
             t = 1;
-        case 'meteo_on_spiderweb_grid'
+        case {'meteo_on_spiderweb_grid','field_on_spiderweb_grid'}
             if isfield(Header,'grid_unit')
                 grid_unit = Header.grid_unit;
             end
@@ -442,11 +442,11 @@ max_ntimes = 1000;
 Structure.Data(max_ntimes).time = [];
 %
 switch lower(Structure.Header.filetype)
-    case 'meteo_on_equidistant_grid'
+    case {'meteo_on_equidistant_grid','field_on_equidistant_grid'}
         nval = Structure.Header.n_quantity * ...
             Structure.Header.n_cols * ...
             Structure.Header.n_rows;
-    case 'meteo_on_curvilinear_grid'
+    case {'meteo_on_curvilinear_grid','field_on_curvilinear_grid'}
         p = fileparts(Structure.Header.grid_file);
         if isempty(p)
             p = fileparts(filename);
@@ -467,11 +467,11 @@ switch lower(Structure.Header.filetype)
             fclose(fid);
             error('Unknown value for "data_row" in file: %s',Structure.Header.data_row)
         end
-    case 'meteo_on_spiderweb_grid'
+    case {'meteo_on_spiderweb_grid','field_on_spiderweb_grid'}
         nval = Structure.Header.n_quantity * ...
             Structure.Header.n_cols * ...
             Structure.Header.n_rows;
-    case 'meteo_on_computational_grid'
+    case {'meteo_on_computational_grid','field_on_computational_grid'}
         nval = inf;
     otherwise
         fclose(fid);
