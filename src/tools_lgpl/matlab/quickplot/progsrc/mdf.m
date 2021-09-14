@@ -724,7 +724,7 @@ if isfield(MDF,'ini')
             % plain ascii initial conditions file (flow only)
             filename = [caseid '.ini'];
             wldep('write',fullfile(path,filename),MDF.ini.Data);
-            MDF.mdf = inifile('seti',MDF.mdf,'','Filic',hstr(caseid));
+            MDF.mdf = inifile('seti',MDF.mdf,'','Filic',hstr(filename));
         case 'NEFIS'
             % NEFIS map-file
             filename = ['trim-restart-for-' caseid];
