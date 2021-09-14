@@ -179,7 +179,7 @@ GRID.Attributes = cell(0,2);
 
 % Grid file
 gridtype='RGF';
-fid=fopen(filename);
+fid=fopen(filename,'r','n','US-ASCII');
 if fid<0
     error('Can''t open file: %s.',filename)
 end
@@ -427,7 +427,7 @@ GRID.Type = gridtype;
 GRID.Orient = getorientation(GRID,~notdef);
 
 % Grid enclosure file
-fid=fopen([basename '.enc']);
+fid=fopen([basename '.enc'],'r','n','US-ASCII');
 if fid>0
     Enc = [];
     while 1
@@ -627,7 +627,7 @@ filename=fullfile(path,[name ext]);
 basename=fullfile(path,name);
 
 if ~isempty(Grd.Enclosure),
-    fid=fopen([basename '.enc'],'w');
+    fid=fopen([basename '.enc'],'w','n','US-ASCII');
     if fid<0
         error('* Could not open output file.')
     end
@@ -636,7 +636,7 @@ if ~isempty(Grd.Enclosure),
 end
 
 % write
-fid=fopen(filename,'w');
+fid=fopen(filename,'w','n','US-ASCII');
 SpecialKeywords = {'Coordinate System','Missing Value'};
 if strcmp(fileformat,'oldrgf') || strcmp(fileformat,'newrgf')
     if strcmp(fileformat,'oldrgf')

@@ -40,7 +40,7 @@ function Grid = read_ecom_corners(file)
 %   $Id$
 
 if ischar(file)
-   fid = fopen(file,'r');
+   fid = fopen(file,'r','n','US-ASCII');
    if fid<0
       error('Unable to open data file.')
    end

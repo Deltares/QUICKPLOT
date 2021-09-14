@@ -43,7 +43,7 @@ function G = read_ecom_modelgrid(FileName)
 %   $HeadURL$
 %   $Id$
 
-fid = fopen(FileName,'r');
+fid = fopen(FileName,'r','n','US-ASCII');
 Comment = fgetl(fid); % New Refined Grid
 
 Comment = fgetl(fid); % Sigma Levels Z=0  to -1.0  11 levels 

@@ -183,11 +183,11 @@ try
         fileName = [f '_' extra_files{ifile} e];
         extlog.(fName).filename = fileName;
         %
-        extlog.(fName).fid = fopen([p filesep fileName],'w');
+        extlog.(fName).fid = fopen([p filesep fileName],'w','n','US-ASCII');
         extlog.(fName).empty = true;
     end
     %
-    logid1=fopen(full_ln,'w');
+    logid1=fopen(full_ln,'w','n','US-ASCII');
     if logid1<0
         ui_message('error',{'Cannot open logfile for validation report.','Stopping validation process.'})
         return
@@ -224,7 +224,7 @@ try
     sumt = 0;
     numt = 0;
     for i=1:length(d)
-        timid = fopen(fullfile(val_dir,d(i).name,'reference','timing.txt'));
+        timid = fopen(fullfile(val_dir,d(i).name,'reference','timing.txt'),'r','n','US-ASCII');
         if timid>0
             [dt2,cnt] = fscanf(timid,'%f',1);
             if cnt==1
@@ -284,7 +284,7 @@ try
             end
             if localexist(CaseInfo)
                 CaseInfo=inifile('open',CaseInfo);
-                logid2=fopen(logname,'w');
+                logid2=fopen(logname,'w','n','US-ASCII');
                 dt2_old = d(i).dt;
                 t2 = write_header(logid2,d(i).name,Color);
                 emptyTable2 = true;
@@ -805,7 +805,7 @@ try
             logid2=[];
             %
             if isnan(dt2_old)
-                timid = fopen('../reference/timing.txt','w');
+                timid = fopen('../reference/timing.txt','w','n','US-ASCII');
                 fprintf(timid,'%5.1f',dt2);
                 fclose(timid);
             end
@@ -1230,7 +1230,7 @@ end
 function fileContent = getfile(filename)
 fileContent = cell(100,1);
 nC = 0;
-fid = fopen(filename);
+fid = fopen(filename,'r','n','US-ASCII');
 while 1
     str = fgetl(fid);
     if ischar(str)
@@ -1540,7 +1540,7 @@ end
 
 function X=localexist(file)
 %X=exist(file);
-X=fopen(file);
+X=fopen(file,'r');
 if X>0, fclose(X); end
 X=X>0;
 

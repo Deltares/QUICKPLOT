@@ -84,7 +84,7 @@ end
 function S = local_open(FileName)
 S.FileName = FileName;
 S.FileType = 'SMS mesh';
-[fid,msg] = fopen(FileName,'r');
+[fid,msg] = fopen(FileName,'r','n','US-ASCII');
 if fid<0
     error('%s: %s',FileName,msg)
 end

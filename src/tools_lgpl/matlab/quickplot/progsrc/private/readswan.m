@@ -34,7 +34,7 @@ function S=readswan(FileName)
 S.FileName=FileName;
 S.FileType='SWAN spectral';
 S.Check='NotOK';
-fid = fopen(FileName,'r');
+fid = fopen(FileName,'r','n','US-ASCII');
 if fid<0
     error('Cannot open %s',FileName)
 end

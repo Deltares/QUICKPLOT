@@ -52,7 +52,7 @@ end
 function S = local_open(FileName)
 S.FileName = FileName;
 S.FileType = 'SHYFEM mesh';
-fid = fopen(FileName,'r');
+fid = fopen(FileName,'r','n','US-ASCII');
 try
     Line = getline(fid);
     X=sscanf(Line,'%f');

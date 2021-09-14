@@ -1034,7 +1034,7 @@ switch cmd
                                         ImE = [ImE 'W'];
                                     end
                             end
-                            fid = fopen(fullfile(ImP,[ImF ImE]),'r');
+                            fid = fopen(fullfile(ImP,[ImF ImE]),'r','n','US-ASCII');
                             if fid>0
                                 Coords = fscanf(fid,'%f',6);
                                 fclose(fid);
