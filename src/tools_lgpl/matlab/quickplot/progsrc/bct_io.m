@@ -133,7 +133,7 @@ function Info = Local_read_bct(filename)
 if exist(filename,'file')~=2
     error('File does not exist: %s',filename)
 end
-fid=fopen(filename,'r');
+fid=fopen(filename,'r','n','US-ASCII');
 Info.Check='NotOK';
 Info.FileName=filename;
 Info.NTables=0;
@@ -348,7 +348,7 @@ if ~ischar(filename) && nargin==1
     Info = filename;
     filename = Info.FileName;
 end
-fid=fopen(filename,'w');
+fid=fopen(filename,'w','n','US-ASCII');
 % When the file is written using a fixed line/record length this is
 % shown in the first line
 %fprintf(fid,'# %i\n',linelength);

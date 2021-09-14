@@ -70,7 +70,7 @@ if (nargin==0) || strcmp(filename,'?')
 end
 
 S.FileName=filename;
-fid=fopen(filename,'r','l');
+fid=fopen(filename,'r','l','US-ASCII');
 HTerminator = 13;
 %--------------------------------------------------------------------------
 % Version number
@@ -334,11 +334,11 @@ fclose(fid);
 MemoFileName=S.FileName;
 MemoFileName(end-2:end)=MemoFileName(end-2:end)-'DBF'+'DBT';
 MemoFormat = 'DBT';
-fid = fopen(MemoFileName,'r','l');
+fid = fopen(MemoFileName,'r','l','US-ASCII');
 if fid<0
     MemoFileName(end-2:end)=MemoFileName(end-2:end)-'DBT'+'FPT';
     MemoFormat = 'FPT';
-    fid = fopen(MemoFileName,'r','l');
+    fid = fopen(MemoFileName,'r','l','US-ASCII');
 end
 if fid>0
     MemoFPT = strcmp(MemoFormat,'FPT');
@@ -389,7 +389,7 @@ end
 %
 MdxFileName=S.FileName;
 MdxFileName(end-2:end)=MdxFileName(end-2:end)-'DBF'+'MDX';
-fid = fopen(MdxFileName,'r','l');
+fid = fopen(MdxFileName,'r','l','US-ASCII');
 if fid>0
     fseek(fid,0,1);
     FileSize = ftell(fid);
@@ -600,7 +600,7 @@ else
         error('Invalid field number.');
     end
 end
-fid=fopen(S.FileName,'r','l');
+fid=fopen(S.FileName,'r','l','US-ASCII');
 Dbs=cell(1,length(Fields));
 for j=1:length(Fields)
     i=Fields(j);

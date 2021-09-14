@@ -99,7 +99,7 @@ if nargin==0,
     filename=[fp fn];
 end
 
-fid=fopen(filename,'r');
+fid=fopen(filename,'r','n','US-ASCII');
 try
     T.FileName=filename;
     T.FileType='BNA File';

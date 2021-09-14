@@ -93,7 +93,7 @@ element(2,i) = {1};
 function FI=Local_open_file(filename)
 FI.FileName=filename;
 FI.FileType='Gmsh';
-fid=fopen(filename,'r');
+fid=fopen(filename,'r','n','US-ASCII');
 if fid<0
     error('Cannot open "%s".',filename)
 end

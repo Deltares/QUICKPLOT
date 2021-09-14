@@ -95,7 +95,7 @@ if nargin==0
     filename=[fp fn];
 end
 
-fid=fopen(filename,'r');
+fid=fopen(filename,'r','n','US-ASCII');
 T.FileName=filename;
 T.FileType='ArcInfoUngenerate';
 T.SubType='unknown';
@@ -509,7 +509,7 @@ else
     T=Data1;
 end
 
-fid=fopen(filename,'w');
+fid=fopen(filename,'w','n','US-ASCII');
 for j=1:length(T.Seg)
     if BNA
         if isfield(T.Seg(j),'ID1')

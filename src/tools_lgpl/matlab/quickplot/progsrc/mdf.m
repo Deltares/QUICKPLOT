@@ -932,7 +932,7 @@ end
 
 
 function DDB = ddbread(filename)
-fid = fopen(filename,'r');
+fid = fopen(filename,'r','n','US-ASCII');
 DDB.DomainNames = {};
 iLine = 0;
 iBound = 0;
@@ -1353,7 +1353,7 @@ for i = 1:size(attfiles,1)
                     F = inifile('open',filename);
                 case 'Obs'
                     try
-                        fid = fopen(filename,'r');
+                        fid = fopen(filename,'r','n','UTF-8');
                         XYName = textscan(fid,'%f %f %s');
                         fclose(fid);
                         for n = 1:length(XYName{3})
@@ -1439,7 +1439,7 @@ keys = {'PROFNR=','TYPE=','WIDTH=','HEIGHT=','ZMIN=','BASE=','TALUD=','FRCTP=','
 lkeys = cellfun(@length,keys);
 N = zeros(100,9);
 n = 0;
-fid = fopen(filename);
+fid = fopen(filename,'n','US-ASCII');
 while ~feof(fid)
     Line = fgetl(fid);
     if isempty(Line)
@@ -1995,7 +1995,7 @@ end
 
 
 function data = readwnd(filename)
-fid = fopen(filename,'r');
+fid = fopen(filename,'r','n','US-ASCII');
 if fid<0
     error('Can''t open file: %s.',filename)
 end
@@ -2010,7 +2010,7 @@ catch e
 end
 
 function S = readbca(filename)
-fid = fopen(filename,'r');
+fid = fopen(filename,'r','n','US-ASCII');
 S.FileName = filename;
 S.FileType = 'Delft3D-FLOW BCA-file';
 S.Location.Name = '';
@@ -2084,7 +2084,7 @@ switch lower(cmd)
 end
 
 function writebch(filename,S)
-fid = fopen(filename,'wt');
+fid = fopen(filename,'wt','n','US-ASCII');
 Format = [repmat(' %15.7e',1,length(S.Freq)) '\n'];
 fprintf(fid,Format,S.Freq);
 fprintf(fid,'\n');
@@ -2098,7 +2098,7 @@ fclose(fid);
 function S = readbch(filename)
 S.FileName = filename;
 S.FileType = 'Delft3D-FLOW BCH-file';
-fid = fopen(filename,'r');
+fid = fopen(filename,'r','n','US-ASCII');
 %
 lNr = 1;
 Line = fgetl(fid);

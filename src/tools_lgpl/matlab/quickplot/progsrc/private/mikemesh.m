@@ -52,7 +52,7 @@ end
 function S = local_open(FileName)
 S.FileName = FileName;
 S.FileType = 'MikeFM mesh';
-fid = fopen(FileName,'r');
+fid = fopen(FileName,'r','n','US-ASCII');
 try
     nNodes=fscanf(fid,'%i');
     if length(nNodes)>1 % e.g. 100079 1000 4875

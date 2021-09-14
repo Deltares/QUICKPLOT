@@ -196,7 +196,7 @@ for i=1:N-1
 end
 
 function S=readclrmap(filename)
-fid=fopen(filename,'r');
+fid=fopen(filename,'r','n','UTF-8');
 if fid<0
     error('Error opening input file.')
 end
@@ -313,7 +313,7 @@ if isfield(S,'Index')
 end
 
 function writeclrmap(filename,S)
-fid=fopen(filename,'wt');
+fid=fopen(filename,'wt','n','UTF-8');
 if fid<0
     error('Error opening output file.')
 end

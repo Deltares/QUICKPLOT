@@ -112,7 +112,7 @@ if nargin<2 || isempty(filetype)
 else
     types = {filetype};
 end
-fid=fopen(filename,'r');
+fid=fopen(filename,'r','n','US-ASCII');
 if fid<0
     error('Can''t open file: %s.',filename)
 end
@@ -404,7 +404,7 @@ end
 if ~isfield(Out,'Type')
     Out.Type='weir';
 end
-fid=fopen(filename,'w');
+fid=fopen(filename,'w','n','US-ASCII');
 switch Out.Type
     case 'openboundary'
         for i = 1:length(Out.Name)

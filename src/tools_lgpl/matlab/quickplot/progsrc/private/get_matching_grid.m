@@ -542,7 +542,7 @@ end
 
 function DWQ = open_dwq(filename)
 DWQ = [];
-fid = fopen(filename,'r');
+fid = fopen(filename,'r','n','US-ASCII');
 L = fgetl(fid);
 [A,cnt,err,idx]=sscanf(L,'%i',inf);
 if ~strcmp(err,'')

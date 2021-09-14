@@ -57,7 +57,7 @@ Time = FI.Series(i).times;
 Val  = FI.Series(i).val;
 
 function FI = File_open(filename)
-fid = fopen(filename,'r');
+fid = fopen(filename,'r','n','US-ASCII');
 if fid<0
     error('Could not open file %s',filename)
 end
