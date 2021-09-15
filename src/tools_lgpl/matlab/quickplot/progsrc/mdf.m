@@ -307,11 +307,11 @@ if isfield(MDF2,'ini')
             %
             if strcmp(MDF2.ini.FileType,'ini')
                 % constituents: data at cell centres
-                last3D = length(MDF2.ini);
+                last3D = length(MDF2.ini.Data);
                 has_umean = false;
             else
                 % constituents and turbulent quantities: data at cell centres
-                last3D = length(MDF2.ini)-2;
+                last3D = length(MDF2.ini.Data)-2;
                 has_umean = true;
             end
             % constituents and turbulent quantities: data at cell centres
@@ -320,8 +320,8 @@ if isfield(MDF2,'ini')
             end
             % u/v mnldf: data at velocity points
             if has_umean
-                iu = length(MDF2.ini)-1;
-                iv = length(MDF2.ini);
+                iu = length(MDF2.ini.Data)-1;
+                iv = length(MDF2.ini.Data);
                 [MDF2.ini.Data(iu).Data,MDF2.ini.Data(iv).Data] = fldrotate('veloc',MDF2.ini.Data(iu).Data,MDF2.ini.Data(iv).Data);
             end
         case 'NEFIS'
@@ -413,13 +413,33 @@ if isfield(MDF2,'bnd')
     MDF2.bnd.MN(:,1:2) = rotate(MDF2.bnd.MN(:,1:2),MMAX);
     MDF2.bnd.MN(:,3:4) = rotate(MDF2.bnd.MN(:,3:4),MMAX);
     %
+    Active = enclosure('inside',MDF2.grd.Enclosure,size(MDF2.grd.X));
+    %
+    jH = 0;
     for i = 1:length(MDF2.bnd.Name)
+        if MDF2.bnd.Forcing(i)=='H'
+            jH = jH+1;
+        end
         if any('CQTRN'==MDF2.bnd.BndType(i))
             if MDF2.bnd.BndType(i)=='R'
                 warning('Riemann data may need adjustment: sign of velocity component changes')
             end
             % if along N axis, then change sign of flux
-            if MDF2.bnd.MN(i,1)~=MDF2.bnd.MN(i,3)
+            if MDF2.bnd.MN(i,1) ~= MDF2.bnd.MN(i,3)
+                nAligned = true;
+            elseif MDF2.bnd.MN(i,2) ~= MDF2.bnd.MN(i,4)
+                nAligned = false;
+            else
+                mn = MDF2.bnd.MN(i,1:2);
+                if mn(2)>1 && Active(mn(1),mn(2)-1)
+                    nAligned = true;
+                elseif mn(2)<size(Active,2) && Active(mn(1),mn(2)+1)
+                    nAligned = true;
+                else
+                    nAligned = false;
+                end
+            end
+            if nAligned
                 switch MDF2.bnd.Forcing(i)
                     case 'T'
                         for j = 1:length(MDF2.bct.Table)
@@ -427,6 +447,12 @@ if isfield(MDF2,'bnd')
                                 MDF2.bct.Table(j).Data(:,2:end) = -MDF2.bct.Table(j).Data(:,2:end);
                                 break
                             end
+                        end
+                    case 'H'
+                        nH = size(MDF2.bch.Amplitudes,1)/2;
+                        MDF2.bch.Amplitudes(jH,:) = -MDF2.bch.Amplitudes(jH,:);
+                        if MDF2.bnd.BndType(i) ~= 'T'
+                            MDF2.bch.Amplitudes(nH+jH,:) = -MDF2.bch.Amplitudes(nH+jH,:);
                         end
                 end
             end

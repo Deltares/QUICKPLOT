@@ -247,7 +247,7 @@ while ~feof(fid)
             Info.NTables=Info.NTables+1;
             
             %display
-            fprintf('Table for bc read: %s \n',Info.Table(i).Location)
+            %fprintf('Table for bc read: %s \n',Info.Table(i).Location)
             
             %update
             if isempty(Info.Table(i).Data)

@@ -9,15 +9,19 @@ function varargout=enclosure(cmd,varargin)
 %
 %   ENCLOSURE('write',FILENAME,MN,'waqua') writes a WAQUA enclosure file.
 %
-%   [X,Y]=ENCLOSURE('apply',MN,Xorg,Yorg) applies the enclosure, replacing
-%   grid coordinates outside the enclosure by NaN.
+%   [X,Y] = ENCLOSURE('apply',MN,Xorg,Yorg) applies the enclosure,
+%   replacing grid coordinates outside the enclosure by NaN.
 %
-%   MN=ENCLOSURE('extract',X,Y) extracts the enclosure indices from X and
+%   MASK = ENCLOSURE('inside',MN,SZ) returns an array of size SZ containing
+%   1 in the active part of the domain, and 0 outside.
+%
+%   MN = ENCLOSURE('extract',X,Y) extracts the enclosure indices from X and
 %   Y matrices containing NaN for points outside the enclosure.
 %
-%   [XC,YC]=ENCLOSURE('coordinates',MN,X,Y) obtain the X,Y coordinates from
-%   M,N enclosure indices. If the MN argument is skipped, the enclosure
-%   indices will first be determined using the extract call above.
+%   [XC,YC] = ENCLOSURE('coordinates',MN,X,Y) obtain the X,Y coordinates
+%   from M,N enclosure indices. If the MN argument is skipped, the
+%   enclosure indices will first be determined using the extract call
+%   above.
 %
 %   See also WLGRID.
 
@@ -57,23 +61,39 @@ end
 
 switch lower(cmd)
     case 'read'
-        Enc=Local_encread(varargin{:});
-        varargout={Enc};
+        Enc = Local_encread(varargin{:});
+        varargout = {Enc};
     case 'extract'
-        Enc=Local_encextract(varargin{:});
-        varargout={Enc};
+        Enc = Local_encextract(varargin{:});
+        varargout = {Enc};
     case 'thindam'
-        [MNu,MNv]=Local_enc2uv(varargin{:});
-        varargout={MNu MNv};
+        [MNu,MNv] = Local_enc2uv(varargin{:});
+        varargout = {MNu MNv};
+    case 'inside'
+        MN = varargin{1};
+        sz = varargin{2} + 1;
+        Ind0 = Local_mask_WL(MN);
+        szInd0 = size(Ind0);
+        nd = ndims(szInd0);
+        %
+        idx = cell(1,nd);
+        for i = nd:-1:1
+            idx{i} = 1:min(sz(i),szInd0(i));
+        end
+        %
+        Ind = false(sz);
+        Ind(idx{:}) = Ind0(idx{:});
+        %
+        varargout = {Ind};
     case 'apply'
-        [X,Y]=Local_encapply(varargin{:});
-        varargout={X Y};
+        [X,Y] = Local_encapply(varargin{:});
+        varargout = {X Y};
     case 'coordinates'
-        XY=Local_coordinates(varargin{:});
-        if nargout==2
-            varargout={XY(:,1) XY(:,2)};
+        XY = Local_coordinates(varargin{:});
+        if nargout == 2
+            varargout = {XY(:,1) XY(:,2)};
         else
-            varargout={XY};
+            varargout = {XY};
         end
     case 'write'
         Local_encwrite(varargin{:});
@@ -82,7 +102,7 @@ switch lower(cmd)
 end
 
 
-function Enc=Local_encread(filename)
+function Enc = Local_encread(filename)
 % * ENC=ENCLOSURE('read',FileName)
 %   % Delft3D, Waqua
 % read an enclosure file

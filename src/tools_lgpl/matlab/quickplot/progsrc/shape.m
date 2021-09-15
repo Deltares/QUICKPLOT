@@ -320,7 +320,7 @@ switch datatype
         fseek(fid,S.Idx(1,shapes(1)),-1);
         TNPnt=0;
         Out=zeros(S.NPnt,2);
-        Obj=zeros(S.NPnt,1);
+        %Obj=zeros(S.NPnt,1);
         for shp=shapes
             fseek(fid,S.Idx(1,shp),-1);
             [NrSize,k]=fread(fid,2,'int32','b');
@@ -332,7 +332,7 @@ switch datatype
                     % x,y
                     TNPnt=TNPnt+1;
                     Out(TNPnt,1:2)=fread(fid,[1 2],'float64');
-                    Obj(TNPnt)=shp;
+                    %Obj(TNPnt)=shp;
                 case {3,5} % polyline, polygon
                     % box, NPrt, NPnt, {iprt}, {x,y}
                     fread(fid,4,'float64');
@@ -340,20 +340,20 @@ switch datatype
                     NPnt=fread(fid,1,'int32');
                     fread(fid,[1 NPrt],'int32');
                     Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
-                    Obj(TNPnt+(1:NPnt))=shp;
+                    %Obj(TNPnt+(1:NPnt))=shp;
                     TNPnt=TNPnt+NPnt;
                 case 8 % multipoint
                     % box, N, {x,y}
                     fread(fid,4,'float64');
                     NPnt=fread(fid,1,'int32');
                     Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
-                    Obj(TNPnt+(1:NPnt))=shp;
+                    %Obj(TNPnt+(1:NPnt))=shp;
                     TNPnt=TNPnt+NPnt;
                 case {11,21} % pointz, pointm
                     % x,y,z or x,y,m
                     TNPnt=TNPnt+1;
                     Out(TNPnt,1:3)=fread(fid,[1 3],'float64');
-                    Obj(TNPnt)=shp;
+                    %Obj(TNPnt)=shp;
                 case {13,15,23,25} % polylinez, polygonz, polylinem, polygonm
                     % box, NPrt, NPnt, {iprt}, {x,y} zrange, {z} or mrange, {m}
                     fread(fid,4,'float64');
@@ -385,12 +385,14 @@ switch datatype
                     Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
                     fread(fid,2,'float64');
                     Out(TNPnt+(1:NPnt),3)=fread(fid,[NPnt 1],'float64');
-                    Obj(TNPnt+(1:NPnt))=shp;
+                    %Obj(TNPnt+(1:NPnt))=shp;
                     TNPnt=TNPnt+NPnt;
                 otherwise % skip unknown
                     fread(fid,NrSize(2)-2,'int16');
             end
         end
+        Out=Out(1:TNPnt,:);
+        %Obj=Obj(1:TNPnt);
     case {'polyline', 'lines'}
         fid = fopen([S.FileBase S.ShapeExt], 'r', 'l');
         fseek(fid, S.Idx(1,shapes(1)), -1);
