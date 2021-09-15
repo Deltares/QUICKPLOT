@@ -70,7 +70,8 @@ if (nargin==0) || strcmp(filename,'?')
 end
 
 S.FileName=filename;
-fid=fopen(filename,'r','l','US-ASCII');
+encoding = Default_Encoding;
+fid=fopen(filename,'r','l',encoding);
 HTerminator = 13;
 %--------------------------------------------------------------------------
 % Version number
@@ -179,6 +180,7 @@ else
     % 200: Win EE                  1250
     %      Russian (201), Turkish (202), Greek (203)
     %   0: ignored
+    % --> might use this to determine the encoding
     fread(fid,2,'uint8'); % reserved
 end
 %--------------------------------------------------------------------------
@@ -585,6 +587,9 @@ else
     D = datenum(Date(1)+1900,Date(2),Date(3));
 end
 
+function Encoding = Default_Encoding
+Encoding = 'windows-1252';
+
 function Dbs=Local_read_dbase(S,Records,Fields)
 if ~isequal(Records,0)
     Records=Records(:);
@@ -600,7 +605,11 @@ else
         error('Invalid field number.');
     end
 end
-fid=fopen(S.FileName,'r','l','US-ASCII');
+encoding = Default_Encoding;
+if isfield(S,'Encoding')
+    encoding = S.Encoding;
+end
+fid=fopen(S.FileName,'r','l',encoding);
 Dbs=cell(1,length(Fields));
 for j=1:length(Fields)
     i=Fields(j);

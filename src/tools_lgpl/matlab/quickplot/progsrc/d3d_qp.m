@@ -4545,7 +4545,7 @@ switch cmd
             cmd='';
         end
         if ~isempty(cmd)
-            [pn,fn,ex]=fileparts(fopen(runfil,'r','n','UTF-8'));
+            [pn,fn,ex]=fileparts(fopen(runfil));
             runningtype= ex(2:end);
             logfilerun=findobj(mfig,'tag','run','type','uimenu');
             if ~isempty(get(logfilerun,'callback'))
@@ -4554,7 +4554,7 @@ switch cmd
             else
                 OtherLog=findobj(logfilerun,'label','&other ...');
             end
-            filename=fopen(runfil,'r','n','UTF-8');
+            filename=fopen(runfil);
             %
             c=setdiff(get(logfilerun,'children'),OtherLog);
             LogCallBack=sprintf('d3d_qp run ''%s''',filename);
