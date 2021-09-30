@@ -141,7 +141,7 @@ Info.NTables=0;
 floc=ftell(fid);
 Line=fgetl(fid);
 line=lower(Line);
-switch line
+switch deblank(line)
     case '[forcing]'
         Info = Local_read_bc(Info,fid);
         return
@@ -234,7 +234,7 @@ while ~feof(fid)
     [key,remainder] = strtok(Line);
     [eq,remainder] = strtok(remainder);
     remainder = strtrim(remainder);
-    if any(strcmpi(key,{'[boundary]','[lateraldischarge]'}))
+    if any(strcmpi(key,{'[boundary]','[lateraldischarge]','[forcing]'}))
         continue
     end
     if ~strcmp(eq,'=') 
