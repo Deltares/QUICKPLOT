@@ -4,6 +4,7 @@ function make_all
 %     * Delft3D-MATLAB interface
 %     * QUICKPLOT
 %     * ECOPLOT
+%     * SIM2UGRID
 %   all with exactly the same version number.
 
 %----- LGPL --------------------------------------------------------------------
@@ -50,3 +51,4 @@ if c(end-1:end)=='64'
    make_d3dmatlab(curdir,qpversion,T)
 end
 make_delwaq2raster(curdir,qpversion,T)
+make_sim2ugrid(curdir,qpversion,T)
