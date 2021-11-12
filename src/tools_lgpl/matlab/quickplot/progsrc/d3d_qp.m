@@ -2079,11 +2079,6 @@ switch cmd
             case 'exportdata'
                 lasterr('');
                 try
-                    if isempty(cmdargs)
-                        FileName='';
-                    else
-                        FileName=cmdargs{1};
-                    end
                     set(mfig,'pointer','watch')
                     DS.FI=Info;
                     DS.Domain=DomainNr;
@@ -2091,15 +2086,15 @@ switch cmd
                     DS.SubField=subf;
                     DS.Selected=selected;
                     DS.Ops=Ops;
-                    FileName=qp_export(getappdata(findobj(UD.Options.Handles,'tag','exportdata'),'exporttype'),FileName,DS);
+                    cmdargs=qp_export(getappdata(findobj(UD.Options.Handles,'tag','exportdata'),'exporttype'),DS,cmdargs);
                     set(mfig,'pointer','arrow')
                 catch Ex
-                    FileName='';
+                    cmdargs={};
                     set(mfig,'pointer','arrow')
                     qp_error('Catch in d3d_qp\exportdata',Ex)
                 end
-                if ~isempty(FileName) && logfile
-                    writelog(logfile,logtype,cmd,FileName);
+                if ~isempty(cmdargs) && logfile
+                    writelog(logfile,logtype,cmd,cmdargs{:});
                 end
                 
             case {'quickview','addtoplot','addtoplot_left','addtoplot_right','loaddata'}
