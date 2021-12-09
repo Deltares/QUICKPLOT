@@ -6,7 +6,7 @@ function outdata=d3d_qp(cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %
-%   Copyright (C) 2011-2021 Stichting Deltares.
+%   Copyright (C) 2011-2020 Stichting Deltares.
 %
 %   This library is free software; you can redistribute it and/or
 %   modify it under the terms of the GNU Lesser General Public
@@ -2079,6 +2079,11 @@ switch cmd
             case 'exportdata'
                 lasterr('');
                 try
+                    if isempty(cmdargs)
+                        FileName='';
+                    else
+                        FileName=cmdargs{1};
+                    end
                     set(mfig,'pointer','watch')
                     DS.FI=Info;
                     DS.Domain=DomainNr;
@@ -2086,15 +2091,15 @@ switch cmd
                     DS.SubField=subf;
                     DS.Selected=selected;
                     DS.Ops=Ops;
-                    cmdargs=qp_export(getappdata(findobj(UD.Options.Handles,'tag','exportdata'),'exporttype'),DS,cmdargs);
+                    FileName=qp_export(getappdata(findobj(UD.Options.Handles,'tag','exportdata'),'exporttype'),FileName,DS);
                     set(mfig,'pointer','arrow')
                 catch Ex
-                    cmdargs={};
+                    FileName='';
                     set(mfig,'pointer','arrow')
                     qp_error('Catch in d3d_qp\exportdata',Ex)
                 end
-                if ~isempty(cmdargs) && logfile
-                    writelog(logfile,logtype,cmd,cmdargs{:});
+                if ~isempty(FileName) && logfile
+                    writelog(logfile,logtype,cmd,FileName);
                 end
                 
             case {'quickview','addtoplot','addtoplot_left','addtoplot_right','loaddata'}
