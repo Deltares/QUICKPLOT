@@ -228,15 +228,19 @@ if ~isempty(Info.Attribute)
         % nc_interpret we should have removed _FillValue attributes for
         % char.
         missval = Info.Attribute(missval).Value;
-        switch netcdf_use_fillvalue
-            case 'exact_match'
-                Data(Data==missval)=NaN;
-            otherwise % 'valid_range'
-                if missval>0
-                    Data(Data>=missval)=NaN;
-                else
-                    Data(Data<=missval)=NaN;
-                end
+        if ~isnumeric(missval)
+            % _FillValue = "-999.9f" is not valid
+        else
+            switch netcdf_use_fillvalue
+                case 'exact_match'
+                    Data(Data==missval) = NaN;
+                otherwise % 'valid_range'
+                    if missval > 0
+                        Data(Data>=missval) = NaN;
+                    else
+                        Data(Data<=missval) = NaN;
+                    end
+            end
         end
     else
         % NCL standard or general standard?

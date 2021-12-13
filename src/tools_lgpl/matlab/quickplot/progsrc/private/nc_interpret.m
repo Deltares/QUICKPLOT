@@ -639,6 +639,7 @@ UGrid  = {nc.Dataset(iUGrid).Name};
 iSGrid = find(iSGrid);
 iUGrid = find(iUGrid);
 gridLoc = {'node','edge','face','volume'};
+scalarDimWarnings = {};
 for ivar = 1:nvars
     Info = nc.Dataset(ivar);
     % fprintf('%i: %s\n',ivar,Info.Name);
@@ -739,12 +740,15 @@ for ivar = 1:nvars
             %
             vDims  = Info.Dimension;
             cvDims = nc.Dataset(icvar).Dimension;
+            cvSize = nc.Dataset(icvar).Size;
             if nc.Dataset(icvar).Nctype==2
                 % in case of a character array, remove string length
                 if CHARDIM==1
                     nmDims = setdiff(cvDims(2:end),vDims);
+                    cvSize = cvSize(2:end);
                 else
                     nmDims = setdiff(cvDims(1:end-1),vDims);
+                    cvSize = cvSize(1:end-1);
                 end
             else
                 nmDims = setdiff(cvDims,vDims);
@@ -752,11 +756,29 @@ for ivar = 1:nvars
             if ~isempty(nmDims) && ~strcmp(Info.Type,'ugrid_mesh') && ~strcmp(Info.Type,'simple_geometry')
                 vDimsStr = sprintf('%s, ',vDims{:});
                 cvDimsStr = sprintf('%s, ',cvDims{:});
-                Msg = sprintf(['Dimensions of variable and auxiliary coordinate do not match.\n', ...
-                    'Variable %s: %s\nCoordinate %s: %s\nSkipping auxiliary coordinate.'], ...
-                    Info.Name, vDimsStr(1:end-2), ...
-                    nc.Dataset(icvar).Name, cvDimsStr(1:end-2));
-                ui_message('error',Msg)
+                if length(nmDims) == 1 && cvSize == 1
+                    % coordinate variable with length 1
+                    if ~ismember(nc.Dataset(icvar).Name,scalarDimWarnings)
+                        Msg = sprintf(['Auxiliary coordinate %s has a dimension %s\n', ...
+                            'which does not match any dimension of data variable %s.\n', ...
+                            'The length of %s equals 1, so this dimension will be interpreted as a scalar coordinate.\n', ...
+                            'Remove this dimension from %s to create a scalar coordinate according CF conventions, or\n', ...
+                            'change to a regular auxiliary coordinate by adding the dimension %s to the data variable.\n'], ...
+                            nc.Dataset(icvar).Name, nmDims{1}, ...
+                            Info.Name, ...
+                            nmDims{1}, ....
+                            nc.Dataset(icvar).Name, ...
+                            nmDims{1});
+                        ui_message('warning',Msg)
+                        scalarDimWarnings{end+1} = nc.Dataset(icvar).Name;
+                    end
+                else
+                    Msg = sprintf(['Dimensions of variable and auxiliary coordinate do not match.\n', ...
+                        'Variable %s: %s\nCoordinate %s: %s\nSkipping auxiliary coordinate.'], ...
+                        Info.Name, vDimsStr(1:end-2), ...
+                        nc.Dataset(icvar).Name, cvDimsStr(1:end-2));
+                    ui_message('error',Msg)
+                end
                 continue
             end
             switch nc.Dataset(icvar).Type
@@ -1101,6 +1123,26 @@ for ivar = 1:nvars
     % if there are Z variables that match a sofar unmatched dimension then
     % we prefer such vertical coordinates over Z variables that don't.
     %
+    if iscell(Info.Mesh) && isequal(Info.Mesh{1},'ugrid')
+        ugridDims = nc.Dataset(Info.Mesh{3}).Mesh(5:end);
+        nonmatchUgridDims = setdiff(ugridDims,Info.Dimension);
+        for z = 1:length(nc.Dataset)
+            if strcmp(nc.Dataset(z).Type,'z-coordinate')
+                nmDim = setdiff(nc.Dataset(z).Dimension,Info.Dimension);
+                if isempty(nmDim)
+                    % all dimensions match ... should already be in the list
+                elseif length(nmDim) == 1
+                    % one dimensions don't match
+                    if ismember(nmDim{1}, nonmatchUgridDims)
+                        % that dimension corresponds to the horizontal stagger position.
+                        Info.Z(end+1) = -z;
+                    end
+                else
+                    % too many dimension don't match
+                end
+            end
+        end
+    end
     zAddsDims = true(size(Info.Z));
     for z = length(Info.Z):-1:1
         if Info.Z(z)<0
@@ -1153,6 +1195,12 @@ for ivar = 1:nvars
             for iy = 1:length(Info.Y)
                 ZDims = setdiff(ZDims,nc.Dataset(Info.Y(iy)).Dimid);
             end
+            % ... and dimensions associated with other UGRID dimensions
+            if iscell(Info.Mesh) && isequal(Info.Mesh{1},'ugrid')
+                ugridDims = nc.Dataset(Info.Mesh{3}).Mesh(5:end);
+                iUDims = find(ismember({nc.Dimension.Name},ugridDims));
+                ZDims = setdiff(ZDims,iUDims);
+            end
         end
         if length(ZDims)==1
            Info.TSMNK(5) = ZDims;
@@ -1186,6 +1234,7 @@ for ivar = 1:nvars
                     end
                     auto_ugrid(:,ivar) = {Info.Name, udim{1}, nc.Dataset(u).Name, gridLoc{ib}}';
                 end
+                %
                 break
             end
         end

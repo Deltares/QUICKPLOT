@@ -131,7 +131,11 @@ else
     marg = 1 + find(fidx==M_);
 end
 
-gAtts = {FI.Attribute.Name};
+if isfield(FI.Attribute,'Name')
+    gAtts = {FI.Attribute.Name};
+else
+    gAtts = {};
+end
 iSource = ustrcmpi('source',gAtts);
 if iSource > 0
     is_dflowfm = ~isempty(strfind(FI.Attribute(iSource).Value,'D-Flow FM'));
@@ -231,6 +235,10 @@ if FI.NumDomains>1
         Data.ValLocation = valLoc;
         if isfield(partData,'Time')
             Data.Time = partData(1).Time;
+        end
+        if isfield(partData,'Classes')
+            Data.Classes = partData(1).Classes;
+            Data.ClassVal = partData(1).ClassVal;
         end
         switch valLoc
             case 'NODE'
@@ -366,6 +374,7 @@ end
 XYneeded = false;
 removeTime   = 0;
 activeloaded = 0;
+szData = [];
 if DataRead && Props.NVal>0
     if iscell(Props.varid)
         switch Props.varid{1}
@@ -545,7 +554,18 @@ if XYRead || XYneeded || ZRead
         dimFaces = meshInfo.Mesh{7};
         allDims = {FI.Dimension.Name};
         MeshSubset = {};
-        switch mesh_settings{4}
+        dloc = mesh_settings{4};
+        if dloc == -1
+            switch Props.Geom(end-3:end)
+                case 'NODE'
+                    dloc = 0;
+                case 'EDGE'
+                    dloc = 1;
+                case 'FACE'
+                    dloc = 2;
+            end
+        end
+        switch dloc
             case 0 % data at NODE
                 MeshSubset = {'NODE' dimNodes idx{M_}
                               'EDGE' dimEdges -1
@@ -1261,6 +1281,7 @@ if XYRead || XYneeded || ZRead
                         [eta    , status] = qp_netcdf_get(FI,FormulaTerms{2,2},Props.DimName,idx,getOptions{:});
                         [depth  , status] = qp_netcdf_get(FI,FormulaTerms{3,2},Props.DimName,idx,getOptions{:});
                         [depth_c, status] = qp_netcdf_get(FI,FormulaTerms{4,2},Props.DimName,idx,getOptions{:});
+                        % nsigma is deprecated ... should depend on valid sigma or zlev ...
                         [nsigma , status] = qp_netcdf_get(FI,FormulaTerms{5,2},Props.DimName,idx,getOptions{:});
                         [zlev   , status] = qp_netcdf_get(FI,FormulaTerms{6,2},Props.DimName,idx,getOptions{:});
                         zUnitVar = FormulaTerms{2,2}; % eta
@@ -1307,10 +1328,11 @@ if XYRead || XYneeded || ZRead
                         if ~isempty(formula)
                             ui_message('warning','Formula for %s not implemented',standard_name)
                         end
-                        [Z, status] = qp_netcdf_get(FI,CoordInfo,Props.DimName,idx);
+                        [Z, status] = qp_netcdf_get(FI,CoordInfo,Props.DimName,idx,getOptions{:});
                         if all(isnan(Z(:)))
                             error('Vertical coordinate variable %s returned only missing values.',CoordInfo.Name)
                         end
+                        zLocVar  = CoordInfo.Name;
                         nZ = length(Z);
                         if signup<0
                             Z=-Z;
@@ -1360,14 +1382,14 @@ if XYRead || XYneeded || ZRead
                                     end
                                     %
                                     zLocVar = waterlevel;
-                                else
+                                elseif ~isempty(szData)
                                     Z = expand_hdim(Z,szData,hdim);
                                 end
                             else
                                % full grid _zcc and _zw coordinates don't
                                % need special treatment.
                             end
-                        else
+                        elseif ~isempty(szData)
                             Z = expand_hdim(Z,szData,hdim);
                         end
                 end
@@ -1560,7 +1582,7 @@ varargout={Ans OrigFI};
 function [TZshift,TZstr]=gettimezone(FI,domain,Props)
 TZstr = '';
 timevar = FI.Dataset(get_varid(Props)+1).Time;
-if isempty(timevar)
+if isempty(timevar) || ~isfield(FI.Dataset(timevar).Info,'TZshift')
     TZshift = NaN;
 else
     TZshift = FI.Dataset(timevar).Info.TZshift;
@@ -1715,8 +1737,18 @@ else
         %
         for i=1:5
             if ~isnan(Info.TSMNK(i))
-                if i==T_ && isempty(FI.Dataset(Info.Time).Info.RefDate)
-                    Insert.DimFlag(i)=3;
+                if i==T_ 
+                    if ~isempty(Info.Time)
+                        if isfield(FI.Dataset(Info.Time).Info,'RefDate') && ~isempty(FI.Dataset(Info.Time).Info.RefDate)
+                            Insert.DimFlag(i)=1;
+                        elseif isfield(FI.Dataset(Info.Time).Info,'DT') && ~isempty(FI.Dataset(Info.Time).Info.DT)
+                            Insert.DimFlag(i)=3;
+                        else
+                            Insert.DimFlag(i)=5;
+                        end
+                    else
+                        Insert.DimFlag(i)=5;
+                    end
                 elseif i==ST_ && ~isempty(Info.Station)
                     Insert.DimFlag(i)=5;
                 else
@@ -1986,18 +2018,42 @@ for i = 1:length(Out)
         Info = FI.Dataset(Out(i).varid(1)+1);
         for j = 1:length(Info.Attribute)
             if strcmp(Info.Attribute(j).Name,'cell_methods')
-                Out(i).AppendName = [' - ' Info.Attribute(j).Value];
+                Out(i).AppendName = [Out(i).AppendName ' - ' Info.Attribute(j).Value];
             end
         end
     end
+    %
+    if strcmp(Out(i).Geom,'PNT')
+        Out(i).AppendName = [Out(i).AppendName ' (points)'];
+    end
 end
 %
+OutNames = cellfun(@(x,y)cat(2,x,y), {Out.Name}, {Out.AppendName}, 'uniformoutput', false);
+[~,~,iuName] = unique(OutNames);
 for i = 1:length(Out)
-   if strcmp(Out(i).Geom,'PNT')
-      Out(i).AppendName = [Out(i).AppendName ' (points)'];
-   elseif strncmp(Out(i).Geom,'UGRID',5)
-      %Out(i).AppendName = [Out(i).AppendName ' (' lower(Out(i).Geom) ')'];
-   end
+    if sum(iuName == iuName(i)) > 1
+        switch Out(i).Geom
+            case {'UGRID1D_NETWORK-NODE','UGRID1D_NETWORK-EDGE','UGRID1D-NODE','UGRID1D-EDGE'}
+                dimStr = ' - 1D';
+            case {'UGRID2D-NODE','UGRID2D-EDGE','UGRID2D-FACE'}
+                if Out(i).DimFlag(K_)
+                    dimStr = ' - 3D';
+                else
+                    dimStr = ' - 2D';
+                end
+            otherwise
+                if Out(i).DimFlag(M_) && Out(i).DimFlag(N_) 
+                    if Out(i).DimFlag(K_)
+                        dimStr = ' - 3D';
+                    else
+                        dimStr = ' - 2D';
+                    end
+                else
+                    dimStr = '';
+                end
+        end
+        Out(i).AppendName = [dimStr, Out(i).AppendName];
+    end
 end
 %
 Meshes = zeros(0,2);
