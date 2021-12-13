@@ -118,7 +118,7 @@ end
 % select appropriate spatial indices ...
 
 %================== NEFIS SPECIFIC CODE =======================================
-if ~strcmp(FI.SubType,'Delft3D-hwgxy') & DimFlag(M_)& DimFlag(N_)
+if ~strcmp(FI.SubType,'Delft3D-hwgxy') && DimFlag(M_) && DimFlag(N_)
     sz([M_ N_])=sz([N_ M_]);
     idx([M_ N_])=idx([N_ M_]);
 end
@@ -129,7 +129,7 @@ ind=cell(1,5);
 ind{2}=1;
 for i=[M_ N_ K_]
     if DimFlag(i)
-        if isequal(idx{i},0) | isequal(idx{i},1:sz(i))
+        if isequal(idx{i},0) || isequal(idx{i},1:sz(i))
             idx{i}=1:sz(i);
             allidx(i)=1;
         elseif ~isequal(idx{i},idx{i}(1):idx{i}(end))
@@ -155,7 +155,7 @@ z=[];
 if XYRead
 
     %======================== SPECIFIC CODE =======================================
-    if DimFlag(M_) & DimFlag(N_)
+    if DimFlag(M_) && DimFlag(N_)
         %    [x,Chk]=vs_get(FI,'map-series',{t},'XP',idx([M_ N_]),'quiet');
         %    [y,Chk]=vs_get(FI,'map-series',{t},'YP',idx([M_ N_]),'quiet');
         if DimFlag(T_)
@@ -196,12 +196,12 @@ if DataRead
         [val1,Chk]=vs_let(FI,Props.Group,{idx{T_}},Props.Val1,elidx,'quiet');
         switch Props.Name
             case {'total wave energy'}
-                ! val1 = significant wave height
+                % val1 = significant wave height
                 rho = 1000;
                 g   = 9.8;
                 val1 = (1/16) * rho * g * val1.^2;
             case {'total wave variance'}
-                ! val1 = significant wave height
+                % val1 = significant wave height
                 val1 = (1/16) * val1.^2;
         end
     end
@@ -218,7 +218,7 @@ if DataRead
         val1(act==-99)=NaN;
     end
 
-    if DataInCell & isequal(Props.ReqLoc,'d')
+    if DataInCell && isequal(Props.ReqLoc,'d')
         Props.ReqLoc='z';
     end
     % combine vectors components ...
@@ -226,16 +226,16 @@ if DataRead
         [val1,val2]=dir2uv(val1,val2);
     end
     % data interpolation ...
-    if isequal(Props.Loc,'d') & isequal(Props.ReqLoc,'z')
+    if isequal(Props.Loc,'d') && isequal(Props.ReqLoc,'z')
         val1=interp2cen(val1,'t');
         if ~isempty(val2)
             val2=interp2cen(val2,'t');
         end
-    elseif isequal(Props.Loc,'u') & isequal(Props.ReqLoc,'z')
+    elseif isequal(Props.Loc,'u') && isequal(Props.ReqLoc,'z')
         [val1,val2]=uv2cen(val1,val2);
     end
     % combine vectors components ...
-    if isequal(Props.VecType,'u') & Props.MNK<=1
+    if isequal(Props.VecType,'u') && Props.MNK<=1
         % rotate n,m components into x,y direction ...
         error('No ALFAS available for HWGXY file.');
         %  [alf,Chk] = vs_get(FI,'GRID','ALFAS',idx([M_ N_]),'quiet');
@@ -313,11 +313,11 @@ end
 if 1 %~all(allidx(DimMask & DimFlag))
     if XYRead
         if DataInCell
-            if DimFlag(M_) & DimFlag(N_) & DimFlag(K_)
+            if DimFlag(M_) && DimFlag(N_) && DimFlag(K_)
                 z=z(:,ind{[M_ N_]},:);
             end
         else
-            if DimFlag(M_) & DimFlag(N_)
+            if DimFlag(M_) && DimFlag(N_)
                 if DimFlag(K_)
                     x=x(:,ind{[M_ N_]},:);
                     y=y(:,ind{[M_ N_]},:);
@@ -341,7 +341,7 @@ end
 
 %================== NEFIS SPECIFIC CODE =======================================
 % permute n and m dimensions into m and n if necessary
-if ~strcmp(FI.SubType,'Delft3D-hwgxy') & DimFlag(M_) & DimFlag(N_)
+if ~strcmp(FI.SubType,'Delft3D-hwgxy') && DimFlag(M_) && DimFlag(N_)
     perm=[2 1 3];
     if XYRead
         x=permute(x,perm);
@@ -368,7 +368,7 @@ if DimFlag(ST_)
 end
 
 % reshape if a single timestep is selected ...
-if ~DimFlag(T_) | (DimFlag(T_) & isequal(size(idx{T_}),[1 1]))
+if ~DimFlag(T_) || (DimFlag(T_) && isequal(size(idx{T_}),[1 1]))
     sz=size(x); sz=[sz(2:end) 1];
     if DimFlag(K_)
         x=reshape(x,sz);
@@ -396,7 +396,7 @@ if XYRead
     Ans.XUnits='m';
     Ans.YUnits='m';
     Info1=vs_disp(FI,'map-series','XP');
-    if isstruct(Info1) & isequal(Info1.ElmUnits,'[  DEG  ]')
+    if isstruct(Info1) && isequal(Info1.ElmUnits,'[  DEG  ]')
         Ans.XUnits='deg';
         Ans.YUnits='deg';
     end
@@ -523,7 +523,7 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 sz=[0 0 0 0 0];
 
 %======================== SPECIFIC CODE =======================================
-if Props.DimFlag(M_) & Props.DimFlag(N_)
+if Props.DimFlag(M_) && Props.DimFlag(N_)
     Info=vs_disp(FI,'map-series','XP');
     sz([M_ N_])=Info.SizeDim;
     if ~strcmp(FI.SubType,'Delft3D-hwgxy')

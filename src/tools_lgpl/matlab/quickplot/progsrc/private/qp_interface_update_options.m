@@ -247,7 +247,8 @@ markerflatfill=0;
 edgeflatcolour=0;
 lineproperties=0;
 
-triangles = 0;
+unstructured = 0;
+triangles = 1;
 thindams = nval>0 & nval<1;
 MultipleColors = (nval>=1 & nval<4) | nval==6;
 %--------------------------------------------------------------------------
@@ -267,6 +268,7 @@ switch geometry
             axestype={''};
         end
     case {'UGRID1D_NETWORK-NODE','UGRID1D_NETWORK-EDGE','UGRID1D-NODE','UGRID1D-EDGE','UGRID2D-NODE','UGRID2D-EDGE','UGRID2D-FACE'}
+        unstructured = 1;
         if multiple(K_) && ~hslice
             if multiple(M_)
                 if vslice
@@ -464,7 +466,8 @@ switch geometry
             end
         end
     case {'TRI','TRI+'}
-        triangles=1;
+        unstructured = 1;
+        triangles = 1;
         if vslice
             if multiple(M_) && (multiple(K_) && ~hslice)
                 axestype={'X-Z'};
@@ -753,76 +756,60 @@ if nval==2 || nval==3
     vectors=1;
     set(findobj(OH,'tag','component'),'enable','on');
     compon=findobj(OH,'tag','component=?');
-    if DimFlag(M_) && (DimFlag(N_) || triangles)
-        switch VectorDef
-            case 0
-                compList={'vector','vector (split x,y)','patch centred vector','magnitude','angle','x component','y component'};
-            case 1
-                if DimFlag(K_) && DimFlag(M_) && DimFlag(N_)
-                    compList={'vector','vector (split x,y)','vector (split m,n)','patch centred vector','magnitude','magnitude in plane','angle','x component','y component','z component','m component','n component'};
-                    if SpatialH ~=2
-                        ii=strmatch('magnitude in plane',compList,'exact');
-                        compList(ii)=[];
-                    end
-                    if Spatial==2 && SpatialH==1
-                        compList{end+1}='normal component';
-                    end
-                else
-                    compList={'vector','vector (split x,y)','vector (split m,n)','patch centred vector','magnitude','angle','x component','y component','m component','n component'};
-                end
-            case 2
-                compList={'vector','patch centred vector','magnitude','m component','n component'};
-        end
-    elseif DimFlag(M_) && DimFlag(K_)
-        compList={'vector','patch centred vector','magnitude','x component','z component'};
-    else
-        switch nvalstr
-            case 'xy'
-                compList={'vector','magnitude','angle'};
-                if vslice
-                    switch VectorDef
-                        case 2
-                            compList(end+1:end+2)={'m component','n component'};
-                            compList(1)=[]; % can't do vector if I only have m and n components
-                        otherwise
-                            compList(end+1:end+4)={'x component','y component','slice normal component','slice tangential component'};
-                    end
-                else
-                    switch VectorDef
-                        case 0
-                            compList(end+1:end+2)={'x component','y component'};
-                        case 1
-                            compList(end+1:end+4)={'x component','y component','m component','n component'};
-                        case 2
-                            compList(end+1:end+2)={'m component','n component'};
-                            compList(1)=[]; % can't do vector if I only have m and n components
-                        case 4
-                            % magnitude and angle already in compList
-                        case 5
-                            compList(end+1:end+4)={'x component','y component','edge normal component','edge tangential component'};
-                    end
-                end
-            case 'xyz'
-                compList={'vector','magnitude','angle','x component','y component','z component'};
-            case 'xz'
-                compList={'vector','magnitude','x component','z component'};
-        end
+    %
+    compList={'vector','vector (split x,y)','vector (split m,n)','patch centred vector','magnitude','magnitude in plane','normal component','angle','x component','y component','z component','m component','n component','edge normal component','edge tangential component','slice normal component','slice tangential component'};
+    compList(strcmp(compList,'patch centred vector')) = [];
+    if SpatialH ~= 2
+        compList(ismember(compList,{'magnitude in plane'}))=[]; % why??
+        compList(ismember(compList,{'vector (split x,y)','vector (split m,n)'}))=[];
+    end
+    if ~vslice
+        % exclude the slice normal and tangential horizontal components if this is not a vertical slice
+        compList(ismember(compList,{'slice normal component','slice tangential component'}))=[];
+    end
+    if ~(DimFlag(M_) && DimFlag(N_)) || (multiple(M_) && multiple(N_)) || (~multiple(M_) && ~multiple(N_))
+        % for structured model grids only: the normal component is the horizontal component normal to the selected dimension
+        compList(ismember(compList,{'normal component'}))=[];
+    end
+    if nval == 2 && ~strcmp(nvalstr,'xz')
+        % if this is vector has only horizontal components: remove options that require Z
+        compList(ismember(compList,{'z component'}))=[];
+    end
+    if strcmp(nvalstr,'xz') || (DimFlag(M_) && ~DimFlag(N_) && ~unstructured)
+        % without Y component: remove options that require Y or N
+        compList(ismember(compList,{'vector (split x,y)','vector (split m,n)','y component','n component'}))=[];
+    end    
+    switch VectorDef
+        case 0 % only X,Y components available: remove options that require m,n or normal,tangential ...
+            compList(ismember(compList,{'vector (split m,n)','m component','n component'})) = [];
+            compList(ismember(compList,{'edge normal component','edge tangential component'})) = [];
+        case 1 % both X,Y and M,N components available: remove options that require normal,tangential ...
+            compList(ismember(compList,{'edge normal component','edge tangential component'})) = [];
+        case 2 % only M,N components available: remove options that require full vector, x,y or normal,tangential ...
+            compList(ismember(compList,{'vector','angle'})) = [];
+            compList(ismember(compList,{'vector (split x,y)','magnitude in plane','angle','x component','y component'})) = [];
+            compList(ismember(compList,{'edge normal component','edge tangential component'})) = [];
+        case 4 % magnitude and horizontal angle: remove options that require x,y, m,n or normal,tangential ...
+            compList(ismember(compList,{'vector (split m,n)','m component','n component'})) = [];
+            compList(ismember(compList,{'vector (split x,y)','magnitude in plane','angle','x component','y component'})) = [];
+            compList(ismember(compList,{'edge normal component','edge tangential component'})) = [];
+        case 5 % edge normal and tangential components: remove options that require m,n ...
+            % x,y can still be reconstructed ...
+            compList(ismember(compList,{'vector (split m,n)','m component','n component'})) = [];
     end
     
     if SpatialV
-        ii=strmatch('vector (split',compList);
-        compList(ii)=[];
+        % exclude the horizontal split options if the plot includes the vertical direction
+        compList(strncmp(compList,'vector (split',13)) = [];
     end
-    if Spatial==1 && ~strcmp(axestype,'Val-Z')
-        ii=strmatch('vector',compList);
-        compList(ii)=[];
+    if Spatial == 1 && ~strcmp(axestype,'Val-Z')
+        % exclude vectors if the plot includes only 1 spatial direction (and this isn't a special profile plot)
+        compList(strcmp(compList,'vector')) = [];
     end
-    if nval==2 && SpatialV && Spatial>=2 && ~strcmp(nvalstr,'xz') % don't plot vectors without vertical component in 2DV and 3D
-        ii=strmatch('vector',compList);
-        compList(ii)=[];
+    if nval==2 && SpatialV && Spatial>=2 && ~strcmp(nvalstr,'xz')
+        % exclude vectors if the plot includes the vertical direction, but the vector not.
+        compList(strcmp(compList,'vector')) = [];
     end
-    ii=strmatch('patch centred vector',compList,'exact');
-    compList(ii)=[];
     
     set(compon,'enable','on','backgroundcolor',Active)
     comp=get(compon,'value');
@@ -1479,7 +1466,7 @@ if ask_for_thinningmode
     thinfld=findobj(OH,'tag','thinfld=?');
     set(thinfld,'enable','on','backgroundcolor',Active)
     thinmodes = {'none','uniform','distance'}'; %,'regrid'
-    if triangles
+    if unstructured % no uniform thinning for unstructured meshes
         thinmodes(2)=[];
     end
     prevthinmodes = get(thinfld,'string');
@@ -1822,7 +1809,7 @@ if nval>=0
             ExpTypes{end+1}='-SIMONA box file';
         end
     end
-    if (multiple(M_) && (multiple(N_) || triangles || strncmp(geometry,'UGRID',5) || strcmp(geometry,'sSEG'))) && ~multiple(K_) && ~multiple(T_)
+    if (multiple(M_) && (multiple(N_) || unstructured || strcmp(geometry,'sSEG'))) && ~multiple(K_) && ~multiple(T_)
         if ~isfield(Ops,'presentationtype')
             ExpTypes{end+1}='ARCview shape';
         elseif  ~isequal(Ops.presentationtype,'continuous shades')

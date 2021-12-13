@@ -98,19 +98,20 @@ if isfield(data, 'XYZ') && clippingspatial
        val = reshape(val, prod(szVal(1:end-1)), szVal(end));
        for clipi = 2:3
            switch clipi
-               case 2
+               case 2 % X
                    dim = 1;
                    clippingvals = Ops.xclipping;
-               case 3
+               case 3 % Y
                    dim = 2;
                    clippingvals = Ops.yclipping;
            end
            if isempty(clippingvals)
                % nothing
            elseif isnumeric(clippingvals)
-               val(logical(ismember(val(:,dim), clippingvals)), dim) = NaN;
+               val(logical(ismember(val(:,dim), clippingvals)), :) = NaN;
            else
                val(:,dim) = realset(clippingvals, val(:,dim));
+               val(isnan(val(:,dim)),:) = NaN;
            end
        end
        val = reshape(val, szVal);

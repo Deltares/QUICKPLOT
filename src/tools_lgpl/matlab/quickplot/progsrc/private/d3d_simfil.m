@@ -961,7 +961,7 @@ switch FI.FileType
                         utypes = unique(types);
                         nfld = nfld + length(utypes);
                     case 'ExtForce'
-                        nfld = nfld + length(unique({FI.ExtForce.Quantity}));
+                        nfld = nfld + length(FI.ExtForce);
                     case 'ExtForceNew'
                         nfld = nfld + length(FI.ExtForceNew.Bnd.Types);
                         for iBT = 1:length(FI.ExtForceNew.Bnd.Types) % return 0 for non-time series
@@ -1069,7 +1069,8 @@ switch FI.FileType
                             Out(ifld).NVal = 0;
                         end
                     case 'TOBEIMPLEMENTED_ExtForce'
-                        forces = unique({FI.ExtForce.Quantity});
+                        fNames = {FI.ExtForce.Quantity};
+                        forces = unique(fNames);
                         translate = {'lowergatelevel'               'lower gate level'                          'm'
                             'damlevel'                              'dam level'                                 'm'
                             'pump'                                  'pump?'                                     '' % discharge?
@@ -1091,40 +1092,73 @@ switch FI.FileType
                             'rainfall'                              'rainfall'                                  ''
                             'airpressure'                           'air pressure'                              ''
                             'atmosphericpressure'                   'air pressure'                              ''};
-                        for iforce = 1:length(forces)
-                            ifld = ifld+1;
-                            fName = forces{iforce};
-                            switch fName
-                                case 'frictioncoefficient'
-                                    frctyp = inifile('hgeti',FI.mdu,'physics','UnifFrictType',1);
-                                    switch frctyp
-                                        case 0
-                                            ForceName  = 'Chezy C';
-                                            ForceUnits = 'm^{1/2}/s';
-                                        case 1
-                                            ForceName  = 'Manning n';
-                                            ForceUnits = 's/m^{1/3}';
-                                        case 2
-                                            ForceName  = 'White-Colebrook/Nikuradse k';
-                                            ForceUnits = 'm';
-                                        case 3
-                                            ForceName  = 'White-Colebrook/Nikuradse k (WAQUA implementation)';
-                                            ForceUnits = 'm';
-                                    end
-                                case translate(:,1)
-                                    ifrc = find(strcmp(fName,translate(:,1)));
-                                    ForceName  = translate{ifrc,2};
-                                    ForceUnits = translate{ifrc,3};
-                                otherwise
-                                    ForceName  = fName;
-                                    ForceUnits = 'm';
+                        for iuforce = 1:length(forces)
+                            fName = forces{iuforce};
+                            iforces = find(strcmp(fName,fNames));
+                            for iforce = iforces
+                                ifld = ifld+1;
+                                switch fName
+                                    case 'frictioncoefficient'
+                                        frctyp = inifile('hgeti',FI.mdu,'physics','UnifFrictType',1);
+                                        switch frctyp
+                                            case 0
+                                                ForceName  = 'Chezy C';
+                                                ForceUnits = 'm^{1/2}/s';
+                                            case 1
+                                                ForceName  = 'Manning n';
+                                                ForceUnits = 's/m^{1/3}';
+                                            case 2
+                                                ForceName  = 'White-Colebrook/Nikuradse k';
+                                                ForceUnits = 'm';
+                                            case 3
+                                                ForceName  = 'White-Colebrook/Nikuradse k (WAQUA implementation)';
+                                                ForceUnits = 'm';
+                                        end
+                                    case translate(:,1)
+                                        ifrc = find(strcmp(fName,translate(:,1)));
+                                        ForceName  = translate{ifrc,2};
+                                        ForceUnits = translate{ifrc,3};
+                                    otherwise
+                                        ForceName  = fName;
+                                        ForceUnits = '';
+                                end
+                                Out(ifld).Name  = ForceName;
+                                Out(ifld).Units = ForceUnits;
+                                Out(ifld).varid = {'ExtForce',iforce};
+                                switch FI.ExtForce(iforce).FileType
+                                    case 'uniform'
+                                        Out(ifld).Geom = 'PNT';
+                                        Out(ifld).DimFlag(T_) = 1;
+                                        Out(ifld).NVal = 1;
+                                    case 'unimagdir'
+                                        Out(ifld).Geom = 'PNT';
+                                        Out(ifld).DimFlag(T_) = 1;
+                                        Out(ifld).NVal = 2;
+                                    case {'curvi'}
+                                        Out(ifld).Geom = 'sQUAD';
+                                        Out(ifld).Coords = 'xy';
+                                        Out(ifld).DimFlag([T_,M_,N_]) = 1;
+                                        Out(ifld).NVal = 1;
+                                    case 'triangulation'
+                                        Out(ifld).Geom = 'PNT';
+                                        Out(ifld).Coords = 'xy';
+                                        Out(ifld).DimFlag(M_) = 1;
+                                        Out(ifld).NVal = 1;
+                                    case 'triangulation_magdir'
+                                        Out(ifld).Geom = 'PNT';
+                                        Out(ifld).Coords = 'xy';
+                                        Out(ifld).DimFlag(M_) = 1;
+                                        Out(ifld).NVal = 2;
+                                    case 'polyline'
+                                        Out(ifld).Geom = 'POLYL';
+                                        Out(ifld).Coords = 'xy';
+                                        Out(ifld).DimFlag(M_) = 1;
+                                        Out(ifld).NVal = 1;
+                                    otherwise
+                                        error('Not yet supported file type %s for %s', FI.ExtForce(iforce).FileType, FI.ExtForce(iforce).Quantity)
+                                end
+                                Out(ifld).Name = [Out(ifld).Name ' - ' abbrevfn(FI.ExtForce(iforce).FileName) ' - ' FI.ExtForce(iforce).Operand];
                             end
-                            Out(ifld).Name  = ForceName;
-                            Out(ifld).Units = ForceUnits;
-                            Out(ifld).Geom = 'PNT';
-                            Out(ifld).Coords = 'xy';
-                            Out(ifld).DimFlag(M_) = 1;
-                            Out(ifld).NVal = 1;
                         end
                     case 'TOBEIMPLEMENTED_ExtForceNew'
                         for itype = 1:length(FI.ExtForceNew.Bnd.Types)
@@ -1291,7 +1325,19 @@ switch FI.FileType
                 types = inifile('hcgetstringi',FI.Structure,'structure','type');
                 sz(ST_) = sum(strcmpi(types,'dambreak'));
             otherwise
-                if ~isempty(strfind(Props.Name,'open boundaries'))
+                if iscell(Props.varid)
+                    switch Props.varid{1}
+                        case 'ExtForce'
+                            iforce = Props.varid{2};
+                            switch FI.ExtForce(iforce).FileType
+                                case 'curvi'
+                                    szX = size(FI.ExtForce(iforce).File.Header.grid_file.X);
+                                    sz(M_) = szX(1);
+                                    sz(N_) = szX(2);
+                                    sz(T_) = length(FI.ExtForce(iforce).File.Data);
+                            end
+                    end
+                elseif ~isempty(strfind(Props.Name,'open boundaries'))
                     ibtp = strcmp(FI.ExtForceNew.Bnd.Types,strtok(Props.Name));
                     sz(ST_) = length(FI.ExtForceNew.Bnd.Locs{ibtp});
                 elseif length(Props.Name)>11 && strcmp(Props.Name(end-10:end),' structures')
@@ -1306,6 +1352,31 @@ switch FI.FileType
         % no generic default dimension code
 end
 % -----------------------------------------------------------------------------
+
+
+% -----------------------------------------------------------------------------
+function T = readtim(FI, idom, Props, t)
+if nargin <4 || t == 0
+    t = ':';
+end
+switch FI.FileType
+    case 'Delft3D D-Flow FM'
+        switch Props.Name
+            otherwise
+                if iscell(Props.varid)
+                    switch Props.varid{1}
+                        case 'ExtForce'
+                            iforce = Props.varid{2};
+                            switch FI.ExtForce(iforce).FileType
+                                case 'curvi'
+                                    T = [FI.ExtForce(iforce).File.Data(t).time];
+                            end
+                    end
+                end
+        end
+end
+% -----------------------------------------------------------------------------
+
 
 % -----------------------------------------------------------------------------
 function S=readsts(FI,Props,t)

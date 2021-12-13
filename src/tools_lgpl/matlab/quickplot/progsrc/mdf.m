@@ -1289,13 +1289,19 @@ for i = 1:size(attfiles,1)
                                 F(q).Value = val;
                             otherwise
                                 % unknown keyword - skip it or warn?
+                                continue
                         end
+                        F(q).File = [];
                     end
                     %
                     for q = 1:length(F)
                         switch F(q).FileType
-                            case 'polyline'
-                                % ... read pli with optional 3rd column ...
+                            case {'triangulation','triangulation_magdir'}
+                                F(q).File = samples('read', F(q).FileName);
+                            case 'curvi'
+                                F(q).File = asciiwind('open', F(q).FileName);
+                            otherwise
+                                ui_message('warning','Unsupported external forcing file type %s in record %i of %s', F(q).FileType, q, filename)
                         end
                     end
                 case 'ExtForceNew'

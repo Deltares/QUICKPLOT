@@ -122,6 +122,14 @@ if isfield(Ops,'presentationtype')
             end
         otherwise
             if NVal==4
+                % currently converting text valued polygons to polygons
+                % without data, but it might be nicer to convert text to
+                % class labels.
+                % labels = unique(data.Val);
+                % [~,data.Val] = ismember(data.Val, labels);
+                % NVal = 1;
+                % However, it might be better to do that generically in
+                % qp_plot for all geometry types. --> DELFT3D-37699
                 NVal=0;
             end
     end
@@ -309,7 +317,7 @@ for iobj = 1:length(XY)
         xyr = NaN(sum(BPln(ipx)+1)-1,2);
         or = 0;
         for i = ipx'
-            xyr(or+(1:BPln(i)),:) = xy(BP(i,1)+1:BP(i,2)-1,:);
+            xyr(or+(1:BPln(i)),:) = xy(BP(i,1)+1:BP(i,2)-1,1:2);
             or = or + BPln(i)+1;
         end
         bp = cumsum(BPln(ipx)+1);
@@ -390,7 +398,7 @@ for i = 1:length(unodes)
     end
     offset = 0;
     for ip = 1:npoly
-        XYvertex(offset+(1:nr),:) = XY{poly_n(ip)}(1:nr,:);
+        XYvertex(offset+(1:nr),:) = XY{poly_n(ip)}(1:nr,1:2);
         offset = offset+nr;
         if hasval
             if iscell(V)

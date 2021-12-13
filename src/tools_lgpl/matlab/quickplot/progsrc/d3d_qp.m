@@ -4473,7 +4473,9 @@ switch cmd
                                     I.PageLabels=qp_settings('print_pagelabels');
                                     I.SelectFrom=get_nondialogs;
                                     [I,FigNew]=md_print('getsettings',Fig,I);
-                                    if ~isequal(Fig,FigNew)
+                                    if isempty(I)
+                                        return
+                                    elseif ~isequal(Fig,FigNew)
                                         set(sld,'vis','on')
                                         set(psh,'vis','on')
                                         Fig=FigNew;

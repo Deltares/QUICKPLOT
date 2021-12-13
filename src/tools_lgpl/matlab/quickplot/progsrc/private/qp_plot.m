@@ -77,6 +77,11 @@ if isfield(PlotState,'FI')
                     end
                 end
             end
+            if DimFlag(M_) && DimFlag(N_) && ...
+                    (((isequal(Selected{M_},0) || length(Selected{M_})>1) && (~isequal(Selected{N_},0) && length(Selected{M_})==1)) ...
+                    || ((isequal(Selected{N_},0) || length(Selected{N_})>1) && (~isequal(Selected{M_},0) && length(Selected{M_})==1)))
+                vslice = 1;
+            end
             presentationtype = Ops.presentationtype;
             if vslice && strcmp(presentationtype,'edges')
                 presentationtype = 'patch_slices';
@@ -85,6 +90,17 @@ if isfield(PlotState,'FI')
                 case {'patches','patches with lines','patch centred vector','polygons','patch_slices'}
                     [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'gridcelldata',SubField{:},SubSelected{:});
                     DataInCell=1;
+                    if strcmp(presentationtype,'patch_slices')
+                        if size(data.X,2)==2 && size(data.X,1)>2
+                            % The following lines are not valid for geographic coordinates!
+                            data.X = (data.X(:,1,:) + data.X(:,2,:))/2;
+                            data.Y = (data.Y(:,1,:) + data.Y(:,2,:))/2;
+                        elseif size(data.X,1)==2 && size(data.X,2)>2
+                            % The following lines are not valid for geographic coordinates!
+                            data.X = (data.X(1,:,:) + data.X(2,:,:))/2;
+                            data.Y = (data.Y(1,:,:) + data.Y(2,:,:))/2;
+                        end
+                    end
                 otherwise
                     [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'griddata',SubField{:},SubSelected{:});
             end

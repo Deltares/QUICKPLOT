@@ -236,7 +236,11 @@ for d=1:length(data)
                         data(d).Val(t,:)=-data(d).XComp(t,:).*dy + data(d).YComp(t,:).*dx;
                     end
                 end
-            else 
+            else
+                if ~isequal(size(data(d).XComp),size(dx))
+                    dx = repmat(dx, size(data(d).XComp)./size(dx));
+                    dy = repmat(dy, size(data(d).XComp)./size(dy));
+                end
                 if Tangential
                     data(d).Val=data(d).XComp.*dx + data(d).YComp.*dy;
                 else
