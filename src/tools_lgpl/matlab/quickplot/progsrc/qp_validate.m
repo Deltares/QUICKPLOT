@@ -250,7 +250,7 @@ try
     for i=1:length(d)
         progressbar(acc_dt/tot_dt,Hpb,'title',d(i).name);
         ui_message('',['Case: ',d(i).name])
-        fprintf('----- %s -------------------------------------------\n',d(i).name);
+        fprintf('----- %s %s\n', d(i).name, repmat('-',1,93 - length(d(i).name)));
         includes{i,1} = [d(i).name '/'];
         includes{i,2} = logname;
         NTested=NTested+1;
