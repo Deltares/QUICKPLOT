@@ -180,6 +180,8 @@ switch cmd
                     try_next='tekal';
                 case {'.dxf'}
                     try_next='AutoCAD DXF';
+                case {'.geojson'}
+                    try_next='GeoJSON';
                 case {'.xyz'}
                     try_next='samples';
                 case {'.seq'}
@@ -894,6 +896,12 @@ switch cmd
                             L(2,:) = {[NaN;NaN;NaN]};
                             FI.Lines  = cat(2,L{:});
                             FI.Patch  = Data(tp==3);
+                            Tp=try_next;
+                        end
+                    case 'GeoJSON'
+                        asciicheck(isASCII,REASON)
+                        FI=geojson('open',FileName);
+                        if ~isempty(FI)
                             Tp=try_next;
                         end
                     case 'shape'

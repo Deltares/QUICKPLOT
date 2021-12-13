@@ -69,6 +69,7 @@ filtertbl={...
     '*.ldb;*.pol'                                          'Land Boundary and Polygon Files'   '>tekal'             1
     '*.tek;*.ann;*.ldb;*.pol;*.spl;*.tka;*.tkp;*.tkf'      'Tekal Data Files'                  'tekal'              0
     '*.dxf'                                                'AutoCAD DXF Files'                 'AutoCAD DXF'        1
+    '*.geojson'                                            'GeoJSON Files'                     'GeoJSON'            1
     '*.shp'                                                'Shape Files'                       'shape'              1
     '*.gen'                                                'ArcInfo Ungenerate Files'          'ArcInfoUngenerate'  1
     '*.bna'                                                'BNA Files'                         'BNA File'           1
