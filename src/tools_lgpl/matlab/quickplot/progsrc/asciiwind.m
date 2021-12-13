@@ -131,6 +131,13 @@ for i = 1:length(t)
             OneTime = reshape(OneTime,[Structure.Header.n_cols Structure.Header.n_rows])';
             OneTime = flipud(OneTime);
         case {'meteo_on_curvilinear_grid','field_on_curvilinear_grid'}
+            if ~isfield(Structure.Header,'data_row')
+                Structure.Header.data_row = 'grid_row';
+            end
+            if ~isfield(Structure.Header,'first_data_value')
+                %Structure.Header.first_data_value = 'grid_llcorner'; % this is how it was intended: as a concatenation of dep-files
+                Structure.Header.first_data_value = 'grid_ulcorner'; % this is how it was interpreted
+            end
             switch Structure.Header.data_row
                 case 'grid_row' % which corresponds to column here
                     sz = size(Structure.Header.grid_file.X);
@@ -313,6 +320,7 @@ if nargin<2
 end
 Structure.Check='NotOK';
 Structure.FileType='asciiwind';
+Structure.Header.fileversion = 1.0;
 
 fid=fopen(filename,'r');
 Structure.FileName=filename;
@@ -321,6 +329,7 @@ if fid<0
 end
 %
 itime = 1;
+timeformat = 1;
 while ~feof(fid)
     [keyw,value] = fgetl_keyval(fid);
     %
@@ -329,11 +338,22 @@ while ~feof(fid)
                 'x_llcenter','y_llcenter','dx','dy','n_quantity','spw_radius','fileversion'}
             value = sscanf(value,'%f');
         case 'time'
-            [Structure.Data(itime).time,Structure.Data(itime).timezone] = value2time(value);
+            [Structure.Data(itime).time,Structure.Data(itime).timezone] = value2time_since(value);
             break
         case ''
-            fclose(fid);
-            error('Error reading line:\n%s\nMissing comment symbol or keyword assignment.',value)
+            % might still be a time specification in FM format
+            % /* TIME (HRS)      0.0  20000101 0
+            [key1,rem1] = strtok(value);
+            key2 = strtok(rem1);
+            if strcmp(key1,'/*') && strcmpi(key2,'time')
+                [Structure.Data(itime).time,Structure.Data(itime).timezone] = value2time_old(value);
+                fgetl_noncomment(fid); % skip the line, fgetl_keyval reset the reading point to before this line since it didn't contain an equal sign
+                timeformat = 2;
+                break
+            else
+                fclose(fid);
+                error('Error reading line:\n%s\nMissing comment symbol or keyword assignment.',value)
+            end
         otherwise
             %value = value;
     end
@@ -370,10 +390,6 @@ if Structure.Header.fileversion<1.02 && strcmp(Structure.Header.filetype,'meteo_
     nr = Structure.Header.n_cols;
     Structure.Header.n_cols = Structure.Header.n_rows;
     Structure.Header.n_rows = nr;
-end
-%
-if Structure.Header.fileversion<1.03 && strcmp(Structure.Header.filetype,'meteo_on_curvilinear_grid')
-    ui_message('error',{Structure.FileName,'This curvilinear grid meteo file is interpreted incorrectly by Delft3D versions 3.28.00 until 3.28.09!'})
 end
 %
 if strcmp(Structure.Header.filetype,'meteo_on_equidistant_grid')
@@ -428,12 +444,17 @@ Q = cell(1,Structure.Header.n_quantity);
 U = cell(1,Structure.Header.n_quantity);
 for i = 1:Structure.Header.n_quantity
     f = sprintf('quantity%i',i);
-    Q{i} = Structure.Header.(f);
-    Structure.Header = rmfield(Structure.Header,f);
-    %
-    f = sprintf('unit%i',i);
-    U{i} = Structure.Header.(f);
-    Structure.Header = rmfield(Structure.Header,f);
+    if isfield(Structure.Header,f)
+        Q{i} = Structure.Header.(f);
+        Structure.Header = rmfield(Structure.Header,f);
+        %
+        f = sprintf('unit%i',i);
+        U{i} = Structure.Header.(f);
+        Structure.Header = rmfield(Structure.Header,f);
+    else
+        Q{i} = f;
+        U{i} = '';
+    end
 end
 Structure.Header.quantity = Q;
 Structure.Header.unit = U;
@@ -478,10 +499,29 @@ switch lower(Structure.Header.filetype)
         error('Unknown ASCII wind type: %s',Structure.Header.filetype)
 end
 %
+if Structure.Header.fileversion<1.03 ...
+        && strcmp(Structure.Header.filetype,'meteo_on_curvilinear_grid')
+    ui_message('error',{Structure.FileName,'This curvilinear grid meteo file is interpreted incorrectly by Delft3D versions 3.28.00 until 3.28.09!'})
+end
+if Structure.Header.fileversion>1.0 ...
+        && strcmp(Structure.Header.filetype,'meteo_on_curvilinear_grid') ...
+        && (~strcmp(Structure.Header.first_data_value,'grid_ulcorner') ...
+            || ~strcmp(Structure.Header.data_row,'grid_row'))
+    msg = {Structure.FileName,'This curvilinear grid meteo file is interpreted incorrectly by D-Flow FM.'};
+    if ~strcmp(Structure.Header.first_data_value,'grid_ulcorner')
+        msg{end+1} = ['D-Flow FM uses first_data_value = grid_ulcorner instead of ',Structure.Header.first_data_value];
+    end
+    if ~strcmp(Structure.Header.data_row,'grid_row')
+        msg{end+1} = ['D-Flow FM uses data_row = grid_row instead of ',Structure.Header.data_row];
+    end
+    ui_message('error',msg)
+end
+%
 while 1
     %
     % read parameters for current time
     %
+    offset = ftell(fid);
     while ~isempty(keyw)
         offset = ftell(fid);
         [keyw,value] = fgetl_keyval(fid);
@@ -504,13 +544,15 @@ while 1
         nval = length(dummy);
     elseif nval > length(dummy)
         fclose(fid);
-        error('Not enough data available for data block %i (%s).',itime,datestr(Structure.Data(itime).time,0))
+        error('Not enough data available for data block %i (%s) - expecting %i values, read %i..',itime,datestr(Structure.Data(itime).time,0),nval,length(dummy))
     end
     %
     % read next time
     %
     [keyw,value] = fgetl_keyval(fid);
-    if isempty(keyw)
+    if timeformat == 2 && strcmp(strtok(value),'/*')
+        fgetl_noncomment(fid); % skip the line, fgetl_keyval reset the reading point to before this line since it didn't contain an equal sign
+    elseif isempty(keyw)
         if ~isempty(value)
             fclose(fid);
             error('Unexpected data while reading time block %i (%s).\nExpected new time block or end-of-file, but encountered data: ''%s''.',itime,datestr(Structure.Data(itime).time,0),value)
@@ -524,7 +566,11 @@ while 1
         Structure.Data(max_ntimes).time = [];
     end
     %
-    [Structure.Data(itime).time,Structure.Data(itime).timezone] = value2time(value);
+    if timeformat == 1
+        [Structure.Data(itime).time,Structure.Data(itime).timezone] = value2time_since(value);
+    elseif timeformat == 2
+        [Structure.Data(itime).time,Structure.Data(itime).timezone] = value2time_old(value);
+    end
 end
 %
 Structure.Data(itime+1:end) = [];
@@ -604,10 +650,13 @@ if isequal(S2.Check,'OK')
 end
 
 
-function Line = fgetl_noncomment(fid)
+function [Line,floc] = fgetl_noncomment(fid)
 % Skip comment lines starting with #
+% first argument the line, second argument the offset of that line in case
+% you want to undo the reading
 Line = '';
 while isempty(Line)
+    floc = ftell(fid);
     Line = fgetl(fid);
     if ~ischar(Line) % end-of-file
         Line = '';
@@ -619,8 +668,7 @@ end
 
 
 function [keyw,value] = fgetl_keyval(fid)
-floc = ftell(fid);
-Line = fgetl_noncomment(fid);
+[Line,floc] = fgetl_noncomment(fid);
 eq = strfind(Line,'=');
 if isempty(eq)
     fseek(fid,floc,-1);
@@ -632,10 +680,28 @@ else
 end
 
 
-function [Time,TimeZone] = value2time(value)
+function [Time,TimeZone] = value2time_since(value)
 X = sscanf(value,'%f %*s since %4d-%2d-%2d %2d:%2d:%2d %c%2d:%2d');
 [Time,Remainder] = strtok(value);
 tunit = strtok(Remainder);
+[Time,TimeZone] = value2time_core(X,tunit);
+
+
+function [Time,TimeZone] = value2time_old(value)
+[tunit,~,~,i] = sscanf(lower(value),'/* time (%[^)])');
+X = sscanf(value(i:end),' %f %4d%2d%2d %f');
+if length(X)>4
+    % offset time and reference date/time incremented both ... choose either
+    % - reference date/time
+    % - offset time and first reference date/time
+    % implementing the first
+    X(1) = 0;
+end
+X(10) = 0;
+[Time,TimeZone] = value2time_core(X,tunit);
+
+
+function [Time,TimeZone] = value2time_core(X,tunit)
 RefDate = datenum(X(2:7)');
 TimeZone = (X(9)+X(10)/60)*(44-abs(X(8)));
 switch lower(tunit)
