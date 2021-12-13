@@ -402,9 +402,9 @@ try
         error('Number of coordinate values in file does not match header')
     end
     fclose(fid);
-catch
+catch err
     fclose(fid);
-    rethrow(lasterror)
+    rethrow(err)
 end
 if isempty(GRID.X)
     error('File does not match Delft3D grid file format.')
@@ -479,10 +479,15 @@ autoenc    = 0;
 i          = 1;
 filename   = '';
 nparset    = 0;
+orient     = 'undefined';
 Grd.CoordinateSystem='Cartesian';
 while i<=nargin
     if ischar(varargin{i})
         switch lower(varargin{i})
+            case {'clockwise','anticlockwise'}
+                orient     = lower(varargin{i});
+            case {'counterclockwise','counter-clockwise','anti-clockwise'}
+                orient     = 'anticlockwise';
             case {'autoenc','autoenclosure'}
                 autoenc    = 1;
             case {'oldrgf','newrgf','swangrid','struct'}
@@ -560,6 +565,19 @@ if ~isequal(sz.x,sz.y)
         [Grd.X,Grd.Y] = ndgrid(Grd.X(:),Grd.Y(:)); % NOT meshgrid, which leads not to righthanded coordinate system.
     else
         error(['X and Y should have same size:',num2str(sz.x),' vs. ',num2str(sz.y)])
+    end
+end
+
+% if specific orientation has been specified, check whether it's 
+if ~strcmp(orient,'undefined')
+    current_orient = getorientation(Grd);
+    if ~isequal(current_orient,orient)
+        Grd.X = Grd.X';
+        Grd.Y = Grd.Y';
+        if isfield(Grd,'Enclosure')
+            % see gridfil for a potentially better suggestion.
+            Grd = rmfield(Grd,'Enclosure');
+        end
     end
 end
 

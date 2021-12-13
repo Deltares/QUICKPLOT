@@ -531,17 +531,23 @@ for f=1:ntim
                     tekal('write',filename,FI);
             end
         case {'grid file','grid file (old format)'}
-            G.X=data.X(1:end-1,1:end-1);
-            G.Y=data.Y(1:end-1,1:end-1);
-            G.CoordSys='Cartesian';
+            if all(isnan(data.X(end,:)) | data.X(end,:) == data.X(end-1,:)) && ...
+                    all(isnan(data.X(:,end)) | data.X(:,end) == data.X(:,end-1))
+                G.X = data.X(1:end-1, 1:end-1);
+                G.Y = data.Y(1:end-1, 1:end-1);
+            else
+                G.X = data.X;
+                G.Y = data.Y;
+            end
+            G.CoordSys = 'Cartesian';
             if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
-                G.CoordSys='Spherical';
+                G.CoordSys = 'Spherical';
             end
             switch expType
                 case 'grid file'
-                    wlgrid('write',filename,G);
+                    wlgrid('write',filename,G,'anticlockwise');
                 case 'grid file (old format)'
-                    wlgrid('writeold',filename,G);
+                    wlgrid('writeold',filename,G,'anticlockwise');
             end
         case {'netcdf3 file','netcdf4 file'}
             export_netcdf(expType,data,cmdargs{:})
@@ -657,19 +663,26 @@ for f=1:ntim
                     xy=[];
                     if isfield(Props,'Geom') && (strcmp(Props.Geom,'POLYL') || strcmp(Props.Geom,'POLYG'))
                         % for now only single partitions supported ...
-                        vNaN=isnan(data.X);
-                        if any(vNaN)
-                            bs=findseries(~vNaN);
-                        else
-                            bs=[1 length(vNaN)];
-                        end
-                        xy={};
-                        for i=size(bs,1):-1:1
-                            xy{i}=[data.X(bs(i,1):bs(i,2)) data.Y(bs(i,1):bs(i,2))];
-                        end
                         vals={};
-                        if isfield(data,'Val')
-                           vals={data.Val(bs(:,1))};
+                        if isfield(data,'XY')
+                            xy = data.XY;
+                            if isfield(data,'Val')
+                                vals={data.Val};
+                            end
+                        else
+                            vNaN=isnan(data.X);
+                            if any(vNaN)
+                                bs=findseries(~vNaN);
+                            else
+                                bs=[1 length(vNaN)];
+                            end
+                            xy={};
+                            for i=size(bs,1):-1:1
+                                xy{i}=[data.X(bs(i,1):bs(i,2)) data.Y(bs(i,1):bs(i,2))];
+                            end
+                            if isfield(data,'Val')
+                                vals={data.Val(bs(:,1))};
+                            end
                         end
                         if strcmp(Ops.facecolour,'none')
                            shp_type = 'polyline';

@@ -15,7 +15,7 @@ function varargout=landboundary(cmd,varargin)
 %
 %   LANDBOUNDARY('write',FILENAME,XY, ...) writes a landboundary to file.
 %   XY should either be a Nx2 array containing NaN separated line segments
-%   or a cell array containing one line segment per cell. If XY is an a 2xN
+%   or a cell array containing one line segment per cell. If XY is a 2xN
 %   array with N not equal to 2, then XY is transposed.
 %
 %   LANDBOUNDARY('write',FILENAME,X,Y, ...) writes a landboundary to file.
@@ -223,7 +223,7 @@ while i<=nargin-1
             data2=varargin{i};
             XYSep=1; % x and y supplied separately?
         end
-    elseif iscell(varargin{i}) && (j==0 || j==1) && ischar(varargin{i}) 
+    elseif iscell(varargin{i}) && (j==0 || j==1) 
         CellData=1;
         if j==0
            Data1=varargin{i};

@@ -118,7 +118,7 @@ if strcmpi(e,'.shx')
     e(end)=e(end)-'X'+'P';
 end
 if ~strcmpi(e,'.shp')
-    if isempty(e) && exist([filename '.shp'])
+    if isempty(e) && exist([filename '.shp'],'file')
         filename=[filename '.shp'];
         e='.shp';
     else
@@ -166,39 +166,39 @@ ShapeTps={'null shape' 'point'  '' 'polyline'  '' 'polygon'  '' '' 'multipoint' 
     ''           'pointm' '' 'polylinem' '' 'polygonm' '' '' 'multipointm' '' ...
     ''           'multipatch'};
 S.ShapeTpName=ShapeTps{S.ShapeTp+1};
-Tmp=fread(fid,[1 8],'float64');
-S.XRange=Tmp([1 3]);
-S.YRange=Tmp([2 4]);
-S.ZRange=Tmp([5 6]);
-S.MRange=Tmp([7 8]);
-NShapes=0;
-TNPrt=0;
-TNPnt=0;
-Index=0;
-if exist([S.FileBase '.shx'])
-    Index=1;
-    fidx=fopen([S.FileBase '.shx'],'r',S.HeaderByteOrder);
+Tmp = fread(fid,[1 8],'float64');
+S.XRange = Tmp([1 3]);
+S.YRange = Tmp([2 4]);
+S.ZRange = Tmp([5 6]);
+S.MRange = Tmp([7 8]);
+NShapes = 0;
+TNPrt = 0;
+TNPnt = 0;
+Index = 0;
+if exist([S.FileBase '.shx'],'file')
+    Index = 1;
+    fidx = fopen([S.FileBase '.shx'],'r',S.HeaderByteOrder);
     if ~isequal(fread(fidx,[1 6],'int32'),[9994 0 0 0 0 0])
         error('Invalid shape index header.');
     end
     fseek(fidx,100,-1);
-    S.Idx=2*fread(fidx,[2 inf],'int32'); % offset stored in words (16 bit)
+    S.Idx = 2*fread(fidx,[2 inf],'int32'); % offset stored in words (16 bit)
     fclose(fidx);
-    S.IndexExt='.shx';
+    S.IndexExt = '.shx';
 else
     NShapeMax = 1024;
     S.Idx = zeros(1,NShapeMax);
 end
 
 while ~feof(fid)
-    if Index && NShapes<size(S.Idx,2)
+    if Index && NShapes < size(S.Idx,2)
         fseek(fid,S.Idx(1,NShapes+1),-1);
     end
-    [NrSize,k]=fread(fid,2,'int32','b');
-    if k==0
+    [NrSize,k] = fread(fid,2,'int32','b');
+    if k == 0
         break
-    elseif NrSize(1)~=NShapes+1
-        if NShapes==0
+    elseif NrSize(1) ~= NShapes+1
+        if NShapes == 0
             fclose(fid);
             error('Invalid first record number: expecting 1, reading %i',NrSize(1))
         elseif Index && NShapes>=size(S.Idx,2)
@@ -208,14 +208,14 @@ while ~feof(fid)
             break
         end
     end
-    ShapeTp=fread(fid,1,'int32');
-    NShapes=NShapes+1;
+    ShapeTp = fread(fid,1,'int32');
+    NShapes = NShapes+1;
     if ~Index
-        if NShapes>NShapeMax
+        if NShapes > NShapeMax
             NShapeMax = 2*NShapeMax;
             S.Idx(1,NShapeMax) =  0;
         end
-        S.Idx(NShapes)=ftell(fid)-12;
+        S.Idx(NShapes) = ftell(fid)-12;
     end
     switch ShapeTp
         case 0 % null shape
@@ -223,35 +223,35 @@ while ~feof(fid)
         case 1 % point
             % x,y
             fread(fid,2,'float64');
-            TNPnt=TNPnt+1;
-            TNPrt=TNPrt+1;
+            TNPnt = TNPnt+1;
+            TNPrt = TNPrt+1;
         case {3,5} % polyline, polygon
             % box, NPrt, NPnt, {iprt}, {x,y}
             fread(fid,4,'float64');
-            NPrt=fread(fid,1,'int32');
-            NPnt=fread(fid,1,'int32');
-            TNPrt=TNPrt+NPrt;
-            TNPnt=TNPnt+NPnt;
+            NPrt = fread(fid,1,'int32');
+            NPnt = fread(fid,1,'int32');
+            TNPrt = TNPrt+NPrt;
+            TNPnt = TNPnt+NPnt;
             fread(fid,[1 NPrt],'int32'); % 0-based offset of first node of part
             fread(fid,[2 NPnt],'float64');
         case 8 % multipoint
             % box, N, {x,y}
             fread(fid,4,'float64');
-            NPnt=fread(fid,1,'int32');
-            TNPnt=TNPnt+NPnt;
+            NPnt = fread(fid,1,'int32');
+            TNPnt = TNPnt+NPnt;
             fread(fid,[2 NPnt],'float64');
         case {11,21} % pointz, pointm
             % x,y,z or x,y,m
             fread(fid,3,'float64');
-            TNPnt=TNPnt+1;
-            TNPrt=TNPrt+1;
+            TNPnt = TNPnt+1;
+            TNPrt = TNPrt+1;
         case {13,15,23,25} % polylinez, polygonz, polylinem, polygonm
             % box, NPrt, NPnt, {iprt}, {x,y} zrange, {z} or mrange, {m}
             fread(fid,4,'float64');
-            NPrt=fread(fid,1,'int32');
-            NPnt=fread(fid,1,'int32');
-            TNPrt=TNPrt+NPrt;
-            TNPnt=TNPnt+NPnt;
+            NPrt = fread(fid,1,'int32');
+            NPnt = fread(fid,1,'int32');
+            TNPrt = TNPrt+NPrt;
+            TNPnt = TNPnt+NPnt;
             fread(fid,[1 NPrt],'int32'); % 0-based offset of first node of part
             fread(fid,[2 NPnt],'float64');
             fread(fid,2,'float64');
@@ -259,19 +259,19 @@ while ~feof(fid)
         case {18, 28} % multipointz, multipointm
             % box, N, {x,y}, zrange, {z} or mrange, {m}
             fread(fid,4,'float64');
-            NPnt=fread(fid,1,'int32');
-            TNPnt=TNPnt+NPnt;
+            NPnt = fread(fid,1,'int32');
+            TNPnt = TNPnt+NPnt;
             fread(fid,[2 NPnt],'float64');
             fread(fid,2,'float64');
             fread(fid,[1 NPnt],'float64');
         case 31 % multipatch
             % box, NPrt, NPnt, {iprt}, {prttyp}, {x,y}, zrange, {z} or mrange, {m}
-            PrtTyps={'trianglestrip','trianglefan','outerring','innerring','firstring','ring'}; % 0 -- 5
+            %PrtTyps = {'trianglestrip','trianglefan','outerring','innerring','firstring','ring'}; % 0 -- 5
             fread(fid,4,'float64');
-            NPrt=fread(fid,1,'int32');
-            NPnt=fread(fid,1,'int32');
-            TNPrt=TNPrt+NPrt;
-            TNPnt=TNPnt+NPnt;
+            NPrt = fread(fid,1,'int32');
+            NPnt = fread(fid,1,'int32');
+            TNPrt = TNPrt+NPrt;
+            TNPnt = TNPnt+NPnt;
             fread(fid,[1 NPrt],'int32');
             fread(fid,[1 NPrt],'int32');
             fread(fid,[2 NPnt],'float64');
@@ -282,19 +282,19 @@ while ~feof(fid)
     end
 end
 fclose(fid);
-S.NShapes=NShapes;
-S.NPrt=TNPrt;
-S.NPnt=TNPnt;
-S.Check='OK';
+S.NShapes = NShapes;
+S.NPrt = TNPrt;
+S.NPnt = TNPnt;
+S.Check = 'OK';
 if ~Index
     S.Idx = S.Idx(1:NShapes);
 end
 
-if ~exist([S.FileBase '.dbf'])
+if ~exist([S.FileBase '.dbf'],'file')
     return
 else
-    S.dBase=dbase('open',[S.FileBase '.dbf']);
-    if S.dBase.NRec~=S.NShapes
+    S.dBase = dbase('open',[S.FileBase '.dbf']);
+    if S.dBase.NRec ~= S.NShapes
         error('Number of records in dBase file (%i) does not match number of shapes (%i).',S.dBase.NRec,S.NShapes)
     end
 end
@@ -316,76 +316,70 @@ else
 end
 switch datatype
     case {'point', 'points'}
-        fid=fopen([S.FileBase S.ShapeExt],'r','l');
+        fid = fopen([S.FileBase S.ShapeExt],'r','l');
         fseek(fid,S.Idx(1,shapes(1)),-1);
-        TNPnt=0;
-        Out=zeros(S.NPnt,2);
-        %Obj=zeros(S.NPnt,1);
-        for shp=shapes
+        TNPnt = 0;
+        Out = zeros(S.NPnt,2);
+        for shp = shapes
             fseek(fid,S.Idx(1,shp),-1);
-            [NrSize,k]=fread(fid,2,'int32','b');
-            ShapeTp=fread(fid,1,'int32');
+            NrSize = fread(fid,2,'int32','b');
+            ShapeTp = fread(fid,1,'int32');
             switch ShapeTp
                 case 0 % null shape
                     % nothing to read
                 case 1 % point
                     % x,y
-                    TNPnt=TNPnt+1;
-                    Out(TNPnt,1:2)=fread(fid,[1 2],'float64');
-                    %Obj(TNPnt)=shp;
+                    TNPnt = TNPnt+1;
+                    Out(TNPnt,1:2) = fread(fid,[1 2],'float64');
                 case {3,5} % polyline, polygon
                     % box, NPrt, NPnt, {iprt}, {x,y}
                     fread(fid,4,'float64');
-                    NPrt=fread(fid,1,'int32');
-                    NPnt=fread(fid,1,'int32');
+                    NPrt = fread(fid,1,'int32');
+                    NPnt = fread(fid,1,'int32');
                     fread(fid,[1 NPrt],'int32');
-                    Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
-                    %Obj(TNPnt+(1:NPnt))=shp;
-                    TNPnt=TNPnt+NPnt;
+                    Out(TNPnt+(1:NPnt),1:2) = fread(fid,[2 NPnt],'float64')';
+                    TNPnt = TNPnt+NPnt;
                 case 8 % multipoint
                     % box, N, {x,y}
                     fread(fid,4,'float64');
-                    NPnt=fread(fid,1,'int32');
-                    Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
-                    %Obj(TNPnt+(1:NPnt))=shp;
-                    TNPnt=TNPnt+NPnt;
+                    NPnt = fread(fid,1,'int32');
+                    Out(TNPnt+(1:NPnt),1:2) = fread(fid,[2 NPnt],'float64')';
+                    TNPnt = TNPnt+NPnt;
                 case {11,21} % pointz, pointm
                     % x,y,z or x,y,m
-                    TNPnt=TNPnt+1;
-                    Out(TNPnt,1:3)=fread(fid,[1 3],'float64');
-                    %Obj(TNPnt)=shp;
+                    TNPnt = TNPnt+1;
+                    Out(TNPnt,1:3) = fread(fid,[1 3],'float64');
                 case {13,15,23,25} % polylinez, polygonz, polylinem, polygonm
                     % box, NPrt, NPnt, {iprt}, {x,y} zrange, {z} or mrange, {m}
                     fread(fid,4,'float64');
-                    NPrt=fread(fid,1,'int32');
-                    NPnt=fread(fid,1,'int32');
+                    NPrt = fread(fid,1,'int32');
+                    NPnt = fread(fid,1,'int32');
                     fread(fid,[1 NPrt],'int32');
-                    Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
+                    Out(TNPnt+(1:NPnt),1:2) = fread(fid,[2 NPnt],'float64')';
                     fread(fid,2,'float64');
-                    Out(TNPnt+(1:NPnt),3)=fread(fid,[NPnt 1],'float64');
+                    Out(TNPnt+(1:NPnt),3) = fread(fid,[NPnt 1],'float64');
                     fread(fid,2,'float64');
-                    TNPnt=TNPnt+NPnt;
+                    TNPnt = TNPnt+NPnt;
                 case {18,28} % multipointz, multipointm
                     % box, N, {x,y}, zrange, {z} or mrange, {m}
                     fread(fid,4,'float64');
-                    NPnt=fread(fid,1,'int32');
-                    Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
+                    NPnt = fread(fid,1,'int32');
+                    Out(TNPnt+(1:NPnt),1:2) = fread(fid,[2 NPnt],'float64')';
                     fread(fid,2,'float64');
-                    Out(TNPnt+(1:NPnt),3)=fread(fid,[NPnt 1],'float64');
+                    Out(TNPnt+(1:NPnt),3) = fread(fid,[NPnt 1],'float64');
                     fread(fid,2,'float64');
-                    TNPnt=TNPnt+NPnt;
+                    TNPnt = TNPnt+NPnt;
                 case 31 % multipatch
                     % box, NPrt, NPnt, {iprt}, {prttyp}, {x,y}, zrange, {z} or mrange, {m}
-                    PrtTyps={'trianglestrip','trianglefan','outerring','innerring','firstring','ring'}; % 0 -- 5
+                    %PrtTyps = {'trianglestrip','trianglefan','outerring','innerring','firstring','ring'}; % 0 -- 5
                     fread(fid,4,'float64');
-                    NPrt=fread(fid,1,'int32');
-                    NPnt=fread(fid,1,'int32');
+                    NPrt = fread(fid,1,'int32');
+                    NPnt = fread(fid,1,'int32');
                     fread(fid,[1 NPrt],'int32');
                     fread(fid,[1 NPrt],'int32');
-                    Out(TNPnt+(1:NPnt),1:2)=fread(fid,[2 NPnt],'float64')';
+                    Out(TNPnt+(1:NPnt),1:2) = fread(fid,[2 NPnt],'float64')';
                     fread(fid,2,'float64');
-                    Out(TNPnt+(1:NPnt),3)=fread(fid,[NPnt 1],'float64');
-                    %Obj(TNPnt+(1:NPnt))=shp;
+                    Out(TNPnt+(1:NPnt),3) = fread(fid,[NPnt 1],'float64');
                     TNPnt=TNPnt+NPnt;
                 otherwise % skip unknown
                     fread(fid,NrSize(2)-2,'int16');
@@ -481,7 +475,7 @@ switch datatype
             end
         end
     otherwise
-    end
+end
 try
     fclose(fid);
 end
