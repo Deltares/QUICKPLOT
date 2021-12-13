@@ -381,13 +381,13 @@ switch simOrg.FileType
             case 'Delft3D-trim'
                 zw = vs_get(simOrg, 'map-series', {it}, 'S1', 'quiet');
                 h = qpread(simOrg, 'water depth', 'data', it);
-                h = h.Val;
+                h = h.Val';
                 u = qpread(simOrg, 'depth averaged velocity', 'data', it);
-                ucx = u.XComp;
-                ucy = u.YComp;
-                it = vs_get(simOrg, 'map-info-series', {it}, 'ITMAPC', 'quiet');
+                ucx = u.XComp';
+                ucy = u.YComp';
+                itmapc = vs_get(simOrg, 'map-info-series', {it}, 'ITMAPC', 'quiet');
                 dt = vs_get(simOrg, 'map-const', 'DT', 'quiet');
-                t = it * dt;
+                t = itmapc * dt;
                 %
                 zw = zw(face_active);
                 h = h(face_active);
@@ -395,8 +395,8 @@ switch simOrg.FileType
                 ucy = ucy(face_active);
                 %
                 if has_chezy
-                    chu = vs_get(simOrg, 'map-series', {last_time}, 'CFUROU', 'quiet');
-                    chv = vs_get(simOrg, 'map-series', {last_time}, 'CFVROU', 'quiet');
+                    chu = vs_get(simOrg, 'map-series', {it}, 'CFUROU', 'quiet');
+                    chv = vs_get(simOrg, 'map-series', {it}, 'CFVROU', 'quiet');
                     czs = sqrt(4./(1./chu(:,[1 1:end-1]).^2 + 1./chu.^2 + 1./chv([1 1:end-1],:).^2 + 1./chv.^2));
                     czs = czs(face_active);
                 else
