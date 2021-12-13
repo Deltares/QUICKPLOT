@@ -423,8 +423,8 @@ switch printObj.Name
         %
         % reset the paper position
         %
+        set(fig,'paperunits',pu)
         if pp_adjusted
-            set(fig,'paperunits',pu)
             if strcmp(ppm,'manual')
                 set(fig,'paperposition',pp)
             else
