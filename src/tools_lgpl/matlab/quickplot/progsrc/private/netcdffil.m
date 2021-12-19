@@ -1401,7 +1401,7 @@ if XYRead || XYneeded || ZRead
                 Z = expand_hdim(Z,szData,hdim);
             end
         catch Ex
-            qp_error({'Retrieving vertical coordinate failed, continuing with layer index as vertical coordinate.','The error message encountered reads:'},Ex,'netcdffil')
+            qp_error({sprintf('Retrieving vertical coordinate "%s" failed, continuing with layer index as vertical coordinate.',CoordInfo.Name),'The error message encountered reads:'},Ex,'netcdffil')
             kDim = length(szData);
             kVec = ones(1,kDim);
             kVec(kDim) = length(idx{K_});

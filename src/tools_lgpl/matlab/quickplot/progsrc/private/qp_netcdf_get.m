@@ -43,7 +43,11 @@ if isempty(var)
     errmsg='Variable name is empty.';
     error(errmsg)
 elseif ischar(var)
-    var = strmatch(var,{FI.Dataset.Name},'exact')-1;
+    varstr = var;
+    var = strmatch(varstr,{FI.Dataset.Name},'exact')-1;
+    if isempty(var)
+        error('Variable ''%s'' not found in file.',varstr)
+    end
 elseif isstruct(var)
     var = var.Varid;
 end
