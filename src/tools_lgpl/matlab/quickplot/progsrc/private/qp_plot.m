@@ -123,7 +123,7 @@ hCLIMSYMM = [];
 if isfield(Ops,'symmetriccolourlimits') && Ops.symmetriccolourlimits
     if iscell(hOld) && length(hOld{end}) == 1 && ishandle(hOld{end})
         xde = get(hOld{end}, 'xdata');
-        if isequal(size(xde),[1 2]) & all(isnan(xde(:)))
+        if isequal(size(xde),[1 2]) && all(isnan(xde(:)))
             hCLIMSYMM = hOld{end};
             hOld(end) = [];
         end
