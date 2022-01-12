@@ -15,7 +15,7 @@ function G = read_ecom_modelgrid(FileName)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2021 Stichting Deltares.                                     
+%   Copyright (C) 2011-2022 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
