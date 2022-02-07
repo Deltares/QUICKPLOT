@@ -145,11 +145,11 @@ switch deblank(line)
     case '[forcing]'
         Info = Local_read_bc(Info,fid);
         return
-    case '[general]' %SOBEK-3 header, we cycle until we get to [boundary];
-        while ~strcmp(line,'[boundary]')
+    case '[general]' %SOBEK-3 header, we cycle until we get to [boundary]; In FM-1D input there is [forcing]
+        while ~strcmp(line,'[boundary]') && ~strcmp(line,'[forcing]')
             line=lower(fgetl(fid));
             if feof(fid)
-                error('The file seems to be from SOBEK-3. I could not find the [boundary] block')
+                error('The file seems to be from SOBEK-3 or Delft3D FM 1D. I could not find the [boundary] or [forcing] block')
             end
         end
         Info = Local_read_bc(Info,fid);
