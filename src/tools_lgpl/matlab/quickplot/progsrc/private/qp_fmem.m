@@ -431,6 +431,7 @@ switch cmd
                                 Opt = {};
                             end
                         end
+                        init_netcdf_settings
                         FI = nc_interpret(FileName,Opt{:});
                         %nc_dump(FileName)
                         %

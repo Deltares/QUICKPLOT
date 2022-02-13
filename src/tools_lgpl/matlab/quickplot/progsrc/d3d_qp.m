@@ -269,6 +269,13 @@ switch cmd
             %
             if ~isstandalone
                 cmdx = qp_settings('autoruncmd','');
+                if ~iscell(cmdx)
+                    if isempty(cmdx)
+                        cmdx = {};
+                    else
+                        cmdx = {cmdx};
+                    end
+                end
                 for i = 1:length(cmdx)
                     try
                         eval(cmdx{i});
@@ -299,14 +306,8 @@ switch cmd
         if showUI
             figure(mfig);
         end
+        init_netcdf_settings
         if isstandalone
-            try
-                % Insert a try-catch block here since the setpref command sometimes fails on a write error to matlabprefs.mat.
-                setpref('SNCTOOLS','USE_JAVA',true);
-            catch
-                ui_message('message','Failed to persist preferences during initialization.')
-            end
-            javaaddpath([qp_basedir('exe') filesep 'netcdfAll-4.1.jar'])
             try
                 CloseSplashScreen;
             end
