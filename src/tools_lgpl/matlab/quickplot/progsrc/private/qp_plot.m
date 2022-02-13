@@ -1,4 +1,4 @@
-function [hNewVec,Error,FileInfo,PlotState]=qp_plot(PlotState)
+function [hNewVec,Error,FileInfo,PlotState]=qp_plot(PlotState,Ops)
 %QP_PLOT Plot function of QuickPlot.
 
 %----- LGPL --------------------------------------------------------------------
@@ -38,34 +38,34 @@ Error=1;
 specialplot='';
 
 if isfield(PlotState,'FI')
-    FileInfo=PlotState.FI;
-    Domain=PlotState.Domain;
-    Props=PlotState.Props;
-    SubField=PlotState.SubField;
-    Selected=PlotState.Selected;
-    Parent=PlotState.Parent;
-    hOld=PlotState.Handles;
-    stats=PlotState.Stations;
-    Ops=PlotState.Ops;
-    Ops=qp_state_version(Ops);
+    FileInfo = PlotState.FI;
+    Domain = PlotState.Domain;
+    Props = PlotState.Props;
+    SubField = PlotState.SubField;
+    Selected = PlotState.Selected;
+    Parent = PlotState.Parent;
+    hOld = PlotState.Handles;
+    stats = PlotState.Stations;
+    Ops = PlotState.Ops;
+    Ops = qp_state_version(Ops);
     
-    DimFlag=Props.DimFlag;
+    DimFlag = Props.DimFlag;
     
-    SubSelected=Selected;
-    SubSelected(~DimFlag)=[];
+    SubSelected = Selected;
+    SubSelected(~DimFlag) = [];
     if isfield(Props,'MNK') && Props.MNK
         Props.MNK = xyz_or_mnk(Ops,Selected,Props.MNK);
     end
     
-    DataInCell=0;
+    DataInCell = 0;
     if Props.NVal<0
-        data=[];
+        data = [];
     else
         if isfield(Ops,'axestype') && strcmp(Ops.axestype,'Time')
-            [Chk,data.Time]=qp_getdata(FileInfo,Domain,Props,'times',Selected{T_});
+            [Chk,data.Time] = qp_getdata(FileInfo,Domain,Props,'times',Selected{T_});
             specialplot = 'time';
         elseif isfield(Ops,'extend2edge') && Ops.extend2edge
-            [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'griddefdata',SubField{:},SubSelected{:});
+            [Chk,data,FileInfo] = qp_getdata(FileInfo,Domain,Props,'griddefdata',SubField{:},SubSelected{:});
         else
             vslice = 0;
             for i = 1:length(SubSelected)
@@ -88,8 +88,8 @@ if isfield(PlotState,'FI')
             end
             switch presentationtype
                 case {'patches','patches with lines','patch centred vector','polygons','patch_slices'}
-                    [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'gridcelldata',SubField{:},SubSelected{:});
-                    DataInCell=1;
+                    [Chk,data,FileInfo] = qp_getdata(FileInfo,Domain,Props,'gridcelldata',SubField{:},SubSelected{:});
+                    DataInCell = 1;
                     if strcmp(presentationtype,'patch_slices')
                         if size(data.X,2)==2 && size(data.X,1)>2
                             % The following lines are not valid for geographic coordinates!
@@ -102,7 +102,7 @@ if isfield(PlotState,'FI')
                         end
                     end
                 otherwise
-                    [Chk,data,FileInfo]=qp_getdata(FileInfo,Domain,Props,'griddata',SubField{:},SubSelected{:});
+                    [Chk,data,FileInfo] = qp_getdata(FileInfo,Domain,Props,'griddata',SubField{:},SubSelected{:});
             end
         end
         if ~Chk
@@ -115,6 +115,16 @@ if isfield(PlotState,'FI')
     end
 else
     data = PlotState;
+    FileInfo = 'unknown origin';
+    data.Geom = 'UGRID2D-FACE';
+    Selected = {1 [] 1:2 [] []}; %TODO
+    Props.DimFlag = [1 0 1 0 0]; %TODO
+    DimFlag = Props.DimFlag;
+    SubField = {};
+    Ops = qp_state_version(Ops);
+    Props.Name = data.Name;
+    Props.NVal = 1; %TODO
+    stats = {}; % TODO
     hOld = [];
     Parent = gca;
 end
@@ -187,25 +197,30 @@ if ~strcmp(Parent,'loaddata')
             end
         end
     end
-    Level = -1;
-    for i = 1:length(hOldVec)
-        if ishandle(hOldVec(i))
-            iLevel = getappdata(hOldVec(i),'Level');
-            if ~isempty(iLevel)
-                Level = iLevel;
+    %
+    if isfield(Ops,'zlevel')
+        Level = Ops.zlevel;
+    else
+        Level = -1;
+        for i = 1:length(hOldVec)
+            if ishandle(hOldVec(i))
+                iLevel = getappdata(hOldVec(i),'Level');
+                if ~isempty(iLevel)
+                    Level = iLevel;
+                end
             end
         end
-    end
-    if Level<0
-        Level = 0;
-        Pchild=allchild(Parent);
-        for i = 1:length(Pchild)
-            iLevel = getappdata(Pchild(i),'Level');
-            if ~isempty(iLevel)
-                Level = max(Level,iLevel);
+        if Level<0
+            Level = 0;
+            Pchild=allchild(Parent);
+            for i = 1:length(Pchild)
+                iLevel = getappdata(Pchild(i),'Level');
+                if ~isempty(iLevel)
+                    Level = max(Level,iLevel);
+                end
             end
+            Level = Level+500;
         end
-        Level = Level+500;
     end
 end
 Thresholds=[]; % Thresholds is predefined to make sure that Thresholds always exists when its value is checked at the end of this routine
@@ -654,10 +669,10 @@ if isfield(Ops,'vectorscalingmode')
                     VecMag=data(d).Val;
                 else
                     VecMag=data(d).XComp.^2;
-                    if isfield(data,'YComp');
+                    if isfield(data,'YComp')
                         VecMag=VecMag+data(d).YComp.^2;
                     end
-                    if isfield(data,'ZComp');
+                    if isfield(data,'ZComp')
                         VecMag=VecMag+data(d).ZComp.^2;
                     end
                     VecMag=sqrt(VecMag);
