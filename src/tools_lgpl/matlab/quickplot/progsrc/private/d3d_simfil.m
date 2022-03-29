@@ -953,7 +953,7 @@ switch FI.FileType
                     case 'BedLevel'
                         if isscalar(FI.BedLevel)
                             nfld = nfld + length(FI.mesh.meshes);
-                        else
+                        elseif ~isempty(FI.BedLevel)
                             nfld = nfld + 1;
                         end
                     case 'Structure'
@@ -1003,7 +1003,9 @@ switch FI.FileType
                         ifld = ifld+1;
                         BL = FI.(flds{i});
                         if isstruct(BL) % quantity on mesh
-                            if FI.BedLevelType == 1
+                            if isempty(BL)
+                                ifld = ifld-1;
+                            elseif FI.BedLevelType == 1
                                 Out(ifld).Name = 'bed levels';
                                 Out(ifld).Units = 'm';
                                 Out(ifld).Geom = 'UGRID2D-FACE';

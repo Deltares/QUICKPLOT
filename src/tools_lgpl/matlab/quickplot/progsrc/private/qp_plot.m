@@ -83,7 +83,8 @@ if isfield(PlotState,'FI')
                 vslice = 1;
             end
             presentationtype = Ops.presentationtype;
-            if vslice && strcmp(presentationtype,'edges')
+            data_at_edges = isfield(Props,'Geom') && ~isempty(strfind(Props.Geom,'EDGE'));
+            if vslice && strcmp(presentationtype,'edges') && ~data_at_edges
                 presentationtype = 'patch_slices';
             end
             switch presentationtype

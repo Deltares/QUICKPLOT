@@ -126,6 +126,8 @@ end
 sz=getsize(FI,domain,Props);
 if isempty(idx{T_})
     idx{T_}=sz(T_);
+elseif isequal(idx{T_},0)
+    idx{T_} = 1:sz(T_);
 end
 if sz(M_)>0 && (isequal(idx{M_},0) || isempty(idx{M_}))
     idx{M_}=1:sz(M_);
@@ -219,11 +221,15 @@ if isequal(Props.Geom,'SEG-NODE') || isequal(Props.Geom,'SEG-EDGE')
             end
             if Props.NVal>0
                 if ~isequal(Props.Subs,0)
-                    Ans.Val = NaN(length(idx{T_}),length(selected));
+                    % delwaq returns array of size NSUBS x NSEGS x NTIMES
+                    Ans.Val = NaN(1,length(selected),length(idx{T_}));
                     %
                     [Member,Idx] = ismember(DataFile.SegmentName,FI.Node.ID(inodes));
-                    [t,Ans.Val(:,Idx(Member))]=delwaq('read',DataFile,Props.Subs(2),find(Member),idx{T_});
-                    Ans.Time=t;
+                    [t,Ans.Val(1,Idx(Member),:)]=delwaq('read',DataFile,Props.Subs(2),find(Member),idx{T_});
+                    %
+                    % need to return a matrix NTIMES x NSEGS (NSUBS = 1)
+                    Ans.Val = permute(Ans.Val,[3,2,1]);
+                    Ans.Time = t;
                 else
                     if isempty(subfield)
                         fld = 'ID';
