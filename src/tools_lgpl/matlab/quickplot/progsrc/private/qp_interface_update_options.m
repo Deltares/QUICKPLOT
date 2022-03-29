@@ -1354,7 +1354,7 @@ end
 
 % plot value as is, or absolute value?
 % in case of vector edges we need the sign for the vector direction
-if nval>0 && nval<2 && ~strcmp(Ops.presentationtype,'vector edges')
+if nval>0 && nval<2 && (~isfield(Ops,'presentationtype') || ~strcmp(Ops.presentationtype,'vector edges'))
     oper=findobj(OH,'tag','operator');
     set(oper,'enable','on')
     oper=findobj(OH,'tag','operator=?');
@@ -1549,7 +1549,7 @@ if ismember(geometry,{'PNT'}) && ~multiple(T_) && nval>=0
         forcemarker = 1;
     end
     lineproperties = 0;
-elseif strcmp(Ops.presentationtype,'vector edges')
+elseif isfield(Ops,'presentationtype') && strcmp(Ops.presentationtype,'vector edges')
     usesmarker = 0;
 elseif lineproperties || nval==0
     usesmarker = 1;
