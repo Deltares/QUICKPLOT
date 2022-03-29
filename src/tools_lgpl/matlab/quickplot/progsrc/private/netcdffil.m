@@ -145,8 +145,8 @@ end
 if FI.NumDomains>1
     args = varargin;
     spatial = false;
-    if ~isempty(marg) && ~isempty(Props.Geom)
-        spatial = strncmp(Props.Geom,'UGRID2D',7);
+    if ~isempty(marg) && ~isempty(Props.Coords)
+        spatial = ~isempty(strfind(Props.Coords,'xy'));
     end
     if domain == FI.NumDomains+2
         % merged partitions
@@ -2030,7 +2030,7 @@ for m = size(meshes,1):-1:1
     Out(mo).varid = crd-1;
     %
     Out(mo).DimName = cell(1,5);
-    Out(mo).DimFlag = ~isnan(XInfo.TSMNK) | ~isnan(YInfo.TSMNK);
+    Out(mo).DimFlag = double(~isnan(XInfo.TSMNK) | ~isnan(YInfo.TSMNK));
     for d = 1:length(XInfo.TSMNK)
         if ~isnan(XInfo.TSMNK(d))
             Out(mo).DimName{d} = FI.Dimension(XInfo.TSMNK(d)+1).Name;
@@ -2170,7 +2170,7 @@ end
 % to display dimension size as ?
 %
 if domain==FI.NumDomains+1
-    for i =1 :length(Out)
+    for i = 1:length(Out)
         if Out(i).DimFlag(M_)
             Out(i).DimFlag(M_) = inf;
         end
