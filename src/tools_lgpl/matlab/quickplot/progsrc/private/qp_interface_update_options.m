@@ -962,7 +962,7 @@ elseif ((nval==1 || nval==6) && TimeSpatial==2) || ...
                             if SpatialV
                                 PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                             else
-                                PrsTps={'markers';'values';'edges'};
+                                PrsTps={'markers';'values';'edges';'vector edges'};
                             end
                         case {'UGRID1D_NETWORK-NODE','UGRID1D-NODE'}
                             if SpatialV
@@ -1093,6 +1093,10 @@ elseif ((nval==1 || nval==6) && TimeSpatial==2) || ...
                 lineproperties=1;
             case 'grid with numbers'
                 ask_for_textprops=1;
+            case 'vector edges'
+                lineproperties=1;
+                thindams=1;
+                nval=0.9;
             case {'edges','edges m','edges n'}
                 lineproperties=1;
                 switch nvalstr
@@ -1348,7 +1352,9 @@ if thindams
     end
 end
 
-if nval>0 && nval<2
+% plot value as is, or absolute value?
+% in case of vector edges we need the sign for the vector direction
+if nval>0 && nval<2 && ~strcmp(Ops.presentationtype,'vector edges')
     oper=findobj(OH,'tag','operator');
     set(oper,'enable','on')
     oper=findobj(OH,'tag','operator=?');
@@ -1362,8 +1368,7 @@ end
 
 if MultipleColors ...
         && isfield(Ops,'presentationtype') ...
-        && (strcmp(Ops.presentationtype,'patches') ...
-            || strcmp(Ops.presentationtype,'edges'))
+        && ismember(Ops.presentationtype,{'patches','edges','vector edges'})
     cun = findobj(OH,'tag','unicolour');
     set(cun,'enable','on')
     Ops.unicolour = get(cun,'value');
@@ -1543,45 +1548,46 @@ if ismember(geometry,{'PNT'}) && ~multiple(T_) && nval>=0
         usesmarker = 1;
         forcemarker = 1;
     end
+    lineproperties = 0;
+elseif strcmp(Ops.presentationtype,'vector edges')
+    usesmarker = 0;
 elseif lineproperties || nval==0
+    usesmarker = 1;
+end
+if lineproperties || nval==0
     set(findobj(OH,'tag','linestyle'),'enable','on')
     lns=findobj(OH,'tag','linestyle=?');
     set(lns,'enable','on','backgroundcolor',Active)
     lnstls=get(lns,'string');
     Ops.linestyle=lnstls{get(lns,'value')};
-    usesmarker=1;
-elseif vectors
-    set(findobj(OH,'tag','linewidth'),'enable','on')
-    lnw=findobj(OH,'tag','linewidth=?');
-    set(lnw,'enable','on','backgroundcolor',Active)
-    Ops.linewidth=get(lnw,'userdata');
 end
 if usesmarker
     set(findobj(OH,'tag','marker'),'enable','on')
-    mrk=findobj(OH,'tag','marker=?');
+    mrk = findobj(OH,'tag','marker=?');
     set(mrk,'enable','on','backgroundcolor',Active)
-    mrkrs=get(mrk,'string');
-    imrk=get(mrk,'value');
+    mrkrs = get(mrk,'string');
+    imrk = get(mrk,'value');
     if forcemarker && ismember('none',mrkrs)
-        inone=strmatch('none',mrkrs);
-        if imrk==inone
+        inone = strmatch('none',mrkrs);
+        if imrk == inone
             set(mrk,'value',1)
         end
         mrkrs(inone)=[];
         set(mrk,'string',mrkrs)
     elseif ~forcemarker && ~ismember('none',mrkrs)
-        mrkrs{end+1}='none';
-        imrk=length(mrkrs); % select no by marker by default
+        mrkrs{end+1} = 'none';
+        imrk = length(mrkrs); % select no by marker by default
         set(mrk,'string',mrkrs,'value',imrk);
     end
     if imrk>length(mrkrs)
-        imrk=1;
+        imrk = 1;
         set(mrk,'value',imrk);
     end
-    Ops.marker=mrkrs{get(mrk,'value')};
+    Ops.marker = mrkrs{get(mrk,'value')};
 end
 if (lineproperties && ~strcmp(Ops.linestyle,'none')) || ...
-        (usesmarker && (~strcmp(Ops.marker,'none') && ~strcmp(Ops.marker,'.')))
+        (usesmarker && (~strcmp(Ops.marker,'none') && ~strcmp(Ops.marker,'.'))) || ...
+        vectors
     set(findobj(OH,'tag','linewidth'),'enable','on')
     lnw=findobj(OH,'tag','linewidth=?');
     set(lnw,'enable','on','backgroundcolor',Active)
