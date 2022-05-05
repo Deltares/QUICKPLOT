@@ -1371,7 +1371,7 @@ if XYRead || XYneeded || ZRead
                                 if isnan(zlev(k)) && ~isnan(sigma(k))
                                     Z(t,HDIMS{:},k) = eta(t,HDIMS{:}) + sigma(k)*(min(depth_c,depth)+eta(t,HDIMS{:}));
                                 elseif isnan(sigma(k)) && ~isnan(zlev(k))
-                                    Z(t,HDIMS{:},k) = zlev(k);
+                                    Z(t,HDIMS{:},k) = max(-depth,zlev(k));
                                 elseif isnan(sigma(k)) % and hence also zlev(k)
                                     error('Both zlev and sigma undefined for layer %i.',K(k))
                                 else % both defined
