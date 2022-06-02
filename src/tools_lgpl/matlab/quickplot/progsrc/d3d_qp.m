@@ -5081,6 +5081,8 @@ switch cmd
             switch lower(e)
                 case {'.qplog','.m'}
                     d3d_qp('run',cmd,cmdargs{:})
+                case {'.fig','.qpses'}
+                    d3d_qp('openfigure',cmd,cmdargs{:})
                 otherwise
                     d3d_qp('openfile',cmd,cmdargs{:})
             end
