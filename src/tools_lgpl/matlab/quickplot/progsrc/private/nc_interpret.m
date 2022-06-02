@@ -753,6 +753,10 @@ for ivar = 1:nvars
                     nmDims = setdiff(cvDims(1:end-1),vDims);
                     cvSize = cvSize(1:end-1);
                 end
+            elseif length(cvSize) > 1
+                % don't understand coordinate variables with 2 or more
+                % dimensions. Give warning?
+                continue
             else
                 nmDims = setdiff(cvDims,vDims);
             end
