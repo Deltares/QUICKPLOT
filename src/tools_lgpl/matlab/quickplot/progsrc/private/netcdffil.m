@@ -1988,8 +1988,19 @@ else
         %    Out(end+1)=Insert;
         %end
         %
+        streamfunc = false;
         if strcmp(standard_name,'discharge') && strcmp(Insert.Geom,'UGRID2D-EDGE') && Insert.DimFlag(K_)==0
-            Insert.Name = 'stream function'; % previously: discharge potential
+           streamfunc = true;
+           prefix = '';
+        else
+           ireg = regexp(Insert.Name,'discharge through flow link');
+           if ~isempty(ireg)
+               streamfunc = true;
+               prefix = Insert.Name(1:ireg-1);
+           end
+        end
+        if streamfunc
+            Insert.Name = [prefix, 'stream function']; % previously: discharge potential
             Insert.Geom = 'UGRID2D-NODE';
             Insert.varid = {'stream_function' Insert.varid};
             Insert.DimName{M_} = FI.Dataset(FI.Dataset(Insert.varid{2}+1).Mesh{3}).Mesh{5};
@@ -2394,7 +2405,9 @@ if iscell(varid)
         case 'stream_function'
             % get underlying discharge on edge variable
             Info = FI.Dataset(varid{2}+1);
-            sz(1) = FI.Dimension(Info.TSMNK(1)+1).Length;
+            if ~isnan(Info.TSMNK(1))
+                sz(1) = FI.Dimension(Info.TSMNK(1)+1).Length;
+            end
             % get the x-coordinates variable for the nodes of the mesh
             XVar = FI.Dataset(Info.Mesh{3}).X;
             % get the node dimension
