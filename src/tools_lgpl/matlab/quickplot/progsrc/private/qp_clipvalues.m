@@ -44,7 +44,7 @@ function data = qp_clipvalues(data, Ops)
 %   $Id$
 
 clippingspatial = 0;
-for clipi = 1:3
+for clipi = 1:4
     switch clipi
         case 1
             % clipping based on components gives all kinds of practical problems
@@ -57,6 +57,9 @@ for clipi = 1:3
         case 3
             fld = {'Y'};
             clp = 'yclipping';
+        case 4
+            fld = {'Z'};
+            clp = 'zclipping';
     end
     if isfield(Ops, clp)
         clippingvals = Ops.(clp);
@@ -96,7 +99,7 @@ if isfield(data, 'XYZ') && clippingspatial
        val = data(d).XYZ;
        szVal = size(val);
        val = reshape(val, prod(szVal(1:end-1)), szVal(end));
-       for clipi = 2:3
+       for clipi = 2:4
            switch clipi
                case 2 % X
                    dim = 1;
@@ -104,8 +107,11 @@ if isfield(data, 'XYZ') && clippingspatial
                case 3 % Y
                    dim = 2;
                    clippingvals = Ops.yclipping;
+               case 4 % Z
+                   dim = 3;
+                   clippingvals = Ops.zclipping;
            end
-           if isempty(clippingvals)
+           if isempty(clippingvals) || size(val,2) < dim
                % nothing
            elseif isnumeric(clippingvals)
                val(logical(ismember(val(:,dim), clippingvals)), :) = NaN;

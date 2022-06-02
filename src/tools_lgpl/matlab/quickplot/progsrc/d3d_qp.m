@@ -2485,7 +2485,7 @@ switch cmd
             writelog(logfile,logtype,cmd,c);
         end
         
-    case {'xclipping','yclipping','clippingvals'}
+    case {'xclipping','yclipping','zclipping','clippingvals'}
         cv=findobj(UOH,'tag',[cmd '=?']);
         if isempty(cmdargs)
             Str=get(cv,'string');

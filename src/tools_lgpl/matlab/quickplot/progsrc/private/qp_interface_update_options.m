@@ -1770,7 +1770,7 @@ if isfield(Ops,'presentationtype') && strcmp(Ops.presentationtype,'values')
     Ops.clipnans=get(findobj(OH,'tag','clipnans'),'value');
 end
 
-if (SpatialH==2)
+if SpatialH == 2
     set(findobj(OH,'tag','clippingvals'),'enable','on')
     set(findobj(OH,'tag','xclipping'),'enable','on')
     set(findobj(OH,'tag','xclipping=?'),'enable','on','backgroundcolor',Active)
@@ -1778,6 +1778,11 @@ if (SpatialH==2)
     set(findobj(OH,'tag','yclipping'),'enable','on')
     set(findobj(OH,'tag','yclipping=?'),'enable','on','backgroundcolor',Active)
     Ops.yclipping=get(findobj(OH,'tag','yclipping=?'),'userdata');
+    if Spatial == 3
+        set(findobj(OH,'tag','zclipping'),'enable','on')
+        set(findobj(OH,'tag','zclipping=?'),'enable','on','backgroundcolor',Active)
+        Ops.zclipping=get(findobj(OH,'tag','zclipping=?'),'userdata');
+    end
 end
 
 %---- Export option

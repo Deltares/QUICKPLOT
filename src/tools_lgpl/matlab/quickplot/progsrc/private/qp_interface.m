@@ -1731,6 +1731,10 @@ voffset=voffset-25;
 h1 = LocTextEdit_line(mfig,'Y','yclipping',[],[offset voffset width 20], ...
     {'Specify y coordinates not to be plotted:','specify the value, e.g. -999,','a lower or upper limit, e.g. <-10 >=10,','a clipping range, e.g. [-0.01 0.01]','or any combination.'});
 set(h1(2),'horizontalalignment','left')
+voffset=voffset-25;
+h1 = LocTextEdit_line(mfig,'Z','zclipping',[],[offset voffset width 20], ...
+    {'Specify z coordinates not to be plotted:','specify the value, e.g. -999,','a lower or upper limit, e.g. <-10 >=10,','a clipping range, e.g. [-0.01 0.01]','or any combination.'});
+set(h1(2),'horizontalalignment','left')
 %
 % ------ export data ...
 %
