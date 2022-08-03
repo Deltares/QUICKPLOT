@@ -908,24 +908,31 @@ switch cmd
         end
         options(FI,mfig,'selectvar');
 
-    case 'delvar'
-        Handle_VarList=findobj(mfig,'tag','varlist');
-        Vars=get(Handle_VarList,'userdata');
-        Str=get(Handle_VarList,'string');
-        NrInList=get(Handle_VarList,'value');
-        Vars(NrInList)=[];
-        Str(NrInList)=[];
-        if isempty(Vars)
-            set(Handle_VarList,'enable','off','backgroundcolor',Inactive);
-            Handle_DelVar=findobj(mfig,'tag','delvar');
-            set(Handle_DelVar,'enable','off');
-            Str=' ';
+    case {'delvar','deletevar','deleteallvars'}
+        Handle_VarList = findobj(mfig,'tag','varlist');
+        Vars = get(Handle_VarList,'userdata');
+        if strcmp(cmd,'deleteallvars')
+            NrInList = ':';
+            Vars(1:end) = []; % Vars will be empty, but not equal to []
         else
-            NrInList=min(NrInList,length(Vars));
+            Str = get(Handle_VarList,'string');
+            NrInList = get(Handle_VarList,'value');
+            Vars(NrInList) = [];
+            Str(NrInList) = [];
+            cmd = 'deletevar';
+        end
+        if isempty(Vars)
+            NrInList = 1;
+            set(Handle_VarList,'enable','off','backgroundcolor',Inactive);
+            Handle_DelVar = findobj(mfig,'tag','delvar');
+            set(Handle_DelVar,'enable','off');
+            Str = ' ';
+        else
+            NrInList = min(NrInList,length(Vars));
         end
         set(Handle_VarList,'userdata',Vars,'string',Str,'value',NrInList);
         options(FI,mfig,'selectvar');
-        NewFI=Vars;
+        NewFI = Vars;
         cmdargs={cmd};
 
     case 'selectvar'
@@ -1260,6 +1267,7 @@ switch cmd
         else
             set(Handle_DefVar,'enable','on')
         end
+        cmdargs={cmd Str};
 
     case 'defvariable'
         Handle_VarList=findobj(mfig,'tag','varlist');
