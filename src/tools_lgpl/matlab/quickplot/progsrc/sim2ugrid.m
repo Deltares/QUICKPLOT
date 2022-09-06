@@ -1,13 +1,14 @@
-function sim2ugrid(filename,ntimesReq)
+function outfile = sim2ugrid(filename,ntimesReq)
 %SIM2UGRID transfers simulation results to netCDF UGRID file.
-%   SIM2UGRID(FILENAME, N)
+%   NCFILENAME = SIM2UGRID(FILENAME, N)
 %   transfers the results of the last N time steps of the specified file to
 %   a netCDF UGRID file. Two file types are currently supported:
 %     * Delft3D-FLOW trim-files
 %     * WAQUA SDS-files
 %   If N is not specified, only the last time step will be transferred.
 %   The name of the netCDF file is constructed by appending _map.nc to the
-%   original file name.
+%   original file name. The optional return argument NCFILENAME contains
+%   the name of the file created.
 %
 %   The function copies only the data relevant for D-FAST Morphological
 %   Impact and D-FAST Bank Erosion, being water levels, bed levels, water
@@ -224,6 +225,10 @@ if ~isempty(Err)
     rethrow(Err)
 else
     fprintf(1, 'Data transfer completed successfully.\n');
+end
+
+if nargout>0
+    outfile = ncfile;
 end
 
 
