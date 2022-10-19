@@ -628,6 +628,9 @@ catch
     % can't determine description from caselist file ...
 end
 
+% parse storage node properties
+Network = parse_nodes(fullfile(fileparts(filename),'NODES.DAT'),Network);
+
 Network.Settings = parse_settings(fullfile(fileparts(filename),'SETTINGS.DAT'));
 if ismember('Water Quality 1D',Network.Settings.Components)
     Network.Delwaq = parse_ntrdlwq(fileparts(filename));
@@ -661,15 +664,172 @@ Matching = strncmp(CaseSpace,Lines,length(CaseSpace));
 description = char(sscanf(Lines{Matching},'%*d ''%[^'']'))';
 
 
+function Network = parse_nodes(filename,Network)
+if ~exist(filename,'file')
+    return
+end
+fid = fopen(filename,'r','n','US-ASCII');
+if fid < 0
+    % file doesn't exist
+    return
+end
+initially_zero = zeros(Network.nNodes,1);
+Storage.Type = initially_zero;
+Storage.ReservoirArea  = initially_zero;
+Storage.ReservoirLevel = initially_zero;
+Storage.ReservoirTable = cell(Network.nNodes,1);
+Storage.StreetArea  = initially_zero;
+Storage.StreetLevel = initially_zero;
+Storage.StreetTable = cell(Network.nNodes,1);
+Str = fgetl(fid);
+IDs = Network.Node.ID;
+try
+    while strncmp(Str,'NODE',4)
+        S = strquotedsplit(Str);
+        %
+        if length(S)<3 || ~strcmp(S(1),'NODE') || ~strcmp(S(2),'id') || S{3}(1)~='''' || S{3}(end)~=''''
+            error('Unable to interpret line "%s" while parsing "%s"; expect line starting with "NODE id ''<id>''"',Str,filename)
+        else
+            id = S{3}(2:end-1);
+        end
+        while ~isequal(S{end},'node')
+            Str1 = fgetl(fid);
+            if ~ischar(Str1)
+                error('Unable to locate end string ''node'' for while parsing "%s".',filename)
+            end
+            S = cat(2,S,strquotedsplit(Str1));
+            Str = cat(2,Str,' ',Str1);
+        end
+        %
+        i = find(strcmp(IDs,id));
+        if isempty(i)
+            %seems to happen ...
+            Str = fgetl(fid);
+            continue
+        end
+        %
+        if length(S)<5 || ~strcmp(S(4),'ty')
+            error('Unable to interpret line "%s" while parsing "%s"; expect line starting with "NODE id ''<id>'' ty <type>"',Str,filename)
+        else
+            ty = S(5);
+        end
+        if ~ismember(ty,{'1','2','3'})
+            % 1 = Reservoir
+            % 2 = Closed - ifnore StreetArea
+            % 3 = Loss - ignore StreetArea
+            error('Unknown storage option %s while parsing line "%s" of "%s".',ty,Str,filename)
+        else
+            ty = str2double(ty);
+        end
+        Storage.Type(i) = ty;
+        %
+        Storage.ReservoirArea(i)  = getvalue(S,'ws',NaN);
+        Storage.ReservoirLevel(i) = getvalue(S,'wl',NaN);
+        Storage.ReservoirTable{i} = parsetable(S,'sw');
+        Storage.StreetArea(i)  = getvalue(S,'ss',NaN); % might find: ss of ct ss PDIN ...
+        Storage.StreetLevel(i) = getvalue(S,'ml',NaN);
+        Storage.StreetTable{i} = parsetable(S,'ss');
+        %
+        Str = fgetl(fid);
+    end
+    % no more NODE data
+    if ischar(Str)
+        error('Unable to interpret line "%s" while parsing "%s"; expecting line starting with "NODE".',Str,filename)
+    else
+        % all OK
+    end
+catch Excep
+    fclose(fid);
+    rethrow(Excep);
+end
+fclose(fid);
+Network.Node.Storage = Storage;
+
+
+function v = getvalue(keys,key,default)
+match = strcmp(keys,key);
+if any(match)
+    j = find(match);
+    v = str2double(keys(j+1));
+else
+    v = default;
+end
+
+
+function T = parsetable(keys,key)
+T = [];
+tables = strcmp(keys,'ct');
+if any(tables)
+    j = find(tables);
+    j = j(strcmp(keys(j+1),key));
+    if ~isempty(j)
+        keys = keys(j:end);
+        % ct <key> PDIN 1 0 '' pdin TBLE val val < val val < val val < tble
+        % 1  2     3    4 5 6  7    8    9   10  11 9+3 ...
+        val1 = keys(9:3:end);
+        nval = find(strcmp(val1,'tble'))-1;
+        T = cell(nval,2);
+        for i = 1:nval
+            T{i,1} = str2double(keys{6 + 3*i});
+            T{i,2} = str2double(keys{7 + 3*i});
+        end
+    end
+end
+
+
+function S = strquotedsplit(Str)
+Nquotes = cumsum(Str=='''');
+inString = Nquotes~=2*floor(Nquotes/2);
+isBreak = Str==' ' & ~inString;
+maxNParts = sum(isBreak)+1; % maximum number of strings if none is empty
+S = cell(1,maxNParts);
+iBreak = find(isBreak);
+k = 0;
+for i = 1:length(iBreak)
+    if i == 1
+        % add start of string until first break only if it's not empty
+        if iBreak(1) > 1
+            k = k+1;
+            S{k} = Str(1:iBreak(1)-1);
+        end
+    else
+        % add new strings only if they are not empty
+        if iBreak(i) > iBreak(i-1)+1
+            k = k+1;
+            S{k} = Str(iBreak(i-1)+1:iBreak(i)-1);
+        end
+    end
+end
+% add any remaining string after last break if not empty
+if isempty(iBreak)
+    % special case of Str equal to one keyword
+    if ~isempty(Str)
+        k = k+1;
+        S{k} = Str;
+    end
+elseif iBreak(end) < length(Str)
+    k = k+1;
+    S{k} = Str(iBreak(end)+1:end);
+end
+% reduce to actual number of strings
+S = S(1:k);
+
+
+
 function Network = parse_calcpoints(filename,Network,nReaches)
 if ~exist(filename,'file')
     return
 end
 fid = fopen(filename,'r','n','US-ASCII');
+if fid < 0
+    % file doesn't exist
+    return
+end
 %CP_1.0
 Str = fgetl(fid);
 if ~ischar(Str)
     % empty file
+    fclose(fid);
     return
 end
 if strncmp(Str,'BRCH',4)

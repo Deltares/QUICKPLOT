@@ -540,7 +540,7 @@ switch component
         reachtypes = {'FLS_LINE1D2DBOUNDARY', 'FLS_LINEBOUNDARY', 'FLS_LINEHISTORY'};
     case '1d'
         nodetypes  = {'SBK_1D2DBOUNDARY', 'SBK_BOUNDARY', 'SBK_BRIDGE', 'SBK_CHANNELCONNECTION', 'SBK_CHANNELLINKAGENODE', 'SBK_CHANNEL_CONN&LAT', 'SBK_CHANNEL_STORCONN&LAT', 'SBK_CMPSTR', 'SBK_CONN&LAT', 'SBK_CONN&LAT&RUNOFF', 'SBK_CONN&MEAS', 'SBK_CONN&RUNOFF', 'SBK_CONNECTIONNODE', 'SBK_CULVERT', 'SBK_DATABASESTRUCTURE', 'SBK_EXTPUMP', 'SBK_EXTRARESISTANCE', 'SBK_EXTWEIR', 'SBK_GENERALSTRUC', 'SBK_GRIDPOINT', 'SBK_GRIDPOINTFIXED', 'SBK_LATERALFLOW', 'SBK_MEASSTAT', 'SBK_ORIFICE', 'SBK_PROFILE', 'SBK_PUMP', 'SBK_RIVERADVANCEDWEIR', 'SBK_RIVERPUMP', 'SBK_RIVERWEIR', 'SBK_SBK-3B-NODE', 'SBK_SBK-3B-REACH', 'SBK_UNIWEIR', 'SBK_WEIR'};
-        reachtypes = {'SBK_CHANNEL', 'SBK_CHANNEL&LAT', 'SBK_DAMBRK', 'SBK_INTCULVERT', 'SBK_INTORIFICE', 'SBK_INTPUMP', 'SBK_INTWEIR', 'SBK_PIPE', 'SBK_PIPE&INFILTRATION', 'SBK_PIPE&RUNOFF'};
+        reachtypes = {'SBK_CHANNEL', 'SBK_CHANNEL&LAT', 'SBK_DAMBRK', 'SBK_INTCULVERT', 'SBK_INTORIFICE', 'SBK_INTPUMP', 'SBK_INTWEIR', 'SBK_PIPE', 'SBK_PIPE&INFILTRATION', 'SBK_PIPE&RUNOFF', 'SBK_RWAPIPE&RUNOFF'};
 end
 % -----------------------------------------------------------------------------
 
@@ -594,27 +594,29 @@ else
                 DataProps{end,8}={'SBK_CHANNELCONNECTION', 'SBK_CHANNELLINKAGENODE', 'SBK_CHANNEL_CONN&LAT', 'SBK_CHANNEL_STORCONN&LAT', 'SBK_CONN&LAT', 'SBK_CONN&LAT&RUNOFF', 'SBK_CONN&MEAS', 'SBK_CONN&RUNOFF', 'SBK_CONNECTIONNODE', 'SBK_GRIDPOINT', 'SBK_GRIDPOINTFIXED', 'SBK_SBK-3B-NODE'}';
             end
             %
-            DataProps(end+1,:)=separator;
-            %
-            DataProps(end+1,:)=DataProps(1,:);
-            DataProps{end,1}='all reach segments';
-            DataProps{end,3}='SEG-EDGE';
-            DataProps{end,6}=1;
-            DataProps{end,7}=4;
-            DataProps{end,8}=reachtypes;
-            %
-            DataProps(end+1,:)=DataProps(end,:);
-            DataProps{end,1}='all reach segments: reach number';
-            DataProps{end,7}=1;
-            %
-            i0 = size(DataProps,1);
-            for i = length(reachtypes):-1:1
-                DataProps(i0+i,:)=DataProps(i0,:);
-                DataProps{i0+i,1}=[reachtypes{i} ' reach segments'];
-                DataProps{i0+i,5}=[0 3 0 0 0];
-                DataProps{i0+i,7}=4;
-                DataProps{i0+i,8}=reachtypes(i);
-                DataProps{i0+i,10}=0;
+            if ~isempty(reachtypes)
+                DataProps(end+1,:)=separator;
+                %
+                DataProps(end+1,:)=DataProps(1,:);
+                DataProps{end,1}='all reach segments';
+                DataProps{end,3}='SEG-EDGE';
+                DataProps{end,6}=1;
+                DataProps{end,7}=4;
+                DataProps{end,8}=reachtypes;
+                %
+                DataProps(end+1,:)=DataProps(end,:);
+                DataProps{end,1}='all reach segments: reach number';
+                DataProps{end,7}=1;
+                %
+                i0 = size(DataProps,1);
+                for i = length(reachtypes):-1:1
+                    DataProps(i0+i,:)=DataProps(i0,:);
+                    DataProps{i0+i,1}=[reachtypes{i} ' reach segments'];
+                    DataProps{i0+i,5}=[0 3 0 0 0];
+                    DataProps{i0+i,7}=4;
+                    DataProps{i0+i,8}=reachtypes(i);
+                    DataProps{i0+i,10}=0;
+                end
             end
         case 'Flow 2D'
             [nodetypes_2d,reachtypes_2d] = types('2d');
