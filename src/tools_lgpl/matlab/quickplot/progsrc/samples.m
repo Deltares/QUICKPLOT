@@ -1,24 +1,41 @@
 function [x,y,z]=samples(cmd,varargin)
 %SAMPLES Read/write sample data from file.
-%     XYZ = SAMPLES('read',FILENAME) read the specified file and return the
-%     data contained in it. In the classic case of a simple plain Delft3D
-%     samples file contain three data columns, the function returns an Nx3
-%     array with the data. Due to the algorithm used, the file may contain
-%     any number of comments in MATLAB style, i.e. starting with %. As a
-%     generalization beyond the classic samples file, the number of columns
-%     may differ from 3.
+%   XYZ = SAMPLES('read',FILENAME) read the specified file and return the
+%   data contained in it. In the classic case of a simple plain Delft3D
+%   samples file contain three data columns, the function returns an Nx3
+%   array with the data. Due to the algorithm used, the file may contain
+%   any number of comments in MATLAB style, i.e. starting with %. As a
+%   generalization beyond the classic samples file, the number of columns
+%   may differ from 3.
 %
-%     [X,Y,Z] = SAMPLES('read',FILENAME) read the specified file and return
-%     the samples in three separate Nx1 arrays.
+%   [X,Y,Z] = SAMPLES('read',FILENAME) read the specified file and return
+%   the samples in three separate Nx1 arrays.
 %
-%     SAMPLES('write',FILENAME,XYZ) write samples given in a Nx3 (or 3xN)
-%     array to a samples file. Because of the automatic transpose option,
-%     this function does not support any other number of data columns.
+%   SAMPLES('write',FILENAME,XYZ) write samples given in a Nx3 (or 3xN)
+%   array to a samples file. Because of the automatic transpose option,
+%   this syntax does not support any other number of data columns. Use
+%   'writeraw' to write an M x N matrix as a file with M data columns
+%   and N rows.
 %
-%     SAMPLES('write',FILENAME,X,Y,Z) write samples given in three Nx1 (or
-%     1xN) arrays to a samples file. Because of the automatic transpose
-%     option, this function does not support any other number of data
-%     columns.
+%   SAMPLES('write',FILENAME,X,Y,Z) 
+%   SAMPLES('write',FILENAME,X1,X2,...,XM) write samples given in M arrays
+%   of size Nx1 (or 1xN) to a samples file. Because of the automatic
+%   transpose option, this syntax does not support any other number of
+%   data columns.
+%
+%   SAMPLES('writeraw',FILENAME,MATRIX) write an M x N matrix as a file
+%   with M data columns and N rows.
+%
+%   SAMPLES('writeraw',FILENAME,'format',FORMAT, MATRIX)
+%   SAMPLES('write',FILENAME,'format',FORMAT, XYZ)
+%   SAMPLES('write',FILENAME,'format',FORMAT, X,Y,Z)
+%   SAMPLES('write',FILENAME,'format',FORMAT, X1,X2,...,XM) write the data
+%   using the specified number format. The default number format used is
+%   a fixed point %f. Here FORMAT should contain a single valid format
+%   specification like '%15.7f', '%16.7e' or '%g' in which case the format
+%   is used for all data columns, or the FORMAT should contain the same
+%   format specifiers as there are data columns to be written; use this
+%   option to vary the format used for the columns.
 
 %----- LGPL --------------------------------------------------------------------
 %
@@ -60,12 +77,52 @@ switch lower(cmd)
         else
             x=xyz;
         end
-    case 'write'
-        if ~ischar(varargin{1})
-            Local_write_samples('?',varargin{:});
+    case {'write','writeraw'}
+        if ~ischar(varargin{1}) || strcmpi(varargin{1},'format')
+            filename = '?';
+            i = 0;
         else
-            Local_write_samples(varargin{:});
+            filename = varargin{1};
+            i = 1;
         end
+        if nargin > i && strcmpi(varargin{i+1},'format')
+            format = varargin{i+2};
+            i = i+2;
+        else
+            format = '%f';
+        end
+        xyz = varargin(i+1:end);
+        if length(xyz) == 1 % single matrix XYZ
+            xyz = xyz{1};
+            if strcmpi(cmd,'write')
+                % backward compatible: consider flipping
+                szd = size(xyz);
+                if length(szd)>2
+                    error('Invalid data argument; data must be provided as one matrix, or multiple vectors')
+                end
+                if szd(2) == 3
+                    xyz = transpose(xyz);
+                end
+            end
+        else % a number of vectors
+            for d = 1:length(xyz)
+                szd = size(xyz{d});
+                if length(szd)>2 || all(szd ~= 1) || ~any(szd == 1)
+                    error('Invalid data argument %i; data must be provided as a single matrix, or multiple vectors',d)
+                else % row or column vector, make sure all data is in row vector form
+                    if d == 1
+                        N = length(xyz{d});
+                    elseif length(xyz{d}) ~= N
+                        error('Invalid data argument %i; all vectors should have equal length (%i)', N)
+                    end
+                    if szd(1) ~= 1
+                        xyz{d} = transpose(xyz{d});
+                    end
+                end
+            end
+            xyz = cat(1,xyz{:});
+        end
+        Local_write_samples(filename,format,xyz);
     otherwise
         error('Unknown command: %s',var2str(cmd)) 
 end
@@ -316,7 +373,7 @@ if isstruct(xyz)
     xyz.Time = [];
     for i = 1:length(xyz.Params)
         switch lower(xyz.Params{i})
-            case {'longitude','lon','x','xp','x-coordinate','x coordinate','x_coordinate','x_gpp','distance'}
+            case {'longitude','lon','x','xp','x-coordinate','x coordinate','x_coordinate','x_gpp','distance','chainage'}
                 xyz.X = i;
             case {'latitude' ,'lat','y','yp','y-coordinate','y coordinate','y_coordinate','y_gpp'}
                 xyz.Y = i;
@@ -379,7 +436,20 @@ if isstruct(xyz)
 end
 
 
-function Local_write_samples(filename,x,y,z)
+function Local_write_samples(filename,format,xyz)
+nrows = size(xyz,1);
+nfields = sum(format == '%');
+if nfields == 1
+    format = repmat([format ' '],1,nrows); % add space between values
+    format = [format(1:end-1) '\n']; % remove last space, add line feed
+elseif nfields == nrows
+    if ~isequal(format(end-1:end),'\n')
+        format = [format '\n']; % add line feed if missing
+    end
+else
+    error('Invalid format specification; it contains %i fields, but 1 or %i expected.',nfields,nrows)
+end
+
 if strcmp(filename,'?')
     [fn,fp]=uiputfile('*.xyz');
     if ~ischar(fn)
@@ -391,20 +461,7 @@ fid=fopen(filename,'wt','n','US-ASCII');
 if fid<0
     error(['Could not create or open: ',filename])
 end
-
-if nargin==4
-    if size(x,2)==1 % column vectors
-        xyz=transpose([x y z]);
-    else % row vectors
-        xyz=[x;y;z];
-    end
-    fprintf(fid,'%f %f %f\n',xyz);
-else
-    if size(x,2)==3 % column vector (3x)
-        x=transpose(x);
-    end
-    fprintf(fid,'%f %f %f\n',x);
-end
+fprintf(fid,format,xyz);
 fclose(fid);
 
 
