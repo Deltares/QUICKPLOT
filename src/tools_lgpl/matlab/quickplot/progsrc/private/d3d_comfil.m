@@ -162,15 +162,26 @@ ind=cell(1,5);
 ind{2}=1;
 for i=[M_ N_ K_]
     if DimFlag(i)
-        if isequal(idx{i},0) | isequal(idx{i},1:sz(i))
+        if isempty(idx{i}) || isequal(idx{i},0) || isequal(idx{i},1:sz(i))
             idx{i}=1:sz(i);
             allidx(i)=1;
         elseif ~isequal(idx{i},idx{i}(1):idx{i}(end))
             error('Only scalars or ranges allowed for index %i',i)
         end
         if i~=K_
-            idx{i} = [max(1,idx{i}(1)-1) idx{i}];
-            ind{i}=2:length(idx{i});
+            if length(idx{i})==1 && idx{i}(1)==1
+                idx{i} = [1 2];
+                ind{i} = 1;
+            elseif idx{i}(1)>1
+                idx{i} = [idx{i}(1)-1 idx{i}];
+                ind{i} = 2:length(idx{i});
+            else
+                if DataInCell
+                    ind{i} = 2:length(idx{i});
+                else
+                    ind{i} = 1:length(idx{i});
+                end
+            end
         else % i==K_
             ind{i}=1:length(idx{i});
         end
