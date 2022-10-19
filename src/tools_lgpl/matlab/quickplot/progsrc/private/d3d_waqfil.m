@@ -409,7 +409,9 @@ switch subtype
                                 %agg(clip)=[]; % For aggregation, use agg or FI.Grid.Index
                             end
                         end
-                        XUnits = FI.Grid.Unit;
+                        if isfield(FI.Grid,'Unit')
+                            XUnits = FI.Grid.Unit;
+                        end
                     case 'arcgrid'
                         eidx=idx;
                         eidx{M_}=eidx{M_}+1;
@@ -919,7 +921,7 @@ end
 %======================== SPECIFIC CODE =======================================
 % select active points ...
 act_from_z = 0;
-if strcmp(subtype,'map') && mapgrid && ~strcmp(Props.Geom,'TRI') && ~strcmp(Props.Geom,'POLYG') && ~strcmp(Props.Geom,'UGRID2D-FACE')
+if strcmp(subtype,'map') && mapgrid && ~strcmp(Props.Geom,'TRI') && ~strcmp(Props.Geom,'POLYG') && ~strcmp(Props.Geom,'UGRID2D-FACE') && ~strcmp(Props.Geom,'UGRID2D-NODE') && ~strcmp(Props.Geom,'UGRID1D-NODE')
     act=FI.Grid.Index(idx{[M_ N_]},1)~=0;
     gridact=~isnan(x(:,:,:,1));
 elseif strcmp(subtype,'plot') && ~isempty(z)
@@ -1325,7 +1327,19 @@ switch Type
                             enablegridview=0;
                             %
                             if isfield(FI.Grid,'Mesh')
-                                DataProps{r,3}='UGRID2D-FACE';
+                                switch FI.Grid.Mesh{3}
+                                    case 0
+                                        imesh = FI.Grid.Mesh{2};
+                                        nMeshDims = FI.Grid.Dataset(imesh).Mesh{2};
+                                        switch nMeshDims
+                                            case 1
+                                                DataProps{r,3}='UGRID1D-NODE';
+                                            case 2
+                                                DataProps{r,3}='UGRID2D-NODE';
+                                        end
+                                    case 2
+                                        DataProps{r,3}='UGRID2D-FACE';
+                                end
                             else
                                 DataProps{r,3}='POLYG';
                             end
