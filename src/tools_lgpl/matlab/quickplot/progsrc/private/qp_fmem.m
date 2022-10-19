@@ -1166,7 +1166,7 @@ switch cmd
                             if DoDS
                                 Message=sprintf('Error while opening\n%s\nUnable to make connection.',FileName);
                             else
-                                Message=sprintf('Error while opening\n%s\nFile format not supported.',FileName);
+                                Message=sprintf('Error while opening\n%s\nUnable to identify file format.',FileName);
                             end
                             ui_message('error',Message)
                             break
