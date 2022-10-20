@@ -886,6 +886,8 @@ if XYRead || XYneeded || ZRead
                     else
                         continue
                     end
+                else
+                    continue
                 end
             end
             CoordInfo = FI.Dataset(vdim);
@@ -1945,6 +1947,8 @@ else
                     Insert.Coords = 'xy';
                 end
             end
+        elseif ~isempty(Info.Z)
+            Insert.hasCoords = 1;
         end
         %
         Insert.varid = Info.Varid;
@@ -2000,16 +2004,19 @@ else
            end
         end
         if streamfunc
-            Insert.Name = [prefix, 'stream function']; % previously: discharge potential
-            Insert.Geom = 'UGRID2D-NODE';
-            Insert.varid = {'stream_function' Insert.varid};
-            Insert.DimName{M_} = FI.Dataset(FI.Dataset(Insert.varid{2}+1).Mesh{3}).Mesh{5};
-            %
-            Out(end+1)=Insert;
+            qvar = FI.Dataset(Insert.varid);
+            if iscell(qvar.Mesh) % catch discharges not defined on UGRID ...
+                Insert.Name = [prefix, 'stream function']; % previously: discharge potential
+                Insert.Geom = 'UGRID2D-NODE';
+                Insert.varid = {'stream_function' Insert.varid};
+                Insert.DimName{M_} = FI.Dataset(FI.Dataset(Insert.varid{2}+1).Mesh{3}).Mesh{5};
+                %
+                Out(end+1)=Insert;
+            end
         else
             switch lower(Insert.Name)
                 case 'time-varying bottom level in flow cell center'
-                    if FI.Dimension(Info.TSMNK(T_)+1).Length>1
+                    if ~isnan(Info.TSMNK(T_)) && FI.Dimension(Info.TSMNK(T_)+1).Length>1
                         Insert.Name = 'cum. erosion/sedimentation';
                         Insert.varid = {'erosion_sedimentation' Insert.varid};
                         %
