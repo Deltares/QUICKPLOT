@@ -1060,8 +1060,8 @@ function MF = mduread(MF,md_path)
 mshname = propget(MF.mdu,'geometry','NetFile');
 if ~isempty(mshname)
     mshname = relpath(md_path,mshname);
-    [F,Q] = getmesh(mshname);
-    MF.mesh.nc_file = F;
+    [NetFile,Q] = getmesh(mshname);
+    MF.mesh.nc_file = NetFile;
     imeshquant = find(([Q.NVal]==0 & ~strcmp({Q.Name},'-------') & [Q.UseGrid]~=0) | [Q.NVal]==4);
     MF.mesh.quant = Q(imeshquant);
     %
@@ -1091,13 +1091,16 @@ if ~isempty(mshname)
     imesh = find(ismesh);
     [~,MF.mesh.meshes] = ismember(imesh,imeshquant);
     %
-    FirstPoint = netcdffil(F,1,Q(1),'grid',1);
+    FirstPoint = netcdffil(NetFile,1,Q(1),'grid',1);
     MF.mesh.XYUnits = FirstPoint.XUnits;
 else
     error('Unable to locate NetFile keyword in [geometry] chapter.');
 end
 %
 attfiles = {...
+   'external forcing','ExtForceFile','ExtForce'
+   'external forcing','ExtForceFileNew','ExtForceNew'
+   'geometry','IniFieldFile','IniField'
    'geometry','BedlevelFile','BedLevel'
    'geometry','DryPointsFile','DryPoints'
    'geometry','WaterLevIniFile','WaterLevIni'
@@ -1113,8 +1116,6 @@ attfiles = {...
    'geometry','ManholeFile','Manhole'
    'geometry','PartitionFile','Partition'
    'restart','RestartFile','Restart'
-   'external forcing','ExtForceFile','ExtForce'
-   'external forcing','ExtForceFileNew','ExtForceNew'
    'output','ObsFile','Obs'
    'output','CrsFile','Crs'
    'sediment','MorFile','Mor'
@@ -1138,57 +1139,57 @@ for i = 1:size(attfiles,1)
         zkuni = -5;
         zkuni = propgetval(MF.mdu,grp,'BotLevUni',zkuni);
         zkuni = propgetval(MF.mdu,grp,'BedLevUni',zkuni);
-        VNames = {F.Dataset.Name}';
+        VNames = {NetFile.Dataset.Name}';
         %
-        if bltyp == 1
-            % bed levels specified at faces: from samples or net file
-            % ... data from Bathymetry/BedlevelFile
-            filename = propget(MF.mdu,grp,fld,'');
-            if isempty(filename)
-                filename = propget(MF.mdu,grp,'BathymetryFile','');
+        filename = '';
+        if isfield(MF,'IniField')
+            IniNames = {MF.IniField.Quantity.Name};
+            ic = find(strcmpi('bedlevel',IniNames));
+            if ~isempty(ic)
+                filename = MF.IniField.Quantity.File;
             end
-            if isempty(filename) % in FM: if file not exists ...
+        end
+        if isempty(filename)
+            filename = propget(MF.mdu,grp,fld,''); % BedlevelFile
+        end
+        if isempty(filename)
+            filename = propget(MF.mdu,grp,'BathymetryFile','');
+        end
+        % ... data from BathymetryFile/BedlevelFile
+        if isempty(filename) % in FM: if file not exists ...
+            if bltyp == 1
+                % bed levels specified at faces
                 % ... variable with standard name "altitude" at cell centres from mesh file
                 % ... variable with name "mesh2d_flowelem_bl" from mesh file
-                SNames = get_standard_names(F);
+                SNames = get_standard_names(NetFile);
                 ibl2d = strcmp('altitude',SNames);
                 if none(ibl2d)
                     ibl2d = strcmp('mesh2d_flowelem_bl',VNames);
                 end
-                ibl2d = find(ibl2d)-1;
-                if ~isempty(ibl2d)
-                    % use bed level from mesh file
-                    iq = false(size(Q));
-                    for j = 1:length(iq)
-                        if isnumeric(Q(j).varid) & ~isempty(Q(j).varid) & isscalar(Q(j).varid) & strcmp(Q(j).Geom,'UGRID2D-FACE')
-                            iq(j) = ismember(Q(j).varid,ibl2d);
-                        end
-                    end
-                    MF.BedLevel = Q(iq);
-                    MF.BedLevelUni = zkuni;
-                else
-                    % use uniform bed level
-                    MF.BedLevel = zkuni;
+                loc = 'UGRID2D-FACE';
+            elseif bltyp == 2
+                % bed levels specified at edges
+                % can't be read from mesh file
+                ibl2d = [];
+            else
+                % bed levels specified at nodes
+                % ... variable with name "node_z" or "NetNode_z" from mesh file
+                ibl2d = strcmp('NetNode_z',VNames);
+                if none(ibl2d)
+                    ibl2d = strcmp('node_z',VNames);
                 end
-                continue
+                loc = 'UGRID2D-NODE';
             end
-        elseif bltyp == 2
-            % bed levels specified at edges: always from samples
-        else
-            % bed levels specified at nodes: always from mesh file
-            ibl2d = strcmp('NetNode_z',VNames);
-            if none(ibl2d)
-                ibl2d = strcmp('node_z',VNames);
-            end
+            %
             ibl2d = find(ibl2d)-1;
             if ~isempty(ibl2d)
                 % use bed level from mesh file
-                    iq = false(size(Q));
-                    for j = 1:length(iq)
-                        if isnumeric(Q(j).varid) & ~isempty(Q(j).varid) & isscalar(Q(j).varid) & strcmp(Q(j).Geom,'UGRID2D-NODE')
-                            iq(j) = ismember(Q(j).varid,ibl2d);
-                        end
+                iq = false(size(Q));
+                for j = 1:length(iq)
+                    if isnumeric(Q(j).varid) & ~isempty(Q(j).varid) & isscalar(Q(j).varid) & strcmp(Q(j).Geom,loc)
+                        iq(j) = ismember(Q(j).varid,ibl2d);
                     end
+                end
                 MF.BedLevel = Q(iq);
                 MF.BedLevelUni = zkuni;
             else
@@ -1380,6 +1381,17 @@ for i = 1:size(attfiles,1)
                         end
                     else
                         F.Bnd.Types = {};
+                    end
+                case 'IniField'
+                    F = inifile('open',filename);
+                    [ContainsIni, IndexChapter] = inifile('exists', F, 'Initial');
+                    if ContainsIni
+                        for iq = length(IndexChapter):-1:1
+                            F.Quantity(iq).Name     = inifile('hgeti', F, IndexChapter(iq), 'quantity');
+                            F.Quantity(iq).FileType = inifile('hgeti', F, IndexChapter(iq), 'dataFileType');
+                            F.Quantity(iq).File     = inifile('hgeti', F, IndexChapter(iq), 'dataFile');
+                            F.Quantity(iq).Interp   = inifile('hgeti', F, IndexChapter(iq), 'interpolationMethod');
+                        end
                     end
                 case 'Mor'
                     F = inifile('open',filename);
