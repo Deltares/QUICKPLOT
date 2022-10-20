@@ -687,17 +687,14 @@ switch cmd
         G=surface([],[],[],'parent',A,'tag','GRID','userdata',GRID);
         selcolor = qp_settings('gridviewselectioncolor')/255;
         %SelectedGrid
-        if matlabversionnumber>=8.04
-            erasemode = {};
-        else
-            erasemode = {'erasemode','xor'};
-        end
+        erasemode = {};
         surface([],[],[],'parent',A, ...
             'facecolor',selcolor,'edgecolor','none', ...
             'tag','SELSURF',erasemode{:});
         %SelectedPatch
         patch('vertices',[],'faces',[],'parent',A, ...
             'facecolor',selcolor,'edgecolor','none', ...
+            'FaceOffsetFactor',1,'FaceOffsetBias',0, ...
             'tag','SELPATCH',erasemode{:});
         %SelectedLine
         line('xdata',[],'ydata',[],'parent',A, ...
@@ -706,7 +703,7 @@ switch cmd
         %SelectedPoint
         line('xdata',[],'ydata',[],'parent',A, ...
             'color',selcolor,'linestyle','none', ...
-            'marker','.','markersize',18, ...
+            'marker','.','markersize',3, ...
             'tag','SELPOINT',erasemode{:});
         set(A,'color',get(F,'color'),'xtick',[],'ytick',[], ...
             'da',[1 1 1],'view',[0 90],'xcolor',get(F,'color'), ...
@@ -1522,6 +1519,10 @@ end
 set(G(1),'tag','GRID','userdata',GRID)
 set(G(2:end),'tag','GRIDother')
 set(G,'clipping','off','hittest','off')
+c = get(A,'children');
+c1 = c(~ismember(c,G));
+c2 = c(ismember(c,G));
+set(A,'children',cat(1,c1,c2))
 %
 xl=limits(G,'xlim'); xl=xl+[-1 1]*max(0.00001,abs(diff(xl)*0.01))/20;
 yl=limits(G,'ylim'); yl=yl+[-1 1]*max(0.00001,abs(diff(yl)*0.01))/20;
