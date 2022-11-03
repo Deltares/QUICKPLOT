@@ -115,6 +115,10 @@ if nargin==1 && isequal(Cmd,'resize')
 end
 
 fig=findobj(allchild(0),'tag','UI_MESSAGE window');
+if isequal(Cmd,'reset')
+    delete(fig)
+    fig = [];
+end
 
 if isempty(UD)
     if ~isempty(fig) && ishandle(fig)
@@ -308,7 +312,7 @@ else
         case 'clear'
             errors={};
             MessageOffset=[];
-            set(findobj(fig,'tag','errorlist'),'string',errors);
+            set(findobj(fig,'tag','errorlist'),'string',errors,'listboxtop',1);
         case 'clipboard'
             i=sort(get(findobj(fig,'tag','errorlist'),'value')); % always copy lines from top to bottom
             clipboard('copy',sprintf('%s\n',errors{i}))
