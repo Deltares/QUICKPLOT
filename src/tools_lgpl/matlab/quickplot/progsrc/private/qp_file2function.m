@@ -187,7 +187,6 @@ tp=qp_gettype(Info);
 % message and return with empty function name.
 %
 id = strcmpi(tp,F(:,1));
-Fcn = '';
 if ~any(id)
     previousMessage = 0;
     if isempty(MissingFileTypes)
@@ -202,6 +201,8 @@ if ~any(id)
     if ~previousMessage
         ui_message('warning','No function associated with a file of type "%s".',tp)
     end
+    Fcn = [];
     return
 end
-Fcn=F{id,2};
+FunName = F{id,2};
+Fcn = str2func(FunName);
