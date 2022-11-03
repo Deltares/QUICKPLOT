@@ -36,3 +36,23 @@ set(ax,'layer','top', ...
 if qp_settings('boundingbox')
     set(ax,'box','on');
 end
+if matlabversionnumber>=8.04
+    set(ax,'sortMethod','childOrder');
+else
+    set(ax,'drawmode','fast');
+end
+if matlabversionnumber >= 9
+    for i = 1:length(ax)
+        axi = ax(i);
+        if isa(axi,'double')
+            axi = handle(axi);
+        end
+        if matlabversionnumber >= 9.10
+            axi.XAxis.LimitsChangedFcn = @qp_updateaxes;
+            axi.YAxis.LimitsChangedFcn = @qp_updateaxes;
+        elseif matlabversionnumber >= 9
+            addlistener(axi,'XLim','PostSet',@qp_updateaxes);
+            addlistener(axi,'YLim','PostSet',@qp_updateaxes);
+        end
+    end
+end

@@ -115,6 +115,7 @@ if isempty(fig)
     try
         usr_smooth = qp_settings('graphicssmoothing');
         set(fig, 'graphicssmoothing', usr_smooth)
+    catch
     end
     qp_figurebars(fig)
 end
@@ -203,17 +204,10 @@ set(fig,'userdata',figoptions,'visible','on');
 
 function standardfig(m,n,tags,orient)
 %set(gcf,'color',[1 1 1]);
-for i=m*n:-1:1
-    ax=subplot(m,n,i);
-    set(ax,'color',qp_settings('defaultaxescolor')/255);
-    if qp_settings('boundingbox')
-        set(ax,'box','on');
-    end
-    if matlabversionnumber>=8.04;
-        set(ax,'tag',tags{i},'sortMethod','childOrder');
-    else
-        set(ax,'tag',tags{i},'drawmode','fast');
-    end
+for i = m*n:-1:1
+    ax = subplot(m,n,i);
+    qp_defaultaxessettings(ax)
+    set(ax,'tag',tags{i});
 end
 md_paper('no edit',orient,'7box');
 

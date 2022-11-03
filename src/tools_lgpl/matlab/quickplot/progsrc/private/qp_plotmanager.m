@@ -1302,6 +1302,10 @@ switch cmd
 
     case 'selectedaxes'
         AxesHandles=get(UD.PlotMngr.AxList,'userdata');
+        if any(~ishandle(AxesHandles))
+            qp_plotmanager refreshaxes
+            AxesHandles=get(UD.PlotMngr.AxList,'userdata');
+        end
         if get(UD.PlotMngr.AxAll,'value') || get(UD.PlotMngr.FigAll,'value')
             iAx=1:length(AxesHandles);
         else
