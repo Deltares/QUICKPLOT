@@ -35,7 +35,7 @@ log_style('latex')
 baseini='validation.ini';
 val_dir = '';
 finish = 'openlog';
-extra_files = {'summary','failed_cases','all_cases'};
+extra_files = {'summary','crashed_cases','reading_failed_cases','script_failed_cases','all_cases'};
 sametype('');
 
 i = 0;
@@ -51,7 +51,7 @@ while i<nargin
             end
         case 'finish'
             i = i+1;
-            switch lower(varargin{i});
+            switch lower(varargin{i})
                 case {'openlog','none','buildpdf'}
                     finish = lower(varargin{i});
             end
@@ -126,6 +126,9 @@ end
 AnyFail=0;
 NTested=0;
 NFailed=0;
+NReadFailed=0;
+NScriptFailed=0;
+NCrashed=0;
 NSlower=0;
 TotTimeRef=0;
 TotTime=0;
@@ -473,7 +476,11 @@ try
                                     %
                                     if vardiff(Prop,PropRef)>1
                                         JustAddedData=0;
-                                        vardiff(Prop,PropRef,logid2,log_style,'Current Data','Reference Data');
+                                        if log_style == 'latex'
+                                            vardiff(Prop,PropRef,logid2,'latex-longtable','new','reference');
+                                        else
+                                            vardiff(Prop,PropRef,logid2,log_style,'new','reference');
+                                        end
                                     end
                                     drawnow
                                 end
@@ -625,9 +632,9 @@ try
                                                 end
                                                 if DiffFound>0
                                                     if ~isempty(addedfields)
-                                                        vardiff(newData,PrevData,logid2,log_style,'Current Data','Reference Data');
+                                                        vardiff(newData,PrevData,logid2,log_style,'new','reference');
                                                     else
-                                                        vardiff(Data,PrevData,logid2,log_style,'Current Data','Reference Data');
+                                                        vardiff(Data,PrevData,logid2,log_style,'new','reference');
                                                     end
                                                     frcolor=Color.Failed;
                                                 end
@@ -653,7 +660,11 @@ try
                                     catch Crash
                                         frcolor=Color.Failed;
                                         frresult=sprintf('%s: Error checking one or more data fields.',FAILED);
-                                        write_table2_line(logid2,[],[],[],sc{1},color_write(protected(Crash.message),Color.Failed));
+                                        stack_cellstr = cat(1,{Crash.message},stack2str(Crash.stack));
+                                        for istack = 1:length(stack_cellstr)
+                                            stack_cellstr{istack} = protected(stack_cellstr{istack});
+                                        end
+                                        write_table2_line(logid2,[],[],[],sc{1},color_write(stack_cellstr,Color.Failed));
                                         emptyTable2 = false;
                                         Crash = [];
                                     end
@@ -800,6 +811,10 @@ try
         if ~isempty(logid2)
             if ~isempty(Crash)
                 write_log(logid2,color_write(protected(Crash.message),Color.Failed,true));
+                stack_cellstr = stack2str(Crash.stack);
+                for istack = 1:length(stack_cellstr)
+                    write_log(logid2,color_write(protected(stack_cellstr{istack}),Color.Failed,true));
+                end
             end
             [dt2,dt2_str,slower] = write_footer(logid2,d(i).name,Color,t2,dt2_old);
             fclose(logid2);
@@ -816,8 +831,14 @@ try
             dt2_str = duration(dt2);
             slower  = dt2>dt2_old;
         end
-        CaseFailed = ~isempty(strmatch(FAILED,frresult)) | ~isempty(strmatch(FAILED,lgresult)) | ~isempty(strmatch(FAILED,result));
-        NFailed=NFailed + double(CaseFailed);
+        CaseReadFailed = strncmp(FAILED,frresult,5);
+        CaseScriptFailed = strncmp(FAILED,lgresult,5);
+        CaseCrashed = strncmp(FAILED,result,5) & ~(CaseReadFailed | CaseScriptFailed);
+        CaseFailed = CaseReadFailed | CaseScriptFailed | CaseCrashed;
+        NReadFailed = NReadFailed + CaseReadFailed;
+        NScriptFailed = NScriptFailed + CaseScriptFailed;
+        NCrashed = NCrashed + CaseCrashed;
+        NFailed = NFailed + CaseFailed;
         if isnan(dt2_old)
             TotTimeRef = TotTimeRef + dt2;
         else
@@ -832,10 +853,10 @@ try
             UserInterrupt=1;
         end
         if ~isempty(result)
-            extlog = write_table1_line(logid1,extlog,Color,CaseFailed,Color.Table{TC1},d(i).name,color,result,[],[],logname,dt2_str);
+            extlog = write_table1_line(logid1,extlog,Color,CaseReadFailed,CaseScriptFailed,CaseCrashed,Color.Table{TC1},d(i).name,color,result,[],[],logname,dt2_str);
             TC1=3-TC1;
         else
-            extlog = write_table1_line(logid1,extlog,Color,CaseFailed,Color.Table{TC1},d(i).name,frcolor,frresult,lgcolor,lgresult,logname,dt2_str);
+            extlog = write_table1_line(logid1,extlog,Color,CaseReadFailed,CaseScriptFailed,CaseCrashed,Color.Table{TC1},d(i).name,frcolor,frresult,lgcolor,lgresult,logname,dt2_str);
             TC1=3-TC1;
         end
         flush(logid1);
@@ -861,7 +882,7 @@ if ~isempty(current_procdef)
     qp_settings('delwaq_procdef',current_procdef)
 end
 if logid1>0
-    write_summary(logid1,extlog,NFailed,NTested,NSlower,TotTimeRef,TotTime);
+    write_summary(logid1,extlog,NFailed,NReadFailed,NScriptFailed,NCrashed,NTested,NSlower,TotTimeRef,TotTime);
     write_includes(logid1,includes);
     if ~isempty(t1)
         write_footer(logid1,'MAIN',Color,t1,NaN);
@@ -1054,8 +1075,12 @@ function write_table_header(logid,tbl,Color)
 fprintf(logid,'%s\n','\begin{longtable}{|p{0.3\linewidth}|p{0.05\linewidth}|p{0.05\linewidth}|p{0.3\linewidth}|p{0.2\linewidth}|}');
 fprintf(logid,'%s\n','\hiderowcolors');
 switch tbl
-    case 'failed_cases'
-        fprintf(logid,'%s\n','\caption{Overview of all failed cases} \label{Tab:FailedSummary} \\');
+    case 'reading_failed_cases'
+        fprintf(logid,'%s\n','\caption{Overview of all cases with errors during data reading} \label{Tab:ReadFailedSummary} \\');
+    case 'script_failed_cases'
+        fprintf(logid,'%s\n','\caption{Overview of all cases with errors during script evaluation} \label{Tab:ScriptFailedSummary} \\');
+    case 'crashed_cases'
+        fprintf(logid,'%s\n','\caption{Overview of all crashed test cases} \label{Tab:CrashedSummary} \\');
     otherwise
         fprintf(logid,'%s\n','\caption{Overview of all test cases included} \label{Tab:Summary} \\');
 end
@@ -1096,7 +1121,7 @@ switch log_style
 end
 
 
-function extlog = write_table1_line(logid,extlog,Color,CaseFailed,bgcolor,casename,frcolor,frresult,lgcolor,lgresult,logname,dt2_str)
+function extlog = write_table1_line(logid,extlog,Color,CaseReadFailed,CaseScriptFailed,CaseCrashed,bgcolor,casename,frcolor,frresult,lgcolor,lgresult,logname,dt2_str)
 switch log_style
     case 'latex'
         message = '';
@@ -1125,12 +1150,17 @@ switch log_style
             extlog.all_cases.empty = false;
         end
         fprintf(extlog.all_cases.fid,'%s',str);
-        if CaseFailed
-            if extlog.failed_cases.empty
-                write_table_header(extlog.failed_cases.fid,'failed_cases',Color)
-                extlog.failed_cases.empty = false;
+        CaseFailed = [CaseReadFailed, CaseScriptFailed, CaseCrashed];
+        FailList = {'reading_failed_cases', 'script_failed_cases', 'crashed_cases'};
+        for ifail = 1:3
+            if CaseFailed(ifail)
+                fcase = FailList{ifail};
+                if extlog.(fcase).empty
+                    write_table_header(extlog.(fcase).fid,fcase,Color)
+                    extlog.(fcase).empty = false;
+                end
+                fprintf(extlog.(fcase).fid,'%s',str);
             end
-            fprintf(extlog.failed_cases.fid,'%s',str);
         end
     otherwise
         fprintf(logid,'<tr bgcolor=%s><td>%s</td>',bgcolor,casename);
@@ -1292,6 +1322,17 @@ function str = color_write(str,color,bold)
 if nargin<3
     bold = false;
 end
+if iscellstr(str)
+    str = str(:)';
+    switch log_style
+        case 'latex'
+            str(2,:) = {'\newline{}'};
+        otherwise
+            str(2,:) = {'<br>'};
+    end
+    str{2,end} = '';
+    str = [str{:}];
+end
 switch log_style
     case 'latex'
         if bold
@@ -1332,7 +1373,7 @@ switch log_style
         end
         fprintf(logid,'%s%s%s\n','\includegraphics*[width=50mm]{',protect_filename(files{end}),'} \\');
         fprintf(logid,'%s\n','\showrowcolors');
-        fprintf(logid,'%s\n','\end{tabular}');
+        fprintf(logid,'%s\n','\end{tabular}\newline');
     otherwise
         fprintf(logid,'<table bgcolor=%s>\n',Color.Table{1});
         fprintf(logid,['<tr>' repmat(['<td width=300 bgcolor=',Color.Titlebar,'>%s</td>'],1,nfiles) '</tr>\n'],files{:});
@@ -1380,33 +1421,34 @@ switch log_style
 end
 
 
-function write_summary(logid1,extlog,NFailed,NTested,NSlower,TotTimeRef,TotTime)
+function write_summary(logid1,extlog,NFailed,NReadFailed,NScriptFailed,NCrashed,NTested,NSlower,TotTimeRef,TotTime)
 switch log_style
     case 'latex'
         sumid = extlog.summary.fid;
         fprintf(sumid,'This document reports on the regression testing of QUICKPLOT.\n');
         fprintf(sumid,'Each test consists of the following steps:.\n');
-	fprintf(sumid,'\\begin{itemize}\n');
-	fprintf(sumid,'\\item Opening the data file.\n');
-	fprintf(sumid,'Read failure is reported as an error.\n');
-	fprintf(sumid,'\\item Determining the quantities contained in the file, and compare this against the reference content.\n');
-	fprintf(sumid,'Missing quantities and changed meta data are reported as errors.\n');
-	fprintf(sumid,'\\item For every quantity contained in the file: read the data of the final time step, and compared with reference data.\n');
-	fprintf(sumid,'Changed data or meta data is reported as an error.\n');
-	fprintf(sumid,'\\end{itemize}\n');
-	fprintf(sumid,'All steps above are summarized in the column "Read".\n');
-	fprintf(sumid,'While this first step guarantees that most of the reading works fine, it doesn''t check whether the plotting or exporting works properly.\n');
-	fprintf(sumid,'Therefore the testing continues ...\n\n');
-	
-	fprintf(sumid,'\\begin{itemize}\n');
-	fprintf(sumid,'\\item For most files a script is executed that triggers various variable selection, plotting, and data export options.\n');
-	fprintf(sumid,'\\end{itemize}\n');
-	fprintf(sumid,'All execution errors and changes in the created (data or figure) files will be reported as errors (missing data files are currently not reported as error, but are typically the result of a reported execution error).\n');
-	fprintf(sumid,'See the report per file for a listing of the script executed and the resulting data tested.\n');
-	fprintf(sumid,'The result of this step is reported in the column "Script".\n');
-	fprintf(sumid,'The graphics part of this second step is more sensitive to hardware changes.\n');
-	fprintf(sumid,'A change in screen resolution may, for instance, trigger slight changes in the figures created and hence many tests to fail; therefore, consistent testing hardware is required for this step.\n\n');
-	
+
+    	fprintf(sumid,'\\begin{itemize}\n');
+    	fprintf(sumid,'\\item Opening the data file.\n');
+    	fprintf(sumid,'Read failure is reported as an error.\n');
+    	fprintf(sumid,'\\item Determining the quantities contained in the file, and compare this against the reference content.\n');
+    	fprintf(sumid,'Missing quantities and changed meta data are reported as errors.\n');
+    	fprintf(sumid,'\\item For every quantity contained in the file: read the data of the final time step, and compared with reference data.\n');
+    	fprintf(sumid,'Changed data or meta data is reported as an error.\n');
+    	fprintf(sumid,'\\end{itemize}\n');
+    	fprintf(sumid,'All steps above are summarized in the column "Read".\n');
+    	fprintf(sumid,'While this first step guarantees that most of the reading works fine, it doesn''t check whether the plotting or exporting works properly.\n');
+    	fprintf(sumid,'Therefore the testing continues ...\n\n');
+
+    	fprintf(sumid,'\\begin{itemize}\n');
+    	fprintf(sumid,'\\item For most files a script is executed that triggers various variable selection, plotting, and data export options.\n');
+    	fprintf(sumid,'\\end{itemize}\n');
+    	fprintf(sumid,'All execution errors and changes in the created (data or figure) files will be reported as errors (missing data files are currently not reported as error, but are typically the result of a reported execution error).\n');
+    	fprintf(sumid,'See the report per file for a listing of the script executed and the resulting data tested.\n');
+    	fprintf(sumid,'The result of this step is reported in the column "Script".\n');
+    	fprintf(sumid,'The graphics part of this second step is more sensitive to hardware changes.\n');
+    	fprintf(sumid,'A change in screen resolution may, for instance, trigger slight changes in the figures created and hence many tests to fail; therefore, consistent testing hardware is required for this step.\n\n');
+
         fprintf(sumid,'The reported timing results compare the timing of the new run against the timing of a reference run.\n');
         fprintf(sumid,'The reference timing is not updated, so the overall performance does not necessarily improve with each "faster than before" release.\n');
         fprintf(sumid,'Depending on the other (background) processes running the timing of tests may vary substantially: repeating the same test will result in slightly different timing results (some tests will become faster while other tests will become slower) -- so we typically don''t look at the individual numbers.\n');
@@ -1415,11 +1457,75 @@ switch log_style
         if NFailed==0
             fprintf(sumid,'The software was successfully run on %d cases; none of them failed.\n',NTested);
         elseif NFailed==1
-            fprintf(sumid,'The software was run on %d cases of which 1 case failed.\n',NTested);
-            fprintf(sumid,'The failed case is shown in Table \\ref{Tab:FailedSummary}.\n');
+            if NTested==1 && NCrashed==1
+                fprintf(sumid,'The software was run on 1 case that crashed.\n');
+            elseif NTested==1
+                fprintf(sumid,'The software was run on 1 case that failed.\n');
+            elseif NCrashed==1
+                fprintf(sumid,'The software was run on %d cases of which 1 case crashed.\n',NTested);
+            else
+                fprintf(sumid,'The software was run on %d cases of which 1 case failed.\n',NTested);
+            end
+            if NReadFailed==1
+                fprintf(sumid,'The failed case is shown in Table \\ref{Tab:ReadFailedSummary}.\n');
+            elseif NScriptFailed==1
+                fprintf(sumid,'The failed case is shown in Table \\ref{Tab:ScriptFailedSummary}.\n');
+            else
+                fprintf(sumid,'The crashed case is shown in Table \\ref{Tab:CrashedSummary}.\n');
+            end
         else
-            fprintf(sumid,'The software was run on %d cases of which %d cases failed.\n',NTested,NFailed);
-            fprintf(sumid,'The failed cases are summarized in Table \\ref{Tab:FailedSummary}.\n');
+            if NTested==NCrashed
+                fprintf(sumid,'The software was run on %d cases that all crashed.\n',NTested);
+            elseif NTested==NFailed && NCrashed==0
+                fprintf(sumid,'The software was run on %d cases that all failed.\n',NTested);
+            elseif NTested==NFailed
+                fprintf(sumid,'The software was run on %d cases that all failed (%d crashed).\n',NTested,NCrashed);
+            elseif NCrashed==NFailed
+                if NFailed==1
+                    fprintf(sumid,'The software was run on %d cases of which 1 case crashed.\n',NTested);
+                else
+                    fprintf(sumid,'The software was run on %d cases of which %d cases crashed.\n',NTested,NFailed);
+                end
+            elseif NCrashed==0
+                if NFailed==1
+                    fprintf(sumid,'The software was run on %d cases of which 1 case failed.\n',NTested);
+                else
+                    fprintf(sumid,'The software was run on %d cases of which %d cases failed.\n',NTested,NFailed);
+                end
+            else
+                fprintf(sumid,'The software was run on %d cases of which %d cases failed (%d crashed).\n',NTested,NFailed,NCrashed);
+            end
+            if NCrashed==NFailed
+                if NCrashed==1
+                    fprintf(sumid,'The crashed case is reported in Table \\ref{Tab:CrashedSummary}.\n');
+                else
+                    fprintf(sumid,'The crashed cases are reported in Table \\ref{Tab:CrashedSummary}.\n');
+                end
+            elseif NCrashed>0
+                if NCrashed==1
+                    fprintf(sumid,'The crashed case is reported in Table \\ref{Tab:CrashedSummary}.\n');
+                else
+                    fprintf(sumid,'The %i crashed cases are reported in Table \\ref{Tab:CrashedSummary}.\n',NCrashed);
+                end
+            end
+            if NReadFailed==0
+                if NCrashed == 0
+                    fprintf(sumid,'No errors were detected during the reading of the data.\n');
+                end
+            elseif NReadFailed==1
+                fprintf(sumid,'One case failed during the reading of the data; it is reported in Table \\ref{Tab:ReadFailedSummary}.\n');
+            else
+                fprintf(sumid,'%i cases failed during the reading of the data; they are reported in Table \\ref{Tab:ReadFailedSummary}.\n',NReadFailed);
+            end
+            if NScriptFailed==0
+                if NCrashed == 0
+                    fprintf(sumid,'No errors were detected while running the data plotting and exporting scripts.\n');
+                end
+            elseif NScriptFailed==1
+                fprintf(sumid,'One case failed while running the data plotting and exporting scripts; it is reported in Table \\ref{Tab:ScriptFailedSummary}.\n');
+            else
+                fprintf(sumid,'%i cases failed while running the data plotting and exporting scripts; they are reported in Table \\ref{Tab:ScriptFailedSummary}.\n',NScriptFailed);
+            end
         end
         %
         if NTested>0
