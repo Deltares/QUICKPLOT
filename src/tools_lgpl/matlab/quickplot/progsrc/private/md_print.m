@@ -211,11 +211,19 @@ else
     %
     switch printObj.Method
         case 1 % Painters
-            printObj.PrtMth = {'-painters'};
+            if matlabversionnumber >= 9.11
+                printObj.PrtMth = {'-vector'};
+            else
+                printObj.PrtMth = {'-painters'};
+            end
         case 2 % Zbuffer
             printObj.PrtMth = {'-zbuffer', sprintf('-r%i',printObj.DPI)};
         case 3 % OpenGL
-            printObj.PrtMth = {'-opengl', sprintf('-r%i',printObj.DPI)};
+            if matlabversionnumber >= 9.11
+                printObj.PrtMth = {'-image', sprintf('-r%i',printObj.DPI)};
+            else
+                printObj.PrtMth = {'-opengl', sprintf('-r%i',printObj.DPI)};
+            end
         otherwise
             printObj.PrtMth = {};
     end
@@ -482,25 +490,32 @@ switch printObj.Name
             set(fig,'inverthardcopy','on');
         end
         switch printObj.Name
-            case {'other Windows printer','default Windows printer','Windows printer'}
-                %paperpos=get(fig,'paperposition');
-                if isdeployed && strcmp(Printer,'default Windows printer')
+            case 'other Windows printer'
+                dvr='-dwin';
+                if printObj.Color
+                    dvr='-dwinc';
+                end
+                if isdeployed
                     deployprint(fig)
-                elseif isdeployed && strcmp(Printer,'other Windows printer')
+                else
+                    print(FigHandle, dvr, printObj.PrtMth{:});
+                end
+            case 'default Windows printer'
+                if exist('printdlg','file')
                     printdlg(fig)
                 else
-                    dvr='-dwin';
-                    if printObj.Color
-                        dvr='-dwinc';
-                    end
-                    print(FigHandle,dvr,printObj.PrtMth{:});
                 end
-                %set(fig,'paperposition',paperpos);
+            case 'Windows printer'
+                dvr='-dwin';
+                if printObj.Color
+                    dvr='-dwinc';
+                end
+                print(FigHandle,dvr,printObj.PrtMth{:});
             case 'Bitmap to clipboard'
                 set(fig,'inverthardcopy','off');
-                print(FigHandle,'-dbitmap');
+                print(FigHandle, '-dbitmap');
             case 'Metafile to clipboard'
-                print(FigHandle,printObj.PrtMth{:},'-dmeta');
+                print(FigHandle, printObj.PrtMth{:}, '-dmeta');
         end
         set(fig,'inverthardcopy',ih);
         cd(ccd)
