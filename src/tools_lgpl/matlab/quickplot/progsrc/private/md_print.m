@@ -70,7 +70,8 @@ if isempty(PL)
     lnx = L+LD;
     all = win+lnx;
     %
-    PL={1  'PDF file'                    all        1     1  1
+    PL={1  'PDF file'                    all        1     1  0
+        1  'Multi page PDF file'         all        1     1  1
         1  'PS file'                     all        1     0  0
         1  'EPS file'                    all        1     0  0
         0  'TIF file'                    all        2     0  0
@@ -106,6 +107,7 @@ getSettings = 0;
 keepOpen = 0;
 printObj.PrtID = -1;
 printObj.NextNr = 1;
+printObj.GhostScript = qp_settings('ghostscript','');
 fileNameArg = '';
 if nargin == 0
     shh=get(0,'showhiddenhandles');
@@ -243,6 +245,9 @@ else
             printObj.dvr='-djpeg';
         case 'PDF file'
             printObj.ext='pdf';
+            printObj.dvr='-dpdf';
+        case 'Multi page PDF file'
+            printObj.ext='pdf';
             printObj.dvr='-dps';
             if printObj.Color
                 printObj.dvr='-dpsc';
@@ -286,7 +291,7 @@ while i < length(figlist)
     i=i+1;
     fig = figlist(i);
     if ~printObj.Append || i == 1
-        printObj = printInitialize(printObj);
+        printObj = printInitialize(printObj,length(figlist));
         fileNameArg = printObj.FileName;
     end
     if ~ischar(printObj.FileName)
@@ -334,7 +339,7 @@ if nargout>0
 end
 
 
-function printObj = printInitialize(printObj)
+function printObj = printInitialize(printObj,nPrints)
 if isempty(printObj.FileName) && ~isempty(printObj.ext)
     defFile = ['default.' printObj.ext];
     if isfield(printObj,'FilePath')
@@ -342,6 +347,9 @@ if isempty(printObj.FileName) && ~isempty(printObj.ext)
     end
     [fn,pn] = uiputfile(defFile,'Specify file name');
     printObj.FileName = [pn,fn];
+    if ~strcmp(printObj.Name,'Multi page PDF file') && nPrints > 1
+        [printObj.BaseName,printObj.NextNr,printObj.FrmtNr] = DetectBaseAndNumber(printObj.FileName);
+    end
 elseif ~isempty(printObj.ext) && ~isfield(printObj,'PDFName')
     [f,p,e] = fileparts(printObj.FileName);
     if ~strcmp(e,['.' printObj.ext])
@@ -353,14 +361,36 @@ if ~isfield(printObj,'NextNr')
 end
 if ischar(printObj.FileName)
     switch printObj.Name
-        case 'PDF file'
+        case 'Multi page PDF file'
             if ~isfield(printObj,'PDFName')
                 printObj.PDFName = printObj.FileName;
                 printObj.FileName = [tempname '.ps'];
             end
     end
 end
-    
+
+
+function [base,nr,FrmtNr] = DetectBaseAndNumber(fn)
+[p,f] = fileparts(fn);
+ndig = 0;
+while length(f)>ndig && ismember(f(end-ndig), '0123456789')
+    ndig = ndig+1;
+end
+if ndig == 0
+    ndig = 3;
+    nr = 0;
+else
+    nr = sscanf(f(end-ndig+1:end),'%d');
+    f = f(1:end-ndig);
+end
+base = fullfile(p,f);
+if ndig>0
+    ndigstr = num2str(ndig);
+    FrmtNr = strcat('%',ndigstr,'.',ndigstr,'i');
+else
+    FrmtNr = '';
+end
+
     
 function printObj = printAdd(printObj, fig)
 if ~ischar(printObj.FileName)
@@ -372,7 +402,7 @@ else
     FigHandle = fig;
 end
 switch printObj.Name
-    case {'TIF file','BMP file','PNG file','JPG file','EPS file','PS file','EMF file','PDF file'}
+    case {'TIF file','BMP file','PNG file','JPG file','EPS file','PS file','EMF file','PDF file','Multi page PDF file'}
         ih=get(fig,'inverthardcopy');
         if isfield(printObj,'InvertHardcopy') && ~printObj.InvertHardcopy
             set(fig,'inverthardcopy','off');
@@ -381,7 +411,7 @@ switch printObj.Name
             set(fig,'inverthardcopy','on');
         end
         %
-        if printObj.NextNr > 1
+        if strcmp(printObj.Name,'Multi page PDF file') && printObj.NextNr > 1
             append = {'-append'};
         else
             append = {};
@@ -398,14 +428,17 @@ switch printObj.Name
         % type settings
         %
         if isfield(printObj,'Paper')
+            pu  = get(fig,'paperunits');
             pt = get(fig,'papertype');
             po = get(fig,'paperorientation');
             ps = get(fig,'papersize');
+            set(fig,'paperunits','inches')
             set(fig,'papersize',printObj.Paper.Size)
             set(fig,'paperorientation',printObj.Paper.Orientation)
             if ~strcmp(printObj.Paper.Type,'<custom>')
                 set(fig,'papertype',printObj.Paper.Type)
             end
+            set(fig,'paperunits',pu)
         end
         %
         % make sure that the printed figure fits onto the page
@@ -424,10 +457,16 @@ switch printObj.Name
             set(fig,'paperposition',[ 0 0 1 1 ])
             pp_adjusted = true;
         end
+        % fig
+        if isfield(printObj,'BaseName')
+            figname = [printObj.BaseName sprintf(printObj.FrmtNr, printObj.NextNr) '.' printObj.ext];
+        else
+            figname = printObj.FileName;
+        end
         %
         % do the actual print
         %
-        print(printObj.FileName, FigHandle, printObj.dvr, printObj.PrtMth{:}, append{:});
+        print(figname, FigHandle, printObj.dvr, printObj.PrtMth{:}, append{:});
         %
         % reset the paper position
         %
@@ -457,7 +496,7 @@ switch printObj.Name
         end
         set(fig,'inverthardcopy',ih);
         %
-        if strcmp(printObj.Name,'PDF file')
+        if strcmp(printObj.Name,'Multi page PDF file')
             switch printObj.PageLabels
                 case 1
                     % no page label
@@ -528,10 +567,11 @@ if ~isfield(printObj,'FileName') || ~ischar(printObj.FileName)
     return
 end
 switch printObj.Name
-    case 'PDF file'
+    case 'Multi page PDF file'
         if isfield(printObj,'Paper') && exist(printObj.FileName,'file')
             ps2pdf('psfile',printObj.FileName, ...
                 'pdffile',printObj.PDFName, ...
+                'gscommand','c:\Program Files\gs\gs10.00.0\bin\gswin64c.exe', ...
                 'gspapersize',paperType2gs(printObj.Paper), ...
                 'deletepsfile',1)
         end
@@ -580,6 +620,9 @@ set(gcbf,'userdata',UD);
 
 function [Settings,FigID] = print_dialog(PL,CanApplyAll,Settings,SelectFrom,FigID)
 persistent PrtID Method DPI Clr InvertHardcopy PageLabels
+if ~exist(qp_settings('ghostscript',''),'file')
+    PL(strcmp(PL(:,2),'Multi page PDF file'),:)=[];
+end
 if isempty(PrtID)
     PrtID=1;
     Method=2;
@@ -918,15 +961,16 @@ while ~gui_quit
                 gui_quit=1;
             case 'OK'
                 gui_quit=1;
-            case 'Figure'
-                FigIndex=get(GUI.FigLst,'value');
-                FigID=AllFigID(FigIndex);
-                if isempty(FigID)
-                    set(GUI.OK,'enable','off')
-                else
-                    set(GUI.OK,'enable','on')
+            case {'Figure','Printer'}
+                if strcmp(cmd,'Figure')
+                    FigIndex=get(GUI.FigLst,'value');
+                    FigID=AllFigID(FigIndex);
+                    if isempty(FigID)
+                        set(GUI.OK,'enable','off')
+                    else
+                        set(GUI.OK,'enable','on')
+                    end
                 end
-            case 'Printer'
                 PrtID=get(GUI.Printer,'value');
                 if strcmp(PL{PrtID,2},'Windows printer')
                     set(GUI.Opt,'enable','on');
@@ -952,13 +996,12 @@ while ~gui_quit
                         set(GUI.InvHard,'enable','off','value',0);
                         Clr=1;
                 end
-                switch PL{PrtID,6}
-                    case 0 % 
-                        set(GUI.PLabelTxt,'enable','off')
-                        set(GUI.PLabels,'enable','off','backgroundcolor',XX.Clr.LightGray)
-                    case 1 % 
-                        set(GUI.PLabelTxt,'enable','on')
-                        set(GUI.PLabels,'enable','on','backgroundcolor',XX.Clr.White)
+                if PL{PrtID,6}==0
+                    set(GUI.PLabelTxt,'enable','off')
+                    set(GUI.PLabels,'enable','off','backgroundcolor',XX.Clr.LightGray)
+                else
+                    set(GUI.PLabelTxt,'enable','on')
+                    set(GUI.PLabels,'enable','on','backgroundcolor',XX.Clr.White)
                 end
             case 'PageLabels'
                 PageLabels = get(GUI.PLabels,'value');

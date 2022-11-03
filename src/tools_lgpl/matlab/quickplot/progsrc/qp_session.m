@@ -790,6 +790,8 @@ end
 function S = local_extract(H, S)
 if nargin>1
     offset = length(S);
+else
+    offset = 0;
 end
 
 for fgi = length(H):-1:1
@@ -804,7 +806,7 @@ for fgi = length(H):-1:1
     S(fgi1).windowsize  = HInfo.Position(3:4); % Units = pixels
     S(fgi1).colour      = round(HInfo.Color*255);
     S(fgi1).expandpar   = [];
-    ExpandP = getappdata(H(fgi1),'ExpandPAR');
+    ExpandP = getappdata(H(fgi),'ExpandPAR');
     if ~isempty(ExpandP)
         S(fgi1).expandpar.filename = ExpandP.FileName;
         S(fgi1).expandpar.domain   = ExpandP.Domain;
@@ -983,7 +985,7 @@ liA  = false(size(A));
 locB = zeros(size(A));
 for j = 1:numel(A)
     for i = 1:numel(B)
-        if isequal(A{j},B{i});
+        if isequal(A{j},B{i})
             liA(j)  = true;
             locB(j) = i;
             break

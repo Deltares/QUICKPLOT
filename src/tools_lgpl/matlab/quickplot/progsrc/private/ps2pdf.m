@@ -32,21 +32,6 @@ function ps2pdf(varargin)
 %
 %                     ** See note on deployed applications, above.
 %
-%      gsfontpath     full path to the Ghostscript font files
-%                     If a gscommand is specified then this path should
-%                     also be specified and reference the same Ghostscript
-%                     version
-%
-%      gslibpath      full path to the Ghostscript library (.ps) files. 
-%                     If a gscommand is specified then this path should
-%                     also be specified and reference the same Ghostscript
-%                     version
-%
-%                     If gscommand is NOT specified and we can determine
-%                     the version of Ghostscript, if any, shipped with
-%                     MATLAB, then this value will be overridden to use the
-%                     path that references MATLAB's version of Ghostscript
-%
 %      gspapersize    paper size to use in the created .pdf file. If not 
 %                     specified or the specified value is not recognized 
 %                     it will use whatever default paper size is 
@@ -86,6 +71,23 @@ function ps2pdf(varargin)
 %    use MATLAB's version of Ghostscript to generate a pdf file and delete
 %    the input.ps file when done 
 %      ps2pdf('psfile', 'input.ps', 'pdffile', 'output.pdf', 'gspapersize', 'a4', 'deletepsfile', 1)
+
+% GhostScript 10.00.0 works better without these settings (on Windows)
+%
+%      gsfontpath     full path to the Ghostscript font files
+%                     If a gscommand is specified then this path should
+%                     also be specified and reference the same Ghostscript
+%                     version
+%
+%      gslibpath      full path to the Ghostscript library (.ps) files. 
+%                     If a gscommand is specified then this path should
+%                     also be specified and reference the same Ghostscript
+%                     version
+%
+%                     If gscommand is NOT specified and we can determine
+%                     the version of Ghostscript, if any, shipped with
+%                     MATLAB, then this value will be overridden to use the
+%                     path that references MATLAB's version of Ghostscript
 
 %   Update log: 
 %      Jul 31, 2013: obtained BSD licensed file by Richard Quist from MATLAB Central
@@ -225,21 +227,21 @@ function gsData = LocalParseArgs(varargin)
                 
             % full path to gs font dir
             case 'gsfontpath' 
-               if ~exist(param_value, 'dir')
-                   error('ps2pdf:ghostscriptFontPath', ...
-                         'Can not find the directory <%s> for Ghostscript fonts (''gsfontpath'')', ...
-                         param_value)
-               end
-               gsData.fontPath = param_value;
+%                if ~exist(param_value, 'dir')
+%                    error('ps2pdf:ghostscriptFontPath', ...
+%                          'Can not find the directory <%s> for Ghostscript fonts (''gsfontpath'')', ...
+%                          param_value)
+%                end
+%                gsData.fontPath = param_value;
 
             % full path to gs lib dir
             case 'gslibpath' 
-               if ~exist(param_value, 'dir')
-                   error('ps2pdf:ghostscriptLibPath', ...
-                         'Can not find the directory <%s> for Ghostscript library files (''gslibpath'')', ...
-                         param_value)
-               end
-               gsData.libPath = param_value;
+%                if ~exist(param_value, 'dir')
+%                    error('ps2pdf:ghostscriptLibPath', ...
+%                          'Can not find the directory <%s> for Ghostscript library files (''gslibpath'')', ...
+%                          param_value)
+%                end
+%                gsData.libPath = param_value;
                 
             % paper size 
             case 'gspapersize'
@@ -334,12 +336,12 @@ function gsData = LocalParseArgs(varargin)
         gsData.libPath = fullfile( ghostDir, 'ps_files', '');
     else
         % if gscommandpath was specified, 
-        if ~isfield(gsData, 'fontPath') || ~isfield(gsData, 'libPath')
-           warning('ps2pdf:ghostscriptCommandSuggestion', ...
-                 ['When specifying a Ghostscript executable (''gscommand'') you should also '...
-                 'specify both the ''gsfontpath'' and ''gslibpath'' locations']);
-   
-        end
+%         if ~isfield(gsData, 'fontPath') || ~isfield(gsData, 'libPath')
+%            warning('ps2pdf:ghostscriptCommandSuggestion', ...
+%                  ['When specifying a Ghostscript executable (''gscommand'') you should also '...
+%                  'specify both the ''gsfontpath'' and ''gslibpath'' locations']);
+%    
+%         end
     end
 end
 
