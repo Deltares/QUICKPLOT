@@ -275,22 +275,11 @@ for ivar = 1:nvars
         if Info.Rank==2
             if strcmp(Info.Dimension{3-CHARDIM},Info.Name)
                 Info.Type = 'coordinate';
-            else
-                j = strmatch('cf_role',Attribs,'exact');
-                if ~isempty(j)
-                    if strcmp(Info.Attribute(j).Value,'timeseries_id') || ...
-                            strcmp(Info.Attribute(j).Value,'profile_id') || ...
-                            strcmp(Info.Attribute(j).Value,'trajectory_id')
-                        %AuxCoordVars=union(AuxCoordVars,{Info.Name});
-                    end
-                end
             end
         end
     elseif Info.Rank==1
         if strcmp(Info.Dimension{1},Info.Name)
             Info.Type = 'coordinate';
-        elseif strcmp(Info.StdName,'latitude') || strcmp(Info.StdName,'longitude')
-            %AuxCoordVars=union(AuxCoordVars,{Info.Name});
         end
     end
     %
@@ -329,11 +318,7 @@ boundVars(cellfun('isempty',boundVars)) = [];
 %
 for ivar = 1:nvars
     Info = nc.Dataset(ivar);
-    if strcmp(Info.Type,'coordinate')
-        idim = Info.Dimid+1;
-    else
-        idim = [];
-    end
+    idim = Info.Dimid+1;
     %
     if strmatch(Info.Name,boundVars,'exact')
         % bounds variables should not be marked as (auxiliary) coordinate
@@ -349,8 +334,8 @@ for ivar = 1:nvars
     %
     % character variables are labels
     %
-    if Info.Nctype == 2 && length(Info.Dimension)==2
-        nc = setType(nc,ivar,idim,'label');
+    if Info.Nctype == 2 && length(Info.Dimension)==2 && ~isempty(idim)
+        nc = setType(nc,ivar,idim(3-CHARDIM),'label');
         continue
     end
     %
@@ -753,10 +738,6 @@ for ivar = 1:nvars
                     nmDims = setdiff(cvDims(1:end-1),vDims);
                     cvSize = cvSize(1:end-1);
                 end
-            elseif length(cvSize) > 1
-                % don't understand coordinate variables with 2 or more
-                % dimensions. Give warning?
-                continue
             else
                 nmDims = setdiff(cvDims,vDims);
             end
@@ -1169,6 +1150,15 @@ for ivar = 1:nvars
     if any(zAddsDims)
         Info.Z(~zAddsDims) = [];
     end
+    % Don't let one-dimensional vertical coordinates self reference unless
+    % its dimension is not associated with the vertical dimension (e.g. bed
+    % elevation defined on an unstructured mesh).
+    % This causes issues for ocean_sigma which needs time/space varying
+    % fields as upper/lower limit for converting the vertical coordinate
+    % to an elevation.
+    if length(Info.Dimension) == 1 && ~ismember(Info.Dimid,Info.TSMNK)
+        Info.Z(abs(Info.Z)==ivar) = [];
+    end
     %
     if ~isempty(Info.Z)
         iZ = abs(Info.Z);
@@ -1305,7 +1295,7 @@ end
 
 function nc = setType(nc,ivar,idim,value)
 nc.Dataset(ivar).Type = value;
-if ~isempty(idim)
+if numel(idim) == 1
     nc.Dimension(idim).Type = value;
 end
 

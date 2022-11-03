@@ -375,6 +375,7 @@ XYneeded = false;
 removeTime   = 0;
 activeloaded = 0;
 szData = [];
+nDims = sum(sz>0);
 if DataRead && Props.NVal>0
     if iscell(Props.varid)
         switch Props.varid{1}
@@ -458,11 +459,15 @@ if DataRead && Props.NVal>0
     end
     %
     switch Props.VectorDef
-        case 4
-            Ans.Angle     = Ans.YComp*pi/180;
+        case {-4,4}
+            if Props.VectorDef == -4 % angle is the FROM-angle defined clockwise positive from North
+                Ans.Angle     = mod(Ans.YComp - 180,360);
+            else % angle is the TO-angle defined clockwise positive from North
+                Ans.Angle     = Ans.YComp;
+            end
             Ans.Magnitude = Ans.XComp;
-            Ans.XComp = Ans.Magnitude.*sin(Ans.Angle);
-            Ans.YComp = Ans.Magnitude.*cos(Ans.Angle);
+            Ans.XComp = Ans.Magnitude.*sind(Ans.Angle);
+            Ans.YComp = Ans.Magnitude.*cosd(Ans.Angle);
             Ans = rmfield(Ans,'Angle');
             Ans = rmfield(Ans,'Magnitude');
         case 5
@@ -496,6 +501,10 @@ if DataRead && Props.NVal>0
     hdim(N_) = hdim(N_)*2;
     hdim(hdim==0)=[];
     hdim = hdim==2;
+    %
+    if nDims < length(szData)
+        szData = szData(1:nDims);
+    end
 else
     szData = cellfun('length',idx(sz>0));
     hdim   = logical([0 0 1 1 0]);
@@ -1492,12 +1501,15 @@ if XYRead || XYneeded || ZRead
         catch Ex
             qp_error({sprintf('Retrieving vertical coordinate "%s" failed, continuing with layer index as vertical coordinate.',CoordInfo.Name),'The error message encountered reads:'},Ex,'netcdffil')
             kDim = length(szData);
-            kVec = ones(1,kDim);
+            kVec = ones(1,max(2,kDim));
             kVec(kDim) = length(idx{K_});
             if vCoordExtended
-                Z = repmat(reshape(idx{K_},kVec)-0.5,szData(1:kDim-1));
+                Z = reshape(idx{K_},kVec) - 0.5;
             else
-                Z = repmat(reshape(idx{K_},kVec),szData(1:kDim-1));
+                Z = reshape(idx{K_},kVec);
+            end
+            if kDim > 1
+                Z = repmat(Z,szData(1:kDim-1));
             end
         end
         %
@@ -2202,12 +2214,14 @@ end
 %
 % VecStdNameTable: component_1, component_2, vector_type, quickplot_combined_name
 %   vector_type = 0: x and y
-%                 4: magnitude and direction
+%                 4: magnitude and to direction
+%                -4: magnitude and from direction
 %                 5: normal and tangential (on ugrid edge)
 VecStdNameTable = {
     'sea_water_speed',               'direction_of_sea_water_velocity',4,'sea_water_velocity'
     'sea_ice_speed',                 'direction_of_sea_ice_speed',     4,'sea_ice_velocity'
     'wind_speed',                    'wind_to_direction',              4,'air_velocity'
+    'wind_speed',                    'wind_from_direction',           -4,'air_velocity'
     'eastward_sea_water_velocity',   'northward_sea_water_velocity',   0,'sea_water_velocity'
     'sea_water_x_velocity',          'sea_water_y_velocity',           0,'sea_water_velocity'
     'eastward_sea_ice_velocity',     'northward_sea_ice_velocity',     0,'sea_ice_velocity'
@@ -2254,7 +2268,7 @@ while i<length(varid_Out)
             Zstr = Out(i).Name; Zstr(xcmp2+2)='z';
             Name = Out(i).Name([1:xcmp2-1 xcmp2+14:end]);
         end
-        j=1; j2=2;
+        col = 1;
         VectorDef = 0; % x and y
         %
         names = {Out.Name};
@@ -2272,28 +2286,35 @@ while i<length(varid_Out)
     if isempty(y)
         % no (unique) match found yet
         stdname = FI.Dataset(Out(i).varid+1).StdName;
-        j = strmatch(stdname,VecStdNameTable(:,1:2),'exact');
-        if ~isempty(j)
+        j = strcmp(stdname,VecStdNameTable(:,1:2));
+        if any(j(:))
             % standard name matches known standard name of a vector component
-            if j<=nVecStdNames
-                j2 = j+nVecStdNames;
-                Name = VecStdNameTable{j,4};
-                VectorDef = VecStdNameTable{j,3};
-            else
-                j2 = j-nVecStdNames;
-                Name = VecStdNameTable{j2,4};
-                VectorDef = VecStdNameTable{j2,3};
-            end
-            Ystr = VecStdNameTable{j2};
+            row = find(any(j,2));
+            col = j*[1;2];
+            col(col==0) = [];
+            j2 = row;
+            j2(col == 1) = j2(col == 1) + nVecStdNames; 
+            Ystr = VecStdNameTable(j2);
             %
             ii = i+1:length(Out);
             varid = varid_Out(ii);
             ii(varid<0) = [];
             varid(varid<0) = [];
             stdnames = {FI.Dataset(varid+1).StdName};
-            y = ii(strcmp(stdnames,Ystr) & strcmp({Out(ii).AppendName},Out(i).AppendName));
-            if length(y)>1
-                y = []; %y(1);
+            ymatch = ismember(stdnames,Ystr) & strcmp({Out(ii).AppendName},Out(i).AppendName);
+            %
+            if any(ymatch)
+                if sum(ymatch) > 1
+                    y = []; % non-unique match, don't do something random
+                else
+                    y = ii(ymatch);
+                    stdname = stdnames(ymatch);
+                    rmatch = strcmp(stdname,Ystr);
+                    row = row(rmatch);
+                    col = col(rmatch);
+                    Name = VecStdNameTable{row,4};
+                    VectorDef = VecStdNameTable{row,3};
+                end
             end
         end
     end
@@ -2303,7 +2324,7 @@ while i<length(varid_Out)
         Out(i).Name = Name;
         Out(i).VectorDef = VectorDef;
         Out(i).MNK = VectorDef==5;
-        if j<j2
+        if col == 1
             Out(i).varid=[Out(i).varid Out(y).varid];
         else
             Out(i).varid=[Out(y).varid Out(i).varid];
