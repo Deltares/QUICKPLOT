@@ -23,6 +23,9 @@ function varargout = asciiwind(cmd,varargin)
 %
 %   See also ARCGRID.
 
+%   ASCIIWIND('to_netcdf', INFO, FILENAME) writes the data read from the
+%   ascii wind file specified by INFO to a new netCDF file FILENAME.
+
 %   MERGED = ASCIIWIND('merge',INFO1,INFO2) verifies whether INFO1 and
 %   INFO2 are compatible data structures and if so, it returns INFO1 as
 %   MERGED with an extra field called 'Vector' containing the INFO2.
@@ -63,7 +66,7 @@ if nargin==0
     end
     return
 end
-switch cmd
+switch lower(cmd)
     case 'open'
         varargout{1} = Local_open_file(varargin{:});
     case 'read'
@@ -72,6 +75,8 @@ switch cmd
         varargout{1} = merge_files(varargin{:});
     case 'grid'
         [varargout{1:3}] = Local_get_grid(varargin{:});
+    case 'to_netcdf'
+        Local_write_netcdf(varargin{:});
     otherwise
         error('Unknown command: "%s"',cmd)
 end
@@ -85,21 +90,26 @@ if nargin<2
         Quant=1;
     end
 elseif ischar(Quant)
-    iQuant = ustrcmpi(Quant,Structure.Header.quantity);
-    if iQuant<0
-        error('Unknown quantity: %s',Quant)
+    if isequal(Quant,':')
+        Quant = 1:Structure.Header.n_quantity;
+    else
+        iQuant = ustrcmpi(Quant,Structure.Header.quantity);
+        if iQuant<0
+            error('Unknown quantity: %s',Quant)
+        end
+        Quant = iQuant;
     end
-    Quant = iQuant;
 elseif any(Quant<0)
     error('Quantity index %i out of range',min(Quant))
 elseif any(Quant>Structure.Header.n_quantity)
     error('Quantity index %i out of range',max(Quant))
 end
+is_pressure = strcmp(Structure.Header.quantity(Quant), 'p_drop');
+nQuant = length(Quant);
 %
-if length(Quant)>1
-    error('Requesting multiple quantities not yet supported.')
-end
-QuantName = [Structure.Header.quantity{Quant} '_spw_eye'];
+% if nQuant>1
+%     error('Requesting multiple quantities not yet supported.')
+% end
 %
 if nargin<3
     if length(Structure.Data)==1
@@ -124,13 +134,15 @@ end
 fid = fopen(Structure.FileName,'r');
 for i = 1:length(t)
     fseek(fid,Structure.Data(t(i)).offset,-1);
-    fscanf(fid,'%f',[Quant-1 Structure.NVal]);
-    OneTime = fscanf(fid,'%f',[Structure.NVal 1]);
+    OneTime = fscanf(fid,'%f',[Structure.NVal Structure.Header.n_quantity]);
+    OneTime = OneTime(:,Quant);
     switch lower(Structure.Header.filetype)
         case {'meteo_on_equidistant_grid','field_on_equidistant_grid'}
+            %TODO: nQuant>1
             OneTime = reshape(OneTime,[Structure.Header.n_cols Structure.Header.n_rows])';
             OneTime = flipud(OneTime);
         case {'meteo_on_curvilinear_grid','field_on_curvilinear_grid'}
+            %TODO: nQuant>1
             if ~isfield(Structure.Header,'data_row')
                 Structure.Header.data_row = 'grid_row';
             end
@@ -158,20 +170,19 @@ for i = 1:length(t)
                     OneTime = rot90(OneTime,2);
             end
         case {'meteo_on_spiderweb_grid','field_on_spiderweb_grid'}
-            OneTime = reshape(OneTime,[Structure.Header.n_cols Structure.Header.n_rows])';
-            OneTime = OneTime([1 1:end],[1:end 1]);
-            if isfield(Structure.Data(t(i)),QuantName)
-                OneTime(1,:) = Structure.Data(t(i)).(QuantName);
-            else
-                OneTime(1,:) = 0;
-            end
+            OneTime = reshape(OneTime,[Structure.Header.n_cols Structure.Header.n_rows nQuant]);
+            OneTime = permute(OneTime,[2 1 3]);
+            OneTime = OneTime([1 1:end],[1:end 1],:);
+            OneTime(1,:,:) = 0;
+            OneTime(1,:,is_pressure) = Structure.Data(t(i)).p_drop_spw_eye;
         case {'meteo_on_computational_grid','field_on_computational_grid'}
+            %TODO: nQuant>1
             if isfield(Structure.Header,'grid_file')
                 OneTime = reshape(OneTime,size(Structure.Header.grid_file.X)+1);
             end
     end
     if ~isempty(varargin)
-        OneTime = OneTime(rows,cols);
+        OneTime = OneTime(rows,cols,:);
     end
     if isfield(Structure.Header,'nodata_value')
        OneTime(OneTime==Structure.Header.nodata_value)=NaN;
@@ -528,6 +539,12 @@ while 1
         switch keyw
             case {'x_spw_eye','y_spw_eye','p_drop_spw_eye'}
                 Structure.Data(itime).(keyw) = sscanf(value,'%f');
+            case {'pdrop_spw_eye'}
+                if Structure.Header.fileversion>=1.03
+                    error('Keyword "pdrop_spw_eye" found instead of "p_drop_spw_eye"!')
+                else
+                    Structure.Data(itime).p_drop_spw_eye = sscanf(value,'%f');
+                end
             case ''
                 break
             otherwise
@@ -647,6 +664,185 @@ if isequal(S2.Check,'OK')
     else
         S.Vector = S2;
     end
+end
+
+
+function Local_write_netcdf(Structure,filename,varargin)
+if ischar(Structure)
+    Structure = Local_open_file(Structure);
+end
+
+Header = Structure.Header;
+switch lower(Header.filetype)
+    case {'meteo_on_equidistant_grid','field_on_equidistant_grid','meteo_on_curvilinear_grid','field_on_curvilinear_grid','meteo_on_computational_grid','field_on_computational_grid'}
+       error('Converting %s to netCDF not yet implemented.')
+    case {'meteo_on_spiderweb_grid','field_on_spiderweb_grid'}
+       nc_writer = @Local_write_netcdf_spw;
+end
+mode = netcdf.getConstant('NETCDF4');
+%mode = bitor(mode,netcdf.getConstant('CLASSIC_MODEL'));
+ncid = netcdf.create(filename,mode);
+try
+    nc_writer(Structure,ncid,varargin{:})
+    netcdf.close(ncid);
+catch e
+    netcdf.close(ncid);
+    rethrow(e)
+end
+
+
+function Local_write_netcdf_spw(Structure,ncid,wind_opt)
+if nargin<3
+    wind_opt = 'x+y';
+end
+
+UNLIMITED = netcdf.getConstant('UNLIMITED');
+times = [Structure.Data.time];
+ref_time = min(times);
+times = times - ref_time;
+n_times = length(times);
+n_range = Structure.Header.n_rows;
+ranges = (1:n_range) * Structure.Header.spw_radius / n_range;
+n_azimuth = Structure.Header.n_cols;
+azimuths = (0:n_azimuth-1) * 360 / n_azimuth;
+p_unit = Structure.Header.unit{3};
+
+time_dim = netcdf.defDim(ncid,'time',UNLIMITED);
+range_dim = netcdf.defDim(ncid,'range',n_range);
+azimuth_dim = netcdf.defDim(ncid,'azimuth',n_azimuth);
+
+time_var = netcdf.defVar(ncid,'time','double',time_dim);
+netcdf.putAtt(ncid,time_var,'standard_name','time');
+netcdf.putAtt(ncid,time_var,'calendar','gregorian');
+tunits = sprintf('days since %sZ',datestr(ref_time,31));
+netcdf.putAtt(ncid,time_var,'units',tunits);
+
+if strcmp(Structure.Header.grid_unit,'degree')
+    x_var = 'longitude_eye';
+    x_sname = 'longitude';
+    x_descr = 'longitude of eye';
+    x_units = 'degrees_east';
+    %
+    y_var = 'latitude_eye';
+    y_sname = 'latitude';
+    y_descr = 'latitude of eye';
+    y_units = 'degrees_north';
+else
+    x_var = 'x_eye';
+    x_sname = 'projection_x_coordinate';
+    x_descr = 'x-coordinate of eye';
+    x_units = 'm';
+    %
+    y_var = 'y_eye';
+    y_sname = 'projection_y_coordinate';
+    y_descr = 'y-coordinate of eye';
+    y_units = 'm';
+end
+xy_vars = [y_var ' ' x_var];
+
+range_id = netcdf.defVar(ncid,'range','double',range_dim);
+netcdf.putAtt(ncid,range_id,'standard_name','projection_range_coordinate');
+netcdf.putAtt(ncid,range_id,'long_name','distance from eye');
+netcdf.putAtt(ncid,range_id,'eye_coordinates',xy_vars);
+netcdf.putAtt(ncid,range_id,'units','m');
+netcdf.putAtt(ncid,range_id,'axis','radial_range_coordinate');
+
+azimuth_id = netcdf.defVar(ncid,'azimuth','double',azimuth_dim);
+netcdf.putAtt(ncid,azimuth_id,'standard_name','ray_azimuth_angle');
+netcdf.putAtt(ncid,azimuth_id,'long_name','azimuth angle clockwise from North');
+netcdf.putAtt(ncid,azimuth_id,'units','degrees');
+netcdf.putAtt(ncid,azimuth_id,'eye_coordinates',xy_vars);
+netcdf.putAtt(ncid,azimuth_id,'axis','radial_azimuth_coordinate');
+
+x_eye_id = netcdf.defVar(ncid,x_var,'double',time_dim);
+netcdf.putAtt(ncid,x_eye_id,'standard_name',x_sname);
+netcdf.putAtt(ncid,x_eye_id,'long_name',x_descr);
+netcdf.putAtt(ncid,x_eye_id,'units',x_units);
+
+y_eye_id = netcdf.defVar(ncid,y_var,'double',time_dim);
+netcdf.putAtt(ncid,y_eye_id,'standard_name',y_sname);
+netcdf.putAtt(ncid,y_eye_id,'long_name',y_descr);
+netcdf.putAtt(ncid,y_eye_id,'units',y_units);
+
+eye_pressure_id = netcdf.defVar(ncid,'eye_pressure','double',time_dim);
+netcdf.putAtt(ncid,eye_pressure_id,'long_name','air pressure in the eye');
+netcdf.putAtt(ncid,eye_pressure_id,'units',p_unit);
+
+switch wind_opt
+    case 'mag+from' % mag + from_dir
+        wind_mag_id = netcdf.defVar(ncid,'wind_mag','double',[range_dim,azimuth_dim,time_dim]);
+        netcdf.putAtt(ncid,wind_mag_id,'standard_name','wind_speed');
+        netcdf.putAtt(ncid,wind_mag_id,'units','m/s');
+        
+        wind_dir_id = netcdf.defVar(ncid,'wind_dir','double',[range_dim,azimuth_dim,time_dim]);
+        netcdf.putAtt(ncid,wind_dir_id,'standard_name','wind_from_direction');
+        netcdf.putAtt(ncid,wind_dir_id,'units','degrees');
+        
+    case 'mag+to' % mag + to_dir
+        wind_mag_id = netcdf.defVar(ncid,'wind_mag','double',[range_dim,azimuth_dim,time_dim]);
+        netcdf.putAtt(ncid,wind_mag_id,'standard_name','wind_speed');
+        netcdf.putAtt(ncid,wind_mag_id,'units','m/s');
+        
+        wind_dir_id = netcdf.defVar(ncid,'wind_dir','double',[range_dim,azimuth_dim,time_dim]);
+        netcdf.putAtt(ncid,wind_dir_id,'standard_name','wind_to_direction');
+        netcdf.putAtt(ncid,wind_dir_id,'units','degrees');
+        
+    case 'x+y' % x + y
+        wind_x_id = netcdf.defVar(ncid,'wind_x','double',[range_dim,azimuth_dim,time_dim]);
+        netcdf.putAtt(ncid,wind_x_id,'standard_name','eastward_wind');
+        netcdf.putAtt(ncid,wind_x_id,'units','m/s');
+        
+        wind_y_id = netcdf.defVar(ncid,'wind_y','double',[range_dim,azimuth_dim,time_dim]);
+        netcdf.putAtt(ncid,wind_y_id,'standard_name','northward_wind');
+        netcdf.putAtt(ncid,wind_y_id,'units','m/s');
+        
+    otherwise
+        error('Invalid option for storing wind "%s", expecting "mag+from", "mag+to" or "x+y".', var2str(wind_opt))
+end
+
+pressure_id = netcdf.defVar(ncid,'pressure','double',[range_dim,azimuth_dim,time_dim]);
+netcdf.putAtt(ncid,pressure_id,'long_name','atmospheric pressure');
+netcdf.putAtt(ncid,pressure_id,'eye_value','eye_pressure');
+netcdf.putAtt(ncid,pressure_id,'units',p_unit);
+
+NC_GLOBAL = netcdf.getConstant('GLOBAL');
+netcdf.putAtt(ncid,NC_GLOBAL,'date_modified',datestr(now,31));
+netcdf.putAtt(ncid,NC_GLOBAL,'merge_frac','0.0');
+netcdf.putAtt(ncid,NC_GLOBAL,'Conventions','CF-x');
+
+
+netcdf.putVar(ncid,time_var,0,n_times,times);
+netcdf.putVar(ncid,range_id,0,n_range,ranges);
+netcdf.putVar(ncid,azimuth_id,0,n_azimuth,azimuths);
+
+x_eye = [Structure.Data.x_spw_eye];
+y_eye = [Structure.Data.y_spw_eye];
+p_eye = [Structure.Data.p_drop_spw_eye];
+
+netcdf.putVar(ncid,y_eye_id,x_eye);
+netcdf.putVar(ncid,x_eye_id,y_eye);
+netcdf.putVar(ncid,eye_pressure_id,p_eye);
+
+for t = 1:n_times
+    DATA = Local_read_file(Structure,':',t);
+    switch wind_opt
+        case 'mag+from' % mag + from_dir
+            netcdf.putVar(ncid,wind_mag_id,[0 0 t-1],[n_range n_azimuth 1],DATA(1,2:end,2:end,1))
+            netcdf.putVar(ncid,wind_dir_id,[0 0 t-1],[n_range n_azimuth 1],DATA(1,2:end,2:end,2))
+            
+        case 'mag+to' % mag + to_dir
+            netcdf.putVar(ncid,wind_mag_id,[0 0 t-1],[n_range n_azimuth 1],DATA(1,2:end,2:end,1))
+            netcdf.putVar(ncid,wind_dir_id,[0 0 t-1],[n_range n_azimuth 1],mod(DATA(1,2:end,2:end,2)+180,360))
+            
+        case 'x+y' % x + y
+            um = DATA(1,2:end,2:end,1);
+            to_dir_cart = 270 - DATA(1,2:end,2:end,2);
+            u = um .* cosd(to_dir_cart);
+            v = um .* sind(to_dir_cart);
+            netcdf.putVar(ncid,wind_x_id,[0 0 t-1],[n_range n_azimuth 1],u)
+            netcdf.putVar(ncid,wind_y_id,[0 0 t-1],[n_range n_azimuth 1],v)
+    end
+    netcdf.putVar(ncid,pressure_id,[0 0 t-1],[n_range n_azimuth 1],DATA(1,2:end,2:end,3))
 end
 
 
