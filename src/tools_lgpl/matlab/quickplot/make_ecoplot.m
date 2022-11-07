@@ -36,6 +36,7 @@ function make_ecoplot(basedir,varargin)
 %   $Id$
 
 curdir=pwd;
+err=[];
 addpath(curdir)
 if matlabversionnumber<7.09
     error('Invalid MATLAB version. Use MATLAB R2009b (7.9) or higher for compiling Delft3D-ECOPLOT!')
@@ -47,23 +48,21 @@ if nargin>0
     cd(basedir);
 end
 try
-    err=localmake(varargin{:});
-catch
-    err=lasterr;
+    localmake(varargin{:});
+catch err
 end
 if nargin>0
     cd(curdir);
 end
 rmpath(curdir)
 if ~isempty(err)
-    error(err)
+    rethrow(err)
 end
 
 
-function err=localmake(qpversion,T)
-err='';
+function localmake(qpversion,T)
 if ~exist('progsrc','dir')
-    err='Cannot locate source'; return
+    error('Cannot locate source')
 end
 sourcedir=[pwd,filesep,'progsrc'];
 disp('Copying files ...')
@@ -74,9 +73,8 @@ else
 end
 if ~exist([pwd,filesep,ecodir])
     [success,message] = mkdir(ecodir);
-    if ~success,
-        err=message;
-        return
+    if ~success
+        error(message)
     end
 end
 cd(ecodir);
@@ -109,7 +107,9 @@ fstrrep('d3d_qp.m','<CREATIONDATE>',TStr)
 fstrrep('wl_identification.c','<VERSION>',qpversion)
 fstrrep('wl_identification.c','<CREATIONDATE>',TStr)
 g = which('-all','gscript');
-copyfile(g{1},'.')
+if ~isempty(g)
+    copyfile(g{1},'.')
+end
 make_eco_exe
 X={'*.asv'
     '*.bak'
