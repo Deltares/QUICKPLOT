@@ -711,7 +711,7 @@ n_range = Structure.Header.n_rows;
 ranges = (1:n_range) * Structure.Header.spw_radius / n_range;
 n_azimuth = Structure.Header.n_cols;
 azimuths = (0:n_azimuth-1) * 360 / n_azimuth;
-p_unit = Structure.Header.unit{3};
+p_units = Structure.Header.unit{3};
 
 time_dim = netcdf.defDim(ncid,'time',UNLIMITED);
 range_dim = netcdf.defDim(ncid,'range',n_range);
@@ -773,45 +773,48 @@ netcdf.putAtt(ncid,y_eye_id,'units',y_units);
 eye_pressure_id = netcdf.defVar(ncid,'eye_pressure','double',time_dim);
 %netcdf.putAtt(ncid,eye_pressure_id,'standard_name','surface_air_pressure');
 netcdf.putAtt(ncid,eye_pressure_id,'long_name','surface air pressure in the eye');
-netcdf.putAtt(ncid,eye_pressure_id,'units',p_unit);
+netcdf.putAtt(ncid,eye_pressure_id,'units',p_units);
 
+dim_order = [range_dim,azimuth_dim,time_dim];
+reorder = [2 1 3];
+dim_order = dim_order(reorder);
 switch wind_opt
     case 'mag+from' % mag + from_dir
-        wind_mag_id = netcdf.defVar(ncid,'wind_mag','double',[range_dim,azimuth_dim,time_dim]);
-        netcdf.putAtt(ncid,wind_mag_id,'standard_name','wind_speed');
-        netcdf.putAtt(ncid,wind_mag_id,'units','m/s');
+        wind1_id = netcdf.defVar(ncid,'wind_mag','double',dim_order);
+        netcdf.putAtt(ncid,wind1_id,'standard_name','wind_speed');
+        netcdf.putAtt(ncid,wind1_id,'units','m/s');
         
-        wind_dir_id = netcdf.defVar(ncid,'wind_dir','double',[range_dim,azimuth_dim,time_dim]);
-        netcdf.putAtt(ncid,wind_dir_id,'standard_name','wind_from_direction');
-        netcdf.putAtt(ncid,wind_dir_id,'units','degrees');
+        wind2_id = netcdf.defVar(ncid,'wind_dir','double',dim_order);
+        netcdf.putAtt(ncid,wind2_id,'standard_name','wind_from_direction');
+        netcdf.putAtt(ncid,wind2_id,'units','degrees');
         
     case 'mag+to' % mag + to_dir
-        wind_mag_id = netcdf.defVar(ncid,'wind_mag','double',[range_dim,azimuth_dim,time_dim]);
-        netcdf.putAtt(ncid,wind_mag_id,'standard_name','wind_speed');
-        netcdf.putAtt(ncid,wind_mag_id,'units','m/s');
+        wind1_id = netcdf.defVar(ncid,'wind_mag','double',dim_order);
+        netcdf.putAtt(ncid,wind1_id,'standard_name','wind_speed');
+        netcdf.putAtt(ncid,wind1_id,'units','m/s');
         
-        wind_dir_id = netcdf.defVar(ncid,'wind_dir','double',[range_dim,azimuth_dim,time_dim]);
-        netcdf.putAtt(ncid,wind_dir_id,'standard_name','wind_to_direction');
-        netcdf.putAtt(ncid,wind_dir_id,'units','degrees');
+        wind2_id = netcdf.defVar(ncid,'wind_dir','double',dim_order);
+        netcdf.putAtt(ncid,wind2_id,'standard_name','wind_to_direction');
+        netcdf.putAtt(ncid,wind2_id,'units','degrees');
         
     case 'x+y' % x + y
-        wind_x_id = netcdf.defVar(ncid,'wind_x','double',[range_dim,azimuth_dim,time_dim]);
-        netcdf.putAtt(ncid,wind_x_id,'standard_name','eastward_wind');
-        netcdf.putAtt(ncid,wind_x_id,'units','m/s');
+        wind1_id = netcdf.defVar(ncid,'wind_x','double',dim_order);
+        netcdf.putAtt(ncid,wind1_id,'standard_name','eastward_wind');
+        netcdf.putAtt(ncid,wind1_id,'units','m/s');
         
-        wind_y_id = netcdf.defVar(ncid,'wind_y','double',[range_dim,azimuth_dim,time_dim]);
-        netcdf.putAtt(ncid,wind_y_id,'standard_name','northward_wind');
-        netcdf.putAtt(ncid,wind_y_id,'units','m/s');
+        wind2_id = netcdf.defVar(ncid,'wind_y','double',dim_order);
+        netcdf.putAtt(ncid,wind2_id,'standard_name','northward_wind');
+        netcdf.putAtt(ncid,wind2_id,'units','m/s');
         
     otherwise
         error('Invalid option for storing wind "%s", expecting "mag+from", "mag+to" or "x+y".', var2str(wind_opt))
 end
 
-pressure_id = netcdf.defVar(ncid,'pressure','double',[range_dim,azimuth_dim,time_dim]);
+pressure_id = netcdf.defVar(ncid,'pressure','double',dim_order);
 netcdf.putAtt(ncid,pressure_id,'standard_name','surface_air_pressure');
 netcdf.putAtt(ncid,pressure_id,'long_name','pressure at the bottom of the atmosphere');
 netcdf.putAtt(ncid,pressure_id,'eye_value','eye_pressure');
-netcdf.putAtt(ncid,pressure_id,'units',p_unit);
+netcdf.putAtt(ncid,pressure_id,'units',p_units);
 
 NC_GLOBAL = netcdf.getConstant('GLOBAL');
 netcdf.putAtt(ncid,NC_GLOBAL,'date_modified',datestr(now,31));
@@ -844,25 +847,30 @@ for t = 1:n_times
     % Note that this adds an index n_azimuth+1 to complete the circle (azimuth dimension)
     DATA = Local_read_file(Structure,':',t);
     % remove the extra data lines mentioned above
-    DATA = DATA(1,store_range,store_azim,:);
+    % make sure that the dimension order matches: range, azimuth, time
+    DATA = permute(DATA(1,store_range,store_azim,:),[2 3 1 4]);
     switch wind_opt
         case 'mag+from' % mag + from_dir
-            netcdf.putVar(ncid,wind_mag_id,[0 0 t-1],[n_range n_azimuth 1],DATA(1,:,:,1))
-            netcdf.putVar(ncid,wind_dir_id,[0 0 t-1],[n_range n_azimuth 1],DATA(1,:,:,2))
+            u = DATA(:,:,1,1);
+            v = DATA(:,:,1,2);
             
         case 'mag+to' % mag + to_dir
-            netcdf.putVar(ncid,wind_mag_id,[0 0 t-1],[n_range n_azimuth 1],DATA(1,:,:,1))
-            netcdf.putVar(ncid,wind_dir_id,[0 0 t-1],[n_range n_azimuth 1],mod(DATA(1,:,:,2)+180,360))
+            u = DATA(:,:,1,1);
+            v = mod(DATA(:,:,1,2)+180,360);
             
         case 'x+y' % x + y
-            um = DATA(1,2:end,2:end,1);
-            to_dir_cart = 270 - DATA(1,2:end,2:end,2);
+            um = DATA(:,:,1,1);
+            to_dir_cart = 270 - DATA(:,:,1,2);
             u = um .* cosd(to_dir_cart);
             v = um .* sind(to_dir_cart);
-            netcdf.putVar(ncid,wind_x_id,[0 0 t-1],[n_range n_azimuth 1],u)
-            netcdf.putVar(ncid,wind_y_id,[0 0 t-1],[n_range n_azimuth 1],v)
     end
-    netcdf.putVar(ncid,pressure_id,[0 0 t-1],[n_range n_azimuth 1],DATA(1,:,:,3))
+    start = [0 0 t-1];
+    count = [n_range n_azimuth 1];
+    start = start(reorder);
+    count = count(reorder);
+    netcdf.putVar(ncid,wind1_id,start,count,permute(u,reorder))
+    netcdf.putVar(ncid,wind2_id,start,count,permute(v,reorder))
+    netcdf.putVar(ncid,pressure_id,start,count,permute(DATA(:,:,1,3),reorder))
 end
 
 
