@@ -430,7 +430,10 @@ if strcmp(Ops.presentationtype,'vector') || ...
         if isfield(data,'SEG')
             data(i).EdgeNodeConnect = data(i).SEG;
         end
-        if isfield(data,'XY')
+        if isfield(data,'XYZ')
+            data(i).X = data(i).XYZ(:,:,:,1);
+            data(i).Y = data(i).XYZ(:,:,:,2);
+        elseif isfield(data,'XY')
             if iscell(data(i).XY)
                 data(i).X = NaN(size(data(i).XY));
                 data(i).Y = data(i).X;
@@ -487,7 +490,7 @@ if strcmp(Ops.presentationtype,'vector') || ...
         end
         data(i).Geom = 'sSEG';
     end
-    for c = {'FaceNodeConnect','EdgeNodeConnect','ValLocation','SEG','XY','EdgeGeometry'}
+    for c = {'FaceNodeConnect','EdgeNodeConnect','ValLocation','SEG','XY','XYZ','TRI','EdgeGeometry'}
         s = c{1};
         if isfield(data,s)
             data = rmfield(data,s);
@@ -1269,6 +1272,7 @@ if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
     isAx =strcmp(get(Chld,'type'),'axes');
     nonAx=Chld(~isAx);
     Ax   =Chld(isAx);
+    has_colorbar = ~isempty(findall(Parent,'tag','ColorbarDeleteProxy'));
     h=qp_colorbar(Ops.colourbar,'peer',Parent);
     if ~isempty(Units)
         if isequal(Units,'<matlab_time>')
@@ -1291,7 +1295,7 @@ if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
         case 'horiz'
             xlabel(h,PName)
     end
-    if ~isempty(h)
+    if ~has_colorbar && ~isempty(h)
         set(pfig,'children',[nonAx;h;Ax(ishandle(Ax) & (Ax~=h))])
         cbratio = qp_settings('colorbar_ratio');
         if cbratio>1
