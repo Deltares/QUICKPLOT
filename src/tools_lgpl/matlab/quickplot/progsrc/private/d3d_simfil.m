@@ -556,6 +556,7 @@ switch FI.FileType(9:end)
                             Ans.XY{j} = landboundary('read',relpath(path_str,pli_files{j}));
                         end
                     end
+                    Ans.Val = inifile('hcgetstringi',FI.Structure,IndexChapter,'id','');
                 else
                     Ans = [];
                 end
@@ -1060,7 +1061,7 @@ switch FI.FileType
                             Out(ifld).Geom = 'POLYL';
                             Out(ifld).Coords = 'xy';
                             Out(ifld).DimFlag(ST_) = 3;
-                            Out(ifld).NVal = 0;
+                            Out(ifld).NVal = 4;
                         end
                         if ismember('dambreak',utypes)
                             ifld = ifld+1;
