@@ -870,7 +870,7 @@ for ifld = 1:nchp
                     DATA  = [DATA;DATA_t];
                     ntim  = ntim  + ~iMissing;
                     if it==itstop
-                        DATA = prctile(DATA, info.prctl, 1);
+                        DATA = compute_percentile(DATA, info.prctl);
                         DATA(ntim==0) = NaN;
                     end
             end
