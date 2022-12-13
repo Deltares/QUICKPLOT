@@ -58,10 +58,10 @@ if nargin<3
     base = 100;
 end
 if ~isnumeric(x)
-    error("First argument must be a numeric vector or matrix")
+    error('First argument must be a numeric vector or matrix')
 end
 if ~isnumeric(p) || ~isvector(p) || any(p<0) || any(p>base)
-    error ("Second argument must be a numeric vector with values between 0 and %g",base)
+    error ('Second argument must be a numeric vector with values between 0 and %g',base)
 end
 
 % convert source array x into a matrix
