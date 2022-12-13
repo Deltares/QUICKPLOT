@@ -77,8 +77,10 @@ n = sum(~isnan(x),1);
 % make sure that quantile is column vector
 p = p(:)/base;
 
-% determine number of rows of original data (x) and percentile data (p)
+% determine number of rows of original data (x), number of locations (n)
+% and percentile data (p)
 len_p = length(p);
+len_n = size(x,2);
 len_x = size(x,1);
 
 % determine fractional index of the quantiles
@@ -95,7 +97,7 @@ i(z) = 1;
 a(z) = 0;
 
 % convert column index into matrix index
-I = i + repmat((0:(len_x-1))*len_x,len_p,1);
+I = i + repmat((0:(len_n-1))*len_x,len_p,1);
 
 % obtain base values
 q = x(I);
