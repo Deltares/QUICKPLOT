@@ -556,7 +556,7 @@ for fgi = length(S):-1:1
             %
             opened_files = file_and_domain(opened_files,S(fgi).axes(axi).items(itm));
             %
-            if d3d_qp('selectfield',S(fgi).axes(axi).items(itm).name);
+            if d3d_qp('selectfield',S(fgi).axes(axi).items(itm).name)
                 if ~isempty(S(fgi).axes(axi).items(itm).subfield)
                     d3d_qp('selectsubfield',S(fgi).axes(axi).items(itm).subfield)
                 end
