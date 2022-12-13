@@ -48,8 +48,8 @@ try
     else
         [varargout{1:nargout}] = feval(varargin{:});
     end
-catch
-    e=lasterr;
+catch e
+    % continue
 end
 
 %
@@ -60,5 +60,5 @@ if ~isempty(warnstate)
 end
 
 if ~isempty(e)
-    error(e);
+    rethrow(e)
 end
