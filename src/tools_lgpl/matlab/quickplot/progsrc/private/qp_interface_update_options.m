@@ -1471,9 +1471,9 @@ if ask_for_thinningmode
     thinfld=findobj(OH,'tag','thinfld=?');
     set(thinfld,'enable','on','backgroundcolor',Active)
     thinmodes = {'none','uniform','distance'}'; %,'regrid'
-    if unstructured % no uniform thinning for unstructured meshes
-        thinmodes(2)=[];
-    end
+    %if unstructured % no uniform thinning for unstructured meshes
+    %    thinmodes(2)=[];
+    %end
     prevthinmodes = get(thinfld,'string');
     thinmode = prevthinmodes{get(thinfld,'value')};
     if ~isequal(prevthinmodes,thinmodes)
