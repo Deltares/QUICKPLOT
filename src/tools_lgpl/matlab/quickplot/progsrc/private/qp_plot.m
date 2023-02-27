@@ -199,7 +199,7 @@ if ~strcmp(Parent,'loaddata')
         end
     end
     %
-    if isfield(Ops,'zlevel')
+    if isfield(Ops,'zlevel') && ~isequal(Ops.zlevel,'auto')
         Level = Ops.zlevel;
     else
         Level = -1;
