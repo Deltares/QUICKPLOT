@@ -78,10 +78,11 @@ for i=1:length(Val)
             Str=var2str(Val(i));
         end
     elseif iscell(Val)
-        Str=protectstring(Val{i});
+        Str=Val{i};
     else % char
-        Str=protectstring(Val(i));
+        Str=Val(i);
     end
+    Str = protectstring(Str);
     if zcoord
         hNew(i+1)=text(X(i),Y(i),Z(i),Str,'parent',Parent); % faster to use text(X,Y,Z,Val,...)?
     else
