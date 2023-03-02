@@ -248,6 +248,8 @@ if manualTicks
         end
     end
     set(ax,[X 'tick'],t,[X 'ticklabel'],tstr)
+else
+    set(ax,[X 'tickmode'],'auto',[X 'ticklabelmode'],'auto')
 end
 
 if ~isfield(ud,'DeleteProxy'), ud.DeleteProxy = []; end
