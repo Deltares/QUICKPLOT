@@ -159,11 +159,18 @@ if FI.NumDomains>1
             args{marg} = 0;
         end
         %
-        if iscell(Props.varid) && strcmp(Props.varid{1},'stream_function')
-            % select all M_
-            Props.Geom = 'UGRID2D-EDGE';
-            Props.varid = Props.varid{2};
-            Props.DimName{M_} = FI.Dataset(FI.Dataset(Props.varid+1).Mesh{2}).Mesh{6};
+        if iscell(Props.varid)
+            if strcmp(Props.varid{1},'stream_function')
+                % select all M_
+                Props.Geom = 'UGRID2D-EDGE';
+                Props.varid = Props.varid{2};
+                Props.DimName{M_} = FI.Dataset(FI.Dataset(Props.varid+1).Mesh{2}).Mesh{6};
+            elseif strcmp(Props.varid{1},'net_discharge_into_cell')
+                % select all M_
+                Props.Geom = 'UGRID2D-EDGE';
+                Props.varid = Props.varid{2};
+                Props.DimName{M_} = FI.Dataset(FI.Dataset(Props.varid+1).Mesh{2}).Mesh{6};
+            end
         end
     else
         % all partitions - unmerged - only "all m" allowed ...
@@ -267,11 +274,18 @@ if FI.NumDomains>1
             end
         end
         %
-        if iscell(field.varid) && strcmp(field.varid{1},'stream_function') % note field is the original copy of Props
-            if DataRead
-                Data.Val = compute_stream_function(Data.Val, Data.EdgeNodeConnect, FI.MergedPartitions(m).nNodes);
+        if iscell(field.varid)
+            if strcmp(field.varid{1},'stream_function') % note field is the original copy of Props
+                if DataRead
+                    Data.Val = compute_stream_function(Data.Val, Data.EdgeNodeConnect, FI.MergedPartitions(m).nNodes);
+                end
+                Data.ValLocation = 'NODE';
+            elseif strcmp(Props.varid{1},'net_discharge_into_cell')
+                if DataRead
+                    Data.Val = compute_net_discharge_into_cell(Data.Val, Data.EdgeNodeConnect, FI.MergedPartitions(m).nFaces);
+                end
+                Data.ValLocation = 'FACE';
             end
-            Data.ValLocation = 'NODE';
         end
         if ~isequal(idx{M_},0)
             if XYRead
@@ -392,11 +406,30 @@ if DataRead && Props.NVal>0
                     meshAttribs = {meshInfo.Attribute.Name};
                 end
                 connect     = strmatch('edge_node_connectivity',meshAttribs,'exact');
-                [EdgeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
-                EdgeConnect(EdgeConnect<0) = NaN;
+                [EdgeNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
+                EdgeNodeConnect(EdgeNodeConnect<0) = NaN;
                 %
                 % Compute stream function psi (u = dpsi/dy, v = -dpsi/dx)
-                Psi = compute_stream_function(Discharge, EdgeConnect, sz(3));
+                Psi = compute_stream_function(Discharge, EdgeNodeConnect, sz(3));
+                %
+                Ans.Val = Psi(idx{3});
+            case 'net_discharge_into_cell'
+                edge_idx = idx;
+                edge_idx{3} = 1:FI.Dimension(Info.TSMNK(3)+1).Length;
+                Props.DimName{M_} = FI.Dataset(FI.Dataset(ivar+1).Mesh{3}).Mesh{6};
+                [Discharge, status] = qp_netcdf_get(FI,ivar,Props.DimName,edge_idx);
+                %
+                meshInfo    = FI.Dataset(Info.Mesh{3});
+                if isempty(meshInfo.Attribute)
+                    meshAttribs = {};
+                else
+                    meshAttribs = {meshInfo.Attribute.Name};
+                end
+                connect     = strmatch('edge_face_connectivity',meshAttribs,'exact');
+                [EdgeFaceConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
+                EdgeFaceConnect(EdgeFaceConnect<0) = NaN;
+                %
+                Psi = compute_net_discharge_into_cell(Discharge, EdgeFaceConnect, sz(3));
                 %
                 Ans.Val = Psi(idx{3});
             case 'erosion_sedimentation'
@@ -2024,6 +2057,14 @@ else
                 Insert.DimName{M_} = FI.Dataset(FI.Dataset(Insert.varid{2}+1).Mesh{3}).Mesh{5};
                 %
                 Out(end+1)=Insert;
+                %
+                Insert.Name = [prefix, 'net discharge into cell']; % can be used as stationarity check for the stream function
+                Insert.Geom = 'UGRID2D-FACE';
+                Insert.varid{1} = 'net_discharge_into_cell';
+                Insert.DimName{M_} = FI.Dataset(FI.Dataset(Insert.varid{2}+1).Mesh{3}).Mesh{7};
+                Insert.DataInCell = 1;
+                %
+                Out(end+1)=Insert;
             end
         else
             switch lower(Insert.Name)
@@ -2442,6 +2483,16 @@ if iscell(varid)
             dimNodes = FI.Dataset(XVar).TSMNK(3)+1;
             sz(M_) = FI.Dimension(dimNodes).Length;
             varid{2} = XVar;
+        case 'net_discharge_into_cell'
+            % get underlying discharge on edge variable
+            Info = FI.Dataset(varid{2}+1);
+            if ~isnan(Info.TSMNK(1))
+                sz(1) = FI.Dimension(Info.TSMNK(1)+1).Length;
+            end
+            % get the mesh variable
+            Info = FI.Dataset(Info.Mesh{3});
+            % get the face dimension
+            sz(M_) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{7})).Length;
         case 'node_index'
             Info = FI.Dataset(varid{2}+1);
             sz(M_) = FI.Dimension(strcmp({FI.Dimension.Name},Info.Mesh{5})).Length;
@@ -2930,7 +2981,7 @@ if localfopen
     fclose(fid);
 end
 
-function Psi = compute_stream_function(Discharge, EdgeConnect, nNodes)
+function Psi = compute_stream_function(Discharge, EdgeNodeConnect, nNodes)
 Psi = NaN(nNodes,1);
 Psi(1) = 0;
 found = true;
@@ -2940,18 +2991,24 @@ while found
     nnodes_done = sum(~isnan(Psi));
     progressbar(nnodes_done/nnodes, hPB);
     found = false;
-    for i = 1:size(EdgeConnect,1)
-        if ~isnan(Psi(EdgeConnect(i,1))) && isnan(Psi(EdgeConnect(i,2))) && ~isnan(Discharge(i))
-            Psi(EdgeConnect(i,2)) = Psi(EdgeConnect(i,1)) + Discharge(i);
+    for i = 1:size(EdgeNodeConnect,1)
+        if ~isnan(Psi(EdgeNodeConnect(i,1))) && isnan(Psi(EdgeNodeConnect(i,2))) && ~isnan(Discharge(i))
+            Psi(EdgeNodeConnect(i,2)) = Psi(EdgeNodeConnect(i,1)) + Discharge(i);
             found = true;
-        elseif isnan(Psi(EdgeConnect(i,1))) && ~isnan(Psi(EdgeConnect(i,2))) && ~isnan(Discharge(i))
-            Psi(EdgeConnect(i,1)) = Psi(EdgeConnect(i,2)) - Discharge(i);
+        elseif isnan(Psi(EdgeNodeConnect(i,1))) && ~isnan(Psi(EdgeNodeConnect(i,2))) && ~isnan(Discharge(i))
+            Psi(EdgeNodeConnect(i,1)) = Psi(EdgeNodeConnect(i,2)) - Discharge(i);
             found = true;
         end
     end
 end
 delete(hPB)
 Psi = Psi - min(Psi);
+
+function Psi = compute_net_discharge_into_cell(Discharge, EdgeFaceConnect, nFaces)
+from_somewhere = EdgeFaceConnect(:,1)~=0;
+to_somewhere = EdgeFaceConnect(:,2)~=0;
+Psi = -accumarray(EdgeFaceConnect(from_somewhere,1),Discharge(from_somewhere)',[nFaces,1]) ...
+      +accumarray(EdgeFaceConnect(to_somewhere,2),Discharge(to_somewhere)',[nFaces,1]);
 
 function check = strend(Str,SubStr)
 len_ss = length(SubStr);
