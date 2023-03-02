@@ -63,11 +63,7 @@ elseif isfield(data,'TRI')
 elseif isfield(data,'Connect')
     data.FaceNodeConnect = data.Connect;
     data = rmfield(data,'Connect');
-else
-    data.FaceNodeConnect = [];
 end
-FaceNodeConnect = data.FaceNodeConnect;
-nc = size(FaceNodeConnect,2);
 if isfield(data,'XYZ')
     data.X = data.XYZ(:,:,:,1);
     data.Y = data.XYZ(:,:,:,2);
@@ -102,7 +98,7 @@ switch NVal
                     if isfield(data,'EdgeNodeConnect')
                         EdgeNodeConnect = data.EdgeNodeConnect;
                     else
-                        EdgeNodeConnect = fnc2enc(FaceNodeConnect);
+                        EdgeNodeConnect = fnc2enc(data.FaceNodeConnect);
                     end
                     %
                     xy = EdgeNodeConnect(:,[1 2 2])';
