@@ -2847,8 +2847,13 @@ switch cmd
         
     case {'comline','hidecomline'}
         currentstatus=get(UD.ComLine.Fig,'visible');
-        if strcmp(cmd,'hidecomline'),
+        if strcmp(cmd,'hidecomline')
             currentstatus='on';
+        elseif matlabversionnumber >= 9.04 % 2018a
+            winstate = get(UD.ComLine.Fig,'WindowState');
+            if ~strcmp(winstate,'normal')
+                set(UD.ComLine.Fig,'WindowState','normal')
+            end
         else
             try
                 jFrame = get(handle(UD.ComLine.Fig),'JavaFrame');
