@@ -1,4 +1,4 @@
-function outdata=d3d_qp(cmd,varargin)
+function outdata = d3d_qp(cmd,varargin)
 %D3D_QP QuickPlot user interface: plotting interface for Delft3D output data.
 %   To start the interface type: d3d_qp
 %
@@ -317,6 +317,7 @@ switch cmd
         d3d_qp updatedomains
         d3d_qp refreshfigs
         set(mfig,'CloseRequestFcn','d3d_qp close');
+        finalversion(1)
         
     case {'openfile','reloadfile','openurl'}
         OpenFile=findobj(mfig,'tag','openfile','type','uipushtool');

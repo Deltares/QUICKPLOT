@@ -1,17 +1,5 @@
-function Out = qpfopen(varargin)
-%QPFOPEN General routine for open various types of data files.
-%   FILE = QPFOPEN('Filename') opens the specified output file and returns
-%   a structure containing data used by the QPREAD function.
-%
-%   For Delwaq/par MAP files the user should also specify a grid file:
-%   FILE = QPFOPEN('DataFile','GridFile')
-%   If no grid file is specified then the MAP file is treated as a history
-%   file with an observation point for each segment.
-%
-%   When no arguments are passed to the function, the user is asked to
-%   specify the file using a standard file selection dialog window.
-%
-%   See also QPREAD, D3D_QP.
+function finalversion(gui)
+%LASTVERSION Report that this is the last version.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -42,7 +30,17 @@ function Out = qpfopen(varargin)
 %   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
+persistent finalremark
 
-finalversion
-[Out,FileName,Tp] = qp_fmem('open',varargin{:});
-Out.QP_FileType = Tp;
+if isempty(finalremark)
+    Str = {'We''re migrating to GitLab. This is the final QUICKPLOT / Delft3D-MATLAB'
+           'toolbox version from the https://svn.oss.deltares.nl repository. Please'
+           'check after 13 March 2023 the Deltares OSS website for information on'
+           'where to newer versions.'};
+    if nargin > 0 && gui
+        ui_message('warning',Str);
+    else
+        fprintf('%s\n',Str{:});
+    end
+    finalremark = 'done';
+end
