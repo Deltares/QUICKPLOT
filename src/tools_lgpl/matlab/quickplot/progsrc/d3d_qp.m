@@ -319,7 +319,6 @@ switch cmd
         d3d_qp updatedomains
         d3d_qp refreshfigs
         set(mfig,'CloseRequestFcn','d3d_qp close');
-        finalversion(1)
         
     case {'openfile','reloadfile','openurl'}
         OpenFile=findobj(mfig,'tag','openfile','type','uipushtool');
