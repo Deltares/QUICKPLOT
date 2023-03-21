@@ -110,6 +110,8 @@ fprintf('Current date and time           : %s\n', TStr);
 fprintf('Modifying files ...\n');
 fstrrep([targetdir,filesep,'d3d_qp.m'], '<VERSION>', qpversion)
 fstrrep([targetdir,filesep,'d3d_qp.m'], '<CREATIONDATE>', TStr)
+fstrrep([targetdir,filesep,'d3d_qp.m'], '<GITHASH>', hash)
+fstrrep([targetdir,filesep,'d3d_qp.m'], '<GITREPO>', repo_url)
 fstrrep([targetdir,filesep,'Contents.m'], '<VERSION>', qpversion)
 fstrrep([targetdir,filesep,'Contents.m'], '<CREATIONDATE>', TStr)
 

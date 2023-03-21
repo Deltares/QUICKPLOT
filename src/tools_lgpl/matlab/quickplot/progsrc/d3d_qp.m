@@ -47,7 +47,7 @@ catch Ex
 end
 
 function outdata=d3d_qp_core(cmd,varargin)
-%VERSION = 2.65
+%VERSION = 2.70
 qpversionbase = 'v<VERSION>';
 gitrepo = '<GITREPO>';
 githash = '<GITHASH>';
@@ -5173,8 +5173,8 @@ else
     qpversion = qpversionbase;
 end
 Str = ['@(#)Deltares, Delft3D-QUICKPLOT, Version ' qpversion ', ' qpcreationdate ];
-RepoLine = ['Repository: ', gitrepo]
-HashLine = ['Hash      : ', githash]
+RepoLine = ['Repository : ', gitrepo];
+HashLine = ['Source hash: ', githash];
 fid = fopen(whatfile,'r','n','UTF-8');
 if fid>0
     % file exists, read its contents
