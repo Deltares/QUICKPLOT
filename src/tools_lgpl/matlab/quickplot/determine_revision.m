@@ -196,7 +196,7 @@ fclose(fid);
 entry = strfind(str,char(12));
 %
 substr = str(1:entry(1)-1);
-lines = strfind(substr,char(10));
+lines = strfind(substr,local_newline);
 updatestr = substr(lines(3)+1:lines(4)-1);
 updatenr = str2double(updatestr);
 %
