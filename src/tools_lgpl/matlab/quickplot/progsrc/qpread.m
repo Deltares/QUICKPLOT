@@ -96,7 +96,7 @@ function [varargout]=qpread(varargin)
 %   $HeadURL$
 %   $Id$
 
-vvarargout=cell(1,max(nargout,1));
+varargout=cell(1,max(nargout,1));
 [OK,varargout{:}]=qp_getdata(varargin{:});
 if ~OK
    fprintf('Error encountered, check syntax!\n');
