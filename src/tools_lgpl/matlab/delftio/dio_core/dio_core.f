@@ -25,8 +25,8 @@ c     Stichting Deltares. All rights reserved.
 c                                                                                 
 c---------------------------------------------------------------------------------
 c     http://www.deltaressystems.com
-c     $HeadURL$
-c     $Id$
+c     
+c     
 
 c********************************************************************
 c*      Check and get string
