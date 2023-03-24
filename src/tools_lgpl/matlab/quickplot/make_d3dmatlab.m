@@ -60,7 +60,7 @@ if ~isempty(err)
 end
 
 
-function localmake(qpversion,T)
+function localmake(qpversion,repo_url,hash,T)
 if ~exist('progsrc','dir')
     error('Cannot locate source folder "progsrc".')
 end
@@ -94,9 +94,9 @@ if ~exist('netcdf/snctools','dir')
     exportsrc('../../../../third_party_open/netcdf/matlab/snctools', 'netcdf/snctools')
 end
 
-if nargin<2
-    qpversion = read_identification(sourcedir, 'd3d_qp.m');
-    T=now;
+if nargin<4
+    [qpversion,hash,repo_url] = read_identification(sourcedir, 'd3d_qp.m');
+    T = now;
 end
 % strip off the 32/64 bit flag (the toolbox is platform independent)
 qpversion = deblank(sscanf(qpversion,'%[^(]'));
@@ -110,6 +110,8 @@ fprintf('Current date and time           : %s\n', TStr);
 fprintf('Modifying files ...\n');
 fstrrep([targetdir,filesep,'d3d_qp.m'], '<VERSION>', qpversion)
 fstrrep([targetdir,filesep,'d3d_qp.m'], '<CREATIONDATE>', TStr)
+fstrrep([targetdir,filesep,'d3d_qp.m'], '<GITHASH>', hash)
+fstrrep([targetdir,filesep,'d3d_qp.m'], '<GITREPO>', repo_url)
 fstrrep([targetdir,filesep,'Contents.m'], '<VERSION>', qpversion)
 fstrrep([targetdir,filesep,'Contents.m'], '<CREATIONDATE>', TStr)
 

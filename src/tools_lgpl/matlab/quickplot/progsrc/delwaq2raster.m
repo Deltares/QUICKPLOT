@@ -141,6 +141,8 @@ if isstandalone
     fprintf(1,'--------------------------------------------------------------------------------\n');
     fprintf(1,'Delft3D-DELWAQ2RASTER conversion tool.\n');
     fprintf(1,'Version <VERSION> (<CREATIONDATE>)\n');
+    fprintf(1,'Repository <GITREPO>\n');
+    fprintf(1,'Source hash <GITHASH>\n');
     fprintf(1,'--------------------------------------------------------------------------------\n');
 end
 

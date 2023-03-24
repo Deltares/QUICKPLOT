@@ -50,6 +50,8 @@ if isstandalone
     fprintf(1, '--------------------------------------------------------------------------------\n');
     fprintf(1, 'SIM2UGRID conversion tool.\n');
     fprintf(1, 'Version <VERSION> (<CREATIONDATE>)\n');
+    fprintf(1, 'Repository <GITREPO>\n');
+    fprintf(1, 'Source hash <GITHASH>\n');
     fprintf(1, '--------------------------------------------------------------------------------\n');
 end
 

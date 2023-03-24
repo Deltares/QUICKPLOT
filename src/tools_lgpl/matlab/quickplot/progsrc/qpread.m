@@ -96,7 +96,6 @@ function [varargout]=qpread(varargin)
 %   $HeadURL$
 %   $Id$
 
-finalversion
 varargout=cell(1,max(nargout,1));
 [OK,varargout{:}]=qp_getdata(varargin{:});
 if ~OK
