@@ -47,8 +47,10 @@ catch Ex
 end
 
 function outdata=d3d_qp_core(cmd,varargin)
-%VERSION = 2.65
+%VERSION = 2.70
 qpversionbase = 'v<VERSION>';
+gitrepo = '<GITREPO>';
+githash = '<GITHASH>';
 qpcreationdate = '<CREATIONDATE>';
 %
 persistent qpversion logfile logtype
@@ -262,7 +264,7 @@ switch cmd
             mfig=mfig(1);
         elseif isempty(mfig)
             if isstandalone && matlabversionnumber>7.10
-                if ~qp_checkversion(qpversionbase,qpcreationdate)
+                if ~qp_checkversion(qpversionbase,gitrepo,githash,qpcreationdate)
                     return
                 end
             end
@@ -317,7 +319,6 @@ switch cmd
         d3d_qp updatedomains
         d3d_qp refreshfigs
         set(mfig,'CloseRequestFcn','d3d_qp close');
-        finalversion(1)
         
     case {'openfile','reloadfile','openurl'}
         OpenFile=findobj(mfig,'tag','openfile','type','uipushtool');
@@ -5154,7 +5155,7 @@ switch str
         clr=str2vec(str,'%f');
 end
 
-function OK = qp_checkversion(qpversionbase,qpcreationdate)
+function OK = qp_checkversion(qpversionbase,gitrepo,githash,qpcreationdate)
 % Until MATLAB 7.10 (R2010a) it was possible to mix
 % c/c++ files in with the MATLAB executable. This was
 % used to include the @(#) identification string in the
@@ -5172,6 +5173,8 @@ else
     qpversion = qpversionbase;
 end
 Str = ['@(#)Deltares, Delft3D-QUICKPLOT, Version ' qpversion ', ' qpcreationdate ];
+RepoLine = ['Repository : ', gitrepo];
+HashLine = ['Source hash: ', githash];
 fid = fopen(whatfile,'r','n','UTF-8');
 if fid>0
     % file exists, read its contents
@@ -5192,7 +5195,7 @@ if fid<0
     if fid>0
         % file can be opened for writing, write string
         try
-            fprintf(fid,'%s\n',Str);
+            fprintf(fid,'%s\n',Str,RepoLine,HashLine);
             fclose(fid);
             % reopen the file to check whether string was written correctly
             fid = fopen(whatfile,'r','n','UTF-8');
