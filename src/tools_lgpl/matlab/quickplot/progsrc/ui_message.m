@@ -115,7 +115,7 @@ if nargin==1 && isequal(Cmd,'resize')
 end
 
 fig=findobj(allchild(0),'tag','UI_MESSAGE window');
-if isequal(Cmd,'reset')
+if nargin>1 && isequal(Cmd,'reset')
     delete(fig)
     fig = [];
 end

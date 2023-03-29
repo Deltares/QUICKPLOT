@@ -342,7 +342,6 @@ switch NVal
                     % what is this code for?
                     % --> Time series plot of single point.
                     % --> Slice of m grid points.
-                    fprintf('QP_PLOT_UGRID - point X');
                     switch data.ValLocation
                         case 'FACE'
                             Skip = isnan(data.FaceNodeConnect);
