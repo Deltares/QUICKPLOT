@@ -426,8 +426,13 @@ if DataRead && Props.NVal>0
                     meshAttribs = {meshInfo.Attribute.Name};
                 end
                 connect     = strmatch('edge_face_connectivity',meshAttribs,'exact');
-                [EdgeFaceConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
-                EdgeFaceConnect(EdgeFaceConnect<0) = NaN;
+                if isempty(connect)
+                    % TODO: reconstruct EdgeFaceConnect from EdgeNodeConnect and FaceNodeConnect.
+                    error('No edge_face_connectivity found in the netCDF file.')
+                else
+                    [EdgeFaceConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
+                    EdgeFaceConnect(EdgeFaceConnect<0) = NaN;
+                end
                 %
                 Psi = compute_net_discharge_into_cell(Discharge, EdgeFaceConnect, sz(3));
                 %
@@ -1919,6 +1924,12 @@ else
         end
         %
         if ~isempty(Info.Mesh)
+            MeshAttributes = FI.Dataset(Info.Mesh{3}).Attribute;
+            if isempty(MeshAttributes)
+                MeshAttribNames = {};
+            else
+                MeshAttribNames = {MeshAttributes.Name};
+            end
             nmesh = nmesh+1;
             switch Info.Mesh{1}
                 case 'ugrid' %,'ugrid1d_network'}
@@ -2058,13 +2069,15 @@ else
                 %
                 Out(end+1)=Insert;
                 %
-                Insert.Name = [prefix, 'net discharge into cell']; % can be used as stationarity check for the stream function
-                Insert.Geom = 'UGRID2D-FACE';
-                Insert.varid{1} = 'net_discharge_into_cell';
-                Insert.DimName{M_} = FI.Dataset(FI.Dataset(Insert.varid{2}+1).Mesh{3}).Mesh{7};
-                Insert.DataInCell = 1;
-                %
-                Out(end+1)=Insert;
+                if ismember('edge_face_connectivity',MeshAttribNames)
+                    Insert.Name = [prefix, 'net discharge into cell']; % can be used as stationarity check for the stream function
+                    Insert.Geom = 'UGRID2D-FACE';
+                    Insert.varid{1} = 'net_discharge_into_cell';
+                    Insert.DimName{M_} = FI.Dataset(FI.Dataset(Insert.varid{2}+1).Mesh{3}).Mesh{7};
+                    Insert.DataInCell = 1;
+                    %
+                    Out(end+1)=Insert;
+                end
             end
         else
             switch lower(Insert.Name)
