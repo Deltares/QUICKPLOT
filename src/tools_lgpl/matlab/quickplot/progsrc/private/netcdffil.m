@@ -401,11 +401,11 @@ if DataRead && Props.NVal>0
                 %
                 meshInfo    = FI.Dataset(Info.Mesh{3});
                 if isempty(meshInfo.Attribute)
-                    meshAttribs = {};
+                    meshAttribNames = {};
                 else
-                    meshAttribs = {meshInfo.Attribute.Name};
+                    meshAttribNames = {meshInfo.Attribute.Name};
                 end
-                connect     = strmatch('edge_node_connectivity',meshAttribs,'exact');
+                connect     = strmatch('edge_node_connectivity',meshAttribNames,'exact');
                 [EdgeNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
                 EdgeNodeConnect(EdgeNodeConnect<0) = NaN;
                 %
@@ -421,11 +421,11 @@ if DataRead && Props.NVal>0
                 %
                 meshInfo    = FI.Dataset(Info.Mesh{3});
                 if isempty(meshInfo.Attribute)
-                    meshAttribs = {};
+                    meshAttribNames = {};
                 else
-                    meshAttribs = {meshInfo.Attribute.Name};
+                    meshAttribNames = {meshInfo.Attribute.Name};
                 end
-                connect     = strmatch('edge_face_connectivity',meshAttribs,'exact');
+                connect     = strmatch('edge_face_connectivity',meshAttribNames,'exact');
                 if isempty(connect)
                     % TODO: reconstruct EdgeFaceConnect from EdgeNodeConnect and FaceNodeConnect.
                     error('No edge_face_connectivity found in the netCDF file.')
@@ -778,11 +778,11 @@ if XYRead || XYneeded || ZRead
         end
         %
         if isempty(meshInfo.Attribute)
-            meshAttribs = {};
+            meshAttribNames = {};
         else
-            meshAttribs = {meshInfo.Attribute.Name};
+            meshAttribNames = {meshInfo.Attribute.Name};
         end
-        connect = strmatch('face_node_connectivity',meshAttribs,'exact');
+        connect = strmatch('face_node_connectivity',meshAttribNames,'exact');
         if ~isempty(connect)
             iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name},'exact');
             if isempty(iconnect)
@@ -819,7 +819,7 @@ if XYRead || XYneeded || ZRead
         end
         %
         Ans.ValLocation = Props.Geom(max(strfind(Props.Geom,'-'))+1:end);
-        connect = strmatch('edge_node_connectivity',meshAttribs,'exact');
+        connect = strmatch('edge_node_connectivity',meshAttribNames,'exact');
         iconnect = [];
         if strcmp(Ans.ValLocation,'EDGE') || ~isfield(Ans,'FaceNodeConnect') || (~DataRead && ~isempty(connect))
             % "~DataRead" is a hack to load EdgeNodeConnect if available for use in GridView
@@ -1923,12 +1923,11 @@ else
             end
         end
         %
+        meshAttribNames = {};
         if ~isempty(Info.Mesh)
-            MeshAttributes = FI.Dataset(Info.Mesh{3}).Attribute;
-            if isempty(MeshAttributes)
-                MeshAttribNames = {};
-            else
-                MeshAttribNames = {MeshAttributes.Name};
+            meshInfo    = FI.Dataset(Info.Mesh{3});
+            if ~isempty(meshInfo.Attribute)
+                meshAttribNames = {meshInfo.Attribute.Name};
             end
             nmesh = nmesh+1;
             switch Info.Mesh{1}
@@ -2069,7 +2068,7 @@ else
                 %
                 Out(end+1)=Insert;
                 %
-                if ismember('edge_face_connectivity',MeshAttribNames)
+                if ismember('edge_face_connectivity',meshAttribNames)
                     Insert.Name = [prefix, 'net discharge into cell']; % can be used as stationarity check for the stream function
                     Insert.Geom = 'UGRID2D-FACE';
                     Insert.varid{1} = 'net_discharge_into_cell';
