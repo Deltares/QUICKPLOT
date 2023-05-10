@@ -30,26 +30,53 @@ function matlab_sysinfo()
 %
 %-------------------------------------------------------------------------------
 
-print('ctfroot = %s\n\n',ctfroot);
+c = computer;
+fprintf('----------------------------------------\n');
+fprintf('Running on computer = %s\n',c);
+fprintf('----------------------------------------\n\n');
 
-print('matlabroot = %s\n\n',matlabroot);
+fprintf('ctfroot = %s\n\n',ctfroot);
+
+fprintf('matlabroot = %s\n\n',matlabroot);
 
 path = getenv('PATH');
-print('PATH = %s\n\n', path);
+fprintf('getenv(PATH) = %s\n\n', path);
 
-c = computer;
 if strcmp(c(1:2),'PC')
-   print('PATH method 2:\n');
    [status, result] = system('set PATH');
-   print('PATH = %s\n\n', result);
+   fprintf('system(PATH) = %s\n\n', result);
    eql = strfind(result,'=');
    col = strfind(result,';');
    dd = strtrim(result(eql(1)+1:col(1)-1));
-   print('exeroot = %s\n\n', dd);
+   fprintf('exeroot = %s\n\n', dd);
 else
-   print('no exeroot defined!\n\n');
-endif
+   fprintf('no exeroot defined!\n\n');
+end
 
+fprintf('prefdir = %s\n\n',qp_prefdir);
+
+d = which('matlab_sysinfo.m');
+fprintf('matlab_sysinfo.m => %s\n\n',d);
+
+d = which('matlab_sysinfo.p');
+fprintf('matlab_sysinfo.p => %s\n\n',d);
+
+d = which('matlab_sysinfo.exe');
+fprintf('matlab_sysinfo.exe => %s\n\n',d);
+
+fprintf('----------------------------------------\n');
+fprintf('Environment listing\n');
+fprintf('----------------------------------------\n\n');
+
+[stat,result] = system('set');
+fprintf('%s\n',result);
+
+fprintf('----------------------------------------\n');
+fprintf('normal end of program\n');
+fprintf('----------------------------------------\n\n');
+
+
+function dd = qp_prefdir
 c = computer;
 if strcmp(c(1:2),'PC')
     % Try %UserProfile% first. This is defined by NT
@@ -69,11 +96,14 @@ else % Unix
     dd = fullfile(getenv('HOME'), '.Deltares', '');
 end
 
-d = which('matlab_sysinfo.m');
-print('matlab_sysinfo.m => %s\n\n',d);
 
-d = which('matlab_sysinfo.p');
-print('matlab_sysinfo.p => %s\n\n',d);
-
-d = which('matlab_sysinfo.exe');
-print('matlab_sysinfo.exe => %s\n\n',d);
+function profileDir = get_profile_dir
+le = lasterr;
+try
+    profileDir = winqueryreg('HKEY_CURRENT_USER',...
+        'Software\Microsoft\Windows\CurrentVersion\ProfileReconciliation',...
+        'ProfileDirectory');
+catch
+    lasterr(le);
+    profileDir = '';
+end
