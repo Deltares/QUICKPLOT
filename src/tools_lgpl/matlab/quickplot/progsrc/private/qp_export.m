@@ -318,6 +318,7 @@ for f=1:ntim
         crds={};
         vars={};
         flds={};
+        numericValues = false;
         vars{1,end+1}='x coordinate';
         crds{1}='X';
         ypres=isfield(data,'Y') || isfield(data,'XY');
@@ -337,6 +338,7 @@ for f=1:ntim
             if ~isempty(VecUnits)
                 vars{1,end}=cat(2,vars{1,end},' (',VecUnits,')');
             end
+            numericValues = true;
         end
         if isfield(data,'YComp') && Props.NVal>1
             flds{1,end+1}='YComp';
@@ -344,6 +346,7 @@ for f=1:ntim
             if ~isempty(VecUnits)
                 vars{1,end}=cat(2,vars{1,end},' (',VecUnits,')');
             end
+            numericValues = true;
         end
         if isfield(data,'ZComp') && Props.NVal>1
             flds{1,end+1}='ZComp';
@@ -351,12 +354,16 @@ for f=1:ntim
             if ~isempty(VecUnits)
                 vars{1,end}=cat(2,vars{1,end},' (',VecUnits,')');
             end
+            numericValues = true;
         end
         if isfield(data,'Val')
             flds{1,end+1}='Val';
             vars{1,end+1}=[componentof Props.Name];
             if ~isempty(ValUnits)
                 vars{1,end}=cat(2,vars{1,end},' (',ValUnits,')');
+            end
+            if isnumeric(data(1).Val)
+                numericValues = true;
             end
         end
         nVar=length(vars);
@@ -373,7 +380,7 @@ for f=1:ntim
                 end
             end
             %
-            if isfield(data,'Time')
+            if isfield(data,'Time') && ~isempty(data.Time)
                 nTim = length(data.Time);
                 if nTim==1
                     fprintf(fid,['time,' TIMEFORMAT '\n'],datevec(data.Time));
@@ -845,11 +852,12 @@ for f=1:ntim
                         end
                     end
                 case {'vector','vector (split x,y)','vector (split m,n)','contour lines','coloured contour lines','contour patches','contour patches with lines','thin dams'}
-                    TempFg=figure('visible','off');
-                    TempAx=axes('parent',TempFg);
                     if isequal(Ops.presentationtype,'contour lines')
                         Ops.presentationtype='coloured contour lines';
                     end
+                    
+                    TempFg=figure('visible','off');
+                    TempAx=axes('parent',TempFg);
                     PS=DataState;
                     PS.Ops=Ops;
                     PS.Parent=TempAx;
@@ -873,14 +881,19 @@ for f=1:ntim
                             cv=get(hNew,'facevertexcdata');
                             UD=get(hNew0,'userdata');
                             Thresholds=UD.XInfo.Thresholds;
-                            for i=1:length(xy)
-                                if ~isempty(xy{i}) && isnan(xy{i}(end,1))
+                            for i=length(xy):-1:1
+                                if isempty(xy{i})
+                                    xy(i)=[];
+                                    cv(i)=[];
+                                    continue
+                                elseif isnan(xy{i}(end,1))
                                     xy{i}=xy{i}(1:end-1,:);
                                 end
-                                if ~isempty(cv{i})
-                                    cv{i}=Thresholds(cv{i}(1));
-                                end
+                                cv{i}=Thresholds(cv{i}(1));
                             end
+                            %
+                            [xy,cv] = stitch_segments(xy,cv);
+                            %
                             cv=cat(1,cv{:});
                             xy(cellfun('isempty',xy)) = [];
                             cLabels={'Value'};
@@ -914,6 +927,8 @@ for f=1:ntim
                                 minmax(i,:) = [getappdata(hNew(i),'MinThreshold') getappdata(hNew(i),'MaxThreshold')];
                             end
                             %
+                            % for tricontourf data: stitch triangles
+                            % for contourf data: clip polygons that overlap
                             [xy,cLabels,cv] = process_polygons(xy,fc,cv,minmax);
                             %
                             featureLabels = {};
@@ -1047,7 +1062,12 @@ for f=1:ntim
                 end
             end
             xyz=x+y+z;
-            expdata=zeros([nVar prod(sz)]);
+            if numericValues
+                nVarNum = nVar;
+            else
+                nVarNum = nVar - nVal;
+            end
+            expdata=zeros([nVarNum prod(sz)]);
             if x
                 expdata(1,:)=data.X(:)';
             end
@@ -1069,12 +1089,12 @@ for f=1:ntim
                 xyz=xyz+1;
                 expdata(xyz,:)=data.ZComp(:)';
             end
-            if isfield(data,'Val')
+            if isfield(data,'Val') && numericValues
                 xyz=xyz+1;
                 expdata(xyz,:)=data.Val(:)';
             end
-            flag=any(isnan(expdata),1);
-            expdata=expdata(:,~flag);
+            excludePoints = any(isnan(expdata),1);
+            expdata(:,excludePoints) = [];
             fid=fopen(filename,'wt');
             if fid<0
                 error(['Could not create or open: ',filename])
@@ -1083,9 +1103,18 @@ for f=1:ntim
                 fprintf(fid,'"%s" ',vars{:});
             end
             fprintf(fid,'\n');
-            Format=repmat(' %14.6f',1,size(expdata,1));
-            Format=[Format(2:end) '\n'];
-            fprintf(fid,Format,expdata);
+            if numericValues
+                Format=repmat(' %14.6f',1,size(expdata,1));
+                Format=[Format(2:end) '\n'];
+                fprintf(fid,Format,expdata);
+            else
+                Format=repmat(' %14.6f',1,size(expdata,1));
+                Format=[Format(2:end) ' ''%s'' \n'];
+                expcell = num2cell(expdata);
+                expcell(end+1,:) = data.Val(~excludePoints);
+                expcell(end,:) = strrep(expcell(end,:),'''','''''');
+                fprintf(fid,Format,expcell{:});
+            end
             fclose(fid);
         case {'stl stereolithography file (ascii)','stl stereolithography file (binary)'}
             writeAscii = strcmp(expType(strfind(expType,'('):end), '(ascii)');
@@ -1208,6 +1237,10 @@ try
                 if isfield(DATA,'EdgeNodeConnect')
                     DATA.EdgeNodeConnect = renum(DATA.EdgeNodeConnect);
                 end
+                %
+                if isfield(DATA,'Val') && isfield(DATA, 'ValLocation')
+                    DATA.Val = DATA.Val(keepNodes);
+                end
             end
             % save as UGRID
             % EdgeNodeConnect is required for a D-Flow FM mesh or network file
@@ -1279,6 +1312,25 @@ try
             end
             netcdf.putAtt(ncid,var_Mesh,'face_dimension',nFaces)
             %
+            if isfield(DATA,'Val') && isfield(DATA, 'ValLocation')
+                switch DATA.ValLocation
+                    case 'NODE'
+                        Val = [prefix 'NodeVal'];
+                        dimVal = dim_nNodes;
+                    case 'EDGE'
+                        Val = [prefix 'EdgeVal'];
+                        dimVal = dim_nEdges;
+                    case 'FACE'
+                        Val = [prefix 'FaceVal'];
+                        dimVal = dim_nFaces;
+                end
+                var_Val = netcdf.defVar(ncid,Val,'double',dimVal);
+                netcdf.putAtt(ncid,var_Val,'long_name',DATA.Name);
+                if isfield(DATA,'Units') && ~isempty(DATA.Units)
+                    netcdf.putAtt(ncid,var_Val,'units',DATA.Units);
+                end
+            end
+            %
             globalId = netcdf.getConstant('GLOBAL');
             netcdf.putAtt(ncid,globalId,'Conventions','UGRID-1.0');
             %
@@ -1290,6 +1342,9 @@ try
                 netcdf.putVar(ncid,var_EdgeNodeConnect,DATA.EdgeNodeConnect')
             end
             netcdf.putVar(ncid,var_FaceNodeConnect,DATA.FaceNodeConnect')
+            if isfield(DATA,'Val') && isfield(DATA, 'ValLocation')
+                netcdf.putVar(ncid,var_Val,DATA.Val);
+            end
         else
             error('Exporting this data set to netCDF not yet supported')
         end
