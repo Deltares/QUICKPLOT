@@ -66,7 +66,80 @@ if FI.NumDomains>1
 end
 
 if nargin==2
-    varargout={infile(FI,domain)};
+    if ~isempty(domain) && domain > 1
+        emptyParts = cell(1,FI.NumDomains);
+        
+        partFI = FI.Partitions{1};
+        infileStruct = infile(partFI,1);
+        [infileStruct.iPart] = deal(1);
+        for iq = 1:length(infileStruct)
+            infileStruct(iq).Partitions = emptyParts;
+            infileStruct(iq).Partitions{1} = infileStruct(iq);
+            
+            varid = infileStruct(iq).varid;
+            if iscell(varid) || isempty(varid)
+                infileStruct(iq).ncVarName = infileStruct(iq).Name;
+            else
+                infileStruct(iq).ncVarName = partFI.Dataset(varid+1).Name;
+            end
+        end
+        
+        for ipart = 2:FI.NumDomains
+            partFI = FI.Partitions{ipart};
+            infileStruct2 = infile(partFI,1);
+            [infileStruct2.iPart] = deal(ipart);
+            for iq2 = 1:length(infileStruct2)
+                infileStruct2(iq2).Partitions = emptyParts;
+                infileStruct2(iq2).Partitions{ipart} = infileStruct2(iq2);
+                
+                varid = infileStruct2(iq2).varid;
+                if iscell(varid) || isempty(varid)
+                    infileStruct2(iq2).ncVarName = infileStruct2(iq2).Name;
+                else
+                    infileStruct2(iq2).ncVarName = partFI.Dataset(varid+1).Name;
+                end
+            end
+            
+            iq = 1;
+            for iq2 = 1:length(infileStruct2)
+                if strcmp(infileStruct2(iq2).Name,'-------')
+                    % in case of a separator, merge it only if the
+                    % reference is also a separator
+                    if strcmp(infileStruct(iq).Name,'-------')
+                        % merge ... nothing to do
+                    else
+                        % insert
+                        infileStruct = insert_quantity(infileStruct,iq,infileStruct2(iq2));
+                    end
+                    iq = iq+1;
+                else
+                    iq1 = find_quantity(infileStruct2,iq2,infileStruct);
+                    if iq1 > 0
+                        % new quantity found, merge with iq1
+                        infileStruct(iq1).iPart = [infileStruct(iq1).iPart ipart];
+                        infileStruct(iq1).Partitions{ipart} = infileStruct2(iq2).Partitions{ipart};
+                        iq = iq1+1;
+                    else
+                        % new quantity not found.
+                        infileStruct = insert_quantity(infileStruct,iq,infileStruct2(iq2));
+                        iq = iq+1;
+                    end
+                end
+            end
+        end
+        infileStruct = rmfield(infileStruct,'ncVarName');
+        for i = 1:length(infileStruct)
+            if infileStruct(i).DimFlag(M_)
+                infileStruct(i).DimFlag(M_) = inf;
+            end
+            if infileStruct(i).DimFlag(N_)
+                infileStruct(i).DimFlag(N_) = inf;
+            end
+        end
+        varargout={infileStruct};
+    else
+        varargout={infile(FI,domain)};
+    end
     return
 elseif ischar(field)
     switch field
@@ -91,21 +164,28 @@ else
 end
 
 cmd=lower(cmd);
+% identify which partition actually contains this file
+if isfield(FI,'Partitions')
+    firstPart = Props.iPart(1);
+    useFI = FI.Partitions{firstPart};
+else
+    useFI = FI;
+end
 switch cmd
     case 'size'
-        varargout={getsize(FI,Props)};
+        varargout={getsize(useFI,Props)};
         return
     case 'times'
-        varargout={readtim(FI,Props,varargin{:})};
+        varargout={readtim(useFI,Props,varargin{:})};
         return
     case 'timezone'
-        [varargout{1:2}]=gettimezone(FI,domain,Props);
+        [varargout{1:2}]=gettimezone(useFI,domain,Props);
         return
     case 'stations'
-        varargout={readsts(FI,Props,0)};
+        varargout={readsts(useFI,Props,0)};
         return
     case 'subfields'
-        varargout={getsubfields(FI,Props,varargin{:})};
+        varargout={getsubfields(useFI,Props,varargin{:})};
         return
     case 'plotoptions'
         varargout = {[]};
@@ -181,16 +261,18 @@ if FI.NumDomains>1
         % read non-spatial data from the first file ... should be consistent across all files and no way to merge anyway
         Data = netcdffil(FI,1,Props,cmd,args{:});
     else
-        for i = 1:FI.NumDomains
-            Data2 = netcdffil(FI,i,Props,cmd,args{:});
-            if i==1
+        iOut = 1;
+        for i = Props.iPart
+            Data2 = netcdffil(FI,i,Props.Partitions{i},cmd,args{:});
+            if iOut == 1
                 Data = Data2;
             else
                 flds = fieldnames(Data2);
                 for j = 1:length(flds)
-                    Data(i).(flds{j}) = Data2.(flds{j});
+                    Data(iOut).(flds{j}) = Data2.(flds{j});
                 end
             end
+            iOut = iOut + 1;
         end
     end
     if spatial && domain == FI.NumDomains+2
@@ -2735,6 +2817,8 @@ for i = 1:length(uBrNr)
 end
 %
 % now we can check all the edges
+distmax = 0;
+nwarn = 0;
 for i = 1:length(uBrNr)
     bN = uBrNr(i);
     bX = BrX{bN};
@@ -2763,14 +2847,29 @@ for i = 1:length(uBrNr)
             dist1 = min(sqrt((bX([1 end])-x1).^2 + (bY([1 end])-y1).^2));
             dist2 = min(sqrt((bX([1 end])-x2).^2 + (bY([1 end])-y2).^2));
             if min(dist1) > 0 && min(dist2) > 0
-                ui_message('warning','The edge %i connecting node %i to %i is supposed to lie on branch %i,\nbut both nodes don''t seem to lie on that branch (mismatch = %g).\n',j,n(1),n(2),bN,max(dist1,dist2))
+                dist = max(min(dist1),min(dist2));
+                nwarn = nwarn + 1;
+                if dist > distmax
+                    msg = {'The edge %i connecting node %i to %i is supposed to lie on branch %i,\nbut both nodes don''t seem to lie on that branch (mismatch = %g).\n',j,n(1),n(2),bN,dist};
+                    distmax = dist;
+                end
             elseif min(dist1) > 0
-                ui_message('warning','The edge %i connecting node %i to %i is supposed to lie on branch %i,\nbut node %i doesn''t seem to lie on that branch (mismatch = %g).\n',j,n(1),n(2),bN,n(1),dist1)
+                dist = min(dist1);
+                nwarn = nwarn + 1;
+                if dist > distmax
+                    msg = {'The edge %i connecting node %i to %i is supposed to lie on branch %i,\nbut node %i doesn''t seem to lie on that branch (mismatch = %g).\n',j,n(1),n(2),bN,n(1),dist};
+                    distmax = dist;
+                end
             elseif min(dist2) > 0
-                ui_message('warning','The edge %i connecting node %i to %i is supposed to lie on branch %i,\nbut node %i doesn''t seem to lie on that branch (mismatch = %g).\n',j,n(1),n(2),bN,n(2),dist2)
+                dist = min(dist2);
+                nwarn = nwarn + 1;
+                if dist > distmax
+                    msg = {'The edge %i connecting node %i to %i is supposed to lie on branch %i,\nbut node %i doesn''t seem to lie on that branch (mismatch = %g).\n',j,n(1),n(2),bN,n(2),dist};
+                    distmax = dist;
+                end
             end
         else
-            % one branch on this branch, one on another branch
+            % one node on this branch, one on another branch
             if nBranches(1)==bN
                 n1 = n(1);
                 n2 = n(2);
@@ -2784,25 +2883,38 @@ for i = 1:length(uBrNr)
             x2 = X(n2);
             y2 = Y(n2);
             dist = sqrt((bX([1 end])-x2).^2 + (bY([1 end])-y2).^2);
-            if dist(1) == 0
-                % second node seems to match the beginning node of the
-                % branch
+            if dist(1) < dist(2)
+                % second node seems closer to the beginning of the branch
                 I = bS<s;
                 EdgeX{j} = [bX(I);x];
                 EdgeY{j} = [bY(I);y];
-            elseif dist(2) == 0
-                % second node seems to match the end node of the branch
+                if dist(1) > 0
+                    nwarn = nwarn + 1;
+                    if dist(1) > distmax
+                        msg = {'The edge %i connecting node %i to %i is supposed to lie on branch %i,\nbut node %i doesn''t seem to lie on that branch (mismatch = %g).\n',j,n(1),n(2),bN,n2,dist(1)};
+                        distmax = dist(1);
+                    end
+                end
+            else
+                % second node seems closer to the end node of the branch
                 I = bS>s;
                 EdgeX{j} = [x;bX(I)];
                 EdgeY{j} = [y;bY(I)];
-            else
-                % second node doesn't seem to match either node ...
-                ui_message('warning','The edge %i connecting node %i to %i is supposed to lie on branch %i,\nbut node %i doesn''t seem to lie on that branch (mismatch = %.3f).\n',j,n(1),n(2),bN,n2,min(dist))
-                EdgeX{j} = bX;
-                EdgeY{j} = bY;
+                if dist(2) > 0
+                    nwarn = nwarn + 1;
+                    if dist(2) > distmax
+                        msg = {'The edge %i connecting node %i to %i is supposed to lie on branch %i,\nbut node %i doesn''t seem to lie on that branch (mismatch = %g).\n',j,n(1),n(2),bN,n2,dist(2)};
+                        distmax = dist(2);
+                    end
+                end
             end
         end
     end
+end
+if distmax > eps(single(1))
+    msg1 = sprintf('Detected %i branch mismatches. Largest mismatch occurred at:',nwarn);
+    msg2 = sprintf(msg{:});
+    ui_message('warning',{msg1,msg2});
 end
 if any(doublePoints)
     if sum(doublePoints)==1
@@ -3038,3 +3150,68 @@ if isempty(index)
 else
     netcdf_var = FormulaTerms{index,2};
 end
+
+
+function iq2 = find_quantity(structList1,iq1,structList2)
+if iq1 > length(structList1)
+    iq2 = -1;
+    return
+end
+struct1 = structList1(iq1);
+isAMatch = zeros(size(structList2));
+for iq2 = 1:length(structList2)
+    struct2 = structList2(iq2);
+    if strcmp(struct1.ncVarName,struct2.ncVarName) && ...
+            strcmp(struct1.Geom,struct2.Geom)
+        if strcmp(struct1.Name,struct2.Name)
+            isAMatch(iq2) = 2;
+        else
+            isAMatch(iq2) = 1;
+        end
+    end
+end
+iq2 = find(isAMatch==2);
+if isempty(iq2)
+    iq2 = 0;
+    if max(isAMatch) == 1
+        % not perfect, but maybe still a match ...
+        iq2 = ustrcmpi(struct1.Name,{structList2.Name});
+        if iq2 < 0
+            iq2 = 0;
+        else
+            % exactly one found
+        end
+    end
+elseif length(iq2) > 1
+    iq2 = 0;
+    fprintf('MULTIPLE matches found\n');
+else
+    % exactly one found
+end
+
+
+function structList = insert_quantity(structList,iq,struct)
+flds = fieldnames(structList);
+flds2 = fieldnames(struct);
+if ~isequal(flds,flds2)
+    missingFields = setdiff(flds,flds2);
+    if ~isempty(missingFields)
+        % add dummy entries for the missing fields
+        for f = 1:length(missingFields)
+            struct(1).(missingFields{f}) = [];
+        end
+    end
+    % no more missing fields
+    sharedFields = flds;
+    
+    extraFields = setdiff(flds2,flds);
+    % need to make sure that the order of the fields is the same, so
+    % execute the next line always
+    struct = orderfields(struct,[sharedFields;extraFields]);
+    if ~isempty(extraFields)
+        for f = 1:length(extraFields)
+            structList(1).(extraFields{f}) = [];
+        end
+    end
+end
+structList = [structList(1:iq-1) struct structList(iq:end)];

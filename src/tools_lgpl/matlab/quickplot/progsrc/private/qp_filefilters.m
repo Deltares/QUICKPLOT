@@ -55,9 +55,9 @@ filtertbl={...
     'gcmplt.*;gcmtsr.*'                                    'ECOMSED Binary Files'              'ecomsed-binary'     0
     '*.stu;*.pst'                                          'JSPost Files'                      'JSPost'             0
     '*.xyz'                                                'Sample Files'                      'samples'            0
+    '*.grb;*.grib;*.grib1;*.grib2'                         'GRIB Files'                        'grib'               0
     '*.nc'                                                 'NetCDF Files'                      'NetCDF'             0
     '*.hdf;*.hdf5'                                         'HDF5 Files'                        'HDF5'               0
-    '*.grib;*.grib1;*.grib2'                               'GRIB Files'                        'grib'               0
     'sds-*'                                                'SIMONA SDS Files'                  'waquasds'           0
     '*.*'                                                  'SIMONA Box Files'                  'boxfile'            0
     '*.his;*.map;*.plo;*.psf;*.lga'                        'Delwaq Binary Files'               'delwaqbin'          0

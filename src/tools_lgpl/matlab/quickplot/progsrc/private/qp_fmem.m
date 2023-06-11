@@ -174,7 +174,7 @@ switch cmd
                     try_next='asciiwind';
                 case {'.inc','.crs','.bin'}
                     try_next='fls';
-                case {'.grib','.grib1','.grib2'}
+                case {'.grb','.grib','.grib1','.grib2'}
                     try_next='grib';
                 case {'.tek','.ann','.ldb','.pol','.spl','.tka','.tkp','.tkf','.pli','.pliz'}
                     try_next='tekal';
@@ -243,7 +243,11 @@ switch cmd
                     types_to_check{i} = types_to_check{i}(2:end);
                 end
             end
-            types_to_check = setdiff(types_to_check,try_next);
+            % previously setdiff was used here, it's simpler but sorts the
+            % types_to_check array. Unfortunately, grib files should be
+            % checked before the NetCDF file, but capital N is sorted
+            % before lowercase g.
+            types_to_check(ismember(types_to_check,try_next))=[];
         else
             types_to_check = {};
         end

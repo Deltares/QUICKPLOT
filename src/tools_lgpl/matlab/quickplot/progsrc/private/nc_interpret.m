@@ -54,6 +54,13 @@ if nargin>1
     nc1 = rmfield(nc,'Filename');
     nc1.Dimension = rmfield(nc1.Dimension,'Length');
     nc1.Dataset   = rmfield(nc1.Dataset,{'Size','Chunking','Shuffle','Deflate'});
+    Atts = {nc1.Attribute.Name};
+    i_uuid = ustrcmpi('uuid',Atts);
+    if i_uuid > 0
+        uuid1 = nc.Attribute(i_uuid).Value;
+    else
+        uuid1 = NaN;
+    end
     nc1 = rmfield(nc1,'Attribute');
     partNrFormat = ['%' num2str(nDigits) '.' num2str(nDigits) 'd'];
     %
@@ -68,16 +75,29 @@ if nargin>1
         nc2 = rmfield(nc2,'Filename');
         nc2.Dimension = rmfield(nc2.Dimension,'Length');
         nc2.Dataset   = rmfield(nc2.Dataset,{'Size','Chunking','Shuffle','Deflate'});
+        Atts = {nc.Attribute.Name};
+        i_uuid = ustrcmpi('uuid',Atts);
+        if i_uuid > 0
+            uuid2 = nc.Attribute(i_uuid).Value;
+        else
+            uuid2 = NaN;
+        end
         nc2 = rmfield(nc2,'Attribute');
         %
-        if vardiff(nc1,nc2)>1
+        if isequal(uuid1,uuid2)
+            % same uuid, so these files must belong to the same simulation
+        elseif vardiff(nc1,nc2)>1
+            % A mismatch in the data sets was detected, revert to the
+            % default one file processing. Make sure that we are processing
+            % the file that was selected instead of the first partition.
+            Partitions{1} = nc_interpret(nc);
             NumPartitions = 1;
             break
         end
     end
     delete(hPB)
     %
-    nc = Partitions{1};
+    nc = Partitions{1}; % this is just a place holder ... the contents may differ
     nc.NumDomains = NumPartitions;
     if NumPartitions>1
         nc.Partitions = Partitions;
