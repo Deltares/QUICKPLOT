@@ -652,6 +652,14 @@ elseif isfield(data,'XDamVal')
 end
 
 if isfield(Ops,'vectorscalingmode')
+    if strcmp(Ops.axestype,'Lon-Lat') || (isfield(data,'XUnits') && strcmp(data(1).XUnits,'deg'))
+        % axes in Lon-Lat coordinates
+        % scale XComp depending on latitude
+        % note: this scaling needs to be done AFTER the vectorcomponent for colouring has been computed.
+        for d=length(data):-1:1
+            data(d).XComp = data(d).XComp./max(cosd(data(d).Y),1e-7);
+        end
+    end
     switch Ops.vectorscalingmode
         case ''
             quivopt={};
