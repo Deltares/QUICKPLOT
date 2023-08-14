@@ -31,13 +31,16 @@ function qp_validate(varargin)
 %   $HeadURL$
 %   $Id$
 
+%% process input arguments: finish, report style, and validation directory
+if matlabversionnumber >= 9.06 && batchStartupOptionUsed
+    finish = 'none';
+    teamcity = true;
+else
+    finish = 'openlog';
+    teamcity = false;
+end
 log_style('latex')
-baseini='validation.ini';
 val_dir = '';
-finish = 'openlog';
-extra_files = {'summary','crashed_cases','reading_failed_cases','script_failed_cases','all_cases'};
-sametype('');
-
 i = 0;
 while i<nargin
     i = i+1;
@@ -55,28 +58,45 @@ while i<nargin
                 case {'openlog','none','buildpdf'}
                     finish = lower(varargin{i});
             end
+        case 'teamcity'
+            teamcity = true;
+        case 'no-teamcity'
+            teamcity = false;
         case {'latex','html'}
             log_style(lower(varargin{i}))
         otherwise
             val_dir = varargin{i};
     end
 end
+
+%% set validation directory
+baseini='validation.ini';
 if isempty(val_dir)
     %
     % Would prefer to use uigetdir, but that doesn't compile.
     %
-    [~,val_dir]=uigetfile(baseini,'Select directory containing validation cases');
-    if ~ischar(val_dir)
-        return
+    if matlabversionnumber >= 9.06 && batchStartupOptionUsed
+        val_dir = '.';
+    else
+        [~,val_dir]=uigetfile(baseini,'Select directory containing validation cases');
+        if ~ischar(val_dir)
+            return
+        end
     end
+else
+    val_dir = absfullfile(val_dir);
 end
 
+%% add QUICKPLOT path
 if ~isstandalone
     qp_path=which('d3d_qp');
     qp_path=fileparts(qp_path);
     addpath(qp_path)
 end
 
+%% prepare validation process
+extra_files = {'summary','crashed_cases','reading_failed_cases','script_failed_cases','all_cases'};
+sametype('');
 currdir=pwd;
 TC1 = 1;
 includes = {};
@@ -200,7 +220,7 @@ try
     cd(val_dir)
     d=dir('*');
     for i=length(d):-1:1
-        if ~d(i).isdir || any(strcmp(d(i).name,{'.','..','common'}))
+        if ~d(i).isdir || any(strcmp(d(i).name,{'.','..','common','.svn','.git'}))
             d(i)=[];
         end
     end
@@ -250,10 +270,18 @@ try
     tot_dt = max(1,acc_dt + sum(case_dt)); % at least a second
     %
     includes = repmat({''},length(d),2);
+    %if teamcity
+    %    fprintf('##teamcity[testSuiteStarted name=''quickplot tests'']\n');
+    %end
+    %% loop over validation test cases
     for i=1:length(d)
         progressbar(acc_dt/tot_dt,Hpb,'title',d(i).name);
         ui_message('',['Case: ',d(i).name])
-        fprintf('----- %s %s\n', d(i).name, repmat('-',1,93 - length(d(i).name)));
+        if teamcity
+            fprintf('##teamcity[testStarted name=''%s'']\n', d(i).name);
+        else
+            fprintf('----- %s %s\n', d(i).name, repmat('-',1,93 - length(d(i).name)));
+        end
         includes{i,1} = [d(i).name '/'];
         includes{i,2} = logname;
         NTested=NTested+1;
@@ -266,6 +294,8 @@ try
         lgresult = NOTAPP;
         logid2=[];
         TC2=1;
+        t2=[];
+        dt2_old=0;
         Crash = [];
         try
             cd(fullfile(val_dir,d(i).name));
@@ -476,7 +506,7 @@ try
                                     %
                                     if vardiff(Prop,PropRef)>1
                                         JustAddedData=0;
-                                        if log_style == 'latex'
+                                        if isequal(log_style,'latex')
                                             vardiff(Prop,PropRef,logid2,'latex-longtable','new','reference');
                                         else
                                             vardiff(Prop,PropRef,logid2,log_style,'new','reference');
@@ -816,7 +846,9 @@ try
                     write_log(logid2,color_write(protected(stack_cellstr{istack}),Color.Failed,true));
                 end
             end
-            [dt2,dt2_str,slower] = write_footer(logid2,d(i).name,Color,t2,dt2_old);
+            if ~isempty(t2)
+                [dt2,dt2_str,slower] = write_footer(logid2,d(i).name,Color,t2,dt2_old);
+            end
             fclose(logid2);
             logid2=[];
             %
@@ -827,14 +859,29 @@ try
             end
         elseif ~isempty(Crash)
             result  = [result Crash.message];
-            dt2     = (now-t2)*86400;
-            dt2_str = duration(dt2);
-            slower  = dt2>dt2_old;
+            if ~isempty(t2)
+                dt2 = (now-t2)*86400;
+                dt2_str = duration(dt2);
+                slower  = dt2>dt2_old;
+            else
+                dt2 = 0;
+                dt2_str = duration(dt2);
+                slower = false;
+            end
         end
         CaseReadFailed = strncmp(FAILED,frresult,5);
         CaseScriptFailed = strncmp(FAILED,lgresult,5);
         CaseCrashed = strncmp(FAILED,result,5) & ~(CaseReadFailed | CaseScriptFailed);
         CaseFailed = CaseReadFailed | CaseScriptFailed | CaseCrashed;
+        if teamcity && CaseFailed
+            if CaseCrashed
+                fprintf('##teamcity[testFailed name=''%s'' message=''case crashed.'']\n', d(i).name)
+            elseif CaseReadFailed
+                fprintf('##teamcity[testFailed name=''%s'' message=''differences when checking data.'']\n', d(i).name)
+            elseif CaseScriptFailed
+                fprintf('##teamcity[testFailed name=''%s'' message=''differences when running script.'']\n', d(i).name)
+            end
+        end
         NReadFailed = NReadFailed + CaseReadFailed;
         NScriptFailed = NScriptFailed + CaseScriptFailed;
         NCrashed = NCrashed + CaseCrashed;
@@ -860,6 +907,9 @@ try
             TC1=3-TC1;
         end
         flush(logid1);
+        if teamcity
+            fprintf('##teamcity[testFinished name=''%s'']\n', d(i).name)
+        end
         if UserInterrupt
             break
         end
@@ -872,8 +922,13 @@ catch err
     if logid1>0
         write_table_error(logid1,extlog,Color,err)
         AnyFail=1;
+    else
+        write_table_error(logid1,[],Color,err)
     end
 end
+%if teamcity
+%    fprintf('##teamcity[testSuiteFinished name=''quickplot tests'']\n');
+%end
 if ishandle(Hpb)
     delete(Hpb);
 end
@@ -1107,7 +1162,13 @@ fprintf(logid,'%s\n','\endlastfoot');
 
 function write_table_error(logid,extlog,Color,err)
 msg = stack2str(err.stack);
+if isempty(extlog)
+    log_style('cmd')
+end
 switch log_style
+    case 'cmd'
+        fprintf('The test bench execution failed unexpectedly with the following message:\n');
+        fprintf('%s\n',err.message,msg{:});
     case 'latex'
         message = protected(err.message);
         msg = protected(msg);
@@ -1710,12 +1771,4 @@ if isequal(type,previous_type)
     type = '';
 else
     previous_type = type;
-end
-
-function str = getsvnline()
-str = '$Id$';
-if str(1) == '$' % the original svn version
-    str = str(2:end-1);
-else % the distributed version
-    % str is as needed
 end
