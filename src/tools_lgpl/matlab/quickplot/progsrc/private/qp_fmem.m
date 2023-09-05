@@ -380,7 +380,7 @@ switch cmd
                         end
                         if isstruct(FI)
                             f=fieldnames(FI);
-                            if length(f)==1 && strcmpi(f{1},'data')
+                            if numel(f)==1 && strcmpi(f{1},'data')
                                 FI = FI.(f{1});
                                 FI.FileName=FileName;
                                 Tp=try_next;
