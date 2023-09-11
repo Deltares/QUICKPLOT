@@ -225,7 +225,7 @@ if strcmp(FI.FileType,'Gmsh')
 else
     switch Props.Geom
         case 'UGRID2D-NODE'
-            % to do
+            sz(M_) = size(FI.NodeCoor,1);
         case 'UGRID2D-FACE'
             if isfield(Props,'ElmLayer')
                 sz(M_) = sum(FI.ElmLyr==Props.ElmLayer);
