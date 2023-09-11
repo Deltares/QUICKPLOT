@@ -154,6 +154,8 @@ switch cmd
                     try_next='nodelemesh';
                 case {'.14','.gr3'}
                     try_next='adcircmesh';
+                case {'.2dm'}
+                    try_next='smsmesh';
                 case {'.mesh'}
                     try_next='mikemesh';
                 case {'.shy'}
@@ -795,6 +797,13 @@ switch cmd
                         end
                     case 'gmsh'
                         FI=gmsh('open',FileName);
+                        if ~isempty(FI)
+                            FI.Options=0;
+                            Tp=FI.FileType;
+                        end
+                    case 'tuflowmesh'
+                        asciicheck(isASCII,REASON)
+                        FI=tuflowmesh('open',FileName);
                         if ~isempty(FI)
                             FI.Options=0;
                             Tp=FI.FileType;
