@@ -89,7 +89,7 @@ for i = 1:length(d)
                     if k > nstrings
                         c{l} = [c{l}(1:j-1) c{l}(j+1:j2-1) c{l}(j2+1:end)];
                     else
-                        c{l} = [c{l}(1:j-1) varargin{k}];
+                        c{l} = [c{l}(1:j-1) varargin{k} c{l}(j2+1:end)];
                     end
                 end
             end

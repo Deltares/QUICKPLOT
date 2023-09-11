@@ -1058,14 +1058,10 @@ if isstandalone
     stalone=' (standalone)';
 end
 c = clock;
-versionstr = d3d_qp('version'); % returns "source code version" or "vA.B.revsion (64bit)"
-if versionstr(1)=='v'
-    version = sscanf(versionstr,'v%d.%d.%d');
-    revision = version(3);
-    % insert QUICKPLOT revision number into SVN revision string of the report
-    versionstr = sprintf('%d.%d',version(1:2));
-else
-    revision = 999999;
+versionstr = d3d_qp('version'); % returns "source code version" or "vA.B.hash (64bit)"
+if versionstr(1) == 'v'
+    % remove the leading v
+    versionstr = versionstr(2:end);
 end
 switch log_style
     case 'latex'
@@ -1076,16 +1072,6 @@ switch log_style
             fprintf(logid,'%s\n','\usepackage{pifont}% http://ctan.org/pkg/pifont');
             fprintf(logid,'%s\n','\newcommand{\cmark}{\ding{51}}%');
             fprintf(logid,'%s\n','\newcommand{\xmark}{\ding{55}}%');
-            % insert QUICKPLOT revision number into SVN revision string of the report
-            fn = fopen(logid);
-            [~,f,e] = fileparts(fn);
-            str = '$Id$';
-            if str(1) == '$'
-                dollar = '';
-            else
-                dollar = '$';
-            end
-            fprintf(logid,'%s%s%s%s%s\n','\svnid{', dollar, str, dollar, '}');
             fprintf(logid,'\n');
             fprintf(logid,'%s\n','\begin{document}');
             fprintf(logid,'%% %s\n','\pagestyle{empty}');
