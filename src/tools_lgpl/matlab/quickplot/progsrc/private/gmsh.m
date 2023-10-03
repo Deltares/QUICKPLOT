@@ -203,7 +203,7 @@ while ~feof(fid)
             %
             S.Field.Nr = Nr;
             S.Field.Data = Data;
-                
+            
         case {'$Elements','$ELM'}
             if S.Version >= 3
                 if S.Binary
