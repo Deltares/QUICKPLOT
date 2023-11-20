@@ -1947,7 +1947,7 @@ for mesh = NumMeshes:-1:1
         %
         progressbar((NumMeshes-mesh)/NumMeshes + (p/(2*nPart))/NumMeshes, hPB);
     end
-    nGlbFaces = sum(cellfun(@sum,faceMask));
+    nGlbFaces = max(cellfun(@max,iFaces));
     glbFNC = NaN(nGlbFaces,6);
     %
     xyNodes = [cat(1,xNodes{:}) cat(1,yNodes{:})];
