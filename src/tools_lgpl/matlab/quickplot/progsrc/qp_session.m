@@ -4,7 +4,7 @@ function S = qp_session(cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %
-%   Copyright (C) 2011-2021 Stichting Deltares.
+%   Copyright (C) 2011-2023 Stichting Deltares.
 %
 %   This library is free software; you can redistribute it and/or
 %   modify it under the terms of the GNU Lesser General Public
@@ -119,7 +119,7 @@ function X = local_identify_expandables(filename)
 XX = cell(100,2);
 X = {};
 j = 0;
-fid = fopen(filename,'r');
+fid = fopen(filename,'r','n','UTF-8');
 Str = getline(fid);
 Expand = 0;
 while ~isempty(Str)
@@ -160,7 +160,7 @@ if nargin==1
 else
     parnames = fieldnames(PAR);
 end
-fid = fopen(filename,'r');
+fid = fopen(filename,'r','n','UTF-8');
 Str = getline(fid);
 expand = 0;
 fgi = 0;
@@ -336,7 +336,7 @@ function local_save(S,filename)
 if isstruct(S)
     S = local_serialize(S);
 end
-fid = fopen(filename,'w');
+fid = fopen(filename,'w','n','UTF-8');
 fprintf(fid,'%s\n',S{:});
 fclose(fid);
 
@@ -556,7 +556,7 @@ for fgi = length(S):-1:1
             %
             opened_files = file_and_domain(opened_files,S(fgi).axes(axi).items(itm));
             %
-            if d3d_qp('selectfield',S(fgi).axes(axi).items(itm).name);
+            if d3d_qp('selectfield',S(fgi).axes(axi).items(itm).name)
                 if ~isempty(S(fgi).axes(axi).items(itm).subfield)
                     d3d_qp('selectsubfield',S(fgi).axes(axi).items(itm).subfield)
                 end
@@ -790,6 +790,8 @@ end
 function S = local_extract(H, S)
 if nargin>1
     offset = length(S);
+else
+    offset = 0;
 end
 
 for fgi = length(H):-1:1
@@ -804,7 +806,7 @@ for fgi = length(H):-1:1
     S(fgi1).windowsize  = HInfo.Position(3:4); % Units = pixels
     S(fgi1).colour      = round(HInfo.Color*255);
     S(fgi1).expandpar   = [];
-    ExpandP = getappdata(H(fgi1),'ExpandPAR');
+    ExpandP = getappdata(H(fgi),'ExpandPAR');
     if ~isempty(ExpandP)
         S(fgi1).expandpar.filename = ExpandP.FileName;
         S(fgi1).expandpar.domain   = ExpandP.Domain;
@@ -983,7 +985,7 @@ liA  = false(size(A));
 locB = zeros(size(A));
 for j = 1:numel(A)
     for i = 1:numel(B)
-        if isequal(A{j},B{i});
+        if isequal(A{j},B{i})
             liA(j)  = true;
             locB(j) = i;
             break

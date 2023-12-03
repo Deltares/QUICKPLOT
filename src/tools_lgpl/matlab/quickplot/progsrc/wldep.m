@@ -61,7 +61,7 @@ function varargout=wldep(cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %
-%   Copyright (C) 2011-2021 Stichting Deltares.
+%   Copyright (C) 2011-2023 Stichting Deltares.
 %
 %   This library is free software; you can redistribute it and/or
 %   modify it under the terms of the GNU Lesser General Public
@@ -163,7 +163,7 @@ if strcmp(filename,'?')
     filename=[fpath,fname];
 end
 
-fid=fopen(filename);
+fid=fopen(filename,'r','n','US-ASCII');
 if fid<0
     error('Cannot open %s.',filename)
 end
@@ -261,7 +261,7 @@ for i = length(data)-1:-1:1
     end
 end
 
-fid = fopen(filename,'w');
+fid = fopen(filename,'w','n','US-ASCII');
 Label = '';
 interactive = length(data)==1;
 

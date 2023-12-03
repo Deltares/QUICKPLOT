@@ -17,7 +17,7 @@ function varargout=boxfile(cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %
-%   Copyright (C) 2011-2021 Stichting Deltares.
+%   Copyright (C) 2011-2023 Stichting Deltares.
 %
 %   This library is free software; you can redistribute it and/or
 %   modify it under the terms of the GNU Lesser General Public
@@ -95,7 +95,7 @@ if strcmp(filename,'?')
     filename=[fpath,fname];
 end
 
-fid=fopen(filename,'r');
+fid=fopen(filename,'r','n','US-ASCII');
 if fid<0
     error('Cannot open %s.',filename)
 end
@@ -215,7 +215,7 @@ function OK=Local_depwrite(filename,DP)
 %    write the MATRIX to the file in boxfile format.
 %    Missing values (NaN's) are replaced by 999.999.
 
-fid=fopen(filename,'w');
+fid=fopen(filename,'w','n','US-ASCII');
 if fid<0
     error('Cannot open %s.',filename)
 end

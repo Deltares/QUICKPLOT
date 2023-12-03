@@ -5,7 +5,7 @@ function qck_anim(cmd,afig,ANISteps)
 
 %----- LGPL --------------------------------------------------------------------
 %
-%   Copyright (C) 2011-2021 Stichting Deltares.
+%   Copyright (C) 2011-2023 Stichting Deltares.
 %
 %   This library is free software; you can redistribute it and/or
 %   modify it under the terms of the GNU Lesser General Public
@@ -167,7 +167,7 @@ switch cmd
                 if ~OPS.AnimLoop
                     doloop=0;
                 end
-                for i0 = 1:NSteps,
+                for i0 = 1:NSteps
                     user_time_prev = user_time_new;
                     i = ANISteps(i0);
                     for iobj=1:length(UDh)
@@ -817,7 +817,7 @@ switch OPS.Type
             return
         end
         if strcmp(PrtID(max(1,end-4):end), ' file')
-            ext = lower(strtok(PrtID(max(1,end-8):end)));
+            ext = streamObj.printObj.ext;
             [fn, pn] = uiputfile([savedir, '*.', ext], 'Specify location and base ...');
             if ~ischar(fn)
                 return
@@ -826,25 +826,21 @@ switch OPS.Type
             if isempty(e)
                 e = ['.' ext];
             end
-            n = '';
-            while length(f)>0 && ismember(f(end), '0123456789')
-                n = [f(end),n];
-                f = f(1:end-1);
-            end
-            if isempty(n)
-                n = 0;
-                if strcmp(e,'.pdf')
-                    ndig = 0;
-                    streamObj.printObj.CloseFile = true;
-                else
-                    ndig = 3;
+            nr = 0;
+            ndig = 0;
+            if ~ismember(PrtID,{'Multi page PDF file','QUICKPLOT session file'})
+                while length(f)>ndig && ismember(f(end-ndig), '0123456789')
+                    ndig = ndig+1;
                 end
-            else
-                ndig = length(n);
-                n = str2num(n);
+                if ndig == 0
+                    ndig = 3;
+                else
+                    nr = sscanf(f(end-ndig+1:end),'%d');
+                    f = f(1:end-ndig);
+                end
             end
             streamObj.BaseStr = fullfile(pn,f);
-            streamObj.NextNr = n;
+            streamObj.NextNr = nr;
             if ndig>0
                 ndigstr = num2str(ndig);
                 streamObj.FrmtNr = strcat('%',ndigstr,'.',ndigstr,'i');
@@ -1063,6 +1059,7 @@ Hoptions  = findobj(uifig, 'tag', 'options');
 Htim      = findobj(uifig, 'tag', 'time steps');
 Hfps      = findobj(uifig, 'tag', 'max_fps');
 Hscr      = findobj(uifig, 'tag', 'script');
+Hok       = findobj(uifig, 'tag', 'ok');
 
 output = get(Houtp, 'value');
 outputtypes = get(Houtp, 'string');
@@ -1097,11 +1094,19 @@ switch cmd
         set(Hoptions, 'userdata', OPS)
 
     case 'time steps'
-        Range = getappdata(Htim, 'range');
-        ANISteps = str2vec(get(Htim, 'string'), 'range', Range, 'applylimit');
-        set(Htim, ...
-            'string', vec2str(ANISteps, 'noones', ...
-            'nobrackets'), 'userdata', ANISteps);
+         Range = getappdata(Htim, 'range');
+         try
+             ANISteps = str2vec(get(Htim, 'string'), 'range', Range, 'applylimit');
+             set(Htim, ...
+                 'foregroundcolor','k', ...
+                 'userdata', ANISteps)
+             % 'string', vec2str(ANISteps, 'noones', ...
+             set(Hok,'enable','on') % conditional on other checks?
+         catch
+             set(Htim, ...
+                 'foregroundcolor','r')
+             set(Hok,'enable','off')
+         end
         
     case 'max_fps'
         newfps = str2num(get(Hfps,'string'));

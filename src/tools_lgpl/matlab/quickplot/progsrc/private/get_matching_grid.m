@@ -8,7 +8,7 @@ function [G,GridFileName]=get_matching_grid(MapSeg,pn,filterspec)
 
 %----- LGPL --------------------------------------------------------------------
 %
-%   Copyright (C) 2011-2021 Stichting Deltares.
+%   Copyright (C) 2011-2023 Stichting Deltares.
 %
 %   This library is free software; you can redistribute it and/or
 %   modify it under the terms of the GNU Lesser General Public
@@ -237,10 +237,10 @@ while 1
                         C = cell(0,4);
                         for i=1:length(G.Dataset)
                             if strcmp(G.Dataset(i).Type,'ugrid_mesh')
-                                nNodeDim = G.Dataset(i).Mesh{5};
+                                    nNodeDim = G.Dataset(i).Mesh{5};
                                 nNodes = G.Dimension(ustrcmpi(nNodeDim,{G.Dimension.Name})).Length;
                                 GridsChecked{end+1} = sprintf('UGRID mesh "%s", number of nodes = %i',G.Dataset(i).Name,nNodes);
-                                if length(G.Dataset(i).Mesh)>=7
+                                if G.Dataset(i).Mesh{2}==2 %2D
                                     nFaceDim = G.Dataset(i).Mesh{7};
                                     nFaces = G.Dimension(ustrcmpi(nFaceDim,{G.Dimension.Name})).Length;
                                     GridsChecked{end+1} = sprintf('UGRID mesh "%s", number of faces = %i',G.Dataset(i).Name,nFaces);
@@ -542,7 +542,7 @@ end
 
 function DWQ = open_dwq(filename)
 DWQ = [];
-fid = fopen(filename,'r');
+fid = fopen(filename,'r','n','US-ASCII');
 L = fgetl(fid);
 [A,cnt,err,idx]=sscanf(L,'%i',inf);
 if ~strcmp(err,'')

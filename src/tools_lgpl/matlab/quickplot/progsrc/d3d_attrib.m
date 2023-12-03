@@ -37,7 +37,7 @@ function varargout=d3d_attrib(cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2021 Stichting Deltares.                                     
+%   Copyright (C) 2011-2023 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -112,7 +112,7 @@ if nargin<2 || isempty(filetype)
 else
     types = {filetype};
 end
-fid=fopen(filename,'r');
+fid=fopen(filename,'r','n','US-ASCII');
 if fid<0
     error('Can''t open file: %s.',filename)
 end
@@ -404,7 +404,7 @@ end
 if ~isfield(Out,'Type')
     Out.Type='weir';
 end
-fid=fopen(filename,'w');
+fid=fopen(filename,'w','n','US-ASCII');
 switch Out.Type
     case 'openboundary'
         for i = 1:length(Out.Name)

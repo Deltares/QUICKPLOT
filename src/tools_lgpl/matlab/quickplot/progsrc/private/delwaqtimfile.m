@@ -7,7 +7,7 @@ function Struct = delwaqtimfile(FileName);
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2021 Stichting Deltares.                                     
+%   Copyright (C) 2011-2023 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -37,7 +37,7 @@ function Struct = delwaqtimfile(FileName);
 
 Struct.FileName = FileName;
 Struct.FileType = 'DelwaqTimFile';
-fid = fopen(FileName,'r');
+fid = fopen(FileName,'r','n','US-ASCII');
 i = 0;
 Table(1).Name='First Table';
 while ~feof(fid)
@@ -169,7 +169,7 @@ Struct.Table = Table;
 function simpleloctable(FileName)
 Struct.FileName = FileName;
 Struct.FileType = 'DelwaqTimFile';
-fid = fopen(FileName,'r');
+fid = fopen(FileName,'r','n','US-ASCII');
 Line = fgetl(fid);
 lowLine = lower(Line);
 [value,n,e,i] = sscanf(lowLine,'location , x , y , z , time');

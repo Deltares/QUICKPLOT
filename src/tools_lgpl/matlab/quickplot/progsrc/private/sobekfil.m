@@ -18,7 +18,7 @@ function varargout=sobekfil(FI,domain,field,cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2021 Stichting Deltares.                                     
+%   Copyright (C) 2011-2023 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -126,6 +126,8 @@ end
 sz=getsize(FI,domain,Props);
 if isempty(idx{T_})
     idx{T_}=sz(T_);
+elseif isequal(idx{T_},0)
+    idx{T_} = 1:sz(T_);
 end
 if sz(M_)>0 && (isequal(idx{M_},0) || isempty(idx{M_}))
     idx{M_}=1:sz(M_);
@@ -219,11 +221,15 @@ if isequal(Props.Geom,'SEG-NODE') || isequal(Props.Geom,'SEG-EDGE')
             end
             if Props.NVal>0
                 if ~isequal(Props.Subs,0)
-                    Ans.Val = NaN(length(idx{T_}),length(selected));
+                    % delwaq returns array of size NSUBS x NSEGS x NTIMES
+                    Ans.Val = NaN(1,length(selected),length(idx{T_}));
                     %
                     [Member,Idx] = ismember(DataFile.SegmentName,FI.Node.ID(inodes));
-                    [t,Ans.Val(:,Idx(Member))]=delwaq('read',DataFile,Props.Subs(2),find(Member),idx{T_});
-                    Ans.Time=t;
+                    [t,Ans.Val(1,Idx(Member),:)]=delwaq('read',DataFile,Props.Subs(2),find(Member),idx{T_});
+                    %
+                    % need to return a matrix NTIMES x NSEGS (NSUBS = 1)
+                    Ans.Val = permute(Ans.Val,[3,2,1]);
+                    Ans.Time = t;
                 else
                     if isempty(subfield)
                         fld = 'ID';
@@ -534,7 +540,7 @@ switch component
         reachtypes = {'FLS_LINE1D2DBOUNDARY', 'FLS_LINEBOUNDARY', 'FLS_LINEHISTORY'};
     case '1d'
         nodetypes  = {'SBK_1D2DBOUNDARY', 'SBK_BOUNDARY', 'SBK_BRIDGE', 'SBK_CHANNELCONNECTION', 'SBK_CHANNELLINKAGENODE', 'SBK_CHANNEL_CONN&LAT', 'SBK_CHANNEL_STORCONN&LAT', 'SBK_CMPSTR', 'SBK_CONN&LAT', 'SBK_CONN&LAT&RUNOFF', 'SBK_CONN&MEAS', 'SBK_CONN&RUNOFF', 'SBK_CONNECTIONNODE', 'SBK_CULVERT', 'SBK_DATABASESTRUCTURE', 'SBK_EXTPUMP', 'SBK_EXTRARESISTANCE', 'SBK_EXTWEIR', 'SBK_GENERALSTRUC', 'SBK_GRIDPOINT', 'SBK_GRIDPOINTFIXED', 'SBK_LATERALFLOW', 'SBK_MEASSTAT', 'SBK_ORIFICE', 'SBK_PROFILE', 'SBK_PUMP', 'SBK_RIVERADVANCEDWEIR', 'SBK_RIVERPUMP', 'SBK_RIVERWEIR', 'SBK_SBK-3B-NODE', 'SBK_SBK-3B-REACH', 'SBK_UNIWEIR', 'SBK_WEIR'};
-        reachtypes = {'SBK_CHANNEL', 'SBK_CHANNEL&LAT', 'SBK_DAMBRK', 'SBK_INTCULVERT', 'SBK_INTORIFICE', 'SBK_INTPUMP', 'SBK_INTWEIR', 'SBK_PIPE', 'SBK_PIPE&INFILTRATION', 'SBK_PIPE&RUNOFF'};
+        reachtypes = {'SBK_CHANNEL', 'SBK_CHANNEL&LAT', 'SBK_DAMBRK', 'SBK_INTCULVERT', 'SBK_INTORIFICE', 'SBK_INTPUMP', 'SBK_INTWEIR', 'SBK_PIPE', 'SBK_PIPE&INFILTRATION', 'SBK_PIPE&RUNOFF', 'SBK_RWAPIPE&RUNOFF'};
 end
 % -----------------------------------------------------------------------------
 
@@ -588,27 +594,29 @@ else
                 DataProps{end,8}={'SBK_CHANNELCONNECTION', 'SBK_CHANNELLINKAGENODE', 'SBK_CHANNEL_CONN&LAT', 'SBK_CHANNEL_STORCONN&LAT', 'SBK_CONN&LAT', 'SBK_CONN&LAT&RUNOFF', 'SBK_CONN&MEAS', 'SBK_CONN&RUNOFF', 'SBK_CONNECTIONNODE', 'SBK_GRIDPOINT', 'SBK_GRIDPOINTFIXED', 'SBK_SBK-3B-NODE'}';
             end
             %
-            DataProps(end+1,:)=separator;
-            %
-            DataProps(end+1,:)=DataProps(1,:);
-            DataProps{end,1}='all reach segments';
-            DataProps{end,3}='SEG-EDGE';
-            DataProps{end,6}=1;
-            DataProps{end,7}=4;
-            DataProps{end,8}=reachtypes;
-            %
-            DataProps(end+1,:)=DataProps(end,:);
-            DataProps{end,1}='all reach segments: reach number';
-            DataProps{end,7}=1;
-            %
-            i0 = size(DataProps,1);
-            for i = length(reachtypes):-1:1
-                DataProps(i0+i,:)=DataProps(i0,:);
-                DataProps{i0+i,1}=[reachtypes{i} ' reach segments'];
-                DataProps{i0+i,5}=[0 3 0 0 0];
-                DataProps{i0+i,7}=4;
-                DataProps{i0+i,8}=reachtypes(i);
-                DataProps{i0+i,10}=0;
+            if ~isempty(reachtypes)
+                DataProps(end+1,:)=separator;
+                %
+                DataProps(end+1,:)=DataProps(1,:);
+                DataProps{end,1}='all reach segments';
+                DataProps{end,3}='SEG-EDGE';
+                DataProps{end,6}=1;
+                DataProps{end,7}=4;
+                DataProps{end,8}=reachtypes;
+                %
+                DataProps(end+1,:)=DataProps(end,:);
+                DataProps{end,1}='all reach segments: reach number';
+                DataProps{end,7}=1;
+                %
+                i0 = size(DataProps,1);
+                for i = length(reachtypes):-1:1
+                    DataProps(i0+i,:)=DataProps(i0,:);
+                    DataProps{i0+i,1}=[reachtypes{i} ' reach segments'];
+                    DataProps{i0+i,5}=[0 3 0 0 0];
+                    DataProps{i0+i,7}=4;
+                    DataProps{i0+i,8}=reachtypes(i);
+                    DataProps{i0+i,10}=0;
+                end
             end
         case 'Flow 2D'
             [nodetypes_2d,reachtypes_2d] = types('2d');

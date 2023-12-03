@@ -14,7 +14,7 @@ function varargout = mdf(cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2021 Stichting Deltares.                                     
+%   Copyright (C) 2011-2023 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -307,11 +307,11 @@ if isfield(MDF2,'ini')
             %
             if strcmp(MDF2.ini.FileType,'ini')
                 % constituents: data at cell centres
-                last3D = length(MDF2.ini);
+                last3D = length(MDF2.ini.Data);
                 has_umean = false;
             else
                 % constituents and turbulent quantities: data at cell centres
-                last3D = length(MDF2.ini)-2;
+                last3D = length(MDF2.ini.Data)-2;
                 has_umean = true;
             end
             % constituents and turbulent quantities: data at cell centres
@@ -320,8 +320,8 @@ if isfield(MDF2,'ini')
             end
             % u/v mnldf: data at velocity points
             if has_umean
-                iu = length(MDF2.ini)-1;
-                iv = length(MDF2.ini);
+                iu = length(MDF2.ini.Data)-1;
+                iv = length(MDF2.ini.Data);
                 [MDF2.ini.Data(iu).Data,MDF2.ini.Data(iv).Data] = fldrotate('veloc',MDF2.ini.Data(iu).Data,MDF2.ini.Data(iv).Data);
             end
         case 'NEFIS'
@@ -413,13 +413,33 @@ if isfield(MDF2,'bnd')
     MDF2.bnd.MN(:,1:2) = rotate(MDF2.bnd.MN(:,1:2),MMAX);
     MDF2.bnd.MN(:,3:4) = rotate(MDF2.bnd.MN(:,3:4),MMAX);
     %
+    Active = enclosure('inside',MDF2.grd.Enclosure,size(MDF2.grd.X));
+    %
+    jH = 0;
     for i = 1:length(MDF2.bnd.Name)
+        if MDF2.bnd.Forcing(i)=='H'
+            jH = jH+1;
+        end
         if any('CQTRN'==MDF2.bnd.BndType(i))
             if MDF2.bnd.BndType(i)=='R'
                 warning('Riemann data may need adjustment: sign of velocity component changes')
             end
             % if along N axis, then change sign of flux
-            if MDF2.bnd.MN(i,1)~=MDF2.bnd.MN(i,3)
+            if MDF2.bnd.MN(i,1) ~= MDF2.bnd.MN(i,3)
+                nAligned = true;
+            elseif MDF2.bnd.MN(i,2) ~= MDF2.bnd.MN(i,4)
+                nAligned = false;
+            else
+                mn = MDF2.bnd.MN(i,1:2);
+                if mn(2)>1 && Active(mn(1),mn(2)-1)
+                    nAligned = true;
+                elseif mn(2)<size(Active,2) && Active(mn(1),mn(2)+1)
+                    nAligned = true;
+                else
+                    nAligned = false;
+                end
+            end
+            if nAligned
                 switch MDF2.bnd.Forcing(i)
                     case 'T'
                         for j = 1:length(MDF2.bct.Table)
@@ -427,6 +447,12 @@ if isfield(MDF2,'bnd')
                                 MDF2.bct.Table(j).Data(:,2:end) = -MDF2.bct.Table(j).Data(:,2:end);
                                 break
                             end
+                        end
+                    case 'H'
+                        nH = size(MDF2.bch.Amplitudes,1)/2;
+                        MDF2.bch.Amplitudes(jH,:) = -MDF2.bch.Amplitudes(jH,:);
+                        if MDF2.bnd.BndType(i) ~= 'T'
+                            MDF2.bch.Amplitudes(nH+jH,:) = -MDF2.bch.Amplitudes(nH+jH,:);
                         end
                 end
             end
@@ -724,7 +750,7 @@ if isfield(MDF,'ini')
             % plain ascii initial conditions file (flow only)
             filename = [caseid '.ini'];
             wldep('write',fullfile(path,filename),MDF.ini.Data);
-            MDF.mdf = inifile('seti',MDF.mdf,'','Filic',hstr(caseid));
+            MDF.mdf = inifile('seti',MDF.mdf,'','Filic',hstr(filename));
         case 'NEFIS'
             % NEFIS map-file
             filename = ['trim-restart-for-' caseid];
@@ -932,7 +958,7 @@ end
 
 
 function DDB = ddbread(filename)
-fid = fopen(filename,'r');
+fid = fopen(filename,'r','n','US-ASCII');
 DDB.DomainNames = {};
 iLine = 0;
 iBound = 0;
@@ -1034,8 +1060,8 @@ function MF = mduread(MF,md_path)
 mshname = propget(MF.mdu,'geometry','NetFile');
 if ~isempty(mshname)
     mshname = relpath(md_path,mshname);
-    [F,Q] = getmesh(mshname);
-    MF.mesh.nc_file = F;
+    [NetFile,Q] = getmesh(mshname);
+    MF.mesh.nc_file = NetFile;
     imeshquant = find(([Q.NVal]==0 & ~strcmp({Q.Name},'-------') & [Q.UseGrid]~=0) | [Q.NVal]==4);
     MF.mesh.quant = Q(imeshquant);
     %
@@ -1065,13 +1091,16 @@ if ~isempty(mshname)
     imesh = find(ismesh);
     [~,MF.mesh.meshes] = ismember(imesh,imeshquant);
     %
-    FirstPoint = netcdffil(F,1,Q(1),'grid',1);
+    FirstPoint = netcdffil(NetFile,1,Q(1),'grid',1);
     MF.mesh.XYUnits = FirstPoint.XUnits;
 else
     error('Unable to locate NetFile keyword in [geometry] chapter.');
 end
 %
 attfiles = {...
+   'external forcing','ExtForceFile','ExtForce'
+   'external forcing','ExtForceFileNew','ExtForceNew'
+   'geometry','IniFieldFile','IniField'
    'geometry','BedlevelFile','BedLevel'
    'geometry','DryPointsFile','DryPoints'
    'geometry','WaterLevIniFile','WaterLevIni'
@@ -1087,8 +1116,6 @@ attfiles = {...
    'geometry','ManholeFile','Manhole'
    'geometry','PartitionFile','Partition'
    'restart','RestartFile','Restart'
-   'external forcing','ExtForceFile','ExtForce'
-   'external forcing','ExtForceFileNew','ExtForceNew'
    'output','ObsFile','Obs'
    'output','CrsFile','Crs'
    'sediment','MorFile','Mor'
@@ -1112,57 +1139,57 @@ for i = 1:size(attfiles,1)
         zkuni = -5;
         zkuni = propgetval(MF.mdu,grp,'BotLevUni',zkuni);
         zkuni = propgetval(MF.mdu,grp,'BedLevUni',zkuni);
-        VNames = {F.Dataset.Name}';
+        VNames = {NetFile.Dataset.Name}';
         %
-        if bltyp == 1
-            % bed levels specified at faces: from samples or net file
-            % ... data from Bathymetry/BedlevelFile
-            filename = propget(MF.mdu,grp,fld,'');
-            if isempty(filename)
-                filename = propget(MF.mdu,grp,'BathymetryFile','');
+        filename = '';
+        if isfield(MF,'IniField')
+            IniNames = {MF.IniField.Quantity.Name};
+            ic = find(strcmpi('bedlevel',IniNames));
+            if ~isempty(ic)
+                filename = MF.IniField.Quantity.File;
             end
-            if isempty(filename) % in FM: if file not exists ...
+        end
+        if isempty(filename)
+            filename = propget(MF.mdu,grp,fld,''); % BedlevelFile
+        end
+        if isempty(filename)
+            filename = propget(MF.mdu,grp,'BathymetryFile','');
+        end
+        % ... data from BathymetryFile/BedlevelFile
+        if isempty(filename) % in FM: if file not exists ...
+            if bltyp == 1
+                % bed levels specified at faces
                 % ... variable with standard name "altitude" at cell centres from mesh file
                 % ... variable with name "mesh2d_flowelem_bl" from mesh file
-                SNames = get_standard_names(F);
+                SNames = get_standard_names(NetFile);
                 ibl2d = strcmp('altitude',SNames);
                 if none(ibl2d)
                     ibl2d = strcmp('mesh2d_flowelem_bl',VNames);
                 end
-                ibl2d = find(ibl2d)-1;
-                if ~isempty(ibl2d)
-                    % use bed level from mesh file
-                    iq = false(size(Q));
-                    for j = 1:length(iq)
-                        if isnumeric(Q(j).varid) & ~isempty(Q(j).varid) & isscalar(Q(j).varid) & strcmp(Q(j).Geom,'UGRID2D-FACE')
-                            iq(j) = ismember(Q(j).varid,ibl2d);
-                        end
-                    end
-                    MF.BedLevel = Q(iq);
-                    MF.BedLevelUni = zkuni;
-                else
-                    % use uniform bed level
-                    MF.BedLevel = zkuni;
+                loc = 'UGRID2D-FACE';
+            elseif bltyp == 2
+                % bed levels specified at edges
+                % can't be read from mesh file
+                ibl2d = [];
+            else
+                % bed levels specified at nodes
+                % ... variable with name "node_z" or "NetNode_z" from mesh file
+                ibl2d = strcmp('NetNode_z',VNames);
+                if none(ibl2d)
+                    ibl2d = strcmp('node_z',VNames);
                 end
-                continue
+                loc = 'UGRID2D-NODE';
             end
-        elseif bltyp == 2
-            % bed levels specified at edges: always from samples
-        else
-            % bed levels specified at nodes: always from mesh file
-            ibl2d = strcmp('NetNode_z',VNames);
-            if none(ibl2d)
-                ibl2d = strcmp('node_z',VNames);
-            end
+            %
             ibl2d = find(ibl2d)-1;
             if ~isempty(ibl2d)
                 % use bed level from mesh file
-                    iq = false(size(Q));
-                    for j = 1:length(iq)
-                        if isnumeric(Q(j).varid) & ~isempty(Q(j).varid) & isscalar(Q(j).varid) & strcmp(Q(j).Geom,'UGRID2D-NODE')
-                            iq(j) = ismember(Q(j).varid,ibl2d);
-                        end
+                iq = false(size(Q));
+                for j = 1:length(iq)
+                    if isnumeric(Q(j).varid) & ~isempty(Q(j).varid) & isscalar(Q(j).varid) & strcmp(Q(j).Geom,loc)
+                        iq(j) = ismember(Q(j).varid,ibl2d);
                     end
+                end
                 MF.BedLevel = Q(iq);
                 MF.BedLevelUni = zkuni;
             else
@@ -1263,13 +1290,19 @@ for i = 1:size(attfiles,1)
                                 F(q).Value = val;
                             otherwise
                                 % unknown keyword - skip it or warn?
+                                continue
                         end
+                        F(q).File = [];
                     end
                     %
                     for q = 1:length(F)
                         switch F(q).FileType
-                            case 'polyline'
-                                % ... read pli with optional 3rd column ...
+                            case {'triangulation','triangulation_magdir'}
+                                F(q).File = samples('read', F(q).FileName);
+                            case 'curvi'
+                                F(q).File = asciiwind('open', F(q).FileName);
+                            otherwise
+                                ui_message('warning','Unsupported external forcing file type %s in record %i of %s', F(q).FileType, q, filename)
                         end
                     end
                 case 'ExtForceNew'
@@ -1349,11 +1382,22 @@ for i = 1:size(attfiles,1)
                     else
                         F.Bnd.Types = {};
                     end
+                case 'IniField'
+                    F = inifile('open',filename);
+                    [ContainsIni, IndexChapter] = inifile('exists', F, 'Initial');
+                    if ContainsIni
+                        for iq = length(IndexChapter):-1:1
+                            F.Quantity(iq).Name     = inifile('hgeti', F, IndexChapter(iq), 'quantity');
+                            F.Quantity(iq).FileType = inifile('hgeti', F, IndexChapter(iq), 'dataFileType');
+                            F.Quantity(iq).File     = inifile('hgeti', F, IndexChapter(iq), 'dataFile');
+                            F.Quantity(iq).Interp   = inifile('hgeti', F, IndexChapter(iq), 'interpolationMethod');
+                        end
+                    end
                 case 'Mor'
                     F = inifile('open',filename);
                 case 'Obs'
                     try
-                        fid = fopen(filename,'r');
+                        fid = fopen(filename,'r','n','UTF-8');
                         XYName = textscan(fid,'%f %f %s');
                         fclose(fid);
                         for n = 1:length(XYName{3})
@@ -1439,7 +1483,7 @@ keys = {'PROFNR=','TYPE=','WIDTH=','HEIGHT=','ZMIN=','BASE=','TALUD=','FRCTP=','
 lkeys = cellfun(@length,keys);
 N = zeros(100,9);
 n = 0;
-fid = fopen(filename);
+fid = fopen(filename,'n','US-ASCII');
 while ~feof(fid)
     Line = fgetl(fid);
     if isempty(Line)
@@ -1693,34 +1737,38 @@ if ~isempty(ininame)
                 MF.ini.FileType = 'netCDF';
                 netcdf.close(ncid)
             catch
-                %
-                % try restid as trim-dat/def
-                inicond = relpath(md_path,ininame);
-                MF.ini = vs_use(inicond,'quiet');
-                %
-                times = qpread(MF.ini,'water level','times');
-                iMAP  = find(times==rdate);
-                %
-                for ig = 1:length(MF.ini.GrpDat)
-                    g = MF.ini.GrpDat(ig).Name;
-                    g_ = strrep(g,'-','_');
-                    if MF.ini.GrpDat(ig).SizeDim>1
-                        MF.ini.Data.(g_) = vs_let(MF.ini,g,{iMAP},'*','quiet');
-                        MF.ini.GrpDat(ig).SizeDim=1;
-                    else
-                        MF.ini.Data.(g_) = vs_let(MF.ini,g,{1},'*','quiet');
+                try
+                    %
+                    % try restid as trim-dat/def
+                    inicond = relpath(md_path,ininame);
+                    MF.ini = vs_use(inicond,'quiet');
+                    %
+                    times = qpread(MF.ini,'water level','times');
+                    iMAP  = find(times==rdate);
+                    %
+                    for ig = 1:length(MF.ini.GrpDat)
+                        g = MF.ini.GrpDat(ig).Name;
+                        g_ = strrep(g,'-','_');
+                        if MF.ini.GrpDat(ig).SizeDim>1
+                            MF.ini.Data.(g_) = vs_let(MF.ini,g,{iMAP},'*','quiet');
+                            MF.ini.GrpDat(ig).SizeDim=1;
+                        else
+                            MF.ini.Data.(g_) = vs_let(MF.ini,g,{1},'*','quiet');
+                        end
                     end
+                    %
+                    MF.ini.FileName = 'IN MEMORY';
+                    MF.ini.FileType = 'NEFIS';
+                    MF.ini.DatExt = '';
+                    MF.ini.DefExt = '';
+                catch
+                    ui_message('warning','Unable to locate restart file: %s',ininame)
                 end
-                %
-                MF.ini.FileName = 'IN MEMORY';
-                MF.ini.FileType = 'NEFIS';
-                MF.ini.DatExt = '';
-                MF.ini.DefExt = '';
             end
         end
     end
     %
-    if strcmp(MF.ini.FileType,'trirst')
+    if isfield(MF,'ini') && strcmp(MF.ini.FileType,'trirst')
         % plain binary restart file (flow only)
         nfields = length(MF.ini.Data);
         % water level, velocity, constituents, turbulent quantities, u/v mnldf
@@ -1995,7 +2043,7 @@ end
 
 
 function data = readwnd(filename)
-fid = fopen(filename,'r');
+fid = fopen(filename,'r','n','US-ASCII');
 if fid<0
     error('Can''t open file: %s.',filename)
 end
@@ -2010,7 +2058,7 @@ catch e
 end
 
 function S = readbca(filename)
-fid = fopen(filename,'r');
+fid = fopen(filename,'r','n','US-ASCII');
 S.FileName = filename;
 S.FileType = 'Delft3D-FLOW BCA-file';
 S.Location.Name = '';
@@ -2084,7 +2132,7 @@ switch lower(cmd)
 end
 
 function writebch(filename,S)
-fid = fopen(filename,'wt');
+fid = fopen(filename,'wt','n','US-ASCII');
 Format = [repmat(' %15.7e',1,length(S.Freq)) '\n'];
 fprintf(fid,Format,S.Freq);
 fprintf(fid,'\n');
@@ -2098,7 +2146,7 @@ fclose(fid);
 function S = readbch(filename)
 S.FileName = filename;
 S.FileType = 'Delft3D-FLOW BCH-file';
-fid = fopen(filename,'r');
+fid = fopen(filename,'r','n','US-ASCII');
 %
 lNr = 1;
 Line = fgetl(fid);

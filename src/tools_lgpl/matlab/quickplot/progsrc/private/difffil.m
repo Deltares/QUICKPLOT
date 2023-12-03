@@ -18,7 +18,7 @@ function varargout=difffil(FI,domain,field,cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2021 Stichting Deltares.                                     
+%   Copyright (C) 2011-2023 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -116,8 +116,13 @@ end
 checkgrids = strcmp(FI.DiffType,'renum');
 JRI = [];
 if Props.NVal>0 && checkgrids
-    [success,Grid1,FI.Files(1)] = qp_getdata(FI.Files(1),domain1,Props.Q1,'grid');
-    [success,Grid2,FI.Files(2)] = qp_getdata(FI.Files(2),domain2,Props.Q2,'grid');
+    if isempty(Props.SubFld)
+        [success,Grid1,FI.Files(1)] = qp_getdata(FI.Files(1),domain1,Props.Q1,'grid');
+        [success,Grid2,FI.Files(2)] = qp_getdata(FI.Files(2),domain2,Props.Q2,'grid');
+    else % subfld index is the first index of varargin, so pass that one ...
+        [success,Grid1,FI.Files(1)] = qp_getdata(FI.Files(1),domain1,Props.Q1,'grid',varargin{1});
+        [success,Grid2,FI.Files(2)] = qp_getdata(FI.Files(2),domain2,Props.Q2,'grid',varargin{1});
+    end
     if isfield(Grid1,'ValLocation')
         X1 = Grid1.X;
         Y1 = Grid1.Y;
@@ -302,6 +307,8 @@ end
 
 % -----------------------------------------------------------------------------
 function Out=infile(FI,domain)
+T_=1; ST_=2; M_=3; N_=4; K_=5;
+warnings = {};
 if ~isfield(FI,'DiffDomain') || isempty(FI.DiffDomain)
     domain1 = 1;
     domain2 = 1;
@@ -369,9 +376,16 @@ for i=1:length(Q1)
             if ~success
                 error(lasterr)
             end
+            if ~isequal(sz(T_),sz2(T_))
+                % allow for a different number of time steps, but warn user
+                % about it.
+                szt = min(sz(T_),sz2(T_));
+                warnings{end+1} = sprintf('File 1 contains %i time steps, file 2 contains %i time steps. Diff supported for first %i time steps.',sz(T_),sz2(T_),szt);
+                sz(T_) = szt;
+                sz2(T_) = szt;
+            end
             if ~isequal(sz,sz2)
-                % allow for different number of time steps, stations in the
-                % future?
+                % allow for different number of stations in the future?
                 i2(k)=[];
             else
                 [success,sf2] = qp_getdata(FI.Files(2),domain2,Q2(i2(k)),'subfields');
@@ -431,6 +445,10 @@ for i=1:length(Q1)
     Out(j) = NewFld;
 end
 Out(j+1:end)=[];
+if ~isempty(warnings)
+    warnings = unique(warnings);
+    ui_message('warning',warnings)
+end
 % -----------------------------------------------------------------------------
 
 
@@ -456,9 +474,10 @@ if ~isfield(FI,'DiffDomain') || isempty(FI.DiffDomain)
 else
     domain1 = FI.DiffDomain(1);
 end
-TimeNr = {};
 if nargin>3
     TimeNr = {t};
+else % limit the number of time steps to the number presented to the user
+    TimeNr = {1:Props.Size(T_)};
 end
 [success,T] = qp_getdata(FI.Files(1),domain1,Props.Q1,'times',TimeNr{:});
 if ~success

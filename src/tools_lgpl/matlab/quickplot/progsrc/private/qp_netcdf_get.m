@@ -9,7 +9,7 @@ function [Data, errmsg] = qp_netcdf_get(FI,var,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %
-%   Copyright (C) 2011-2021 Stichting Deltares.
+%   Copyright (C) 2011-2023 Stichting Deltares.
 %
 %   This library is free software; you can redistribute it and/or
 %   modify it under the terms of the GNU Lesser General Public
@@ -43,7 +43,11 @@ if isempty(var)
     errmsg='Variable name is empty.';
     error(errmsg)
 elseif ischar(var)
-    var = strmatch(var,{FI.Dataset.Name},'exact')-1;
+    varstr = var;
+    var = strmatch(varstr,{FI.Dataset.Name},'exact')-1;
+    if isempty(var)
+        error('Variable ''%s'' not found in file.',varstr)
+    end
 elseif isstruct(var)
     var = var.Varid;
 end
@@ -228,15 +232,19 @@ if ~isempty(Info.Attribute)
         % nc_interpret we should have removed _FillValue attributes for
         % char.
         missval = Info.Attribute(missval).Value;
-        switch netcdf_use_fillvalue
-            case 'exact_match'
-                Data(Data==missval)=NaN;
-            otherwise % 'valid_range'
-                if missval>0
-                    Data(Data>=missval)=NaN;
-                else
-                    Data(Data<=missval)=NaN;
-                end
+        if ~isnumeric(missval)
+            % _FillValue = "-999.9f" is not valid
+        else
+            switch netcdf_use_fillvalue
+                case 'exact_match'
+                    Data(Data==missval) = NaN;
+                otherwise % 'valid_range'
+                    if missval > 0
+                        Data(Data>=missval) = NaN;
+                    else
+                        Data(Data<=missval) = NaN;
+                    end
+            end
         end
     else
         % NCL standard or general standard?
@@ -247,7 +255,7 @@ if ~isempty(Info.Attribute)
                 Data(Data<=-32767)=NaN;
             case 'int'
                 Data(Data<=-2147483647)=NaN;
-            case {'float','double'}
+            case {'single','double'}
                 Data(Data>=9.9692099683868690e+36)=NaN;
         end
     end

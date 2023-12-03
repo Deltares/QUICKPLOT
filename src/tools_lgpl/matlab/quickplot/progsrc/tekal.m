@@ -67,7 +67,7 @@ function varargout = tekal(cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2021 Stichting Deltares.                                     
+%   Copyright (C) 2011-2023 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -174,7 +174,7 @@ while i<=length(INP)
 end
 
 variable=0;
-fid=fopen(filename,'r');
+fid=fopen(filename,'r','n','US-ASCII');
 if fid<0
     error('Cannot open file ...')
 end
@@ -398,7 +398,7 @@ try
             end
         else
             if fid<0
-                fid=fopen(FileInfo.FileName,'r');
+                fid=fopen(FileInfo.FileName,'r','n','US-ASCII');
             end
             fseek(fid,FileInfo.Field(v).Offset,-1);
             if length(FileInfo.Field(v).Size)>1
@@ -571,7 +571,7 @@ end
 
 
 function NewFileInfo=Local_write_file(filename,FileInfo,varargin)
-fid=fopen(filename,'w');
+fid=fopen(filename,'w','n','US-ASCII');
 NewFileInfo.Check='NotOK';
 if fid<0
     error('invalid filename')

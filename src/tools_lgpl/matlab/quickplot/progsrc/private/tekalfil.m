@@ -18,7 +18,7 @@ function varargout=tekalfil(FI,domain,field,cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2021 Stichting Deltares.                                     
+%   Copyright (C) 2011-2023 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -272,6 +272,17 @@ switch FI.FileType
                 Data(Data(:,1)==999.999 & Data(:,2)==999.999,:)=NaN;
             end
         end
+    case 'GeoJSON'
+        already_selected = 1;
+        geotypes = FI.features.data(1,:);
+        switch Props.Name
+            case 'line'
+                geoset = {'MultiLineString'};
+            case 'point'
+                geoset = {'Point'};
+        end
+        ifeature = find(ismember(geotypes,geoset));
+        Data = FI.features.data(2,ifeature(idx{M_}));
     case 'AutoCAD DXF'
         if strcmp(Props.Coords,'xyz')
             Data=FI.Lines(1:3,:)';
@@ -847,6 +858,16 @@ switch FI.FileType
                 end
             end
         end
+    case 'GeoJSON'
+        DataProps={'line'                      'POLYL' 'xy'  [0 0 1 0 0]  0          0       0       0       1          []      {}
+                   'point'                     'PNT'   'xy'  [0 0 1 0 0]  0          0       0       0       1          []      {}  };
+        geotypes = unique(FI.features.data(1,:));
+        if ~ismember('MultiLineString',geotypes)
+            DataProps(strcmp('line',DataProps(:,1)),:) = [];
+        end
+        if ~ismember('Point',geotypes)
+            DataProps(strcmp('point',DataProps(:,1)),:) = [];
+        end
     case {'BNA File','ArcInfoUngenerate','AutoCAD DXF'}
         if isfield(FI,'SubType') && ismember(FI.SubType,{'line','polygon'})
             ncoords = size(FI.Seg(1).Coord,2);
@@ -874,7 +895,7 @@ switch FI.FileType
                 DataProps(i+1,:)=DataProps(1,:);
                 DataProps{i+1,1}=[DataProps{i+1,1} ':' dBaseFlds{i}];
                 switch FI.dBase.Fld(i).Type
-                    case {'2','4','8','N','F'}
+                    case {'2','4','8','D','N','F'}
                         DataProps{i+1,6}=1;
                     otherwise
                         DataProps{i+1,6}=4;
@@ -1018,6 +1039,15 @@ switch FI.FileType
                 sz(ST_)=FI.Field(blck).Size(2)-sum(Props.DimFlag([M_ N_ K_])~=0);
             end
         end
+    case 'GeoJSON'
+        geotypes = FI.features.data(1,:);
+        switch Props.Name
+            case 'line'
+                geoset = {'MultiLineString'};
+            case 'point'
+                geoset = {'Point'};
+        end
+        sz(M_) = sum(ismember(geotypes,geoset));
     case {'BNA File','ArcInfoUngenerate'}
         sz(M_)=length(FI.Seg);
     case {'AutoCAD DXF'}

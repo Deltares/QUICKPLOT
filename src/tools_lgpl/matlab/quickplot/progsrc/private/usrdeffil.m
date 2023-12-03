@@ -18,7 +18,7 @@ function varargout=usrdeffil(FI,domain,field,cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2021 Stichting Deltares.                                     
+%   Copyright (C) 2011-2023 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -161,6 +161,7 @@ for i=1:length(FI)
     DataProps{i,8}=i;
     if isfield(FI(i),'Geom') && ~isempty(FI(i).Geom)
         DataProps{i,3}=FI(i).Geom;
+        DataProps{i,9}=strcmp(FI(i).Geom, 'TRI');
     elseif isfield(FI(i),'Tri') && ~isempty(FI(i).Tri)
         DataProps{i,9}=FI(i).Tri;
         DataProps{i,3}='TRI';
@@ -908,24 +909,31 @@ switch cmd
         end
         options(FI,mfig,'selectvar');
 
-    case 'delvar'
-        Handle_VarList=findobj(mfig,'tag','varlist');
-        Vars=get(Handle_VarList,'userdata');
-        Str=get(Handle_VarList,'string');
-        NrInList=get(Handle_VarList,'value');
-        Vars(NrInList)=[];
-        Str(NrInList)=[];
-        if isempty(Vars)
-            set(Handle_VarList,'enable','off','backgroundcolor',Inactive);
-            Handle_DelVar=findobj(mfig,'tag','delvar');
-            set(Handle_DelVar,'enable','off');
-            Str=' ';
+    case {'delvar','deletevar','deleteallvars'}
+        Handle_VarList = findobj(mfig,'tag','varlist');
+        Vars = get(Handle_VarList,'userdata');
+        if strcmp(cmd,'deleteallvars')
+            NrInList = ':';
+            Vars(1:end) = []; % Vars will be empty, but not equal to []
         else
-            NrInList=min(NrInList,length(Vars));
+            Str = get(Handle_VarList,'string');
+            NrInList = get(Handle_VarList,'value');
+            Vars(NrInList) = [];
+            Str(NrInList) = [];
+            cmd = 'deletevar';
+        end
+        if isempty(Vars)
+            NrInList = 1;
+            set(Handle_VarList,'enable','off','backgroundcolor',Inactive);
+            Handle_DelVar = findobj(mfig,'tag','delvar');
+            set(Handle_DelVar,'enable','off');
+            Str = ' ';
+        else
+            NrInList = min(NrInList,length(Vars));
         end
         set(Handle_VarList,'userdata',Vars,'string',Str,'value',NrInList);
         options(FI,mfig,'selectvar');
-        NewFI=Vars;
+        NewFI = Vars;
         cmdargs={cmd};
 
     case 'selectvar'
@@ -1260,6 +1268,7 @@ switch cmd
         else
             set(Handle_DefVar,'enable','on')
         end
+        cmdargs={cmd Str};
 
     case 'defvariable'
         Handle_VarList=findobj(mfig,'tag','varlist');
@@ -1365,7 +1374,7 @@ switch cmd
                 Props.Oper=Ops{k};
                 Props.Data={Vars(i) c};
                 Props.DataInCell = Vars(i).DataInCell;
-            case {'10log','abs','max m','alg.mean m','min m','max n','alg.mean n','min n','max k','alg.mean k','min k','sum k','sum m','sum n','flip m','flip n','flip k'}
+            case {'10log','abs','flip m','flip n','flip k'}
                 VarName=sprintf('%s(%s)',Ops{k},Vars(i).Name);
                 switch Ops{k}
                     case '10log'
@@ -1375,6 +1384,22 @@ switch cmd
                 Props.NVal=Vars(i).Props.NVal;
                 Props.Oper=Ops{k};
                 Props.Data={Vars(i)};
+                Props.DataInCell = Vars(i).DataInCell;
+            case {'max m','alg.mean m','min m','max n','alg.mean n','min n','max k','alg.mean k','min k','sum k','sum m','sum n'}
+                VarName=sprintf('%s(%s)',Ops{k},Vars(i).Name);
+                Props.Units = Vars(i).Units;
+                Props.NVal=Vars(i).Props.NVal;
+                Props.Oper=Ops{k};
+                Props.Data={Vars(i)};
+                switch Ops{k}
+                    case {'max m','alg.mean m','min m','sum m'}
+                        switch Props.Geom
+                            case {'UGRID2D-FACE', 'UGRID2D-EDGE', 'UGRID2D-NODE', 'UGRID1D-EDGE', 'UGRID1D-NODE'}
+                                Props.Geom = 'PNT';
+                            otherwise
+                                % should maybe also change
+                        end
+                end
                 Props.DataInCell = Vars(i).DataInCell;
             case {'m index','n index','k index'}
                 VarName=sprintf('%s(%s)',Ops{k},Vars(i).Name);

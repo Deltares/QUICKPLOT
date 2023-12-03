@@ -65,7 +65,7 @@ function varargout = grib(cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2021 Stichting Deltares.                                     
+%   Copyright (C) 2011-2023 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -1208,7 +1208,7 @@ end
 
 %% readNamesTable
 function Names = readNamesTable(File)
-fid = fopen([basedir filesep 'grib' filesep File],'r');
+fid = fopen([basedir filesep 'grib' filesep File],'r','n','US-ASCII');
 Names = {};
 if fid>0
     Line = fgetl(fid);
@@ -1230,14 +1230,25 @@ end
 function dir = basedir
 try
    dir = qp_basedir('deploy');
+   % this is the correct location in MATLAB 2013b when the grib folder is
+   % included in the compilation.
+   if ~exist(fullfile(dir,'grib'),'dir')
+       dir = fullfile(dir,'d3d_qp');
+       % this is the correct location in MATLAB 2023a when the grib folder
+       % is included in the compilation.
+       if ~exist(fullfile(dir,'grib'),'dir')
+           ui_message('warning','Unable to locate the grib mapping folder in "%s".',dir)
+       end
+   end
 catch
+    % this is the correct location in source code mode
    dir = fileparts(which(mfilename));
 end
 
 
 %% readTables
 function Codes = readTables
-fid = fopen([basedir filesep 'grib' filesep 'tablelookup.lst'],'r');
+fid = fopen([basedir filesep 'grib' filesep 'tablelookup.lst'],'r','n','US-ASCII');
 Codes.TableID=zeros(0,3);
 Codes.Names=cell(0,1);
 if fid>0

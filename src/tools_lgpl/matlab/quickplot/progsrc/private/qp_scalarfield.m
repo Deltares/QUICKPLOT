@@ -6,7 +6,7 @@ function hNew = qp_scalarfield(Parent,hNew,presentationtype,datatype,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2021 Stichting Deltares.                                     
+%   Copyright (C) 2011-2023 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -208,6 +208,7 @@ set(Parent,'NextPlot','add')
 unknown_ValLocation = 0;
 Val = data.Val(:);
 
+hasFaceNodeConnect = true;
 if isfield(data,'FaceNodeConnect')
     FaceNodeConnect = data.FaceNodeConnect;
 elseif isfield(data,'TRI')
@@ -215,6 +216,7 @@ elseif isfield(data,'TRI')
 elseif isfield(data,'Connect')
     FaceNodeConnect = data.Connect;
 else
+    hasFaceNodeConnect = false;
     FaceNodeConnect = [];
 end
 
@@ -269,7 +271,7 @@ switch data.ValLocation
                 
             case 'continuous shades'
                 XY = [data.X data.Y];
-                if ~isempty(FaceNodeConnect)
+                if hasFaceNodeConnect
                     nNodes = sum(~isnan(FaceNodeConnect),2);
                     uNodes = unique(nNodes);
                     first = isempty(hNew);
@@ -357,21 +359,61 @@ switch data.ValLocation
     case 'EDGE'
         iEdge = data.EdgeNodeConnect;
         switch presentationtype
-            case 'edges'
-                if isfield(Ops, 'unicolour') && Ops.unicolour
-                    iEdge(isnan(data.Val),:) = [];
+            case {'edges','vector edges'}
+                if strcmp(presentationtype,'edges')
+                    N = 2;
+                    if isfield(Ops, 'unicolour') && Ops.unicolour
+                        iEdge(isnan(data.Val),:) = [];
+                        fvcd = [];
+                        ec = Ops.colour;
+                    else
+                        fvcd = repmat(data.Val,N,1);
+                        ec = 'interp';
+                    end
+                    %
                     vdata = [data.X(iEdge,:) data.Y(iEdge,:)];
                     fdata = reshape(1:2*size(iEdge,1),[size(iEdge,1) 2]);
-                    fvcd = [];
-                    ec = Ops.colour;
-                else
-                    vdata = [data.X(iEdge,:) data.Y(iEdge,:)];
-                    fdata = reshape(1:2*size(iEdge,1),[size(iEdge,1) 2]);
-                    fvcd = [data.Val;data.Val];
-                    ec = 'interp';
+                    markers = { ...
+                        'marker',Ops.marker, ...
+                        'markersize',Ops.markersize, ...
+                        'markeredgecolor',Ops.markercolour, ...
+                        'markerfacecolor',Ops.markerfillcolour};
+                else % vector edges
+                    N = 8;
+                    if isfield(Ops, 'unicolour') && Ops.unicolour
+                        iEdge(isnan(data.Val),:) = [];
+                        fvcd = [];
+                        ec = Ops.colour;
+                    else
+                        fvcd = abs(repmat(data.Val,N,1));
+                        ec = 'interp';
+                    end
+                    %
+                    x1 = data.X(iEdge(:,1));
+                    y1 = data.Y(iEdge(:,1));
+                    x2 = data.X(iEdge(:,2));
+                    y2 = data.Y(iEdge(:,2));
+                    xh = (x1+x2)/2;
+                    yh = (y1+y2)/2;
+                    dx = x2 - x1;
+                    dy = y2 - y1;
+                    mg = sqrt(dx.^2+dy.^2);
+                    sv = sign(data.Val);
+                    ex = sv.*dx./mg;
+                    ey = sv.*dy./mg;
+                    nx = -ey;
+                    ny = ex;
+                    a = mean(mg)/10;
+                    X = [x1; xh; xh - a*ex + a*nx; xh; xh - a*ex - a*nx; xh; x2; xh];
+                    Y = [y1; yh; yh - a*ey + a*ny; yh; yh - a*ey - a*ny; yh; y2; yh];
+                    %
+                    vdata = [X(:) Y(:)];
+                    fdata = reshape(1:N*size(iEdge,1),[size(iEdge,1) N]);
+                    %
+                    markers = {};
                 end
                 if isempty(hNew)
-                    hNew = patch(...
+                    hNew = patch( ...
                         'vertices',vdata, ...
                         'faces',fdata, ...
                         'facevertexcdata',fvcd, ...
@@ -379,10 +421,7 @@ switch data.ValLocation
                         'edgecolor',ec, ...
                         'linewidth',Ops.linewidth, ...
                         'linestyle',Ops.linestyle, ...
-                        'marker',Ops.marker, ...
-                        'markersize',Ops.markersize, ...
-                        'markeredgecolor',Ops.markercolour, ...
-                        'markerfacecolor',Ops.markerfillcolour);
+                        markers{:});
                 else
                     set(hNew, ...
                         'vertices',vdata, ...

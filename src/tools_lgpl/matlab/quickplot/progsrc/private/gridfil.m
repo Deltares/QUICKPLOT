@@ -18,7 +18,7 @@ function varargout=gridfil(FI,domain,field,cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %
-%   Copyright (C) 2011-2021 Stichting Deltares.
+%   Copyright (C) 2011-2023 Stichting Deltares.
 %
 %   This library is free software; you can redistribute it and/or
 %   modify it under the terms of the GNU Lesser General Public
@@ -335,12 +335,12 @@ if Props.File~=0
                 MNu=Attrib.MNu;
             elseif isfield(Attrib,'MNKu')
                 MNKu=Attrib.MNKu;
-                MNu=MNKu(MNKu(:,5)<=idx{K_} & MNKu(:,6)>=idx{K_},1:4);
+                MNu = MNKu(MNKu(:,5)<=idx{K_} & MNKu(:,6)>=idx{K_}, 1:4);
             else
-                [MNu,MNv]=enclosure('thindam',Attrib.Data);
+                [MNu,MNv]  =enclosure('thindam',Attrib.Data);
             end
             if ~isempty(MNu)
-                MNu(:,[3 4])=MNu(:,[3 4])-MNu(:,[1 2]);
+                MNu(:,[3 4]) = MNu(:,[3 4])-MNu(:,[1 2]);
                 if any( ~( (abs(MNu(:,3))==abs(MNu(:,4))) | ...
                         abs(MNu(:,3))==0              | ...
                         abs(MNu(:,4))==0              ) )
@@ -1949,6 +1949,13 @@ OK=1;
 
 function [k,NSubs,NTurb,NRem]=DetectFld(Rst)
 ActualRst = qp_unwrapfi(Rst);
+if ~isfield(ActualRst,'Data')
+    k = 0;
+    NSubs = 0;
+    NTurb = 0;
+    NRem = 0;
+    return
+end
 N=length(ActualRst.Data);
 %
 NLyr = qp_option(Rst,'NLyr');

@@ -45,7 +45,7 @@ function [out,out2]=qp_gridview(cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2021 Stichting Deltares.                                     
+%   Copyright (C) 2011-2023 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -687,17 +687,14 @@ switch cmd
         G=surface([],[],[],'parent',A,'tag','GRID','userdata',GRID);
         selcolor = qp_settings('gridviewselectioncolor')/255;
         %SelectedGrid
-        if matlabversionnumber>=8.04
-            erasemode = {};
-        else
-            erasemode = {'erasemode','xor'};
-        end
+        erasemode = {};
         surface([],[],[],'parent',A, ...
             'facecolor',selcolor,'edgecolor','none', ...
             'tag','SELSURF',erasemode{:});
         %SelectedPatch
         patch('vertices',[],'faces',[],'parent',A, ...
             'facecolor',selcolor,'edgecolor','none', ...
+            'FaceOffsetFactor',1,'FaceOffsetBias',0, ...
             'tag','SELPATCH',erasemode{:});
         %SelectedLine
         line('xdata',[],'ydata',[],'parent',A, ...
@@ -706,7 +703,7 @@ switch cmd
         %SelectedPoint
         line('xdata',[],'ydata',[],'parent',A, ...
             'color',selcolor,'linestyle','none', ...
-            'marker','.','markersize',18, ...
+            'marker','.','markersize',12, ...
             'tag','SELPOINT',erasemode{:});
         set(A,'color',get(F,'color'),'xtick',[],'ytick',[], ...
             'da',[1 1 1],'view',[0 90],'xcolor',get(F,'color'), ...
@@ -1484,17 +1481,29 @@ if isfield(GRID,'FaceNodeConnect') || isfield(GRID,'EdgeNodeConnect') % unstruct
         eConnect(any(isnan(eConnect),2),:) = [];
         GRID.EdgeNodeConnect = eConnect;
     end
-    xy = eConnect(:,[1 2 2])';
-    xy = xy(:);
-    xy_wrong = min(xy);
-    if xy_wrong>=1
-        xy_wrong = max(xy);
+    
+    % convert EdgeNodeConnect to a long list of node pairs that can be
+    % transformed to x,y coordinates of a line. Note that we first create
+    % triplets by duplicating the second column, and blank the resulting
+    % 3rd X and Y coordinates before plotting.
+    iNode = eConnect(:,[1 2 2])';
+    iNode = iNode(:);
+    if isempty(iNode)
+        warning('Empty edge-node-connectivty array!')
+    elseif any(isnan(iNode(:)))
+        warning('NaN values in the edge-node-connectivity array!')
+        iNode = [];
+    else
+        wrong_iNode = min(iNode);
+        if wrong_iNode >= 1 % minimum is not wrong ...
+            wrong_iNode = max(iNode);
+        end
+        if wrong_iNode < 1 || wrong_iNode > length(GRID.X)
+            error('Invalid node index found in edge_node_connectivity table. Value (%i) outside range 1:%i.',wrong_iNode,length(GRID.X))
+        end
     end
-    if xy_wrong<1 || xy_wrong>length(GRID.X)
-        error('Invalid node index found in edge_node_connectivity table. Value (%i) outside range 1:%i.',xy_wrong,length(GRID.X))
-    end
-    X = GRID.X(xy);
-    Y = GRID.Y(xy);
+    X = GRID.X(iNode);
+    Y = GRID.Y(iNode);
     X(3:3:end) = NaN;
     Y(3:3:end) = NaN;
     G=line('parent',A);
@@ -1522,6 +1531,10 @@ end
 set(G(1),'tag','GRID','userdata',GRID)
 set(G(2:end),'tag','GRIDother')
 set(G,'clipping','off','hittest','off')
+c = get(A,'children');
+c1 = c(~ismember(c,G));
+c2 = c(ismember(c,G));
+set(A,'children',cat(1,c1,c2))
 %
 xl=limits(G,'xlim'); xl=xl+[-1 1]*max(0.00001,abs(diff(xl)*0.01))/20;
 yl=limits(G,'ylim'); yl=yl+[-1 1]*max(0.00001,abs(diff(yl)*0.01))/20;

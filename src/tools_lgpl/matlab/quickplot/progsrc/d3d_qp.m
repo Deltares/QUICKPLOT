@@ -1,4 +1,4 @@
-function outdata=d3d_qp(cmd,varargin)
+function varargout = d3d_qp(cmd,varargin)
 %D3D_QP QuickPlot user interface: plotting interface for Delft3D output data.
 %   To start the interface type: d3d_qp
 %
@@ -6,7 +6,7 @@ function outdata=d3d_qp(cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %
-%   Copyright (C) 2011-2021 Stichting Deltares.
+%   Copyright (C) 2011-2023 Stichting Deltares.
 %
 %   This library is free software; you can redistribute it and/or
 %   modify it under the terms of the GNU Lesser General Public
@@ -33,12 +33,13 @@ function outdata=d3d_qp(cmd,varargin)
 %   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
+
 try
     if nargin==0
         cmd='initialize';
     end
     if nargout>0
-        outdata=d3d_qp_core(cmd,varargin{:});
+        varargout = d3d_qp_core(cmd,varargin{:});
     else
         d3d_qp_core(cmd,varargin{:});
     end
@@ -47,8 +48,10 @@ catch Ex
 end
 
 function outdata=d3d_qp_core(cmd,varargin)
-%VERSION = 2.60
+%VERSION = 2.70
 qpversionbase = 'v<VERSION>';
+gitrepo = '<GITREPO>';
+githash = '<GITHASH>';
 qpcreationdate = '<CREATIONDATE>';
 %
 persistent qpversion logfile logtype
@@ -80,20 +83,20 @@ end
 cmd=lower(cmd);
 if nargout~=0
     if strcmp(cmd,'initialize')
-        outdata = [];
+        outdata = {[]};
     elseif strcmp(cmd,'iswl')
-        outdata = isequal(qp_settings('WLextensions','off'),'on');
+        outdata = {isequal(qp_settings('WLextensions','off'),'on')};
         return
     elseif strcmp(cmd,'version')
         if nargin>1
-            outdata = qp_checkversion(varargin{:});
+            outdata = {qp_checkversion(varargin{:})};
         else
-            outdata = qpversion;
+            outdata = {qpversion};
         end
         return
     elseif isstandalone % allow standalone auto start ...
-        outdata = [];
-    elseif none(strcmp(cmd,{'loaddata','selected','selectedfigure','selectedaxes','selecteditem','selectfield','selectedfield','qpmanual','matlabmanual'}))
+        outdata = {[]};
+    elseif none(strcmp(cmd,{'loaddata','selected','selectedfigure','selectedaxes','selecteditem','selectfield','selectedfield','qpmanual','matlabmanual','selecteddomain'}))
         error('Too many output arguments.')
     end
 end
@@ -138,9 +141,7 @@ switch cmd
         qck_anim(cmd,cmdargs{:});
 
     case 'set'
-        if length(cmdargs)==2
-            qp_settings(cmdargs{:})
-        end
+        qp_settings(cmdargs{:})
         
     case 'debug'
         error('Insert a break point HERE for debugging!')
@@ -164,7 +165,7 @@ switch cmd
         qp_plotmanager(cmd,UD,logfile,logtype,cmdargs);
         
     case {'selectedfigure', 'selectedaxes', 'selecteditem'}
-        outdata = qp_plotmanager(cmd,UD,logfile,logtype,cmdargs);
+        outdata = {qp_plotmanager(cmd,UD,logfile,logtype,cmdargs)};
         
     case {'geodata','geodata_gshhs','geodata_border','geodata_river','geodata_wms'}
         if length(cmd)>7
@@ -262,13 +263,20 @@ switch cmd
             mfig=mfig(1);
         elseif isempty(mfig)
             if isstandalone && matlabversionnumber>7.10
-                if ~qp_checkversion(qpversionbase,qpcreationdate)
+                if ~qp_checkversion(qpversionbase,gitrepo,githash,qpcreationdate)
                     return
                 end
             end
             %
             if ~isstandalone
                 cmdx = qp_settings('autoruncmd','');
+                if ~iscell(cmdx)
+                    if isempty(cmdx)
+                        cmdx = {};
+                    else
+                        cmdx = {cmdx};
+                    end
+                end
                 for i = 1:length(cmdx)
                     try
                         eval(cmdx{i});
@@ -299,14 +307,8 @@ switch cmd
         if showUI
             figure(mfig);
         end
+        init_netcdf_settings
         if isstandalone
-            try
-                % Insert a try-catch block here since the setpref command sometimes fails on a write error to matlabprefs.mat.
-                setpref('SNCTOOLS','USE_JAVA',true);
-            catch
-                ui_message('message','Failed to persist preferences during initialization.')
-            end
-            javaaddpath([qp_basedir('exe') filesep 'netcdfAll-4.1.jar'])
             try
                 CloseSplashScreen;
             end
@@ -1217,12 +1219,23 @@ switch cmd
         end
         d3d_qp updatedatafields
         
+    case 'selecteddomain'
+        domains = findobj(mfig,'tag','selectdomain');
+        Domains = get(domains,'string');
+        i = get(domains,'value');
+        outdata = {i, Domains{i}};
+        
     case 'selectdomain'
-        domains=findobj(mfig,'tag','selectdomain');
-        Domains=get(domains,'string');
+        domains = findobj(mfig,'tag','selectdomain');
+        Domains = get(domains,'string');
         if ~isempty(cmdargs)
-            i=ustrcmpi(cmdargs{1},Domains);
-            if i<0
+            if ischar(cmdargs{1})
+                i = ustrcmpi(cmdargs{1},Domains);
+            elseif isnumeric(cmdargs{1})
+                i = cmdargs{1};
+                cmdargs{1} = sprintf('%g',i); % only for error handling
+            end
+            if i < 0 || i > length(Domains)
                 error('Cannot select field: %s',cmdargs{1})
             else
                 set(domains,'value',i);
@@ -1316,7 +1329,7 @@ switch cmd
         sf   = findobj(mfig,'tag','selectfield');
         ifld = get(sf,'value');
         ud   = get(sf,'userdata');
-        outdata = ud(ifld);
+        outdata = {ud(ifld)};
         
     case {'selectfield','selectsubfield'}
         sf=findobj(mfig,'tag',cmd);
@@ -1338,7 +1351,7 @@ switch cmd
             writelog(logfile,logtype,cmd,flds{get(sf,'value')});
         end
         if nargout>0
-            outdata = found;
+            outdata = {found};
         end
         
     case 'updatetimezone'
@@ -1970,6 +1983,7 @@ switch cmd
                 outdata.M = selected{3};
                 outdata.N = selected{4};
                 outdata.K = selected{5};
+                outdata = {outdata};
                 return
             
             case 'defvariable'
@@ -2154,10 +2168,8 @@ switch cmd
                         end
                         if isempty(ax)
                             %Parent=qp_createaxes(pfig,'oneplot');
-                            Parent=axes('layer','top','color',qp_settings('defaultaxescolor')/255);
-                            if qp_settings('boundingbox')
-                                set(Parent,'box','on');
-                            end
+                            Parent = axes('Parent',pfig);
+                            qp_defaultaxessettings(Parent)
                         else
                             Parent=ax(1);
                         end
@@ -2200,7 +2212,7 @@ switch cmd
                             set(Handle_SelectFile, 'userdata', File);
                             % return data ...
                             if nargout>0
-                                outdata = hNew;
+                                outdata = {hNew};
                             else
                                 assignin('base', 'data', hNew)
                             end
@@ -2484,7 +2496,7 @@ switch cmd
             writelog(logfile,logtype,cmd,c);
         end
         
-    case {'xclipping','yclipping','clippingvals'}
+    case {'xclipping','yclipping','zclipping','clippingvals'}
         cv=findobj(UOH,'tag',[cmd '=?']);
         if isempty(cmdargs)
             Str=get(cv,'string');
@@ -2608,12 +2620,12 @@ switch cmd
                 update_option_positions(UD,'main',pos(4)-30+1)
         end
         
-    case {'climmin','climmax','1vecunit','vscale','thinfact','thindist','fontsize','markersize','linewidth'}
+    case {'climmin','climmax','1vecunit','vscale','thinfact','thindist','thincount','fontsize','markersize','linewidth'}
         switch cmd
             case {'climmin','climmax'}
                 pos=0;
                 int=0;
-            case 'thinfact'
+            case {'thinfact','thincount'}
                 pos=1;
                 int=1;
             case {'1vecunit','vscale','thindist','fontsize','markersize','linewidth'}
@@ -2796,7 +2808,7 @@ switch cmd
             end
         end
         if nargout>0
-            outdata = found;
+            outdata = {found};
         end
         
     case {'about','version'}
@@ -2843,8 +2855,13 @@ switch cmd
         
     case {'comline','hidecomline'}
         currentstatus=get(UD.ComLine.Fig,'visible');
-        if strcmp(cmd,'hidecomline'),
+        if strcmp(cmd,'hidecomline')
             currentstatus='on';
+        elseif matlabversionnumber >= 9.04 % 2018a
+            winstate = get(UD.ComLine.Fig,'WindowState');
+            if ~strcmp(winstate,'normal')
+                set(UD.ComLine.Fig,'WindowState','normal')
+            end
         else
             try
                 jFrame = get(handle(UD.ComLine.Fig),'JavaFrame');
@@ -3083,7 +3100,7 @@ switch cmd
         
     case {'gridview','hidegridview'}
         currentstatus=get(UD.GridView.Fig,'visible');
-        if strcmp(cmd,'hidegridview'),
+        if strcmp(cmd,'hidegridview')
             currentstatus='on';
         end
         switch currentstatus
@@ -3185,7 +3202,7 @@ switch cmd
                     fn=[fn ftype(2:end)];
                 end
                 try
-                    logfile=fopen([pn fn],'w');
+                    logfile=fopen([pn fn],'w','n','UTF-8');
                 catch Ex
                     qp_error('Catch in d3d_qp\logfile',Ex)
                 end
@@ -3695,6 +3712,17 @@ switch cmd
             end
         end
         
+    case 'axesaspectreset'
+        ax = qpsa;
+        PM = UD.PlotMngr;
+        hordas_auto = getappdata(ax,'haspectdefaultvalue');
+        if ~isempty(hordas_auto)
+            set(PM.Y.AspectValue, ...
+                'string',num2str(1/hordas_auto), ...
+                'userdata',1/hordas_auto);
+        end
+        d3d_qp axesaspect
+        
     case 'axesaspect'
         ax = qpsa;
         PM = UD.PlotMngr;
@@ -3726,15 +3754,11 @@ switch cmd
             end
         end
         if ~isempty(cmdargs)
-            if getappdata(ax,'haspectenforced')
-                % ok
-            else
-                y = cmdargs{1};
-                if strcmpi(y,'auto')
-                    yaspect = 'auto';
-                elseif isscalar(y) && isnumeric(y) && y>0
-                    yaspect = y;
-                end
+            y = cmdargs{1};
+            if strcmpi(y,'auto')
+                yaspect = 'auto';
+            elseif isscalar(y) && isnumeric(y) && y>0
+                yaspect = y;
             end
             if length(cmdargs)>1
                 z = cmdargs{2};
@@ -3749,7 +3773,12 @@ switch cmd
             zaspect = [];
         end
         if strcmp(yaspect,'auto')
-            set(ax,'dataAspectratioMode','auto');
+            hordas_auto = getappdata(ax,'haspectautovalue');
+            %if isempty(hordas_auto) %truly auto
+                set(ax,'dataAspectratioMode','auto');
+            %else
+            %    set(ax,'dataAspectratio',[1 1/hordas_auto 1]);
+            %end
             if ~getappdata(ax,'axes2d')
                 zaspect = 'auto';
             end
@@ -3965,6 +3994,15 @@ switch cmd
             auto = strcmp(lbl,'<automatic>');
         end
         %
+        set(XLblAuto,'value',auto)
+        if auto
+            if isappdata(ax,xlbl)
+                rmappdata(ax,xlbl)
+            end
+        else
+            setappdata(ax,xlbl,lbl)
+        end
+        %
         if auto
             lbl = '<automatic>';
             if isappdata(ax,[xlbl 'auto'])
@@ -3990,21 +4028,13 @@ switch cmd
         %
         switch x
             case 'title'
-                title(ax,expanded_lbl)
+                qp_title('update',ax)
             case 'x'
                 xlabel(ax,expanded_lbl)
             case 'y'
                 ylabel(ax,expanded_lbl)
             case 'z'
                 zlabel(ax,expanded_lbl)
-        end
-        set(XLblAuto,'value',auto)
-        if auto
-            if isappdata(ax,xlbl)
-                rmappdata(ax,xlbl)
-            end
-        else
-            setappdata(ax,xlbl,lbl)
         end
         if strcmp(cmd,'title')
             d3d_qp refreshaxes
@@ -4018,7 +4048,7 @@ switch cmd
         
     case 'zoomdown'
         zoom(gcbf,'down');
-        updateaxes(gcbf,[])
+        qp_updateaxes(gcbf,[])
         
     case 'zoomin'
         %  putdowntext('zoomin',gcbo)
@@ -4075,7 +4105,7 @@ switch cmd
             h = zoom(gcbf);
             if strcmpi(get(gcbo,'State'),'on')
                 set(h,'Direction','in')
-                set(h,'ActionPostCallback',@updateaxes);
+                set(h,'ActionPostCallback',@qp_updateaxes);
                 set(h,'Enable','on');
             else
                 set(h,'Enable','off');
@@ -4131,7 +4161,7 @@ switch cmd
             h = zoom(gcbf);
             if strcmpi(get(gcbo,'State'),'on')
                 set(h,'Direction','out')
-                set(h,'ActionPostCallback',@updateaxes);
+                set(h,'ActionPostCallback',@qp_updateaxes);
                 set(h,'Enable','on');
             else
                 set(h,'Enable','off');
@@ -4190,7 +4220,7 @@ switch cmd
         else
             h = pan(gcbf);
             if strcmpi(get(gcbo,'State'),'on')
-                set(h,'ActionPostCallback',@updateaxes);
+                set(h,'ActionPostCallback',@qp_updateaxes);
                 set(h,'Enable','on');
             else
                 set(h,'Enable','off');
@@ -4236,7 +4266,7 @@ switch cmd
             end
         end
         %
-        updateaxes(gcbf,[])
+        qp_updateaxes(gcbf,[])
         
     case 'zoomoutdown'
         WBDZOF = getappdata(gcbf,'WrappedButtonDownZoomOutFcn');
@@ -4275,7 +4305,7 @@ switch cmd
             end
         end
         %
-        updateaxes(gcbf,[])
+        qp_updateaxes(gcbf,[])
         
     case 'zoominup'
         WBUPF = getappdata(gcbf,'WrappedButtonUpZoomInFcn');
@@ -4286,17 +4316,17 @@ switch cmd
             WBUPF = getappdata(gcbf,'WrappedButtonUpZoomInFcn0');
             WBUPF{1}(gcbf,[],WBUPF{2:end})
         end
-        updateaxes(gcbf,[])
+        qp_updateaxes(gcbf,[])
         
     case 'zoomoutup'
         WBUPF = getappdata(gcbf,'WrappedButtonUpZoomOutFcn');
         WBUPF{1}(gcbf,[],WBUPF{2:end})
-        updateaxes(gcbf,[])
+        qp_updateaxes(gcbf,[])
         
     case 'zoominout'
         WBUPF = getappdata(gcbf,'WrappedZoomInOutFcn');
         WBUPF{1}(gcbo,[],WBUPF{2})
-        updateaxes(gcbf,[])
+        qp_updateaxes(gcbf,[])
         
     case 'pandown'
         WBDPF = getappdata(gcbf,'WrappedButtonDownPanFcn');
@@ -4313,12 +4343,12 @@ switch cmd
     case 'panup'
         WBUPF = getappdata(gcbf,'WrappedButtonUpPanFcn');
         WBUPF{1}(gcbf,[],WBUPF{2:end})
-        updateaxes(gcbf,[])
+        qp_updateaxes(gcbf,[])
         
     case 'viewreset'
         WRF = getappdata(gcbf,'WrappedResetFcn');
         WRF{1}(gcbo,[],WRF{2})
-        updateaxes(gcbf,[])
+        qp_updateaxes(gcbf,[])
         
     case 'rotate3d'
         %  putdowntext('rotate3d',gcbo)
@@ -4473,7 +4503,9 @@ switch cmd
                                     I.PageLabels=qp_settings('print_pagelabels');
                                     I.SelectFrom=get_nondialogs;
                                     [I,FigNew]=md_print('getsettings',Fig,I);
-                                    if ~isequal(Fig,FigNew)
+                                    if isempty(I)
+                                        return
+                                    elseif ~isequal(Fig,FigNew)
                                         set(sld,'vis','on')
                                         set(psh,'vis','on')
                                         Fig=FigNew;
@@ -4517,7 +4549,7 @@ switch cmd
         if isempty(cmdargs)
             [fn,pn]=uigetfile('*.qplog;*.m');
             if ischar(fn)
-                runfil=fopen([pn fn],'r');
+                runfil=fopen([pn fn],'r','n','UTF-8');
             else
                 runfil=-1;
             end
@@ -4538,7 +4570,7 @@ switch cmd
                     break
                 end
             end
-            runfil=fopen(cmdargs{1},'r');
+            runfil=fopen(cmdargs{1},'r','n','UTF-8');
         end
         cmdargs={};
         if runfil<0
@@ -4946,6 +4978,7 @@ switch cmd
         set(findobj(UOH,'tag','thinfld=?'),'value',1)
         set(findobj(UOH,'tag','thinfact=?'),'userdata',1,'string','1')
         set(findobj(UOH,'tag','thindist=?'),'userdata',50,'string','50')
+        set(findobj(UOH,'tag','thincount=?'),'userdata',1000,'string','1000')
         %
         % ------ data clipping values ...
         %
@@ -4957,8 +4990,8 @@ switch cmd
         %
         % ------ x/y clipping values ...
         %
-        set(findobj(UOH,'tag','xclipping'),'string','')
-        set(findobj(UOH,'tag','yclipping'),'string','')
+        set(findobj(UOH,'tag','xclipping=?'),'string','')
+        set(findobj(UOH,'tag','yclipping=?'),'string','')
         %
         % ------ export data ...
         %
@@ -5078,6 +5111,8 @@ switch cmd
             switch lower(e)
                 case {'.qplog','.m'}
                     d3d_qp('run',cmd,cmdargs{:})
+                case {'.fig','.qpses'}
+                    d3d_qp('openfigure',cmd,cmdargs{:})
                 otherwise
                     d3d_qp('openfile',cmd,cmdargs{:})
             end
@@ -5117,44 +5152,6 @@ if ~isempty(names)
     beep
 end
 
-function updateaxes(obj,evd)
-ax=get(obj,'currentaxes');
-setappdata(ax,'xlimmode','manual')
-setappdata(ax,'ylimmode','manual')
-if ~isempty(ax)
-    basicaxestype=getappdata(ax,'BasicAxesType');
-    if ischar(basicaxestype)
-        switch basicaxestype
-            case {'LimitingFactorsAxes','LimitingFactorsAxes2'}
-                if isequal(basicaxestype,'LimitingFactorsAxes2')
-                    ax2=ax;
-                    ax=getappdata(ax2,'LimitingFactorsAxes');
-                    set(ax,'xlim',get(ax2,'xlim'))
-                else
-                    ax2 = getappdata(ax,'LimitingFactorsAxes');
-                end
-                set(ax,'xticklabelmode','auto','xtickmode','auto');
-                tick(ax,'x','autodate');
-                set(ax2,'xlim',get(ax,'xlim'), ...
-                    'ylim',getappdata(ax2,'YLim'), ...
-                    'xtick',get(ax,'xtick'), ...
-                    'xticklabel',get(ax,'xticklabel'))
-                set(ax,'xticklabel','')
-            otherwise
-                setaxesprops(ax)
-        end
-    end
-end
-lat = getappdata(ax,'linkedaxestype');
-if strcmp(lat,'SecondY')
-    ax2 = getappdata(ax,'linkedaxes');
-    set(ax2,'xlim',get(ax,'xlim'))
-    setaxesprops(ax2)
-end
-mfig=findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
-UD=getappdata(mfig,'QPHandles');
-qp_plotmanager('refreshaxprop',UD)
-
 function clr = str2color(str)
 switch str
     case 'r'
@@ -5177,7 +5174,7 @@ switch str
         clr=str2vec(str,'%f');
 end
 
-function OK = qp_checkversion(qpversionbase,qpcreationdate)
+function OK = qp_checkversion(qpversionbase,gitrepo,githash,qpcreationdate)
 % Until MATLAB 7.10 (R2010a) it was possible to mix
 % c/c++ files in with the MATLAB executable. This was
 % used to include the @(#) identification string in the
@@ -5195,7 +5192,9 @@ else
     qpversion = qpversionbase;
 end
 Str = ['@(#)Deltares, Delft3D-QUICKPLOT, Version ' qpversion ', ' qpcreationdate ];
-fid = fopen(whatfile,'r');
+RepoLine = ['Repository : ', gitrepo];
+HashLine = ['Source hash: ', githash];
+fid = fopen(whatfile,'r','n','UTF-8');
 if fid>0
     % file exists, read its contents
     Str2 = fgetl(fid);
@@ -5211,14 +5210,14 @@ if fid>0
 end
 if fid<0
     % file does not exist, try to write it
-    fid = fopen(whatfile,'w');
+    fid = fopen(whatfile,'w','n','UTF-8');
     if fid>0
         % file can be opened for writing, write string
         try
-            fprintf(fid,'%s\n',Str);
+            fprintf(fid,'%s\n',Str,RepoLine,HashLine);
             fclose(fid);
             % reopen the file to check whether string was written correctly
-            fid = fopen(whatfile,'r');
+            fid = fopen(whatfile,'r','n','UTF-8');
             Str2 = fgetl(fid);
             if ~ischar(Str2)
                 Str2 = '';

@@ -59,7 +59,7 @@ function varargout=wlgrid(cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %
-%   Copyright (C) 2011-2021 Stichting Deltares.
+%   Copyright (C) 2011-2023 Stichting Deltares.
 %
 %   This library is free software; you can redistribute it and/or
 %   modify it under the terms of the GNU Lesser General Public
@@ -179,7 +179,7 @@ GRID.Attributes = cell(0,2);
 
 % Grid file
 gridtype='RGF';
-fid=fopen(filename);
+fid=fopen(filename,'r','n','US-ASCII');
 if fid<0
     error('Can''t open file: %s.',filename)
 end
@@ -402,9 +402,9 @@ try
         error('Number of coordinate values in file does not match header')
     end
     fclose(fid);
-catch
+catch err
     fclose(fid);
-    rethrow(lasterror)
+    rethrow(err)
 end
 if isempty(GRID.X)
     error('File does not match Delft3D grid file format.')
@@ -427,7 +427,7 @@ GRID.Type = gridtype;
 GRID.Orient = getorientation(GRID,~notdef);
 
 % Grid enclosure file
-fid=fopen([basename '.enc']);
+fid=fopen([basename '.enc'],'r','n','US-ASCII');
 if fid>0
     Enc = [];
     while 1
@@ -479,10 +479,15 @@ autoenc    = 0;
 i          = 1;
 filename   = '';
 nparset    = 0;
+orient     = 'undefined';
 Grd.CoordinateSystem='Cartesian';
 while i<=nargin
     if ischar(varargin{i})
         switch lower(varargin{i})
+            case {'clockwise','anticlockwise'}
+                orient     = lower(varargin{i});
+            case {'counterclockwise','counter-clockwise','anti-clockwise'}
+                orient     = 'anticlockwise';
             case {'autoenc','autoenclosure'}
                 autoenc    = 1;
             case {'oldrgf','newrgf','swangrid','struct'}
@@ -563,6 +568,19 @@ if ~isequal(sz.x,sz.y)
     end
 end
 
+% if specific orientation has been specified, check whether it's 
+if ~strcmp(orient,'undefined')
+    current_orient = getorientation(Grd);
+    if ~isequal(current_orient,orient)
+        Grd.X = Grd.X';
+        Grd.Y = Grd.Y';
+        if isfield(Grd,'Enclosure')
+            % see gridfil for a potentially better suggestion.
+            Grd = rmfield(Grd,'Enclosure');
+        end
+    end
+end
+
 % enclosure
 if ~isfield(Grd,'Enclosure')
     if autoenc
@@ -627,7 +645,7 @@ filename=fullfile(path,[name ext]);
 basename=fullfile(path,name);
 
 if ~isempty(Grd.Enclosure),
-    fid=fopen([basename '.enc'],'w');
+    fid=fopen([basename '.enc'],'w','n','US-ASCII');
     if fid<0
         error('* Could not open output file.')
     end
@@ -636,7 +654,7 @@ if ~isempty(Grd.Enclosure),
 end
 
 % write
-fid=fopen(filename,'w');
+fid=fopen(filename,'w','n','US-ASCII');
 SpecialKeywords = {'Coordinate System','Missing Value'};
 if strcmp(fileformat,'oldrgf') || strcmp(fileformat,'newrgf')
     if strcmp(fileformat,'oldrgf')
