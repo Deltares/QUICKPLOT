@@ -125,6 +125,13 @@ switch v_slice
                         iface = isel;
                         data.FaceNodeConnect = data.FaceNodeConnect(iface,:);
                 end
+                if isfield(data,'ZLocation')
+                    switch data.ZLocation
+                        case 'FACE'
+                            iface = isel;
+                            data.Z = data.Z(iface,:);
+                    end
+                end
             elseif isfield(data,'TRI')
                 data.X = data.XYZ(:,isel,:,1);
                 data.Y = data.XYZ(:,isel,:,2);
@@ -282,6 +289,9 @@ switch v_slice
             data=rmfield(data,'FaceNodeConnect');
             if isfield(data,'EdgeNodeConnect')
                 data=rmfield(data,'EdgeNodeConnect');
+            end
+            if isfield(data,'EdgeFaceConnect')
+                data=rmfield(data,'EdgeFaceConnect');
             end
         elseif isfield(data,'TRI')
             szV = size(data.XYZ);

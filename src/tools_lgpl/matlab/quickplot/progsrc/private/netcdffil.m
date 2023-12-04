@@ -128,12 +128,14 @@ if nargin==2
             end
         end
         infileStruct = rmfield(infileStruct,'ncVarName');
-        for i = 1:length(infileStruct)
-            if infileStruct(i).DimFlag(M_)
-                infileStruct(i).DimFlag(M_) = inf;
-            end
-            if infileStruct(i).DimFlag(N_)
-                infileStruct(i).DimFlag(N_) = inf;
+        if domain == FI.NumDomains+1
+            for i = 1:length(infileStruct)
+                if infileStruct(i).DimFlag(M_)
+                    infileStruct(i).DimFlag(M_) = inf;
+                end
+                if infileStruct(i).DimFlag(N_)
+                    infileStruct(i).DimFlag(N_) = inf;
+                end
             end
         end
         varargout={infileStruct};
@@ -173,7 +175,7 @@ else
 end
 switch cmd
     case 'size'
-        varargout={getsize(useFI,Props)};
+        varargout={getsize(FI,Props)};
         return
     case 'times'
         varargout={readtim(useFI,Props,varargin{:})};
@@ -405,7 +407,13 @@ if FI.NumDomains>1
             for v = {'Val','XComp','YComp','NormalComp','TangentialComp'}
                 fld = v{1};
                 if isfield(partData,fld)
-                    Data.(fld) = Data.(fld)(idx{M_});
+                    Data.(fld) = Data.(fld)(idx{M_},:);
+                end
+            end
+            %
+            if isfield(Data,'ZLocation')
+                if isequal(Data.ZLocation,Data.ValLocation)
+                    Data.Z = Data.Z(idx{M_},:);
                 end
             end
         end
@@ -2341,12 +2349,8 @@ for loop = 1:2
                         Meshes(end+1,:) = [thisMesh{3} i];
                     end
                 else % loop == 2
-                    if thisMesh{4} == -1
-                        Out(i).UseGrid = i;
-                    else
-                        j = find(Meshes(:,1) == thisMesh{3});
-                        Out(i).UseGrid = Meshes(j,2);
-                    end
+                    j = find(Meshes(:,1) == thisMesh{3});
+                    Out(i).UseGrid = Meshes(j,2);
                 end
         end
     end

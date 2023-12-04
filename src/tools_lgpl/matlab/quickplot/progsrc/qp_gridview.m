@@ -1201,87 +1201,74 @@ switch selection.Type
                         end
                 end
             case 'ugrid'
+                CNECT = []; % no faces
+                ledge = []; % no edges
+                ip = []; % no nodes
                 switch GRID.ValLocation
                     case 'NODE'
                         ip    = Range{1};
-                        if isfield(GRID,'FaceNodeConnect')
-                            lface = all(ismember(GRID.FaceNodeConnect,ip) | isnan(GRID.FaceNodeConnect),2);
-                            ip    = ip(~ismember(ip,GRID.FaceNodeConnect(lface,:)));
-                            CNECT = GRID.FaceNodeConnect(lface,:);
-                        else
-                            lface = [];
-                            CNECT = [];
-                        end
-                        ledge = all(ismember(GRID.EdgeNodeConnect,ip),2);
+                        ledge = all(ismember(GRID.EdgeNodeConnect,Range{1}),2);
                         ip    = ip(~ismember(ip,GRID.EdgeNodeConnect(ledge,:)));
-                        set(SelectedPoint, ...
-                            'xdata',GRID.X(ip), ...
-                            'ydata',GRID.Y(ip))
-                        Edges = GRID.EdgeNodeConnect(ledge,:)';
-                        X = GRID.X(Edges);
-                        Y = GRID.Y(Edges);
-                        X(3,:) = NaN;
-                        Y(3,:) = NaN;
-                        set(SelectedLine, ... %TODO
-                            'xdata',X(:), ...
-                            'ydata',Y(:))
                     case 'EDGE'
-                        if isfield(GRID,'FaceNodeConnect')
-                            % determine Edge-Face relationship (code copy)
-                            Faces = GRID.FaceNodeConnect;
-                            missing = isnan(Faces);
-                            NEdges = sum(~missing(:));
-                            Edges = zeros(3,NEdges);
-                            ie = 0;
-                            for j = 1:size(Faces,2)
-                                for i = 1:size(Faces,1)
-                                    if ~isnan(Faces(i,j))
-                                        ie = ie+1;
-                                        Edges(1,ie) = Faces(i,j);
-                                        if j==size(Faces,2) || isnan(Faces(i,j+1))
-                                            Edges(2,ie) = Faces(i,1);
-                                        else
-                                            Edges(2,ie) = Faces(i,j+1);
-                                        end
-                                        Edges(3,ie) = i;
-                                    end
-                                end
-                            end
-                            Edges(1:2,:) = sort(Edges(1:2,:));
-                            Edges = Edges';
-                            % determine for which Faces all Edges have been selected
-                            EdgeSel = sort(GRID.EdgeNodeConnect(Range{1},:),2);
-                            yEdges = ismember(Edges(:,1:2),EdgeSel,'rows');
-                            NEdgesIncluded = accumarray(Edges(:,3),double(yEdges));
-                            NEdgesTotal    = sum(~missing,2);
-                            lface = NEdgesIncluded==NEdgesTotal;
-                            CNECT = GRID.FaceNodeConnect(lface,:);
-                            % determine which Edges are not part of the selected faces
-                            FacesIncluded  = find(lface);
-                            ledge = ismember(Edges(:,3),FacesIncluded);
-                            Edges = EdgeSel(~ismember(EdgeSel,Edges(ledge,1:2),'rows'),:)';
-                        else
-                            % no faces, so faces are empty and all edges
-                            % should be drawn
-                            CNECT = [];
-                            Edges = GRID.EdgeNodeConnect(Range{1},:);
-                        end
-                        X = GRID.X(Edges);
-                        Y = GRID.Y(Edges);
-                        X(3,:) = NaN;
-                        Y(3,:) = NaN;
-                        set(SelectedLine, ...
-                            'xdata',X(:), ...
-                            'ydata',Y(:))
-                        set(SelectedPoint,'xdata',[],'ydata',[])
+                        ledge = Range{1};
                     case 'FACE'
                         CNECT = GRID.FaceNodeConnect(Range{1},:);
-                        set(SelectedLine,'xdata',[],'ydata',[])
-                        set(SelectedPoint,'xdata',[],'ydata',[])
                 end
+                %
+                if ~isempty(ledge) && isfield(GRID,'FaceNodeConnect')
+                    % determine Edge-Face relationship (code copy)
+                    Faces = GRID.FaceNodeConnect;
+                    missing = isnan(Faces);
+                    NEdges = sum(~missing(:));
+                    Edges = zeros(3,NEdges);
+                    ie = 0;
+                    for j = 1:size(Faces,2)
+                        for i = 1:size(Faces,1)
+                            if ~isnan(Faces(i,j))
+                                ie = ie+1;
+                                Edges(1,ie) = Faces(i,j);
+                                if j==size(Faces,2) || isnan(Faces(i,j+1))
+                                    Edges(2,ie) = Faces(i,1);
+                                else
+                                    Edges(2,ie) = Faces(i,j+1);
+                                end
+                                Edges(3,ie) = i;
+                            end
+                        end
+                    end
+                    Edges(1:2,:) = sort(Edges(1:2,:));
+                    Edges = Edges';
+                    % determine for which Faces all Edges have been selected
+                    EdgeSel = sort(GRID.EdgeNodeConnect(ledge,:),2);
+                    yEdges = ismember(Edges(:,1:2),EdgeSel,'rows');
+                    NEdgesIncluded = accumarray(Edges(:,3),double(yEdges));
+                    NEdgesTotal    = sum(~missing,2);
+                    lface = NEdgesIncluded==NEdgesTotal;
+                    CNECT = GRID.FaceNodeConnect(lface,:);
+                    % determine which Edges are not part of the selected faces
+                    FacesIncluded  = find(lface);
+                    faceEdges = ismember(Edges(:,3),FacesIncluded);
+                    ledge = ledge(~ismember(EdgeSel,Edges(faceEdges,1:2),'rows'));
+                end
+                if ~isempty(ledge)
+                    Edges = GRID.EdgeNodeConnect(ledge,:)';
+                    X = GRID.X(Edges);
+                    Y = GRID.Y(Edges);
+                    X(3,:) = NaN;
+                    Y(3,:) = NaN;
+                else
+                    X = [];
+                    Y = [];
+                end
+                set(SelectedLine,'xdata',X(:),'ydata',Y(:))
+                set(SelectedPoint,'xdata',GRID.X(ip),'ydata',GRID.Y(ip))
                 for l = 1:size(CNECT,1)
                     np = sum(~isnan(CNECT(l,:)));
-                    CNECT(l,np+1:end) = CNECT(l,np);
+                    if np == 0
+                        CNECT(l,:) = 1;
+                    else
+                        CNECT(l,np+1:end) = CNECT(l,np);
+                    end
                 end
                 set(SelectedPatch,'vertices',[GRID.X GRID.Y],'faces',CNECT)
                 set(SelectedGrid,'xdata',[],'ydata',[],'zdata',[])
@@ -2021,7 +2008,8 @@ switch NewLoc
                             iFace = find(lFace==2);
                             iFace = iFace(1);
                         case 3 % select all faces for which all nodes match
-                            lFace = all(ismember(GRID.FaceNodeConnect,iNode) | isnan(GRID.FaceNodeConnect),2);
+                            lFace = all(ismember(GRID.FaceNodeConnect,iNode) | isnan(GRID.FaceNodeConnect),2) ...
+                                & ~all(isnan(GRID.FaceNodeConnect),2);
                             iFace = find(lFace);
                     end
                     if length(iFace)==1

@@ -322,6 +322,7 @@ switch NVal
                 if multiple(K_)
                     switch data.ValLocation
                         case 'FACE'
+                            data.FaceNodeConnect(isnan(data.FaceNodeConnect)) = [];
                             szX = size(data.X);
                             szX(1) = 1;
                             data.X = reshape(mean(data.X(data.FaceNodeConnect,:)),szX);
@@ -1079,3 +1080,4 @@ else
         setappdata(Parent(i),'linkedaxes',Parent)
     end
 end
+

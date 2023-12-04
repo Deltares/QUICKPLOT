@@ -458,6 +458,9 @@ switch NVal
                     planecomp=data.YComp;
                 end
                 planecomp=xsign.*planecomp;
+                if ~isfield(data,'ZComp')
+                    data.ZComp = zeros(size(planecomp));
+                end
                 planecomp((planecomp==0) & (data.ZComp==0))=NaN;
                 
                 hold on
