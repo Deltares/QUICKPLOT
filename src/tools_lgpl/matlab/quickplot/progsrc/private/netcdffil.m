@@ -297,9 +297,21 @@ if FI.NumDomains>1
             end
         end
         
+        valLoc = Props.Geom(end-3:end);
+        hasTimeDim = false;
+        tDim = {};
+        if isfield(partData,'Time') && length(partData(1).Time)>1
+            hasTimeDim = true;
+            tDim = {':'};
+        end
+
         % z values
-        if ZRead && isfield(partData, 'ZLocation')
-            zLoc = partData(1).ZLocation;
+        if ZRead && isfield(partData, 'Z')
+            if isfield(partData, 'ZLocation')
+                zLoc = partData(1).ZLocation;
+            else
+                zLoc = valLoc;
+            end
             switch zLoc
                 case 'NODE'
                     nloc = FI.MergedPartitions.nNodes;
@@ -315,18 +327,19 @@ if FI.NumDomains>1
                     globalIndex = FI.MergedPartitions.faceGIndex;
             end
             Data.ZLocation = zLoc;
-            Data.ZUnits = partData(1).ZUnits;
+            if isfield(partData, 'ZUnits')
+                Data.ZUnits = partData(1).ZUnits;
+            end
             sz = size(partData(1).Z);
-            sz(1) = nloc;
+            sz(hasTimeDim+1) = nloc;
             Data.Z = NaN(sz);
             for p = 1:length(partData)
                 masked = domainMask{p};
-                Data.Z(globalIndex{p}(masked),:) = partData(p).Z(masked,:);
+                Data.Z(tDim{:},globalIndex{p}(masked),:) = partData(p).Z(tDim{:},masked,:);
             end
         end
         
         % data values 
-        valLoc = Props.Geom(end-3:end);
         Data.ValLocation = valLoc;
         if isfield(partData,'Time')
             Data.Time = partData(1).Time;
@@ -353,11 +366,11 @@ if FI.NumDomains>1
             fld = v{1};
             if isfield(partData,fld)
                 sz = size(partData(1).(fld));
-                sz(1) = nloc;
+                sz(hasTimeDim+1) = nloc;
                 Data.(fld) = NaN(sz);
                 for p = 1:length(partData)
                     masked = domainMask{p};
-                    Data.(fld)(globalIndex{p}(masked),:) = partData(p).(fld)(masked,:);
+                    Data.(fld)(tDim{:},globalIndex{p}(masked),:) = partData(p).(fld)(tDim{:},masked,:);
                 end
             end
         end
@@ -407,13 +420,13 @@ if FI.NumDomains>1
             for v = {'Val','XComp','YComp','NormalComp','TangentialComp'}
                 fld = v{1};
                 if isfield(partData,fld)
-                    Data.(fld) = Data.(fld)(idx{M_},:);
+                    Data.(fld) = Data.(fld)(tDim{:},idx{M_},:);
                 end
             end
             %
             if isfield(Data,'ZLocation')
                 if isequal(Data.ZLocation,Data.ValLocation)
-                    Data.Z = Data.Z(idx{M_},:);
+                    Data.Z = Data.Z(tDim{:},idx{M_},:);
                 end
             end
         end

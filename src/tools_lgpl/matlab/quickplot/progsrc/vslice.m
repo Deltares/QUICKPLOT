@@ -295,7 +295,9 @@ switch v_slice
             end
         elseif isfield(data,'TRI')
             szV = size(data.XYZ);
-            if isfield(data,'Time') && length(data.Time)==szV(1)
+            reorderDims = false;
+            if length(szV) == 4 % isfield(data,'Time') && length(data.Time)==szV(1)
+                reorderDims = true;
                 dms = [2:max(length(szV),3) 1];
                 data.XYZ = permute(data.XYZ,dms);
             end
@@ -309,9 +311,9 @@ switch v_slice
             end
             data=rmfield(data,'TRI');
             data=rmfield(data,'XYZ');
-            if isfield(data,'Time') && length(data.Time)==szV(1)
+            if reorderDims
                 szV = size(data.X);
-                if length(data.Time)==1
+                if ~isfield(data,'Time') || length(data.Time)==1
                     dms = [length(szV)+1 1:length(szV)];
                 else
                     dms = [length(szV) 1:length(szV)-1];

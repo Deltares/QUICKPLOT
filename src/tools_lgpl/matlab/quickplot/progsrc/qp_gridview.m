@@ -1089,6 +1089,7 @@ switch selection.Type
                 end
             otherwise
                 i = Range(1);
+                selection.Range = i; % remove second index for UGRID points
                 switch GRID.ValLocation
                     case 'NODE'
                         set(SelectedPatch,'vertices',[],'faces',[])
@@ -1907,15 +1908,30 @@ switch NewLoc
                 else
                     if strcmp(OldLoc,'FACE')
                         % find node numbers associated with the selected nodes
-                        iFace = OldRange.Range{1};
+                        switch OldRange.Type
+                            case 'point'
+                                iFace = OldRange.Range(1);
+                            otherwise
+                                iFace = OldRange.Range{1};
+                        end
+                        find_point = length(iFace)==1;
                         iNode = GRID.FaceNodeConnect(iFace,:);
                         iNode = unique(iNode(~isnan(iNode)));
                     else
-                        iNode = OldRange.Range{1};
+                        switch OldRange.Type
+                            case 'point'
+                                iNode = OldRange.Range(1);
+                            otherwise
+                                iNode = OldRange.Range{1};
+                        end
+                        find_point = length(iNode)==1;
                     end
                     % find edges for which all nodes are selected
                     lEdge = all(ismember(GRID.EdgeNodeConnect,iNode),2);
                     iEdge = find(lEdge);
+                    if find_point
+                        iEdge = iEdge(1);
+                    end
                     NewRange.Type = 'range';
                     NewRange.Range = {iEdge};
                 end
@@ -1980,14 +1996,18 @@ switch NewLoc
                     switch OldRange.Type
                         case 'point'
                             iLocation = OldRange.Range(1);
-                            if strcmp(OldLoc,'NODE')
-                                MatchLevel = 1;
-                            else
-                                MatchLevel = 2;
-                            end
                         case 'range'
                             iLocation = OldRange.Range{1};
-                            MatchLevel = 3;
+                    end
+                    find_point = length(iLocation)==1;
+                    if find_point
+                        if strcmp(OldLoc,'NODE')
+                            MatchLevel = 1;
+                        else
+                            MatchLevel = 2;
+                        end
+                    else
+                        MatchLevel = 3;
                     end
                     if strcmp(OldLoc,'EDGE')
                         % find node numbers associated with the selected edges
@@ -2012,13 +2032,8 @@ switch NewLoc
                                 & ~all(isnan(GRID.FaceNodeConnect),2);
                             iFace = find(lFace);
                     end
-                    if length(iFace)==1
-                        NewRange.Type = 'point';
-                        NewRange.Range = [iFace 1];
-                    else
-                        NewRange.Type = 'range';
-                        NewRange.Range = {iFace};
-                    end
+                    NewRange.Type = 'range';
+                    NewRange.Range = {iFace};
                 end
             otherwise
                 error('Transition from %s to %s not yet implemented',OldLoc,NewLoc)

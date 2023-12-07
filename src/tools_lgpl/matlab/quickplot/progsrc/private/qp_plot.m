@@ -449,6 +449,35 @@ if isfield(Ops,'plotcoordinate')
     data.Geom = 'sSEG';
 end
 
+if length(data) == 1 && ...
+        (strcmp(Ops.axestype,'Time-Z') || ...
+        strcmp(Ops.axestype,'Val-Z'))
+    if isfield(data,'ValLocation')
+        switch data.ValLocation
+            case 'FACE'
+                FNC = data.FaceNodeConnect;
+                missing = isnan(FNC);
+                nNodes = size(missing,2)-sum(missing,2);
+                FNC(missing) = 1;
+                data.X = reshape(data.X(FNC),size(FNC));
+                data.X(missing) = 0;
+                data.X = sum(data.X,2)./nNodes;
+                if isfield(data,'Y')
+                    data.Y = reshape(data.Y(FNC),size(FNC));
+                    data.Y(missing) = 0;
+                    data.Y = sum(data.Y,2)./nNodes;
+                end
+        end
+        data.Geom = 'sSEG';
+        for c = {'FaceNodeConnect','EdgeNodeConnect','ValLocation','ZLocation','SEG','XY','XYZ','TRI','EdgeGeometry'}
+            s = c{1};
+            if isfield(data,s)
+                data = rmfield(data,s);
+            end
+        end
+    end
+end
+
 if strcmp(Ops.presentationtype,'vector') || ...
         strcmp(Ops.presentationtype,'markers') || ...
         strcmp(Ops.presentationtype,'values') || ...
