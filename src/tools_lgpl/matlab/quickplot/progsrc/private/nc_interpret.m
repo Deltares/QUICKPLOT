@@ -772,7 +772,7 @@ for ivar = 1:nvars
             if ~isempty(nmDims) && ~strcmp(Info.Type,'ugrid_mesh') && ~strcmp(Info.Type,'simple_geometry')
                 vDimsStr = sprintf('%s, ',vDims{:});
                 cvDimsStr = sprintf('%s, ',cvDims{:});
-                if length(nmDims) == 1 && cvSize == 1
+                if length(nmDims) == 1 && isequal(cvSize,1)
                     % coordinate variable with length 1
                     if ~ismember(nc.Dataset(icvar).Name,scalarDimWarnings)
                         Msg = sprintf(['Auxiliary coordinate %s has a dimension %s\n', ...
