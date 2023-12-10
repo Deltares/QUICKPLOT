@@ -863,14 +863,23 @@ if Props.NVal==6
         Ops.Thresholds = 1:length(data(1).Classes);
     end
 elseif isfield(Ops,'thresholds') && ~strcmp(Ops.thresholds,'none')
-    miv = inf;
-    mv  = -inf;
-    for d = 1:length(data)
-        miv = min(miv,min(data(d).Val(:)));
-        mv  = max(mv ,max(data(d).Val(:)));
+    if isfield(Ops,'colourlimits') && isequal(size(Ops.colourlimits),[1 2])
+        minmax = Ops.colourlimits;
+    else
+        miv = inf;
+        mv  = -inf;
+        for d = 1:length(data)
+            miv = min(miv,min(data(d).Val(:)));
+            mv  = max(mv ,max(data(d).Val(:)));
+        end
+        if isfield(Ops,'symmetriccolourlimits') && Ops.symmetriccolourlimits
+            miv = min(miv,-mv);
+            mv = max(mv,-miv);
+        end
+        minmax = [miv mv];
     end
-    Ops.Thresholds = compthresholds(Ops,[miv mv],LocStartClass);
-    if miv<Ops.Thresholds(1) && ~LocLabelClass
+    Ops.Thresholds = compthresholds(Ops,minmax,LocStartClass);
+    if minmax(1)<Ops.Thresholds(1) && ~LocLabelClass
         Ops.Thresholds = [-inf Ops.Thresholds];
     end
 else
