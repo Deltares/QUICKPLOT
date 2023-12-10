@@ -1911,7 +1911,7 @@ else
                     Insert.Geom = upper(Info.Mesh{1});
             end
             BaseGeom = Insert.Geom;
-            if strcmp(Info.Mesh{1},'ugrid')
+            if ismember(Info.Mesh{1},{'ugrid','ugrid1d_network'})
                 switch Info.Mesh{4}
                     case -1 % the mesh itself
                         Insert.SubFld = [];
