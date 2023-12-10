@@ -910,6 +910,8 @@ for ivar = 1:nvars
     xName = '';
     if strcmp(Info.Type,'simple_geometry')
         Info.TSMNK(3) = nc.Dataset(Info.Mesh{4}).Dimid;
+    elseif strcmp(Info.Type,'ugrid_mesh_contact')
+        Info.TSMNK(3) = Info.Dimid(1);
     elseif strcmp(Info.Type,'ugrid_mesh') && iscell(Info.Mesh) && strcmp(Info.Mesh{1},'ugrid1d_network')
         crds = Info.Coordinates;
         for i = 1:length(crds)
@@ -1503,18 +1505,49 @@ if nargin<5
     Attribs = {Info.Attribute.Name};
 end
 % ugrid mesh contact
-Info.Type = 'ugrid_mesh_contact';
+geometry = 'ugrid_mesh_contact';
+Info.Type = geometry;
 %
 j = strmatch('cf_role',Attribs,'exact');
 if isempty(j) || ~strcmp(Info.Attribute(j).Value,'mesh_topology_contact')
     ui_message('error','Attribute ''cf_role'' should be set to ''mesh_topology_contact'' for UGRID mesh contact variable "%s".',Info.Name)
+    return
 end
 %
 j = strmatch('contact',Attribs,'exact');
 if isempty(j)
     ui_message('error','Attribute ''contact'' should be defined for UGRID mesh contact variable "%s".',Info.Name)
+    return
 else
-    meshLoc = reshape(multiline(Info.Attribute(j).Value,' ','cell'),[2 2])';
+    try
+        mesh_contact = Info.Attribute(j).Value;
+        meshLoc = reshape(multiline(mesh_contact,' ','cell'),[2 2])';
+    catch
+        ui_message('error','Unable to interpret contact attribute string "%s" as ''[mesh1]: [loc1] [mesh2]: [loc2]'' for "%s".',Info.Attribute(j).Value,Info.Name)
+        return
+    end
+end
+%
+for imesh = 1:2
+    mesh = meshLoc{imesh,1}(1:end-1);
+    meshvar = ustrcmpi(mesh,varNames);
+    if meshvar<0
+        ui_message('error','Unable to locate mesh "%s" referred to from %s contact attribute "%s".',mesh,Info.Name,mesh_contact)
+        return
+    end
+    loc = meshLoc{imesh,2};
+    switch lower(loc)
+        case 'node'
+            dloc = 0;
+        case 'edge'
+            dloc = 1;
+        case 'face'
+            dloc = 2;
+        otherwise
+            ui_message('error','Unknown location "%s" specified for mesh %s in %s contact attribute "%s".',loc,mesh,Info.Name,mesh_contact)
+            return
+    end
+    meshLoc(imesh,:) = {meshvar dloc};
 end
 %
 %      contacts:cf_role = "mesh_topology_contact" ;
@@ -1523,6 +1556,7 @@ end
 %      contacts:contact_id = "contacts_contact_id" ;
 %      contacts:contact_long_name = "contacts_contact_long_name" ;
 %      contacts:start_index = 1 d;
+Info.Mesh = {geometry meshLoc ivar};
 
 
 function [nc,Info] = parse_ugrid_mesh_or_contact(nc,varNames,dimNames,ivar)

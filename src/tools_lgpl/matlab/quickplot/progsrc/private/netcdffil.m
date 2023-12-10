@@ -701,13 +701,6 @@ if XYRead || XYneeded || ZRead
         %ugrid
         mesh_settings = Info.Mesh;
         msh = mesh_settings{3};
-        meshInfo      = FI.Dataset(msh);
-        %
-        dimNodes = meshInfo.Mesh{5};
-        dimEdges = meshInfo.Mesh{6};
-        dimFaces = meshInfo.Mesh{7};
-        allDims = {FI.Dimension.Name};
-        MeshSubset = {};
         dloc = mesh_settings{4};
         if dloc == -1
             switch Props.Geom(end-3:end)
@@ -719,211 +712,9 @@ if XYRead || XYneeded || ZRead
                     dloc = 2;
             end
         end
-        switch dloc
-            case 0 % data at NODE
-                MeshSubset = {'NODE' dimNodes idx{M_}
-                              'EDGE' dimEdges -1
-                              'FACE' dimFaces -1};
-                if ~isempty(dimEdges)
-                    MeshSubset{2,3} = 1:FI.Dimension(strcmp(dimEdges,allDims)).Length;
-                end
-                if ~isempty(dimFaces)
-                    MeshSubset{3,3} = 1:FI.Dimension(strcmp(dimFaces,allDims)).Length;
-                end
-            case 1 % data at EDGE
-                MeshSubset = {'NODE' dimNodes 1:FI.Dimension(strcmp(dimNodes,allDims)).Length
-                    'EDGE' dimEdges idx{M_}
-                    'FACE' dimFaces -1};
-                if ~isempty(dimFaces)
-                    MeshSubset{3,3} = 1:FI.Dimension(strcmp(dimFaces,allDims)).Length;
-                end
-            case 2 % data at FACE
-                MeshSubset = {'NODE' dimNodes 1:FI.Dimension(strcmp(dimNodes,allDims)).Length
-                              'EDGE' dimEdges -1
-                              'FACE' dimFaces idx{M_}};
-                if ~isempty(dimEdges)
-                    MeshSubset{2,3} = 1:FI.Dimension(strcmp(dimEdges,allDims)).Length;
-                end
-        end
-        if isempty(MeshSubset)
-            getOptions = {};
-        else
-            getOptions = {'mesh_subsets' MeshSubset};
-        end
         %
-        for c = 'XY'
-            if isempty(meshInfo.(c))
-                error('No %s coordinate found for %s.',c,meshInfo.Name)
-            end
-            CoordInfo2 = FI.Dataset(meshInfo.(c));
-            [Ans.(c), status] = qp_netcdf_get(FI,CoordInfo2);
-            %
-            unit = get_unit(CoordInfo2);
-            if ischar(unit)
-                Ans.([c 'Units']) = unit;
-            end
-        end
-        if strcmp(mesh_settings{1},'ugrid1d_network')
-            % Ans.X contains mesh node branch index
-            % Ans.Y contains mesh node offset/chainage
-            %
-            attcsp = strmatch('coordinate_space',{meshInfo.Attribute.Name});
-            csp = strmatch(meshInfo.Attribute(attcsp).Value,{FI.Dataset.Name},'exact');
-            [BrX,BrY,xUnit,BrL] = get_edge_geometry(FI,csp);
-            %
-            if isempty(FI.Dataset(meshInfo.X).Attribute)
-                istart = [];
-            else
-                istart = strmatch('start_index',{FI.Dataset(meshInfo.X).Attribute.Name});
-            end
-            if isempty(istart)
-                start_index = 0;
-            else
-                start_index = FI.Dataset(meshInfo.X).Attribute(istart).Value;
-            end
-            start_index = verify_start_index(istart, start_index, min(Ans.X), max(Ans.X), length(BrX), 'branch', FI.Dataset(meshInfo.X).Name);
-            Ans.X = Ans.X-start_index+1;
-            %
-            % Get edge_node_connectivity
-            attENC = strmatch('edge_node_connectivity',{meshInfo.Attribute.Name});
-            [e2n, status] = qp_netcdf_get(FI, meshInfo.Attribute(attENC).Value);
-            i_e2n = strmatch(meshInfo.Attribute(attENC).Value, {FI.Dataset.Name});
-            if isempty(FI.Dataset(i_e2n).Attribute)
-                istart = [];
-            else
-                istart = strmatch('start_index',{FI.Dataset(i_e2n).Attribute.Name});
-            end
-            if ~isempty(istart)
-                start_index = FI.Dataset(i_e2n).Attribute(istart).Value;
-            else
-                start_index = 0;
-            end
-            start_index = verify_start_index(istart, start_index, min(e2n(:)), max(e2n(:)), length(Ans.X), 'node',FI.Dataset(i_e2n).Name);
-            e2n = e2n-start_index+1;
-            %
-            % Get mesh_edge branch affinity (read from edge_coordinates or reconstructed)
-            attECO = strmatch('edge_coordinates',{meshInfo.Attribute.Name});
-            if ~isempty(attECO)
-                ecoords = strsplit(meshInfo.Attribute(attECO).Value);
-                for iec = 1:length(ecoords)
-                    i_eBrNr = strmatch(ecoords{iec},{FI.Dataset.Name});
-                    if isempty(FI.Dataset(i_eBrNr).Attribute)
-                        ecAtt = {};
-                    else
-                        ecAtt = {FI.Dataset(i_eBrNr).Attribute.Name};
-                    end
-                    if ismember('units',ecAtt) || ismember('standard_name',ecAtt)
-                        % x-coordinate, y-coordinate, offset
-                        continue
-                    end
-                    % branch_id
-                    [eBrNr, status] = qp_netcdf_get(FI,FI.Dataset(i_eBrNr));
-                    if any(eBrNr<0)
-                        ui_message('warning','Invalid %s data: negative branch ids encountered. Ignoring this data.',FI.Dataset(i_eBrNr).Name)
-                        eBrNr = [];
-                    end
-                    break
-                end
-                if isempty(FI.Dataset(i_eBrNr).Attribute)
-                    istart = [];
-                else
-                    istart = strmatch('start_index',{FI.Dataset(i_eBrNr).Attribute.Name});
-                end
-                if ~isempty(istart)
-                    start_index = FI.Dataset(i_eBrNr).Attribute(istart).Value;
-                else
-                    start_index = 0;
-                end
-                start_index = verify_start_index(istart, start_index, min(eBrNr), max(eBrNr), length(BrX), 'branch',FI.Dataset(i_eBrNr).Name);
-                eBrNr = eBrNr-start_index+1;
-            else
-                eBrNr = [];
-            end
-            if isempty(eBrNr)
-                % TODO: create networknode(i)
-                % networknode(i) = N if mesh node i coincides with network node N
-                % networknode(i) = -1 if mesh node i does not coincide with a network node
-                networknode = -ones(size(Ans.X));
-                networknode(Ans.Y==0 | Ans.Y==BrL(Ans.X)) = 1;
-                %
-                % reconstruct mesh_edge branch affinity
-                eBrNr = Ans.X(e2n);
-                for i = 1:size(eBrNr,1)
-                    n1 = networknode(e2n(i,1));
-                    if n1<0
-                        % start node isn't a network node, so edge must
-                        % be on same branch.
-                        % eBrNr(i,1) is correct.
-                        continue
-                    end
-                    n2 = networknode(e2n(i,2));
-                    if n2<0
-                        % end node isn't a network node, so edge must
-                        % be on same branch.
-                        eBrNr(i,1) = eBrNr(i,2);
-                        continue
-                    end
-                    % both start and end node of edge match a network node.
-                    % identify the branches between the network nodes.
-                    %
-                    if 1
-                        % if one branch, select that one.
-                        1
-                    else
-                        % if multiple branches, select one and give warning.
-                        2
-                    end
-                end
-                eBrNr = eBrNr(:,1);
-            end
-            %
-            if ischar(xUnit)
-                Ans.XUnits = xUnit;
-                Ans.YUnits = xUnit;
-            end
-            [Ans.X,Ans.Y,Ans.EdgeGeometry.X,Ans.EdgeGeometry.Y] = branch2xy(BrX,BrY,xUnit,BrL,Ans.X,Ans.Y,eBrNr,e2n);
-        end
-        %
-        if isempty(meshInfo.Attribute)
-            meshAttribNames = {};
-        else
-            meshAttribNames = {meshInfo.Attribute.Name};
-        end
-        connect = strmatch('face_node_connectivity',meshAttribNames,'exact');
-        if ~isempty(connect)
-            iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name},'exact');
-            if isempty(iconnect)
-                ui_message('warning','The face_node_connectivity variable "%s" could not be found! Using empty set.',meshInfo.Attribute(connect).Value)
-            else
-                [Ans.FaceNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
-                nNodes = sum(~isnan(Ans.FaceNodeConnect),2);
-                min_nNodes = min(nNodes);
-                if min_nNodes<3
-                    nError = sum(nNodes==min_nNodes);
-                    error('%i faces found with %i nodes. Number of nodes per face should be at least 3.',nError,min_nNodes)
-                end
-                if isempty(FI.Dataset(iconnect).Attribute)
-                    istart = [];
-                else
-                    istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name},'exact');
-                end
-                if isempty(istart)
-                    start = 0;
-                else
-                    start = FI.Dataset(iconnect).Attribute(istart).Value;
-                end
-                start = verify_start_index(istart, start, min(Ans.FaceNodeConnect(Ans.FaceNodeConnect>=0)), max(Ans.FaceNodeConnect(:)), length(Ans.X), 'node', meshInfo.Attribute(connect).Value);
-                Ans.FaceNodeConnect = Ans.FaceNodeConnect - start + 1;
-                Ans.FaceNodeConnect(Ans.FaceNodeConnect<1) = NaN;
-                % check for indices after missing value
-                dFNC = diff(isnan(Ans.FaceNodeConnect),1,2);
-                if any(dFNC(:)<0)
-                    dFNC = max(dFNC,0);
-                    Mask = [zeros(size(dFNC(:,1))), cumsum(dFNC,2)];
-                    Ans.FaceNodeConnect(Mask==1) = NaN;
-                end
-            end
-        end
+        [Ans,meshAttribNames,getOptions] = qp_netcdf_ugrid_get_xy(FI,msh,dloc,idx{M_});
+        meshInfo = FI.Dataset(msh);
         %
         Ans.ValLocation = Props.Geom(max(strfind(Props.Geom,'-'))+1:end);
         connect = strmatch('edge_node_connectivity',meshAttribNames,'exact');
@@ -1006,6 +797,52 @@ if XYRead || XYneeded || ZRead
         %
         %[Ans.XFace, status] = qp_netcdf_get(FI,'mesh2d_face_x');
         %[Ans.YFace, status] = qp_netcdf_get(FI,'mesh2d_face_y');
+    elseif strcmp(Info.Type,'ugrid_mesh_contact')
+        meshes = Info.Mesh{2};
+        Contacts = qp_netcdf_get(FI,FI.Dataset(Info.Mesh{3}));
+        Contacts = Contacts(idx{M_},:);
+        for imesh = 2:-1:1
+            % get X,Y coordinates of NODE/EDGE/FACE [see: meshes{imesh,2}] locations
+            % with indices Contacts(:,imesh) from mesh meshes{imesh,1}
+            idx = Contacts(:,imesh);
+            Mesh = qp_netcdf_ugrid_get_xy(FI,meshes{imesh,1},meshes{imesh,2},idx);
+            switch meshes{imesh,2}
+                case 0 % get NODE xy
+                    x = Mesh.X(idx);
+                    y = Mesh.Y(idx);
+                    
+                case 1 % get EDGE xy
+                    enc = Mesh.EdgeNodeConnect(idx,:);
+                    %
+                    x = Mesh.X(enc);
+                    x = sum(x,2)/2;
+                    %
+                    y = Mesh.Y(enc);
+                    y = sum(y,2)/2;
+                    
+                case 2 % get FACE xy
+                    fnc = Mesh.FaceNodeConnect(idx,:);
+                    missing = isnan(fnc);
+                    nNodes = sum(~missing,2);
+                    fnc(missing) = 1;
+                    %
+                    x = Mesh.X(fnc);
+                    x(missing) = 0;
+                    x = sum(x,2)./nNodes;
+                    %
+                    y = Mesh.Y(fnc);
+                    y(missing) = 0;
+                    y = sum(y,2)./nNodes;
+            end
+            % x = Contacts(:,imesh);
+            % y = Contacts(:,imesh);
+            Ans.X(imesh,:) = x(:);
+            Ans.Y(imesh,:) = y(:);
+        end
+        Ans.X(3,:) = NaN;
+        Ans.Y(3,:) = NaN;
+        Ans.X = Ans.X(:);
+        Ans.Y = Ans.Y(:);
     elseif strcmp(Info.Type,'simple_geometry')
         simpleType = Info.Mesh{2};
         switch simpleType
@@ -2055,29 +1892,32 @@ else
             end
             nmesh = nmesh+1;
             switch Info.Mesh{1}
-                case 'ugrid' %,'ugrid1d_network'}
+                case 'ugrid'
                     tpd = Info.Mesh{2};
-                    if tpd<0
-                        Insert.Geom = 'UGRID-CONTACT';
-                    else
-                        Insert.Geom = sprintf('UGRID%iD',tpd);
-                    end
+                    Insert.Geom = sprintf('UGRID%iD',tpd);
 
                 case 'simple_geometry'
                     switch Info.Mesh{2}
                         case 'line'
                             Insert.Geom = 'POLYL';
                     end
+                    
+                case 'ugrid_mesh_contact'
+                    Insert.Geom = 'POLYL';
+                    Insert.SubFld = [];
+                    Insert.NVal = 0;
+    
                 otherwise
                     Insert.Geom = upper(Info.Mesh{1});
             end
             BaseGeom = Insert.Geom;
-            if ~strcmp(Info.Mesh{1},'simple_geometry')
+            if strcmp(Info.Mesh{1},'ugrid')
                 switch Info.Mesh{4}
                     case -1 % the mesh itself
                         Insert.SubFld = [];
                         Insert.Geom = [Insert.Geom '-NODE'];
                         Insert.DimFlag(3) = 6;
+                        Insert.NVal = 0;
                     case 0 % node
                         Insert.Geom = [Insert.Geom '-NODE'];
                         Insert.DimFlag(3) = 6;
@@ -2096,9 +1936,6 @@ else
             end
             Insert.Coords = 'xy';
             Insert.hasCoords=1;
-            if strcmp(Info.Type,'ugrid_mesh')
-                Insert.NVal = 0;
-            end
         elseif ~isempty(Info.X) && ~isempty(Info.Y)
             Insert.hasCoords=1;
             mesh = [Info.X Info.Y];
@@ -2138,29 +1975,31 @@ else
         %
         Out(end+1)=Insert;
         %
-        if ~isempty(Info.Mesh) && isequal(Info.Type,'ugrid_mesh') && isequal(Info.Mesh{4},-1)
-            Nm = Insert.Name;
-            %
-            Insert.Name = [Nm ' - node indices'];
-            Insert.NVal = 1;
-            Insert.varid{1} = 'node_index';
-            Out(end+1) = Insert;
-            %
-            if ~isempty(Info.Mesh{6})
-                Insert.Name = [Nm ' - edge indices'];
-                Insert.Geom = [BaseGeom '-EDGE'];
-                Insert.varid{1} = 'edge_index';
-                Insert.DimName{M_} = Info.Mesh{6};
+        if ~isempty(Info.Mesh)
+            if isequal(Info.Type,'ugrid_mesh') && isequal(Info.Mesh{4},-1)
+                Nm = Insert.Name;
+                %
+                Insert.Name = [Nm ' - node indices'];
+                Insert.NVal = 1;
+                Insert.varid{1} = 'node_index';
                 Out(end+1) = Insert;
-            end
-            %
-            if length(Info.Mesh)>=7 && ~isempty(Info.Mesh{7})
-                Insert.Name = [Nm ' - face indices'];
-                Insert.Geom = [BaseGeom '-FACE'];
-                Insert.DataInCell = 1;
-                Insert.varid{1} = 'face_index';
-                Insert.DimName{M_} = Info.Mesh{7};
-                Out(end+1) = Insert;
+                %
+                if ~isempty(Info.Mesh{6})
+                    Insert.Name = [Nm ' - edge indices'];
+                    Insert.Geom = [BaseGeom '-EDGE'];
+                    Insert.varid{1} = 'edge_index';
+                    Insert.DimName{M_} = Info.Mesh{6};
+                    Out(end+1) = Insert;
+                end
+                %
+                if length(Info.Mesh)>=7 && ~isempty(Info.Mesh{7})
+                    Insert.Name = [Nm ' - face indices'];
+                    Insert.Geom = [BaseGeom '-FACE'];
+                    Insert.DataInCell = 1;
+                    Insert.varid{1} = 'face_index';
+                    Insert.DimName{M_} = Info.Mesh{7};
+                    Out(end+1) = Insert;
+                end
             end
         end
         %
@@ -3276,3 +3115,218 @@ if ~isequal(flds,flds2)
     end
 end
 structList = [structList(1:iq-1) struct structList(iq:end)];
+
+
+function [Ans,meshAttribNames,getOptions] = qp_netcdf_ugrid_get_xy(FI,msh,dloc,idx)
+meshInfo      = FI.Dataset(msh);
+%
+dimNodes = meshInfo.Mesh{5};
+dimEdges = meshInfo.Mesh{6};
+dimFaces = meshInfo.Mesh{7};
+allDims = {FI.Dimension.Name};
+MeshSubset = {};
+switch dloc
+    case 0 % data at NODE
+        MeshSubset = {'NODE' dimNodes idx
+            'EDGE' dimEdges -1
+            'FACE' dimFaces -1};
+        if ~isempty(dimEdges)
+            MeshSubset{2,3} = 1:FI.Dimension(strcmp(dimEdges,allDims)).Length;
+        end
+        if ~isempty(dimFaces)
+            MeshSubset{3,3} = 1:FI.Dimension(strcmp(dimFaces,allDims)).Length;
+        end
+    case 1 % data at EDGE
+        MeshSubset = {'NODE' dimNodes 1:FI.Dimension(strcmp(dimNodes,allDims)).Length
+            'EDGE' dimEdges idx
+            'FACE' dimFaces -1};
+        if ~isempty(dimFaces)
+            MeshSubset{3,3} = 1:FI.Dimension(strcmp(dimFaces,allDims)).Length;
+        end
+    case 2 % data at FACE
+        MeshSubset = {'NODE' dimNodes 1:FI.Dimension(strcmp(dimNodes,allDims)).Length
+            'EDGE' dimEdges -1
+            'FACE' dimFaces idx};
+        if ~isempty(dimEdges)
+            MeshSubset{2,3} = 1:FI.Dimension(strcmp(dimEdges,allDims)).Length;
+        end
+end
+if isempty(MeshSubset)
+    getOptions = {};
+else
+    getOptions = {'mesh_subsets' MeshSubset};
+end
+%
+for c = 'XY'
+    if isempty(meshInfo.(c))
+        error('No %s coordinate found for %s.',c,meshInfo.Name)
+    end
+    CoordInfo2 = FI.Dataset(meshInfo.(c));
+    [Ans.(c), status] = qp_netcdf_get(FI,CoordInfo2);
+    %
+    unit = get_unit(CoordInfo2);
+    if ischar(unit)
+        Ans.([c 'Units']) = unit;
+    end
+end
+if strcmp(meshInfo.Mesh{1},'ugrid1d_network')
+    % Ans.X contains mesh node branch index
+    % Ans.Y contains mesh node offset/chainage
+    %
+    attcsp = strmatch('coordinate_space',{meshInfo.Attribute.Name});
+    csp = strmatch(meshInfo.Attribute(attcsp).Value,{FI.Dataset.Name},'exact');
+    [BrX,BrY,xUnit,BrL] = get_edge_geometry(FI,csp);
+    %
+    if isempty(FI.Dataset(meshInfo.X).Attribute)
+        istart = [];
+    else
+        istart = strmatch('start_index',{FI.Dataset(meshInfo.X).Attribute.Name});
+    end
+    if isempty(istart)
+        start_index = 0;
+    else
+        start_index = FI.Dataset(meshInfo.X).Attribute(istart).Value;
+    end
+    start_index = verify_start_index(istart, start_index, min(Ans.X), max(Ans.X), length(BrX), 'branch', FI.Dataset(meshInfo.X).Name);
+    Ans.X = Ans.X-start_index+1;
+    %
+    % Get edge_node_connectivity
+    attENC = strmatch('edge_node_connectivity',{meshInfo.Attribute.Name});
+    [e2n, status] = qp_netcdf_get(FI, meshInfo.Attribute(attENC).Value);
+    i_e2n = strmatch(meshInfo.Attribute(attENC).Value, {FI.Dataset.Name});
+    if isempty(FI.Dataset(i_e2n).Attribute)
+        istart = [];
+    else
+        istart = strmatch('start_index',{FI.Dataset(i_e2n).Attribute.Name});
+    end
+    if ~isempty(istart)
+        start_index = FI.Dataset(i_e2n).Attribute(istart).Value;
+    else
+        start_index = 0;
+    end
+    start_index = verify_start_index(istart, start_index, min(e2n(:)), max(e2n(:)), length(Ans.X), 'node',FI.Dataset(i_e2n).Name);
+    e2n = e2n-start_index+1;
+    %
+    % Get mesh_edge branch affinity (read from edge_coordinates or reconstructed)
+    attECO = strmatch('edge_coordinates',{meshInfo.Attribute.Name});
+    if ~isempty(attECO)
+        ecoords = strsplit(meshInfo.Attribute(attECO).Value);
+        for iec = 1:length(ecoords)
+            i_eBrNr = strmatch(ecoords{iec},{FI.Dataset.Name});
+            if isempty(FI.Dataset(i_eBrNr).Attribute)
+                ecAtt = {};
+            else
+                ecAtt = {FI.Dataset(i_eBrNr).Attribute.Name};
+            end
+            if ismember('units',ecAtt) || ismember('standard_name',ecAtt)
+                % x-coordinate, y-coordinate, offset
+                continue
+            end
+            % branch_id
+            [eBrNr, status] = qp_netcdf_get(FI,FI.Dataset(i_eBrNr));
+            if any(eBrNr<0)
+                ui_message('warning','Invalid %s data: negative branch ids encountered. Ignoring this data.',FI.Dataset(i_eBrNr).Name)
+                eBrNr = [];
+            end
+            break
+        end
+        if isempty(FI.Dataset(i_eBrNr).Attribute)
+            istart = [];
+        else
+            istart = strmatch('start_index',{FI.Dataset(i_eBrNr).Attribute.Name});
+        end
+        if ~isempty(istart)
+            start_index = FI.Dataset(i_eBrNr).Attribute(istart).Value;
+        else
+            start_index = 0;
+        end
+        start_index = verify_start_index(istart, start_index, min(eBrNr), max(eBrNr), length(BrX), 'branch',FI.Dataset(i_eBrNr).Name);
+        eBrNr = eBrNr-start_index+1;
+    else
+        eBrNr = [];
+    end
+    if isempty(eBrNr)
+        % TODO: create networknode(i)
+        % networknode(i) = N if mesh node i coincides with network node N
+        % networknode(i) = -1 if mesh node i does not coincide with a network node
+        networknode = -ones(size(Ans.X));
+        networknode(Ans.Y==0 | Ans.Y==BrL(Ans.X)) = 1;
+        %
+        % reconstruct mesh_edge branch affinity
+        eBrNr = Ans.X(e2n);
+        for i = 1:size(eBrNr,1)
+            n1 = networknode(e2n(i,1));
+            if n1<0
+                % start node isn't a network node, so edge must
+                % be on same branch.
+                % eBrNr(i,1) is correct.
+                continue
+            end
+            n2 = networknode(e2n(i,2));
+            if n2<0
+                % end node isn't a network node, so edge must
+                % be on same branch.
+                eBrNr(i,1) = eBrNr(i,2);
+                continue
+            end
+            % both start and end node of edge match a network node.
+            % identify the branches between the network nodes.
+            %
+            if 1
+                % if one branch, select that one.
+                1
+            else
+                % if multiple branches, select one and give warning.
+                2
+            end
+        end
+        eBrNr = eBrNr(:,1);
+    end
+    %
+    if ischar(xUnit)
+        Ans.XUnits = xUnit;
+        Ans.YUnits = xUnit;
+    end
+    [Ans.X,Ans.Y,Ans.EdgeGeometry.X,Ans.EdgeGeometry.Y] = branch2xy(BrX,BrY,xUnit,BrL,Ans.X,Ans.Y,eBrNr,e2n);
+end
+%
+if isempty(meshInfo.Attribute)
+    meshAttribNames = {};
+else
+    meshAttribNames = {meshInfo.Attribute.Name};
+end
+connect = strmatch('face_node_connectivity',meshAttribNames,'exact');
+if ~isempty(connect)
+    iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name},'exact');
+    if isempty(iconnect)
+        ui_message('warning','The face_node_connectivity variable "%s" could not be found! Using empty set.',meshInfo.Attribute(connect).Value)
+    else
+        [Ans.FaceNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
+        nNodes = sum(~isnan(Ans.FaceNodeConnect),2);
+        min_nNodes = min(nNodes);
+        if min_nNodes<3
+            nError = sum(nNodes==min_nNodes);
+            error('%i faces found with %i nodes. Number of nodes per face should be at least 3.',nError,min_nNodes)
+        end
+        if isempty(FI.Dataset(iconnect).Attribute)
+            istart = [];
+        else
+            istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name},'exact');
+        end
+        if isempty(istart)
+            start = 0;
+        else
+            start = FI.Dataset(iconnect).Attribute(istart).Value;
+        end
+        start = verify_start_index(istart, start, min(Ans.FaceNodeConnect(Ans.FaceNodeConnect>=0)), max(Ans.FaceNodeConnect(:)), length(Ans.X), 'node', meshInfo.Attribute(connect).Value);
+        Ans.FaceNodeConnect = Ans.FaceNodeConnect - start + 1;
+        Ans.FaceNodeConnect(Ans.FaceNodeConnect<1) = NaN;
+        % check for indices after missing value
+        dFNC = diff(isnan(Ans.FaceNodeConnect),1,2);
+        if any(dFNC(:)<0)
+            dFNC = max(dFNC,0);
+            Mask = [zeros(size(dFNC(:,1))), cumsum(dFNC,2)];
+            Ans.FaceNodeConnect(Mask==1) = NaN;
+        end
+    end
+end
