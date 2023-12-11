@@ -2016,7 +2016,12 @@ else
            prefix = '';
         else
            ireg = regexp(Insert.Name,'discharge through flow link');
-           if ~isempty(ireg)
+           try
+               convFac = qp_unitconversion(Insert.Units,'m3 s-1');
+           catch
+               convFac = 'error';
+           end
+           if ~isempty(ireg) && isnumeric(convFac)
                streamfunc = true;
                prefix = Insert.Name(1:ireg-1);
            end
