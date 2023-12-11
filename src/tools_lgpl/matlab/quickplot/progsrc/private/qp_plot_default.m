@@ -636,7 +636,7 @@ switch NVal
                 if isfield(data,'YComp')
                     v = squeeze(data.YComp);
                 else
-                    v = squeeze(data.YComp);
+                    v = squeeze(data.ZComp);
                 end
                 hNew(2)=line(v,z,'parent',ax);
                 setaxesprops(ax,'Val-Z',{Qc2 'elevation'},{Units ZUnits});
