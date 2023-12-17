@@ -408,11 +408,37 @@ for ivar = 1:nvars
     j = strmatch('units',Attribs,'exact');
     if ~isempty(j)
         unit = Info.Attribute(j).Value;
-        [unit1,unit2] = strtok(lower(unit));
-        if ~ischar(unit1)
-            unit1='';
+        if ~ischar(unit)
+            unit = '';
         end
-        switch unit1
+        %
+        try
+            [refdate,dt,TZshift] = nc_interpret_time_unit(unit);
+            if ~isempty(refdate) && ~isequal(nc.Dataset(ivar).Type,'time') && length(nc.Dataset(ivar).Dimension)==1
+                if strcmp(nc.Dataset(ivar).Type,'coordinate')
+                    nc = setType(nc,ivar,idim,'time');
+                else
+                    nc = setType(nc,ivar,idim,'aux-time');
+                end
+            elseif strcmp(nc.Dataset(ivar).Type,'coordinate')
+                nc = setType(nc,ivar,idim,'aux-time');
+            end
+            %
+            nc.Dataset(ivar).Info.DT      = dt;
+            if ~isempty(unit2) && isempty(refdate)
+                nc.Dataset(ivar).Info.RefDate = unit;
+            else
+                nc.Dataset(ivar).Info.RefDate = refdate;
+            end
+            %
+            % Pass TZshift to QUICKPLOT for optional processing
+            nc.Dataset(ivar).Info.TZshift = TZshift;
+            continue
+        catch
+            % no problem, the unit doesn't have to be a time unit
+        end
+        %
+        switch unit
             case {'degrees_north','degree_north','degrees_N','degree_N','degreesN','degreeN'}
                 nc = setType(nc,ivar,idim,'latitude');
                 continue
@@ -425,101 +451,19 @@ for ivar = 1:nvars
                 %
                 nc = setType(nc,ivar,idim,'z-coordinate');
                 continue
-            case {'millisecond','milliseconds','millisec','millisecs','msec','ms'}
-                dt = 0.001;
-            case {'second','seconds','sec','secs','s'}
-                dt = 1;
-            case {'minute','minutes','min','mins'}
-                dt = 60;
-            case {'hour','hours','hr','hrs','h'}
-                dt = 3600;
-            case {'day','days','d'}
-                dt = 86400; % 24*3600
-            case {'week'}
-                dt = 7*86400;
-            case {'month','months','mon'}
-                dt = 365.242198781*24*3600/12;
-            case {'year','years','yr','yrs'}
-                dt = 365.242198781*24*3600;
-            case {'common_year','common_years'}
-                dt = 365          *24*3600;
-            case {'leap_year','leap_years'}
-                dt = 366          *24*3600;
-            case {'Julian_year','Julian_years'}
-                dt = 365.25       *24*3600;
-            case {'Gregorian_year','Gregorian_years'}
-                dt = 365.2425     *24*3600;
             otherwise
                 try
                     f = qp_unitconversion(unit1,'Pa');
-                catch
-                    f = 'fail';
-                end
-                if ~ischar(f)
                     %
-                    % dimension unit is compatible with pressure (Pa)
-                    % according CF 1.4 this must be a z-coordinate
-                    %
-                    nc = setType(nc,ivar,idim,'z-coordinate');
-                    continue
-                end
-                dt = [];
-        end
-        if ~isempty(dt)
-            % quantity with time unit
-            %
-            % even though there is a space between the time and the time
-            % zone, this line supports the case in which a + or - of the
-            % time zone is directly attached to the time.
-            refdate = sscanf(unit2,' since %d-%d-%d%*1[ T]%d:%d:%f %d:%d',[1 8]);
-            if length(refdate)==1
-                % possibly basic (condensed) format
-                refdate = sscanf(unit2,' since %4d%2d%2d%*1[ T]%2d%2d%f %d:%d',[1 8]);
-            end
-            if length(refdate)>=6
-                if length(refdate)==8
-                    % offset HH:MM
-                    TZshift = refdate(7) + sign(refdate(7))*refdate(8)/60;
-                elseif length(refdate)==7
-                    % offset HH or HHMM
-                    TZshift = refdate(7);
-                    if abs(TZshift)>24
-                        TZshift = fix(TZshift/100)+rem(TZshift,100)/60;
+                    if isnumeric(f)
+                        % dimension unit is compatible with pressure (Pa)
+                        % according CF 1.4 this must be a z-coordinate
+                        nc = setType(nc,ivar,idim,'z-coordinate');
+                        continue
                     end
-                else
-                    TZshift = 0;
+                catch
+                    % other units don't have any special meaning
                 end
-                refdate = datenum(refdate(1:6));
-            elseif length(refdate)>=3
-                refdate(6) = 0;
-                refdate = datenum(refdate);
-                TZshift = NaN;
-            else
-                refdate = [];
-                TZshift = NaN;
-            end
-            %
-            % time quantity "since" --> time dimension
-            %
-            if ~isempty(refdate) && ~isequal(nc.Dataset(ivar).Type,'time') && length(nc.Dataset(ivar).Dimension)==1
-                if strcmp(nc.Dataset(ivar).Type,'coordinate')
-                    nc = setType(nc,ivar,idim,'time');
-                else
-                    nc = setType(nc,ivar,idim,'aux-time');
-                end
-            elseif strcmp(nc.Dataset(ivar).Type,'coordinate')
-                nc = setType(nc,ivar,idim,'aux-time');
-            end
-            %
-            nc.Dataset(ivar).Info.DT      = dt/86400;
-            if ~isempty(unit2) && isempty(refdate)
-                nc.Dataset(ivar).Info.RefDate = unit;
-            else
-                nc.Dataset(ivar).Info.RefDate = refdate;
-            end
-            % Pass TZshift to QUICKPLOT for optional processing
-            nc.Dataset(ivar).Info.TZshift = TZshift;
-            continue
         end
     end
     %
