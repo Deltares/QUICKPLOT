@@ -4523,8 +4523,10 @@ switch cmd
                     else
                         sld=findobj(Fig,'tag','animslid');
                         psh=findobj(Fig,'tag','animpush');
+                        axtb = findall(Fig,'type','axestoolbar');
                         set(sld,'vis','off')
                         set(psh,'vis','off')
+                        set(axtb,'vis','off')
                         switch cmd
                             case 'clipbitmap'
                                 I.PrtID='Bitmap to clipboard';
@@ -4572,11 +4574,14 @@ switch cmd
                                     elseif ~isequal(Fig,FigNew)
                                         set(sld,'vis','on')
                                         set(psh,'vis','on')
+                                        set(axtb,'vis','on')
                                         Fig=FigNew;
                                         sld=findobj(Fig,'tag','animslid');
                                         psh=findobj(Fig,'tag','animpush');
+                                        axtb = findall(Fig,'type','axestoolbar');
                                         set(sld,'vis','off')
                                         set(psh,'vis','off')
+                                        set(axtb,'vis','off')
                                     end
                                     I=rmfield(I,'SelectFrom');
                                     args={I};
@@ -4587,6 +4592,7 @@ switch cmd
                                 if isequal(I.PrtID,0) || ~ischar(filename)
                                     set(sld,'vis','on')
                                     set(psh,'vis','on')
+                                    set(axtb,'vis','on')
                                     return
                                 end
                                 qp_settings('print_ID',I.PrtID);
@@ -4599,6 +4605,7 @@ switch cmd
                         end
                         set(sld,'vis','on')
                         set(psh,'vis','on')
+                        set(axtb,'vis','on')
                     end
             end
             if logfile
