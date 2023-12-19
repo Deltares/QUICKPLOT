@@ -425,7 +425,7 @@ for ivar = 1:nvars
             end
             %
             nc.Dataset(ivar).Info.DT      = dt;
-            if ~isempty(unit2) && isempty(refdate)
+            if ~isempty(unit) && isempty(refdate)
                 nc.Dataset(ivar).Info.RefDate = unit;
             else
                 nc.Dataset(ivar).Info.RefDate = refdate;

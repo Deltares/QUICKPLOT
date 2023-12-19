@@ -313,6 +313,7 @@ if FI.NumDomains>1
                 zLoc = valLoc;
             end
             Data = mergePartData(Data, partData, FI, zLoc,{'Z'}, hasTimeDim, tDim);
+            Data.ZLocation = zLoc;
         end
         
         % data values 
@@ -2514,6 +2515,8 @@ else
 end
 if ~isstruct(tinfo) % likely even empty
     % continue with T = T;
+elseif ~isfield(tinfo,'RefDate') || isempty(tinfo.RefDate)
+    T = tinfo.DT * T;
 elseif ischar(tinfo.RefDate)
     switch tinfo.RefDate
         case 'day as %Y%m%d.%f'
@@ -2527,10 +2530,8 @@ elseif ischar(tinfo.RefDate)
         otherwise
             T = tinfo.DT * T;
     end
-elseif ~isempty(tinfo.RefDate)
-    T = tinfo.RefDate + tinfo.DT * T;
 else
-    T = tinfo.DT * T;
+    T = tinfo.RefDate + tinfo.DT * T;
 end
 % -----------------------------------------------------------------------------
 
@@ -2956,7 +2957,6 @@ if nNodes > 0
         % start by setting the first node to zero
         Mask = isnan(Psi);
         i = find(Mask,1,'first');
-        fprintf('Starting from %i ...\n',i);
         Psi(i) = 0;
         
         % loop while something changes
