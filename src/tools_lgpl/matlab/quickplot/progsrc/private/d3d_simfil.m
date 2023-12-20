@@ -932,7 +932,15 @@ switch FI.FileType
                             Out(nFLD).Geom  = 'UGRID1D_NETWORK-EDGE';
                             Out(nFLD).UseGrid = modelGrid;
                         case 'observations'
-                            Out(nFLD).Name = [Out(nFLD).Name ' at observation point'];
+                            if isempty(strfind(lower(Out(nFLD).Name),'observ'))
+                                % introduced to separater "water level" at
+                                % observation points from "water level" at
+                                % grid points, but also encountered
+                                % Observedwaterlevel (yes, ugly one word)
+                                % but that doesn't need the addition at
+                                % observation point.
+                                Out(nFLD).Name = [Out(nFLD).Name ' at observation point'];
+                            end
                             Out(nFLD).Geom  = 'PNT';
                             Out(nFLD).DimFlag(M_) = 0;
                             Out(nFLD).DimFlag(ST_) = 3;
