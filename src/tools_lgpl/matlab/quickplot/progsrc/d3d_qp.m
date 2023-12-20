@@ -4523,7 +4523,12 @@ switch cmd
                     else
                         sld=findobj(Fig,'tag','animslid');
                         psh=findobj(Fig,'tag','animpush');
-                        axtb = findall(Fig,'type','axestoolbar');
+                        ax=findall(Fig,'type','axes');
+                        try
+                            axtb = [ax.Toolbar];
+                        catch
+                            axtb = [];
+                        end
                         set(sld,'vis','off')
                         set(psh,'vis','off')
                         set(axtb,'vis','off')
@@ -4578,7 +4583,12 @@ switch cmd
                                         Fig=FigNew;
                                         sld=findobj(Fig,'tag','animslid');
                                         psh=findobj(Fig,'tag','animpush');
-                                        axtb = findall(Fig,'type','axestoolbar');
+                                        ax=findall(Fig,'type','axes');
+                                        try
+                                            axtb = [ax.Toolbar];
+                                        catch
+                                            axtb = [];
+                                        end
                                         set(sld,'vis','off')
                                         set(psh,'vis','off')
                                         set(axtb,'vis','off')
