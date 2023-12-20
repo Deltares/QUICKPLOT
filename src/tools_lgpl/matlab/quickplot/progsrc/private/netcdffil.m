@@ -1792,7 +1792,7 @@ else
             if ~isnan(Info.TSMNK(i))
                 if i==T_ 
                     if ~isempty(Info.Time)
-                        if isfield(FI.Dataset(Info.Time).Info,'RefDate') && ~isempty(FI.Dataset(Info.Time).Info.RefDate)
+                        if isfield(FI.Dataset(Info.Time).Info,'RefDate') && isnumeric(FI.Dataset(Info.Time).Info.RefDate)
                             Insert.DimFlag(i)=1;
                         elseif isfield(FI.Dataset(Info.Time).Info,'DT') && ~isempty(FI.Dataset(Info.Time).Info.DT)
                             Insert.DimFlag(i)=3;

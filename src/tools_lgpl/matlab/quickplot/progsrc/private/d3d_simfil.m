@@ -752,7 +752,9 @@ switch FI.FileType
                         continue
                 end
                 n_netcdf_vars = length(FI.output.(netcdf_files{i}).Dataset);
-                netcdf_fields(i) = max(0, n_netcdf_vars - n_netcdf_geovars(i)) + 1;
+                if FI.output.(netcdf_files{i}).Dimension(1).Length > 0
+                    netcdf_fields(i) = max(0, n_netcdf_vars - n_netcdf_geovars(i)) + 1;
+                end
             end
         else
             netcdf_fields = [];
