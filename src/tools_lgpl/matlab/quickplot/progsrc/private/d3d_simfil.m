@@ -1646,7 +1646,6 @@ if ~isfield(FI,'gpXY')
         FI.gpId(iM)   = multiline(gpI{i},';','cell');
         FI.gpConnect(iE,:) = [iM(1:end-1); iM(2:end)]';
     end
-    FI.gpXY = FI.gpXY + 0.01;
 end
 % -----------------------------------------------------------------------------
 
