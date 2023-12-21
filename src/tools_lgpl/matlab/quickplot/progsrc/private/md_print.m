@@ -470,7 +470,10 @@ switch printObj.Name
         %
         % do the actual print
         %
+        warnStruct = warning;
+        warning('off', 'MATLAB:print:ExcludesUIInFutureRelease')
         print(figname, FigHandle, printObj.dvr, printObj.PrtMth{:}, append{:});
+        warning(warnStruct)
         %
         % reset the paper position
         %

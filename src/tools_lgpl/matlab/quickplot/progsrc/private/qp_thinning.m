@@ -39,7 +39,13 @@ function [data,s] = qp_thinning(data,Ops)
 %   $HeadURL$
 %   $Id$
 
-multi_time = isfield(data,'Time') && length(data(1).Time)>1;
+if isfield(data,'Time')
+    ntim = length(data(1).Time);
+else
+    ntim = 1;
+end
+multi_time = ntim>1;
+%
 s = [];
 if ~isfield(Ops,'thinningmode')
     return
@@ -94,7 +100,6 @@ if isfield(data,'XYZ')
         end
     end
     data = rmfield(data,'XYZ');
-    slice2DV = false;
 end
 %
 if strcmpi(Ops.thinningmode,'none') || strcmpi(Ops.thinningmode,'dynamic')
@@ -107,6 +112,20 @@ elseif ~multi_time && xor(size(data.X,1)>1,size(data.X,2)>1) && size(data.X,3)>1
     slice2DV = true;
 else
     slice2DV = false;
+end
+
+if multi_time
+    if isfield(data,'Val')
+        szVal = size(data(1).Val);
+    else
+        szVal = [];
+    end
+    if isfield(data,'XComp')
+        szVal = size(data(1).XComp);
+    end
+    if ~isequal(szVal,size(data(1).X))
+        error('Thinning not yet implemented for X and Val of different size.')
+    end
 end
 
 switch lower(Ops.thinningmode)
@@ -136,19 +155,18 @@ switch lower(Ops.thinningmode)
                 end
             end
         end
+        
     case 'distance'
         npnt = zeros(1,length(data));
         if multi_time
-            sela = {':',':'};
-            sel1 = {1,':'};
-            ntim = size(data(d).X,1);
+            select_all = {':',':'};
+            select_one = {1,':'};
             for d = 1:length(data)
-                npnt(d) = numel(data(d).X)/size(data(d).X,1);
+                npnt(d) = numel(data(d).X)/ntim;
             end
         else
-            sela = {':'};
-            sel1 = {':'};
-            ntim = 1;
+            select_all = {':'};
+            select_one = {':'};
             for d = 1:length(data)
                 npnt(d) = numel(data(d).X);
             end
@@ -163,9 +181,9 @@ switch lower(Ops.thinningmode)
             %
             tnpnt = 0;
             for d = 1:length(data)
-                x(tnpnt+(1:npnt(d))) = data(d).X(sel1{:});
-                y(tnpnt+(1:npnt(d))) = data(d).Y(sel1{:});
-                z(tnpnt+(1:npnt(d))) = data(d).Z(sel1{:});
+                x(tnpnt+(1:npnt(d))) = data(d).X(select_one{:});
+                y(tnpnt+(1:npnt(d))) = data(d).Y(select_one{:});
+                z(tnpnt+(1:npnt(d))) = data(d).Z(select_one{:});
                 tnpnt = tnpnt+npnt(d);
             end
             %
@@ -177,8 +195,8 @@ switch lower(Ops.thinningmode)
             %
             tnpnt = 0;
             for d = 1:length(data)
-                x(tnpnt+(1:npnt(d))) = data(d).X(sel1{:});
-                y(tnpnt+(1:npnt(d))) = data(d).Y(sel1{:});
+                x(tnpnt+(1:npnt(d))) = data(d).X(select_one{:});
+                y(tnpnt+(1:npnt(d))) = data(d).Y(select_one{:});
                 tnpnt = tnpnt+npnt(d);
             end
             %
@@ -190,8 +208,8 @@ switch lower(Ops.thinningmode)
             %
             tnpnt = 0;
             for d = 1:length(data)
-                x(tnpnt+(1:npnt(d))) = data(d).X(sel1{:});
-                z(tnpnt+(1:npnt(d))) = data(d).Z(sel1{:});
+                x(tnpnt+(1:npnt(d))) = data(d).X(select_one{:});
+                z(tnpnt+(1:npnt(d))) = data(d).Z(select_one{:});
                 tnpnt = tnpnt+npnt(d);
             end
             %
@@ -201,7 +219,7 @@ switch lower(Ops.thinningmode)
         else
             tnpnt = 0;
             for d = 1:length(data)
-                x(tnpnt+(1:npnt(d))) = data(d).X(sel1{:});
+                x(tnpnt+(1:npnt(d))) = data(d).X(select_one{:});
                 tnpnt = tnpnt+npnt(d);
             end
             %
@@ -229,7 +247,7 @@ switch lower(Ops.thinningmode)
                 tmpf = tmpa;
                 tnpnt = 0;
                 for d = 1:length(data)
-                    tmpf(:,tnpnt+(1:npnt(d))) = data(d).(f)(sela{:});
+                    tmpf(:,tnpnt+(1:npnt(d))) = data(d).(f)(select_all{:});
                     tnpnt = tnpnt+npnt(d);
                     data(d).(f) = [];
                 end

@@ -352,8 +352,15 @@ if isfield(Ops,'plotcoordinate')
                         % here we should actually identify the point at
                         % which we go from one face to the next. Such that
                         % we get N data and N+1 coordinates.
-                        data.X = mean(data.X(data.FaceNodeConnect),2);
-                        data.Y = mean(data.Y(data.FaceNodeConnect),2);
+                        X = data.X;
+                        Y = data.Y;
+                        X(end+1) = 0;
+                        Y(end+1) = 0;
+                        FNC = data.FaceNodeConnect;
+                        nNodes = sum(~isnan(FNC),2);
+                        FNC(isnan(FNC)) = length(X);
+                        data.X = sum(X(FNC),2)./nNodes;
+                        data.Y = sum(Y(FNC),2)./nNodes;
                     case 'EDGE'
                         iNode = stitch_edges(data.EdgeNodeConnect);
                         nodeMask = iNode==0;
@@ -442,6 +449,35 @@ if isfield(Ops,'plotcoordinate')
     data.Geom = 'sSEG';
 end
 
+if length(data) == 1 && ...
+        (strcmp(Ops.axestype,'Time-Z') || ...
+        strcmp(Ops.axestype,'Val-Z'))
+    if isfield(data,'ValLocation')
+        switch data.ValLocation
+            case 'FACE'
+                FNC = data.FaceNodeConnect;
+                missing = isnan(FNC);
+                nNodes = size(missing,2)-sum(missing,2);
+                FNC(missing) = 1;
+                data.X = reshape(data.X(FNC),size(FNC));
+                data.X(missing) = 0;
+                data.X = sum(data.X,2)./nNodes;
+                if isfield(data,'Y')
+                    data.Y = reshape(data.Y(FNC),size(FNC));
+                    data.Y(missing) = 0;
+                    data.Y = sum(data.Y,2)./nNodes;
+                end
+        end
+        data.Geom = 'sSEG';
+        for c = {'FaceNodeConnect','EdgeNodeConnect','ValLocation','ZLocation','SEG','XY','XYZ','TRI','EdgeGeometry'}
+            s = c{1};
+            if isfield(data,s)
+                data = rmfield(data,s);
+            end
+        end
+    end
+end
+
 if strcmp(Ops.presentationtype,'vector') || ...
         strcmp(Ops.presentationtype,'markers') || ...
         strcmp(Ops.presentationtype,'values') || ...
@@ -487,7 +523,7 @@ if strcmp(Ops.presentationtype,'vector') || ...
         end
         switch LOC
             case 'EDGE'
-                if isfield(data,'Geom') && strcmp(data(i).Geom,'sQUAD')
+                if isfield(data,'Geom') && (strcmp(data(i).Geom,'sQUAD') || strcmp(data(i).Geom,'sSEG'))
                     data(i).EdgeNodeConnect = [1:length(data(i).X)-1;2:length(data(i).X)]';
                 end
                 if isfield(data,'EdgeGeometry') && ~isempty(data(i).EdgeGeometry)
@@ -501,6 +537,9 @@ if strcmp(Ops.presentationtype,'vector') || ...
                     data(i).X = mean(shaped_subsref(data(i).X,data(i).EdgeNodeConnect),2);
                     if isfield(data,'Y')
                         data(i).Y = mean(shaped_subsref(data(i).Y,data(i).EdgeNodeConnect),2);
+                    end
+                    if isfield(data,'Z')
+                        data(i).Z = (data(i).Z(:,1:end-1) + data(i).Z(:,2:end))/2;
                     end
                 end
             case 'FACE'
@@ -824,14 +863,23 @@ if Props.NVal==6
         Ops.Thresholds = 1:length(data(1).Classes);
     end
 elseif isfield(Ops,'thresholds') && ~strcmp(Ops.thresholds,'none')
-    miv = inf;
-    mv  = -inf;
-    for d = 1:length(data)
-        miv = min(miv,min(data(d).Val(:)));
-        mv  = max(mv ,max(data(d).Val(:)));
+    if isfield(Ops,'colourlimits') && isequal(size(Ops.colourlimits),[1 2])
+        minmax = Ops.colourlimits;
+    else
+        miv = inf;
+        mv  = -inf;
+        for d = 1:length(data)
+            miv = min(miv,min(data(d).Val(:)));
+            mv  = max(mv ,max(data(d).Val(:)));
+        end
+        if isfield(Ops,'symmetriccolourlimits') && Ops.symmetriccolourlimits
+            miv = min(miv,-mv);
+            mv = max(mv,-miv);
+        end
+        minmax = [miv mv];
     end
-    Ops.Thresholds = compthresholds(Ops,[miv mv],LocStartClass);
-    if miv<Ops.Thresholds(1) && ~LocLabelClass
+    Ops.Thresholds = compthresholds(Ops,minmax,LocStartClass);
+    if minmax(1)<Ops.Thresholds(1) && ~LocLabelClass
         Ops.Thresholds = [-inf Ops.Thresholds];
     end
 else

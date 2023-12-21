@@ -396,6 +396,70 @@ switch cmd
         end
         d3d_qp selectfile*
         
+    case 'analytical'
+        if ~isempty(cmdargs)
+            FI.Type = cmdargs{1};
+            FI.Name = cmdargs{2};
+            FI.Args = struct(cmdargs(3:end));
+        else
+            defaults = [];
+            [DomainNr,Props,subf] = qpfield;
+            if ~isempty(Props)
+                if Props.DimFlag(T_)
+                    try
+                        cFI = qpfile;
+                        sz = qpread(cFI,DomainNr,Props,'size');
+                        if sz(T_) > 0
+                            times = qpread(cFI,DomainNr,Props,'times',1:2);
+                            refDate = times(1);
+                            dtSec = (times(2)-times(1))*86400;
+                            defaults.refDate = datestr(refDate,0);
+                            defaults.dt = dtSec;
+                            defaults.dtUnit = 'seconds';
+                            defaults.nTimeSteps = sz(T_);
+                        end
+                    catch
+                    end
+                end
+            end
+            FI = analytical_solution(defaults);
+        end
+        if ~isempty(FI)
+            FileName = FI.Name;
+            
+            NewRecord.QPF=1;
+            NewRecord.Name=FileName;
+            NewRecord.Data=FI;
+            NewRecord.FileType='analytical';
+            NewRecord.Options=0;
+            NewRecord.Otherargs={};
+            
+            Handle_SelectFile=findobj(mfig,'tag','selectfile');
+            File=get(Handle_SelectFile,'userdata');
+            Str=get(Handle_SelectFile,'string');
+            
+            if isempty(File)
+                Str={abbrevfn(FileName,60)};
+                NrInList=1;
+                File=NewRecord;
+            else
+                FileNameList={File.Name};
+                NrInList=find(strcmp(FileName,FileNameList));
+                if isempty(NrInList)
+                    NrInList=length(File)+1;
+                end
+                Str{NrInList}=abbrevfn(FileName,60);
+                File(NrInList)=NewRecord;
+            end
+            set(Handle_SelectFile,'userdata',File,'string',Str,'value',NrInList,'enable','on','backgroundcolor',Active);
+            d3d_qp selectfile*
+            %
+            if logfile
+                parameters = [fieldnames(FI.Args) struct2cell(FI.Args)]';
+                writelog(logfile,logtype,cmd,FI.Type,FI.Name,parameters{:});
+            end
+        end
+        
     case {'difffiles','diff_files','diff_files_one_domain'}
         pos = get(mfig,'position');
         pos(4) = 310;
@@ -4459,8 +4523,15 @@ switch cmd
                     else
                         sld=findobj(Fig,'tag','animslid');
                         psh=findobj(Fig,'tag','animpush');
+                        ax=findall(Fig,'type','axes');
+                        try
+                            axtb = [ax.Toolbar];
+                        catch
+                            axtb = [];
+                        end
                         set(sld,'vis','off')
                         set(psh,'vis','off')
+                        set(axtb,'vis','off')
                         switch cmd
                             case 'clipbitmap'
                                 I.PrtID='Bitmap to clipboard';
@@ -4508,11 +4579,19 @@ switch cmd
                                     elseif ~isequal(Fig,FigNew)
                                         set(sld,'vis','on')
                                         set(psh,'vis','on')
+                                        set(axtb,'vis','on')
                                         Fig=FigNew;
                                         sld=findobj(Fig,'tag','animslid');
                                         psh=findobj(Fig,'tag','animpush');
+                                        ax=findall(Fig,'type','axes');
+                                        try
+                                            axtb = [ax.Toolbar];
+                                        catch
+                                            axtb = [];
+                                        end
                                         set(sld,'vis','off')
                                         set(psh,'vis','off')
+                                        set(axtb,'vis','off')
                                     end
                                     I=rmfield(I,'SelectFrom');
                                     args={I};
@@ -4523,6 +4602,7 @@ switch cmd
                                 if isequal(I.PrtID,0) || ~ischar(filename)
                                     set(sld,'vis','on')
                                     set(psh,'vis','on')
+                                    set(axtb,'vis','on')
                                     return
                                 end
                                 qp_settings('print_ID',I.PrtID);
@@ -4535,6 +4615,7 @@ switch cmd
                         end
                         set(sld,'vis','on')
                         set(psh,'vis','on')
+                        set(axtb,'vis','on')
                     end
             end
             if logfile
