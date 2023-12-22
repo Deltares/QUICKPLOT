@@ -354,8 +354,8 @@ if isfield(Ops,'plotcoordinate')
                         % we get N data and N+1 coordinates.
                         X = data.X;
                         Y = data.Y;
-                        X(end+1) = 0;
-                        Y(end+1) = 0;
+                        X(end+1,:) = 0;
+                        Y(end+1,:) = 0;
                         FNC = data.FaceNodeConnect;
                         nNodes = sum(~isnan(FNC),2);
                         FNC(isnan(FNC)) = length(X);
