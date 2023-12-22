@@ -1000,14 +1000,20 @@ if XYRead || XYneeded || ZRead
         if is_dflowfm
             if strend(CoordInfo.Name,'_zcc')
                 iName  = strrep(CoordInfo.Name,'_zcc','_zw');
-                iDimid = ustrcmpi(iName,{FI.Dataset.Name});
+                iDimid = strcmp(iName,{FI.Dataset.Name});
+                if none(iDimid)
+                    error('Unable to locate "%s" for the verical location of the cell interfaces.',iName)
+                end
                 CoordInfo = FI.Dataset(iDimid);
                 idx{K_} = unique([idx{K_} idx{K_}+1]);
                 Props.DimName{K_} = CoordInfo.Dimension{3};
                 vCoordExtended = true;
             elseif strend(CoordInfo.Name,'_layer_z') || strend(CoordInfo.Name,'_layer_sigma') || strend(CoordInfo.Name,'_layer_sigma_z')
                 iName  = strrep(CoordInfo.Name,'_layer_','_interface_');
-                iDimid = ustrcmpi(iName,{FI.Dataset.Name});
+                iDimid = strcmp(iName,{FI.Dataset.Name});
+                if none(iDimid)
+                    error('Unable to locate "%s" for the verical location of the cell interfaces.',iName)
+                end
                 CoordInfo = FI.Dataset(iDimid);
                 idx{K_} = unique([idx{K_} idx{K_}+1]);
                 Props.DimName{K_} = CoordInfo.Dimension{1};
