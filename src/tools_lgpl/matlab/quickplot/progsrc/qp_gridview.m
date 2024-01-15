@@ -205,16 +205,17 @@ switch cmd
         % line segment
         G=findobj(gcbf,'tag','GRID');
         GRID=get(G,'userdata');
-        if length(GRID.Selected.Range)==2
-            ij0=GRID.Selected.Range;
-        else
-            ij0=GRID.Selected.Range([1 3]);
-        end
-        i0=ij0(1);
-        j0=ij0(2);
         %
         switch GRID.Type
             case 'sgrid'
+                if length(GRID.Selected.Range)>2
+                    ij0=GRID.Selected.Range([1 3]);
+                else
+                    ij0=GRID.Selected.Range;
+                end
+                i0=ij0(1);
+                j0=ij0(2);
+                %
                 [i,j]=trackpnt(gcbf);
                 midist=abs(i-i0);
                 mjdist=abs(j-j0);
