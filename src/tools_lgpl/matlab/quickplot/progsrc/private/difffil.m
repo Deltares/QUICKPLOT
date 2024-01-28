@@ -189,7 +189,8 @@ if ~isempty(JRI)
     if isequal(args{i},0)
         args{i} = JRI;
     else
-        args{i} = JRI(args{i});
+        valid = args{i}<=numel(JRI);
+        args{i} = JRI(args{i}(valid));
     end
 end
 
