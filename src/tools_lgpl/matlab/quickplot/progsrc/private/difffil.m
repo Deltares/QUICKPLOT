@@ -113,119 +113,41 @@ else
     domain2 = FI.DiffDomain(2);
 end
 
-checkgrids = strcmp(FI.DiffType,'renum');
-JRI = [];
-if Props.NVal>0 && checkgrids
-    if isempty(Props.SubFld)
-        [success,Grid1,FI.Files(1)] = qp_getdata(FI.Files(1),domain1,Props.Q1,'grid');
-        [success,Grid2,FI.Files(2)] = qp_getdata(FI.Files(2),domain2,Props.Q2,'grid');
-    else % subfld index is the first index of varargin, so pass that one ...
-        [success,Grid1,FI.Files(1)] = qp_getdata(FI.Files(1),domain1,Props.Q1,'grid',varargin{1});
-        [success,Grid2,FI.Files(2)] = qp_getdata(FI.Files(2),domain2,Props.Q2,'grid',varargin{1});
-    end
+check_renumbering = strcmp(FI.DiffType,'renum');
+check_shared_locs = strcmp(FI.DiffType,'shared');
+check_grids = check_renumbering || check_shared_locs;
+JRI1 = [];
+JRI2 = [];
+if isempty(Props.SubFld)
+    subf = {};
+    nSubf = 0;
+else % subfld index is the first index of varargin, so pass that one ...
+    subf = varargin{1};
+    nSubf = 1;
+end
+if Props.NVal>0 && check_grids
+    [~,Grid1,FI.Files(1)] = qp_getdata(FI.Files(1),domain1,Props.Q1,'grid',subf{:});
+    [~,Grid2,FI.Files(2)] = qp_getdata(FI.Files(2),domain2,Props.Q2,'grid',subf{:});
     if isfield(Grid1,'ValLocation')
-        X1 = Grid1.X;
-        Y1 = Grid1.Y;
-        %
-        X2 = Grid2.X;
-        Y2 = Grid2.Y;
-        %
-        [~,I1] = sort(Y1);
-        [~,I2] = sort(X1(I1));
-        I = I1(I2);
-        %
-        [~,J1] = sort(Y2);
-        [~,J2] = sort(X2(J1));
-        J = J1(J2);
-        %
-        if ~isequal(X1(I),X2(J)) || ~isequal(Y1(I),Y2(J))
-            error('The node coordinates of the two meshes are not equal.')
+        if check_renumbering
+            JRI2 = determine_renum(Grid1, Grid2);
+        elseif check_shared_locs
+            [JRI1, JRI2] = determine_shared(Grid1, Grid2);
         end
-        %
-        switch Grid1.ValLocation
-            case 'NODE'
-                [~,RI] = sort(I);
-                JRI = J(RI);
-            case 'EDGE'
-                [~,RI]=sort(I);
-                [~,RJ]=sort(J);
-                %
-                ENC1 = RI(Grid1.EdgeNodeConnect);
-                [ENC1,eI] = sortrows(ENC1);
-                %
-                ENC2 = RJ(Grid2.EdgeNodeConnect);
-                [ENC2,eJ] = sortrows(ENC2);
-                %
-                if ~isequal(ENC1,ENC2)
-                    dENC = ~all(ENC1==ENC2,2);
-                    ei = eI(dENC);
-                    ej = eJ(dENC);
-                    error('The edge-node connectivity of the two meshes are not equal.\nCheck edge %i of mesh 1, and face %i of mesh 2.',ei(1),ej(1))
-                end
-                %
-                [~,eRI] = sort(eI);
-                JRI = eJ(eRI);
-            case 'FACE'
-                [~,RI] = sort(I);
-                [~,RJ] = sort(J);
-                %
-                FNC1 = Grid1.FaceNodeConnect;
-                Mask = isnan(FNC1);
-                FNC1(Mask) = 1;
-                FNC1 = RI(FNC1);
-                FNC1(Mask) = 0;
-                [FNC1,fI] = sortrows(FNC1);
-                %
-                FNC2 = Grid2.FaceNodeConnect;
-                Mask = isnan(FNC2);
-                FNC2(Mask) = 1;
-                FNC2 = RJ(FNC2);
-                FNC2(Mask) = 0;
-                [FNC2,fJ] = sortrows(FNC2);
-                %
-                if ~isequal(FNC1,FNC2)
-                    nPnt = min(size(FNC1,2),size(FNC2,2));
-                    if isequal(FNC1(:,1:nPnt),FNC2(:,1:nPnt)) && ...
-                            all(all(FNC1(:,nPnt+1:end)==0)) && ...
-                            all(all(FNC2(:,nPnt+1:end)==0))
-                        % still okay
-                    else
-                        nPnt = max(size(FNC1,2),size(FNC2,2));
-                        if nPnt > size(FNC1,2)
-                            FNC1(:,end+1:nPnt) = 0;
-                        else
-                            FNC2(:,end+1:nPnt) = 0;
-                        end
-                        dFNC = ~all(FNC1==FNC2,2);
-                        fi = fI(dFNC);
-                        fj = fJ(dFNC);
-                        error('The face-node connectivity of the two meshes are not equal.\nCheck face %i of mesh 1, and face %i of mesh 2.',fi(1),fj(1))
-                    end
-                end
-                %
-                [~,fRI] = sort(fI);
-                JRI = fJ(fRI);
-        end
-
     end
 end
 
-[success,Ans,FI.Files(1)] = qp_getdata(FI.Files(1),domain1,Props.Q1,cmd,varargin{:});
+% determine M index in varargin/args array ...
+iM = nSubf + sum(Props.DimFlag(1:M_)~=0);
+args = apply_renum(varargin, JRI1, iM);
+[success,Ans,FI.Files(1)] = qp_getdata(FI.Files(1),domain1,Props.Q1,cmd,args{:});
 if ~success
     error(lasterr)
 end
 
 if Props.NVal>0
     cmd = strrep(cmd,'grid','');
-    args = varargin;
-    if checkgrids && ~isempty(JRI)
-        i = sum(Props.DimFlag(1:M_)~=0);
-        if isequal(args{i},0)
-            args{i} = JRI;
-        else
-            args{i} = JRI(args{i});
-        end
-    end
+    args = apply_renum(varargin, JRI2, iM);
     [success,Data2,FI.Files(2)] = qp_getdata(FI.Files(2),domain2,Props.Q2,cmd,args{:});
     if ~success
         error(lasterr)
@@ -260,6 +182,146 @@ end
 
 varargout={Ans FI};
 % -----------------------------------------------------------------------------
+
+
+function args = apply_renum(args, JRI, i)
+if ~isempty(JRI)
+    if isequal(args{i},0)
+        args{i} = JRI;
+    else
+        args{i} = JRI(args{i});
+    end
+end
+
+
+function JRI = determine_renum(Grid1, Grid2)
+X1 = Grid1.X;
+Y1 = Grid1.Y;
+%
+X2 = Grid2.X;
+Y2 = Grid2.Y;
+%
+[~,I1] = sort(Y1);
+[~,I2] = sort(X1(I1));
+I = I1(I2);
+%
+[~,J1] = sort(Y2);
+[~,J2] = sort(X2(J1));
+J = J1(J2);
+%
+if ~isequal(X1(I),X2(J)) || ~isequal(Y1(I),Y2(J))
+    error('The node coordinates of the two meshes are not equal.')
+end
+%
+switch Grid1.ValLocation
+    case 'NODE'
+        [~,RI] = sort(I);
+        JRI = J(RI);
+    case 'EDGE'
+        [~,RI]=sort(I);
+        [~,RJ]=sort(J);
+        %
+        ENC1 = RI(Grid1.EdgeNodeConnect);
+        [ENC1,eI] = sortrows(ENC1);
+        %
+        ENC2 = RJ(Grid2.EdgeNodeConnect);
+        [ENC2,eJ] = sortrows(ENC2);
+        %
+        if ~isequal(ENC1,ENC2)
+            dENC = ~all(ENC1==ENC2,2);
+            ei = eI(dENC);
+            ej = eJ(dENC);
+            error('The edge-node connectivity of the two meshes are not equal.\nCheck edge %i of mesh 1, and face %i of mesh 2.',ei(1),ej(1))
+        end
+        %
+        [~,eRI] = sort(eI);
+        JRI = eJ(eRI);
+    case 'FACE'
+        [~,RI] = sort(I);
+        [~,RJ] = sort(J);
+        %
+        FNC1 = Grid1.FaceNodeConnect;
+        Mask = isnan(FNC1);
+        FNC1(Mask) = 1;
+        FNC1 = RI(FNC1);
+        FNC1(Mask) = 0;
+        [FNC1,fI] = sortrows(FNC1);
+        %
+        FNC2 = Grid2.FaceNodeConnect;
+        Mask = isnan(FNC2);
+        FNC2(Mask) = 1;
+        FNC2 = RJ(FNC2);
+        FNC2(Mask) = 0;
+        [FNC2,fJ] = sortrows(FNC2);
+        %
+        if ~isequal(FNC1,FNC2)
+            nPnt = min(size(FNC1,2),size(FNC2,2));
+            if isequal(FNC1(:,1:nPnt),FNC2(:,1:nPnt)) && ...
+                    all(all(FNC1(:,nPnt+1:end)==0)) && ...
+                    all(all(FNC2(:,nPnt+1:end)==0))
+                % still okay
+            else
+                nPnt = max(size(FNC1,2),size(FNC2,2));
+                if nPnt > size(FNC1,2)
+                    FNC1(:,end+1:nPnt) = 0;
+                else
+                    FNC2(:,end+1:nPnt) = 0;
+                end
+                dFNC = ~all(FNC1==FNC2,2);
+                fi = fI(dFNC);
+                fj = fJ(dFNC);
+                error('The face-node connectivity of the two meshes are not equal.\nCheck face %i of mesh 1, and face %i of mesh 2.',fi(1),fj(1))
+            end
+        end
+        %
+        [~,fRI] = sort(fI);
+        JRI = fJ(fRI);
+end
+
+
+function [JRI1, JRI2] = determine_shared(Grid1, Grid2)
+XY1 = Grid1.X + 1i * Grid1.Y;
+XY2 = Grid2.X + 1i * Grid2.Y;
+[~, JRI1_node, JRI2_node] = intersect(XY1, XY2);
+%
+switch Grid1.ValLocation
+    case 'NODE'
+        JRI1 = JRI1_node;
+        JRI2 = JRI2_node;
+        
+    case 'EDGE'
+        reverse_JRI1 = NaN(size(XY1));
+        reverse_JRI1(JRI1_node) = 1:length(JRI1_node);
+        ENC1 = reverse_JRI1(Grid1.EdgeNodeConnect);
+        %
+        reverse_JRI2 = NaN(size(XY2));
+        reverse_JRI2(JRI2_node) = 1:length(JRI2_node);
+        ENC2 = reverse_JRI2(Grid2.EdgeNodeConnect);
+        %
+        [~,JRI1,JRI2] = intersect(ENC1,ENC2,'rows');
+        
+    case 'FACE'
+        reverse_JRI1 = NaN(size(XY1));
+        reverse_JRI1(JRI1_node) = 1:length(JRI1_node);
+        %
+        FNC1 = Grid1.FaceNodeConnect;
+        Mask = isnan(FNC1);
+        FNC1(Mask) = 1;
+        FNC1 = reverse_JRI1(FNC1);
+        FNC1(Mask) = 0;
+        %
+        reverse_JRI2 = NaN(size(XY2));
+        reverse_JRI2(JRI2_node) = 1:length(JRI2_node);
+        %
+        FNC2 = Grid2.FaceNodeConnect;
+        Mask = isnan(FNC2);
+        FNC2(Mask) = 1;
+        FNC2 = reverse_JRI2(FNC2);
+        FNC2(Mask) = 0;
+        %
+        [~,JRI1,JRI2] = intersect(FNC1,FNC2,'rows');
+
+end
 
 
 % -----------------------------------------------------------------------------
@@ -383,6 +445,10 @@ for i=1:length(Q1)
                 warnings{end+1} = sprintf('File 1 contains %i time steps, file 2 contains %i time steps. Diff supported for first %i time steps.',sz(T_),sz2(T_),szt);
                 sz(T_) = szt;
                 sz2(T_) = szt;
+            end
+            if strcmp(FI.DiffType,'shared')
+                sz = min(sz,sz2);
+                sz2 = sz;
             end
             if ~isequal(sz,sz2)
                 % allow for different number of stations in the future?
