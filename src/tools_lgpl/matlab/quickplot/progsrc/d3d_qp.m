@@ -756,7 +756,7 @@ switch cmd
             NewRecord.Data.DiffDomain = Domains;
             NewRecord.Data.DiffType = DiffType;
             NewRecord.FileType='diff';
-            NewRecord.Options=0;
+            NewRecord.Options=1;
             NewRecord.Otherargs={};
             %
             if isempty(File)

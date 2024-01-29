@@ -146,6 +146,9 @@ if ~success
 end
 
 if Props.NVal>0
+    FI = guarantee_options(FI);
+    diffval = qp_option(FI,'diffval');
+    
     cmd = strrep(cmd,'grid','');
     args = apply_renum(varargin, JRI2, iM);
     [success,Data2,FI.Files(2)] = qp_getdata(FI.Files(2),domain2,Props.Q2,cmd,args{:});
@@ -159,7 +162,15 @@ if Props.NVal>0
         if isfield(Data2,fld)
             v1 = Ans.(fld);
             v2 = Data2.(fld);
-            v1 = v1 - v2;
+            switch diffval
+                case 'val1-val2'
+                    v1 = v1 - v2;
+                case 'only-val1'
+                    v1(~isnan(v2)) = NaN;
+                case 'only-val2'
+                    v2(~isnan(v1)) = NaN;
+                    v1 = v2;
+            end
             Ans.(fld) = v1;
         end
     end
@@ -569,3 +580,77 @@ if ~success
     error(lasterr)
 end
 % -----------------------------------------------------------------------------
+
+
+% -------------------------------------------------------------------------
+function [NewFI,cmdargs]=options(FI,mfig,cmd,varargin)
+T_=1; ST_=2; M_=3; N_=4; K_=5;
+%======================== SPECIFIC CODE ===================================
+FI = guarantee_options(FI);
+NewFI=FI;
+cmd=lower(cmd);
+cmdargs={};
+switch cmd
+    case 'initialize'
+        optfig(mfig);
+        diffval_lst = findobj(mfig,'tag','diffval_lst');
+        diffval_ops = get(diffval_lst,'userdata');
+        i = ustrcmpi(qp_option(FI,'diffval'), diffval_ops);
+        if i<0
+            i = 1;
+        end
+        set(diffval_lst,'value',i)
+
+    case 'diffval'
+        diffval_lst = findobj(mfig,'tag','diffval_lst');
+        i = get(diffval_lst,'value');
+        diffval_ops = get(diffval_lst,'userdata');
+        NewFI = qp_option(NewFI,'diffval',diffval_ops{i});
+        
+    otherwise
+        error(['Unknown option command: ',cmd])
+end
+% -------------------------------------------------------------------------
+
+
+% -------------------------------------------------------------------------
+function FI = guarantee_options(FI)
+defopt = {'diffval' 'val1-val2'};
+for i = 1:size(defopt,1)
+    opt = defopt{i,1};
+    val = defopt{i,2};
+    if isequal(qp_option(FI,opt),[])
+        FI = qp_option(FI,opt,val);
+    end
+end
+% -------------------------------------------------------------------------
+
+
+% -------------------------------------------------------------------------
+function optfig(h0)
+Inactive=get(0,'defaultuicontrolbackground');
+Active=[1 1 1];
+FigPos=get(h0,'position');
+FigPos(3:4) = getappdata(h0,'DefaultFileOptionsSize');
+set(h0,'position',FigPos)
+
+voffset=FigPos(4)-30;
+uicontrol('Parent',h0, ...
+    'Style','text', ...
+    'BackgroundColor',Inactive, ...
+    'Horizontalalignment','left', ...
+    'Position',[11 voffset 160 18], ...
+    'String','Difference Value', ...
+    'Enable','on', ...
+    'Tag','diffval_txt');
+uicontrol('Parent',h0, ...
+    'Style','popupmenu', ...
+    'BackgroundColor',Active, ...
+    'Callback','d3d_qp fileoptions diffval', ...
+    'Position',[171 voffset 160 20], ...
+    'String',{'Value 1 - Value 2','Value 1 where no Value 2','Value 2 where no Value 1'}, ...
+    'Userdata',{'val1-val2','only-val1','only-val2'}, ...
+    'Value',1, ...
+    'Enable','on', ...
+    'Tag','diffval_lst');
+% -------------------------------------------------------------------------
