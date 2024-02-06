@@ -329,6 +329,54 @@ end
 function data = get_const(simOrg)
 data = [];
 switch simOrg.FileType
+    case 'samples'
+        if ~isequal(simOrg.Params,{'x','y','z','m','n','id'})
+            error('Only sample files supported with columns x,y,z,m,n,id.') 
+        end
+        filename = simOrg.FileName;
+        [p,f] = fileparts(filename);
+        quantity = sscanf(f,'xyz_%*[^-]-zeta.%i.Q%i');
+        if quantity(1)==1
+            type = 'reference';
+        else % 2
+            type = 'measure';
+        end
+        level = quantity(2);
+        data.ncfile = fullfile(p,sprintf('%s-Q%i_map.nc',type,level));
+        data.zb = zeros(size(simOrg.XYZ(:,3)));
+        data.zb_loc = 'face';
+        %
+        data.ntimes = 1;
+        %
+        szMN = max(simOrg.XYZ(:,[4 5]))+1;
+        face_active = accumarray(simOrg.XYZ(:,[4 5])+1,1,szMN) > 0;
+        %
+%         xface = accumarray(simOrg.XYZ(:,[4 5])+1,simOrg.XYZ(:,1),szMN);
+%         yface = accumarray(simOrg.XYZ(:,[4 5])+1,simOrg.XYZ(:,2),szMN);
+%         xface(~face_active) = NaN;
+%         yface(~face_active) = NaN;
+%         xnode = (xface + xface([2:end end],:) + xface(:,[2:end end]) + xface([2:end end],[2:end end]))/4;
+%         ynode = (yface + yface([2:end end],:) + yface(:,[2:end end]) + yface([2:end end],[2:end end]))/4;
+        [xnode,ynode] = ndgrid((1:szMN(1))-0.5, (1:szMN(2))-0.5);
+        %
+        node_active = face_active | face_active([2:end end],:) | face_active(:,[2:end end]) | face_active([2:end end],[2:end end]);
+        nodes = nan(szMN);
+        nodes(node_active) = 1:sum(node_active(:));
+        %
+        data.xnode = xnode(node_active);
+        data.ynode = ynode(node_active);
+        data.faces = face_node_connectivity(nodes);
+        data.face_active = face_active;
+        data.faces = reshape(data.faces, prod(szMN), 4);
+        data.faces = data.faces(data.face_active, :);
+        %
+        data.has_chezy = false;
+        %
+        data.tunits = 'seconds';
+        %
+        data.modelname = 'UNKNOWN';
+        data.prehistory = 'Converted from WAQMORF samples.';
+
     case 'SIMONA SDS FILE'
         filename = simOrg.FileName;
         data.ncfile = [filename, '_map.nc'];
@@ -347,7 +395,7 @@ switch simOrg.FileType
         data.zb = data.zb(node_active);
         nnodes = length(data.xnode);
         %
-        nodes = zeros(size(xd));
+        nodes = zeros(size(xd)); % shouldn't this be NaN ?
         nodes(node_active) = 1:nnodes;
         data.faces = face_node_connectivity(nodes);
         data.face_active = all(~isnan(data.faces), 3) & ~isnan(zw);
@@ -370,6 +418,7 @@ switch simOrg.FileType
             cprehistory{nmodifiers - i + 1} = [datestr(simOrg.WriteProg(i).Date, sim2ugrid_dateformat), ': ', simOrg.WriteProg(i).Name];
         end
         data.prehistory = [sprintf('%s-',cprehistory{1:end-1}) cprehistory{end}];
+
     case 'NEFIS'
         switch simOrg.SubType
             case 'Delft3D-trim'
@@ -456,6 +505,29 @@ faces = cat(3, ...
 function data = get_time_dependent(simOrg,it,face_active,has_chezy)
 zw = [];
 switch simOrg.FileType
+    case 'samples'
+        filename = simOrg.FileName;
+        [p,f,e] = fileparts(filename);
+        quantity = sscanf(f,'xyz_%[^-]');
+        quantity = char(quantity);
+        %
+        switch quantity
+            case 'velocity'
+                ucx = simOrg.XYZ(:,3);
+                f2 = strrep(f,'velocity','waterdepth');
+                sim2 = qpfopen(fullfile(p,[f2,e]));
+                h = sim2.XYZ(:,3);
+            case 'waterdepth'
+                h = simOrg.XYZ(:,3);
+                f2 = strrep(f,'waterdepth','velocity');
+                sim2 = qpfopen(fullfile(p,[f2,e]));
+                ucx = sim2.XYZ(:,3);
+        end
+        ucy = zeros(size(ucx));
+        zw = ucy;
+        czs = [];
+        t = 0;
+
     case 'SIMONA SDS FILE'
         [zw, t_abs] = waquaio(simOrg, '', 'wlvl', it);
         h = waquaio(simOrg, '', 'wdepth', it);
@@ -470,6 +542,7 @@ switch simOrg.FileType
         ucy = ucy(face_active);
         czs = czs(face_active);
         t = t_abs - refdate;
+
     case 'NEFIS'
         switch simOrg.SubType
             case 'Delft3D-trim'
