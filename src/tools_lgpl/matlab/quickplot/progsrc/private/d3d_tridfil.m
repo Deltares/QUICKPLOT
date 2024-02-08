@@ -91,7 +91,7 @@ switch cmd
         varargout={readsts(FI,Props,0)};
         return
     case 'subfields'
-        varargout={{}};
+        varargout={getsubfields(FI,Props,varargin{:})};
         return
     otherwise
         [XYRead,DataRead,DataInCell]=gridcelldata(cmd);
@@ -102,7 +102,17 @@ DimFlag=Props.DimFlag;
 % initialize and read indices ...
 idx={[] [] 0 0 0};
 fidx=find(DimFlag);
-idx(fidx(1:length(varargin)))=varargin;
+
+subf = getsubfields(FI,Props);
+if isempty(subf)
+    % initialize and read indices ...
+    idx(fidx(1:length(varargin))) = varargin;
+    isubf = [];
+else
+    % initialize and read indices ...
+    idx(fidx(1:(length(varargin)-1))) = varargin(2:end);
+    isubf = varargin{1};
+end
 
 % select appropriate timestep ...
 sz=getsize(FI,Props);
@@ -147,7 +157,7 @@ if XYRead
             z=reshape(x(:,3,:),szx);
             y=reshape(x(:,2,:),szx);
             x=reshape(x(:,1,:),szx);
-            x((x == plsmisval & y == plsmisval) | (x == negmisval & y == negmisval) | (x==0 & y==0))=NaN;
+            x((x == plsmisval & y == plsmisval) | (x == negmisval & y == negmisval) | (x == -999 & y == -999) | (x==0 & y==0))=NaN;
             y(isnan(x))=NaN;
             z(isnan(x))=NaN;
     end
@@ -155,14 +165,17 @@ if XYRead
 end
 
 % load data ...
-if DataRead
-    val1=[]; val2=[];
-    switch Props.Name
-        case {'drogue velocity'}
+val1=[];
+val2=[];
+if DataRead && Props.NVal>0
+    switch Props.Val2
+        case 'XYDRO'
             val1=x;
             val2=y;
             val1=gradient(val1);
             val2=gradient(val2);
+        otherwise
+            [val1,Chk]=vs_let(FI,Props.Group,{idx{T_}},Props.Val2,{isubf elidx{1}},'quiet');
     end
 else
     Props.NVal=0;
@@ -185,7 +198,7 @@ if DimFlag(ST_)
 end
 
 % reshape if a single timestep is selected ...
-if DimFlag(T_) & isequal(size(idx{T_}),[1 1])
+if DimFlag(T_) && isequal(size(idx{T_}),[1 1])
     sz=size(val1);
     sz=[sz(2:end) 1];
     switch Props.NVal
@@ -204,7 +217,7 @@ if XYRead
     Ans.XUnits='m';
     Ans.YUnits='m';
     Info=vs_disp(FI,Props.Group,Props.Val1);
-    if isfield(Info,'ElmUnits') & isequal(Info.ElmUnits,'[  DEG  ]')
+    if isfield(Info,'ElmUnits') && isequal(Info.ElmUnits,'[  DEG  ]')
         Ans.XUnits='deg';
         Ans.YUnits='deg';
     end
@@ -232,8 +245,9 @@ function Out=infile(FI,domain)
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'                   'Units'   'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc'  'Loc3D' 'Group'          'Val1'     'Val2'    'SubFld' 'MNK'};
 DataProps={'drogue track'              ''     'PNT'  'xy'    [1 6 0 0 0]  0         0     ''       'z'   'z'       ''      'dro-series'     'XYDRO'    ''         []       0
-    'particle track'            ''     'PNT'  'xyz'   [1 6 0 0 0]  0         0     ''       'z'   'z'       ''      'trk-series'     'XYZTRK'   ''         []       0};
-%          'drogue velocity'           ''     'PNT'  'xy'    [1 5 0 0 0]  0         2     ''       'z'   'z'       ''      'dro-series'     'XYDRO'    ''         []       0};
+    'particle track'                   ''     'PNT'  'xyz'   [1 6 0 0 0]  0         0     ''       'z'   'z'       ''      'trk-series'     'XYZTRK'   ''         []       0
+    'particle mass'                    ''     'PNT'  'xyz'   [1 6 0 0 0]  0         1     ''       'z'   'z'       ''      'trk-series'     'XYZTRK'   'WPART'    1        0};
+%    'drogue velocity'                  ''     'PNT'  'xy'    [1 5 0 0 0]  0         2     ''       'z'   'z'       ''      'dro-series'     'XYDRO'    'XYDRO'    []       0};
 Out=cell2struct(DataProps,PropNames,2);
 
 %======================== SPECIFIC CODE REMOVE ================================
@@ -242,6 +256,13 @@ for i=size(Out,1):-1:1
     if ~isstruct(Info)
         % remove references to non-stored data fields
         Out(i,:)=[];
+    end
+    if ~isempty(Out(i).Val2)
+        Info=vs_disp(FI,Out(i).Group,Out(i).Val2);
+        if ~isstruct(Info)
+            % remove references to non-stored data fields
+            Out(i,:)=[];
+        end
     end
 end
 % -----------------------------------------------------------------------------
@@ -311,3 +332,19 @@ if t~=0
 end
 S=cellstr(S);
 % -----------------------------------------------------------------------------
+
+function Subf = getsubfields(FI,Props,f)
+if isempty(Props.SubFld)
+    Subf={};
+else
+    Info = vs_disp(FI,'trk-series','WPART');
+    nSubs = Info.SizeDim(1);
+    if nargin<3 || f==0
+        f = 1:nSubs;
+    end
+    n = length(f);
+    Subf = cell(n,1);
+    for i = 1:n
+        Subf{i} = sprintf('Class %i',f(i));
+    end
+end

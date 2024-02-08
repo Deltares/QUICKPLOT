@@ -305,17 +305,15 @@ switch geometry
         elseif multiple(T_)
             if isequal(coordinates,'d')
                 axestype={'Time-Val','Distance-Val'};
-            elseif nval==0 
+            elseif ~isempty(coordinates)
                 switch coordinates
                     case 'xyz'
                         axestype={'X-Y','X-Z','X-Y-Z'};
                     otherwise
                         axestype={'X-Y'};
                 end
-            elseif isempty(coordinates)
-                axestype={'Time-Val'};
             else
-                axestype={'Time-Val','X-Y'};
+                axestype={'Time-Val'};
             end
         else
             if isequal(coordinates,'d')
@@ -924,7 +922,7 @@ elseif ((nval==1 || nval==6) && TimeSpatial==2) || ...
                             if strcmp(axestype,'Time-Z')
                                 PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
                             else
-                                PrsTps={'markers';'values'};
+                                PrsTps={'markers';'values';'tracks'};
                             end
                         case {'SEG','SEG-NODE','SEG-EDGE'}
                             switch dic
@@ -1093,6 +1091,8 @@ elseif ((nval==1 || nval==6) && TimeSpatial==2) || ...
                         thindams=1;
                         nval=0.9;
                 end
+            case 'tracks'
+                lineproperties=1;
             case 'vector'
                 vectors=1';
                 Ops.vectorcomponent='edge';
@@ -1105,9 +1105,11 @@ end
 %--------------------------------------------------------------------------
 
 if (isequal(geometry,'PNT') && multiple(T_) && ~isempty(coordinates)) || (isequal(geometry,'POLYL') && strcmp(coordinates,'xyz'))
-    coltrack=findobj(OH,'tag','colourtracks');
-    set(coltrack,'enable','on')
-    if get(coltrack,'value')
+    if nval == 0
+        coltrack=findobj(OH,'tag','colourtracks');
+        set(coltrack,'enable','on')
+    end
+    if nval > 0 || get(coltrack,'value')
         coltrkm=findobj(OH,'tag','trackcolour=?');
         ptrkCLR=get(coltrkm,'string');
         coltrki=get(coltrkm,'value');
@@ -1126,6 +1128,9 @@ if (isequal(geometry,'PNT') && multiple(T_) && ~isempty(coordinates)) || (isequa
         trkCLR = strcat(num2cell(crds_notplotted),' coordinate');
         if multiple(T_) && isempty(strfind('Time',axestype))
             trkCLR{end+1} = 'time';
+        end
+        if nval == 1
+            trkCLR{end+1} = 'value';
         end
         if ~isequal(trkCLR,ptrkCLR)
             % try to find an exact match when switching vector colouring strings
