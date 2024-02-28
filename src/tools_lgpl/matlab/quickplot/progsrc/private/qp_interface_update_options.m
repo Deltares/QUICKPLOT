@@ -297,7 +297,17 @@ switch geometry
             else
                 switch coordinates
                     case 'xyz'
-                        axestype={'X-Y','X-Z','X-Y-Z'};
+                        if nval == 0
+                            axestype={'X-Y','X-Z','X-Y-Z'};
+                        else
+                            axestype={'Time-Val','X-Y','X-Z','X-Y-Z'};
+                        end
+                    case 'xy'
+                        if nval == 0
+                            axestype={'X-Y'};
+                        else
+                            axestype={'Time-Val','X-Y'};
+                        end
                     otherwise
                         axestype={'X-Y'};
                 end
@@ -308,7 +318,17 @@ switch geometry
             elseif ~isempty(coordinates)
                 switch coordinates
                     case 'xyz'
-                        axestype={'X-Y','X-Z','X-Y-Z'};
+                        if nval == 0
+                            axestype={'X-Y','X-Z','X-Y-Z'};
+                        else
+                            axestype={'Time-Val','X-Y','X-Z','X-Y-Z'};
+                        end
+                    case 'xy'
+                        if nval == 0
+                            axestype={'X-Y'};
+                        else
+                            axestype={'Time-Val','X-Y'};
+                        end
                     otherwise
                         axestype={'X-Y'};
                 end
@@ -921,8 +941,10 @@ elseif ((nval==1 || nval==6) && TimeSpatial==2) || ...
                         case {'PNT','PNT+'}
                             if strcmp(axestype,'Time-Z')
                                 PrsTps={'continuous shades';'markers';'values';'contour lines';'coloured contour lines';'contour patches';'contour patches with lines'};
-                            else
+                            elseif multiple(T_)
                                 PrsTps={'markers';'values';'tracks'};
+                            else
+                                PrsTps={'markers';'values'};
                             end
                         case {'SEG','SEG-NODE','SEG-EDGE'}
                             switch dic
@@ -1104,10 +1126,12 @@ end
 
 %--------------------------------------------------------------------------
 
-if (isequal(geometry,'PNT') && multiple(T_) && ~isempty(coordinates)) || (isequal(geometry,'POLYL') && strcmp(coordinates,'xyz'))
+if ismember(axestype,{'X-Y','X-Z','X-Y-Z'}) && (isequal(geometry,'PNT') && multiple(T_) && ~isempty(coordinates)) || (isequal(geometry,'POLYL') && strcmp(coordinates,'xyz'))
+    coltrack=findobj(OH,'tag','colourtracks');
     if nval == 0
-        coltrack=findobj(OH,'tag','colourtracks');
-        set(coltrack,'enable','on')
+        set(coltrack,'enable','on','style','checkbox')
+    else
+        set(coltrack,'enable','on','style','text')
     end
     if nval > 0 || get(coltrack,'value')
         coltrkm=findobj(OH,'tag','trackcolour=?');
