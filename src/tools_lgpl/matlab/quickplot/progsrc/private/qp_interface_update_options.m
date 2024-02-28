@@ -232,6 +232,7 @@ forcemarkercolor=0;
 markerflatfill=0;
 edgeflatcolour=0;
 lineproperties=0;
+tracks=0;
 
 unstructured = 0;
 triangles = 1;
@@ -1115,6 +1116,7 @@ elseif ((nval==1 || nval==6) && TimeSpatial==2) || ...
                 end
             case 'tracks'
                 lineproperties=1;
+                tracks=1;
             case 'vector'
                 vectors=1';
                 Ops.vectorcomponent='edge';
@@ -1126,7 +1128,8 @@ end
 
 %--------------------------------------------------------------------------
 
-if ismember(axestype,{'X-Y','X-Z','X-Y-Z'}) && (isequal(geometry,'PNT') && multiple(T_) && ~isempty(coordinates)) || (isequal(geometry,'POLYL') && strcmp(coordinates,'xyz'))
+% if ismember(axestype,{'X-Y','X-Z','X-Y-Z'}) && (isequal(geometry,'PNT') && multiple(T_) && ~isempty(coordinates)) || (isequal(geometry,'POLYL') && strcmp(coordinates,'xyz'))
+if tracks
     coltrack=findobj(OH,'tag','colourtracks');
     if nval == 0
         set(coltrack,'enable','on','style','checkbox')
@@ -1154,7 +1157,7 @@ if ismember(axestype,{'X-Y','X-Z','X-Y-Z'}) && (isequal(geometry,'PNT') && multi
             trkCLR{end+1} = 'time';
         end
         if nval == 1
-            trkCLR{end+1} = 'value';
+            trkCLR = [{'value'};trkCLR];
         end
         if ~isequal(trkCLR,ptrkCLR)
             % try to find an exact match when switching vector colouring strings

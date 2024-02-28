@@ -262,6 +262,7 @@ for i=size(Out,1):-1:1
     if ~isstruct(Info)
         % remove references to non-stored data fields
         Out(i,:)=[];
+        continue
     end
     if ~isempty(Out(i).Val2)
         switch Out(i).Val2
