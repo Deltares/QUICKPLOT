@@ -228,6 +228,14 @@ while ~feof(fid)
                         cval{ncval} = A;
                         kyw=next-1;
                         kywval=NaN;
+                    otherwise
+                        if ll == 0 || length(values) == ll-1 % only for last item
+                            ncval = ncval+1;
+                            ijcval(ncval,:) = [nl+1 length(values)+1];
+                            cval{ncval} = strtrim(str);
+                            kyw=length(str);
+                            kywval=NaN;
+                        end
                 end
             end
             if kyw>0
