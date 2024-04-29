@@ -3370,8 +3370,13 @@ switch Props.varid{1}
         hold(Parent,'on')
         hNew1 = area(Parent, T, Fluxes(:,:,1));
         hNew2 = area(Parent, T, -Fluxes(:,:,2));
+        colours = jet(size(Fluxes,2));
+        for i = 1:size(Fluxes,2)
+            set(hNew1(i),'facecolor', colours(i,:))
+            set(hNew2(i),'facecolor', colours(i,:))
+        end
         hNew = [hNew1, hNew2];
-        legend(Props.varid{3})
+        legend(protectstring(Props.varid{3}))
         %
         setappdata(Parent,'AxesType','Time-<blocking>')
         setappdata(Parent,'BasicAxesType','Time-<blocking>')
