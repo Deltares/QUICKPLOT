@@ -3374,6 +3374,21 @@ if isfield(Attributes,'Name')
     end
 end
 
+function map = get_colors(n)
+n_hues = 6;
+n1 = ceil(n/n_hues);
+hsv = repmat([0:(n_hues-1)]'/n_hues,n1,1);
+n2 = ceil(sqrt(n1));
+offset = 0;
+for s = n2:-1:1
+    hsv(offset + (1:n_hues*n2),2) = s/n2;
+    for v = n2:-1:1
+        hsv(offset + (1:n_hues),3) = v/n2;
+        offset = offset + n_hues;
+    end
+end
+map = hsv2rgb(hsv(1:n,:));
+
 function hNew = plotthis(FI,Props,Parent,Ops,hOld,varargin)
 hNew = [];
 % balance plot
@@ -3388,7 +3403,7 @@ switch Props.varid{1}
         hold(Parent,'on')
         hNew1 = area(Parent, T, Fluxes(:,:,1));
         hNew2 = area(Parent, T, -Fluxes(:,:,2));
-        colours = jet(size(Fluxes,2));
+        colours = get_colors(size(Fluxes,2));
         for i = 1:size(Fluxes,2)
             set(hNew1(i),'facecolor', colours(i,:))
             set(hNew2(i),'facecolor', colours(i,:))
