@@ -240,7 +240,7 @@ if ~iscell(Format)
     end
     set(ax,[xx 'tick'],(1:NTh),[xx 'ticklabel'],tckL);
 else
-    set(ax,[xx 'ticklabel'],protectstring(Format),[xx 'tick'],(1:NTh))
+    set(ax,[xx 'ticklabel'],Format,[xx 'tick'],(1:NTh))
 end
 if LabelCol
     set(ax,[xx 'tick'],(1:NTh)+.5,'ticklength',[0 0])
