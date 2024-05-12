@@ -39,20 +39,8 @@ if ~isfield(Ops,'plotcoordinate')
     Ops.plotcoordinate = 'time';
     data.X = data.Time;
 end
-if ~isempty(strfind(Ops.basicaxestype,'Z')) && isfield(data,'Z')
-    if Param.multiple(K_)
-        hNew = plotslice(hNew,Parent,data,Ops,Props,Ops.Thresholds);
-    else
-        if isfield(data,'Val')
-            val = data.Val;
-        else
-            val = [];
-        end
-        hNew = qp_plot_line(hNew,Parent,data.X,[],data.Z,val,Ops);
-        if isempty(hNew)
-            return
-        end
-    end
+if ~isempty(strfind(Ops.basicaxestype,'Z')) && isfield(data,'Z') && Param.multiple(K_)
+    hNew = plotslice(hNew,Parent,data,Ops,Props,Ops.Thresholds);
     if FirstFrame
         set(Parent,'view',[0 90],'layer','top');
         %set(get(Parent,'ylabel'),'string','elevation (m) \rightarrow')
