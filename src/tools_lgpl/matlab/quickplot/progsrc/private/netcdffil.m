@@ -115,12 +115,12 @@ if nargin==2
                 else
                     iq1 = find_quantity(infileStruct2,iq2,infileStruct);
                     if iq1 > 0
-                        % new quantity found, merge with iq1
+                        % matching quantity found, merge with iq1
                         infileStruct(iq1).iPart = [infileStruct(iq1).iPart ipart];
                         infileStruct(iq1).Partitions{ipart} = infileStruct2(iq2).Partitions{ipart};
                         iq = iq1+1;
                     else
-                        % new quantity not found.
+                        % no matching quantity not found.
                         infileStruct = insert_quantity(infileStruct,iq,infileStruct2(iq2));
                         iq = iq+1;
                     end
@@ -2001,13 +2001,14 @@ else
                 streamfunc = true;
                 prefix = '';
             else
-                ireg = regexp(Insert.Name,'discharge through flow link');
+                ireg = regexp(Insert.Name,'discharge through flow link','once');
+                ireg2 = regexp(Insert.Name,'time of','once');
                 try
                     convFac = qp_unitconversion(Insert.Units,'m3 s-1');
                 catch
                     convFac = 'error';
                 end
-                if ~isempty(ireg) && isnumeric(convFac)
+                if ~isempty(ireg) && isempty(ireg2) && isnumeric(convFac)
                     streamfunc = true;
                     prefix = Insert.Name(1:ireg-1);
                 end
@@ -3088,6 +3089,7 @@ if isempty(iq2)
         end
     end
 elseif length(iq2) > 1
+    iq2
     iq2 = 0;
     fprintf('MULTIPLE matches found\n');
 else
