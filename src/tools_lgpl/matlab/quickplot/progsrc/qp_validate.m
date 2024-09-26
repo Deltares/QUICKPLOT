@@ -161,6 +161,13 @@ TotTime=0;
 fs=filesep;
 sdata=['..',fs,'data',fs];
 sref=['..',fs,'reference',fs];
+% some file are platform specific, use a prefix to separate them.
+if strcmp(computer,'PCWIN64')
+    % no prefix on Windows for backward compatibility
+    sref_platform_prefix='';
+else
+    sref_platform_prefix=[lower(computer),'_'];
+end
 swrk=['..',fs,'work',fs];
 slog=['..',fs,'logfiles',fs];
 T_=1; ST_=2; M_=3; N_=4; K_=5;
@@ -768,6 +775,7 @@ try
                                 write_log1(logid2,'Checking File ''%s'': ',protected(checkf));
                                 showfig=0;
                                 [~,~,ext]=fileparts(checkf);
+                                % reference files are generic by default
                                 reffile=[sref,checkf];
                                 args={};
                                 switch lower(ext)
@@ -775,6 +783,8 @@ try
                                         % matching DPI for default size: 53, 54, 56, 57 61, 62, 64, 65, 66, 69
                                         args={'skip',256};
                                         showfig=1;
+                                        % figures are platform specific
+                                        reffile=[sref,sref_platform_prefix,checkf];
                                     case '.asc'
                                         args={'skip',71};
                                     case '.mat'
