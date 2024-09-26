@@ -800,7 +800,7 @@ try
                                         lgresult=CREATED;
                                     end
                                     if showfig
-                                        include_figure(logid2,['reference/' checkf]);
+                                        include_figure(logid2,reffile(4:end));
                                     end
                                 else
                                     [Eql,Msg]=filesequal(checkf,reffile,args{:});
@@ -831,11 +831,11 @@ try
                                     write_log(logid2,[sc{1+Eql},Msg]);
                                     if Eql
                                         if showfig
-                                            include_figure(logid2,['reference/' checkf]);
+                                            include_figure(logid2,reffile(4:end));
                                         end
                                     else
                                         if showfig
-                                            include_diff_figures(logid2,{['reference/' checkf],['work/' checkf],diffimg{:}},Color);
+                                            include_diff_figures(logid2,{reffile(4:end),['work/' checkf],diffimg{:}},Color);
                                         end
                                         lgcolor=Color.Failed;
                                         lgresult=[FAILED ': Log file results differ.'];
