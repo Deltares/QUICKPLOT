@@ -34,6 +34,8 @@ function varargout = d3d_qp(cmd,varargin)
 %   $HeadURL$
 %   $Id$
 
+%VERSION = 2.70
+
 try
     if nargin==0
         cmd='initialize';
@@ -48,19 +50,22 @@ catch Ex
 end
 
 function outdata=d3d_qp_core(cmd,varargin)
-%VERSION = 2.70
-qpversionbase = 'v<VERSION>';
-gitrepo = '<GITREPO>';
-githash = '<GITHASH>';
-qpcreationdate = '<CREATIONDATE>';
-%
-persistent qpversion logfile logtype
+persistent qpversion qpversionbase gitrepo githash qpcreationdate
+persistent logfile logtype
 
 if isempty(qpversion)
+    qpversionbase = 'v<VERSION>';
+    gitrepo = '<GITREPO>';
+    githash = '<GITHASH>';
+    qpcreationdate = '<CREATIONDATE>';
+
     if isequal(qpversionbase(1:2),'v<')
-        qpversion='source code version';
+        thisfile=mfilename('fullpath');
+        thisdir=fileparts(thisfile);
+        [version, githash, gitrepo] = read_identification(thisdir,'d3d_qp.m');
+        qpversion = ['source code ',version];
     else
-        qpversion=qpversionbase;
+        qpversion = qpversionbase;
     end
     if all(qpversion ~= '(')
         switch computer
@@ -100,7 +105,7 @@ if nargout~=0
         if nargin>1
             outdata = {qp_checkversion(varargin{:})};
         else
-            outdata = {qpversion};
+            outdata = {qpversion,githash,gitrepo};
         end
         return
     elseif isstandalone % allow standalone auto start ...
