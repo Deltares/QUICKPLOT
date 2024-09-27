@@ -62,13 +62,22 @@ if isempty(qpversion)
     else
         qpversion=qpversionbase;
     end
-    if isempty(strfind(qpversion,'('))
-        if strncmp(fliplr(computer),'46',2)
-            nbits=64;
-        else
-            nbits=32;
+    if all(qpversion ~= '(')
+        switch computer
+            case 'PCWIN'
+                platform = 'Windows 32bit';
+            case 'GLNX86'
+                platform = 'Linux 32bit';
+            case 'PCWIN64'
+                platform = 'Windows 64bit';
+            case 'GLNXA64'
+                platform = 'Linux 64bit';
+            case 'MACI64'
+                platform = 'Apple 64bit';
+            otherwise
+                platform = computer;
         end
-        qpversion=sprintf('%s (%ibit)',qpversion,nbits);
+        qpversion=sprintf('%s (%s)',qpversion,platform);
     end
     logfile=0;
     logtype=1;

@@ -55,13 +55,23 @@ baseversion = deblank(str(11:end));
 [a,b] = strtok(baseversion);
 version = sprintf('%s.%s%s',a,revstring,b);
 %
-% Append 32 or 64 bit flag
+% Append platform identifier
 %
-if strncmp(fliplr(computer),'46',2)
-    version=[version ' (64bit)'];
-else
-    version=[version ' (32bit)'];
+switch computer
+    case 'PCWIN'
+        platform = 'Windows 32bit';
+    case 'GLNX86'
+        platform = 'Linux 32bit';
+    case 'PCWIN64'
+        platform = 'Windows 64bit';
+    case 'GLNXA64'
+        platform = 'Linux 64bit';
+    case 'MACI64'
+        platform = 'Apple 64bit';
+    otherwise
+        platform = computer;
 end
+version=sprintf('%s (%s)',version,platform);
 %
 % Done.
 %

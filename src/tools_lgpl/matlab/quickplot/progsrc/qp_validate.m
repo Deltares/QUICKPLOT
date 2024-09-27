@@ -1072,7 +1072,7 @@ if isstandalone
     stalone=' (standalone)';
 end
 c = clock;
-versionstr = d3d_qp('version'); % returns "source code version" or "vA.B.hash (64bit)"
+versionstr = d3d_qp('version'); % returns "source code version" or "vA.B.hash (platform)"
 if versionstr(1) == 'v'
     % remove the leading v
     versionstr = versionstr(2:end);
