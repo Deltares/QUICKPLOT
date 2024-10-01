@@ -470,10 +470,7 @@ switch printObj.Name
         %
         % do the actual print
         %
-        warnStruct = warning;
-        warning('off', 'MATLAB:print:ExcludesUIInFutureRelease')
-        print(figname, FigHandle, printObj.dvr, printObj.PrtMth{:}, append{:});
-        warning(warnStruct)
+        printNoWarn(figname, FigHandle, printObj.dvr, printObj.PrtMth{:}, append{:});
         %
         % reset the paper position
         %
@@ -556,17 +553,24 @@ switch printObj.Name
                 if printObj.Color
                     dvr='-dwinc';
                 end
-                print(FigHandle,dvr,printObj.PrtMth{:});
+                printNoWarn(FigHandle,dvr,printObj.PrtMth{:});
             case 'Bitmap to clipboard'
                 set(fig,'inverthardcopy','off');
-                print(FigHandle, '-dbitmap');
+                printNoWarn(FigHandle, '-dbitmap');
             case 'Metafile to clipboard'
-                print(FigHandle, printObj.PrtMth{:}, '-dmeta');
+                printNoWarn(FigHandle, printObj.PrtMth{:}, '-dmeta');
         end
         set(fig,'inverthardcopy',ih);
         cd(ccd)
 end
 printObj.NextNr = printObj.NextNr + 1;
+
+
+function printNoWarn(varargin)
+warnStruct = warning;
+warning('off', 'MATLAB:print:ExcludesUIInFutureRelease')
+print(varargin{:});
+warning(warnStruct)
 
 
 function printObj = printFinalize(printObj)
