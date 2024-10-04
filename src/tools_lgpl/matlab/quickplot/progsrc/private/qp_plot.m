@@ -224,7 +224,6 @@ if ~strcmp(Parent,'loaddata')
         end
     end
 end
-Thresholds=[]; % Thresholds is predefined to make sure that Thresholds always exists when its value is checked at the end of this routine
 
 for i=5:-1:1
     multiple(i) = (length(Selected{i})>1) | isequal(Selected{i},0);
@@ -849,11 +848,9 @@ if isequal(quivopt,{'automatic'})
     quivopt={0};
 end
 
-LocLabelClass=0;
-LocStartClass=0;
+classes_between_thresholds = 1;
 if isfield(Ops,'presentationtype') && strcmp(Ops.presentationtype,'coloured contour lines')
-    LocLabelClass=1;
-    LocStartClass=1;
+    classes_between_thresholds = 0;
 end
 
 if Props.NVal==6
@@ -881,12 +878,28 @@ elseif isfield(Ops,'thresholds') && ~strcmp(Ops.thresholds,'none')
         end
         minmax = [miv mv];
     end
-    Ops.Thresholds = compthresholds(Ops,minmax,LocStartClass);
-    if minmax(1)<Ops.Thresholds(1) && ~LocLabelClass
-        Ops.Thresholds = [-inf Ops.Thresholds];
-    end
+    [Ops.Thresholds,Ops.PlotClass] = compthresholds(Ops,minmax,classes_between_thresholds);
 else
     Ops.Thresholds = 'none';
+    if isfield(Ops,'climclipping') && Ops.climclipping
+        for fldc = {'Val'}
+            fld = fldc{1};
+            if isfield(data,fld)
+                for d = 1:length(data)
+                    Val = data(d).(fld);
+                    Val(Val < Ops.colourlimits(1) | Val > Ops.colourlimits(2)) = NaN;
+                    data(d).(fld) = Val;
+                end
+            end
+        end
+    end
+end
+if ~isfield(Ops,'PlotClass')
+    if isequal(Ops.Thresholds,'none')
+        Ops.PlotClass = [];
+    else
+        Ops.PlotClass = true(size(Ops.Thresholds));
+    end
 end
 
 stn='';
@@ -1234,15 +1247,20 @@ else
         end
         switch geom
             case {'SEG','SEG-NODE','SEG-EDGE'}
-                [hNew{d},Thresholds,Param]=qp_plot_seg(plotargs{:});
+                [hNew{d},Param]=qp_plot_seg(plotargs{:});
             case 'PNT'
-                [hNew{d},Thresholds,Param,Parent]=qp_plot_pnt(plotargs{:});
+                [hNew{d},Param,Parent]=qp_plot_pnt(plotargs{:});
             case {'POLYL','POLYG'}
-                [hNew{d},Thresholds,Param]=qp_plot_polyl(plotargs{:});
+                [hNew{d},Param]=qp_plot_polyl(plotargs{:});
             case {'UGRID1D_NETWORK-NODE','UGRID1D_NETWORK-EDGE','UGRID1D-NODE','UGRID1D-EDGE','UGRID2D-NODE','UGRID2D-EDGE','UGRID2D-FACE'}
-                [hNew{d},Thresholds,Param]=qp_plot_ugrid(plotargs{:});
+                [hNew{d},Param]=qp_plot_ugrid(plotargs{:});
             otherwise
-                [hNew{d},Thresholds,Param,Parent]=qp_plot_default(plotargs{:});
+                switch Ops.presentationtype
+                    case {'coloured contour lines','contour patches','contour patches with lines'}
+                        Ops.climclipping = 0;
+                        Ops.PlotClass(:) = true;
+                end
+                [hNew{d},Param,Parent]=qp_plot_default(plotargs{:});
                 PlotState.Parent=Parent;
         end
         hNew{d} = hNew{d}(:);
@@ -1252,7 +1270,7 @@ else
     end
     hNew = hNew(1:length(data));
     
-    ChangeCLim = strcmp(Thresholds,'none') || ~isempty(Ops.colourlimits);
+    ChangeCLim = strcmp(Ops.Thresholds,'none') || ~isempty(Ops.colourlimits);
 
     hNewVec=cat(1,hNew{:});
 end
@@ -1425,17 +1443,23 @@ if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
             end
         end
         if ~strcmp(Ops.Thresholds,'none')
+            Thresholds = Ops.Thresholds;
+            Classes = {};
+            LineParams = {};
             if Props.NVal==6
-                classbar(h,1:length(Thresholds),'labelcolor','label',Thresholds,data(1).Classes,'plotall','climmode','new')
-            elseif LocLabelClass
-                if isfield(Ops,'LineParams') && ~isempty(Ops.LineParams)
-                    classbar(h,1:length(Thresholds),'labellines','label',Thresholds,'plotall','climmode','new','lineparams',Ops.LineParams)
-                else
-                    classbar(h,1:length(Thresholds),'labelcolor','label',Thresholds,'plotall','climmode','new')
-                end
+                LabelStyle = {'labelcolor'};
+                Classes = {data(1).Classes};
+            elseif classes_between_thresholds
+                LabelStyle = {};
+                % remove the infinity threshold ...
+                Thresholds = Ops.Thresholds(1:end-1);
+            elseif isfield(Ops,'LineParams') && ~isempty(Ops.LineParams)
+                LabelStyle = {'labellines'};
+                LineParams = {'lineparams',Ops.LineParams};
             else
-                classbar(h,1:length(Thresholds),'label',Thresholds,'plotall','climmode','new')
+                LabelStyle = {'labelcolor'};
             end
+            classbar(h,1:length(Thresholds),LabelStyle{:},'label',Thresholds,Classes{:},'plotselect',Ops.PlotClass,'climmode','new',LineParams{:})
         end
     end
 end
@@ -1456,8 +1480,8 @@ IUD.XInfo=[];
 if isfield(data,'XInfo')
     IUD.XInfo=data(1).XInfo;
 end
-if ~isempty(Thresholds)
-    IUD.XInfo.Thresholds=Thresholds;
+if ~isempty(Ops.Thresholds)
+    IUD.XInfo.Thresholds=Ops.Thresholds;
 end
 set(hNewVec,'userdata',[])
 set(hNewVec(1),'userdata',IUD)

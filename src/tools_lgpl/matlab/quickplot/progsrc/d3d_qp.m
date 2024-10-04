@@ -2499,7 +2499,7 @@ switch cmd
             writelog(logfile,logtype,cmd,get(cb,'value'));
         end
         
-    case {'colbarhorz','climsymm','extend2edge','clipnans'}
+    case {'colbarhorz','climsymm','climclip','extend2edge','clipnans'}
         % nothing do
         cb=findobj(UOH,'tag',cmd);
         if ~isempty(cmdargs)
@@ -5050,8 +5050,10 @@ switch cmd
         % ------ colour limits ...
         %
         set(findobj(UOH,'tag','climmode=?'),'value',1)
+        set(findobj(UOH,'tag','climsymm'),'value',0)
         set(findobj(UOH,'tag','climmax=?'),'userdata',1,'string','1')
-        set(findobj(UOH,'tag','climmax=?'),'userdata',0,'string','0')
+        set(findobj(UOH,'tag','climmin=?'),'userdata',0,'string','0')
+        set(findobj(UOH,'tag','climclip'),'value',0)
         %
         % ------ colour map ...
         %

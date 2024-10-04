@@ -1747,6 +1747,9 @@ if MultipleColors
                 else
                     Ops.colourlimits=[Min Max];
                 end
+                climclip = findobj(OH,'tag','climclip');
+                set(climclip,'enable','on')
+                Ops.climclipping = get(climclip, 'value');
         end
     end
     set(findobj(OH,'tag','colourmap'),'enable','on')
