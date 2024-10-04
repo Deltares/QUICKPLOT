@@ -111,8 +111,8 @@ t0 = get(h,'clim');
 df0 = (t0(2) - t0(1))/lengthcmap;
 tm = mean(t0);
 df = max(df0, tm * 1e-11);
-t = mean(t0) + [-1 1]*(lengthcmap-1)*df/2;
-cblim = t;%[0 100];
+tickval = mean(t0) + [-1 1]*(lengthcmap-1)*df/2;
+cblim = tickval;%[0 100];
 manualTicks = df>df0;
 
 %
@@ -260,25 +260,35 @@ if manualTicks
             break
         end
     end
-    set(ax,[X 'tick'],t,[X 'ticklabel'],tstr)
+    set(ax,[X 'tick'],tickval,[X 'ticklabel'],tstr)
 else
     set(ax,[X 'tickmode'],'auto',[X 'ticklabelmode'],'auto')
     if strcmp(climmode,'manual')
-        t = get(ax,[X 'ticklabel']);
-        if ~iscell(t)
-            t = cellstr(t);
+        climauto = limits(h,'color');
+        clim = get(h,'CLim');
+        % in case of values outside the color range, add leq and geq signs
+        if climauto(1) < clim(1) && climauto(2) > clim(2)
+            tickval = get(ax,[X,'tick']);
+            ticklabel = get(ax,[X,'ticklabel']);
+            if ~iscell(ticklabel)
+                ticklabel = cellstr(ticklabel);
+            end
+            if matlabversionnumber > 8.02
+                leq = '\leq ';
+                geq = '\geq ';
+            else
+                leq = '<=';
+                geq = '>=';
+            end
+            set(ax,[X 'tickmode'],'manual')
+            if tickval(1) == clim(1)
+                ticklabel{1} = [leq, ticklabel{1}];
+            end
+            if tickval(end) == clim(2)
+                ticklabel{end} = [geq, ticklabel{end}];
+            end
+            set(ax,[X 'ticklabel'],ticklabel)
         end
-        if matlabversionnumber > 8.02
-            leq = '\leq ';
-            geq = '\geq ';
-        else
-            leq = '<=';
-            geq = '>=';
-        end
-        set(ax,[X 'tickmode'],'manual')
-        t{1} = [leq, t{1}];
-        t{end} = [geq, t{end}];
-        set(ax,[X 'ticklabel'],t)
     end
 end
 
