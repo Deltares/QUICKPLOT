@@ -2054,7 +2054,13 @@ for mesh = NumMeshes:-1:1
         % may not correspond to the order of the nodes in the source
         % domain. We need to copy the original order to avoid messing up
         % the normal and tangential directions.
-        glbENC(iEdges{p},:) = enc{p};
+        %
+        % Only follow the orientation of the domain to which this edge
+        % belongs. The edge may have a different orientation in the
+        % neighbouring domain if it's located on the outermost edge (far
+        % away from the internal part of the partition).
+        edge_of_p = edgeMask{p};
+        glbENC(iEdges{p}(edge_of_p),:) = enc{p}(edge_of_p,:);
     end
     %
     merged_mesh(mesh).Name = M.Name;
