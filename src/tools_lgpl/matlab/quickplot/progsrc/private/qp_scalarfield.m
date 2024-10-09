@@ -375,58 +375,94 @@ switch data.ValLocation
     case 'EDGE'
         iEdge = data.EdgeNodeConnect;
         switch presentationtype
-            case {'edges','vector edges'}
-                if strcmp(presentationtype,'edges')
-                    N = 2;
-                    if isfield(Ops, 'unicolour') && Ops.unicolour
-                        iEdge(isnan(data.Val),:) = [];
-                        fvcd = [];
-                        ec = Ops.colour;
-                    else
-                        fvcd = repmat(data.Val,N,1);
-                        ec = 'interp';
-                    end
-                    %
-                    vdata = [data.X(iEdge,:) data.Y(iEdge,:)];
-                    fdata = reshape(1:2*size(iEdge,1),[size(iEdge,1) 2]);
-                    markers = { ...
-                        'marker',Ops.marker, ...
-                        'markersize',Ops.markersize, ...
-                        'markeredgecolor',Ops.markercolour, ...
-                        'markerfacecolor',Ops.markerfillcolour};
-                else % vector edges
-                    N = 8;
-                    if isfield(Ops, 'unicolour') && Ops.unicolour
-                        iEdge(isnan(data.Val),:) = [];
-                        fvcd = [];
-                        ec = Ops.colour;
-                    else
-                        fvcd = abs(repmat(data.Val,N,1));
-                        ec = 'interp';
-                    end
-                    %
-                    x1 = data.X(iEdge(:,1));
-                    y1 = data.Y(iEdge(:,1));
-                    x2 = data.X(iEdge(:,2));
-                    y2 = data.Y(iEdge(:,2));
-                    xh = (x1+x2)/2;
-                    yh = (y1+y2)/2;
-                    dx = x2 - x1;
-                    dy = y2 - y1;
-                    mg = sqrt(dx.^2+dy.^2);
-                    sv = sign(data.Val);
-                    ex = sv.*dx./mg;
-                    ey = sv.*dy./mg;
-                    nx = -ey;
-                    ny = ex;
-                    a = mean(mg)/10;
-                    X = [x1; xh; xh - a*ex + a*nx; xh; xh - a*ex - a*nx; xh; x2; xh];
-                    Y = [y1; yh; yh - a*ey + a*ny; yh; yh - a*ey - a*ny; yh; y2; yh];
-                    %
-                    vdata = [X(:) Y(:)];
-                    fdata = reshape(1:N*size(iEdge,1),[size(iEdge,1) N]);
-                    %
-                    markers = {};
+            case {'edges','vector edges','normal vector edges'}
+                switch presentationtype
+                    case 'edges'
+                        N = 2;
+                        if isfield(Ops, 'unicolour') && Ops.unicolour
+                            iEdge(isnan(data.Val),:) = [];
+                            fvcd = [];
+                            ec = Ops.colour;
+                        else
+                            fvcd = repmat(data.Val,N,1);
+                            ec = 'interp';
+                        end
+                        %
+                        vdata = [data.X(iEdge,:) data.Y(iEdge,:)];
+                        fdata = reshape(1:2*size(iEdge,1),[size(iEdge,1) 2]);
+                        markers = { ...
+                            'marker',Ops.marker, ...
+                            'markersize',Ops.markersize, ...
+                            'markeredgecolor',Ops.markercolour, ...
+                            'markerfacecolor',Ops.markerfillcolour};
+                    case 'vector edges'
+                        N = 7;
+                        if isfield(Ops, 'unicolour') && Ops.unicolour
+                            iEdge(isnan(data.Val),:) = [];
+                            fvcd = [];
+                            ec = Ops.colour;
+                        else
+                            fvcd = abs(repmat(data.Val,N,1));
+                            ec = 'interp';
+                        end
+                        %
+                        x1 = data.X(iEdge(:,1));
+                        y1 = data.Y(iEdge(:,1));
+                        x2 = data.X(iEdge(:,2));
+                        y2 = data.Y(iEdge(:,2));
+                        xh = (x1+x2)/2;
+                        yh = (y1+y2)/2;
+                        dx = x2 - x1;
+                        dy = y2 - y1;
+                        mg = sqrt(dx.^2+dy.^2);
+                        sv = sign(data.Val);
+                        ex = sv.*dx./mg;
+                        ey = sv.*dy./mg;
+                        nx = -ey;
+                        ny = ex;
+                        a = mean(mg)/10;
+                        X = [x1; xh; xh - a*ex + a*nx; xh; xh - a*ex - a*nx; xh; x2];
+                        Y = [y1; yh; yh - a*ey + a*ny; yh; yh - a*ey - a*ny; yh; y2];
+                        %
+                        vdata = [X(:) Y(:)];
+                        fdata = reshape(1:N*size(iEdge,1),[size(iEdge,1) N]);
+                        %
+                        markers = {};
+                    case 'normal vector edges'
+                        N = 9;
+                        if isfield(Ops, 'unicolour') && Ops.unicolour
+                            iEdge(isnan(data.Val),:) = [];
+                            fvcd = [];
+                            ec = Ops.colour;
+                        else
+                            fvcd = abs(repmat(data.Val,N,1));
+                            ec = 'interp';
+                        end
+                        %
+                        x1 = data.X(iEdge(:,1));
+                        y1 = data.Y(iEdge(:,1));
+                        x2 = data.X(iEdge(:,2));
+                        y2 = data.Y(iEdge(:,2));
+                        xh = (x1+x2)/2;
+                        yh = (y1+y2)/2;
+                        dx = x2 - x1;
+                        dy = y2 - y1;
+                        mg = sqrt(dx.^2+dy.^2);
+                        sv = sign(data.Val);
+                        ex = sv.*dy./mg;
+                        ey = -sv.*dx./mg;
+                        nx = -ey;
+                        ny = ex;
+                        a = mean(mg)/10;
+                        xpnt = xh + 3*a*ex;
+                        ypnt = yh + 3*a*ey;
+                        X = [x1; x2; xh; xpnt; xpnt - a*ex + a*nx; xpnt; xpnt - a*ex - a*nx; xpnt; xh];
+                        Y = [y1; y2; yh; ypnt; ypnt - a*ey + a*ny; ypnt; ypnt - a*ey - a*ny; ypnt; yh];
+                        %
+                        vdata = [X(:) Y(:)];
+                        fdata = reshape(1:N*size(iEdge,1),[size(iEdge,1) N]);
+                        %
+                        markers = {};
                 end
                 if isempty(hNew)
                     if strcmp(Ops.linestyle, 'none')
