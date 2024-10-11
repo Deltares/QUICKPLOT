@@ -880,10 +880,6 @@ elseif isfield(Ops,'thresholds') && ~strcmp(Ops.thresholds,'none')
         minmax = [miv mv];
     end
     [Ops.Thresholds,Ops.PlotClass] = compthresholds(Ops,minmax,classes_between_thresholds);
-    if Ops.Thresholds(2) == 0
-        Ops.Thresholds(1) = [];
-        Ops.PlotClass(1) = [];
-    end
 else
     Ops.Thresholds = 'none';
     if isfield(Ops,'climclipping') && Ops.climclipping

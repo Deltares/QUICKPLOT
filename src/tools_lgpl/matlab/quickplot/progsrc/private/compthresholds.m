@@ -159,7 +159,7 @@ else
     if isempty(Thresholds)
         Thresholds = [-inf, inf];
     else
-        if isfinite(Thresholds(1))
+        if isfinite(Thresholds(1)) && Thresholds(1) ~= 0
             Thresholds = [-inf, Thresholds];
         end
         if isfinite(Thresholds(end))
