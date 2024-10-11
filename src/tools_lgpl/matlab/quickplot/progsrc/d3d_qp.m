@@ -2581,6 +2581,30 @@ switch cmd
             writelog(logfile,logtype,cmd,c);
         end
         
+    case 'plotclass'
+        cv = findobj(UOH,'tag','thresholds=?');
+        pc = findobj(UOH,'tag','plotclass');
+
+        c = get(cv, 'userdata');
+        % classes = get_classes(c);
+        classes = {'1','2','3'};
+
+        if isempty(cmdargs)
+            iclass = get(pc, 'userdata');
+            if isequal(iclass,0) || isequal(iclass,-1)
+                iclass = 1:length(classes);
+            end
+            [~,iclass] = ui_type(classes, 'multiselect', iclass);
+        else
+            iclass = cmdargs{1};
+        end
+        if ~isequal(iclass,-1)
+            set(pc, 'userdata', iclass)
+            if logfile
+                writelog(logfile,logtype,cmd,iclass);
+            end
+        end
+
     case {'xclipping','yclipping','zclipping','clippingvals'}
         cv=findobj(UOH,'tag',[cmd '=?']);
         if isempty(cmdargs)

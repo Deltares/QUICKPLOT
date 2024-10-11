@@ -1676,37 +1676,6 @@ if usesmarker
     end
 end
 
-if isfield(Ops,'presentationtype')
-    switch Ops.presentationtype
-        case {'vector','patches','patches with lines','markers'}
-            if MultipleColors && Props.NVal~=6
-                cclass=findobj(OH,'tag','colclassify');
-                set(cclass,'enable','on')
-                if get(cclass,'value')
-                    ask_for_thresholds = 1;
-                end
-            end
-    end
-end
-
-if ask_for_thresholds
-    set(findobj(OH,'tag','thresholds'),'enable','on')
-    set(findobj(OH,'tag','thresholds=?'),'enable','on','backgroundcolor',Active)
-    Ops.thresholds=get(findobj(OH,'tag','thresholds=?'),'userdata');
-    %
-    % if the thresholds have not explicitly been specified
-    % (only the number of thresholds is given, or even that is left to default)
-    % then ask for distribution of thresholds
-    %
-    if isempty(Ops.thresholds) || ...
-            (isequal(size(Ops.thresholds),[1 1]) && isnumeric(Ops.thresholds) && isequal(Ops.thresholds,round(Ops.thresholds)) && Ops.thresholds>0)
-        thrd=findobj(OH,'tag','threshdistr=?');
-        set(thrd,'enable','on','backgroundcolor',Active)
-        thrdStr=get(thrd,'string'); % linear, logarithmic, anti-logarithmic
-        Ops.thresholddistribution=thrdStr{get(thrd,'value')};
-    end
-end
-
 if MultipleColors
     if Props.NVal~=6
         set(findobj(OH,'tag','climmode'),'enable','on')
@@ -1770,6 +1739,40 @@ if MultipleColors
         end
     else
         Ops.colourbar='none';
+    end
+end
+
+if isfield(Ops,'presentationtype')
+    switch Ops.presentationtype
+        case {'vector','patches','patches with lines','markers'}
+            if MultipleColors && Props.NVal~=6
+                cclass=findobj(OH,'tag','colclassify');
+                set(cclass,'enable','on')
+                if get(cclass,'value')
+                    ask_for_thresholds = 1;
+                end
+            end
+    end
+end
+if ask_for_thresholds
+    set(findobj(OH,'tag','thresholds'),'enable','on')
+    set(findobj(OH,'tag','thresholds=?'),'enable','on','backgroundcolor',Active)
+    Ops.thresholds=get(findobj(OH,'tag','thresholds=?'),'userdata');
+    %
+    % if the thresholds have not explicitly been specified
+    % (only the number of thresholds is given, or even that is left to default)
+    % then ask for distribution of thresholds
+    %
+    if isempty(Ops.thresholds) || ...
+            (isequal(size(Ops.thresholds),[1 1]) && isnumeric(Ops.thresholds) && isequal(Ops.thresholds,round(Ops.thresholds)) && Ops.thresholds>0)
+        thrd=findobj(OH,'tag','threshdistr=?');
+        set(thrd,'enable','on','backgroundcolor',Active)
+        thrdStr=get(thrd,'string'); % linear, logarithmic, anti-logarithmic
+        Ops.thresholddistribution=thrdStr{get(thrd,'value')};
+    end
+    if false % to be activated under UNST-8375
+        set(findobj(OH,'tag','plotclass'),'enable','on')
+        set(findobj(OH,'tag','plotclassbutton'),'enable','on')
     end
 end
 
