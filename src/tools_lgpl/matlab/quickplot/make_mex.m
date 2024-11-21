@@ -67,6 +67,7 @@ fprintf('##teamcity[testStarted name=''%s'']\n', caseid);
 try
     cd(folder)
     mex(varargin{:})
+    fprintf('##teamcity[testFinished name=''%s'']\n', caseid)
 catch
     fprintf('##teamcity[testFailed name=''%s'' message=''case crashed.'']\n', caseid)
 end
