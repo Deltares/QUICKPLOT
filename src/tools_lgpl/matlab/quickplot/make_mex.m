@@ -40,19 +40,33 @@ cwd = pwd;
 
 % not on Windows
 if ~ispc
-   cd([cwd, filesep, 'progsrc', filesep, 'private'])
-   mex('exepath.c')
+   compile('exepath', ...
+       [cwd, filesep, 'progsrc', filesep, 'private'], ...
+       'exepath.c')
 end
 
 % all platforms
-cd([cwd, filesep, 'progsrc', filesep, 'private'])
-mex('reducepoints.c')
+compile('reducepoints', ...
+    [cwd, filesep, 'progsrc', filesep, 'private'], ...
+    'reducepoints.c')
 
 % Windows only
 if ispc
-   cd([cwd, filesep, 'progsrc', filesep, 'private'])
-   mex('writeavi.cpp', 'vfw32.lib', 'user32.lib')
+   compile('writeavi', ...
+       [cwd, filesep, 'progsrc', filesep, 'private'], ...
+       'writeavi.cpp', 'vfw32.lib', 'user32.lib')
 
-   cd([cwd, filesep, 'progsrc', filesep, 'private'])
-   mex('CloseSplashScreen.cpp', '-I..\include')
+   compile('CloseSplashScreen', ...
+       [cwd, filesep, 'SplashScreen', filesep, 'finish'], ...
+       'CloseSplashScreen.cpp', '-I..\include')
+end
+
+
+function compile(caseid, folder, varargin)
+fprintf('##teamcity[testStarted name=''%s'']\n', caseid);
+try
+    cd(folder)
+    mex(varargin{:})
+catch
+    fprintf('##teamcity[testFailed name=''%s'' message=''case crashed.'']\n', caseid)
 end
