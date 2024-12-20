@@ -45,6 +45,7 @@ try
     if ~exist('testcodes','dir')
         error('Cannot locate source folder "testcodes".')
     end
+    cd testcodes
     make_hello_world
     make_matlab_sysinfo
 catch err
