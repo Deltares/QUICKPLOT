@@ -1,11 +1,5 @@
-function make_all(release)
-%MAKE_ALL Build various tools based on the QUICKPLOT source
-%   Builds
-%     * Delft3D-MATLAB interface
-%     * QUICKPLOT
-%     * ECOPLOT
-%     * SIM2UGRID
-%   all with exactly the same version number.
+function make_tests(basedir, varargin)
+%MAKE_TESTS Build some test binaries
 
 %----- LGPL --------------------------------------------------------------------
 %
@@ -37,33 +31,28 @@ function make_all(release)
 %   $HeadURL$
 %   $Id$
 
-if ~license('checkout','compiler')
-    try
-        if batchStartupOptionUsed
-            fprintf('##teamcity[buildStop comment=''Compiler license currently not available.'' readdToQueue=''true'']\n');
-            return
-        end
-    end
-    error('Compiler license currently not available.')
-end
+
 curdir = pwd;
-sourcedir = [curdir,filesep,'progsrc'];
-
-[qpversion,hash,repo_url] = get_qpversion(sourcedir,'d3d_qp.m');
-T = now;
-
-if nargin == 0
-    Tvec = datevec(T);
-    yr = Tvec(1);
-    mn = Tvec(2);
-    release = sprintf('Build %d.%2.2d',yr,mn);
+addpath(curdir)
+if ~exist('mcc')
+    error('Cannot find MATLAB compiler. Use another MATLAB installation!')
 end
-
-if strcmp(computer,'PCWIN64')
-   make_d3dmatlab(curdir,'version',qpversion,'url',repo_url,'hash',hash,'time',T,'release',release)
+if nargin>0
+    cd(basedir);
 end
-make_quickplot(curdir,qpversion,repo_url,hash,T)
-make_ecoplot(curdir,qpversion,repo_url,hash,T)
-make_delwaq2raster(curdir,qpversion,repo_url,hash,T)
-make_sim2ugrid(curdir,qpversion,repo_url,hash,T)
-make_tests(curdir,qpversion,repo_url,hash,T)
+err = [];
+try
+    if ~exist('testcodes','dir')
+        error('Cannot locate source folder "testcodes".')
+    end
+    make_hello_world
+    make_matlab_sysinfo
+catch err
+end
+if nargin>0
+    cd(curdir);
+end
+rmpath(curdir)
+if ~isempty(err)
+    rethrow(err)
+end
