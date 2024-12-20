@@ -48,6 +48,7 @@ try
     cd testcodes
     make_hello_world
     make_matlab_sysinfo
+    make_graphics_test
 catch err
 end
 if nargin>0
