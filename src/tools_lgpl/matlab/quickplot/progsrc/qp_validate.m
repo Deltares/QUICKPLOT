@@ -869,7 +869,8 @@ try
         d3d_qp('closefile');
         figs = get_nondialogs;
         if ~isempty(figs)
-            ui_message('warning','%i figures were not closed properly.',length(figs))
+            fprintf('%i figure(s) not properly closed.',length(figs));
+            ui_message('warning','%i figure(s) not properly closed.',length(figs))
             d3d_qp('closeallfig')
         end
         if ~isempty(logid2)
