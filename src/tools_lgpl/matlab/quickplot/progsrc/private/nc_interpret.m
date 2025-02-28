@@ -810,8 +810,6 @@ for ivar = 1:nvars
     % For every dimension I may have multiple (auxiliary) coordinates. How
     % to deal with that?
     %
-    Info.Station
-    {nc.Dataset(abs(Info.Station)).Name}
     if isempty(Info.Time) && ~isempty(Info.AuxTime)
         Info.Time = Info.AuxTime;
         Info.AuxTime = [];
