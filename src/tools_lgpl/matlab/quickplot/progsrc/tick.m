@@ -250,7 +250,7 @@ for i=1:length(ax)
         if datefrmt
             if strcmp(get(handle,[ax(i) 'tickmode']),'auto') || strcmp(tckmode,'autoticks')
                 if strcmp(frmt,'autodate')
-                    [tck,frmt,FirstLabel]=Local_datetick(handle,ax(i));
+                    [tck,frmt]=Local_datetick(handle,ax(i));
                 else
                     tck=Local_datetick(handle,ax(i));
                 end
@@ -265,7 +265,7 @@ for i=1:length(ax)
         end
     end
     if strcmp(frmt,'autodate')
-        [dummytck,frmt,FirstLabel]=Local_datetick(handle,ax(i));
+        [dummytck,frmt]=Local_datetick(handle,ax(i));
     end
     Local_tick(handle,ax(i),tck,frmt,scaling,DecSep,Language,SkipNLabels,FirstLabel)
 end
