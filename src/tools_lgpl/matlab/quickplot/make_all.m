@@ -37,6 +37,22 @@ function make_all(release)
 %   $HeadURL$
 %   $Id$
 
+curdir = pwd;
+sourcedir = [curdir,filesep,'progsrc'];
+
+[qpversion,hash,repo_url] = get_qpversion(sourcedir,'d3d_qp.m');
+T = now;
+
+if ~isempty(strfind(qpversion,'(changed)'))
+    % when running on TeamCity never build (changed) code versions ...
+    try
+        if batchStartupOptionUsed
+            fprintf('##teamcity[buildStop comment=''Version string "%s" contains the text "(changed)".'' readdToQueue=''true'']\n', qpversion);
+            return
+        end
+    end
+end
+
 if ~license('checkout','compiler')
     try
         if batchStartupOptionUsed
@@ -46,11 +62,6 @@ if ~license('checkout','compiler')
     end
     error('Compiler license currently not available.')
 end
-curdir = pwd;
-sourcedir = [curdir,filesep,'progsrc'];
-
-[qpversion,hash,repo_url] = get_qpversion(sourcedir,'d3d_qp.m');
-T = now;
 
 if nargin == 0
     Tvec = datevec(T);
