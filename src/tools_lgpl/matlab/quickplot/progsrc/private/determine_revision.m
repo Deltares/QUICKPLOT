@@ -150,11 +150,9 @@ else
         [a,b] = system_plain(['git status "' dirname '"']);
         b = strsplit(b,local_newline);
     
-        staged = strncmp(b,'Changes to be committed:',24);
-        hasStagedChanges = any(staged);
+        hasStagedChanges = check_and_list_files(b,'Changes to be committed:','Staged files:\n');
     
-        unstaged = strncmp(b,'Changes not staged for commit:',30);
-        hasUnstagedChanges = any(unstaged);
+        hasUnstagedChanges = check_and_list_files(b,'Changes not staged for commit:','Modified files:\n');
     
         hasUntrackedChanges = check_and_list_files(b,'Untracked files:','Untracked files:\n');
 
@@ -170,18 +168,28 @@ end
 function needsCheck = check_and_list_files(b,checkString,printString)
 isCheckString = strncmp(b,checkString,length(checkString));
 needsCheck = any(isCheckString);
+TAB = sprintf('\t');
 if needsCheck
-    i = find(isCheckString);
-    % i+1: (use "git add <file>..." ...
+    i = find(isCheckString) + 1;
+    % skip lines starting with '(use' such as
+    % (use "git add <file>..." to update what will be committed)
+    i = i+1;
+    while i < length(b) && strcmp(strtok(b{i}),'(use')
+        i = i+1;
+    end
+
     needsCheck = false;
-    i = i+2;
     checkHeaderPrinted = false;
-    while i < length(b) && abs(b{i}(1)) == 9
+    while i < length(b) && strcmp(b{i}(1), TAB)
         file = b{i}(2:end);
+        % skip 'modified:' if found ...
+        if strncmp(file,'modified:',9)
+            file = strtrim(file(10:end));
+        end
         folderAndFile = strsplit(file,'/');
-        if length(folderAndFile) == 1 || strcmp(folderAndFile{1},'progsrc')
+        if length(folderAndFile) == 1 || strcmp(folderAndFile{1},'private')
             % file in current folder
-            % or file in progsrc folder or below
+            % or file in private folder or below
             needsCheck = true;
             if ~checkHeaderPrinted
                 fprintf(printString);
