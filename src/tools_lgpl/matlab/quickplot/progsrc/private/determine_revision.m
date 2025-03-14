@@ -120,7 +120,7 @@ else
     % get hash
     cwd = pwd;
     cd(dirname)
-    [a,b] = system_plain('git -P log -n 1 -v --decorate');
+    [a,b] = system_plain('git -P log -n 1 -v --decorate')
     if a ~= 0
         revString = 'unknown';
         repoUrl   = 'unknown';
@@ -148,13 +148,13 @@ else
 
         % get status
         [a, b] = system_plain(['git status "' dirname '"']);
-        b = strsplit(b, local_newline)
+        b = strsplit(b, local_newline);
     
-        hasStagedChanges = check_and_list_files(b, 'Changes to be committed:', 'Staged files:\n', false)
+        hasStagedChanges = check_and_list_files(b, 'Changes to be committed:', 'Staged files:\n', false);
     
-        hasUnstagedChanges = check_and_list_files(b, 'Changes not staged for commit:', 'Modified files:\n', false)
+        hasUnstagedChanges = check_and_list_files(b, 'Changes not staged for commit:', 'Modified files:\n', false);
     
-        hasUntrackedChanges = check_and_list_files(b, 'Untracked files:', 'Untracked files:\n', true)
+        hasUntrackedChanges = check_and_list_files(b, 'Untracked files:', 'Untracked files:\n', true);
 
         % we should also check if we have local commits to be pushed.
         revString = hash(1:9);
