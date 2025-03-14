@@ -147,14 +147,14 @@ else
         % however, neither should DIMRsets refer to QUICKPLOT tags.
 
         % get status
-        [a,b] = system_plain(['git status "' dirname '"']);
-        b = strsplit(b,local_newline);
+        [a, b] = system_plain(['git status "' dirname '"']);
+        b = strsplit(b, local_newline);
     
-        hasStagedChanges = check_and_list_files(b,'Changes to be committed:','Staged files:\n');
+        hasStagedChanges = check_and_list_files(b, 'Changes to be committed:', 'Staged files:\n', false);
     
-        hasUnstagedChanges = check_and_list_files(b,'Changes not staged for commit:','Modified files:\n');
+        hasUnstagedChanges = check_and_list_files(b, 'Changes not staged for commit:', 'Modified files:\n', false);
     
-        hasUntrackedChanges = check_and_list_files(b,'Untracked files:','Untracked files:\n');
+        hasUntrackedChanges = check_and_list_files(b, 'Untracked files:', 'Untracked files:\n', true);
 
         % we should also check if we have local commits to be pushed.
         revString = hash(1:9);
@@ -165,7 +165,7 @@ else
     cd(cwd)
 end
 
-function needsCheck = check_and_list_files(b,checkString,printString)
+function needsCheck = check_and_list_files(b, checkString, printString, mexExcept)
 isCheckString = strncmp(b,checkString,length(checkString));
 needsCheck = any(isCheckString);
 TAB = sprintf('\t');
@@ -190,12 +190,16 @@ if needsCheck
         if length(folderAndFile) == 1 || strcmp(folderAndFile{1},'private')
             % file in current folder
             % or file in private folder or below
-            needsCheck = true;
-            if ~checkHeaderPrinted
-                fprintf(printString);
-                checkHeaderPrinted = true;
+            if mexExcept && ~isempty(strfind(folderAndFile{end},'.mex'))
+                % we need to ignore added mex files for the build process
+            else
+                needsCheck = true;
+                if ~checkHeaderPrinted
+                    fprintf(printString);
+                    checkHeaderPrinted = true;
+                end
+                fprintf(' * %s\n',file);
             end
-            fprintf(' * %s\n',file);
         end
         i = i+1;
     end
