@@ -120,7 +120,8 @@ else
     % get hash
     cwd = pwd;
     cd(dirname)
-    [a,b] = system_plain('git -P log -n 1 -v --decorate');
+    [a,b] = system_plain('git -P log -n 2 -v --decorate')
+    [a,b] = system_plain('git -P log -n 1 -v --decorate')
     % if we could remove -n 1, we could look for the latest hash available
     % at the origin, but that triggers a pager to wait for keypresses. The
     % option --no-pager before log seems to work on the command line, but
@@ -138,10 +139,10 @@ else
             % We're probably working on a merge-request ... if so, the
             % second commit matches the origin ... get that commit text
             % but keep the original hash, and continue the analysis
-            [a,b] = system_plain('git -P log -n 1 --skip=1 -v --decorate');
+            [a,b] = system_plain('git -P log -n 1 --skip=1 -v --decorate')
             b = strsplit(b, local_newline);
         end
-        hasLocalCommits = isempty(strfind(b{1}, 'origin/'));
+        hasLocalCommits = isempty(strfind(b{1}, 'origin/'))
 
         % get repository
         [a, b] = system_plain('git remote -v');
