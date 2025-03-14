@@ -223,9 +223,9 @@ switch cmd
         [xlim,ylim,Width,Height] = getlims(FI);
         pxsz = [Width Height];
         % get size in map units
-        sz = FI.Loc(3:4);
-        % requested size is such that lowest resolution just matches pixels
-        sz = min(pxsz./sz) * sz;
+        sz = pxsz;
+        %
+        % make sure that the figure is not too big for the screen (first estimate)
         ssz=qp_getscreen;
         fac=max(sz./ssz(3:4));
         if fac>1
@@ -234,9 +234,25 @@ switch cmd
         pos=[ssz(1:2)+ssz(3:4)/2-sz/2 sz];
         Fg=qp_createfig('free format figure',FI.FileName);
         set(Fg,'units','pixels','position',pos,'resize','off');
+        if sz(1) > sz(2)
+            set(Fg,'PaperOrientation','landscape')
+        else
+            set(Fg,'PaperOrientation','portrait')
+        end
+        %
+        % drawnow is needed to update the position property
+        drawnow
+        %
+        % make sure that the figure is not too big for the screen (update)
+        fsz = get(Fg,'position');
+        fac=max(sz./fsz(3:4));
+        if fac>1
+            sz=floor(sz/fac);
+        end
+        set(Fg,'position',[fsz(1:2) sz])
         %
         Ax=axes('parent',Fg,'units','normalized','position',[0 0 1 1],'visible','off');
-        set(Ax,'xlim',xlim,'ylim',ylim)
+        set(Ax,'xlim',xlim,'ylim',ylim,'DataAspectRatio',[FI.Loc(3:4)./pxsz 1])
         d3d_qp('refreshfigs',Fg)
         d3d_qp('addtoplot')
         %
