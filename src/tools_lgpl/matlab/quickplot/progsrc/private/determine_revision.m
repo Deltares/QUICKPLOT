@@ -120,7 +120,7 @@ else
     % get hash
     cwd = pwd;
     cd(dirname)
-    [a,b] = system_plain('git -P log -n 10 -v --decorate --first-parent')
+    [a,b] = system_plain('git -P log -n 30 -v --first-parent --clear-decorations --decorate-refs=remotes')
     [a,b] = system_plain('git -P log -n 1 -v --decorate');
     % if we could remove -n 1, we could look for the latest hash available
     % at the origin, but that triggers a pager to wait for keypresses. The
