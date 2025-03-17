@@ -121,24 +121,31 @@ else
     cwd = pwd;
     cd(dirname)
     [a,b] = system_plain('git -P log -n 1 -v --decorate');
+    % if we could remove -n 1, we could look for the latest hash available
+    % at the origin, but that triggers a pager to wait for keypresses. The
+    % option --no-pager before log seems to work on the command line, but
+    % not when called via system for some reason.
     if a ~= 0
         revString = 'unknown';
         repoUrl   = 'unknown';
         hash      = 'unknown';
     else
-        [commit,b] = strtok(b);
-        [hash,b] = strtok(b);
-        b = strsplit(b,local_newline);
-        hasLocalCommits = isempty(strfind(b{1},'origin/'));
-        % if we could remove -n 1, we could look for the latest hash available
-        % at the origin, but that triggers a pager to wait for keypresses. The
-        % option --no-pagers before log seems to work on the command line, but
-        % not when called via system for some reason.
+        [commit, b] = strtok(b);
+        [hash, b] = strtok(b);
+        b = strsplit(b, local_newline);
+        
+        if ~isempty(strfind(b{1},'refs/merge-requests'))
+            % We're probably working on a merge-request ... don't look for
+            % origin ...
+            hasLocalCommits = false;
+        else
+            hasLocalCommits = isempty(strfind(b{1}, 'origin/'));
+        end
 
         % get repository
-        [a,b] = system_plain('git remote -v');
-        [origin,b] = strtok(b);
-        [repoUrl,b] = strtok(b);
+        [a, b] = system_plain('git remote -v');
+        [origin, b] = strtok(b);
+        [repoUrl, b] = strtok(b);
 
         % git describe
         %[a,b] = system_plain(['git describe "' dirname '"']);
@@ -147,16 +154,14 @@ else
         % however, neither should DIMRsets refer to QUICKPLOT tags.
 
         % get status
-        [a,b] = system_plain(['git status "' dirname '"']);
-        b = strsplit(b,local_newline);
+        [a, b] = system_plain(['git status "' dirname '"']);
+        b = strsplit(b, local_newline);
     
-        staged = strncmp(b,'Changes to be committed:',24);
-        hasStagedChanges = any(staged);
+        hasStagedChanges = check_and_list_files(b, 'Changes to be committed:', 'Staged files:\n', false);
     
-        unstaged = strncmp(b,'Changes not staged for commit:',30);
-        hasUnstagedChanges = any(unstaged);
+        hasUnstagedChanges = check_and_list_files(b, 'Changes not staged for commit:', 'Modified files:\n', false);
     
-        hasUntrackedChanges = check_and_list_files(b,'Untracked files:','Untracked files:\n');
+        hasUntrackedChanges = check_and_list_files(b, 'Untracked files:', 'Untracked files:\n', true);
 
         % we should also check if we have local commits to be pushed.
         revString = hash(1:9);
@@ -167,31 +172,41 @@ else
     cd(cwd)
 end
 
-function needsCheck = check_and_list_files(b,checkString,printString)
-isCheckString = strncmp(b,checkString,length(checkString));
-needsCheck = any(isCheckString);
-if needsCheck
-    i = find(isCheckString);
-    % i+1: (use "git add <file>..." ...
-    needsCheck = false;
-    i = i+2;
-    checkHeaderPrinted = false;
-    while i < length(b) && abs(b{i}(1)) == 9
-        file = b{i}(2:end);
-        folderAndFile = strsplit(file,'/');
-        if length(folderAndFile) == 1 || strcmp(folderAndFile{1},'progsrc')
-            % file in current folder
-            % or file in progsrc folder or below
-            needsCheck = true;
-            if ~checkHeaderPrinted
-                fprintf(printString);
-                checkHeaderPrinted = true;
-            end
-            fprintf(' * %s\n',file);
-        end
-        i = i+1;
+function checkResult = check_and_list_files(b, checkString, printString, mexExcept)
+checkResult = false;
+TAB = sprintf('\t');
+isCheckString = strncmp(b, checkString, length(checkString));
+if any(isCheckString)
+    i = find(isCheckString) + 1;
+    % skip lines starting with '(use' such as
+    % (use "git add <file>..." to update what will be committed)
+    i = i + 1;
+    while i < length(b) && strcmp(strtok(b{i}), '(use')
+        i = i + 1;
     end
-    if checkHeaderPrinted
+    while i < length(b) && strcmp(b{i}(1), TAB)
+        file = b{i}(2:end);
+        % skip 'modified:' substring if found ...
+        if strncmp(file, 'modified:', 9)
+            file = strtrim(file(10:end));
+        end
+        folderAndFile = strsplit(file, '/');
+        if length(folderAndFile) == 1 || strcmp(folderAndFile{1}, 'private')
+            % file in current folder
+            % or file in private folder or below
+            if mexExcept && ~isempty(strfind(folderAndFile{end}, '.mex'))
+                % we need to ignore added mex files for the build process
+            else
+                if ~checkResult
+                    fprintf(printString);
+                    checkResult = true;
+                end
+                fprintf(' * %s\n', file);
+            end
+        end
+        i = i + 1;
+    end
+    if checkResult
         fprintf('\n');
     end
 end

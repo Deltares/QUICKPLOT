@@ -1,4 +1,4 @@
-function varargout=writeavi(varargin)
+function varargout = writeavi(varargin)
 %WRITEAVI MEX interface to Windows AVI functions.
 %
 %   AVIHandle = WRITEAVI('initialize')
@@ -45,7 +45,11 @@ function varargout=writeavi(varargin)
 
 %#mex
 try
-    D = writeavi_precompiled
+    if nargout > 0
+        [varargout{1:nargout}] = writeavi_precompiled(varargin{:});
+    else
+        writeavi_precompiled(varargin{:});
+    end
 catch
     error('Missing MEX-file "writeavi"');
 end

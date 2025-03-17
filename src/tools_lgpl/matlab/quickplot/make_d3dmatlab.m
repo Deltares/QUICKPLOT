@@ -68,7 +68,7 @@ end
 sourcedir=[pwd,filesep,'progsrc'];
 
 % set defaults
-[qpversion,hash,repo_url] = get_qpversion(sourcedir, 'd3d_qp.m');
+[qpversion,hash,repo_url] = get_qpversion;
 T = now;
 
 % overrule using input arguments
@@ -119,7 +119,10 @@ if ~exist('netcdf/snctools','dir')
 end
 
 % strip off the platform flag (binaries for Windows and Linux are included)
-qpversion = deblank(sscanf(qpversion,'%[^(]'));
+% ... but don't strip of (changed)
+% ... the platform is the last string between brackets
+brackets = strfind(qpversion,'(');
+qpversion = qpversion(1:max(brackets)-2);
 % for the progress statement add the platform statement
 qpversion_ = [qpversion, ' (all platforms)'];
 
