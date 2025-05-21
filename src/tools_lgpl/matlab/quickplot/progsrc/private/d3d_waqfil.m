@@ -2354,25 +2354,44 @@ end
 function fm_dir = get_latest_delft3d_fm_installation
 refdate = 0;
 if ispc
-    DeltaresProgFiles = cat(2,getenv('ProgramFiles'),'\Deltares\');
-    d = dir(DeltaresProgFiles);
-    folder = '';
-    for i = 1:length(d)
-        % look for latest folder
-        if d(i).isdir && d(i).datenum > refdate
-            % make sure it is a Delft3D FM/D-Hydro folder
-            if exist(cat(2,DeltaresProgFiles,d(i).name,'\plugins'),'dir')
-                folder = d(i).name;
-                refdate = d(i).datenum;
+    try
+        deltashell_exe = winqueryreg('HKEY_LOCAL_MACHINE','SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\DeltaShell.Gui.exe');
+        % example: deltashell_exe = C:\Program Files\Deltares\Delft3D FM Suite 2024.01 HMWQ\bin\DeltaShell.Gui.exe
+        
+        deltashell_dir = fileparts(deltashell_exe);
+        % example: deltashell_dir = C:\Program Files\Deltares\Delft3D FM Suite 2024.01 HMWQ\bin
+        
+        fm_base = fileparts(deltashell_dir);
+        % example: fm_base = C:\Program Files\Deltares\Delft3D FM Suite 2024.01 HMWQ
+        
+        refdate = 1;
+    catch
+        DeltaresProgFiles = cat(2,getenv('ProgramFiles'),'\Deltares\');
+        % example: DeltaresProgFiles = C:\Program Files\Deltares\
+
+        d = dir(DeltaresProgFiles);
+        folder = '';
+        for i = 1:length(d)
+            % look for latest folder
+            if d(i).isdir && d(i).datenum > refdate
+                % make sure it is a Delft3D FM/D-Hydro folder
+                if exist(cat(2,DeltaresProgFiles,d(i).name,'\plugins'),'dir')
+                    folder = d(i).name;
+                    refdate = d(i).datenum;
+                end
             end
         end
+        
+        fm_base = cat(2,DeltaresProgFiles,folder);
+        % example: fm_base = C:\Program Files\Deltares\Delft3D FM Suite 2024.01 HMWQ
     end
 end
 if refdate > 0
-    fm_dir = cat(2,DeltaresProgFiles,folder,'\plugins\DeltaShell.Dimr\kernels\x64\');
+    fm_dir = cat(2,fm_base,'\plugins\DeltaShell.Dimr\kernels\x64\');
 else
     fm_dir = '';
 end
+
 
 % -----------------------------------------------------------------------------
 function [LocFI,isbinary,subtype,DELWAQ,casemod]=KeyParamFI(FI)
