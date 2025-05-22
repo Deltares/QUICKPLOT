@@ -668,17 +668,17 @@ if DimFlag(T_)
     else
         % if Time Zone is known ...
         if strcmp(tz_forcing,'As in dataset') % free to choose for plotting
-            on = 'on';
-            bg = Active; 
+            status_switch = 'on';
+            status_color = Active; 
             TZsel = get(atz,'value');
         else % specific time zone enforced, don't ask ...
-            on = 'off';
-            bg = Inactive;
+            status_switch = 'off';
+            status_color = Inactive;
             TZsel = find(strcmp(TZstr,tz_forcing));
             set(atz,'value',TZsel)
         end
-        set(findobj(OH,'tag','axestimezone'),'enable',on);
-        set(atz,'enable',on,'backgroundcolor',bg)
+        set(findobj(OH,'tag','axestimezone'),'enable',status_switch);
+        set(atz,'enable',status_switch,'backgroundcolor',status_color)
         Ops.axestimezone_str   = strtok(TZstr{TZsel});
         Ops.axestimezone_shift = TZshift(TZsel);
     end
@@ -1861,12 +1861,8 @@ if nval>=0
         end
         if nval==1
             ExpTypes{end+1}='-QuickIn file';
-        end
-        if nval==1
             ExpTypes{end+1}='Delft3D-MOR field file';
             ExpTypes{end+1}='-Delft3D-MOR field file';
-        end
-        if nval==1
             ExpTypes{end+1}='SIMONA box file';
             ExpTypes{end+1}='-SIMONA box file';
             ExpTypes{end+1}='Waqview xyz file';
