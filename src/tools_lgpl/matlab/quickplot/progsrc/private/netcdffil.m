@@ -234,7 +234,15 @@ if FI.NumDomains>1
     if ~isempty(marg) && ~isempty(Props.Coords)
         spatial = ~isempty(strfind(Props.Coords,'xy'));
     end
-    if domain == FI.NumDomains+2
+    if spatial && domain == FI.NumDomains+2
+        m = identify_mesh(Props.DimName{M_}, FI.MergedPartitions);
+        if isempty(m)
+            spatial = false;
+        else
+            MergedMesh = FI.MergedPartitions(m);
+        end
+    end
+    if spatial && domain == FI.NumDomains+2
         % merged partitions
         if DimFlag(K_)
             cmd = strrep(cmd, 'grid', 'z');
@@ -253,7 +261,7 @@ if FI.NumDomains>1
                     PFI = FI.Partitions{i};
                     PProps.Geom = 'UGRID2D-EDGE';
                     PProps.varid = Props.varid{2};
-                    PProps.DimName{M_} = PFI.Dataset(PFI.Dataset(PProps.varid+1).Mesh{2}).Mesh{6};
+                    PProps.DimName{M_} = PFI.Dataset(PFI.Dataset(PProps.varid+1).Mesh{3}).Mesh{6};
                     Props.Partitions{i} = PProps;
                 end
                 Props.Geom = 'UGRID2D-EDGE';
@@ -286,8 +294,6 @@ if FI.NumDomains>1
         % merged partitions
         partData = Data;
         Data = [];
-        m = identify_mesh(Props.DimName{M_}, FI.MergedPartitions);
-        MergedMesh = FI.MergedPartitions(m);
         
         % XY values i.e. mesh
         if XYRead
@@ -304,7 +310,11 @@ if FI.NumDomains>1
             end
         end
         
-        valLoc = Props.Geom(end-3:end);
+        if strncmp(Props.Geom, 'UGRID', 5)
+            valLoc = Props.Geom(end-3:end);
+        else
+            valLoc = [];
+        end
         if isfield(partData,'Time') && length(partData(1).Time)>1
             nPrefixDim = 1;
             prefixDim = {':'};
@@ -325,11 +335,15 @@ if FI.NumDomains>1
                 zLoc = valLoc;
             end
             Data = mergePartData(Data, partData, MergedMesh, zLoc,{'Z'}, nPrefixDim, prefixDim);
-            Data.ZLocation = zLoc;
+            if ~isempty(zLoc)
+                Data.ZLocation = zLoc;
+            end
         end
         
-        % data values 
-        Data.ValLocation = valLoc;
+        % data values
+        if ~isempty(valLoc)
+            Data.ValLocation = valLoc;
+        end
         if isfield(partData,'Time')
             Data.Time = partData(1).Time;
         end
@@ -2526,6 +2540,7 @@ for m = 1:length(mergedMeshes)
         return
     end
 end
+m = [];
 
 % -----------------------------------------------------------------------------
 function Domains=domains(FI)
@@ -3357,26 +3372,31 @@ end
 
 
 function Data = mergePartData(Data,partData,MergedMesh,valLoc,valFields,nPrefixDim,prefixDim)
-switch valLoc
-    case 'NODE'
-        nloc = MergedMesh.nNodes;
-        domainMask = MergedMesh.nodeDMask;
-        globalIndex = MergedMesh.nodeGIndex;
-    case 'EDGE'
-        nloc = MergedMesh.nEdges;
-        domainMask = MergedMesh.edgeDMask;
-        globalIndex = MergedMesh.edgeGIndex;
-    case 'FACE'
-        nloc = MergedMesh.nFaces;
-        domainMask = MergedMesh.faceDMask;
-        globalIndex = MergedMesh.faceGIndex;
-end
 for v = valFields
     fld = v{1};
     if isfield(partData,fld)
+        switch valLoc
+            case 'NODE'
+                nloc = MergedMesh.nNodes;
+                domainMask = MergedMesh.nodeDMask;
+                globalIndex = MergedMesh.nodeGIndex;
+            case 'EDGE'
+                nloc = MergedMesh.nEdges;
+                domainMask = MergedMesh.edgeDMask;
+                globalIndex = MergedMesh.edgeGIndex;
+            case 'FACE'
+                nloc = MergedMesh.nFaces;
+                domainMask = MergedMesh.faceDMask;
+                globalIndex = MergedMesh.faceGIndex;
+        end
+        %
         sz = size(partData(1).(fld));
         sz(nPrefixDim+1) = nloc;
-        Data.(fld) = NaN(sz);
+        if iscell(partData(1).(fld))
+            Data.(fld) = cell(sz);
+        else
+            Data.(fld) = NaN(sz);
+        end
         for p = 1:length(partData)
             masked = domainMask{p};
             Data.(fld)(prefixDim{:},globalIndex{p}(masked),:) = partData(p).(fld)(prefixDim{:},masked,:);

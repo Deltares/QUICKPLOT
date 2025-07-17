@@ -1959,7 +1959,7 @@ for mesh = NumMeshes:-1:1
         file = Partitions{p}.Filename;
         xNodes{p} = nc_varget(file,xNodeVar);
         yNodes{p} = nc_varget(file,yNodeVar);
-        for partinfo = 1:3
+        for partinfo = 1:4
             try
                 switch partinfo
                     case 1
@@ -1979,6 +1979,15 @@ for mesh = NumMeshes:-1:1
                         % for com files ...
                         iFaces{p} = nc_varget(file,'FlowElemGlobalNr');
                         faceDomain{p} = nc_varget(file,'FlowElemDomain');
+                    case 4
+                        % fallback, use all values of domain 1
+                        if isempty(faceDim)
+                            iNodes{p} = (1:nNodes(p))';
+                            nodeDomain{p} = zeros([nNodes(p),1]);
+                        else
+                            iFaces{p} = (1:nFaces(p));
+                            faceDomain{p} = zeros([nFaces(p),1]);
+                        end
                 end
                 break
             catch
