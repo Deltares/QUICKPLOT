@@ -396,7 +396,7 @@ if isfield(Ops,'plotcoordinate')
                 end
                 x = data.X(:,:,1);
                 y = data.Y(:,:,1);
-            else
+            elseif isfield(data,'X')
                 if size(data.X,2)==2 && size(data.X,1)>2
                     data.X = (data.X(:,1,:) + data.X(:,2,:))/2;
                 elseif size(data.X,1)==2 && size(data.X,2)>2
@@ -425,6 +425,8 @@ if isfield(Ops,'plotcoordinate')
                 s = rot90(s,2);
             end
             s = reshape(repmat(s,[1 1 size(data.X,3)]),size(data.X));
+        case {'coordinate','index'}
+            s = 1:numel(data.Val);
         case 'x coordinate'
             s = data.X;
         case 'y coordinate'
@@ -1142,11 +1144,11 @@ if isfield(Ops,'plotcoordinate') && ~isempty(Ops.plotcoordinate)
             else
                 diststr = 'y coordinate';
             end
-        case 'coordinate'
+        case {'coordinate','index'}
             if isfield(data,'XName')
                 diststr = data(1).XName;
             else
-                diststr = 'coordinate';
+                diststr = Ops.plotcoordinate;
             end
     end
 end

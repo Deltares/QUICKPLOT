@@ -180,10 +180,10 @@ elseif isfield(Props,'Geom') && ~isempty(Props.Geom)
 else
     if DimFlag(M_) && DimFlag(N_)
         geometry='sQUAD';
-        coordinates='xy';
+        coordinates='mn';
     elseif DimFlag(M_) || DimFlag(N_)
         geometry='sSEG';
-        coordinates='x';
+        coordinates='m';
     else
         geometry='PNT';
         coordinates='';
@@ -719,7 +719,7 @@ if strfind(axestype,'Y')
     %end
 else
     if ~ismember('y',coordinates) && ~ismember('x',coordinates)
-        coords={'coordinate'};
+        coords={'index'};
     elseif ~ismember('y',coordinates)
         coords={'path distance','reverse path distance','x coordinate'};
     elseif isfield(Props,'MName') && ~isempty(Props.MName) && multiple(M_)
