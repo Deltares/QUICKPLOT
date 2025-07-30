@@ -130,9 +130,9 @@ else
         repoUrl   = 'unknown';
         hash      = 'unknown';
     else
-        [commit, b] = strtok(b);
-        [hash, b] = strtok(b);
-        b = strsplit(b, local_newline);
+        [commit, b] = strtok(b)
+        [hash, b] = strtok(b)
+        b = strsplit(b, local_newline)
         
         if ~isempty(strfind(b{1},'refs/pull'))
             % We're probably working on a pull request ... don't look for
