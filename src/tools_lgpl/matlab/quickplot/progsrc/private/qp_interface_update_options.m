@@ -188,6 +188,9 @@ else
         geometry='PNT';
         coordinates='';
     end
+    if ~isempty(Props.Coords)
+        coordinates = Props.Coords;
+    end
     if isfield(Props,'Tri') && isequal(Props.Tri,1)
         geometry='TRI';
         coordinates='xy';
