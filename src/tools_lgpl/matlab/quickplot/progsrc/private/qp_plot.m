@@ -419,7 +419,7 @@ if isfield(Ops,'plotcoordinate')
             end
             if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
                 s = pathdistance(x,y,'geographic');
-                data.XUnits = 'm';
+                sUnits = 'm';
             else
                 s = pathdistance(x,y);
             end
