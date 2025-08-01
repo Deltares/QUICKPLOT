@@ -1241,7 +1241,7 @@ switch Type
                     case 'tem'
                         Out(end).DimFlag(T_) = 5;
                         name = 'temperature';
-                        units = '°C';
+                        units = 'Â°C';
                     case 'vdf'
                         Out(end).DimFlag(T_) = 5;
                         name = 'vertical diffusivity';
@@ -2216,7 +2216,7 @@ if isempty(x)
             x.NonTranspSubs=isSubs & ~isTransp;
         end
     catch
-        if isequal(tbl,'auto') || ~exist(tbl,'file')
+        if strcmp(tbl,'auto') || ~exist(tbl,'file')
             errmsg = 'Cannot find the process definition file.';
         else
             errmsg = ['Cannot open the process definition file ', tbl];
