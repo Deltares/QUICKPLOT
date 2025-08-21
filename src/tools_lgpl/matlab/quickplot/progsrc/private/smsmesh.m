@@ -100,7 +100,7 @@ try
         S = local_open_grd(fid,S);
         S = local_open_dep(S);
     else
-        error('Expected "MESH2D" or "Node Number =" on the first line.')
+        error('Expected "MESH2D" or "Node Number =" on the first line. Found: %s', Line)
     end
     fclose(fid);
 catch err
@@ -293,7 +293,7 @@ while 1
             end
             nVal = nVal + S.nMaterials;
             if length(elm) < nVal
-                error('Expected at least %i numbers on line "%s".', nVal, Line)
+                error('Expected at least %i numbers on line "%s", found %i.', nVal, Line, length(elm))
             end
             IDs = zeros(4,1);
             % The following code ignores the additional nodes upon reading.

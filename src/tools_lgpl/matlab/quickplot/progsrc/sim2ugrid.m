@@ -22,7 +22,7 @@ function outfile = sim2ugrid(varargin)
 %
 %   The function copies only the data relevant for D-FAST Morphological
 %   Impact and D-FAST Bank Erosion, being water levels, bed levels, water
-%   depth, flow velocity vector, and Chézy value at the cell centres.
+%   depth, flow velocity vector, and ChÃ©zy value at the cell centres.
 %
 %   See also VS_USE, WAQUA, NETCDF.
 
@@ -436,11 +436,11 @@ switch simOrg.QP_FileType
         
         isource = ustrcmpi('source', {simOrg.Attribute.Name});
         if isempty(isource)
-            error('Expecting a global "source" attribute in a D-Flow FM netCDF file.')
+            error('Expecting a global "source" attribute in D-Flow FM netCDF file: %s', filename)
         else
             source = simOrg.Attribute(isource).Value;
             if ~strncmp(source, 'D-Flow FM', 9)
-                error('Only netCDF files coming from D-Flow FM are currently supported.')
+                error('Only netCDF files coming from D-Flow FM are currently supported. Found source: %s', source)
             end
         end
 
