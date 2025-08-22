@@ -1386,7 +1386,7 @@ if ask_for_angleconvention
     set(pd,'enable','on','backgroundcolor',Active)
 end
 
-if thindams && ~strncmp(Ops.presentationtype,'values',6)
+if thindams && isfield(Ops,'presentationtype') && ~strncmp(Ops.presentationtype,'values',6)
     if nval==0.9
         cl=1;
     else
