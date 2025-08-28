@@ -313,18 +313,25 @@ if isempty(Err)
         % write time dependent data
         start = [0, iTime];
         count = [total_nfaces, 1];
+
+        % Replace NaNs with missing_real before writing to netCDF
+        zw(isnan(zw)) = missing_real;
+        h(isnan(h)) = missing_real;
+        ucx(isnan(ucx)) = missing_real;
+        ucy(isnan(ucy)) = missing_real;
+        if has_chezy
+            czs(isnan(czs)) = missing_real;
+            netcdf.putVar(ncid, iczs, start, count, czs)
+        end
+
+        % Write data to netCDF file
         try
             netcdf.putVar(ncid, it, iTime, 1, t)
-            zw(isnan(zw)) = missing_real;
             netcdf.putVar(ncid, izw, start, count, zw)
-            h(isnan(h)) = missing_real;
             netcdf.putVar(ncid, ih, start, count, h)
-            ucx(isnan(ucx)) = missing_real;
             netcdf.putVar(ncid, iucx, start, count, ucx)
-            ucy(isnan(ucy)) = missing_real;
             netcdf.putVar(ncid, iucy, start, count, ucy)
             if has_chezy
-                czs(isnan(czs)) = missing_real;
                 netcdf.putVar(ncid, iczs, start, count, czs)
             end
         catch Err
