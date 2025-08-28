@@ -18,7 +18,7 @@ function outfile = sim2ugrid(varargin)
 %
 %   The function copies only the data relevant for D-FAST Morphological
 %   Impact and D-FAST Bank Erosion, being water levels, bed levels, water
-%   depth, flow velocity vector, and Chézy value at the cell centres.
+%   depth, flow velocity vector, and ChÃ©zy value at the cell centres.
 %
 %   See also VS_USE, WAQUA, NETCDF.
 
@@ -157,6 +157,8 @@ total_nnodes = sum(nnodes);
 ncfile = simData{1}.ncfile;
 fprintf(1, 'Creating %s ...\n', ncfile);
 ncid = netcdf.create(ncfile, 'NETCDF4');
+missing_node = netcdf.getConstant('NC_FILL_INT');
+missing_real = netcdf.getConstant('NC_FILL_DOUBLE');
 
 % define dimensions, variables and attributes
 Err = [];
@@ -183,6 +185,7 @@ try
     ifnc = netcdf.defVar(ncid, 'mesh2d_face_nodes', 'NC_INT', [imaxfn, ifaces]);
     netcdf.putAtt(ncid, ifnc, 'cf_role', 'face_node_connectivity')
     netcdf.putAtt(ncid, ifnc, 'start_index', int32(1))
+    netcdf.putAtt(ncid, ifnc, '_FillValue', missing_node)
     
     if strcmp(zb_loc,'node')
         idim = inodes;
@@ -195,6 +198,7 @@ try
     netcdf.putAtt(ncid, izb, 'units', 'm')
     netcdf.putAtt(ncid, izb, 'mesh', 'mesh2d')
     netcdf.putAtt(ncid, izb, 'location', zb_loc)
+    netcdf.putAtt(ncid, izb, '_FillValue', missing_real)
     
     it = netcdf.defVar(ncid, 'time', 'NC_DOUBLE', itimes);
     netcdf.putAtt(ncid, it, 'standard_name', 'time')
@@ -206,6 +210,7 @@ try
     netcdf.putAtt(ncid, izw, 'units', 'm')
     netcdf.putAtt(ncid, izw, 'mesh', 'mesh2d')
     netcdf.putAtt(ncid, izw, 'location', 'face')
+    netcdf.putAtt(ncid, izw, '_FillValue', missing_real)
     
     ih = netcdf.defVar(ncid, 'mesh2d_h1', 'NC_DOUBLE', [ifaces, itimes]);
     netcdf.putAtt(ncid, ih, 'standard_name', 'sea_floor_depth_below_sea_surface')
@@ -213,18 +218,21 @@ try
     netcdf.putAtt(ncid, ih, 'units', 'm')
     netcdf.putAtt(ncid, ih, 'mesh', 'mesh2d')
     netcdf.putAtt(ncid, ih, 'location', 'face')
+    netcdf.putAtt(ncid, ih, '_FillValue', missing_real)
     
     iucx = netcdf.defVar(ncid, 'mesh2d_ucx', 'NC_DOUBLE', [ifaces, itimes]);
     netcdf.putAtt(ncid, iucx, 'standard_name', 'sea_water_x_velocity')
     netcdf.putAtt(ncid, iucx, 'units', 'm s-1')
     netcdf.putAtt(ncid, iucx, 'mesh', 'mesh2d')
     netcdf.putAtt(ncid, iucx, 'location', 'face')
+    netcdf.putAtt(ncid, iucx, '_FillValue', missing_real)
     
     iucy = netcdf.defVar(ncid, 'mesh2d_ucy', 'NC_DOUBLE', [ifaces, itimes]);
     netcdf.putAtt(ncid, iucy, 'standard_name', 'sea_water_y_velocity')
     netcdf.putAtt(ncid, iucy, 'units', 'm s-1')
     netcdf.putAtt(ncid, iucy, 'mesh', 'mesh2d')
     netcdf.putAtt(ncid, iucy, 'location', 'face')
+    netcdf.putAtt(ncid, iucy, '_FillValue', missing_real)
     
     if has_chezy
         iczs = netcdf.defVar(ncid, 'mesh2d_czs', 'NC_DOUBLE', [ifaces, itimes]);
@@ -232,6 +240,7 @@ try
         netcdf.putAtt(ncid, iczs, 'units', 'm0.5s-1')
         netcdf.putAtt(ncid, iczs, 'mesh', 'mesh2d')
         netcdf.putAtt(ncid, iczs, 'location', 'face')
+        netcdf.putAtt(ncid, iczs, '_FillValue', missing_real)
     end
     
     iglobal = netcdf.getConstant('GLOBAL');
@@ -260,10 +269,11 @@ if isempty(Err)
             faces{i} = faces{i} + nodeOffsets(i-1);
         end
         % concatenate arrays
-        xnode = cat(1,xnode{:});
-        ynode = cat(1,ynode{:});
-        faces = cat(1,faces{:});
-        zb = cat(1,zb{:});
+        xnode = cat(1, xnode{:});
+        ynode = cat(1, ynode{:});
+        faces = cat(1, faces{:});
+        faces(isnan(faces)) = missing_node;
+        zb = cat(1, zb{:});
         % write arrays
         netcdf.putVar(ncid, ix, xnode)
         netcdf.putVar(ncid, iy, ynode)
@@ -305,11 +315,16 @@ if isempty(Err)
         count = [total_nfaces, 1];
         try
             netcdf.putVar(ncid, it, iTime, 1, t)
+            zw(isnan(zw)) = missing_real;
             netcdf.putVar(ncid, izw, start, count, zw)
+            h(isnan(h)) = missing_real;
             netcdf.putVar(ncid, ih, start, count, h)
+            ucx(isnan(ucx)) = missing_real;
             netcdf.putVar(ncid, iucx, start, count, ucx)
+            ucy(isnan(ucy)) = missing_real;
             netcdf.putVar(ncid, iucy, start, count, ucy)
             if has_chezy
+                czs(isnan(czs)) = missing_real;
                 netcdf.putVar(ncid, iczs, start, count, czs)
             end
         catch Err
