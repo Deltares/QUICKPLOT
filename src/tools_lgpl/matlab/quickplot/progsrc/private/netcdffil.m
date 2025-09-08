@@ -268,7 +268,7 @@ if FI.NumDomains>1
     end
     if isempty(cmd)
         Data = [];
-    elseif ~merge_needed
+    elseif ~merge_needed && domain == FI.NumDomains+2
         % read non-spatial data from the first file ... should be consistent across all files and no way to merge anyway
         Data = netcdffil(FI,1,Props,cmd,args{:});
     else
