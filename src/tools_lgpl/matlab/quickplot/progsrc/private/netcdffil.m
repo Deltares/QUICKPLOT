@@ -2199,7 +2199,7 @@ end
 % all partitions ... no index across all partitions ... set DimFlag to inf
 % to display dimension size as ?
 %
-if load_all_domains(FI, domain)
+if load_all_partitions(FI, domain)
     for i = 1:length(Out)
         if Out(i).DimFlag(M_)
             Out(i).DimFlag(M_) = inf;
@@ -3457,7 +3457,7 @@ switch Props.varid{1}
 end
 
 function check = load_single_partition(FI, domain)
-check = ~isempty(domain) && domain <= FI.NumDomains;
+check = ~isempty(domain) && FI.NumDomains > 1 && domain <= FI.NumDomains;
 
 function check = load_all_partitions(FI, domain)
 check = domain == FI.NumDomains+1;
