@@ -238,9 +238,9 @@ else
             end
             if strcmp(Cmd,'error')
                 stdbeep
-                figure(fig)
+                bring_to_front(fig)
             elseif strcmp(Cmd,'warning')
-                figure(fig)
+                bring_to_front(fig)
             end
             Separator={};
             if isempty(errors)
@@ -376,3 +376,10 @@ UD.MessageOffset=MessageOffset;
 UD.MaxNMessages=MaxNMessages;
 UD.LastType=LastType;
 set(fig,'userdata',UD);
+
+function bring_to_front(fig)
+try
+    focus(fig)
+catch
+    figure(fig)
+end
