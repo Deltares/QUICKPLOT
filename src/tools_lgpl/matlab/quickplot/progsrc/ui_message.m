@@ -379,7 +379,6 @@ set(fig,'userdata',UD);
 
 function bring_to_front(fig)
 try
-    focus(fig)
+    figure(fig) % focus(fig)
 catch
-    figure(fig)
 end
