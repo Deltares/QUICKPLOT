@@ -54,6 +54,7 @@ persistent qpversion qpversionbase gitrepo githash qpcreationdate
 persistent logfile logtype
 
 fprintf('d3d_qp_core called with command: %s\n', cmd)
+dbstack
 cmd0 = cmd;
 
 if isempty(qpversion)
@@ -122,7 +123,12 @@ if isempty(gcbf) || ~strcmp(get(gcbf,'tag'),'Delft3D-QUICKPLOT')
     mfig=findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
     
     if isempty(mfig) && none(strcmp(cmd,{'initialize','initialize_background','closefigure','printfigure','dayok'}))
-        d3d_qp
+        try
+            d3d_qp_core('initialize')
+        catch e
+            e
+            stack2str(e.stack)
+        end
         mfig=findobj(allchild(0),'flat','tag','Delft3D-QUICKPLOT');
         if isempty(mfig)
             %
