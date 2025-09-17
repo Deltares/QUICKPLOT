@@ -53,6 +53,9 @@ function outdata=d3d_qp_core(cmd,varargin)
 persistent qpversion qpversionbase gitrepo githash qpcreationdate
 persistent logfile logtype
 
+fprintf('d3d_qp_core called with command: %s\n', cmd)
+cmd0 = cmd;
+
 if isempty(qpversion)
     qpversionbase = 'v<VERSION>';
     gitrepo = '<GITREPO>';
@@ -5253,6 +5256,7 @@ switch cmd
             error('Unknown command in d3d_qp: %s',cmd)
         end
 end
+fprintf('END OF d3d_qp_core called with command: %s\n', cmd0)
 
 function check_nonprivate_files
 thisfile=mfilename('fullpath');

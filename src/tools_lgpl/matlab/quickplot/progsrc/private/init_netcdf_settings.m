@@ -38,6 +38,8 @@ if ~isempty(run_once)
 end
 
 fprintf('Running INIT_NETCDF_SETTINGS\n');
+fprintf('Stack:\n');
+dbstack
 run_once = 1;
 matlab_netcdf_path = qp_basedir('exe');
 fprintf('Base dir: %s\n', matlab_netcdf_path);
