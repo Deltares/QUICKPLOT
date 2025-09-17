@@ -37,9 +37,12 @@ if ~isempty(run_once)
     return
 end
 
+fprintf('Running INIT_NETCDF_SETTINGS\n');
 run_once = 1;
 matlab_netcdf_path = qp_basedir('exe');
+fprintf('Base dir: %s\n', matlab_netcdf_path);
 if isstandalone
+    fprintf('STANDALONE!!\n');
     try
         % Insert a try-catch block here since the setpref command sometimes fails on a write error to matlabprefs.mat.
         setpref('SNCTOOLS','USE_JAVA',true);
@@ -55,16 +58,20 @@ else
         };
     matlab_netcdf_path = '';
     for i = 1:length(check_dirs)
+        fprintf('Checking: %s\n', check_dirs{i});
         if exist(check_dirs{i}, 'dir')
+            fprintf('Exists!\n');
             matlab_netcdf_path = check_dirs{i};
             break
         end
+        fprintf('Nope ...\n');
     end
 
     % if nc_info can be found we assume that the settings were
     % preconfigured correctly either during a previous start of d3d_qp, or
     % via oetsettings, or by the user
     p = which('nc_info');
+    fprintf('Do we already have nc_info? Located at: %s\n', p);
     if isempty(p)
         if ~isempty(matlab_netcdf_path)
             addpath([matlab_netcdf_path, filesep, 'mexnc'])
@@ -73,6 +80,7 @@ else
 
         % check if nc_info can now be found ...
         p = which('nc_info');
+        fprintf('Do we now have nc_info? Located at: %s\n', p);
         if isempty(p)
             ui_message('message','Unable to locate mexnc and snctools for accessing netCDF files.')
         end
