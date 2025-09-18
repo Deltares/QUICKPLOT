@@ -89,8 +89,7 @@ switch style
             'String',sprintf('MATLAB. (c) 1984 - %i The MathWorks, Inc.',dm(1)));
         
     otherwise
-        icon_filename = 'private/d3d_qp.png';
-        [icon,~,alpha] = imread(icon_filename);
+        [icon,~,alpha] = imread(d3d_qp('iconpath'));
 
         a0 = axes('Parent',ifig, ...
             'Units', 'pixels', ...

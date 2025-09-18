@@ -86,7 +86,7 @@ pos(3:4)=dims;
 
 mfig = qp_uifigure('Delft3D-QUICKPLOT','','Delft3D-QUICKPLOT',pos);
 try
-    icon_filename = 'private/d3d_qp.png';
+    icon_filename = d3d_qp('iconpath');
     if exist(icon_filename,'file')
         set(mfig,'Icon',icon_filename)
     end
