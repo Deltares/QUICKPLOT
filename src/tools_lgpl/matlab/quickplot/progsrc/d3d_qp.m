@@ -101,8 +101,8 @@ if nargout~=0
     elseif strcmp(cmd,'iswl')
         outdata = {isequal(qp_settings('WLextensions','off'),'on')};
         return
-    elseif strcmp('iconpath')
-        outdata = {[qp_basedir('exe') filesep 'private' filesep d3d_qp.png']};
+    elseif strcmp(cmd,'iconpath')
+        outdata = {[qp_basedir('exe') filesep 'private' filesep 'd3d_qp.png']};
         return
     elseif strcmp(cmd,'version')
         if nargin>1
