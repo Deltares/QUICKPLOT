@@ -64,7 +64,8 @@ if ~isempty(closecom)
     end
 end
 %
-create_figure = @uifigure;
+% create_figure = @uifigure; % uifigures allow you to set the Icon, but they are slower ...
+create_figure = @figure;
 
 H = create_figure('Visible','off', ...
     'DefaultUicontrolBackgroundColor',Inactive, ...
