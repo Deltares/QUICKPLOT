@@ -2051,10 +2051,10 @@ switch field
                 end
                 varargout={SUBS refdate+subs.SimTime/1440};
             else
-                error('Invalid substance name: %s',sbs)
+                error('Invalid substance name: "%s"',sbs)
             end
         else
-            error('Unknown field: %s',field)
+            error('Unknown field: "%s"',field)
         end
 end
 %==========================================================================
