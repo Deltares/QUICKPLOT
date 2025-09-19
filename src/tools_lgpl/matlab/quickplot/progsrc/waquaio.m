@@ -41,9 +41,9 @@ function varargout=waquaio(sds,exper,field,varargin)
 %   * subst:<substance name>  : substance field, time
 %
 %   * weirs    : udam,vdam,uhgh,vhgh: weir locations and weir crest heights
-%     weirs2-cresth  : udam,vdam,uhgh,vhgh: weir locations and weir crest heights
-%     weirs2-sill1   : udam,vdam,uhgh,vhgh: weir locations and weir sill heights (low M/N)
-%     weirs2-sill2   : udam,vdam,uhgh,vhgh: weir locations and weir sill heights (high M/N)
+%     weirs-cresth  : udam,vdam,uhgh,vhgh: weir locations and weir crest heights
+%     weirs-sill1   : udam,vdam,uhgh,vhgh: weir locations and weir sill heights (low M/N)
+%     weirs-sill2   : udam,vdam,uhgh,vhgh: weir locations and weir sill heights (high M/N)
 %   * weirs2   : udam,vdam: locations of weirs - new style
 %     weirs2-cresth  : udam,vdam,uhgh,vhgh: weir locations and weir crest heights - new style
 %     weirs2-sill1   : udam,vdam,uhgh,vhgh: weir locations and weir sill heights (low M/N) - new style
