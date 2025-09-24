@@ -1433,15 +1433,7 @@ try
                         Val = [prefix 'FaceVal'];
                         dimVal = dim_nFaces;
                 end
-                var_Val = netcdf.defVar(ncid,Val,'double',dimVal);
-                netcdf.putAtt(ncid,var_Val,'long_name',DATA.Name);
-                if isfield(DATA,'Units') && ~isempty(DATA.Units)
-                    netcdf.putAtt(ncid,var_Val,'units',DATA.Units);
-                end
-                if isfield(DATA,'Classes') && isfield(DATA,'ClassVal')
-                    netcdf.putAtt(ncid,var_Val,'flag_meanings',strjoin(DATA.Classes));
-                    netcdf.putAtt(ncid,var_Val,'flag_values',DATA.ClassVal);
-                end
+                var_Val = add_Val_field(ncid, Val, dimVal, DATA);
             end
             %
             globalId = netcdf.getConstant('GLOBAL');
@@ -1491,11 +1483,7 @@ try
                 end
                 %
                 Val = [prefix 'Val'];
-                var_Val = netcdf.defVar(ncid,Val,'double',dim_nPoints);
-                netcdf.putAtt(ncid,var_Val,'long_name',DATA.Name);
-                if isfield(DATA,'Units') && ~isempty(DATA.Units)
-                    netcdf.putAtt(ncid,var_Val,'units',DATA.Units);
-                end
+                var_Val = add_Val_field(ncid, Val, dim_nPoints, DATA);
                 %
                 %globalId = netcdf.getConstant('GLOBAL');
                 %netcdf.putAtt(ncid,globalId,'Conventions','CF?');
@@ -1520,4 +1508,15 @@ catch Exception1
         % ignore or append
     end
     rethrow(Exception1)
+end
+
+function varid = add_Val_field(ncid, Val, dimVal, DATA)
+varid = netcdf.defVar(ncid,Val,'double',dimVal);
+netcdf.putAtt(ncid, varid, 'long_name', DATA.Name);
+if isfield(DATA, 'Units') && ~isempty(DATA.Units)
+    netcdf.putAtt(ncid, varid, 'units', DATA.Units);
+end
+if isfield(DATA, 'Classes') && isfield(DATA, 'ClassVal')
+    netcdf.putAtt(ncid, varid, 'flag_meanings', strjoin(DATA.Classes));
+    netcdf.putAtt(ncid, varid, 'flag_values', DATA.ClassVal);
 end
