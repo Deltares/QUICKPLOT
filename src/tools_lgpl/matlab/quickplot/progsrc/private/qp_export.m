@@ -59,7 +59,7 @@ if isfield(Props,'MNK') && Props.MNK
 end
 
 sign=1;
-if isequal(ExpType(1),'-'),
+if isequal(ExpType(1),'-')
     sign=-1;
     ExpType=ExpType(2:end);
 end
@@ -1319,6 +1319,7 @@ try
             end
         end
         if isfield(DATA,'FaceNodeConnect')
+            % write UGRID 2D
             allNodes = 1:length(DATA.X);
             keepNodes = ismember(allNodes,DATA.FaceNodeConnect);
             if ~all(keepNodes)
@@ -1335,10 +1336,19 @@ try
                 %
                 if isfield(DATA,'EdgeNodeConnect')
                     DATA.EdgeNodeConnect = renum(DATA.EdgeNodeConnect);
+                    keepEdges = all(DATA.EdgeNodeConnect > 0,2);
+                    DATA.EdgeNodeConnect = DATA.EdgeNodeConnect(keepEdges,:);
                 end
                 %
                 if isfield(DATA,'Val') && isfield(DATA, 'ValLocation')
-                    DATA.Val = DATA.Val(keepNodes);
+                    switch DATA.ValLocation
+                        case 'NODE'
+                            DATA.Val = DATA.Val(keepNodes);
+                        case 'EDGE'
+                            DATA.Val = DATA.Val(keepEdges);
+                        case 'FACE'
+                            % we keep all faces, so nothing to do here.
+                    end
                 end
             end
             % save as UGRID
@@ -1428,6 +1438,10 @@ try
                 if isfield(DATA,'Units') && ~isempty(DATA.Units)
                     netcdf.putAtt(ncid,var_Val,'units',DATA.Units);
                 end
+                if isfield(DATA,'Classes') && isfield(DATA,'ClassVal')
+                    netcdf.putAtt(ncid,var_Val,'flag_meanings',strjoin(DATA.Classes));
+                    netcdf.putAtt(ncid,var_Val,'flag_values',DATA.ClassVal);
+                end
             end
             %
             globalId = netcdf.getConstant('GLOBAL');
@@ -1443,6 +1457,56 @@ try
             netcdf.putVar(ncid,var_FaceNodeConnect,DATA.FaceNodeConnect')
             if isfield(DATA,'Val') && isfield(DATA, 'ValLocation')
                 netcdf.putVar(ncid,var_Val,DATA.Val);
+            end
+        elseif isfield(DATA,'Val') && isequal(size(DATA.Val),size(DATA.X))
+            % write simple X,Y,Z data
+            szX = size(DATA.X);
+            if isequal(max(szX),numel(DATA.X))
+                % write X,Y,Z with single spatial dimension
+                nPoints = [prefix 'nPoints'];
+                dim_nPoints = netcdf.defDim(ncid,nPoints,numel(DATA.X));
+                %
+                X = [prefix 'X'];
+                var_X = netcdf.defVar(ncid,X,'double',dim_nPoints);
+                if isfield(DATA,'XUnits') && strcmp(DATA.XUnits,'deg')
+                    netcdf.putAtt(ncid,var_X,'standard_name','longitude')
+                    netcdf.putAtt(ncid,var_X,'units','degrees_east')
+                else
+                    netcdf.putAtt(ncid,var_X,'standard_name','projection_x_coordinate')
+                    if isfield(DATA,'XUnits') && ~isempty(DATA.XUnits)
+                        netcdf.putAtt(ncid,var_X,'units',DATA.XUnits)
+                    end
+                end
+                %
+                Y = [prefix 'Y'];
+                var_Y = netcdf.defVar(ncid,Y,'double',dim_nPoints);
+                if isfield(DATA,'YUnits') && strcmp(DATA.YUnits,'deg')
+                    netcdf.putAtt(ncid,var_Y,'standard_name','latitude');
+                    netcdf.putAtt(ncid,var_Y,'units','degrees_north')
+                else
+                    netcdf.putAtt(ncid,var_Y,'standard_name','projection_y_coordinate')
+                    if isfield(DATA,'YUnits') && ~isempty(DATA.YUnits)
+                        netcdf.putAtt(ncid,var_Y,'units',DATA.YUnits)
+                    end
+                end
+                %
+                Val = [prefix 'Val'];
+                var_Val = netcdf.defVar(ncid,Val,'double',dim_nPoints);
+                netcdf.putAtt(ncid,var_Val,'long_name',DATA.Name);
+                if isfield(DATA,'Units') && ~isempty(DATA.Units)
+                    netcdf.putAtt(ncid,var_Val,'units',DATA.Units);
+                end
+                %
+                %globalId = netcdf.getConstant('GLOBAL');
+                %netcdf.putAtt(ncid,globalId,'Conventions','CF?');
+                %
+                netcdf.endDef(ncid)
+                %
+                netcdf.putVar(ncid,var_X,DATA.X)
+                netcdf.putVar(ncid,var_Y,DATA.Y)
+                netcdf.putVar(ncid,var_Val,DATA.Val);
+            else
+                error('Exporting this multidimensional data set to netCDF not yet supported')
             end
         else
             error('Exporting this data set to netCDF not yet supported')
