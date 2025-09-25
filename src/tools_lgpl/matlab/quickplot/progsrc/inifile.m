@@ -340,13 +340,6 @@ while iarg <= length(varargin)
     end
     iarg = iarg+1;
 end
-switch formatStyle
-    case 'compact'
-        compact = true;
-    case 'standard'
-    case 'pretty'
-        pretty = true;
-end
 if pretty
     indent = '    ';
 else
