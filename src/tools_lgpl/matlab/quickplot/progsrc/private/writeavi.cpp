@@ -58,6 +58,8 @@ typedef struct {
    LPBITMAPINFO        bitinf;
 } AVIFILESTRUCT, FAR * PAVIFILESTRUCT;
 
+static const size_t AVI_MAGIC = 15102025;
+
 /********************************************************************
  *      Check and get string
  ********************************************************************/
@@ -117,8 +119,8 @@ PAVIFILESTRUCT GetAVI(const mxArray * mxA)
 
    PAVIFILESTRUCT pavi = (PAVIFILESTRUCT) pavih;
 
-   if (pavi->magicNumber != 15102025)
-      mexErrMsgTxt("AVI handle returned points to invalid memory.");
+   if (pavi->magicNumber != AVI_MAGIC)
+      mexErrMsgTxt("AVI handle points to invalid memory.");
 
   /*
    * Check AVIFILE for validity; if not valid
@@ -193,7 +195,7 @@ const mxArray *prhs[]  // Array of right hand side arguments
             AVIFileInit();
 
             pavifil = (PAVIFILESTRUCT) malloc(sizeof(AVIFILESTRUCT));
-            pavifil->magicNumber  = 15102025;
+            pavifil->magicNumber  = AVI_MAGIC;
             pavifil->pfile        = NULL;
             pavifil->ps           = NULL;
             pavifil->psCompressed = NULL;
@@ -242,7 +244,7 @@ const mxArray *prhs[]  // Array of right hand side arguments
          bitinf->bmiHeader.biPlanes = 1 ;
          bitinf->bmiHeader.biBitCount = (WORD) bits ;
          bitinf->bmiHeader.biCompression = BI_RGB ;
-         bitinf->bmiHeader.biSizeImage = (WORD) ((width*bits+31)/32 * 4)*height ;
+         bitinf->bmiHeader.biSizeImage = (DWORD) (((width*bits+31)/32 * 4)*height) ;
          bitinf->bmiHeader.biXPelsPerMeter = 0 ;
          bitinf->bmiHeader.biYPelsPerMeter = 0 ;
          bitinf->bmiHeader.biClrUsed = LenCMap;
