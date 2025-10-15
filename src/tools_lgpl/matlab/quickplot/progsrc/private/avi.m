@@ -149,7 +149,8 @@ switch cmd
             % multiple of 4.
             Fig=Fig(min(1:szAVI(1),szFig(1)),min(1:szAVI(2),szFig(2)),:);
             if ~isequal(AVIHandle.VideoSize,szFig)
-                error('Image size should not change during video.');
+                error('Image size should not change during recording. Initial size: %i x %i. New size: %i x %i.', ...
+                    AVIHandle.VideoSize(1), AVIHandle.VideoSize(2), szFig(1), szFig(2));
             end
             AVIHandle.FrameNr=AVIHandle.FrameNr+1;
             AVIHandle.CPointer = calldll('writeavi','addframe', AVIHandle.CPointer, ...

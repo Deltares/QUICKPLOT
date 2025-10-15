@@ -25,8 +25,8 @@
  *
  *-------------------------------------------------------------------------------
  *   http://www.deltaressystems.com
- *   $HeadURL: https://repos.deltares.nl/repos/ds/trunk/src/tools/matlab/Delft3D-toolbox/progsrc/private/exepath.c $
- *   $Id: exepath.c 14474 2011-01-07 12:56:41Z jagers $
+ *   $HeadURL$
+ *   $Id$
  */
 
 /* mex function to determine the path of the executable on Linux in deployed mode. */
