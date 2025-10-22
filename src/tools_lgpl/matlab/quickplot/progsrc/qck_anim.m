@@ -114,13 +114,13 @@ end
 %
 switch cmd
     case {'start','startanim'}
-        asld=findobj(afig,'tag','animslid');
-        sld=findobj(par_fig,'tag','animslid');
-        psh=findobj(par_fig,'tag','animpush');
         animstop=findall(par_fig,'tag','stopanim');
         set(animstop,'userdata',0)
+        
+        asld=findobj(afig,'tag','animslid');
         i0=getappdata(asld,'minival');
         i1=getappdata(asld,'maxival');
+
         OPS.Type = '';
         OPS.background = 0;
         OPS.steps = i0:i1;
@@ -136,8 +136,19 @@ switch cmd
             ANISteps = OPS.steps;
         end
         streamObj = streamInitialize(OPS, par_fig);
+        
+        sld=findobj(par_fig,'tag','animslid');
+        psh=findobj(par_fig,'tag','animpush');
+        ax=findall(par_fig,'type','axes');
+        try
+            axtb = [ax.Toolbar];
+        catch
+            axtb = [];
+        end
         set(sld,'vis','off')
         set(psh,'vis','off')
+        set(axtb,'vis','off')
+        
         if OPS.background
             set(par_fig,'vis','off')
             pbfig=progressbar('cancel','closereq');
@@ -145,9 +156,7 @@ switch cmd
             pbfig=-1;
         end
         vuim=findall(par_fig,'type','uimenu','visible','on');
-        %      vtb=findall(par_fig,'type','uitoolbar','visible','on');
         set(vuim,'vis','off')
-        %      set(vtb,'vis','off')
         set(findall(par_fig,'tag','startanim'),'enable','off');
         set(findall(par_fig,'tag','stopanim'),'enable','on');
         %
@@ -266,6 +275,8 @@ switch cmd
             set(sld(ish),'vis','on')
             ish=ishandle(psh);
             set(psh(ish),'vis','on')
+            ish=ishandle(axtb);
+            set(axtb(ish),'vis','on')
         catch
         end
     case 'slider'
@@ -955,6 +966,14 @@ switch streamObj.Type
         
     case 'video file'
         Fig = getframe(figures(1));
+        if isfield(streamObj,'imageSize')
+            if ~isequal(streamObj.imageSize, size(Fig.cdata))
+               error('Image size should not change during recording. Initial size: %i x %i. New size: %i x %i.', ...
+                   streamObj.imageSize(1), streamObj.imageSize(2), size(Fig.cdata, 1), size(Fig.cdata, 2))
+            end
+        else
+            streamObj.imageSize = size(Fig.cdata);
+        end
         if strcmp(streamObj.vidObj.VideoFormat,'Indexed')
             if isfield(streamObj,'Colormap')
                 X = rgb2ind(Fig.cdata,streamObj.Colormap);

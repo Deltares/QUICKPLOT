@@ -31,8 +31,8 @@
  *
  *-------------------------------------------------------------------------------
  *   http://www.deltaressystems.com
- *   $HeadURL: https://repos.deltares.nl/repos/ds/trunk/src/tools/matlab/Delft3D-toolbox/progsrc/private/writeavi.cpp $
- *   $Id: writeavi.cpp 14474 2011-01-07 12:56:41Z jagers $
+ *   $HeadURL$
+ *   $Id$
  */
 
 #define  STRICT
@@ -51,11 +51,14 @@
 #define LPLPBI LPBITMAPINFOHEADER *
 
 typedef struct {
+   size_t              magicNumber;
    PAVIFILE            pfile;          // pfile
    PAVISTREAM          ps;
    PAVISTREAM          psCompressed;
    LPBITMAPINFO        bitinf;
 } AVIFILESTRUCT, FAR * PAVIFILESTRUCT;
+
+static const size_t AVI_MAGIC = 15102025;
 
 /********************************************************************
  *      Check and get string
@@ -99,7 +102,7 @@ size_t chkGetPosInt(const mxArray * mxA)
       if ((dimarray[0]==1) & (dimarray[1]==1)) {
          double rValue = mxGetScalar(mxA);
          if (rValue >= 0.0)
-            Value = (int)rValue;
+            Value = (size_t) rValue;
       }
    }
    return Value;
@@ -115,6 +118,9 @@ PAVIFILESTRUCT GetAVI(const mxArray * mxA)
       mexErrMsgTxt("Invalid AVI handle.");
 
    PAVIFILESTRUCT pavi = (PAVIFILESTRUCT) pavih;
+
+   if (pavi->magicNumber != AVI_MAGIC)
+      mexErrMsgTxt("AVI handle points to invalid memory.");
 
   /*
    * Check AVIFILE for validity; if not valid
@@ -136,24 +142,25 @@ const mxArray *prhs[]  // Array of right hand side arguments
 )
 {
    int i;
-   size_t ndims, d;
+   size_t ndims;
    const mwSize *dimarray;
    LPBYTE vals, frame;
 
    char str[256];
-  /*
+
+/*
    printf("%i input argument(s) and %i output argument(s).\n",nrhs,nlhs);
    for (i=0; i<nrhs; i++) {
       printf("arg%2.2i: ",i);
       ndims=mxGetNumberOfDimensions(prhs[i]);
       dimarray=mxGetDimensions(prhs[i]);
       printf("%i",dimarray[0]);
-      for (d=1; d<ndims; d++) {
+      for (int d=1; d<ndims; d++) {
          printf("x%i",dimarray[d]);
       }
       printf(" %s\n",mxGetClassName(prhs[i]));
    }
-   */
+*/
    if (nrhs<1)
       mexErrMsgTxt("Missing AVI command.");
    else if ( mxIsChar(prhs[0]) != 1)
@@ -188,6 +195,7 @@ const mxArray *prhs[]  // Array of right hand side arguments
             AVIFileInit();
 
             pavifil = (PAVIFILESTRUCT) malloc(sizeof(AVIFILESTRUCT));
+            pavifil->magicNumber  = AVI_MAGIC;
             pavifil->pfile        = NULL;
             pavifil->ps           = NULL;
             pavifil->psCompressed = NULL;
@@ -236,7 +244,7 @@ const mxArray *prhs[]  // Array of right hand side arguments
          bitinf->bmiHeader.biPlanes = 1 ;
          bitinf->bmiHeader.biBitCount = (WORD) bits ;
          bitinf->bmiHeader.biCompression = BI_RGB ;
-         bitinf->bmiHeader.biSizeImage = ((width*bits+31)/32 * 4)*height ;
+         bitinf->bmiHeader.biSizeImage = (DWORD) (((width*bits+31)/32 * 4)*height) ;
          bitinf->bmiHeader.biXPelsPerMeter = 0 ;
          bitinf->bmiHeader.biYPelsPerMeter = 0 ;
          bitinf->bmiHeader.biClrUsed = LenCMap;
@@ -384,6 +392,7 @@ const mxArray *prhs[]  // Array of right hand side arguments
       else {
          pavifil = GetAVI(prhs[1]);
          /*
+         printf("AVI Magic Number = %i\n",pavifil->magicNumber);
          printf("AVI PFile = %i\n",pavifil->pfile);
           */
          if (strcmp(cmdStr,"open")==0) {
@@ -422,6 +431,7 @@ const mxArray *prhs[]  // Array of right hand side arguments
 
                plhs[0] = mxCreateDoubleMatrix(1,1,mxREAL);
                *mxGetPr(plhs[0])=(double)(0);
+               return; // early return to avoid overwriting plhs[0]=0 with pavifil again
             }
          }
          else if (strcmp(cmdStr,"addvideo")==0) {
@@ -461,7 +471,7 @@ const mxArray *prhs[]  // Array of right hand side arguments
                         mexErrMsgTxt("Invalid number of columns in colour table");
                      if (dimarray[0] > 256)
                         mexErrMsgTxt("Too many colours in colour table");
-                     NClrs = dimarray[0];
+                     NClrs = (int) dimarray[0];
 
                   }
                }
@@ -486,12 +496,12 @@ const mxArray *prhs[]  // Array of right hand side arguments
                _fmemset(pavifil->bitinf, 0, sz_bitinf);
                //
                pavifil->bitinf->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-               pavifil->bitinf->bmiHeader.biWidth = width ;
-               pavifil->bitinf->bmiHeader.biHeight = height ;
+               pavifil->bitinf->bmiHeader.biWidth = (LONG) width ;
+               pavifil->bitinf->bmiHeader.biHeight = (LONG) height ;
                pavifil->bitinf->bmiHeader.biPlanes = 1 ;
                pavifil->bitinf->bmiHeader.biBitCount = (WORD) bits ;
                pavifil->bitinf->bmiHeader.biCompression = BI_RGB ;
-               pavifil->bitinf->bmiHeader.biSizeImage = ((width*bits+31)/32 * 4)*height ;
+               pavifil->bitinf->bmiHeader.biSizeImage = (DWORD) (((width*bits+31)/32 * 4)*height) ;
                pavifil->bitinf->bmiHeader.biXPelsPerMeter = 0 ;
                pavifil->bitinf->bmiHeader.biYPelsPerMeter = 0 ;
                pavifil->bitinf->bmiHeader.biClrUsed = LenCMap;
@@ -551,7 +561,7 @@ const mxArray *prhs[]  // Array of right hand side arguments
                val = mxGetField(prhs[nrhs-1], 0, "Parameters");
                if (val != NULL) {
                   vals = (LPBYTE)mxGetData(val);
-                  opts.cbParms = mxGetNumberOfElements(val);
+                  opts.cbParms = (DWORD) mxGetNumberOfElements(val);
                   opts.lpParms = (void *) calloc(opts.cbParms,sizeof(BYTE));
                   frame = (LPBYTE)opts.lpParms;
                   for (i=0; i<(int)opts.cbParms; i++) {
@@ -585,9 +595,9 @@ const mxArray *prhs[]  // Array of right hand side arguments
                strhdr.fccType                = streamtypeVIDEO;// stream type
                strhdr.fccHandler             = opts.fccHandler;
                strhdr.dwScale                = 1;
-               strhdr.dwRate                 = fps;
+               strhdr.dwRate                 = (DWORD) fps;
                strhdr.dwSuggestedBufferSize  = pavifil->bitinf->bmiHeader.biSizeImage;
-               SetRect(&strhdr.rcFrame, 0, 0, width, height);
+               SetRect(&strhdr.rcFrame, 0, 0, (int) width, (int) height);
 
                // And create the stream;
                hr = AVIFileCreateStream(pavifil->pfile,    // file pointer
@@ -663,7 +673,7 @@ const mxArray *prhs[]  // Array of right hand side arguments
                            frame = (LPBYTE) mxCalloc(pavifil->bitinf->bmiHeader.biSizeImage,
                            sizeof(BYTE));
                            //
-                           int m,n,i1,i2;
+                           int m,n,i2;
                            int bh = pavifil->bitinf->bmiHeader.biHeight;
                            int bw = pavifil->bitinf->bmiHeader.biWidth;
                            i2=0;
@@ -674,7 +684,7 @@ const mxArray *prhs[]  // Array of right hand side arguments
                               }
                            //
                            hr = AVIStreamWrite(pavifil->psCompressed, // stream pointer
-                           iframe, // time of this frame
+                           (LONG) iframe, // time of this frame
                            1, // number to write
                            frame,
                            pavifil->bitinf->bmiHeader.biSizeImage, // size of this frame
@@ -706,7 +716,7 @@ const mxArray *prhs[]  // Array of right hand side arguments
                            frame = (LPBYTE) mxCalloc(pavifil->bitinf->bmiHeader.biSizeImage,
                            sizeof(BYTE));
                            //
-                           int m,n,k,i1,i2;
+                           int m,n,k,i2;
                            int bh = pavifil->bitinf->bmiHeader.biHeight;
                            int bw = pavifil->bitinf->bmiHeader.biWidth;
                            i2=0;
@@ -721,7 +731,7 @@ const mxArray *prhs[]  // Array of right hand side arguments
                               }
                            //
                            hr = AVIStreamWrite(pavifil->psCompressed, // stream pointer
-                           iframe, // time of this frame
+                           (LONG) iframe, // time of this frame
                            1, // number to write
                            frame,
                            pavifil->bitinf->bmiHeader.biSizeImage, // size of this frame
