@@ -806,6 +806,11 @@ for ivar = 1:nvars
             end
         end
     end
+    if strcmp(Info.Type,'ugrid_mesh')
+        if isempty(Info.X) || isempty(Info.Y)
+            ui_message('error','Unable to identify X and/or Y coordinates for UGRID mesh "%s".', Info.Name)
+        end
+    end
     %
     % For every dimension I may have multiple (auxiliary) coordinates. How
     % to deal with that?
