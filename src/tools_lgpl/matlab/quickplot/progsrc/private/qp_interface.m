@@ -138,6 +138,7 @@ m1=qp_uimenu(mfig,'&Help', ...
     'matlabmanual','MATLAB Interface &Toolbox manual',showmim,1,0
     'deltaresweb','&Deltares Systems',1,1,showqpm || showmim
     'deltaresweboss','Deltares &Open Source',1,1,0
+    'qpsourcerepo','QUICKPLOT &Source Code',1,1,0
     'aboutmatlab','About &MATLAB',1,1,1
     'about','&About Delft3D-QUICKPLOT',1,1,1});
 %=============

@@ -5162,7 +5162,7 @@ switch cmd
             writelog(logfile,logtype,args{:});
         end
         
-    case {'deltaresweb','deltaresweboss'}
+    case {'deltaresweb','deltaresweboss','qpsourcerepo'}
         ops={};
         if matlabversionnumber>5
             ops={'-browser'};
@@ -5170,6 +5170,8 @@ switch cmd
         switch cmd
             case 'deltaresweboss'
                 site='http://oss.deltares.nl';
+            case 'qpsourcerepo'
+                site='https://github.com/Deltares/QUICKPLOT';
             otherwise
                 site='http://www.deltaressystems.com';
         end
