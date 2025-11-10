@@ -3440,10 +3440,7 @@ switch Props.varid{1}
         hNew = [hNew1, hNew2];
         legend(protectstring(Props.varid{3}))
         %
-        setappdata(Parent,'AxesType','Time-<blocking>')
-        setappdata(Parent,'BasicAxesType','Time-<blocking>')
-        setappdata(Parent,'xquantity','time')
-        tick(Parent,'x','autodate')
+        setaxesprops(Parent,'Time-<blocking>',{'time','balance'})
         %
         balArea = get_attrib(Info.Attribute,'balance_area');
         quant = get_attrib(Info.Attribute,'balance_quantity');

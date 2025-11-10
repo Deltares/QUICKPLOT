@@ -239,22 +239,9 @@ function update_axesprops(hAx)
 if isequal(getappdata(hAx,'LonLat'),1)
     sethscale_lonlat(hAx,false)
 end
-% axes2d = isequal(getappdata(hAx,'axes2d'),true);
-% if axes2d
-%     alldims = 'xy';
-% else
-%     alldims = 'xyz';
-% end
-% dar = get(hAx,'dataaspectratio');
-% dar = dar/dar(1);
-% buf = 1000;
-% for d = alldims
-%     dlimmode = getappdata(hAx,[d 'limmode']);
-%     if strcmp(dlimmode,'auto')
-%        lim = limits(hAx,d);
-%        set(hAx,[d 'lim'],lim + [-buf buf]*dar(d-'w'))
-%     end
-% end
+if getappdata(hAx,'axes2d')
+    set(hAx, 'View',[0 90])
+end
 for d = 'xyz'
     update_axticks(hAx,d)
 end
