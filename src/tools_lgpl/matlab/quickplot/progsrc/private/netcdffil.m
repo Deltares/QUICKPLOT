@@ -99,7 +99,10 @@ if nargin==2
                 if strcmp(infileStruct2(iq2).Name,'-------')
                     % in case of a separator, merge it only if the
                     % reference is also a separator
-                    if strcmp(infileStruct(iq).Name,'-------')
+                    if iq > length(infileStruct)
+                        % append
+                        infileStruct = insert_quantity(infileStruct,iq,infileStruct2(iq2));
+                    elseif strcmp(infileStruct(iq).Name,'-------')
                         % merge ... nothing to do
                     else
                         % insert
@@ -264,21 +267,17 @@ if FI.NumDomains>1
     if isempty(cmd)
         Data = [];
     elseif ~merge_needed && load_merged_partitions(FI, domain)
-        % read non-spatial data from the first file ... should be consistent across all files and no way to merge anyway
-        Data = netcdffil(FI,1,Props,cmd,args{:});
+        % read non-spatial data from the first file on which the quantity is available ...
+        p = Props.iPart(1);
+        Data = netcdffil(FI.Partitions{p},1,Props.Partitions{p},cmd,args{:});
     else
-        iOut = 1;
+        Data = [];
         for i = Props.iPart
             Data2 = netcdffil(FI,i,Props.Partitions{i},cmd,args{:});
-            if iOut == 1
-                Data = Data2;
-            else
-                flds = fieldnames(Data2);
-                for j = 1:length(flds)
-                    Data(iOut).(flds{j}) = Data2.(flds{j});
-                end
+            flds = fieldnames(Data2);
+            for j = 1:length(flds)
+                Data(i).(flds{j}) = Data2.(flds{j});
             end
-            iOut = iOut + 1;
         end
     end
     if merge_needed
@@ -683,42 +682,11 @@ if XYRead || XYneeded || ZRead
             end
         end
         %
-        [Ans,meshAttribNames,getOptions] = qp_netcdf_ugrid_get_xy(Ans,FI,msh,dloc,idx{M_});
+        Ans.ValLocation = Props.Geom(max(strfind(Props.Geom,'-'))+1:end);
+        [Ans,getOptions] = qp_netcdf_ugrid_get_xy(Ans,FI,msh,dloc,idx{M_});
         meshInfo = FI.Dataset(msh);
         %
-        Ans.ValLocation = Props.Geom(max(strfind(Props.Geom,'-'))+1:end);
-        connect = strmatch('edge_node_connectivity',meshAttribNames,'exact');
-        iconnect = [];
-        if strcmp(Ans.ValLocation,'EDGE') || ~isfield(Ans,'FaceNodeConnect') || (~DataRead && ~isempty(connect))
-            % "~DataRead" is a hack to load EdgeNodeConnect if available for use in GridView
-            iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name},'exact');
-            if isempty(iconnect)
-                ui_message('warning','The edge_node_connectivity variable "%s" could not be found! Using empty set.',meshInfo.Attribute(connect).Value)
-                Ans.EdgeNodeConnect = zeros(0,2);
-            else
-                [Ans.EdgeNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
-            end
-        end
-        if isfield(Ans,'EdgeNodeConnect') && ~isempty(iconnect)
-            if isempty(FI.Dataset(iconnect).Attribute)
-                istart = [];
-            else
-                istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name},'exact');
-            end
-            if isempty(istart)
-                start = 0;
-            else
-                start = FI.Dataset(iconnect).Attribute(istart).Value;
-            end
-            start = verify_start_index(istart, start, min(Ans.EdgeNodeConnect(Ans.EdgeNodeConnect>=0)), max(Ans.EdgeNodeConnect(:)), length(Ans.X), 'node', meshInfo.Attribute(connect).Value);
-            Ans.EdgeNodeConnect = Ans.EdgeNodeConnect - start + 1;
-            edgeInvalid = any(Ans.EdgeNodeConnect<1,2);
-            if any(edgeInvalid)
-                ui_message('warning','%i invalid edges detected in edge-node connectivity variable %s; edges removed.',sum(edgeInvalid),meshInfo.Attribute(connect).Value)
-                Ans.EdgeNodeConnect(edgeInvalid,:) = [];
-            end
-        end
-        if mesh_settings{2}==1 % also: if strncmp(Props.Geom,'UGRID1D',7)
+        if mesh_settings{2}==1 % equivalent to: if strncmp(Props.Geom,'UGRID1D',7)
             aEG = strcmp({meshInfo.Attribute.Name},'edge_geometry');
             if any(aEG)
                 % get edge geometry
@@ -1680,25 +1648,6 @@ end
 % -------------------------------------------------------------------------
 
 % -----------------------------------------------------------------------------
-function start_index = verify_start_index(istart, start_index, minIndex, maxIndex, limitIndex, location, variable)
-if isempty(istart)
-    if minIndex == 1 && maxIndex == limitIndex
-        start_index = 1;
-        ui_message('warning','No start_index found on %s.\nDefault value is 0, but data suggest otherwise.\nUsing start_index=1.', variable)
-    else
-        start_index = 0;
-    end
-else
-    if minIndex-start_index+1 < 1
-        error('File specifies start_index %g for %s, but lowest %s index in file is %g.', start_index, variable, location, minIndex)
-    elseif maxIndex-start_index+1 > limitIndex
-        error('File specifies start_index %g for %s and the largest %s index in file is %g, but the last %s is only %g.', start_index, variable, location, maxIndex, location, limitIndex)
-    end
-end
-% -----------------------------------------------------------------------------
-
-
-% -----------------------------------------------------------------------------
 function Out=infile(FI,domain)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
@@ -2439,6 +2388,16 @@ end
 
 % -----------------------------------------------------------------------------
 function sz=getsize(FI,Props)
+FI_org = FI;
+Props_org = Props;
+if isfield(FI,'Partitions')
+    definedInPartitions = Props.iPart;
+    if ~isempty(definedInPartitions)
+        firstPartition = definedInPartitions(1);
+        FI = FI.Partitions{firstPartition};
+        Props = Props.Partitions{firstPartition};
+    end
+end
 M_ = 3;
 ndims = length(Props.DimFlag);
 sz = zeros(1,ndims);
@@ -2501,24 +2460,28 @@ end
 %
 % in case of merged partitions overrule the previous value
 %
-if isfield(FI,'MergedPartitions') && ...
-        Props.DimFlag(M_) && ...
-        isfinite(Props.DimFlag(M_)) && ...
+if isfield(FI_org,'MergedPartitions') && ...
+        Props_org.DimFlag(M_) && ...
+        isfinite(Props_org.DimFlag(M_)) && ...
         ~isempty(varid)
     M = FI.Dataset(varid+1).Mesh;
-    if iscell(M) && strcmp(M{1},'ugrid')
+    if iscell(M) && strncmp(M{1},'ugrid',5)
         if isempty(loc)
             loc = M{4};
         end
-        m = identify_mesh(Props.DimName{M_}, FI.MergedPartitions);
-        MergedMesh = FI.MergedPartitions(m);
-        switch loc
-            case {0,-1} % nodes
-                sz(M_) = MergedMesh.nNodes;
-            case 1 % edges
-                sz(M_) = MergedMesh.nEdges;
-            case 2 % faces
-                sz(M_) = MergedMesh.nFaces;
+        m = identify_mesh(Props.DimName{M_}, FI_org.MergedPartitions);
+        if isempty(m)
+            ui_message('error','Dimension "%s"s doesn''t belong to a merged mesh.',Props.DimName{M_})
+        else
+            MergedMesh = FI_org.MergedPartitions(m);
+            switch loc
+                case {0,-1} % nodes
+                    sz(M_) = MergedMesh.nNodes;
+                case 1 % edges
+                    sz(M_) = MergedMesh.nEdges;
+                case 2 % faces
+                    sz(M_) = MergedMesh.nFaces;
+            end
         end
     end
 end
@@ -2662,245 +2625,6 @@ szZData = szData;
 szZData(hdims) = szFld(hdims);
 % -----------------------------------------------------------------------------
 
-
-% -----------------------------------------------------------------------------
-function [X,Y,EdgeX,EdgeY] = branch2xy(BrX,BrY,xUnit,BrL,BrNr,BrOffset,eBrNr,EdgeNode)
-EdgeX = cell(size(eBrNr));
-EdgeY = EdgeX;
-X = zeros(size(BrNr));
-Y = X;
-if strcmp(xUnit,'deg')
-    cUnit = {'Geographic'};
-else
-    cUnit = {};
-end
-% need to loop over all branches on which at least one edge or one node is
-% located. An edge may be located on a branch without nodes if the edge
-% matches the whole branch. A node may be located on a branch without edge
-% in case of the mesh covers only a part of the network (parallel
-% partition).
-uBrNr = unique([eBrNr;BrNr]);
-doublePoints = false(size(uBrNr));
-%
-% first check all the nodes such that they are all available when checking
-% whether an edge with one node on the branch is at the beginning or the
-% end of the branch.
-for i = 1:length(uBrNr)
-    bN = uBrNr(i);
-    bX = BrX{bN};
-    bY = BrY{bN};
-    Mask = diff(bX)==0 & diff(bY)==0;
-    if any(Mask)
-        doublePoints(i) = true;
-        bX(Mask)=[];
-        bY(Mask)=[];
-        % Update BrX/Y such that we don't need to perform this check again
-        % when processing the edges.
-        BrX{bN} = bX;
-        BrY{bN} = bY;
-    end
-    bS = pathdistance(bX,bY,cUnit{:});
-    %
-    for j = find(BrNr==bN)'
-        s  = (BrOffset(j)/BrL(bN))*bS(end);
-        if s>bS(end)
-            error('Offset %g larger than branch length %g',BrOffset(j),BrL(bN));
-        else
-            x = interp1(bS,bX,s);
-            y = interp1(bS,bY,s);
-        end
-        X(j) = x;
-        Y(j) = y;
-    end
-end
-%
-% now we can check all the edges
-distmax = 0;
-nwarn = 0;
-for i = 1:length(uBrNr)
-    bN = uBrNr(i);
-    bX = BrX{bN};
-    bY = BrY{bN};
-    bS = pathdistance(bX,bY,cUnit{:});
-    %
-    for j = find(eBrNr==bN)'
-        n = EdgeNode(j,:);
-        nBranches = BrNr(n);
-        if all(nBranches==bN)
-            % both nodes on this branch, select the segment
-            s  = (sort(BrOffset(n))/BrL(bN))*bS(end);
-            I = bS>s(1) & bS<s(2);
-            x = interp1(bS,bX,s);
-            y = interp1(bS,bY,s);
-            EdgeX{j} = [x(1);bX(I);x(2)];
-            EdgeY{j} = [y(1);bY(I);y(2)];
-        elseif all(nBranches~=bN)
-            % both nodes on other branches, select the whole branch
-            EdgeX{j} = bX;
-            EdgeY{j} = bY;
-            x1 = X(n(1));
-            y1 = Y(n(1));
-            x2 = X(n(2));
-            y2 = Y(n(2));
-            dist1 = min(sqrt((bX([1 end])-x1).^2 + (bY([1 end])-y1).^2));
-            dist2 = min(sqrt((bX([1 end])-x2).^2 + (bY([1 end])-y2).^2));
-            if min(dist1) > 0 && min(dist2) > 0
-                dist = max(min(dist1),min(dist2));
-                nwarn = nwarn + 1;
-                if dist > distmax
-                    msg = {'The edge %i connecting node %i to %i is supposed to lie on branch %i,\nbut both nodes don''t seem to lie on that branch (mismatch = %g).\n',j,n(1),n(2),bN,dist};
-                    distmax = dist;
-                end
-            elseif min(dist1) > 0
-                dist = min(dist1);
-                nwarn = nwarn + 1;
-                if dist > distmax
-                    msg = {'The edge %i connecting node %i to %i is supposed to lie on branch %i,\nbut node %i doesn''t seem to lie on that branch (mismatch = %g).\n',j,n(1),n(2),bN,n(1),dist};
-                    distmax = dist;
-                end
-            elseif min(dist2) > 0
-                dist = min(dist2);
-                nwarn = nwarn + 1;
-                if dist > distmax
-                    msg = {'The edge %i connecting node %i to %i is supposed to lie on branch %i,\nbut node %i doesn''t seem to lie on that branch (mismatch = %g).\n',j,n(1),n(2),bN,n(2),dist};
-                    distmax = dist;
-                end
-            end
-        else
-            % one node on this branch, one on another branch
-            if nBranches(1)==bN
-                n1 = n(1);
-                n2 = n(2);
-            else
-                n2 = n(1);
-                n1 = n(2);
-            end
-            s  = (BrOffset(n1)/BrL(bN))*bS(end);
-            x = interp1(bS,bX,s);
-            y = interp1(bS,bY,s);
-            x2 = X(n2);
-            y2 = Y(n2);
-            dist = sqrt((bX([1 end])-x2).^2 + (bY([1 end])-y2).^2);
-            if dist(1) < dist(2)
-                % second node seems closer to the beginning of the branch
-                I = bS<s;
-                EdgeX{j} = [bX(I);x];
-                EdgeY{j} = [bY(I);y];
-                if dist(1) > 0
-                    nwarn = nwarn + 1;
-                    if dist(1) > distmax
-                        msg = {'The edge %i connecting node %i to %i is supposed to lie on branch %i,\nbut node %i doesn''t seem to lie on that branch (mismatch = %g).\n',j,n(1),n(2),bN,n2,dist(1)};
-                        distmax = dist(1);
-                    end
-                end
-            else
-                % second node seems closer to the end node of the branch
-                I = bS>s;
-                EdgeX{j} = [x;bX(I)];
-                EdgeY{j} = [y;bY(I)];
-                if dist(2) > 0
-                    nwarn = nwarn + 1;
-                    if dist(2) > distmax
-                        msg = {'The edge %i connecting node %i to %i is supposed to lie on branch %i,\nbut node %i doesn''t seem to lie on that branch (mismatch = %g).\n',j,n(1),n(2),bN,n2,dist(2)};
-                        distmax = dist(2);
-                    end
-                end
-            end
-        end
-    end
-end
-if distmax > eps(single(1))
-    msg1 = sprintf('Detected %i branch mismatches. Largest mismatch occurred at:',nwarn);
-    msg2 = sprintf(msg{:});
-    ui_message('warning',{msg1,msg2});
-end
-if any(doublePoints)
-    if sum(doublePoints)==1
-        ui_message('warning','Double geometry points encountered on branch: %i',find(doublePoints))
-    else
-        ui_message('warning','Double geometry points encountered on branches: %s',vec2str(find(doublePoints),'nobrackets'))
-    end
-end
-% -----------------------------------------------------------------------------
-
-
-% -----------------------------------------------------------------------------
-function unit = get_unit(Info)
-unit = [];
-if ~isempty(Info.Attribute)
-    Attribs = {Info.Attribute.Name};
-    j = strmatch('units',Attribs,'exact');
-    if ~isempty(j)
-        unit = Info.Attribute(j).Value;
-        units = {'degrees_east','degree_east','degreesE','degreeE', ...
-            'degrees_north','degree_north','degreesN','degreeN'};
-        if ismember(unit,units)
-            unit = 'deg';
-        end
-    end
-end
-% -----------------------------------------------------------------------------
-
-% -----------------------------------------------------------------------------
-function [BrX,BrY,xUnit,BrL] = get_edge_geometry(FI,csp)
-CSP = FI.Dataset(csp);
-atteg = strmatch('edge_geometry',{CSP.Attribute.Name});
-veg = strmatch(CSP.Attribute(atteg).Value,{FI.Dataset.Name},'exact');
-% node count dimension
-VEG = FI.Dataset(veg);
-attnc = strmatch('node_count',{VEG.Attribute.Name});
-ndc = [];
-if ~isempty(attnc)
-    ndc = strmatch(VEG.Attribute(attnc).Value,{FI.Dataset.Name},'exact');
-    ndcd = strmatch(VEG.Attribute(attnc).Value,{FI.Dimension.Name},'exact');
-    if isempty(ndc)
-        if ~isempty(ndcd)
-            ui_message('error','Geometry %s attribute node_count reads "%s". This is a dimension, but should be a variable.',VEG.Name,VEG.Attribute(attnc).Value)
-        else
-            ui_message('error','Geometry %s attribute node_count reads "%s". Variable not found.',VEG.Name,VEG.Attribute(attnc).Value)
-        end
-    end
-end
-if isempty(ndc)
-    attnc = strmatch('part_node_count',{VEG.Attribute.Name});
-    ui_message('error','Incorrect attribute "part_node_count" used for specifying the node_count for geometry variable "%s".',VEG.Name)
-    ndc = strmatch(VEG.Attribute(attnc).Value,{FI.Dataset.Name},'exact');
-end
-%
-if isempty(FI.Dataset(veg).X)
-    error('Missing X coordinate for geometry variable "%s".',VEG.Name)
-elseif isempty(FI.Dataset(veg).Y)
-    error('Missing Y coordinate for geometry variable "%s".',VEG.Name)
-end
-[BrX, status] = qp_netcdf_get(FI,FI.Dataset(FI.Dataset(veg).X));
-[BrY, status] = qp_netcdf_get(FI,FI.Dataset(FI.Dataset(veg).Y));
-[NDC, status] = qp_netcdf_get(FI,FI.Dataset(ndc));
-BrX = mat2cell(BrX,NDC,1);
-BrY = mat2cell(BrY,NDC,1);
-%
-xUnit = get_unit(FI.Dataset(FI.Dataset(veg).X));
-%
-if nargout>3
-    attbl = strmatch('edge_length',{CSP.Attribute.Name});
-    if isempty(attbl)
-        attbl = strmatch('branch_lengths',{CSP.Attribute.Name});
-        if ~isempty(attbl)
-            ui_message('error','Incorrect attribute "branch_lengths" used for specifying the edge_length for 1D UGRID variable "%s".',CSP.Name)
-        end
-    end
-    if ~isempty(attbl)
-        vbl = strmatch(CSP.Attribute(attbl).Value,{FI.Dataset.Name},'exact');
-        [BrL, status] = qp_netcdf_get(FI,FI.Dataset(vbl));
-    else
-        BrL = zeros(size(BrX));
-        for i = 1:length(BrX)
-            brl = pathdistance(BrX{i},BrY{i}); % Cartesian or spherical?
-            BrL(i) = brl(end);
-        end
-    end
-end
-
-
 % -----------------------------------------------------------------------------
 function [NewFI,cmdargs]=options(FI,mfig,cmd,varargin)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
@@ -2916,19 +2640,20 @@ switch cmd
         set(findobj(mfig,'tag','ncdump'),'enable','on')
         set(findobj(mfig,'tag','ncdumpto=?'),'enable','on','backgroundcolor',Active)
     case 'ncdump'
+        file = FI.FileName;
         out = get(findobj(mfig,'tag','ncdumpto=?'),'value');
         switch out
             case 1
                 [f,p] = uiputfile('*.ncdump','Specify Dump File');
                 if ischar(f)
                     fid = fopen([p,f],'w','n','US-ASCII');
-                    nc_dump(FI.FileName,fid)
+                    nc_dump(file,fid)
                     fclose(fid);
                 end
             case {2,3}
                 f = tempname;
                 fid = fopen(f,'w','n','US-ASCII');
-                nc_dump(FI.FileName,fid);
+                nc_dump(file,fid);
                 fclose(fid);
                 C = getfile(f);
                 delete(f);
@@ -2940,7 +2665,7 @@ switch cmd
                     ui_message('message',C);
                 end
             case 4
-                nc_dump(FI.FileName)
+                nc_dump(file)
         end
     otherwise
         error(['Unknown option command: ',cmd])
@@ -3146,7 +2871,7 @@ end
 structList = [structList(1:iq-1) struct structList(iq:end)];
 
 
-function [Ans,meshAttribNames,getOptions] = qp_netcdf_ugrid_get_xy(Ans,FI,msh,dloc,idx)
+function [Ans,getOptions] = qp_netcdf_ugrid_get_xy(Ans,FI,msh,dloc,idx)
 meshInfo      = FI.Dataset(msh);
 %
 dimNodes = meshInfo.Mesh{5};
@@ -3198,126 +2923,6 @@ for c = 'XY'
         Ans.([c 'Units']) = unit;
     end
 end
-if strcmp(meshInfo.Mesh{1},'ugrid1d_network')
-    % Ans.X contains mesh node branch index
-    % Ans.Y contains mesh node offset/chainage
-    %
-    attcsp = strmatch('coordinate_space',{meshInfo.Attribute.Name});
-    csp = strmatch(meshInfo.Attribute(attcsp).Value,{FI.Dataset.Name},'exact');
-    [BrX,BrY,xUnit,BrL] = get_edge_geometry(FI,csp);
-    %
-    if isempty(FI.Dataset(meshInfo.X).Attribute)
-        istart = [];
-    else
-        istart = strmatch('start_index',{FI.Dataset(meshInfo.X).Attribute.Name});
-    end
-    if isempty(istart)
-        start_index = 0;
-    else
-        start_index = FI.Dataset(meshInfo.X).Attribute(istart).Value;
-    end
-    start_index = verify_start_index(istart, start_index, min(Ans.X), max(Ans.X), length(BrX), 'branch', FI.Dataset(meshInfo.X).Name);
-    Ans.X = Ans.X-start_index+1;
-    %
-    % Get edge_node_connectivity
-    attENC = strmatch('edge_node_connectivity',{meshInfo.Attribute.Name});
-    [e2n, status] = qp_netcdf_get(FI, meshInfo.Attribute(attENC).Value);
-    i_e2n = strmatch(meshInfo.Attribute(attENC).Value, {FI.Dataset.Name});
-    if isempty(FI.Dataset(i_e2n).Attribute)
-        istart = [];
-    else
-        istart = strmatch('start_index',{FI.Dataset(i_e2n).Attribute.Name});
-    end
-    if ~isempty(istart)
-        start_index = FI.Dataset(i_e2n).Attribute(istart).Value;
-    else
-        start_index = 0;
-    end
-    start_index = verify_start_index(istart, start_index, min(e2n(:)), max(e2n(:)), length(Ans.X), 'node',FI.Dataset(i_e2n).Name);
-    e2n = e2n-start_index+1;
-    %
-    % Get mesh_edge branch affinity (read from edge_coordinates or reconstructed)
-    attECO = strmatch('edge_coordinates',{meshInfo.Attribute.Name});
-    if ~isempty(attECO)
-        ecoords = strsplit(meshInfo.Attribute(attECO).Value);
-        for iec = 1:length(ecoords)
-            i_eBrNr = strmatch(ecoords{iec},{FI.Dataset.Name});
-            if isempty(FI.Dataset(i_eBrNr).Attribute)
-                ecAtt = {};
-            else
-                ecAtt = {FI.Dataset(i_eBrNr).Attribute.Name};
-            end
-            if ismember('units',ecAtt) || ismember('standard_name',ecAtt)
-                % x-coordinate, y-coordinate, offset
-                continue
-            end
-            % branch_id
-            [eBrNr, status] = qp_netcdf_get(FI,FI.Dataset(i_eBrNr));
-            if any(eBrNr<0)
-                ui_message('warning','Invalid %s data: negative branch ids encountered. Ignoring this data.',FI.Dataset(i_eBrNr).Name)
-                eBrNr = [];
-            end
-            break
-        end
-        if isempty(FI.Dataset(i_eBrNr).Attribute)
-            istart = [];
-        else
-            istart = strmatch('start_index',{FI.Dataset(i_eBrNr).Attribute.Name});
-        end
-        if ~isempty(istart)
-            start_index = FI.Dataset(i_eBrNr).Attribute(istart).Value;
-        else
-            start_index = 0;
-        end
-        start_index = verify_start_index(istart, start_index, min(eBrNr), max(eBrNr), length(BrX), 'branch',FI.Dataset(i_eBrNr).Name);
-        eBrNr = eBrNr-start_index+1;
-    else
-        eBrNr = [];
-    end
-    if isempty(eBrNr)
-        % TODO: create networknode(i)
-        % networknode(i) = N if mesh node i coincides with network node N
-        % networknode(i) = -1 if mesh node i does not coincide with a network node
-        networknode = -ones(size(Ans.X));
-        networknode(Ans.Y==0 | Ans.Y==BrL(Ans.X)) = 1;
-        %
-        % reconstruct mesh_edge branch affinity
-        eBrNr = Ans.X(e2n);
-        for i = 1:size(eBrNr,1)
-            n1 = networknode(e2n(i,1));
-            if n1<0
-                % start node isn't a network node, so edge must
-                % be on same branch.
-                % eBrNr(i,1) is correct.
-                continue
-            end
-            n2 = networknode(e2n(i,2));
-            if n2<0
-                % end node isn't a network node, so edge must
-                % be on same branch.
-                eBrNr(i,1) = eBrNr(i,2);
-                continue
-            end
-            % both start and end node of edge match a network node.
-            % identify the branches between the network nodes.
-            %
-            if 1
-                % if one branch, select that one.
-                1
-            else
-                % if multiple branches, select one and give warning.
-                2
-            end
-        end
-        eBrNr = eBrNr(:,1);
-    end
-    %
-    if ischar(xUnit)
-        Ans.XUnits = xUnit;
-        Ans.YUnits = xUnit;
-    end
-    [Ans.X,Ans.Y,Ans.EdgeGeometry.X,Ans.EdgeGeometry.Y] = branch2xy(BrX,BrY,xUnit,BrL,Ans.X,Ans.Y,eBrNr,e2n);
-end
 %
 if isempty(meshInfo.Attribute)
     meshAttribNames = {};
@@ -3359,6 +2964,44 @@ if ~isempty(connect)
         end
     end
 end
+%
+connect = strmatch('edge_node_connectivity',meshAttribNames,'exact');
+iconnect = [];
+if strcmp(Ans.ValLocation,'EDGE') || ~isfield(Ans,'FaceNodeConnect') || (~DataRead && ~isempty(connect))
+    % "~DataRead" is a hack to load EdgeNodeConnect if available for use in GridView
+    iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name},'exact');
+    if isempty(iconnect)
+        ui_message('warning','The edge_node_connectivity variable "%s" could not be found! Using empty set.',meshInfo.Attribute(connect).Value)
+        Ans.EdgeNodeConnect = zeros(0,2);
+    else
+        [Ans.EdgeNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
+    end
+end
+if isfield(Ans,'EdgeNodeConnect') && ~isempty(iconnect)
+    if isempty(FI.Dataset(iconnect).Attribute)
+        istart = [];
+    else
+        istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name},'exact');
+    end
+    if isempty(istart)
+        start = 0;
+    else
+        start = FI.Dataset(iconnect).Attribute(istart).Value;
+    end
+    start = verify_start_index(istart, start, min(Ans.EdgeNodeConnect(Ans.EdgeNodeConnect>=0)), max(Ans.EdgeNodeConnect(:)), length(Ans.X), 'node', meshInfo.Attribute(connect).Value);
+    Ans.EdgeNodeConnect = Ans.EdgeNodeConnect - start + 1;
+    edgeInvalid = any(Ans.EdgeNodeConnect<1,2);
+    if any(edgeInvalid)
+        ui_message('warning','%i invalid edges detected in edge-node connectivity variable %s; edges removed.',sum(edgeInvalid),meshInfo.Attribute(connect).Value)
+        Ans.EdgeNodeConnect(edgeInvalid,:) = [];
+    end
+end
+%
+if strcmp(meshInfo.Mesh{1},'ugrid1d_network')
+    % Get mesh_edge branch affinity (read from edge_coordinates or reconstructed)
+    eBrNr_function = @(nBranches) get_edge_branch_index(FI, meshInfo, nBranches);
+    Ans = process_netcdf_ugrid1d(Ans, meshInfo, FI, eBrNr_function);
+end
 
 
 function Data = mergePartData(Data,partData,MergedMesh,valLoc,valFields,nPrefixDim,prefixDim)
@@ -3380,16 +3023,22 @@ for v = valFields
                 globalIndex = MergedMesh.faceGIndex;
         end
         %
-        sz = size(partData(1).(fld));
-        sz(nPrefixDim+1) = nloc;
-        if iscell(partData(1).(fld))
-            Data.(fld) = cell(sz);
-        else
-            Data.(fld) = NaN(sz);
-        end
         for p = 1:length(partData)
             masked = domainMask{p};
-            Data.(fld)(prefixDim{:},globalIndex{p}(masked),:) = partData(p).(fld)(prefixDim{:},masked,:);
+            if isempty(masked)
+                continue
+            else
+                if ~isfield(Data,fld)
+                    sz = size(partData(p).(fld));
+                    sz(nPrefixDim+1) = nloc;
+                    if iscell(partData(p).(fld))
+                        Data.(fld) = cell(sz);
+                    else
+                        Data.(fld) = NaN(sz);
+                    end
+                end
+                Data.(fld)(prefixDim{:},globalIndex{p}(masked),:) = partData(p).(fld)(prefixDim{:},masked,:);
+            end
         end
     end
 end

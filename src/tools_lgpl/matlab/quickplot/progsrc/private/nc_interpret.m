@@ -1894,36 +1894,37 @@ facedims(id+1:end) = [];
 
 
 function merged_mesh = nc_mapmerge(Partitions, hPB)
-P1 = Partitions{1};
-nData = length(P1.Dataset);
-dataNames = {P1.Dataset.Name}';
 nPart = length(Partitions);
-ugrids = zeros(nData,1);
-for i = 1:nData
-    M = P1.Dataset(i).Mesh;
-    if iscell(M) && numel(M)>=4 && ismember(M{1},{'ugrid','ugrid1d_network'}) && isequal(M{4},-1)
-        ugrids(i) = i;
+meshNames = cell(2,0);
+for p = 1:nPart
+    Part = Partitions{p};
+    for i = 1:length(Part.Dataset)
+        meshInfo = Part.Dataset(i).Mesh;
+        if iscell(meshInfo) && numel(meshInfo)>=4 && ismember(meshInfo{1},{'ugrid','ugrid1d_network'}) && isequal(meshInfo{4},-1)
+            if ~ismember(Part.Dataset(i).Name, meshNames(1,:))
+                meshNames(:,end+1) = {Part.Dataset(i).Name;p};
+            end
+        end
     end
 end
-ugrids(ugrids == 0) = [];
-dims = {P1.Dimension.Name};
+%
 merged_mesh = [];
-NumMeshes = numel(ugrids);
+NumMeshes = size(meshNames,2);
 for mesh = NumMeshes:-1:1
-    i = ugrids(mesh);
-    M = P1.Dataset(i);
+    meshName = meshNames{1,mesh};
+    firstPart = meshNames{2,mesh};
+    P1 = Partitions{firstPart};
+    i = strcmp({P1.Dataset.Name}, meshName);
+    meshInfo = P1.Dataset(i);
     %
-    nodeDim = M.Mesh{5};
-    iNodeDim = strcmp(nodeDim,dims);
-    edgeDim = M.Mesh{6};
-    iEdgeDim = strcmp(edgeDim,dims);
-    faceDim = M.Mesh{7};
-    iFaceDim = strcmp(faceDim,dims);
+    nodeDim = meshInfo.Mesh{5};
+    edgeDim = meshInfo.Mesh{6};
+    faceDim = meshInfo.Mesh{7};
     %
-    xNodeVar = P1.Dataset(M.X).Name;
-    yNodeVar = P1.Dataset(M.Y).Name;
+    xNodeVar = P1.Dataset(meshInfo.X).Name;
+    yNodeVar = P1.Dataset(meshInfo.Y).Name;
     %
-    MeshAttribs = P1.Dataset(M.Varid+1).Attribute;
+    MeshAttribs = P1.Dataset(meshInfo.Varid+1).Attribute;
     MeshAttNames = {MeshAttribs.Name};
     isFNC = strcmp(MeshAttNames,'face_node_connectivity');
     if any(isFNC)
@@ -1956,6 +1957,14 @@ for mesh = NumMeshes:-1:1
     nodeDomain = cell(nPart,1);
     faceDomain = cell(nPart,1);
     for p = 1:nPart
+        dims = {Partitions{p}.Dimension.Name};
+        iNodeDim = strcmp(nodeDim,dims);
+        iEdgeDim = strcmp(edgeDim,dims);
+        iFaceDim = strcmp(faceDim,dims);
+        %
+        if ~any(iNodeDim)
+            continue
+        end
         nNodes(p) = Partitions{p}.Dimension(iNodeDim).Length;
         nEdges(p) = Partitions{p}.Dimension(iEdgeDim).Length;
         if any(iFaceDim)
@@ -1971,17 +1980,17 @@ for mesh = NumMeshes:-1:1
                     case 1
                         % for map files ...
                         if isempty(faceDim) % 1D mesh
-                            iNodes{p} = nc_varget(file,[M.Name,'_flowelem_globalnr']);
-                            nodeDomain{p} = nc_varget(file,[M.Name,'_flowelem_domain']);
+                            iNodes{p} = nc_varget(file,[meshInfo.Name,'_flowelem_globalnr']);
+                            nodeDomain{p} = nc_varget(file,[meshInfo.Name,'_flowelem_domain']);
                         else
-                            iFaces{p} = nc_varget(file,[M.Name,'_flowelem_globalnr']);
-                            faceDomain{p} = nc_varget(file,[M.Name,'_flowelem_domain']);
+                            iFaces{p} = nc_varget(file,[meshInfo.Name,'_flowelem_globalnr']);
+                            faceDomain{p} = nc_varget(file,[meshInfo.Name,'_flowelem_domain']);
                         end
                     case 2
                         % for net files ...
-                        if ismember([M.Name,'_netelem_domain'], dataNames)
-                            iFaces{p} = nc_varget(file,[M.Name,'_netelem_globalnr']);
-                            faceDomain{p} = nc_varget(file,[M.Name,'_netelem_domain']);
+                        if ismember([meshInfo.Name,'_netelem_domain'], dataNames)
+                            iFaces{p} = nc_varget(file,[meshInfo.Name,'_netelem_globalnr']);
+                            faceDomain{p} = nc_varget(file,[meshInfo.Name,'_netelem_domain']);
                         else
                             iFaces{p} = nc_varget(file,'iglobal_s');
                             faceDomain{p} = nc_varget(file,'idomain');
@@ -2030,12 +2039,14 @@ for mesh = NumMeshes:-1:1
     efc = cell(nPart,1);
     edgeMask = cell(nPart,1);
     for p = 1:nPart
+        if nNodes(p) == 0
+            continue
+        end
         iNodes{p} = RI(offset + (1:nNodes(p)));
         offset = offset + nNodes(p);
-        file = Partitions{p}.Filename;
         %
         if ~isempty(fncVar)
-            FNC = nc_varget_start_at_one(file,P1,fncVar);
+            FNC = nc_varget_start_at_one(Partitions{p},fncVar);
             Mask = isnan(FNC);
             FNC(Mask) = 1;
             FNC = iNodes{p}(FNC);
@@ -2053,13 +2064,15 @@ for mesh = NumMeshes:-1:1
         end
         %
         if ~isempty(encVar)
-            ENC = nc_varget_start_at_one(file,P1,encVar);
-            ENC = iNodes{p}(ENC);
-            enc{p} = ENC;
+            ENC = nc_varget_start_at_one(Partitions{p},encVar);
+            % don't modify ENC itself since for 1D mesh we need still the original ENC slightly further down
+            enc{p} = iNodes{p}(ENC);
         end
         %
         if ~isempty(efcVar)
-            EFC = nc_varget_start_at_one(file,P1,efcVar);
+            % 2D: edges are assigned to the same domain as the connected
+            % face with the lowest domain number.
+            EFC = nc_varget_start_at_one(Partitions{p},efcVar);
             Mask = isnan(EFC) | EFC==0;
             EFC(Mask) = 1;
             eDom = faceDomain{p}(EFC);
@@ -2069,14 +2082,23 @@ for mesh = NumMeshes:-1:1
             %
             eDom(Mask) = NaN;
             edgeMask{p} = all(eDom>=p-1 | isnan(eDom),2) & any(eDom==p-1,2);
+        elseif isempty(faceDim) % 1D mesh
+            % 1D: edges are assigned to the same domain as the connected
+            % node with the lowest domain number
+            eNodeDomain = nodeDomain{p}(ENC);
+            edgeMask{p} = all(eNodeDomain>=p-1 | isnan(eNodeDomain),2) & any(eNodeDomain==p-1,2);
+        else % not 1D mesh
+            % no edge-face connectivity information on the file, so no
+            % quick way to assign edges to the same domain as the connected
+            % face with the lowest domain number.
+            % edgeMask{p} = ... ?
         end
         progressbar((NumMeshes-mesh)/NumMeshes + ((nPart + p)/(2*nPart))/NumMeshes, hPB);
     end
     %
-    % nodes are assigned to the same domain as the connected face with the
-    % lowest domain number
-    %
     if ~isempty(faceDim) % not 1D mesh
+        % 2D: nodes are assigned to the same domain as the connected face
+        % with the lowest domain number
         nodeDomain  = NaN(nGlbNodes,1);
         for p = nPart:-1:1
             masked = faceMask{p};
@@ -2091,9 +2113,6 @@ for mesh = NumMeshes:-1:1
             nodeMask{p} = nodeDomain(iNodes{p}) == p-1;
         end
     end
-    %
-    % edges are assigned to the same domain as the connected face with the
-    % lowest domain number.
     %
     % first sort the edge connectivities to determine the edges uniquely
     [glbENC,~,RI] = unique(sort(cat(1,enc{:}),2),'rows');
@@ -2117,7 +2136,7 @@ for mesh = NumMeshes:-1:1
         glbENC(iEdges{p}(edge_of_p),:) = enc{p}(edge_of_p,:);
     end
     %
-    merged_mesh(mesh).Name = M.Name;
+    merged_mesh(mesh).Name = meshInfo.Name;
     merged_mesh(mesh).Index = i;
     if isempty(faceDim) % 1D mesh
         merged_mesh(mesh).Dimensionality = 1;
@@ -2134,7 +2153,7 @@ for mesh = NumMeshes:-1:1
     merged_mesh(mesh).nodeGIndex = iNodes;
     %
     unit = [];
-    coordAttribs = P1.Dataset(M.X).Attribute;
+    coordAttribs = P1.Dataset(meshInfo.X).Attribute;
     j = strcmp('units',{coordAttribs.Name});
     if sum(j) == 1
         unit = coordAttribs(j).Value;
@@ -2162,12 +2181,36 @@ for mesh = NumMeshes:-1:1
         end
         merged_mesh(mesh).EdgeFaceConnect = glbEFC;
     end
+    %
+    if strcmp(meshInfo.Mesh{1},'ugrid1d_network')
+        eBrNr_function = @(nBranches) get_global_edge_branch_ids(nPart, Partitions, nNodes, meshInfo, nBranches, nGlbEdges, iEdges);
+        Ans.X = merged_mesh(mesh).X;
+        Ans.Y = merged_mesh(mesh).Y;
+        Ans.EdgeNodeConnect = merged_mesh(mesh).EdgeNodeConnect;
+        Ans = process_netcdf_ugrid1d(Ans, meshInfo, Part, eBrNr_function);
+        merged_mesh(mesh).X = Ans.X;
+        merged_mesh(mesh).Y = Ans.Y;
+        merged_mesh(mesh).EdgeGeometry = Ans.EdgeGeometry;
+    end
+end
+
+function glb_eBrNr = get_global_edge_branch_ids(nPart, Partitions, nNodes, meshInfo, nBranches, nGlbEdges, iEdges)
+eBrNr = cell(nPart,1);
+for p = 1:nPart
+    if nNodes(p) == 0
+        continue
+    end
+    eBrNr{p} = get_edge_branch_index(Partitions{p}, meshInfo, nBranches);
+end
+glb_eBrNr = zeros(nGlbEdges,1);
+for p = 1:nPart
+    glb_eBrNr(iEdges{p}) = eBrNr{p};
 end
 
 
-function FNC = nc_varget_start_at_one(file,P1,fncVar)
-FNC = nc_varget(file,fncVar);
-f = P1.Dataset(strcmp({P1.Dataset.Name},fncVar)).Attribute;
+function FNC = nc_varget_start_at_one(partFile,fncVar)
+FNC = nc_varget(partFile.Filename,fncVar);
+f = partFile.Dataset(strcmp({partFile.Dataset.Name},fncVar)).Attribute;
 si = strcmp({f.Name},'start_index');
 if any(si)
     start_index = f(si).Value;
