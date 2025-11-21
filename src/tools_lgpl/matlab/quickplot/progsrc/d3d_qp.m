@@ -341,7 +341,7 @@ switch cmd
         d3d_qp refreshfigs
         set(mfig,'CloseRequestFcn','d3d_qp close');
         
-    case {'openfile','reloadfile','openurl'}
+    case {'openfile','openfile*','reloadfile','openurl'}
         OpenFile=findobj(mfig,'tag','openfile','type','uipushtool');
         Handle_SelectFile=findobj(mfig,'tag','selectfile');
         File=get(Handle_SelectFile,'userdata');
@@ -358,6 +358,8 @@ switch cmd
                 pn=get(OpenFile,'userdata');
                 [NewRecord,FileName,Tp,Otherargs]=qp_proxy('opennew',pn);
             end
+        elseif strcmp(cmd,'openfile*')
+            [NewRecord,FileName,Tp,Otherargs]=qp_proxy('open*',cmdargs{:});
         else
             [NewRecord,FileName,Tp,Otherargs]=qp_proxy('open',cmdargs{:});
         end
@@ -4729,7 +4731,7 @@ switch cmd
             set(OtherLog,'visible','off')
             for i=1:length(c)
                 Str=get(c(i),'callback');
-                if strcmp(Str,LogCallBack),
+                if strcmp(Str,LogCallBack)
                     Str=get(c(i),'label');
                     LogId=i;
                     LogNr=Str(2)-48;
@@ -4778,7 +4780,6 @@ switch cmd
                 end
                 cmdstr=deblank(cmdstr);
             end
-            cmdargs={};
             if ischar(cmdstr) && ~isempty(cmdstr)
                 cmdstr = qp_strrep(cmdstr,PAR,'$');
                 if strcmpi(runningtype,'m') || cmdstr(1)=='>'
@@ -4797,6 +4798,10 @@ switch cmd
                         d3d_qp(cmd,cmdargs{:});
                     else
                         try
+                            % avoid user interaction while executing scripts
+                            if strcmp(cmd,'openfile')
+                                cmd = 'openfile*';
+                            end
                             d3d_qp_core(cmd,cmdargs{:});
                         catch Ex
                             qp_error(sprintf('Error executing command "%s" in line %i',cmd,inLine),Ex)

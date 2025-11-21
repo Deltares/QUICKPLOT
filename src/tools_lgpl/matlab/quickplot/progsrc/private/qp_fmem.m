@@ -44,6 +44,13 @@ if ~isempty(varargin) && strcmp(varargin{1},'no_merge')
     varargin = varargin(2:end);
     MergePartitions = 0;
 end
+if ~isempty(cmd) && cmd(end)=='*'
+    user_interaction_allowed = false;
+    cmd = cmd(1:end-1);
+else
+    user_interaction_allowed = true;
+end
+fprintf('Command in qp_fmem: %s\n',cmd)
 switch cmd
     case {'open','openldb','opennew','openurl'}
         if strcmp(cmd,'opennew') %|| strcmp(cmd,'openldb')
@@ -84,7 +91,9 @@ switch cmd
         elseif ~isempty(filterspec) && exist(filterspec)==2
             FileName=filterspec;
             FileFromCall=1;
-        else
+        elseif ~isempty(filterspec) && ~user_interaction_allowed
+            error('The file specified "%s" doesn''t exist.',filterspec)
+        else % nothing specified or user interaction allowed
             if ~isempty(filterspec)
                 [dummypath,tmpfn,tmpext]=fileparts(filterspec);
                 filterspec=[tmpfn,tmpext];
@@ -1185,6 +1194,9 @@ switch cmd
                     if userasked
                         % and I have asked the user
                         qp_error(sprintf('Error while opening\n%s\nas %s:',FileName,usertrytp),err)
+                        break
+                    elseif ~user_interaction_allowed
+                        qp_error(sprintf('Error while opening\n%s\nAll possible readers have been tried.',FileName))
                         break
                     else
                         if isempty(filtertbl)
