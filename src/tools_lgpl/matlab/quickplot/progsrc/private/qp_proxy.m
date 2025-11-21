@@ -32,7 +32,6 @@ function varargout = qp_proxy(cmd,varargin)
 %   $Id$
 persistent save
 
-fprintf('Command in qp_proxy: %s\n',cmd)
 switch cmd
     case {'open','open*','openldb','opennew','openurl','grid_opennew','grid_open'}
         type = cmd(1:4);

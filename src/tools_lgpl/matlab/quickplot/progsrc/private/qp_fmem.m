@@ -50,7 +50,7 @@ if ~isempty(cmd) && cmd(end)=='*'
 else
     user_interaction_allowed = true;
 end
-fprintf('Command in qp_fmem: %s\n',cmd)
+
 switch cmd
     case {'open','openldb','opennew','openurl'}
         if strcmp(cmd,'opennew') %|| strcmp(cmd,'openldb')
