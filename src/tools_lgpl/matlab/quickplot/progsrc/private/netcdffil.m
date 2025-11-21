@@ -719,11 +719,13 @@ if XYRead || XYneeded || ZRead
             case 'EDGE'
                 for fld = {'Val','XComp','YComp','Angle','Magnitude','NormalComp','TangentialComp'}
                     Fld = fld{1};
-                    if isfield(Ans,Fld)
+                    if isfield(Ans,Fld) && any(edgeInvalid)
                         Ans.(Fld)(edgeInvalid(idx{M_})) = [];
                     end
                 end
-                idx{M_}(edgeInvalid(idx{M_})) = [];
+                if any(edgeInvalid)
+                    idx{M_}(edgeInvalid(idx{M_})) = [];
+                end
                 Ans.EdgeNodeConnect = Ans.EdgeNodeConnect(idx{M_},:);
                 if isfield(Ans,'EdgeGeometry')
                     Ans.EdgeGeometry.X = Ans.EdgeGeometry.X(idx{M_});
@@ -2879,6 +2881,7 @@ dimEdges = meshInfo.Mesh{6};
 dimFaces = meshInfo.Mesh{7};
 allDims = {FI.Dimension.Name};
 MeshSubset = {};
+edgeInvalid = [];
 switch dloc
     case 0 % data at NODE
         MeshSubset = {'NODE' dimNodes idx
