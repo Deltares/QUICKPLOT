@@ -2970,7 +2970,14 @@ end
 %
 connect = strmatch('edge_node_connectivity',meshAttribNames,'exact');
 iconnect = [];
-if strcmp(Ans.ValLocation,'EDGE') || ~isfield(Ans,'FaceNodeConnect') || (~DataRead && ~isempty(connect))
+if isfield(Ans,'ValLocation') && strcmp(Ans.ValLocation,'EDGE')
+    data_at_edges = true;
+elseif ~isfield(Ans,'ValLocation') && dloc == 1
+    data_at_edges = true;
+else
+    data_at_edges = false;
+end
+if data_at_edges || ~isfield(Ans,'FaceNodeConnect') || (~DataRead && ~isempty(connect))
     % "~DataRead" is a hack to load EdgeNodeConnect if available for use in GridView
     iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name},'exact');
     if isempty(iconnect)
