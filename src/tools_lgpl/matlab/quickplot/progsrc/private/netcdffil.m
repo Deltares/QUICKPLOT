@@ -683,7 +683,7 @@ if XYRead || XYneeded || ZRead
         end
         %
         Ans.ValLocation = Props.Geom(max(strfind(Props.Geom,'-'))+1:end);
-        [Ans,getOptions] = qp_netcdf_ugrid_get_xy(Ans,FI,msh,dloc,idx{M_});
+        [Ans,getOptions] = qp_netcdf_ugrid_get_xy(Ans,FI,msh,dloc,idx{M_},DataRead);
         meshInfo = FI.Dataset(msh);
         %
         if mesh_settings{2}==1 % equivalent to: if strncmp(Props.Geom,'UGRID1D',7)
@@ -754,7 +754,7 @@ if XYRead || XYneeded || ZRead
             % get X,Y coordinates of NODE/EDGE/FACE [see: meshes{imesh,2}] locations
             % with indices Contacts(:,imesh) from mesh meshes{imesh,1}
             idx = Contacts(:,imesh);
-            Mesh = qp_netcdf_ugrid_get_xy([],FI,meshes{imesh,1},meshes{imesh,2},idx);
+            Mesh = qp_netcdf_ugrid_get_xy([],FI,meshes{imesh,1},meshes{imesh,2},idx,DataRead);
             switch meshes{imesh,2}
                 case 0 % get NODE xy
                     x = Mesh.X(idx);
@@ -2871,7 +2871,7 @@ end
 structList = [structList(1:iq-1) struct structList(iq:end)];
 
 
-function [Ans,getOptions] = qp_netcdf_ugrid_get_xy(Ans,FI,msh,dloc,idx)
+function [Ans,getOptions] = qp_netcdf_ugrid_get_xy(Ans,FI,msh,dloc,idx,DataRead)
 meshInfo      = FI.Dataset(msh);
 %
 dimNodes = meshInfo.Mesh{5};
