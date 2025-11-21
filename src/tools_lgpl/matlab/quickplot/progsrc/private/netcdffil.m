@@ -683,7 +683,7 @@ if XYRead || XYneeded || ZRead
         end
         %
         Ans.ValLocation = Props.Geom(max(strfind(Props.Geom,'-'))+1:end);
-        [Ans,getOptions] = qp_netcdf_ugrid_get_xy(Ans,FI,msh,dloc,idx{M_},DataRead);
+        [Ans,getOptions,edgeInvalid] = qp_netcdf_ugrid_get_xy(Ans,FI,msh,dloc,idx{M_},DataRead);
         meshInfo = FI.Dataset(msh);
         %
         if mesh_settings{2}==1 % equivalent to: if strncmp(Props.Geom,'UGRID1D',7)
@@ -2871,7 +2871,7 @@ end
 structList = [structList(1:iq-1) struct structList(iq:end)];
 
 
-function [Ans,getOptions] = qp_netcdf_ugrid_get_xy(Ans,FI,msh,dloc,idx,DataRead)
+function [Ans,getOptions,edgeInvalid] = qp_netcdf_ugrid_get_xy(Ans,FI,msh,dloc,idx,DataRead)
 meshInfo      = FI.Dataset(msh);
 %
 dimNodes = meshInfo.Mesh{5};
