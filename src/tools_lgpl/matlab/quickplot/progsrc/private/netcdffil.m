@@ -2470,7 +2470,7 @@ if isfield(FI_org,'MergedPartitions') && ...
     if iscell(M) && strncmp(M{1},'ugrid',5) && ~strcmp(M{1},'ugrid_mesh_contact')
         m = identify_mesh(Props.DimName{M_}, FI_org.MergedPartitions);
         if isempty(m)
-            ui_message('error','Dimension "%s"s doesn''t belong to a merged mesh.',Props.DimName{M_})
+            ui_message('error','Dimension "%s" doesn''t belong to a merged mesh.',Props.DimName{M_})
         else
             MergedMesh = FI_org.MergedPartitions(m);
             if isempty(loc)
