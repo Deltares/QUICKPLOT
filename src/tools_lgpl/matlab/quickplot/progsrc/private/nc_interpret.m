@@ -1988,6 +1988,7 @@ for mesh = NumMeshes:-1:1
                         end
                     case 2
                         % for net files ...
+                        dataNames = {Partitions{p}.Dataset.Name}';
                         if ismember([meshInfo.Name,'_netelem_domain'], dataNames)
                             iFaces{p} = nc_varget(file,[meshInfo.Name,'_netelem_globalnr']);
                             faceDomain{p} = nc_varget(file,[meshInfo.Name,'_netelem_domain']);
@@ -2099,18 +2100,18 @@ for mesh = NumMeshes:-1:1
     if ~isempty(faceDim) % not 1D mesh
         % 2D: nodes are assigned to the same domain as the connected face
         % with the lowest domain number
-        nodeDomain  = NaN(nGlbNodes,1);
+        glbNodeDomain  = NaN(nGlbNodes,1);
         for p = nPart:-1:1
             masked = faceMask{p};
             %
             inodes = fnc{p}(masked,:);
             inodes(isnan(inodes))=[];
             %
-            nodeDomain(inodes) = p-1;
+            glbNodeDomain(inodes) = p-1;
         end
         nodeMask = cell(nPart,1);
         for p = 1:nPart
-            nodeMask{p} = nodeDomain(iNodes{p}) == p-1;
+            nodeMask{p} = glbNodeDomain(iNodes{p}) == p-1;
         end
     end
     %
@@ -2134,6 +2135,33 @@ for mesh = NumMeshes:-1:1
         % away from the internal part of the partition).
         edge_of_p = edgeMask{p};
         glbENC(iEdges{p}(edge_of_p),:) = enc{p}(edge_of_p,:);
+    end
+    %
+    if ~isempty(efcVar)
+        glbEFC = zeros(nGlbEdges,2);
+        for p = 1:nPart
+            glbEFC(iEdges{p},:) = efc{p};
+        end
+    elseif ~isempty(faceDim)  % not 1D mesh, but no edge-face connectivity
+        glbEFC = derive_edge_face_connectivity(glbFNC, glbENC);
+        EFC = glbEFC;
+
+        Mask = isnan(EFC) | EFC==0;
+        EFC(Mask) = 1;
+
+        glbFaceDomain = zeros(nGlbFaces,1);
+        for p = 1:nPart
+            glbFaceDomain(iFaces{p}) = faceDomain{p};
+        end
+        glbEdgeDomain = glbFaceDomain(EFC);
+        glbEdgeDomain(Mask) = inf;
+        glbEdgeDomain = min(glbEdgeDomain,[],2);
+
+        for p = 1:nPart
+            edgeMask{p} = glbEdgeDomain(iEdges{p}) == p-1;
+        end
+    else % 1D mesh
+        glbEFC = [];
     end
     %
     merged_mesh(mesh).Name = meshInfo.Name;
@@ -2174,11 +2202,7 @@ for mesh = NumMeshes:-1:1
     merged_mesh(mesh).faceDMask  = faceMask;
     merged_mesh(mesh).faceGIndex = iFaces;
     %
-    if ~isempty(efcVar)
-        glbEFC = zeros(nGlbEdges,2);
-        for p = 1:nPart
-            glbEFC(iEdges{p},:) = efc{p};
-        end
+    if ~isempty(efcVar) % ~isempty(glbEFC)
         merged_mesh(mesh).EdgeFaceConnect = glbEFC;
     end
     %
@@ -2218,3 +2242,37 @@ else
     start_index = 0;
 end
 FNC = FNC - start_index + 1;
+
+
+function EFC = derive_edge_face_connectivity(FNC,ENC)
+nFaces = size(FNC,1);
+nFaceNodeMax = size(FNC,2);
+
+% fill blank (NaN) node indices by first node of face
+for nd = 4:nFaceNodeMax
+    M = isnan(FNC(:,nd));
+    if any(M)
+        FNC(M,nd) = FNC(M,1);
+    end
+end
+% construct for each face pairs of successive nodes
+FNC = FNC(:,ceil([1:0.5:end 1]));
+FNC = reshape(FNC',[2 numel(FNC)/2])';
+% associate each node pair with a face
+iface = repmat(1:nFaces,[nFaceNodeMax 1]);
+iface = iface(:);
+% remove pairs of equal nodes (caused by the filled blanks in step 1)
+remove = FNC(:,1) == FNC(:,2);
+FNC(remove,:) = [];
+iface(remove) = [];
+% match each node pair to an edge
+[~,Lob1]=ismember(FNC,ENC,'rows');
+[~,Lob2]=ismember(FNC(:,2:-1:1),ENC,'rows');
+iedge = Lob1+Lob2;
+% construct the edge-face connectivity
+[C,ia] = unique(iedge);
+EFC = NaN(size(ENC,1),2);
+EFC(C,1) = iface(ia);
+iedge(ia) = [];
+iface(ia) = [];
+EFC(iedge,2) = iface;

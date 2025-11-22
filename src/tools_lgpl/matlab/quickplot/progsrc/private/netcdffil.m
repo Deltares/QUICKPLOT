@@ -2467,15 +2467,15 @@ if isfield(FI_org,'MergedPartitions') && ...
         isfinite(Props_org.DimFlag(M_)) && ...
         ~isempty(varid)
     M = FI.Dataset(varid+1).Mesh;
-    if iscell(M) && strncmp(M{1},'ugrid',5)
-        if isempty(loc)
-            loc = M{4};
-        end
+    if iscell(M) && strncmp(M{1},'ugrid',5) && ~strcmp(M{1},'ugrid_mesh_contact')
         m = identify_mesh(Props.DimName{M_}, FI_org.MergedPartitions);
         if isempty(m)
             ui_message('error','Dimension "%s"s doesn''t belong to a merged mesh.',Props.DimName{M_})
         else
             MergedMesh = FI_org.MergedPartitions(m);
+            if isempty(loc)
+                loc = M{4};
+            end
             switch loc
                 case {0,-1} % nodes
                     sz(M_) = MergedMesh.nNodes;
@@ -3044,7 +3044,7 @@ for v = valFields
                     if iscell(partData(p).(fld))
                         Data.(fld) = cell(sz);
                     else
-                        Data.(fld) = NaN(sz);
+                        Data.(fld) = zeros(sz);
                     end
                 end
                 Data.(fld)(prefixDim{:},globalIndex{p}(masked),:) = partData(p).(fld)(prefixDim{:},masked,:);
