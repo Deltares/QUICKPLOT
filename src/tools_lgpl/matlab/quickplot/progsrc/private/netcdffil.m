@@ -3044,7 +3044,7 @@ for v = valFields
                     if iscell(partData(p).(fld))
                         Data.(fld) = cell(sz);
                     else
-                        Data.(fld) = zeros(sz);
+                        Data.(fld) = NaN(sz);
                     end
                 end
                 Data.(fld)(prefixDim{:},globalIndex{p}(masked),:) = partData(p).(fld)(prefixDim{:},masked,:);

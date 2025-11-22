@@ -135,7 +135,7 @@ function [DataProps,fld] = addpropmulti(DataProps,fld,propversion,ediscr,eunit,l
 nel = prod(sz);
 ndim = length(sz);
 for e=1:nel
-    [x{1:ndim}] = ind2sub(sz,e);
+    [x{1:ndim}] = ind2sub([sz 1],e);
     if nel>1
         Str=sprintf('%i, ',x{:});
         Str=sprintf('%s (%s)',ediscr,Str(1:end-2));
