@@ -379,15 +379,15 @@ switch cmd
                             end
                         end
                     case 'matlab'
-                        if isstandalone
-                            FI=load(FileName);
-                        else
-                            FI=load('-mat',FileName);
-                        end
                         if strcmpi(en,'.fig')
                             d3d_qp('openfigure',FileName);
                             FI=[];
                             break
+                        end
+                        if isstandalone
+                            FI=load(FileName);
+                        else
+                            FI=load('-mat',FileName);
                         end
                         if isstruct(FI)
                             f=fieldnames(FI);

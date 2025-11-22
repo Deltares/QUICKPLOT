@@ -35,8 +35,13 @@ function qp_error(msg,Ex,varargin)
 %   $HeadURL$
 %   $Id$
 
-stacklist = stack2str(Ex.stack,varargin{:});
-message = Ex.message;
+if nargin>1
+    stacklist = stack2str(Ex.stack,varargin{:});
+    message = Ex.message;
+else
+    stacklist = {};
+    message = '';
+end
 if isequal(message(1:min(20,end)),'Error using <a href=')
     newline = find(message==char(10));
     message = message(newline(1)+1:end);
