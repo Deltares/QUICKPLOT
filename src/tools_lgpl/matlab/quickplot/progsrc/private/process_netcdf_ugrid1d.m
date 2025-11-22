@@ -1,10 +1,20 @@
 function Ans = process_netcdf_ugrid1d(Ans, meshInfo, FI, eBrNr_function)
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
-
-% Ans.X contains mesh node branch index
-% Ans.Y contains mesh node offset/chainage
-
+%PROCESS_NETCDF_UGRID1D Processes 1D UGRID network data from a NetCDF file.
+%   Ans = process_netcdf_ugrid1d(Ans, meshInfo, FI, eBrNr_function) reads and processes
+%   mesh node and edge data from a NetCDF file using meshInfo and FI structures.
+%
+%   Inputs:
+%     Ans            - Structure containing mesh node and edge data (fields X, Y, EdgeNodeConnect, etc.).
+%     meshInfo       - Structure with mesh metadata and attribute information.
+%     FI             - Structure representing the NetCDF file interface, including datasets and attributes.
+%     eBrNr_function - Function handle to generate edge branch numbers if not present.
+%
+%   Outputs:
+%     Ans            - Updated structure with processed mesh node indices, offsets, units,
+%                      edge branch numbers, and edge geometry coordinates.
+%
+%   Ans.X contains mesh node branch index
+%   Ans.Y contains mesh node offset/chainage
 % network is completely stored on each involved partition file, read it
 attcsp = strmatch('coordinate_space',{meshInfo.Attribute.Name});
 csp = strmatch(meshInfo.Attribute(attcsp).Value,{FI.Dataset.Name},'exact');
