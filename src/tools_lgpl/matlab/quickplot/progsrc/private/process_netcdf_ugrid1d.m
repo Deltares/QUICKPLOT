@@ -40,7 +40,34 @@ e2n = Ans.EdgeNodeConnect;
 % If the branch indices for the edges are not given, try to reconstruct
 eBrNr = eBrNr_function(length(BrX));
 if isempty(eBrNr)
-    error('No branch indices found for the edges. Reconstructon algorithm not yet implemented.');
+    % networknode(i) = N if mesh node i coincides with network node N
+    % networknode(i) = -1 if mesh node i does not coincide with a network node
+    networknode = -ones(size(Ans.X));
+    networknode(Ans.Y==0 | Ans.Y==BrL(Ans.X)) = 1;
+    %
+    % reconstruct mesh_edge branch affinity
+    eBrNr = Ans.X(e2n);
+    for i = 1:size(eBrNr,1)
+        n1 = networknode(e2n(i,1));
+        if n1<0
+            % start node isn't a network node, so edge must
+            % be on same branch.
+            % eBrNr(i,1) is correct.
+            continue
+        end
+        n2 = networknode(e2n(i,2));
+        if n2<0
+            % end node isn't a network node, so edge must
+            % be on same branch.
+            eBrNr(i,1) = eBrNr(i,2);
+            continue
+        end
+        % both start and end node of edge match a network node.
+        % identify the branches between the network nodes.
+        %
+        error('Incomplete logic while reconstructing branch indices for edges.')
+    end
+    eBrNr = eBrNr(:,1);
 end
 %
 if ischar(xUnit)
