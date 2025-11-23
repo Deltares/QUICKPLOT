@@ -886,6 +886,11 @@ for f=1:ntim
                             %
                             if ~isempty(xv)
                                 CV = cat(1,CV,cv);
+                                if size(fv,2) > size(FV,2) && ~isempty(FV)
+                                    FV(:,end+1:size(fv,2)) = NaN;
+                                elseif size(fv,2) < size(FV,2)
+                                    fv(:,end+1:size(FV,2)) = NaN;
+                                end
                                 FV = cat(1,FV,fv + size(XV,1));
                                 XV = cat(1,XV,xv);
                             else
