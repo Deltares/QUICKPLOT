@@ -254,7 +254,7 @@ if FI.NumDomains>1
                     PProps = Props.Partitions{i};
                     PFI = FI.Partitions{i};
                     PProps.Geom = 'UGRID2D-EDGE';
-                    PProps.varid = Props.varid{2};
+                    PProps.varid = PProps.varid{2};
                     PProps.DimName{M_} = PFI.Dataset(PFI.Dataset(PProps.varid+1).Mesh{3}).Mesh{6};
                     Props.Partitions{i} = PProps;
                 end
@@ -2639,10 +2639,22 @@ cmdargs={};
 switch cmd
     case 'initialize'
         optfig(mfig);
-        set(findobj(mfig,'tag','ncdump'),'enable','on')
+        set(findobj(mfig,'tag','nclintro'),'enable','on')
+        if isfield(FI,'Partitions')
+            all_domains = domains(FI);
+            npartitions = length(FI.Partitions);
+            set(findobj(mfig,'tag','ncdomain_text'),'enable','on')
+            set(findobj(mfig,'tag','ncdomain_edit'),'enable','on','backgroundcolor',Active,'string',all_domains(1:npartitions));
+        end
+        set(findobj(mfig,'tag','ncdumpto'),'enable','on')
         set(findobj(mfig,'tag','ncdumpto=?'),'enable','on','backgroundcolor',Active)
+        set(findobj(mfig,'tag','ncdump'),'enable','on')
     case 'ncdump'
-        file = FI.FileName;
+        if isfield(FI,'Partitions')
+            ipart = get(findobj(mfig,'tag','ncdomain_edit'),'value');
+            FI = FI.Partitions{ipart};
+        end
+        file = FI.Filename;
         out = get(findobj(mfig,'tag','ncdumpto=?'),'value');
         switch out
             case 1
@@ -2683,14 +2695,38 @@ set(h0,'position',FigPos)
 
 voffset=FigPos(4)-30;
 uicontrol('Parent',h0, ...
-    'Style','pushbutton', ...
-    'BackgroundColor',Inactive, ...
-    'Callback','d3d_qp fileoptions ncdump', ...
-    'Position',[11 voffset-3 140 24], ...
-    'String','NetCDF Dump to', ...
+    'Style','text', ...
+    'Position',[11 voffset FigPos(3)-20 18], ...
+    'String','CDL listing of NetCDF metadata', ...
     'Horizontalalignment','left', ...
     'Enable','off', ...
-    'Tag','ncdump');
+    'Tag','nclintro');
+
+voffset=voffset-25;
+uicontrol('Parent',h0, ...
+    'Style','text', ...
+    'Position',[11 voffset 140 18], ...
+    'String','For domain', ...
+    'Horizontalalignment','left', ...
+    'Enable','off', ...
+    'Tag','ncdomain_text');
+uicontrol('Parent',h0, ...
+    'Style','popupmenu', ...
+    'BackgroundColor',Inactive, ...
+    'Position',[161 voffset 170 20], ...
+    'String',{' '}, ...
+    'Enable','off', ...
+    'Tag','ncdomain_edit');
+
+voffset=voffset-25;
+uicontrol('Parent',h0, ...
+    'Style','text', ...
+    'Callback','d3d_qp fileoptions ncdump', ...
+    'Position',[11 voffset 140 18], ...
+    'String','Dump to', ...
+    'Horizontalalignment','left', ...
+    'Enable','off', ...
+    'Tag','ncdumpto');
 dumpto = uicontrol('Parent',h0, ...
     'Style','popupmenu', ...
     'BackgroundColor',Inactive, ...
@@ -2698,6 +2734,17 @@ dumpto = uicontrol('Parent',h0, ...
     'String',{'File','Clipboard','Message Window'}, ...
     'Enable','off', ...
     'Tag','ncdumpto=?');
+
+voffset=voffset-25;
+uicontrol('Parent',h0, ...
+    'Style','pushbutton', ...
+    'Callback','d3d_qp fileoptions ncdump', ...
+    'Position',[161 voffset 170 20], ...
+    'String','Write listing', ...
+    'Horizontalalignment','left', ...
+    'Enable','off', ...
+    'Tag','ncdump');
+
 if ~isstandalone
     set(dumpto, 'String',{'File','Clipboard','Message Window','MATLAB Command Window'})
 end
@@ -2828,17 +2875,11 @@ end
 iq2 = find(isAMatch==2);
 if isempty(iq2)
     iq2 = 0;
-    if max(isAMatch) == 1
-        % not perfect, but maybe still a match ...
-        iq2 = ustrcmpi(struct1.Name,{structList2.Name});
-        if iq2 < 0
-            iq2 = 0;
-        else
-            % exactly one found
-        end
+    if sum(isAMatch) == 1
+        % one match based on ncVarName and Geom, use it ...
+        iq2 = find(isAMatch==1);
     end
 elseif length(iq2) > 1
-    iq2
     iq2 = 0;
     fprintf('MULTIPLE matches found\n');
 else
@@ -3035,20 +3076,19 @@ for v = valFields
         %
         for p = 1:length(partData)
             masked = domainMask{p};
-            if isempty(masked)
+            if isempty(partData(p).(fld)) || isempty(masked)
                 continue
-            else
-                if ~isfield(Data,fld)
-                    sz = size(partData(p).(fld));
-                    sz(nPrefixDim+1) = nloc;
-                    if iscell(partData(p).(fld))
-                        Data.(fld) = cell(sz);
-                    else
-                        Data.(fld) = NaN(sz);
-                    end
-                end
-                Data.(fld)(prefixDim{:},globalIndex{p}(masked),:) = partData(p).(fld)(prefixDim{:},masked,:);
             end
+            if ~isfield(Data,fld)
+                sz = size(partData(p).(fld));
+                sz(nPrefixDim+1) = nloc;
+                if iscell(partData(p).(fld))
+                    Data.(fld) = cell(sz);
+                else
+                    Data.(fld) = NaN(sz);
+                end
+            end
+            Data.(fld)(prefixDim{:},globalIndex{p}(masked),:) = partData(p).(fld)(prefixDim{:},masked,:);
         end
     end
 end

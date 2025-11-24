@@ -89,13 +89,11 @@ for i = 1:9
     end
 end
 
-if isempty(gcbo)
-    h(h==0)=[];
-    children = [children(1);flipud(h);children(2:end)];
-    %
-    % The following command destroys the whole menu in MATLAB R13 on Linux when
-    % called from a callback. Therefore, this code is called only once. The
-    % menu items are kept in place by hiding and showing them.
-    %
-    set(filemenu,'children',children)
+h(h==0) = [];
+children = [children(1);flipud(h);children(2:end)];
+
+j = 0;
+for i = length(children):-1:1
+    j = j+1;
+    set(children(i),'Position',j)
 end
