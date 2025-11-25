@@ -263,7 +263,7 @@ else
                             cMsg{i0+i}=Msg{j}(LBr(i):(LBr(i+1)-2));
                         end
                     else
-                        for i=1:size(Msg{j})
+                        for i=1:size(Msg{j},1)
                             cMsg{i0+i}=Msg{j}(i,:);
                         end
                     end

@@ -33,7 +33,7 @@ function varargout = qp_proxy(cmd,varargin)
 persistent save
 
 switch cmd
-    case {'open','openldb','opennew','openurl','grid_opennew','grid_open'}
+    case {'open','open*','openldb','opennew','openurl','grid_opennew','grid_open'}
         type = cmd(1:4);
         if strcmpi(type,'grid')
             [FI,FileName,Tp,Otherargs]=grid_fopen(cmd(6:end),varargin{:});

@@ -244,6 +244,9 @@ if ndims(data.X)>2 || size(data.X,2)>1
     data.Z = data.Z(:,1);
 end
 
+if isempty(data.ValLocation)
+    return
+end
 switch data.ValLocation
     case 'NODE'
         switch presentationtype

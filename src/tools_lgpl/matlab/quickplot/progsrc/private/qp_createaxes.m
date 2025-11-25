@@ -40,8 +40,7 @@ switch cmd
         pos = varargin{1};
         unt = varargin{2};
         rel = varargin{3};
-        nax = size(rel,1);
-        for i = size(rel):-1:1
+        for i = size(rel,1):-1:1
             subpos = [pos(1:2)+pos(3:4).*rel(i,1:2) pos(3:4).*rel(i,3:4)];
             ax(i)=axes('parent',fig, ...
                 'units',unt, ...
