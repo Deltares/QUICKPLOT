@@ -2,30 +2,30 @@ function [hNewVec,Error,FileInfo,PlotState]=qp_plot(PlotState,Ops)
 %QP_PLOT Plot function of QuickPlot.
 
 %----- LGPL --------------------------------------------------------------------
-%                                                                               
-%   Copyright (C) 2011-2025 Stichting Deltares.                                     
-%                                                                               
-%   This library is free software; you can redistribute it and/or                
-%   modify it under the terms of the GNU Lesser General Public                   
-%   License as published by the Free Software Foundation version 2.1.                         
-%                                                                               
-%   This library is distributed in the hope that it will be useful,              
-%   but WITHOUT ANY WARRANTY; without even the implied warranty of               
-%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU            
-%   Lesser General Public License for more details.                              
-%                                                                               
-%   You should have received a copy of the GNU Lesser General Public             
-%   License along with this library; if not, see <http://www.gnu.org/licenses/>. 
-%                                                                               
-%   contact: delft3d.support@deltares.nl                                         
-%   Stichting Deltares                                                           
-%   P.O. Box 177                                                                 
-%   2600 MH Delft, The Netherlands                                               
-%                                                                               
-%   All indications and logos of, and references to, "Delft3D" and "Deltares"    
-%   are registered trademarks of Stichting Deltares, and remain the property of  
-%   Stichting Deltares. All rights reserved.                                     
-%                                                                               
+%
+%   Copyright (C) 2011-2025 Stichting Deltares.
+%
+%   This library is free software; you can redistribute it and/or
+%   modify it under the terms of the GNU Lesser General Public
+%   License as published by the Free Software Foundation version 2.1.
+%
+%   This library is distributed in the hope that it will be useful,
+%   but WITHOUT ANY WARRANTY; without even the implied warranty of
+%   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+%   Lesser General Public License for more details.
+%
+%   You should have received a copy of the GNU Lesser General Public
+%   License along with this library; if not, see <http://www.gnu.org/licenses/>.
+%
+%   contact: delft3d.support@deltares.nl
+%   Stichting Deltares
+%   P.O. Box 177
+%   2600 MH Delft, The Netherlands
+%
+%   All indications and logos of, and references to, "Delft3D" and "Deltares"
+%   are registered trademarks of Stichting Deltares, and remain the property of
+%   Stichting Deltares. All rights reserved.
+%
 %-------------------------------------------------------------------------------
 %   http://www.deltaressystems.com
 %   $HeadURL$
@@ -48,15 +48,15 @@ if isfield(PlotState,'FI')
     stats = PlotState.Stations;
     Ops = PlotState.Ops;
     Ops = qp_state_version(Ops);
-    
+
     DimFlag = Props.DimFlag;
-    
+
     SubSelected = Selected;
     SubSelected(~DimFlag) = [];
     if isfield(Props,'MNK') && Props.MNK
         Props.MNK = xyz_or_mnk(Ops,Selected,Props.MNK);
     end
-    
+
     DataInCell = 0;
     if Props.NVal<0
         data = [];
@@ -261,7 +261,7 @@ if isfield(Ops,'units')
             end
         else
             Units=Ops.units;
-        end            
+        end
     elseif ~isempty(Ops.units) && ~isempty(Units)
         if isfield(data,'TemperatureType')
             if data.TemperatureType
@@ -343,140 +343,7 @@ if isfield(Ops,'trackcolour')
 end
 
 if isfield(Ops,'plotcoordinate')
-    % TODO: take into account the EdgeGeometry length ...
-    sName = '';
-    sUnits = [];
-    if isfield(data,'XName')
-        sName = data.XName;
-    end
-    if isfield(data,'XUnits')
-        sUnits = data.XUnits;
-    end
-    switch Ops.plotcoordinate
-        case {'path distance','reverse path distance'}
-            if isfield(data,'FaceNodeConnect') || isfield(data,'EdgeNodeConnect')
-                switch data.ValLocation
-                    case 'FACE'
-                        % here we should actually identify the point at
-                        % which we go from one face to the next. Such that
-                        % we get N data and N+1 coordinates.
-                        X = data.X;
-                        Y = data.Y;
-                        X(end+1,:) = 0;
-                        Y(end+1,:) = 0;
-                        FNC = data.FaceNodeConnect;
-                        nNodes = sum(~isnan(FNC),2);
-                        FNC(isnan(FNC)) = length(X);
-                        data.X = sum(X(FNC),2)./nNodes;
-                        data.Y = sum(Y(FNC),2)./nNodes;
-                    case 'EDGE'
-                        iNode = stitch_edges(data.EdgeNodeConnect);
-                        nodeMask = iNode==0;
-                        iNode(nodeMask) = 1;
-                        data.X = data.X(iNode);
-                        data.Y = data.Y(iNode);
-                        if any(nodeMask)
-                            data.X(nodeMask) = NaN;
-                            data.Y(nodeMask) = NaN;
-                            edgeMask = nodeMask(1:end-1) | nodeMask(2:end);
-                            data.Val(~edgeMask) = data.Val;
-                            data.Val(edgeMask) = NaN;
-                        end
-                    case 'NODE'
-                        % data.X/Y already contains the node coordinates
-                end
-                x = data.X;
-                y = data.Y;
-                for fld = {'FaceNodeConnect','EdgeNodeConnect','ValLocation'}
-                    if isfield(data,fld{1})
-                        data = rmfield(data,fld{1});
-                    end
-                end
-            elseif isfield(data,'Y')
-                if size(data.X,2)==2 && size(data.X,1)>2
-                    % The following lines are not valid for geographic coordinates!
-                    data.X = (data.X(:,1,:) + data.X(:,2,:))/2;
-                    data.Y = (data.Y(:,1,:) + data.Y(:,2,:))/2;
-                elseif size(data.X,1)==2 && size(data.X,2)>2
-                    % The following lines are not valid for geographic coordinates!
-                    data.X = (data.X(1,:,:) + data.X(2,:,:))/2;
-                    data.Y = (data.Y(1,:,:) + data.Y(2,:,:))/2;
-                end
-                x = data.X(:,:,1);
-                y = data.Y(:,:,1);
-            elseif isfield(data,'X')
-                if size(data.X,2)==2 && size(data.X,1)>2
-                    data.X = (data.X(:,1,:) + data.X(:,2,:))/2;
-                elseif size(data.X,1)==2 && size(data.X,2)>2
-                    data.X = (data.X(1,:,:) + data.X(2,:,:))/2;
-                end
-                x = data.X(:,:,1);
-                y = 0*x;
-            end
-            if strcmp(Ops.plotcoordinate,'reverse path distance')
-                x = rot90(x,2);
-                y = rot90(y,2);
-            end
-            if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
-                s = pathdistance(x,y,'geographic');
-                sUnits = 'm';
-            else
-                s = pathdistance(x,y);
-            end
-            %if ~isequal(size(data.X),size(data.Val)) && ~isfield(data,'dX_tangential')
-            %    ds = s(min(find(s>0)))/2;
-            %    if ~isempty(ds)
-            %        s = s-ds;
-            %    end
-            %end
-            if strcmp(Ops.plotcoordinate,'reverse path distance')
-                s = rot90(s,2);
-            end
-            s = reshape(repmat(s,[1 1 size(data.X,3)]),size(data.X));
-        case {'coordinate','index'}
-            if isfield(data,'X')
-                s = data.X;
-            else
-                s = 1:numel(data.Val);
-            end
-        case 'x coordinate'
-            s = data.X;
-        case 'y coordinate'
-            s = data.Y;
-            if isfield(data,'YName')
-                sName = data.YName;
-            end
-            if isfield(data,'YUnits')
-                sUnits = data.YUnits;
-            end
-        case 'time'
-            s = repmat(data.Time,[1 size(data.X,3)]);
-            sUnits = [];
-    end
-    data.X = squeeze(s);
-    flds = {'Z','Val','XComp','YComp','ZComp'};
-    for i = 1:length(flds)
-        fld = flds{i};
-        if isfield(data,fld)
-            data.(fld) = squeeze(data.(fld));
-        end
-    end
-    if isfield(data,'Y')
-        data = rmfield(data,'Y');
-        if isfield(data,'YName')
-            data = rmfield(data,'YName');
-        end
-        if isfield(data,'YUnits')
-            data = rmfield(data,'YUnits');
-        end
-    end
-    if ~isempty(sName)
-        data.XName = sName;
-    end
-    if ~isempty(sUnits)
-        data.XUnits = sUnits;
-    end
-    data.Geom = 'sSEG';
+    data = compute_plotcoordinate(data,Ops.plotcoordinate);
 end
 
 if length(data) == 1 && ...
@@ -604,7 +471,7 @@ if NVal==0.6 || NVal==0.9
     % 0.6 = thindam optionally coloured
     % 0.9 = coloured thindam
     NVal=0.5;
-elseif  NVal==1.9 
+elseif  NVal==1.9
     % 1.9 = coloured thindam or vector perpendicular to thindam
     switch Ops.presentationtype
         case {'vector'}
@@ -1303,7 +1170,7 @@ else
         delete(hNew{d});
     end
     hNew = hNew(1:length(data));
-    
+
     ChangeCLim = strcmp(Ops.Thresholds,'none') || ~isempty(Ops.colourlimits);
 
     hNewVec=cat(1,hNew{:});
@@ -1422,7 +1289,7 @@ elseif isfield(Ops,'symmetriccolourlimits') && Ops.symmetriccolourlimits
     clim = max(abs(clim));
     if isempty(hCLIMSYMM)
         hNew{end+1} = surface([NaN NaN], [NaN NaN], [NaN NaN;NaN NaN], ...
-                              'cdata', [-1 1;-1 1]*clim);
+            'cdata', [-1 1;-1 1]*clim);
     else
         set(hCLIMSYMM, 'cdata', [-1 1;-1 1]*clim)
         hNew{end+1} = hCLIMSYMM;
@@ -1637,3 +1504,153 @@ while iE <= nEdges
     iE = iE+1;
 end
 iNode = iNode(1:iN);
+
+
+function data = compute_plotcoordinate(data,plotcoordinate)
+% TODO: take into account the EdgeGeometry length ...
+sName = '';
+sUnits = [];
+if isfield(data,'XName')
+    sName = data(1).XName;
+end
+if isfield(data,'XUnits')
+    sUnits = data(1).XUnits;
+end
+for i = 1:length(data)
+    % data(i) is modified inside the get_plotcoordinate call, but fields
+    % cannot be added or removed there since then the data structure will
+    % not match the other entries in the array anymore.
+    [s,sName,sUnits,data(i)] = get_plotcoordinate(data(i),sName,sUnits,plotcoordinate);
+    % in most cases data will have a field "X", but not always.
+    data(i).X = s;
+end
+if ~isempty(sName)
+    [data(:).XName] = deal(sName);
+end
+if ~isempty(sUnits)
+    [data(:).XUnits] = deal(sUnits);
+end
+[data(:).Geom] = deal('sSEG');
+
+% clean up the data structure
+if isfield(data,'Y')
+    data = rmfield(data,'Y');
+    if isfield(data,'YName')
+        data = rmfield(data,'YName');
+    end
+    if isfield(data,'YUnits')
+        data = rmfield(data,'YUnits');
+    end
+end
+for fld = {'FaceNodeConnect','EdgeNodeConnect','ValLocation'}
+    if isfield(data,fld{1})
+        data = rmfield(data,fld{1});
+    end
+end
+
+
+function [s,sName,sUnits,data] = get_plotcoordinate(data,sName,sUnits,plotcoordinate)
+switch plotcoordinate
+    case {'path distance','reverse path distance'}
+        if isfield(data,'FaceNodeConnect') || isfield(data,'EdgeNodeConnect')
+            switch data.ValLocation
+                case 'FACE'
+                    % here we should actually identify the point at
+                    % which we go from one face to the next. Such that
+                    % we get N data and N+1 coordinates.
+                    X = data.X;
+                    Y = data.Y;
+                    X(end+1,:) = 0;
+                    Y(end+1,:) = 0;
+                    FNC = data.FaceNodeConnect;
+                    nNodes = sum(~isnan(FNC),2);
+                    FNC(isnan(FNC)) = length(X);
+                    data.X = sum(X(FNC),2)./nNodes;
+                    data.Y = sum(Y(FNC),2)./nNodes;
+                case 'EDGE'
+                    iNode = stitch_edges(data.EdgeNodeConnect);
+                    nodeMask = iNode==0;
+                    iNode(nodeMask) = 1;
+                    data.X = data.X(iNode);
+                    data.Y = data.Y(iNode);
+                    if any(nodeMask)
+                        data.X(nodeMask) = NaN;
+                        data.Y(nodeMask) = NaN;
+                        edgeMask = nodeMask(1:end-1) | nodeMask(2:end);
+                        data.Val(~edgeMask) = data.Val;
+                        data.Val(edgeMask) = NaN;
+                    end
+                case 'NODE'
+                    % data.X/Y already contains the node coordinates
+            end
+            x = data.X;
+            y = data.Y;
+        elseif isfield(data,'Y')
+            if size(data.X,2)==2 && size(data.X,1)>2
+                % The following lines are not valid for geographic coordinates!
+                data.X = (data.X(:,1,:) + data.X(:,2,:))/2;
+                data.Y = (data.Y(:,1,:) + data.Y(:,2,:))/2;
+            elseif size(data.X,1)==2 && size(data.X,2)>2
+                % The following lines are not valid for geographic coordinates!
+                data.X = (data.X(1,:,:) + data.X(2,:,:))/2;
+                data.Y = (data.Y(1,:,:) + data.Y(2,:,:))/2;
+            end
+            x = data.X(:,:,1);
+            y = data.Y(:,:,1);
+        elseif isfield(data,'X')
+            if size(data.X,2)==2 && size(data.X,1)>2
+                data.X = (data.X(:,1,:) + data.X(:,2,:))/2;
+            elseif size(data.X,1)==2 && size(data.X,2)>2
+                data.X = (data.X(1,:,:) + data.X(2,:,:))/2;
+            end
+            x = data.X(:,:,1);
+            y = 0*x;
+        end
+        if strcmp(plotcoordinate,'reverse path distance')
+            x = rot90(x,2);
+            y = rot90(y,2);
+        end
+        if isfield(data,'XUnits') && strcmp(data.XUnits,'deg')
+            s = pathdistance(x,y,'geographic');
+            sUnits = 'm';
+        else
+            s = pathdistance(x,y);
+        end
+        %if ~isequal(size(data.X),size(data.Val)) && ~isfield(data,'dX_tangential')
+        %    ds = s(min(find(s>0)))/2;
+        %    if ~isempty(ds)
+        %        s = s-ds;
+        %    end
+        %end
+        if strcmp(plotcoordinate,'reverse path distance')
+            s = rot90(s,2);
+        end
+        s = reshape(repmat(s,[1 1 size(data.X,3)]),size(data.X));
+    case {'coordinate','index'}
+        if isfield(data,'X')
+            s = data.X;
+        else
+            s = 1:numel(data.Val);
+        end
+    case 'x coordinate'
+        s = data.X;
+    case 'y coordinate'
+        s = data.Y;
+        if isfield(data,'YName')
+            sName = data.YName;
+        end
+        if isfield(data,'YUnits')
+            sUnits = data.YUnits;
+        end
+    case 'time'
+        s = repmat(data.Time,[1 size(data.X,3)]);
+        sUnits = [];
+end
+
+% squeeze all arrays to remove unnecessary singleton dimensions
+s = squeeze(s);
+for fld = {'Z','Val','XComp','YComp','ZComp'}
+    if isfield(data,fld{1})
+        data.(fld) = squeeze(data.(fld{1}));
+    end
+end
