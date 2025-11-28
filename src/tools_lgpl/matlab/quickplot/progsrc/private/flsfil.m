@@ -432,17 +432,17 @@ end
 function S=readsts(FI,domain,Props,t)
 S={};
 %======================== SPECIFIC CODE =======================================
-switch FI.FileType,
+switch FI.FileType
     case 'FLS-inc'
         S={};
     case {'FLS-bin','FLS-his'}
         S={};
-        for i=1:FI.NumSta,
+        for i=1:FI.NumSta
             S{i}=sprintf('(%i,%i)',FI.M(i),FI.N(i));
         end
     case 'FLS-cross'
         S={};
-        for i=1:size(FI.M)
+        for i=1:size(FI.M,1)
             S{i}=sprintf('(%i,%i)-(%i,%i)',FI.M(i,1),FI.N(i,1),FI.M(i,2),FI.N(i,2));
         end
 end
