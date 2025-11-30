@@ -1651,6 +1651,6 @@ end
 s = squeeze(s);
 for fld = {'Z','Val','XComp','YComp','ZComp'}
     if isfield(data,fld{1})
-        data.(fld) = squeeze(data.(fld{1}));
+        data.(fld{1}) = squeeze(data.(fld{1}));
     end
 end
