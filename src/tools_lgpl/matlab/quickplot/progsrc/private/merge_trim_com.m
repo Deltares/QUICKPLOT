@@ -120,7 +120,7 @@ if isfield(OrigFI,'NEFIS')
             if isfield(Ans,'Time') && length(Ans(1).Time) > 1
                 hasMultiTime = 1;
             end
-            for cfld = {'X','Y','Z','Val','XComp','YComp','ZComp','XDam','YDam'}
+            for cfld = {'X','Y','Z','Val','XComp','YComp','ZComp','XDam','YDam','XDamVal','YDamVal'}
                 fld = cfld{1};
                 if ~isfield(Ans,fld)
                     continue
