@@ -1485,6 +1485,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    'sQU
     'bed level in water level points'  'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'd'   'z'       ''      'map-const'      'DP0'     ''       []       0
     'bed level in velocity points'     'm'      [1 0 1 1 0]  1         0.9  'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-const'      'DPU0'    'DPV0'   []       0
     'bed slope'                        '-'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-sed-series' 'DZDUU'   'DZDVV'  []       1
+    'staggered bed slope'              '-'      [1 0 1 1 0]  1         1.9  'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-sed-series' 'DZDUU'   'DZDVV'  []       1
     'cum. erosion/sedimentation'       'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'd'   'z'       ''      'map-const'      'DP0'     ''       []       0
     'morphological acceleration factor' '-'     [1 0 0 0 0]  0         1    ''      ''       ''        'NA'  ''        ''    'map-infsed-serie' 'MORFAC'  ''       []       0
     '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
