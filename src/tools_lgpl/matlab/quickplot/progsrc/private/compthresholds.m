@@ -66,7 +66,6 @@ if abs(minmax(end)) > eps(0)*1e6
     minmax(end) = minmax(end) + eps(minmax(end));
 end
 
-LocStartClass = 1-classes_between_thresholds;
 if isstruct(Thresholds) % Threshold step given
 
     step = Thresholds.step;
@@ -89,8 +88,15 @@ elseif numel(Thresholds) == 1 && ...
     if Ops.symmetriccolourlimits
         minmax=[-1 1]*max(abs(minmax));
     end
-    % transform to linear space
-    ratio = (LocStartClass:Thresholds)/(Thresholds+1);
+    % transform to linear 
+    if classes_between_thresholds
+        LocStartClass = 0;
+        LocEndClass = Thresholds+1;
+    else
+        LocStartClass = 0;
+        LocEndClass = Thresholds;
+    end
+    ratio = (LocStartClass:LocEndClass)/(Thresholds+1);
     sign = 1;
     switch Ops.thresholddistribution
         case 'logarithmic'
@@ -125,8 +131,14 @@ elseif numel(Thresholds) == 1 && ...
 else % actual Thresholds given
 
     % use colour limits if provided
-    if ~isempty(Ops.colourlimits)
+    if ~isempty(Ops.colourlimits) && isfield(Ops,'climclipping') && Ops.climclipping
         Thresholds(Thresholds < Ops.colourlimits(1) | Thresholds > Ops.colourlimits(2)) = [];
+        if Thresholds(1) > Ops.colourlimits(1)
+            Thresholds = [Ops.colourlimits(1), Thresholds];
+        end
+        if Thresholds(end) < Ops.colourlimits(2)
+            Thresholds(end+1) = Ops.colourlimits(2);
+        end
     end
 end
 
