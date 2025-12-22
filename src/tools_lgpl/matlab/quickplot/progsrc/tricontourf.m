@@ -126,41 +126,46 @@ else
 end
 
 % don't try to plot contour patches at infinity or beyond the data
-levels(levels == inf | levels > max(v(:))) = [];
+%levels(levels == inf | levels > max(v(:))) = [];
 
 maxfinite=max(max(levels),max(v(isfinite(v(:)))));
 minfinite=min(min(levels),min(v(isfinite(v(:)))));
 v(v(:)==-inf)=-realmax;
 v(v(:)==+inf)=realmax;
 
-for LevelNr=1:length(levels)+1
+nLevels = length(levels);
+for LevelNr=1:nLevels+1
     if LevelNr == 1
-        if isempty(levels)
-            level=minfinite;
+        if isempty(levels) % also levelNr > length(levels)
+            level=maxfinite;
         else
             level=levels(LevelNr);
         end
         plevel=minfinite;
         Smaller=logical(any(isnan(v(tri)),2)*[1 1 1]);
-        Nsmaller=sum(Smaller,2);
+        nSmaller=sum(Smaller,2);
         Larger=(v(tri)>=level) & ~Smaller;
-        Nlarger=sum(Larger,2);
-    elseif LevelNr > length(levels)
+        nLarger=sum(Larger,2);
+    elseif LevelNr > nLevels
         plevel=level;
         level=maxfinite;
-        Nsmaller=3-Nlarger;
+        nSmaller=3-nLarger;
         Smaller=~Larger;
         Larger=false(size(tri));
-        Nlarger=zeros(size(tri,1),1);
+        nLarger=zeros(size(tri,1),1);
     else
         plevel=level;
         level=levels(LevelNr);
-        Nsmaller=3-Nlarger;
+        nSmaller=3-nLarger;
         Smaller=~Larger;
         Larger=Larger & (v(tri)>=level);
-        Nlarger=sum(Larger,2);
+        nLarger=sum(Larger,2);
     end
-    CLIndex=6-Nsmaller+3*Nlarger; % Nsmaller+2*(3-Nsmaller-Nlarger)+5*Nlarger;
+    if level == -inf || plevel == inf
+        % don't add an additional level before -Inf or after Inf
+        continue
+    end
+    CLIndex=6-nSmaller+3*nLarger; % Nsmaller+2*(3-Nsmaller-Nlarger)+5*Nlarger;
 
     NTriangles=[0 0 0 1 2 1 2 3 2 0 2 1 0 0 0 0];
     NPoints =  [0 0 0 3 4 3 4 5 4 0 4 3 0 0 0 0];
@@ -602,7 +607,8 @@ for LevelNr=1:length(levels)+1
     TRI=J(TRI);
     if getdata
         H{LevelNr}={Coord(:,1:3) TRI LevelNr};
-    elseif ~isempty(Coord)
+    else
+        % every level need to return an object, so return an empty object
         if ~isnan(ZPlane)
             Coord(:,3)=ZPlane;
         end
@@ -621,7 +627,7 @@ for LevelNr=1:length(levels)+1
                 userdataopt={'userdata',level};
         end
         visopt={};
-        if ~isfinite(clevel)
+        if ~isfinite(clevel) || isempty(Coord)
             visopt={'visible','off'};
         end
         NewH = patch('Vertices',Coord(:,1:3), ...
