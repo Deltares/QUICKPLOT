@@ -879,7 +879,7 @@ if ~isempty(Attribs)
                         end
                         DataProps(l,:) = {Str   'sQUAD' 'xy'    [0 0 1 1 0]  1          1     ''        'd'   'd'      ''      i      j   };
                         if isequal(qp_option(Attribs(i),'DLocation'),'cell centres')
-                            DataProps(L,8:9) = {'z'};
+                            DataProps(l,8:9) = {'z'};
                         end
                         if length(Attrib.Data)==1
                             DataProps(l+1,:) = DataProps(l,:);
