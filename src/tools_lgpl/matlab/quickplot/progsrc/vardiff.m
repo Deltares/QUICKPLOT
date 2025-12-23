@@ -167,15 +167,19 @@ switch pflag
         d1_str=var2str(varargin{1});
         d2_str=var2str(varargin{2});
         substr=varargin{3};
+        maxAbs=varargin{4};
+        maxRel=varargin{5};
         switch formatflag
             case {'latex','latex-longtable'}
                 if isequal(d1_str,d2_str) || size(d1_str,1)>1 || size(d2_str,1)>1
-                    myfprintf(fid,'\\STRUT %s & \\multicolumn{2}{c}{%s} \\\\ \\hline\n',substr,'data differs');
+                    msg = sprintf('data differs (abs: %g, rel: %g)', maxAbs,maxRel);
+                    myfprintf(fid,'\\STRUT %s & \\multicolumn{2}{c}{%s} \\\\ \\hline\n',substr,msg);
                 else
                     myfprintf(fid,'\\STRUT %s & %s & %s \\\\ \\hline\n',substr,protect_string(d1_str),protect_string(d2_str));
                 end
             otherwise
                 myfprintf(fid,['Data of %s%s differs from data contained in %s%s.' br],var1,substr,var2,substr);
+                myfprintf(fid,['Maximum difference abs: %g, rel: %g.' br],maxAbs,maxRel);
         end
     case 'fieldnames'  % fieldnames1,fieldnames2,subscript string
         fn1=varargin{1};
@@ -408,11 +412,29 @@ else  % some numeric type of equal size
     elseif isa(s1,'double') || isa(s1,'single')
         NaNorEqual=(isnan(s1) & isnan(s2)) | (s1==s2);
         DiffFound=~all(NaNorEqual(:));
+        if DiffFound
+            if any(xor(isnan(s1),isnan(s2)))
+                maxAbs = NaN;
+                maxRel = NaN;
+            else
+                mask = ~isnan(s1);
+                absDiff = abs(s1(mask)-s2(mask));
+                avgAbsVal = (abs(s1(mask))+abs(s2(mask)))/2;
+                maxAbs = max(absDiff);
+                maxRel = max(absDiff./avgAbsVal);
+            end
+        end
     else
         DiffFound=~isequal(s1,s2);
+        if DiffFound
+            absDiff = abs(s1(:)-s2(:));
+            avgAbsVal = (abs(s1(:))+abs(s2(:)))/2;
+            maxAbs = max(absDiff);
+            maxRel = max(absDiff./avgAbsVal);
+        end
     end
     if DiffFound
-        printdiff(fid,br,'data',formatflag,s1,s2,substr);
+        printdiff(fid,br,'data',formatflag,s1,s2,substr,maxAbs,maxRel);
     end
 end
 
