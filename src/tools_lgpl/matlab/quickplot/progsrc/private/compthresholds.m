@@ -93,7 +93,7 @@ elseif numel(Thresholds) == 1 && ...
         LocStartClass = 0;
         LocEndClass = Thresholds+1;
     else
-        LocStartClass = 0;
+        LocStartClass = 1;
         LocEndClass = Thresholds;
     end
     ratio = (LocStartClass:LocEndClass)/(Thresholds+1);
