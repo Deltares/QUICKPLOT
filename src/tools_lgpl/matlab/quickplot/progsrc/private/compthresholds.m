@@ -171,10 +171,10 @@ else
     if isempty(Thresholds)
         Thresholds = [-inf, inf];
     else
-        if isfinite(Thresholds(1)) && Thresholds(1) ~= 0
+        if isfinite(Thresholds(1)) && Thresholds(1) > minmax(1)
             Thresholds = [-inf, Thresholds];
         end
-        if isfinite(Thresholds(end))
+        if isfinite(Thresholds(end)) && Thresholds(end) < minmax(2)
             Thresholds = [Thresholds, inf];
         end
     end

@@ -1390,8 +1390,6 @@ if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
                 Classes = {data(1).Classes};
             elseif classes_between_thresholds
                 LabelStyle = {};
-                % remove the infinity threshold ...
-                Thresholds = Ops.Thresholds(1:end-1);
             elseif isfield(Ops,'LineParams') && ~isempty(Ops.LineParams)
                 LabelStyle = {'labellines'};
                 LineParams = {'lineparams',Ops.LineParams};
