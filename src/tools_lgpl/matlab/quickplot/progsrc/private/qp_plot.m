@@ -1344,7 +1344,6 @@ if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
     isAx =strcmp(get(Chld,'type'),'axes');
     nonAx=Chld(~isAx);
     Ax   =Chld(isAx);
-    has_colorbar = ~isempty(findall(Parent,'tag','ColorbarDeleteProxy'));
     h=qp_colorbar(Ops.colourbar,'peer',Parent);
     if ~isempty(Units)
         if isequal(Units,'<matlab_time>')
@@ -1367,7 +1366,7 @@ if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
         case 'horiz'
             xlabel(h,PName)
     end
-    if ~has_colorbar && ~isempty(h)
+    if ~isempty(h)
         set(pfig,'children',[nonAx;h;Ax(ishandle(Ax) & (Ax~=h))])
         cbratio = qp_settings('colorbar_ratio');
         if cbratio>1
