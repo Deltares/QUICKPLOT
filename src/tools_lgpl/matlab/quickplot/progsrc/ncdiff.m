@@ -1,4 +1,4 @@
-function ncdiff(file1, file2)
+function argout = ncdiff(file1, file2)
 %NCDIFF - Compares the content of two NetCDF files.
 %   This function compares the content of two NetCDF files and reports the
 %   differences. It compares (global) attributes and variables. It does not
@@ -47,14 +47,21 @@ ncInfo1 = ncinfo(file1);
 ncInfo2 = ncinfo(file2);
 fprintf('File 1: %s\n', ncInfo1.Filename);
 fprintf('File 2: %s\n\n', ncInfo2.Filename);
-check_fields(ncInfo1, ncInfo2, 'global attribute', 'Attributes', @(x,y) report_attribute_differences(x,y));
-check_fields(ncInfo1, ncInfo2, 'variable', 'Variables', @(x,y) report_variable_differences(x,y,file1,file2));
+anydiff = check_fields(ncInfo1, ncInfo2, dimension_diff_reporter('global'));
+anydiff = anydiff | check_fields(ncInfo1, ncInfo2, variable_diff_reporter(file1, file2));
+anydiff = anydiff | check_fields(ncInfo1, ncInfo2, attribute_diff_reporter('global'));
+if nargout == 1
+    argout = anydiff;
+end
 
-
-function check_fields(ncInfo1, ncInfo2, typeName, fld, diff_reporter)
-fprintf('Comparing %ss ...\n', typeName);
-structList1 = ncInfo1.(fld);
-structList2 = ncInfo2.(fld);
+% routine to check and report any differences for a series of variables or
+% attributes.
+function anydiff = check_fields(ncInfo1, ncInfo2, reporter)
+if reporter.verbose
+    fprintf('Comparing %ss ...\n', reporter.fld_longname);
+end
+structList1 = ncInfo1.(reporter.fld);
+structList2 = ncInfo2.(reporter.fld);
 if isempty(structList1)
     nameList1 = {};
 else
@@ -70,16 +77,12 @@ anydiff = false;
 namesOnlyIn1 = setdiff(nameList1, nameList2);
 if ~isempty(namesOnlyIn1)
     anydiff = true;
-    fprintf('%ss only found in file 1:\n', typeName);
-    fprintf('   %s\n',namesOnlyIn1{:});
-    fprintf('\n');
+    fprintf_setdiff(reporter,1,namesOnlyIn1)
 end
 namesOnlyIn2 = setdiff(nameList2, nameList1);
 if ~isempty(namesOnlyIn2)
     anydiff = true;
-    fprintf('%ss only found in file 2:\n', typeName);
-    fprintf('   %s\n',namesOnlyIn2{:});
-    fprintf('\n');
+    fprintf_setdiff(reporter,2,namesOnlyIn2)
 end
 nameList = intersect(nameList1, nameList2);
 
@@ -88,52 +91,135 @@ for i = 1:length(nameList)
     i1 = strcmp(nameList1, name);
     i2 = strcmp(nameList2, name);
 
-    info1 = ncInfo1.(fld)(i1);
-    info2 = ncInfo2.(fld)(i2);
+    info1 = ncInfo1.(reporter.fld)(i1);
+    info2 = ncInfo2.(reporter.fld)(i2);
 
-    anydiff = anydiff | diff_reporter(info1, info2);
+    anydiff = anydiff | reporter.report(info1, info2);
 end
 
-if ~anydiff
-    fprintf('No differences found.\n');
+if reporter.verbose
+    if ~anydiff
+        fprintf('No differences found.\n');
+    end
+    fprintf('\n');
 end
-fprintf('\n');
 
+% report differences in two sets
+function fprintf_setdiff(reporter,fileN,namesOnlyInN)
+fprintf('%s%ss only found in file %i:\n', reporter.indent, reporter.fld_longname, fileN);
+for i = 1:length(namesOnlyInN)
+    fprintf('%s   %s\n',reporter.indent,namesOnlyInN{i});
+end
 
+% reporter for variable differences
+function reporter = variable_diff_reporter(file1,file2)
+reporter.fld = 'Variables';
+reporter.fld_longname = 'variable';
+reporter.indent = '';
+reporter.verbose = true;
+reporter.report = @(x,y) report_variable_differences(x,y,file1,file2);
+
+% actual variable difference reporter
 function anydiff = report_variable_differences(info1, info2, file1, file2)
 anydiff = false;
 name = info1.Name;
-switch vardiff(info1, info2)
-    case 0
-        varData1 = ncread(file1, name);
-        varData2 = ncread(file2, name);
-        ifill = info1.Attributes(strcmp({info1.Attributes.Name},'_FillValue'));
-        if ~isempty(ifill)
-            fill_value = ifill.Value;
-            varData1(isnan(varData1)) = fill_value;
-            varData2(isnan(varData2)) = fill_value;
+flds = fieldnames(info1);
+for i = 1:length(flds)
+    fld1 = info1.(flds{i});
+    fld2 = info2.(flds{i});
+    if ~isequal(fld1,fld2)
+        if ~anydiff
+            anydiff = 1;
+            fprintf('=> variable %s:\n', name);
         end
-        switch vardiff(varData1, varData2)
-            case 0
-                % equal
+        switch flds{i}
+            case 'Attributes'
+                anydiff = check_fields(info1, info2, attribute_diff_reporter('local'));
+            case 'Dimensions'
+                anydiff = check_fields(info1, info2, dimension_diff_reporter('local'));
             otherwise
-                anydiff = true;
-                fprintf('=> variable %s:\n', name);
-                vardiff(varData1, varData2)
+                vardiff(fld1,fld2)
         end
-    otherwise
-        anydiff = true;
-        fprintf('=> variable %s:\n', name);
-        vardiff(info1, info2)
+    end
 end
 
+if isequal(info1.Size,info2.Size)
+    varData1 = ncread(file1, name);
+    varData2 = ncread(file2, name);
+    common_fillvalue = 0;
+    if isstruct(info1.Attributes)
+        ifill = info1.Attributes(strcmp({info1.Attributes.Name},'_FillValue'));
+        if ~isempty(ifill)
+            varData1(isnan(varData1)) = common_fillvalue;
+        end
+    end
+    if isstruct(info2.Attributes)
+        ifill = info2.Attributes(strcmp({info2.Attributes.Name},'_FillValue'));
+        if ~isempty(ifill)
+            varData2(isnan(varData2)) = common_fillvalue;
+        end
+    end
+    switch vardiff(varData1, varData2)
+        case 0
+            % equal
+        otherwise
+            if ~anydiff
+                anydiff = true;
+                fprintf('=> variable %s:\n', name);
+            end
+            vardiff(varData1, varData2)
+    end
+end
 
-function anydiff = report_attribute_differences(info1, info2)
+% reporter for dimension differences
+function reporter = dimension_diff_reporter(scope)
+reporter.fld = 'Dimensions';
+reporter.fld_longname = 'dimension';
+switch scope
+    case 'global'
+        reporter.indent = '';
+        reporter.verbose = true;
+        reporter.report = @(x,y) report_dimension_differences(x,y,'=>','  ');
+    otherwise
+        reporter.indent = '   ';
+        reporter.verbose = false;
+        reporter.report = @(x,y) report_dimension_differences(x,y,'  ','     ');
+end
+
+% actual attrbute difference reporter
+function anydiff = report_dimension_differences(info1, info2, prefix1, prefix2)
+anydiff = false;
+name = info1.Name;
+if ~isequal(info1.Length, info2.Length) || ~isequal(info1.Unlimited, info2.Unlimited)
+    anydiff = true;
+    fprintf('%s dimension %s:\n', prefix1, name);
+    fprintf('%s length 1: %i (unlimited = %i)\n', prefix2, info1.Length, info1.Unlimited)
+    fprintf('%s length 2: %i (unlimited = %i)\n', prefix2, info2.Length, info2.Unlimited)
+end
+
+% reporter for attribute differences
+function reporter = attribute_diff_reporter(scope)
+reporter.fld = 'Attributes';
+switch scope
+    case 'global'
+        reporter.fld_longname = 'global attribute';
+        reporter.indent = '';
+        reporter.verbose = true;
+        reporter.report = @(x,y) report_attribute_differences(x,y,'=>','  ');
+    otherwise
+        reporter.fld_longname = 'attribute';
+        reporter.indent = '   ';
+        reporter.verbose = false;
+        reporter.report = @(x,y) report_attribute_differences(x,y,'  ','     ');
+end
+
+% actual attrbute difference reporter
+function anydiff = report_attribute_differences(info1, info2, prefix1, prefix2)
 anydiff = false;
 name = info1.Name;
 if ~isequal(info1.Value, info2.Value)
     anydiff = true;
-    fprintf('=> attribute %s:\n', name);
-    fprintf('   value 1: %s\n', info1.Value)
-    fprintf('   value 2: %s\n', info2.Value)
+    fprintf('%s attribute %s:\n', prefix1, name);
+    fprintf('%s value 1: %s\n', prefix2, var2str(info1.Value))
+    fprintf('%s value 2: %s\n', prefix2, var2str(info2.Value))
 end
