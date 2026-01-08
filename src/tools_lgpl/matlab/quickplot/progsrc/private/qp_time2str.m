@@ -38,7 +38,13 @@ nTimes = length(Time);
 switch Type
     case {1,2} % day-month-year h:m:s
         % 1: discrete, 2: continuous
-        TStr=datestr(Time,0);
+        if all(Time>0)
+            datefmt = 'dd-MMM-yyyy HH:mm:ss';
+        else
+            datefmt = 'dd-MMM-yyyy G HH:mm:ss';
+        end
+        Date = datetime(Time,'ConvertFrom','datenum');
+        TStr = char(Date,datefmt);
     case {3,4} % day h:m:s
         % 3: discrete, 4: continuous
         TStr=cat(2,repmat('day ',nTimes,1),num2str(floor(Time)), ...

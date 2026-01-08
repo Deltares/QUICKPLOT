@@ -252,7 +252,7 @@ if ~iscell(Format)
         end
     else
         for i=1:nThresholds
-            if isnan(sTh(i)) || isequal(sTh(i),-inf)
+            if isnan(sTh(i)) || isequal(sTh(i),-inf) || isequal(sTh(i),inf)
                 tckL{i}='';
             else
                 tckL{i}=sprintf(Format,sTh(i));

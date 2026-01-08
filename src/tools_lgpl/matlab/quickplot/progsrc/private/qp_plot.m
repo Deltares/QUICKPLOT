@@ -1309,7 +1309,6 @@ if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
     isAx =strcmp(get(Chld,'type'),'axes');
     nonAx=Chld(~isAx);
     Ax   =Chld(isAx);
-    has_colorbar = ~isempty(findall(Parent,'tag','ColorbarDeleteProxy'));
     h=qp_colorbar(Ops.colourbar,'peer',Parent);
     if ~isempty(Units)
         if isequal(Units,'<matlab_time>')
@@ -1332,7 +1331,7 @@ if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
         case 'horiz'
             xlabel(h,PName)
     end
-    if ~has_colorbar && ~isempty(h)
+    if ~isempty(h)
         set(pfig,'children',[nonAx;h;Ax(ishandle(Ax) & (Ax~=h))])
         cbratio = qp_settings('colorbar_ratio');
         if cbratio>1
@@ -1355,8 +1354,6 @@ if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
                 Classes = {data(1).Classes};
             elseif classes_between_thresholds
                 LabelStyle = {};
-                % remove the infinity threshold ...
-                Thresholds = Ops.Thresholds(1:end-1);
             elseif isfield(Ops,'LineParams') && ~isempty(Ops.LineParams)
                 LabelStyle = {'labellines'};
                 LineParams = {'lineparams',Ops.LineParams};
@@ -1533,18 +1530,11 @@ end
 [data(:).Geom] = deal('sSEG');
 
 % clean up the data structure
-if isfield(data,'Y')
-    data = rmfield(data,'Y');
-    if isfield(data,'YName')
-        data = rmfield(data,'YName');
-    end
-    if isfield(data,'YUnits')
-        data = rmfield(data,'YUnits');
-    end
-end
-for fld = {'FaceNodeConnect','EdgeNodeConnect','ValLocation'}
-    if isfield(data,fld{1})
-        data = rmfield(data,fld{1});
+flds = {'Y','YName','YUnits','FaceNodeConnect','EdgeNodeConnect','ValLocation'};
+for i = 1:length(flds)
+    fld = flds{i};
+    if isfield(data,fld)
+        data = rmfield(data,fld);
     end
 end
 
@@ -1649,8 +1639,10 @@ end
 
 % squeeze all arrays to remove unnecessary singleton dimensions
 s = squeeze(s);
-for fld = {'Z','Val','XComp','YComp','ZComp'}
-    if isfield(data,fld{1})
-        data.(fld{1}) = squeeze(data.(fld{1}));
+flds = {'Z','Val','XComp','YComp','ZComp'};
+for i = 1:length(flds)
+    fld = flds{i};
+    if isfield(data,fld)
+        data.(fld) = squeeze(data.(fld));
     end
 end

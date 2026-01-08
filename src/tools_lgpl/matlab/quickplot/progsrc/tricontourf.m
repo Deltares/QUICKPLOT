@@ -19,6 +19,7 @@ function H=tricontourf(tri,x,y,z,v,varargin)
 %     Return: [ data | {handles} ]
 %     ZPlane: ZVal (contours projected on the plane z=ZVal
 %     CLevel: [ min | max | index | index0 | {classic} ]
+%     PlotClass: <array of length Levels-1>
 %
 %   Example
 %      x=rand(20); y=rand(20); z=rand(20); tri=delaunay(x,y);
@@ -74,39 +75,47 @@ clevelname='classic';
 
 if nargin<5
     error('Not enough input arguments.')
-else
-    i0=0;
-    if isequal(size(z),size(v))
-        i0=1;
-        levels=varargin{1};
-    else
-        levels=v;
-        v=z;
-        z=[];
-    end
 end
+
+i0=0;
+if isequal(size(z),size(v))
+    i0=1;
+    levels=varargin{1};
+else
+    levels=v;
+    v=z;
+    z=[];
+end
+plotclass = true(1,length(levels)-1);
+
 if mod(nargin-5-i0,2)~=0
     error('Invalid number of input arguments.')
-else
-    for i=(1+i0):2:length(varargin)
-        switch lower(varargin{i})
-            case 'zplane'
-                ZPlane=varargin{i+1};
-                if ~isnumeric(ZPlane) || ~isequal(size(ZPlane),[1 1])
-                    error('Invalid ZPlane option.')
-                end
-            case 'return'
-                getdata=strcmp('data',varargin{i+1});
-            case 'clevel'
-                switch lower(varargin{i+1})
-                    case {'min','max','index','index0','classic'}
-                        clevelname=lower(varargin{i+1});
-                    otherwise
-                        error('Invalid CLevel name')
-                end
-            otherwise
-                error('Invalid option %i: %s.',i,varargin{i}(:)')
-        end
+end
+
+for i=(1+i0):2:length(varargin)
+    switch lower(varargin{i})
+        case 'zplane'
+            ZPlane=varargin{i+1};
+            if ~isnumeric(ZPlane) || ~isequal(size(ZPlane),[1 1])
+                error('Invalid ZPlane option.')
+            end
+        case 'return'
+            getdata=strcmp('data',varargin{i+1});
+        case 'clevel'
+            switch lower(varargin{i+1})
+                case {'min','max','index','index0','classic'}
+                    clevelname=lower(varargin{i+1});
+                otherwise
+                    error('Invalid CLevel name')
+            end
+        case 'plotclass'
+            plotclass = varargin{i+1};
+            if ~islogical(plotclass) || ...
+                    ~isequal(size(plotclass),[1,length(levels)-1])
+                error('PlotClass argument should be a logical array of size [1, %i].',length(levels)-1)
+            end
+        otherwise
+            error('Invalid option %i: %s.',i,varargin{i}(:)')
     end
 end
 
@@ -126,41 +135,49 @@ else
 end
 
 % don't try to plot contour patches at infinity or beyond the data
-levels(levels == inf | levels > max(v(:))) = [];
+%levels(levels == inf | levels > max(v(:))) = [];
 
 maxfinite=max(max(levels),max(v(isfinite(v(:)))));
 minfinite=min(min(levels),min(v(isfinite(v(:)))));
 v(v(:)==-inf)=-realmax;
 v(v(:)==+inf)=realmax;
 
-for LevelNr=1:length(levels)+1
+nLevels = length(levels);
+for LevelNr=1:nLevels+1
     if LevelNr == 1
         if isempty(levels)
-            level=minfinite;
+            level=maxfinite;
         else
             level=levels(LevelNr);
         end
         plevel=minfinite;
         Smaller=logical(any(isnan(v(tri)),2)*[1 1 1]);
-        Nsmaller=sum(Smaller,2);
+        nSmaller=sum(Smaller,2);
         Larger=(v(tri)>=level) & ~Smaller;
-        Nlarger=sum(Larger,2);
-    elseif LevelNr > length(levels)
+        nLarger=sum(Larger,2);
+        plotThisClass = false;
+    elseif LevelNr > nLevels
         plevel=level;
         level=maxfinite;
-        Nsmaller=3-Nlarger;
+        nSmaller=3-nLarger;
         Smaller=~Larger;
         Larger=false(size(tri));
-        Nlarger=zeros(size(tri,1),1);
+        nLarger=zeros(size(tri,1),1);
+        plotThisClass = false;
     else
         plevel=level;
         level=levels(LevelNr);
-        Nsmaller=3-Nlarger;
+        nSmaller=3-nLarger;
         Smaller=~Larger;
         Larger=Larger & (v(tri)>=level);
-        Nlarger=sum(Larger,2);
+        nLarger=sum(Larger,2);
+        plotThisClass = plotclass(LevelNr-1);
     end
-    CLIndex=6-Nsmaller+3*Nlarger; % Nsmaller+2*(3-Nsmaller-Nlarger)+5*Nlarger;
+    if level == -inf || plevel == inf
+        % don't add an additional level before -Inf or after Inf
+        continue
+    end
+    CLIndex=6-nSmaller+3*nLarger; % Nsmaller+2*(3-Nsmaller-Nlarger)+5*Nlarger;
 
     NTriangles=[0 0 0 1 2 1 2 3 2 0 2 1 0 0 0 0];
     NPoints =  [0 0 0 3 4 3 4 5 4 0 4 3 0 0 0 0];
@@ -602,7 +619,8 @@ for LevelNr=1:length(levels)+1
     TRI=J(TRI);
     if getdata
         H{LevelNr}={Coord(:,1:3) TRI LevelNr};
-    elseif ~isempty(Coord)
+    else
+        % every level needs to return an object, so return an empty object
         if ~isnan(ZPlane)
             Coord(:,3)=ZPlane;
         end
@@ -621,7 +639,7 @@ for LevelNr=1:length(levels)+1
                 userdataopt={'userdata',level};
         end
         visopt={};
-        if ~isfinite(clevel)
+        if ~isfinite(clevel) || isempty(Coord) || ~plotThisClass
             visopt={'visible','off'};
         end
         NewH = patch('Vertices',Coord(:,1:3), ...

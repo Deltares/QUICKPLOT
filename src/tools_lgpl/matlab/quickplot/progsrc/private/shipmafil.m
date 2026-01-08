@@ -559,7 +559,7 @@ for c = {'a' 'a1' 'a2'}
                 if d3d_qp('selectfield',quant)
                     d3d_qp('component','magnitude')
                     d3d_qp('presenttype','contour patches')
-                    d3d_qp('thresholds',0:cstep:cmax)
+                    d3d_qp('thresholds',[0:cstep:cmax inf])
                     d3d_qp('colourmap','revhot')
                     d3d_qp('addtoplot')
                     d3d_qp('component','vector')

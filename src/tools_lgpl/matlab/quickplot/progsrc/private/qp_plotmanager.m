@@ -627,7 +627,9 @@ switch cmd
                                         end
                                     case 3
                                         if isfield(UserDatas{itloc}.PlotState,'SubField') && ~isempty(UserDatas{itloc}.PlotState.SubField)
-                                            subflds=qpread(UserDatas{itloc}.PlotState.FI,UserDatas{itloc}.PlotState.Props,'subfields');
+                                            subflds=qpread(UserDatas{itloc}.PlotState.FI, ...
+                                                UserDatas{itloc}.PlotState.Domain, ...
+                                                UserDatas{itloc}.PlotState.Props, 'subfields');
                                             extrastr{itloc}=subflds{UserDatas{itloc}.PlotState.SubField{1}};
                                         else
                                             extrastr{itloc}='';

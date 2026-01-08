@@ -203,6 +203,9 @@ sethscale(hAx, cos(lat*pi/180), newAxesSettings)
 
 
 function sethscale(hAx,ratio,newAxesSettings)
+if nargin<3
+    newAxesSettings = true;
+end
 if newAxesSettings
     setappdata(hAx,'haspectdefaultvalue',ratio)
     if strcmp(get(hAx,'dataaspectratiomode'),'manual')

@@ -97,6 +97,8 @@
 %   clipgrid            - Clip a grid away from the inside/outside of a polygon.
 %   degstr              - Convert degree values to string representation.
 %   floodmask           - Find connected points in an array.
+%   nccopy              - Copy data from one NetCDF file to a new NetCDF file.
+%   ncdiff              - Compares the content of two NetCDF files.
 %   qp_unitconversion   - Convert unit strings.
 %   ustrcmpi            - Find a unique string.
 %   var2str             - Generic "display" function with string output.
