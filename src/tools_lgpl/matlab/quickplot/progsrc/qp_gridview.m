@@ -114,7 +114,32 @@ switch cmd
         GRID=get(G,'userdata');
         switch GRID.Type
             case 'sgrid'
-                fprintf('To implement\n');
+                switch GRID.ValLocation
+                    case 'NODE'
+                        X = GRID.X;
+                        Y = GRID.Y;
+                    case 'FACE'
+                        X = interp2cen(GRID.X);
+                        Y = interp2cen(GRID.Y);
+                    otherwise
+                        fprintf('To implement\n');
+                end
+                nTotal = 1+sum(sum(abs(diff(GRID.Selected.Range,1))));
+                XY = NaN(nTotal,2);
+                MN = GRID.Selected.Range(1,:);
+                j = 1;
+                XY(j,1) = X(MN(1),MN(2));
+                XY(j,2) = Y(MN(1),MN(2));
+                for i = 2:size(GRID.Selected.Range,1)
+                    dMN = GRID.Selected.Range(i,:) - MN;
+                    sMN = sign(dMN);
+                    for d = 1:max(abs(dMN))
+                        MN = MN + sMN;
+                        j = j + 1;
+                        XY(j,1) = X(MN(1),MN(2));
+                        XY(j,2) = Y(MN(1),MN(2));
+                    end
+                end
             case 'ugrid'
                 switch GRID.ValLocation
                     case 'NODE'
