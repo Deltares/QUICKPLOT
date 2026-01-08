@@ -1,8 +1,7 @@
 function argout = ncdiff(file1, file2)
 %NCDIFF - Compares the content of two NetCDF files.
 %   This function compares the content of two NetCDF files and reports the
-%   differences. It compares (global) attributes and variables. It does not
-%   differences in unused dimensions.
+%   differences. It compares dimensions, (global) attributes and variables.
 %
 %   Syntax
 %     NCDIFF(fileName1, fileName2)

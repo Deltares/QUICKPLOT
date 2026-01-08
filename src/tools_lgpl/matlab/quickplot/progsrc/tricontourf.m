@@ -145,7 +145,7 @@ v(v(:)==+inf)=realmax;
 nLevels = length(levels);
 for LevelNr=1:nLevels+1
     if LevelNr == 1
-        if isempty(levels) % also levelNr > length(levels)
+        if isempty(levels)
             level=maxfinite;
         else
             level=levels(LevelNr);
@@ -620,7 +620,7 @@ for LevelNr=1:nLevels+1
     if getdata
         H{LevelNr}={Coord(:,1:3) TRI LevelNr};
     else
-        % every level need to return an object, so return an empty object
+        % every level needs to return an object, so return an empty object
         if ~isnan(ZPlane)
             Coord(:,3)=ZPlane;
         end
