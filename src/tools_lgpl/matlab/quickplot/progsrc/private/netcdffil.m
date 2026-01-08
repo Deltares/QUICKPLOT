@@ -907,7 +907,7 @@ if XYRead || XYneeded || ZRead
                 if activeloaded==0
                     activeloaded = -1;
                     if ~isempty(underscore)
-                        location = xcoord(underscore+1:end);
+                        location = xcoord(underscore(1)+1:end);
                         maskvar = ['mask_' location];
                         actvarid = strmatch(maskvar,{FI.Dataset.Name},'exact');
                         ActiveInfo = FI.Dataset(actvarid);
