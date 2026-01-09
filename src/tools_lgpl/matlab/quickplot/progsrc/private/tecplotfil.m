@@ -113,7 +113,17 @@ end
 Zone = FI.Zone(domain);
 
 if strcmpi(Zone.type,'ORDERED')
-    % TODO
+    spatialIndices = idx(fidx);
+    if XYRead
+        Ans.X = Zone.data(spatialIndices{:},1);
+        Ans.Y = Zone.data(spatialIndices{:},2);
+        if length(spatialIndices)==3
+            Ans.Z = Zone.data(spatialIndices{:},3);
+        end
+    end
+    if DataRead
+        Ans.Val = Zone.data(spatialIndices{:},Props.ival);
+    end
 else
     switch Zone.elementType
         case 'LINESEG'

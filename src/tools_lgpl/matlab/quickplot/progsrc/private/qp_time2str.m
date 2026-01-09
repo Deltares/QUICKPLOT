@@ -1,8 +1,24 @@
-function TStr = qp_time2str(Time,Type)
-%QP_TIME2STR Convert time double to cell of time strings.
-%   STRINGS = QP_TIME2STR(TIME,TYPE) where TYPE =
+function timeString = qp_time2str(timeValue,timeType)
+%qp_time2str Convert time double to cell of time strings.
+%   Converts a time value to a time string in a way very similar to
+%   date2str, but this routine supports the QUICKPLOT specific time types.
 %
-%   See also DATESTR.
+%   Syntax:
+%     timeStr = qp_time2str(timeValue,timeType)
+%
+%   Input Arguments
+%     timeValue - Input time value
+%     timeType - QUICKPLOT time type
+%       1 or 2 : date number converted to 'dd-MMM-yyyy HH:mm:ss'
+%       3 or 4 : relative date number converted to '"day" %i HH:mm:ss'
+%       5 or 6 : time step converted to '%i' ('%f' if fractional)
+%       7 or 8 : seconds converted to '%f "s"'
+%       9 or 10: clock time converted to 'HH:mm:ss'
+%
+%   Output Arguments
+%     timeStr - Output time string
+%
+%   See also DATESTR, DATETIME.
 
 %----- LGPL --------------------------------------------------------------------
 %
@@ -34,30 +50,30 @@ function TStr = qp_time2str(Time,Type)
 %   $HeadURL$
 %   $Id$
 
-nTimes = length(Time);
-switch Type
+nTimes = length(timeValue);
+switch timeType
     case {1,2} % day-month-year h:m:s
         % 1: discrete, 2: continuous
-        if all(Time>0)
+        if all(timeValue>0)
             datefmt = 'dd-MMM-yyyy HH:mm:ss';
         else
             datefmt = 'dd-MMM-yyyy G HH:mm:ss';
         end
-        Date = datetime(Time,'ConvertFrom','datenum');
-        TStr = char(Date,datefmt);
+        Date = datetime(timeValue,'ConvertFrom','datenum');
+        timeString = char(Date,datefmt);
     case {3,4} % day h:m:s
         % 3: discrete, 4: continuous
-        TStr=cat(2,repmat('day ',nTimes,1),num2str(floor(Time)), ...
-            repmat(' ',nTimes,1),datestr(rem(Time,1),13));
+        timeString=cat(2,repmat('day ',nTimes,1),num2str(floor(timeValue)), ...
+            repmat(' ',nTimes,1),datestr(rem(timeValue,1),13));
     case {5,6} % i
         % 5: discrete, 6: continuous
-        TStr=num2str(Time);
+        timeString=num2str(timeValue);
     case {7,8} % seconds
         % 7: discrete, 8: continuous
-        TStr=cat(2,num2str(Time*24*3600),repmat(' s',nTimes,1));
+        timeString=cat(2,num2str(timeValue*24*3600),repmat(' s',nTimes,1));
     case {9,10} % h:m:s
         % 9: discrete, 10: continuous
-        h = Time*24;
+        h = timeValue*24;
         m = rem(h,1)*60;
         s = round(rem(m,1)*60);
         m = floor(m);
@@ -73,8 +89,8 @@ switch Type
             m(i) = 0;
         end
         T = [h(:) m(:) s(:)]';
-        TStr = multiline(sprintf('%2i:%02i:%02i\n',T));
-        TStr(end,:) = [];
+        timeString = multiline(sprintf('%2i:%02i:%02i\n',T));
+        timeString(end,:) = [];
     otherwise
-        TStr = '';
+        timeString = '';
 end

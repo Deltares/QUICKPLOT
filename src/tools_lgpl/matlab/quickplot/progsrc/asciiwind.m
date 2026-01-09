@@ -1001,8 +1001,9 @@ if isempty(eq)
     keyw = '';
     value = Line;
 else
-    keyw = lower(deblank(Line(1:eq-1)));
-    value = strtrim(Line(eq+1:end));
+    eq1 = eq(1);
+    keyw = lower(deblank(Line(1:eq1-1)));
+    value = strtrim(Line(eq1+1:end));
 end
 
 

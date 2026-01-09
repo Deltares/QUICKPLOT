@@ -49,6 +49,7 @@ Subfield=DataState.SubField;
 Selected=DataState.Selected;
 Ops=DataState.Ops;
 Ops=qp_state_version(Ops);
+timeType = Props.DimFlag(T_);
 
 componentstrings = {'x','y','z'};
 if isfield(Props,'MNK') && Props.MNK
@@ -698,7 +699,7 @@ for f=1:ntim
                     end
                 end
                 if isfield(data,'Time') && ~isempty(data.Time) && ~isnan(data.Time)
-                    cmnt={sprintf('time     = %s',datestr(data.Time,0)),cmnt{:}};
+                    cmnt=[{sprintf('time     = %s',qp_time2str(data.Time,timeType))},cmnt(:)'];
                 end
                 xx.Field(f).Comments=cmnt;
                 xx.Field(f).Name=sprintf('F%3.3i',f);
@@ -728,7 +729,8 @@ for f=1:ntim
                     tmp=getfield(data,Flds{fldi});
                     NaNs=isnan(tmp);
                     Act=Act & ~NaNs;
-                    tmp(NaNs)=min(tmp(:));
+                    minVal = min(tmp(:));
+                    tmp(NaNs) = minVal - max(1,eps(minVal));
                     i=i+1;
                     expdata(dims{:},i)=tmp;
                 end
@@ -737,7 +739,11 @@ for f=1:ntim
             expdata(dims{:},i)=Act;
             expdata(isnan(expdata))=-999;
             %
-            xx.Zone(f).Title=datestr(data.Time,0);
+            if isfield(data,'Time') && ~isempty(data.Time) && ~isnan(data.Time)
+                xx.Zone(f).Title=qp_time2str(data.Time,timeType);
+            else
+                xx.Zone(f).Title=sprintf('zone %i',f);
+            end
             xx.Zone(f).Data=expdata;
             if lastfield
                 tecplot('write',filename,xx);

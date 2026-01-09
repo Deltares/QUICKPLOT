@@ -316,9 +316,11 @@ while ischar(file.line)
                     switch upper(FI.Zone(z).dataFormat)
                         case {'BLOCK','FEBLOCK'}
                             % all values of one variable together
+                            FI.Zone(z).dataFormat = 'BLOCK';
                         case {'POINT','FEPOINT'}
                             % all values of one point/node together
-                        otherwise
+                             FI.Zone(z).dataFormat = 'POINT';
+                       otherwise
                             error('Unsupported data format %s for zone %i.',FI.Zone(z).dataFormat,z)
                     end
                 case 'TEXT'
@@ -501,36 +503,56 @@ while ischar(file.line)
                 % reached data block
                 FI.Zone(z).dataStart = loc;
                 fseek(file.fid,loc,-1);
+                Zone = FI.Zone(z);
+                nVar =  length(FI.Variables);
                 %
-                switch upper(FI.Zone(z).dataFormat)
-                    case {'BLOCK','FEBLOCK'}
+                if strcmpi(Zone.type,'ORDERED')
+                    if isfield(Zone,'kMax') % 3D
+                        blockSize = [Zone.iMax Zone.jMax Zone.kMax];
+                    elseif isfield(Zone,'jMax') % 2D
+                        blockSize = [Zone.iMax Zone.jMax];
+                    else % 1D
+                        blockSize = Zone.iMax;
+                    end
+                else % unstructured elements
+                    blockSize = Zone.nNodes;
+                end
+                %
+                switch Zone.dataFormat
+                    case 'BLOCK'
                         % all values of one variable together
                         % following implementation assumes all variables
                         % NODAL and not shared.
-                        expectedSize = [FI.Zone(z).nNodes length(FI.Variables)];
-                        data = data_read(file.fid,prod(expectedSize));
-                        data = reshape(data,expectedSize);
-                    case {'POINT','FEPOINT'}
+                        data = data_read(file.fid,prod(blockSize)*nVar);
+                        data = reshape(data,[prod(blockSize) nVar]);
+                    case 'POINT'
                         % all values of one point/node together
-                        % FI.Variables may not be set, if so derive from number of values on line 1.
-                        expectedSize = [length(FI.Variables) FI.Zone(z).nNodes];
-                        data = data_read(file.fid,prod(expectedSize));
-                        data = reshape(data,expectedSize).';
+                        % FI.Variables may not be set ...
+                        if nVar == 0
+                            % if so derive from number of values on line 1.
+                            % TODO
+                        end
+                        data = data_read(file.fid,prod(blockSize)*nVar);
+                        data = reshape(data,[nVar prod(blockSize)]).';
                 end
-                %
-                if isfield(FI.Zone,'elementSize') && ~isempty(FI.Zone(z).elementSize)
-                    expectedSize = [FI.Zone(z).elementSize FI.Zone(z).nElements];
-                    [topo,nRead] = fscanf(file.fid,'%i',prod(expectedSize));
-                    if nRead < prod(expectedSize)
-                        error('Error while reading element-node connectivity.')
-                    end
-                    topo = reshape(topo,expectedSize);
-                else
-                    topo = [];
-                end
-                %
+                data = reshape(data,[blockSize nVar]);
                 FI.Zone(z).data = data;
-                FI.Zone(z).topology = topo.';
+                %
+                if ~strcmpi(Zone.type,'ORDERED')
+                    if isfield(Zone,'elementSize') && ~isempty(Zone.elementSize)
+                        blockSize = [Zone.elementSize FI.Zone(z).nElements];
+                        [topo,nRead] = fscanf(file.fid,'%i',prod(blockSize));
+                        if nRead < prod(blockSize)
+                            error('Error while reading element-node connectivity.')
+                        end
+                        topo = reshape(topo,blockSize);
+                    else
+                        topo = [];
+                    end
+                    %
+                    FI.Zone(z).data = data;
+                    FI.Zone(z).topology = topo.';
+                end
                 file = init_file(file.fid);
             end
     end
