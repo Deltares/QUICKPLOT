@@ -249,7 +249,7 @@ while ischar(file.line)
             if ~zone_found
                 file = check_symbol(file,'=');
                 [FI.Title,file] = get_string(file);
-                FI.Filetype = 'FULL';
+                FI.FileContent = 'FULL';
                 FI.Variables = {};
             end
         case 'FILETYPE'
@@ -259,7 +259,7 @@ while ischar(file.line)
                 if ~ismember(upper(filetype),{'FULL','GRID','SOLUTION'})
                     error('Unsupported filetype "%s" found in file %s.',filetype,FI.FileName)
                 end
-                FI.Filetype = upper(filetype);
+                FI.FileContent = upper(filetype);
             end
         case 'VARIABLES'
             if ~zone_found
@@ -270,6 +270,7 @@ while ischar(file.line)
             in_record = 'ZONE';
             zone_found = true;
             z = z+1;
+            FI.Zone(z).title = sprintf('zone %i',z);
             FI.Zone(z).type = 'ORDERED';
         case 'T'
             file = check_symbol(file,'=');
@@ -302,6 +303,7 @@ while ischar(file.line)
         case 'ET'
             file = check_symbol(file,'=');
             [FI.Zone(z).elementType,file] = get_string(file);
+            FI.Zone(z).type = ['FE',FI.Zone(z).elementType];
             FI.Zone(z).elementSize = element_size(FI.Zone(z).elementType);
             if FI.Zone(z).elementSize <= 0
                 error('Unsupported element type %s for zone %i.',FI.Zone(z).elementType,z)

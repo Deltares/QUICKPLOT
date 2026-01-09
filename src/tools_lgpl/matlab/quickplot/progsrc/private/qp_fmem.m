@@ -194,7 +194,7 @@ switch cmd
                     try_next='grib';
                 case {'.tek','.ann','.ldb','.pol','.spl','.tka','.tkp','.tkf','.pli','.pliz'}
                     try_next='tekal';
-                case {'.tpl'}
+                case {'.tpl','.tp'}
                     try_next='Tecplot';
                 case {'.dxf'}
                     try_next='AutoCAD DXF';
