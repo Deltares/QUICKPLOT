@@ -194,6 +194,8 @@ switch cmd
                     try_next='grib';
                 case {'.tek','.ann','.ldb','.pol','.spl','.tka','.tkp','.tkf','.pli','.pliz'}
                     try_next='tekal';
+                case {'.tpl'}
+                    try_next='Tecplot';
                 case {'.dxf'}
                     try_next='AutoCAD DXF';
                 case {'.geojson'}
@@ -905,6 +907,12 @@ switch cmd
                                 end
                                 FI.Options=FI.can_be_ldb;
                             end
+                        end
+                    case 'Tecplot'
+                        FI = tecplot('open',FileName);
+                        if ~isempty(FI)
+                            FI.Options=0;
+                            Tp=FI.FileType;
                         end
                     case 'AutoCAD DXF'
                         Data=dxf('read',FileName);

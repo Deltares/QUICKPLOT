@@ -63,6 +63,7 @@ end
 
 function FI=Local_open_file(filename)
 FI.FileName=filename;
+FI.FileType='Tecplot';
 fid=fopen(filename,'r','l');
 if fid<0
     error('Cannot open "%s".',filename)
