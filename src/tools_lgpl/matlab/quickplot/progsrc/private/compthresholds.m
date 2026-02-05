@@ -171,14 +171,14 @@ else
     if isempty(Thresholds)
         Thresholds = [-inf, inf];
     else
-        if isfinite(Thresholds(1)) && Thresholds(1) > minmax(1)
+        if isfinite(Thresholds(1))
             Thresholds = [-inf, Thresholds];
         end
-        if isfinite(Thresholds(end)) && Thresholds(end) < minmax(2)
+        if isfinite(Thresholds(end))
             Thresholds = [Thresholds, inf];
         end
     end
-    InRange = true(1,length(Thresholds)-1);
+    InRange = [Thresholds(2) > minmax(1), true(1,length(Thresholds)-3), Thresholds(end-1) < minmax(2)];
 end
 
 if ~isfield(Ops,'climclipping') || ~Ops.climclipping
