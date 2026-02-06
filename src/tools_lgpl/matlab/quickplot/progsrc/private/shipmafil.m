@@ -551,7 +551,7 @@ for c = {'a' 'a1' 'a2'}
                 if qp_settings('shipma_figa_depth') && d3d_qp('selectfield','depth')
                     d3d_qp('colourmap','navdepth')
                     d3d_qp('presenttype','contour patches')
-                    d3d_qp('thresholds',[-inf 0:cstep:cmax])
+                    d3d_qp('thresholds',[-inf 0:cstep:cmax inf])
                     d3d_qp('colbarhorz',1)
                     d3d_qp('addtoplot')
                 end
