@@ -763,6 +763,8 @@ try
                             for mi = 1:length(diffm)
                                 write_log(logid2,'%s: %s',protected(logf),color_write(protected(diffm{mi}),Color.Failed));
                             end
+                            lgcolor=Color.Failed;
+                            lgresult=[FAILED ': Running the script generated messages.'];
                         end
                         if isempty(checkfs)
                             write_log(logid2,'No file to check.');
