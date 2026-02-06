@@ -346,7 +346,7 @@ if isfield(Ops,'plotcoordinate')
     data = compute_plotcoordinate(data,Ops.plotcoordinate);
 end
 
-if length(data) == 1 && ...
+if isscalar(data) && ...
         (strcmp(Ops.axestype,'Time-Z') || ...
         strcmp(Ops.axestype,'Val-Z'))
     if isfield(data,'ValLocation')
@@ -802,11 +802,11 @@ end
 stn='';
 if any(cellfun('isclass',Selected,'cell'))
     stn='';
-elseif isfield(data,'LocationName') && length(data)==1
+elseif isfield(data,'LocationName') && isscalar(data)
     if ischar(data.LocationName)
         stn = data.LocationName;
     elseif iscell(data.LocationName)
-        if length(data.LocationName)==1
+        if isscalar(data.LocationName)
             stn = data.LocationName{1};
         else
             stn = '<multiple>';
@@ -847,7 +847,7 @@ if ~isempty(SubField)
 end
 
 TStr='';
-if isfield(data,'Time') && length(data(1).Time)==1
+if isfield(data,'Time') && isscalar(data(1).Time)
     TStr = qp_time2str(data(1).Time,DimFlag(T_));
     if isfield(Ops,'axestimezone_shift') && ~isnan(Ops.axestimezone_shift)
         TStr = [TStr ' (' Ops.axestimezone_str ')'];
@@ -1176,7 +1176,7 @@ else
     hNewVec=cat(1,hNew{:});
 end
 
-if isempty(specialplot) && isfield(Ops,'basicaxestype') && ~isempty(Ops.basicaxestype) && length(Parent)==1
+if isempty(specialplot) && isfield(Ops,'basicaxestype') && ~isempty(Ops.basicaxestype) && isscalar(Parent)
     axestype = multiline(strtok(Ops.basicaxestype),'-','cell');
     nAxes = length(axestype);
     %
