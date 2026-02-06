@@ -360,6 +360,12 @@ switch data.ValLocation
                         set(hNew,Ops.LineParams{:})
                     case 'contour patches'
                         hNew=tricontourf(TRI,data.X,data.Y,Val,Ops.Thresholds,'clevel','index0','zplane',0);
+                        % lines needed if tricontourf may add levels below first and above last level
+                        % if length(hNew) == length(Ops.PlotClass)+2
+                        %     delete(hNew(1))
+                        %     delete(hNew(end))
+                        %     hNew = hNew(2:end-1);
+                        % end
                         for i = 1:length(hNew)
                             if ~Ops.PlotClass(i)
                                 set(hNew(i),'Visible','off')
@@ -367,6 +373,12 @@ switch data.ValLocation
                         end
                     case 'contour patches with lines'
                         hNew1=tricontourf(TRI,data.X,data.Y,Val,Ops.Thresholds,'clevel','index0','zplane',0);
+                        % lines needed if tricontourf may add levels below first and above last level
+                        % if length(hNew1) == length(Ops.PlotClass)+2
+                        %     delete(hNew1(1))
+                        %     delete(hNew1(end))
+                        %     hNew1 = hNew1(2:end-1);
+                        % end
                         for i = 1:length(hNew1)
                             if ~Ops.PlotClass(i)
                                 set(hNew1(i),'Visible','off')

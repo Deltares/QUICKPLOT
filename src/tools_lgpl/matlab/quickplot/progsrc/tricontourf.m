@@ -25,17 +25,17 @@ function H=tricontourf(tri,x,y,z,v,varargin)
 %      x=rand(20); y=rand(20); z=rand(20); tri=delaunay(x,y);
 %      thresholds=.3:.1:.8;
 %      subplot(2,2,1)
-%      tricontourf(tri,x,y,z,thresholds); title('classic'); colorbar
+%      tricontourf(tri,x,y,z,thresholds); title('classic'); qp_colorbar
 %      subplot(2,2,2)
 %      tricontourf(tri,x,y,z,thresholds,'clevel','min');
-%      title('min'); classbar(colorbar,thresholds)
+%      title('min'); classbar(qp_colorbar,thresholds)
 %      subplot(2,2,3)
 %      tricontourf(tri,x,y,z,thresholds,'clevel','max');
-%      title('max'); classbar(colorbar,thresholds,'max')
+%      title('max'); classbar(qp_colorbar,thresholds,'max')
 %      subplot(2,2,4)
 %      tricontourf(tri,x,y,z,thresholds,'clevel','index');
-%      title('index'); colorbar
-%      classbar(colorbar,1:length(thresholds)+1,'labelcolor','label',thresholds)
+%      title('index');
+%      classbar(qp_colorbar,1:length(thresholds)+1,'labelcolor','label',thresholds)
 %
 %   See also CONTOUR, CONTOURF, TRICONTOUR
 
@@ -173,8 +173,8 @@ for LevelNr=1:nLevels+1
         nLarger=sum(Larger,2);
         plotThisClass = plotclass(LevelNr-1);
     end
-    if level == -inf || plevel == inf
-        % don't add an additional level before -Inf or after Inf
+    if LevelNr == 1 || LevelNr == nLevels+1
+        % don't add an additional level below first or above last level
         continue
     end
     CLIndex=6-nSmaller+3*nLarger; % Nsmaller+2*(3-Nsmaller-Nlarger)+5*Nlarger;

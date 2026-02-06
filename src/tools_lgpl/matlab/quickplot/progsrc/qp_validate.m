@@ -765,7 +765,9 @@ try
                         m2=ui_message('getall');
                         checkfs=setdiff(d2,d1);
                         %
-                        old_messages = read_messages([reference_folder fs logfile '_messages.txt']);
+                        CmpFile = [logfile,'_messages.txt'];
+                        reference_files = strike_reference_entry(reference_files,CmpFile);
+                        old_messages = read_messages([reference_folder fs CmpFile]);
                         if length(m2)>length(m1)
                             new_messages = m2(length(m1)+2:length(m2));
                         else
