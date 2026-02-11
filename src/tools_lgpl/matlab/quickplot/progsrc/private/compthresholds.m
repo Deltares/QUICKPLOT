@@ -60,24 +60,30 @@ end
 % use colour limits if provided
 if ~isempty(Ops.colourlimits)
     minmax = Ops.colourlimits;
+    if isstruct(Thresholds) || is_positive_integer(Thresholds)
+        if any(~isfinite(minmax))
+            ui_message('warning','Infinite colour limits are not allowed when specifying only the number of thresholds or threshold step; using data range instead.')
+            minmax = minmax_data;
+        end
+    end
 else
     minmax = minmax_data;
 end
+
 % use symmetric limits if requested
 if Ops.symmetriccolourlimits
     minmax = [-1 1] * max(abs(minmax));
 end
 % broaden the range slightly to make sure that all values are within the
 % range
-if abs(minmax(1)) > eps(0)*1e6
+if abs(minmax(1)) > eps(0)*1e6 && isfinite(minmax(1))
     minmax(1) = minmax(1) - eps(minmax(1));
 end
-if abs(minmax(end)) > eps(0)*1e6
+if abs(minmax(end)) > eps(0)*1e6 && isfinite(minmax(end))
     minmax(end) = minmax(end) + eps(minmax(end));
 end
 
 if isstruct(Thresholds) % Threshold step given
-
     step = Thresholds.step;
     Thresholds = step*(floor(minmax(1)/step):ceil(minmax(2)/step));
     Thresholds([1, end]) = minmax;
@@ -149,15 +155,25 @@ elseif ~isempty(Ops.colourlimits)
     else
         InRange = true(1,length(Thresholds)-1);
         if Thresholds(1) > Ops.colourlimits(1)
-            Thresholds = [-inf, Ops.colourlimits(1), Thresholds];
-            InRange = [false, true, InRange];
+            if isfinite(Ops.colourlimits(1))
+                Thresholds = [-inf, Ops.colourlimits(1), Thresholds];
+                InRange = [false, true, InRange];
+            else
+                Thresholds = [-inf, Thresholds];
+                InRange = [true, InRange];
+            end
         elseif isfinite(Thresholds(1))
             Thresholds = [-inf, Thresholds];
             InRange = [false, InRange];
         end
-        if Thresholds(end) > Ops.colourlimits(2)
-            Thresholds = [Thresholds, Ops.colourlimits(2), inf];
-            InRange = [InRange, true, false];
+        if Thresholds(end) < Ops.colourlimits(2)
+            if isfinite(Ops.colourlimits(2))
+                Thresholds = [Thresholds, Ops.colourlimits(2), inf];
+                InRange = [InRange, true, false];
+            else
+                Thresholds = [Thresholds, inf];
+                InRange = [InRange, true];
+            end
         elseif isfinite(Thresholds(end))
             Thresholds = [Thresholds, inf];
             InRange = [InRange, false];

@@ -760,21 +760,17 @@ if Props.NVal==6
     end
     Ops.Thresholds(end+1) = inf;
 elseif isfield(Ops,'thresholds') && ~strcmp(Ops.thresholds,'none')
-    if isfield(Ops,'colourlimits') && isequal(size(Ops.colourlimits),[1 2])
-        minmax = Ops.colourlimits;
-    else
-        miv = inf;
-        mv  = -inf;
-        for d = 1:length(data)
-            miv = min(miv,min(data(d).Val(:)));
-            mv  = max(mv ,max(data(d).Val(:)));
-        end
-        if isfield(Ops,'symmetriccolourlimits') && Ops.symmetriccolourlimits
-            miv = min(miv,-mv);
-            mv = max(mv,-miv);
-        end
-        minmax = [miv mv];
+    miv = inf;
+    mv  = -inf;
+    for d = 1:length(data)
+        miv = min(miv,min(data(d).Val(:)));
+        mv  = max(mv ,max(data(d).Val(:)));
     end
+    if isfield(Ops,'symmetriccolourlimits') && Ops.symmetriccolourlimits
+        miv = min(miv,-mv);
+        mv = max(mv,-miv);
+    end
+    minmax = [miv mv];
     [Ops.Thresholds,Ops.PlotClass] = compthresholds(Ops,minmax,classes_between_thresholds);
 else
     Ops.Thresholds = 'none';
@@ -1282,7 +1278,10 @@ Error=0;
 
 if isfield(Ops,'colourlimits') && ~isempty(Ops.colourlimits)
     if ChangeCLim
-        set(Parent,'clim',Ops.colourlimits)
+        cl = Ops.colourlimits;
+        cl(1) = min(max(cl(1), -1e30), +1e30);
+        cl(2) = max(min(cl(2), +1e30),cl(1) + eps(cl(1)));
+        set(Parent,'clim',cl)
     end
 elseif isfield(Ops,'symmetriccolourlimits') && Ops.symmetriccolourlimits
     clim = limits(hNewVec,'clim');

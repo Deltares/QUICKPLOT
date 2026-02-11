@@ -173,8 +173,8 @@ for LevelNr=1:nLevels+1
         nLarger=sum(Larger,2);
         plotThisClass = plotclass(LevelNr-1);
     end
-    if LevelNr == 1 || LevelNr == nLevels+1
-        % don't add an additional level below first or above last level
+    if level == -inf || plevel == inf
+        % don't add an additional level before -Inf or after Inf
         continue
     end
     CLIndex=6-nSmaller+3*nLarger; % Nsmaller+2*(3-Nsmaller-Nlarger)+5*Nlarger;
