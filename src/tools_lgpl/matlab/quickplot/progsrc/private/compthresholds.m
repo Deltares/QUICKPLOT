@@ -192,9 +192,17 @@ else % no colour limits set, thus we depend on the dynamics data limits
     else
         if minmax(1) < Thresholds(1)
             Thresholds = [minmax(1), Thresholds];
+        elseif isfinite(Thresholds(1))
+            Thresholds = [-inf, Thresholds];
+        else
+            % Thresholds(1) is already equal to -inf
         end
         if minmax(2) > Thresholds(end)
             Thresholds = [Thresholds, minmax(2)];
+        elseif isfinite(Thresholds(end))
+            Thresholds = [Thresholds, inf];
+        else
+            % Thresholds(end) is already equal to inf
         end
     end
     InRange = true(1,length(Thresholds)-1);
