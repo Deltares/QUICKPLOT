@@ -84,11 +84,14 @@ if abs(minmax(end)) > eps(0)*1e6 && isfinite(minmax(end))
 end
 
 if isstruct(Thresholds) % Threshold step given
+    thresholdsBasedOnMinmax = true;
+
     step = Thresholds.step;
     Thresholds = step*(floor(minmax(1)/step):ceil(minmax(2)/step));
     Thresholds([1, end]) = minmax;
 
 elseif is_positive_integer(Thresholds) % number of Thresholds given
+    thresholdsBasedOnMinmax = true;
 
     % transform to linear 
     if classes_between_thresholds
@@ -131,6 +134,7 @@ elseif is_positive_integer(Thresholds) % number of Thresholds given
     end
 
 else % actual Thresholds given
+    thresholdsBasedOnMinmax = false;
 
     % use colour limits if provided
     if ~isempty(Ops.colourlimits) && isfield(Ops,'climclipping') && Ops.climclipping
@@ -192,17 +196,17 @@ else % no colour limits set, thus we depend on the dynamics data limits
     else
         if minmax(1) < Thresholds(1)
             Thresholds = [minmax(1), Thresholds];
-        elseif isfinite(Thresholds(1))
+        elseif isfinite(Thresholds(1)) && ~thresholdsBasedOnMinmax
             Thresholds = [-inf, Thresholds];
         else
-            % Thresholds(1) is already equal to -inf
+            % Thresholds(1) is already equal to -inf or minmax(1)
         end
         if minmax(2) > Thresholds(end)
             Thresholds = [Thresholds, minmax(2)];
-        elseif isfinite(Thresholds(end))
+        elseif isfinite(Thresholds(end)) && ~thresholdsBasedOnMinmax
             Thresholds = [Thresholds, inf];
         else
-            % Thresholds(end) is already equal to inf
+            % Thresholds(end) is already equal to inf or minmax(2)
         end
     end
     InRange = true(1,length(Thresholds)-1);
