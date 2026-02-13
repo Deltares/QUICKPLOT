@@ -225,6 +225,12 @@ if iSource > 0
 else
     is_dflowfm = false;
 end
+if ~is_dflowfm
+    iHistory = ustrcmpi('history',gAtts);
+    if iHistory > 0
+        is_dflowfm = ~isempty(strfind(FI.Attribute(iHistory).Value,'D-Flow FM'));
+    end
+end
 if FI.NumDomains>1
     args = varargin;
     if load_merged_partitions(FI, domain) && ...
@@ -999,7 +1005,17 @@ if XYRead || XYneeded || ZRead
         vdimid = Info.Z;
         CoordInfo = FI.Dataset(vdimid);
         if is_dflowfm
-            if strend(CoordInfo.Name,'_zcc')
+            if strend(CoordInfo.Name,'_c')
+                iName  = strrep(CoordInfo.Name,'_c','_w');
+                iDimid = strcmp(iName,{FI.Dataset.Name});
+                if none(iDimid)
+                    error('Unable to locate "%s" for the verical location of the cell interfaces.',iName)
+                end
+                CoordInfo = FI.Dataset(iDimid);
+                idx{K_} = unique([idx{K_} idx{K_}+1]);
+                Props.DimName{K_} = CoordInfo.Dimension{3};
+                vCoordExtended = true;
+            elseif strend(CoordInfo.Name,'_zcc')
                 iName  = strrep(CoordInfo.Name,'_zcc','_zw');
                 iDimid = strcmp(iName,{FI.Dataset.Name});
                 if none(iDimid)
@@ -2981,10 +2997,10 @@ if ~isempty(connect)
     else
         [Ans.FaceNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
         nNodes = sum(~isnan(Ans.FaceNodeConnect),2);
-        min_nNodes = min(nNodes);
-        if min_nNodes<3
-            nError = sum(nNodes==min_nNodes);
-            error('%i faces found with %i nodes. Number of nodes per face should be at least 3.',nError,min_nNodes)
+        nError = sum(nNodes<3);
+        if nError > 0
+            Ans.FaceNodeConnect(nNodes<3,:)=[];
+            ui_message('warning','%i faces found with less than 3 nodes. Those faces have been removed.',nError)
         end
         if isempty(FI.Dataset(iconnect).Attribute)
             istart = [];

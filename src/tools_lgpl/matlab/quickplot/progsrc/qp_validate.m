@@ -1500,19 +1500,22 @@ function include_diff_figures(logid,files,Color)
 nfiles = length(files);
 switch log_style
     case 'latex'
+        column_titles = {'reference','work','diff'};
+        column_separator = {' & ',' & ',' \\'};
         fprintf(logid,'%s%s%s\n','\begin{tabular}{',repmat('l',1,nfiles),'}');
         fprintf(logid,'%s\n','\hiderowcolors');
-        for i = 1:nfiles-1
-            fprintf(logid,'%s%s%s','\textbf{',protected(files{i}),'} & ');
+        for i = 1:3
+            fprintf(logid,'%s%s%s%s','\textbf{',column_titles{i},'}',column_separator{i});
         end
-        fprintf(logid,'%s%s%s\n','\textbf{',protected(files{end}),'} \\');
+        fprintf(logid,'\n');
         %
-        for i = 1:nfiles-1
-            fprintf(logid,'%s%s%s','\includegraphics*[width=50mm]{',protect_filename(files{i}),'} & ');
+        for i = 1:3
+            fprintf(logid,'%s%s%s%s','\includegraphics*[width=50mm]{',protect_filename(files{i}),'}',column_separator{i});
         end
-        fprintf(logid,'%s%s%s\n','\includegraphics*[width=50mm]{',protect_filename(files{end}),'} \\');
+        fprintf(logid,'\n');
         fprintf(logid,'%s\n','\showrowcolors');
         fprintf(logid,'%s\n','\end{tabular}\newline');
+        fprintf(logid,'with reference = %s, work = %s, and diff = %s.\n',protected(files{1}),protected(files{2}),protected(files{3}));
     otherwise
         fprintf(logid,'<table bgcolor=%s>\n',Color.Table{1});
         fprintf(logid,['<tr>' repmat(['<td width=300 bgcolor=',Color.Titlebar,'>%s</td>'],1,nfiles) '</tr>\n'],files{:});

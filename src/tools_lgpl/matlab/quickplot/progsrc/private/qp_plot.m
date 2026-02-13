@@ -759,6 +759,7 @@ if Props.NVal==6
         Ops.Thresholds = 1:length(data(1).Classes);
     end
     Ops.Thresholds(end+1) = inf;
+    Ops.PlotClass = isfinite(Ops.Thresholds);
 elseif isfield(Ops,'thresholds') && ~strcmp(Ops.thresholds,'none')
     miv = inf;
     mv  = -inf;
@@ -995,6 +996,7 @@ if isfield(Ops,'basicaxestype') && ~isempty(strfind(Ops.basicaxestype,'Z'))
     end
 end
 
+drawColourbar = isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none');
 ChangeCLim=1;
 
 diststr = 'x coordinate';
@@ -1104,7 +1106,6 @@ elseif NVal==-1
         %      setaxesprops(Parent,'<blocking>')
     end
 else
-    Param.ChangeCLim=1;
     Param.NVal=NVal;
     Param.multiple=multiple;
     Param.FirstFrame=FirstFrame;
@@ -1167,7 +1168,7 @@ else
     end
     hNew = hNew(1:length(data));
 
-    ChangeCLim = strcmp(Ops.Thresholds,'none') || ~isempty(Ops.colourlimits);
+    ChangeCLim = strcmp(Ops.Thresholds,'none') && ~isempty(Ops.colourlimits);
 
     hNewVec=cat(1,hNew{:});
 end
@@ -1303,7 +1304,7 @@ if isfield(Ops,'colourmap') && ~isempty(Ops.colourmap)
     end
 end
 
-if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
+if drawColourbar
     Chld =allchild(pfig);
     isAx =strcmp(get(Chld,'type'),'axes');
     nonAx=Chld(~isAx);
@@ -1346,20 +1347,23 @@ if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
             PlotClass = Ops.PlotClass;
             Classes = {};
             LineParams = {};
+            firstClass = find(PlotClass, 1, 'first');
+            lastClass = find(PlotClass, 1, 'last');
+            classRange = firstClass:lastClass;
+            threshRange = classRange;
             if Props.NVal==6
-                Thresholds = Thresholds(1:end-1);
-                PlotClass = PlotClass(1:end-1);
                 LabelStyle = {'labelcolor'};
                 Classes = {data(1).Classes};
             elseif classes_between_thresholds
                 LabelStyle = {};
+                threshRange = firstClass:lastClass+1;
             elseif isfield(Ops,'LineParams') && ~isempty(Ops.LineParams)
                 LabelStyle = {'labellines'};
                 LineParams = {'lineparams',Ops.LineParams};
             else
                 LabelStyle = {'labelcolor'};
             end
-            classbar(h,1:length(Thresholds),LabelStyle{:},'label',Thresholds,Classes{:},'plotselect',PlotClass,'climmode','new',LineParams{:})
+            classbar(h,classRange,LabelStyle{:},'label',Thresholds(threshRange),Classes{:},'plotselect',PlotClass(classRange),'climmode','new',LineParams{:})
         end
     end
 end

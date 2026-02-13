@@ -638,17 +638,27 @@ for LevelNr=1:nLevels+1
                 clevel=LevelNr;
                 userdataopt={'userdata',level};
         end
-        visopt={};
-        if ~isfinite(clevel) || isempty(Coord) || ~plotThisClass
+        if plotThisClass && isfinite(clevel)
+            visopt={};
+            if isempty(Coord)
+                cdata = clevel;
+            else
+                cdata = clevel*ones(size(TRI,1),1);
+            end
+        else
             visopt={'visible','off'};
+            cdata = [];
         end
         NewH = patch('Vertices',Coord(:,1:3), ...
             'Faces',TRI, ...
-            'facevertexcdata',clevel*ones(size(TRI,1),1), ...
+            'facevertexcdata',cdata, ...
             'edgecolor','none', ...
             'facecolor','flat', ...
             userdataopt{:}, ...
             visopt{:});
+        if isempty(Coord) && plotThisClass && isfinite(clevel)
+            set(NewH,'facevertexcdata',clevel)
+        end
         setappdata(NewH,'MinThreshold',plevel);
         setappdata(NewH,'MaxThreshold',level);
         H=[H NewH];
