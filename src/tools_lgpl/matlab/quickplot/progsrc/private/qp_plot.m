@@ -1363,7 +1363,7 @@ if drawColourbar
             else
                 LabelStyle = {'labelcolor'};
             end
-            classbar(h,classRange,LabelStyle{:},'label',Thresholds(threshRange),Classes{:},'plotselect',PlotClass(classRange),'climmode','new',LineParams{:})
+            classbar(h,threshRange,LabelStyle{:},'label',Thresholds(threshRange),Classes{:},'plotselect',PlotClass(classRange),'climmode','new',LineParams{:})
         end
     end
 end
