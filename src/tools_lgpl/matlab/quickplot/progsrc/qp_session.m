@@ -700,16 +700,17 @@ for fgi = length(S):-1:1
                     if isfield(Ops,'thresholddistribution')
                         d3d_qp('threshdistr',Ops.thresholddistribution)
                     end
-                    if isfield(Ops,'colourlimits')
-                        if isempty(Ops.colourlimits)
-                            d3d_qp('climmode','automatic')
+                    if isfield(Ops,'colourlimits') && ~isempty(Ops.colourlimits)
+                        d3d_qp('climmode','manual')
+                        d3d_qp('climmin',Ops.colourlimits(1))
+                        d3d_qp('climmax',Ops.colourlimits(2))
+                        if isfield(Ops,'climclipping')
+                            d3d_qp('climclip',Ops.climclipping)
                         else
-                            d3d_qp('climmode','manual')
-                            d3d_qp('climmin',Ops.colourlimits(1))
-                            d3d_qp('climmax',Ops.colourlimits(2))
+                            d3d_qp('climclip',0)
                         end
-                    end
-                    if isfield(Ops,'symmetriccolourlimits')
+                    elseif isfield(Ops,'symmetriccolourlimits')
+                        d3d_qp('climmode','automatic')
                         d3d_qp('climsymm',Ops.symmetriccolourlimits)
                     end
                     if isfield(Ops,'colourmap')
