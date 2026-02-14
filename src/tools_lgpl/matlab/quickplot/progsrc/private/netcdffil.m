@@ -1004,7 +1004,7 @@ if XYRead || XYneeded || ZRead
         vCoordExtended = false;
         vdimid = Info.Z;
         CoordInfo = FI.Dataset(vdimid);
-        if is_dflowfm
+        if is_dflowfm && DataInCell
             if strend(CoordInfo.Name,'_c')
                 iName  = strrep(CoordInfo.Name,'_c','_w');
                 iDimid = strcmp(iName,{FI.Dataset.Name});
