@@ -2026,7 +2026,8 @@ for mesh = NumMeshes:-1:1
         nGlbFaces = 0;
         glbFNC = [];
     else
-        nGlbFaces = max(cellfun(@max,iFaces));
+        nonEmptyFaceLists = ~cellfun(@isempty,iFaces);
+        nGlbFaces = max(cellfun(@max,iFaces(nonEmptyFaceLists)));
         glbFNC = NaN(nGlbFaces,6);
     end
     %
@@ -2156,6 +2157,15 @@ for mesh = NumMeshes:-1:1
         glbEdgeDomain = glbFaceDomain(EFC);
         glbEdgeDomain(Mask) = inf;
         glbEdgeDomain = min(glbEdgeDomain,[],2);
+        if any(~isfinite(glbEdgeDomain))
+            % some edges have not been assigned to a domain based on the
+            % edges ... this may happen for old 1D2D net-files since the 1D
+            % edges don't have face neighbours.
+            for p = 1:nPart
+                non_assigned = ~isfinite(glbEdgeDomain(iEdges{p}));
+                glbEdgeDomain(iEdges{p}(non_assigned)) = p-1;
+            end
+        end
 
         for p = 1:nPart
             edgeMask{p} = glbEdgeDomain(iEdges{p}) == p-1;
@@ -2269,6 +2279,9 @@ iface(remove) = [];
 [~,Lob1]=ismember(FNC,ENC,'rows');
 [~,Lob2]=ismember(FNC(:,2:-1:1),ENC,'rows');
 iedge = Lob1+Lob2;
+% remove edges without faces at either side. Typically 1D edges in old models.
+iface(iedge==0) = [];
+iedge(iedge==0) = [];
 % construct the edge-face connectivity
 [C,ia] = unique(iedge);
 EFC = NaN(size(ENC,1),2);

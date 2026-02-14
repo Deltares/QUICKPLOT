@@ -197,6 +197,7 @@ switch cmd
         [XYRead, DataRead, DataInCell, ZRead]=gridcelldata(cmd);
 end
 
+DataRead = DataRead & Props.NVal ~= 0;
 DimFlag=Props.DimFlag;
 
 % initialize and read indices ...
@@ -3026,7 +3027,6 @@ if ~isempty(connect)
 end
 %
 connect = strmatch('edge_node_connectivity',meshAttribNames,'exact');
-iconnect = [];
 if isfield(Ans,'ValLocation') && strcmp(Ans.ValLocation,'EDGE')
     data_at_edges = true;
 elseif ~isfield(Ans,'ValLocation') && dloc == 1
@@ -3034,33 +3034,31 @@ elseif ~isfield(Ans,'ValLocation') && dloc == 1
 else
     data_at_edges = false;
 end
-if data_at_edges || ~isfield(Ans,'FaceNodeConnect') || (~DataRead && ~isempty(connect))
-    % "~DataRead" is a hack to load EdgeNodeConnect if available for use in GridView
+if ~isempty(connect) && (data_at_edges || ~isfield(Ans,'FaceNodeConnect') || ~DataRead)
+    % "~DataRead" is a hack to load EdgeNodeConnect if available for use in GridView (and for mesh plots)
     iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name},'exact');
     if isempty(iconnect)
         ui_message('warning','The edge_node_connectivity variable "%s" could not be found! Using empty set.',meshInfo.Attribute(connect).Value)
         Ans.EdgeNodeConnect = zeros(0,2);
     else
         [Ans.EdgeNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
-    end
-end
-if isfield(Ans,'EdgeNodeConnect') && ~isempty(iconnect)
-    if isempty(FI.Dataset(iconnect).Attribute)
-        istart = [];
-    else
-        istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name},'exact');
-    end
-    if isempty(istart)
-        start = 0;
-    else
-        start = FI.Dataset(iconnect).Attribute(istart).Value;
-    end
-    start = verify_start_index(istart, start, min(Ans.EdgeNodeConnect(Ans.EdgeNodeConnect>=0)), max(Ans.EdgeNodeConnect(:)), length(Ans.X), 'node', meshInfo.Attribute(connect).Value);
-    Ans.EdgeNodeConnect = Ans.EdgeNodeConnect - start + 1;
-    edgeInvalid = any(Ans.EdgeNodeConnect<1,2);
-    if any(edgeInvalid)
-        ui_message('warning','%i invalid edges detected in edge-node connectivity variable %s; edges removed.',sum(edgeInvalid),meshInfo.Attribute(connect).Value)
-        Ans.EdgeNodeConnect(edgeInvalid,:) = [];
+        if isempty(FI.Dataset(iconnect).Attribute)
+            istart = [];
+        else
+            istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name},'exact');
+        end
+        if isempty(istart)
+            start = 0;
+        else
+            start = FI.Dataset(iconnect).Attribute(istart).Value;
+        end
+        start = verify_start_index(istart, start, min(Ans.EdgeNodeConnect(Ans.EdgeNodeConnect>=0)), max(Ans.EdgeNodeConnect(:)), length(Ans.X), 'node', meshInfo.Attribute(connect).Value);
+        Ans.EdgeNodeConnect = Ans.EdgeNodeConnect - start + 1;
+        edgeInvalid = any(Ans.EdgeNodeConnect<1,2);
+        if any(edgeInvalid)
+            ui_message('warning','%i invalid edges detected in edge-node connectivity variable %s; edges removed.',sum(edgeInvalid),meshInfo.Attribute(connect).Value)
+            Ans.EdgeNodeConnect(edgeInvalid,:) = [];
+        end
     end
 end
 %
