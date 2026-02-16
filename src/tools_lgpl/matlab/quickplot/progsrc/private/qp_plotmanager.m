@@ -362,6 +362,7 @@ switch cmd
             set(UD.PlotMngr.FigList,'string',{''},'userdata',[],'value',1, ...
                 'enable','off','backgroundcolor',Inactive);
             set(UD.PlotMngr.SavFig,'enable','off');
+            set(UD.PlotMngr.Animate,'enable','off');
             set(UD.PlotMngr.ClsFig,'enable','off');
             set(UD.PlotMngr.FigAll,'enable','off');
             set(UD.PlotMngr.NewAx,'enable','off');
@@ -397,6 +398,7 @@ switch cmd
             set(UD.PlotMngr.FigList,'string',fignames,'userdata',Figs,'value',i, ...
                 'enable',enable,'backgroundcolor',backgroundcolor);
             set(UD.PlotMngr.SavFig,'enable','on');
+            set(UD.PlotMngr.Animate,'enable','on');
             set(UD.PlotMngr.ClsFig,'enable',enable);
             set(UD.PlotMngr.NewAx,'enable','on');
         end

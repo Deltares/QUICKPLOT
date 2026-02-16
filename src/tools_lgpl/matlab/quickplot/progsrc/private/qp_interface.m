@@ -518,7 +518,8 @@ PM.OpnFig = qp_toolbarpush(PM.TB,'openfigure',0,'Load a figure from file');
 PM.SavFig = qp_toolbarpush(PM.TB,'savefigure',0,'Save a figure to a MATLAB fig file');
 PM.FigOpt = qp_toolbarpush(PM.TB,'figureoptions',0,'Set figure options');
 PM.ClsFig = qp_toolbarpush(PM.TB,'closefigure',0,'Close active figure (without confirmation)');
-set([PM.SavFig PM.FigOpt PM.ClsFig],'enable','off');
+PM.Animate = qp_toolbarpush(PM.TB,'startanim',0,'Start Animation');
+set([PM.SavFig PM.FigOpt PM.ClsFig PM.Animate],'enable','off');
 %
 PM.Separator = axes('Parent',PM.Fig, ...
     'Visible','off', ...
@@ -589,7 +590,6 @@ PM.AxAll = uicontrol('Parent',PM.Fig, ...
 PM.DelIt = qp_toolbarpush(PM.TB,'deleteitems',1,'Delete items (without confirmation)');
 PM.ItInfo = qp_toolbarpush(PM.TB,'iteminfo',0,'Get some extra information on the selected item');
 PM.ItLink = qp_toolbarpush(PM.TB,'linkitems',0,'Select and link items for animation');
-PM.Animate = qp_toolbarpush(PM.TB,'startanim',0,'Start Animation');
 PM.GeoData = qp_toolbarpush(PM.TB,'geodata',0,'Add geodata item to axes');
 PM.GeoDataMenu = uicontextmenu('parent',PM.Fig);
 qp_uimenu(PM.GeoDataMenu, ...
