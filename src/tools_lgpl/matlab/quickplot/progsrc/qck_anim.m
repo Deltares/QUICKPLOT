@@ -944,10 +944,10 @@ switch OPS.Type
         end
 
     otherwise
+        ext = strtok(OPS.Type);
         if length(stream_args) >= 1
             [pn,f,e] = fileparts(stream_args{1});
         else
-            ext = strtok(OPS.Type);
             [fn, pn] = uiputfile([savedir, '*.', ext], 'Specify location and base ...');
             if ~ischar(fn)
                 return

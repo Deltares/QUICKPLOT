@@ -828,6 +828,8 @@ try
                                         showfig=1;
                                         % figures are platform specific
                                         reffile=[reference_folder,sref_platform_prefix,checkf];
+                                    case '.jpg' % {'.gif','.tif'} can't be visualized in LaTeX
+                                        showfig=1;
                                     case '.asc'
                                         args={'skip',71};
                                     case '.mat'
@@ -851,7 +853,7 @@ try
                                     if ~Eql
                                         try
                                             switch lower(ext)
-                                                case '.png'
+                                                case {'.jpg','.png'} % {'.gif','.tif'}
                                                     I1=imread(checkf);
                                                     I2=imread(reffile);
                                                     if ~isequal(size(I1),size(I2))
