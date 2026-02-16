@@ -155,7 +155,16 @@ if strncmp(cmd,'geodata_wms',11)
 end
 switch cmd
     case {'slider','startanim','animselect','animpush','stopanim'}
-        qck_anim(cmd,cmdargs{:});
+        if isequal(gcbf,UD.PlotMngr.Fig)
+            cmdrec = qck_anim(cmd,'qpsf');
+        else
+            cmdrec = qck_anim(cmd,cmdargs{:});
+        end
+        if ~isempty(cmdrec)
+            if logfile
+                writelog(logfile,logtype,cmdrec{:});
+            end
+        end
 
     case 'set'
         qp_settings(cmdargs{:})

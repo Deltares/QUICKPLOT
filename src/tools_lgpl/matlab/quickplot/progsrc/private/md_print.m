@@ -585,6 +585,8 @@ printObj.NextNr = printObj.NextNr + 1;
 function printNoWarn(varargin)
 warnStruct = warning;
 warning('off', 'MATLAB:print:ExcludesUIInFutureRelease')
+warning('off', 'MATLAB:print:RasterNotSupportedInFutureRelease')
+warning('off', 'MATLAB:print:PostscriptNotSupportedInFutureRelease')
 print(varargin{:});
 warning(warnStruct)
 

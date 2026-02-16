@@ -60,6 +60,9 @@ while ~isempty(rmndr)
                     quotes_inside(2:2:end)=[];
                     unquoted(quotes_inside)=[];
                     %
+                    if isempty(unquoted)
+                        unquoted = '';
+                    end
                     cmdargs{end+1}=unquoted;
                     rmndr=rmndr(endquote+1:end);
                 end

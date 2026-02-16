@@ -106,7 +106,7 @@ if isequal(SERIES.Type(end),'_')
 
     Type=SERIES.Type(1:end-1);
     switch lower(Type)
-        case {'tif','tiff','jpg','jpeg','bmp','png','hdf'}
+        case {'tif','tiff','jpg','jpeg','bmp','gif','png','hdf'}
             Ext=Type;
         otherwise % jpgXX or jpegXX
             Ext=Type(Type>57); % keep only the characters
@@ -142,7 +142,13 @@ else
     M=frame2im(F);
     FrmtString=strcat('%s%',num2str(SERIES.Digits),'.',num2str(SERIES.Digits),'i%s.%s');
     filename=sprintf(FrmtString,SERIES.Base,SERIES.Number,SERIES.SubCase,SERIES.Type);
-    imwrite(M,filename);
+    switch SERIES.Type
+        case 'gif'
+            [A,map] = rgb2ind(M,256);
+            imwrite(A,map,filename);
+        otherwise
+            imwrite(M,filename);
+    end
 end
 
 SERIES.Number=SERIES.Number+1;
