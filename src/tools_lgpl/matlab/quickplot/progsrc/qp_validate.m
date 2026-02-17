@@ -828,8 +828,14 @@ try
                                         showfig=1;
                                         % figures are platform specific
                                         reffile=[reference_folder,sref_platform_prefix,checkf];
-                                    case '.jpg' % {'.gif','.tif'} can't be visualized in LaTeX
+                                    case '.jpg'
                                         showfig=1;
+                                        % figures are platform specific
+                                        reffile=[reference_folder,sref_platform_prefix,checkf];
+                                    case {'.gif','.tif'}
+                                        % can't be visualized in LaTeX, so don't set showfig
+                                        % figures are platform specific
+                                        reffile=[reference_folder,sref_platform_prefix,checkf];
                                     case '.asc'
                                         args={'skip',71};
                                     case '.mat'
