@@ -1,5 +1,7 @@
-function init_netcdf_settings
-%INIT_NETCDF_SETTINGS Check and set netCDF settings as needed.
+function add_third_party(type,name)
+%ADD_THIRD_PARTY Search for folders and jar-files to add to the path.
+%   add_third_party('folder',FOLDERNAME)
+%   add_third_party('jar',JARFILE)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -31,38 +33,38 @@ function init_netcdf_settings
 %   $HeadURL$
 %   $Id$
 
-mlock
-persistent run_once
-if ~isempty(run_once)
-    return
-end
-
-run_once = 1;
-if isstandalone
-    try
-        % Insert a try-catch block here since the setpref command sometimes fails on a write error to matlabprefs.mat.
-        setpref('SNCTOOLS','USE_JAVA',true);
-    catch
-        ui_message('message','Failed to persist preferences during initialization.')
-    end
-
-else
-    % if nc_info can be found we assume that the settings were
-    % preconfigured correctly either during a previous start of d3d_qp, or
-    % via oetsettings, or by the user
-    p = which('nc_info');
-    if isempty(p)
-        add_third_party('folder','mexnc')
-        add_third_party('folder','snctools')
-
-        % check if nc_info can now be found ...
-        p = which('nc_info');
-        if isempty(p)
-            ui_message('message','Unable to locate mexnc and snctools for accessing netCDF files.')
+switch type
+    case 'folder'
+        check_dirs = get_check_dirs;
+        for i = 1:length(check_dirs)
+            test_dir = [check_dirs{i},filesep,name];
+            if exist(test_dir, 'dir')
+                addpath(test_dir)
+                break
+            end
         end
-    end
+
+    case 'jar'
+        check_dirs = get_check_dirs;
+        for i = 1:length(check_dirs)
+            test_file = [check_dirs{i},filesep,name];
+            if exist(test_file, 'file')
+                javaaddpath(test_file)
+                break
+            end
+        end
+
+    otherwise
+        error('Only "folder" or "jar" supported as first argument.')
 end
-try
-    add_third_party('jar','netcdfAll-4.1.jar')
-catch
-end
+
+function check_dirs = get_check_dirs
+qp_install_path = qp_basedir('exe');
+up = [filesep, '..'];
+check_dirs = {...
+    qp_install_path ... % new distribution root
+    [qp_install_path, filesep, 'netcdf'] ... % new distribution netcdf-root
+    [qp_install_path, up, up, up, up, filesep, 'third_party_open'] ... % source tree checkout root
+    [qp_install_path, up, up, up, up, filesep, 'third_party_open', filesep, 'netcdf', filesep, 'matlab'] ... % source tree checkout netcdf-root
+    [qp_install_path, up, up, filesep, 'io', filesep, 'netcdf'] ... % open earth tools checkout netcdf-root (obsolete)
+    };

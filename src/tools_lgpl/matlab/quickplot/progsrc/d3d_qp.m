@@ -350,6 +350,13 @@ switch cmd
         d3d_qp refreshfigs
         set(mfig,'CloseRequestFcn','d3d_qp close');
         
+    case 'openfiles'
+        if ~isempty(cmdargs)
+            for i = 1:length(cmdargs)
+                d3d_qp_core('openfile',cmdargs{i})
+            end
+        end
+
     case {'openfile','openfile*','reloadfile','openurl'}
         OpenFile=findobj(mfig,'tag','openfile','type','uipushtool');
         Handle_SelectFile=findobj(mfig,'tag','selectfile');
@@ -2958,7 +2965,7 @@ switch cmd
                 try % before 2018a
                     warnJF = warning('query','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
                     warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame')
-                    jFrame = get(handle(UD.PlotMngr.Fig),'JavaFrame');
+                    jFrame = get(handle(UD.PlotMngr.Fig),'JavaFrame'); %#ok<JAVFM>
                     warning(warnJF);
                     if jFrame.isMinimized
                         jFrame.setMinimized(0)
@@ -2992,7 +2999,7 @@ switch cmd
             end
         else
             try
-                jFrame = get(handle(UD.ComLine.Fig),'JavaFrame');
+                jFrame = get(handle(UD.ComLine.Fig),'JavaFrame'); %#ok<JAVFM>
                 if jFrame.isMinimized
                     jFrame.setMinimized(0)
                     return

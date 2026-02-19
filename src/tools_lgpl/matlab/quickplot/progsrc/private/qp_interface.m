@@ -84,7 +84,9 @@ dims=[339+panewidth 400];
 pos(1:2)=PosUR-dims;
 pos(3:4)=dims;
 
+qp_drag_and_drop('initialize')
 mfig = qp_uifigure('Delft3D-QUICKPLOT','','Delft3D-QUICKPLOT',pos);
+qp_drag_and_drop('activate',mfig)
 try
     icon_filename = d3d_qp('iconpath');
     if exist(icon_filename,'file')
