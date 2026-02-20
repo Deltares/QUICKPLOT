@@ -104,7 +104,7 @@ if strcmp(c(1:2),'PC')
    folder = '';
    for i = 1:length(folders)
        try % typically d3d_qp.exe is located in the first folder, but sometimes in the second one ...
-           filename = check_path([folder filesep 'd3d_qp.exe']);
+           filename = check_path([folders{i} filesep 'd3d_qp.exe']);
            folder = fileparts(filename);
            return
        catch
