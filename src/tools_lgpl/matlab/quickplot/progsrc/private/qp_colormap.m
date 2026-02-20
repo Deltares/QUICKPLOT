@@ -70,7 +70,7 @@ if isempty(COLORMAPS) || strcmp(MapName,':reload')
     %
     % Retreive directory information from QP_BASEDIR.
     %
-    qp_path = qp_basedir('base');
+    qp_path = qp_basedir('exe');
     clrmap_path = [qp_path filesep 'colormaps'];
     %
     % Reset list of loaded colormaps.

@@ -306,7 +306,7 @@ switch cmd
         S = convertcolors(S,newspace);
     case 'save'
         try
-            qp_path=qp_basedir;
+            qp_path=qp_basedir('exe');
             clrmap_path=[qp_path filesep 'colormaps'];
         catch
             clrmap_path=pwd;
@@ -386,7 +386,7 @@ switch cmd
         switch cmd
             case 'load'
                 try
-                    qp_path=qp_basedir;
+                    qp_path=qp_basedir('exe');
                     clrmap_path=[qp_path filesep 'colormaps'];
                 catch
                     clrmap_path=pwd;
