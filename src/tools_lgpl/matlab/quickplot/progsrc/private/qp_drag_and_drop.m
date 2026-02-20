@@ -1,5 +1,7 @@
 function qp_drag_and_drop(cmd,varargin)
 %QP_DRAG_AND_DROP QuickPlot wrapper for drag 'n drop functionality.
+%   Currently only supported for Windows.
+%   Code throws Java exception on Linux.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -31,6 +33,10 @@ function qp_drag_and_drop(cmd,varargin)
 %   $HeadURL$
 %   $Id$
 
+if ~ispc
+    return
+end
+
 switch cmd
     case 'initialize'
         try
@@ -40,9 +46,9 @@ switch cmd
         add_third_party('folder','uiFileDnD')
         
     case 'activate'
-        %try
+        try
             fig_handle = varargin{1};
             uiFileDnD(fig_handle, @(o,dat)d3d_qp('openfiles',dat.names{:}));
-        %catch
-        %end
+        catch
+        end
 end
