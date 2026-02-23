@@ -43,7 +43,9 @@ switch cmd
             addprop(groot,'ForceIndependentlyHostedFigures');
         catch
         end
-        add_third_party('folder','uiFileDnD')
+        if ~isstandalone
+            add_third_party('folder','uiFileDnD')
+        end
         
     case 'activate'
         try

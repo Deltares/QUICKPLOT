@@ -92,6 +92,7 @@ end
 copyfile('../../../../third_party_open/netcdf/matlab/netcdfAll-4.1.jar','.')
 addpath ../../../../third_party_open/netcdf/matlab/mexnc
 addpath ../../../../third_party_open/netcdf/matlab/snctools
+addpath ../../../../third_party_openuiFileDnD
 %
 if nargin<4
     [qpversion,hash,repo_url] = get_qpversion;
