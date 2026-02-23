@@ -8,6 +8,7 @@ function java_dnd(target, dropFcn)
 
 % Required: MLDropTarget.class under the same folder
 
+%#function MLDropTarget.class
 if ~exist('MLDropTarget', 'class')
     pth = fileparts(mfilename('fullpath'));
     javaaddpath(pth); % dynamic for this session
