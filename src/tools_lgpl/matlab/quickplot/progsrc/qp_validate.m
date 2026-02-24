@@ -210,15 +210,15 @@ try
         return
     end
     %
-    [i_quantity,f,e] = fileparts(full_ln);
+    [log_path,log_file,e] = fileparts(full_ln);
     extlog.files = extra_files;
     for ifile = 1:length(extra_files)
         fName = extra_files{ifile};
         %
-        fileName = [f '_' extra_files{ifile} e];
+        fileName = [log_file '_' extra_files{ifile} e];
         extlog.(fName).filename = fileName;
         %
-        extlog.(fName).fid = fopen([i_quantity filesep fileName],'w','n','US-ASCII');
+        extlog.(fName).fid = fopen([log_path filesep fileName],'w','n','US-ASCII');
         extlog.(fName).empty = true;
     end
     %
@@ -361,7 +361,6 @@ try
                 %
                 reference_dir = dir(reference_folder);
                 reference_files = {reference_dir(~[reference_dir.isdir]).name}';
-                reference_files = strike_platform_duplicates(reference_files);
                 %
                 % Delete all files in work directory (but make sure that we actually are in the work directory) ...
                 %
@@ -901,6 +900,7 @@ try
                     end
                 end
                 reference_files = strike_reference_entry(reference_files, 'timing.txt');
+                reference_files = strike_files_for_other_platforms(reference_files,sref_platform_prefix);
                 if ~isempty(reference_files)
                     write_section(logid2,'Missing result files:');
                     for i_reffile = 1:length(reference_files)
@@ -1889,17 +1889,32 @@ fprintf(fid,'%s\n',messages{:});
 fclose(fid);
 
 
-function reference_files = strike_platform_duplicates(reference_files)
+function reference_files = strike_files_for_other_platforms(reference_files,sref_platform_prefix)
 PREFIXES = {'glnxa64_', 'maci64_', 'maca64_'};
 for i_prefix = 1:length(PREFIXES)
     prefix = PREFIXES{i_prefix};
-    imatch = strncmp(prefix,reference_files,length(prefix));
-    reference_files(imatch) = [];
+    if ~strcmp(prefix,sref_platform_prefix)
+        imatch = strncmp(prefix,reference_files,length(prefix));
+        reference_files(imatch) = [];
+    end
+end
+if ~isempty(sref_platform_prefix) % if not Windows, remove the Windows copies
+    len_prefix = length(sref_platform_prefix);
+    match_this_platform = strncmp(reference_files,sref_platform_prefix,len_prefix);
+    files_this_platform = reference_files(match_this_platform);
+    for i_file = 1:length(files_this_platform)
+        file = files_this_platform{i_file}(len_prefix+1:end);
+        reference_files(strcmp(reference_files,file)) = [];
+    end
 end
 
 
 function reference_files = strike_reference_entry(reference_files,file)
-[in_list,i] = ismember(file,reference_files);
-if in_list
-    reference_files(i) = [];
+PREFIXES = {'glnxa64_', 'maci64_', 'maca64_', ''};
+for i_prefix = 1:length(PREFIXES)
+    prefix = PREFIXES{i_prefix};
+    [in_list,i] = ismember([prefix,file],reference_files);
+    if in_list
+        reference_files(i) = [];
+    end
 end

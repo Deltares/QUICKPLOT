@@ -643,11 +643,11 @@ for LevelNr=1:nLevels+1
             if isempty(Coord)
                 cdata = clevel;
             else
-                cdata = clevel*ones(size(TRI,1),1);
+                cdata = repmat(clevel,size(TRI,1),1);
             end
         else
             visopt={'visible','off'};
-            cdata = [];
+            cdata = NaN(size(TRI,1),1);
         end
         NewH = patch('Vertices',Coord(:,1:3), ...
             'Faces',TRI, ...

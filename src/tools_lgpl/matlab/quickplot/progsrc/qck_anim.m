@@ -69,7 +69,7 @@ if nargin > 1
     end
 end
 if isempty(afig)
-    error('No figure specifed to be animated.')
+    error('No figure specified to be animated.')
 end
 
 %
