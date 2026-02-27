@@ -139,28 +139,8 @@ if strcmp(c(1:2),'PC')
 else % Unix
     dd = fullfile(getenv('HOME'), '.Deltares', '');
 end
-curd=pwd;
-try
-    ensure_directory(dd);
-catch
+if ~mkdir(dd)
     dd='';
-end
-cd(curd);
-%TODO: Shift to Deltares directory
-
-
-function ensure_directory(dirname)
-if ~exist(dirname, 'dir')
-    [parent, thisdir, ext] = fileparts(dirname);
-    thisdir = [thisdir ext];
-    ensure_directory(parent);
-    cd(parent)
-    c = computer;
-    if strcmp(c(1:2),'PC')
-        status = dos(['mkdir "',thisdir,'"']); %#ok<NASGU>
-    else
-        status = unix(['mkdir -p ',thisdir]); %#ok<NASGU>
-    end
 end
 
 

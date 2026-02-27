@@ -168,6 +168,7 @@ while 1
     % these edges are numbered irow(istart(n2):istart(n2+1)-1)
     % they may already be traversed, so let's check which one is available
     %
+    n3 = 0;
     for r2 = istart(n2):istart(n2+1)-1
         l2 = irow(r2);
         if edges(l2,1)==n2
@@ -177,6 +178,9 @@ while 1
             n3 = edges(l2,1);
             break
         end
+    end
+    if n3 == 0
+        error('Error converting a set of triangular patches to a set of closed polygons. Unable to locate next edge.')
     end
     %
     % add the node to the contour
