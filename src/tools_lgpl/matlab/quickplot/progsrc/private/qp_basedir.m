@@ -139,7 +139,8 @@ if strcmp(c(1:2),'PC')
 else % Unix
     dd = fullfile(getenv('HOME'), '.Deltares', '');
 end
-if ~mkdir(dd)
+[success,~]=mkdir(dd); % need second output argument to avoid 'Directory already exists.' messages
+if ~success
     dd='';
 end
 
