@@ -465,18 +465,19 @@ if isstruct(xyz)
         % case, we might want to sort them, but we haven't implemented that
         % yet.
         %
+        timeLabels = xyz.Params(xyz.Time);
         if ~isempty(crds)
             sortloc = unique(xyz.XYZ(:,crds),'rows');
             nLoc = size(sortloc,1);
             nVal = size(xyz.XYZ,1);
             locations = xyz.XYZ(1:nLoc,crds); % alternatively use unique(...,'stable')
             if nVal/nLoc == floor(nVal/nLoc) && isequal(xyz.XYZ(:,crds),repmat(locations,[nVal/nLoc 1]))
-                Times = gettimes(xyz.XYZ(1:nLoc:nVal,xyz.Time));
+                Times = gettimes(xyz.XYZ(1:nLoc:nVal,xyz.Time),timeLabels);
                 iTime = cumsum(repmat((1:nLoc)'==1,[nVal/nLoc 1]));
             end
         end
         if isempty(iTime)
-            [Times,idum,iTime] = unique(gettimes(xyz.XYZ(:,xyz.Time),xyz.Params(xyz.Time)),'stable');
+            [Times,idum,iTime] = unique(gettimes(xyz.XYZ(:,xyz.Time),timeLabels),'stable');
             nLoc = hist(iTime,max(iTime));
         end
         %
@@ -524,12 +525,12 @@ fprintf(fid,format,xyz);
 fclose(fid);
 
 
-function Times = gettimes(Times,ColLabels)
+function Times = gettimes(Times,timeLabels)
 if size(Times,2)==2 % gpp => 20140118 105120
     d = Times(:,1);
     s = Times(:,2);
 else
-    switch ColLabels{1}
+    switch lower(timeLabels{1})
         case 'time (min)'
             Times = Times/1440;
             return
