@@ -38,7 +38,6 @@ if ~isempty(run_once)
 end
 
 run_once = 1;
-matlab_netcdf_path = qp_basedir('exe');
 if isstandalone
     try
         % Insert a try-catch block here since the setpref command sometimes fails on a write error to matlabprefs.mat.
@@ -46,30 +45,15 @@ if isstandalone
     catch
         ui_message('message','Failed to persist preferences during initialization.')
     end
-else
-    up = [filesep, '..'];
-    check_dirs = {...
-        [matlab_netcdf_path, filesep, 'netcdf'] ... % new distribution
-        [matlab_netcdf_path, up, up, up, up, filesep, 'third_party_open', filesep, 'netcdf', filesep, 'matlab'] ... % Delft3D source tree checkout
-        [matlab_netcdf_path, up, up, filesep, 'io', filesep, 'netcdf'] ... % open earth tools checkout
-        };
-    matlab_netcdf_path = '';
-    for i = 1:length(check_dirs)
-        if exist(check_dirs{i}, 'dir')
-            matlab_netcdf_path = check_dirs{i};
-            break
-        end
-    end
 
+else
     % if nc_info can be found we assume that the settings were
     % preconfigured correctly either during a previous start of d3d_qp, or
     % via oetsettings, or by the user
     p = which('nc_info');
     if isempty(p)
-        if ~isempty(matlab_netcdf_path)
-            addpath([matlab_netcdf_path, filesep, 'mexnc'])
-            addpath([matlab_netcdf_path, filesep, 'snctools'])
-        end
+        add_third_party('folder','mexnc')
+        add_third_party('folder','snctools')
 
         % check if nc_info can now be found ...
         p = which('nc_info');
@@ -78,9 +62,7 @@ else
         end
     end
 end
-if ~isempty(matlab_netcdf_path)
-    try
-        javaaddpath([matlab_netcdf_path, filesep, 'netcdfAll-4.1.jar'])
-    catch
-    end
+try
+    add_third_party('jar','netcdfAll-4.1.jar')
+catch
 end

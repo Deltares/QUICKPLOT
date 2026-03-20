@@ -130,7 +130,7 @@ switch NVal
                         'markerfacecolor',Ops.markerfillcolour, ...
                         'parent',Parent);
                 end
-                set(hNew,'xdata',X,'ydata',Y);
+                set(hNew(1),'xdata',X,'ydata',Y);
                 set(hNew(2),'xdata',Xp,'ydata',Yp);
                 %
                 if strcmp(Ops.colourbar,'none')

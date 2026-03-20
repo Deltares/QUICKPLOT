@@ -159,8 +159,8 @@ NSlower=0;
 TotTimeRef=0;
 TotTime=0;
 fs='/'; % always use forward slash here instead of filesep because the backward slash on Windows gives problems in LaTeX ...
-sdata=['..',fs,'data',fs];
-sref=['..',fs,'reference',fs];
+data_folder=['..',fs,'data',fs];
+reference_folder=['..',fs,'reference',fs];
 % some file are platform specific, use a prefix to separate them.
 if strcmp(computer,'PCWIN64')
     % no prefix on Windows for backward compatibility
@@ -168,8 +168,8 @@ if strcmp(computer,'PCWIN64')
 else
     sref_platform_prefix=[lower(computer),'_'];
 end
-swrk=['..',fs,'work',fs];
-slog=['..',fs,'logfiles',fs];
+work_folder=['..',fs,'work',fs];
+logfile_folder=['..',fs,'logfiles',fs];
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %
 Hpb=progressbar('cancel','delete(gcbf)','pause','on');
@@ -210,15 +210,15 @@ try
         return
     end
     %
-    [p,f,e] = fileparts(full_ln);
+    [log_path,log_file,e] = fileparts(full_ln);
     extlog.files = extra_files;
     for ifile = 1:length(extra_files)
         fName = extra_files{ifile};
         %
-        fileName = [f '_' extra_files{ifile} e];
+        fileName = [log_file '_' extra_files{ifile} e];
         extlog.(fName).filename = fileName;
         %
-        extlog.(fName).fid = fopen([p filesep fileName],'w','n','US-ASCII');
+        extlog.(fName).fid = fopen([log_path filesep fileName],'w','n','US-ASCII');
         extlog.(fName).empty = true;
     end
     %
@@ -341,9 +341,9 @@ try
                 if isempty(dir('logfiles'))
                     ensure_directory('logfiles');
                 end
-                logs=dir(['logfiles' fs '*.qplog']);
-                logm=dir(['logfiles' fs '*.m']);
-                logs=cat(1,logs,logm);
+                logfiles=dir(['logfiles' fs '*.qplog']);
+                mfiles=dir(['logfiles' fs '*.m']);
+                logfiles=cat(1,logfiles,mfiles);
                 %
                 % check for reference directory...
                 %
@@ -358,6 +358,9 @@ try
                 end
                 cd('work')
                 workdir=pwd;
+                %
+                reference_dir = dir(reference_folder);
+                reference_files = {reference_dir(~[reference_dir.isdir]).name}';
                 %
                 % Delete all files in work directory (but make sure that we actually are in the work directory) ...
                 %
@@ -377,26 +380,26 @@ try
                 else
                     FileName2=portpath(FileName2);
                     write_section(logid2,'Opening ''%s'' with ''%s''',protected(FileName),protected(FileName2));
-                    FileName2={[sdata,FileName2]};
+                    FileName2={[data_folder,FileName2]};
                 end
                 if length(FileName)<7 || ~isequal(lower(FileName(1:7)),'http://')
-                    FileName = [sdata,FileName];
+                    FileName = [data_folder,FileName];
                 end
                 d3d_qp('openfile',FileName,FileName2{:});
                 FI=qpfile;
                 if ~isstruct(FI)
                     error('Error opening file ''%s''.',FileName);
                 end
-                [ChkOK,Dms]=qp_getdata(FI,'domains');
+                [ChkOK,domains]=qp_getdata(FI,'domains');
                 write_log(logid2,'Reading domains: %s',sc{ChkOK+1});
-                if isempty(Dms)
-                    Dms={'no name'};
+                if isempty(domains)
+                    domains={'no name'};
                 end
-                dmx=length(Dms);
-                Props={};
-                for dm=1:dmx
-                    [Chk,P]=qp_getdata(FI,dm);
-                    write_log(logid2,'Reading fields of domain ''%s'': %s',protected(Dms{dm}),sc{Chk+1});
+                n_domains=length(domains);
+                Props=cell(1,n_domains);
+                for i_domain=1:n_domains
+                    [Chk,quantities]=qp_getdata(FI,i_domain);
+                    write_log(logid2,'Reading fields of domain ''%s'': %s',protected(domains{i_domain}),sc{Chk+1});
                     ChkOK = Chk & ChkOK;
                     if ~Chk
                         continue
@@ -404,30 +407,31 @@ try
                     %
                     szFail = {};
                     szChkOK = true;
-                    for p=1:length(P)
-                        if strcmp(P(p).Name,'-------')
-                            P(p).Size=[0 0 0 0 0];
+                    for i_quantity=1:length(quantities)
+                        if strcmp(quantities(i_quantity).Name,'-------')
+                            quantities(i_quantity).Size=[0 0 0 0 0];
                         else
-                            [Chk,P(p).Size]=qp_getdata(FI,dm,P(p),'size');
+                            [Chk,quantities(i_quantity).Size]=qp_getdata(FI,i_domain,quantities(i_quantity),'size');
                             if ~Chk
-                                szFail{end+1} = P(p).Name;
+                                szFail{end+1} = quantities(i_quantity).Name;
                             end
                             szChkOK = Chk & szChkOK;
                         end
                     end
-                    write_log(logid2,'Reading sizes of data fields of domain ''%s'': %s',protected(Dms{dm}),sc{szChkOK+1});
+                    write_log(logid2,'Reading sizes of data fields of domain ''%s'': %s',protected(domains{i_domain}),sc{szChkOK+1});
                     if ~szChkOK
                         szFail = sprintf('''%s'', ',szFail{:});
                         write_log(logid2,'Problem encountered while determining the size of %s',szFail(1:end-2));
                     end
                     ChkOK = szChkOK & ChkOK;
-                    Props{dm}=P;
+                    Props{i_domain}=quantities;
                 end
                 write_log(logid2,'');
                 if ChkOK
                     CmpFile='datafields.mat';
-                    RefFile=[sref CmpFile];
-                    WrkFile=[swrk CmpFile];
+                    reference_files = strike_reference_entry(reference_files,CmpFile);
+                    RefFile=[reference_folder CmpFile];
+                    WrkFile=[work_folder CmpFile];
                     if localexist(RefFile)
                         cmpFile=localload(RefFile);
                         if isfield(cmpFile,'Props')
@@ -447,11 +451,11 @@ try
                             else
                                 JustAddedData=1;
                                 JustAddedFields=1;
-                                for dm=1:length(Props)
+                                for i_domain=1:length(Props)
                                     %
                                     % Check for differences in the datafields
-                                    Prop = Props{dm};
-                                    PropRef = PrevProps{dm};
+                                    Prop = Props{i_domain};
+                                    PropRef = PrevProps{i_domain};
                                     if isempty(PropRef)
                                         write_log(logid2,'Old datafields record is empty.');
                                         JustAddedData=0;
@@ -461,7 +465,7 @@ try
                                         pnAdded = setdiff(pName,pNameRef);
                                         pnRemoved = setdiff(pNameRef,pName);
                                         if length(Props)>1
-                                            write_log_domain(logid2,Dms{dm});
+                                            write_log_domain(logid2,domains{i_domain});
                                         end
                                         if ~isempty(pnAdded)
                                             pnAdded = protected(pnAdded);
@@ -562,72 +566,73 @@ try
                     frresult=[FAILED ': Error while reading data.'];
                 end
                 %
-                NP=length(P);
-                NL=length(logs);
-                NT=NP+NL;
+                n_quantities=length(quantities);
+                n_logfiles = length(logfiles);
+                NT=n_quantities+n_logfiles;
                 %
                 write_begin_table(logid2,Color)
                 inTable2 = true;
                 datacheck=inifile('get',CaseInfo,'datacheck','default',1);
-                P=Props{dmx};
+                quantities=Props{n_domains};
                 try
-                    for p=1:NP
-                        if progressbar((acc_dt+case_dt(i)*(p-1)/NT)/tot_dt,Hpb)<0
+                    for i_quantity=1:n_quantities
+                        if progressbar((acc_dt+case_dt(i)*(i_quantity-1)/NT)/tot_dt,Hpb)<0
                             write_table2_line(logid2,Color.Table{TC2},'','','',''); % at least one line needed in table
                             write_end_table(logid2,emptyTable2);
                             inTable2 = false;
                             UserInterrupt=1;
                             error('User interrupt');
                         end
-                        if ~strcmp(P(p).Name,'-------')
-                            if P(p).NVal<0
-                                write_table2_line(logid2,Color.Table{TC2},P(p).Name,NOTAPP,'','Check not applicable.');
+                        if ~strcmp(quantities(i_quantity).Name,'-------')
+                            if quantities(i_quantity).NVal<0
+                                write_table2_line(logid2,Color.Table{TC2},quantities(i_quantity).Name,NOTAPP,'','Check not applicable.');
                                 emptyTable2 = false;
                                 TC2=3-TC2;
-                            elseif ~inifile('get',CaseInfo,'datacheck',P(p).Name,datacheck)
-                                write_table2_line(logid2,Color.Table{TC2},P(p).Name,NOTAPP,NOTAPP,'Check skipped.');
+                            elseif ~inifile('get',CaseInfo,'datacheck',quantities(i_quantity).Name,datacheck)
+                                write_table2_line(logid2,Color.Table{TC2},quantities(i_quantity).Name,NOTAPP,NOTAPP,'Check skipped.');
                                 emptyTable2 = false;
                                 TC2=3-TC2;
                             else
-                                PName=P(p).Name;
-                                PName_double = find(strcmpi(PName,{P(1:p-1).Name}));
+                                PName=quantities(i_quantity).Name;
+                                PName_double = find(strcmpi(PName,{quantities(1:i_quantity-1).Name}));
                                 PName=str2file(PName);
                                 CmpFile=[PName '.mat'];
                                 if PName_double
                                     CmpFile=[PName sprintf('.(%i).mat',length(PName_double)+1)];
                                 end
-                                RefFile=[sref CmpFile];
-                                WrkFile=[swrk CmpFile];
+                                reference_files = strike_reference_entry(reference_files,CmpFile);
+                                RefFile=[reference_folder CmpFile];
+                                WrkFile=[work_folder CmpFile];
                                 idx={};
                                 subf={};
-                                if ~isempty(P(p).DimFlag) && P(p).DimFlag(ST_)
+                                if ~isempty(quantities(i_quantity).DimFlag) && quantities(i_quantity).DimFlag(ST_)
                                     idx={1};
-                                    if P(p).DimFlag(T_)
-                                        if P(p).DimFlag(M_) || P(p).DimFlag(N_)
-                                            idx=[{P(p).Size(T_)} idx(:)'];
+                                    if quantities(i_quantity).DimFlag(T_)
+                                        if quantities(i_quantity).DimFlag(M_) || quantities(i_quantity).DimFlag(N_)
+                                            idx=[{quantities(i_quantity).Size(T_)} idx(:)'];
                                         else
-                                            idx=[{1:min(10,P(p).Size(T_))} idx(:)'];
+                                            idx=[{1:min(10,quantities(i_quantity).Size(T_))} idx(:)'];
                                         end
                                     end
                                 end
-                                [Chk,subfields]=qp_getdata(FI,dm,P(p),'subfields');
+                                [Chk,subfields]=qp_getdata(FI,i_domain,quantities(i_quantity),'subfields');
                                 if Chk && ~isempty(subfields)
                                     subf={length(subfields)};
                                 end
-                                [Chk,Data]=qp_getdata(FI,dm,P(p),'griddata',subf{:},idx{:});
+                                [Chk,Data]=qp_getdata(FI,i_domain,quantities(i_quantity),'griddata',subf{:},idx{:});
                                 if ~Chk && isempty(Data)
-                                    write_table2_line(logid2,Color.Table{TC2},P(p).Name,color_write(FAILED,Color.Failed),'','Failed to get data');
+                                    write_table2_line(logid2,Color.Table{TC2},quantities(i_quantity).Name,color_write(FAILED,Color.Failed),'','Failed to get data');
                                     emptyTable2 = false;
                                     TC2=3-TC2;
                                     Chk = 0;
                                 else
-                                    write_table2_line(logid2,Color.Table{TC2},P(p).Name,sc{Chk+1},[],'');
+                                    write_table2_line(logid2,Color.Table{TC2},quantities(i_quantity).Name,sc{Chk+1},[],'');
                                     emptyTable2 = false;
                                     TC2=3-TC2;
                                 end
                                 if ~Chk
                                     frcolor=Color.Failed;
-                                    frresult=sprintf('%s: Error retrieving data for ''%s''.',FAILED,protected(P(p).Name));
+                                    frresult=sprintf('%s: Error retrieving data for ''%s''.',FAILED,protected(quantities(i_quantity).Name));
                                 else
                                     try
                                         if localexist(RefFile)
@@ -694,7 +699,7 @@ try
                                                 write_table2_line(logid2,[],[],[],2,'');
                                                 ChkOK = DiffFound<=0;
                                                 if ~ChkOK
-                                                    frresult=sprintf('%s: Data changed for ''%s''.',FAILED,protected(P(p).Name));
+                                                    frresult=sprintf('%s: Data changed for ''%s''.',FAILED,protected(quantities(i_quantity).Name));
                                                 end
                                                 localsave([PName,'.mat'],Data,saveops);
                                             else
@@ -736,38 +741,74 @@ try
                 inTable2 = false;
                 drawnow
                 %
-                if isempty(logs)
+                if isempty(logfiles)
                     write_rule(logid2);
                     write_log(logid2,'No log files to run for validation.');
                 else
                     lgcolor=Color.Success;
                     lgresult=PASSED;
-                    for lg=1:NL
-                        if progressbar((acc_dt+case_dt(i)*(NP+lg-1)/NT)/tot_dt,Hpb)<0
+                    for i_logfile=1:n_logfiles
+                        if progressbar((acc_dt+case_dt(i)*(n_quantities+i_logfile-1)/NT)/tot_dt,Hpb)<0
                             UserInterrupt=1;
                             error('User interrupt');
                         end
-                        logf=logs(lg).name;
+                        logfile=logfiles(i_logfile).name;
                         write_rule(logid2);
-                        write_section(logid2,'Results for log file: %s',protected(logf));
-                        echo_logfile(logid2,[slog,logf]);
+                        write_section(logid2,'Results for log file: %s',protected(logfile));
+                        echo_logfile(logid2,[logfile_folder,logfile]);
                         d3d_qp('reset');
                         d1=dir; d1={d1.name};
                         m1=ui_message('getall');
-                        d3d_qp('run',[slog,logf]);
+                        d3d_qp('run',[logfile_folder,logfile]);
                         d2=dir; d2={d2.name};
                         m2=ui_message('getall');
                         checkfs=setdiff(d2,d1);
+                        %
+                        CmpFile = [logfile,'_messages.txt'];
+                        reference_files = strike_reference_entry(reference_files,CmpFile);
+                        old_messages = read_messages([reference_folder fs CmpFile]);
                         if length(m2)>length(m1)
-                            diffm=m2(length(m1)+2:length(m2));
-                            for mi = 1:length(diffm)
-                                write_log(logid2,'%s: %s',protected(logf),color_write(protected(diffm{mi}),Color.Failed));
+                            new_messages = m2(length(m1)+2:length(m2));
+                        else
+                            new_messages = {};
+                        end
+                        if ~isequal(old_messages,new_messages)
+                            write_section(logid2,'Reference messages:');
+                            if isempty(old_messages)
+                                write_log(logid2,'None.')
+                            else
+                                for i_message = 1:length(old_messages)
+                                    write_log(logid2,'> %s',protected(old_messages{i_message}));
+                                end
+                            end
+                            write_section(logid2,'Messages generated by this run:');
+                            if isempty(new_messages)
+                                write_log(logid2,color_write('None.',Color.Failed))
+                            else
+                                for i_message = 1:length(new_messages)
+                                    line = new_messages{i_message};
+                                    [same,i_old] = ismember(line,old_messages);
+                                    if same
+                                        old_messages(i_old) = [];
+                                        write_log(logid2,'> %s',protected(line));
+                                    else
+                                        write_log(logid2,'> %s',color_write(protected(line),Color.Failed));
+                                    end
+                                end
+                            end
+                            write_messages([logfile '_messages.txt'],new_messages);
+                            %
+                            if ~isequal(lgcolor,Color.Failed)
+                                lgcolor=Color.Failed;
+                                lgresult=[FAILED ': The messages while running the script have changed.'];
                             end
                         end
+                        %
+                        write_section(logid2,'Comparing result files:');
                         if isempty(checkfs)
                             write_log(logid2,'No file to check.');
                             lgcolor=Color.Failed;
-                            lgresult=sprintf('%s: No check on ''%s''.',FAILED,protected(logf));
+                            lgresult=sprintf('%s: No check on ''%s''.',FAILED,protected(logfile));
                         else
                             %checkf=inifile('get',CaseInfo,'logfilecheck',logf,'');
                             for icheck=1:length(checkfs)
@@ -776,7 +817,8 @@ try
                                 showfig=0;
                                 [~,~,ext]=fileparts(checkf);
                                 % reference files are generic by default
-                                reffile=[sref,checkf];
+                                reffile=[reference_folder,checkf];
+                                reference_files = strike_reference_entry(reference_files,checkf);
                                 args={};
                                 switch lower(ext)
                                     case '.png'
@@ -784,7 +826,15 @@ try
                                         args={'skip',256};
                                         showfig=1;
                                         % figures are platform specific
-                                        reffile=[sref,sref_platform_prefix,checkf];
+                                        reffile=[reference_folder,sref_platform_prefix,checkf];
+                                    case '.jpg'
+                                        showfig=1;
+                                        % figures are platform specific
+                                        reffile=[reference_folder,sref_platform_prefix,checkf];
+                                    case {'.gif','.tif'}
+                                        % can't be visualized in LaTeX, so don't set showfig
+                                        % figures are platform specific
+                                        reffile=[reference_folder,sref_platform_prefix,checkf];
                                     case '.asc'
                                         args={'skip',71};
                                     case '.mat'
@@ -808,7 +858,7 @@ try
                                     if ~Eql
                                         try
                                             switch lower(ext)
-                                                case '.png'
+                                                case {'.jpg','.png'} % {'.gif','.tif'}
                                                     I1=imread(checkf);
                                                     I2=imread(reffile);
                                                     if ~isequal(size(I1),size(I2))
@@ -849,6 +899,19 @@ try
                         drawnow
                     end
                 end
+                reference_files = strike_reference_entry(reference_files, 'timing.txt');
+                reference_files = strike_files_for_other_platforms(reference_files,sref_platform_prefix);
+                if ~isempty(reference_files)
+                    write_section(logid2,'Missing result files:');
+                    for i_reffile = 1:length(reference_files)
+                        write_log(logid2,'> %s',color_write(protected(reference_files{i_reffile}),Color.Failed));
+                    end
+                    %
+                    if ~isequal(lgcolor,Color.Failed)
+                        lgcolor=Color.Failed;
+                        lgresult=[FAILED ': Some result files are missing.'];
+                    end
+                end
             else
                 frcolor=Color.Font;
                 frresult=[FAILED ': case.ini missing.'];
@@ -869,7 +932,7 @@ try
         d3d_qp('closefile');
         figs = get_nondialogs;
         if ~isempty(figs)
-            fprintf('%i figure(s) not properly closed.',length(figs));
+            fprintf('%i figure(s) not properly closed.\n',length(figs));
             ui_message('warning','%i figure(s) not properly closed.',length(figs))
             d3d_qp('closeallfig')
         end
@@ -888,10 +951,10 @@ try
             logid2=[];
             %
             if isnan(dt2_old)
-                timid = fopen([sref,'timing.txt'],'w','n','US-ASCII');
+                timid = fopen([reference_folder,'timing.txt'],'w','n','US-ASCII');
                 fprintf(timid,'%5.1f',dt2);
                 fclose(timid);
-                timid = fopen([swrk,'timing.txt'],'w','n','US-ASCII');
+                timid = fopen([work_folder,'timing.txt'],'w','n','US-ASCII');
                 fprintf(timid,'%5.1f',dt2);
                 fclose(timid);
             end
@@ -1445,19 +1508,27 @@ function include_diff_figures(logid,files,Color)
 nfiles = length(files);
 switch log_style
     case 'latex'
+        column_titles = {'reference','work','diff'};
+        column_separator = repmat({' & '},1,nfiles);
+        column_separator{end} = ' \\';
         fprintf(logid,'%s%s%s\n','\begin{tabular}{',repmat('l',1,nfiles),'}');
         fprintf(logid,'%s\n','\hiderowcolors');
-        for i = 1:nfiles-1
-            fprintf(logid,'%s%s%s','\textbf{',protected(files{i}),'} & ');
+        for i = 1:nfiles
+            fprintf(logid,'%s%s%s%s','\textbf{',column_titles{i},'}',column_separator{i});
         end
-        fprintf(logid,'%s%s%s\n','\textbf{',protected(files{end}),'} \\');
+        fprintf(logid,'\n');
         %
-        for i = 1:nfiles-1
-            fprintf(logid,'%s%s%s','\includegraphics*[width=50mm]{',protect_filename(files{i}),'} & ');
+        for i = 1:nfiles
+            fprintf(logid,'%s%s%s%s','\includegraphics*[width=50mm]{',protect_filename(files{i}),'}',column_separator{i});
         end
-        fprintf(logid,'%s%s%s\n','\includegraphics*[width=50mm]{',protect_filename(files{end}),'} \\');
+        fprintf(logid,'\n');
         fprintf(logid,'%s\n','\showrowcolors');
         fprintf(logid,'%s\n','\end{tabular}\newline');
+        fprintf(logid,'with %s = %s',column_titles{1},protected(files{1}));
+        for i = 2:nfiles-1
+            fprintf(logid,', %s = %s',column_titles{i},protected(files{i}));
+        end
+        fprintf(logid,' and %s = %s.\n',column_titles{nfiles},protected(files{nfiles}));
     otherwise
         fprintf(logid,'<table bgcolor=%s>\n',Color.Table{1});
         fprintf(logid,['<tr>' repmat(['<td width=300 bgcolor=',Color.Titlebar,'>%s</td>'],1,nfiles) '</tr>\n'],files{:});
@@ -1794,4 +1865,56 @@ if isequal(type,previous_type)
     type = '';
 else
     previous_type = type;
+end
+
+
+function messages = read_messages(message_file)
+fid = fopen(message_file,'r');
+messages = {};
+if fid > 0
+    i = 0;
+    messages = cell(1,1000);
+    while ~feof(fid)
+        i = i+1;
+        messages{i} = fgetl(fid);
+    end
+    messages(i+1:end) = [];
+    fclose(fid);
+end
+
+
+function write_messages(message_file,messages)
+fid = fopen(message_file,'w');
+fprintf(fid,'%s\n',messages{:});
+fclose(fid);
+
+
+function reference_files = strike_files_for_other_platforms(reference_files,sref_platform_prefix)
+PREFIXES = {'glnxa64_', 'maci64_', 'maca64_'};
+for i_prefix = 1:length(PREFIXES)
+    prefix = PREFIXES{i_prefix};
+    if ~strcmp(prefix,sref_platform_prefix)
+        imatch = strncmp(prefix,reference_files,length(prefix));
+        reference_files(imatch) = [];
+    end
+end
+if ~isempty(sref_platform_prefix) % if not Windows, remove the Windows copies
+    len_prefix = length(sref_platform_prefix);
+    match_this_platform = strncmp(reference_files,sref_platform_prefix,len_prefix);
+    files_this_platform = reference_files(match_this_platform);
+    for i_file = 1:length(files_this_platform)
+        file = files_this_platform{i_file}(len_prefix+1:end);
+        reference_files(strcmp(reference_files,file)) = [];
+    end
+end
+
+
+function reference_files = strike_reference_entry(reference_files,file)
+PREFIXES = {'glnxa64_', 'maci64_', 'maca64_', ''};
+for i_prefix = 1:length(PREFIXES)
+    prefix = PREFIXES{i_prefix};
+    [in_list,i] = ismember([prefix,file],reference_files);
+    if in_list
+        reference_files(i) = [];
+    end
 end

@@ -1,4 +1,4 @@
-function qck_anim(cmd,afig,ANISteps)
+function cmdargs_optional = qck_anim(cmd,varargin)
 %QCK_ANIM Helper function for QuickPlot Animations.
 
 %QCK_ANIM(Cmd,Figure,CmdArgs)
@@ -33,12 +33,13 @@ function qck_anim(cmd,afig,ANISteps)
 %   $HeadURL$
 %   $Id$
 
-if nargin<2
-    afig=gcbf;
-    if isempty(afig)
-        error('This function should not be called manually.')
-    end
+cmdargs_always = qck_anim_core(cmd,varargin{:});
+if nargout > 0
+    cmdargs_optional = cmdargs_always;
 end
+
+function cmdargs_out = qck_anim_core(cmd,varargin)
+cmdargs_out = {};
 
 if strcmp(cmd,'animpush')
     pos=get(gcbo,'position');
@@ -46,6 +47,31 @@ if strcmp(cmd,'animpush')
     set(uicm,'position',pos(1:2)+pos(3:4)/2,'visible','on')
     return
 end
+
+afig = gcbf;
+afig_string = 'gcbf';
+cmdargs_in = varargin;
+if nargin > 1
+    arg1 = varargin{1};
+    if isscalar(arg1) && ishandle(arg1)
+        afig = arg1;
+        afig_string = '--';
+        cmdargs_in = varargin(2:end);
+    elseif strcmpi(arg1,'qpsf')
+        afig = qpsf;
+        afig_string = 'qpsf';
+        cmdargs_in = varargin(2:end);
+    elseif strcmpi(arg1,'gcbf')
+        % afig already set above
+        cmdargs_in = varargin(2:end);
+    else
+        % afig already set above
+    end
+end
+if isempty(afig)
+    error('No figure specified to be animated.')
+end
+
 %
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 AnimSlid=findobj(afig,'tag','animslid');
@@ -121,21 +147,28 @@ switch cmd
         i0=getappdata(asld,'minival');
         i1=getappdata(asld,'maxival');
 
-        OPS.Type = '';
-        OPS.background = 0;
-        OPS.steps = i0:i1;
-        OPS.AnimLoop = 0;
-        OPS.maxfps = 25;
-        OPS.scriptname = '';
-        ANISteps = OPS.steps;
         if nargin<3
             [Cancel,OPS] = runAnimationDialog(i0,i1);
             if Cancel
                 return
             end
-            ANISteps = OPS.steps;
+            stream_args = {};
+        else
+            OPS.steps = cmdargs_in{1};
+            OPS.AnimLoop = 0;
+            OPS.maxfps = cell_or_default(cmdargs_in,2,25);
+            OPS.Type = cell_or_default(cmdargs_in,3,'');
+            OPS.background = cell_or_default(cmdargs_in,4,0);
+            OPS.scriptname = cell_or_default(cmdargs_in,5,'');
+            stream_args = cmdargs_in(6:end);
         end
-        streamObj = streamInitialize(OPS, par_fig);
+        ANISteps = OPS.steps;
+        [streamObj,stream_args] = streamInitialize(OPS, par_fig, stream_args);
+        if strcmpi(afig_string,'qpsf')
+            cmdargs_out = [{'startanim',afig_string,OPS.steps,OPS.maxfps,OPS.Type,OPS.background,OPS.scriptname}, stream_args];
+        else
+            % only qpsf is reproducible, so no reason to record this case
+        end
         
         sld=findobj(par_fig,'tag','animslid');
         psh=findobj(par_fig,'tag','animpush');
@@ -476,6 +509,14 @@ end
 set(par_fig(existpar),'pointer','arrow')
 
 
+function value = cell_or_default(cell_array, index, def_value)
+if index <= numel(cell_array)
+    value = cell_array{index};
+else
+    value = def_value;
+end
+
+
 function OPS = streamOptions(outputtype, OPS, interactiveMode)
 if nargin<3
     interactiveMode = true;
@@ -805,7 +846,7 @@ set(a,'userdata',vidOps)
 videoDialogCallback(hProf)
 set(a,'visible','on')
 
-function streamObj = streamInitialize(OPS, figures)
+function [streamObj,stream_args] = streamInitialize(OPS, figures, stream_args)
 persistent savedir
 if ~ischar(savedir)
     savedir = '';
@@ -861,44 +902,61 @@ switch OPS.Type
             streamObj.ExtStr = e;
         end
 
-    case 'avi file'
-        [fn,pn]=uiputfile([savedir '*.avi'], 'Specify output file ...');
-        if ~ischar(fn)
-            return
+    case {'avi file','video file','animated gif file'}
+        switch OPS.Type
+            case 'avi file'
+                e0 = '.avi';
+            case 'video file'
+                e0 = OPS.vidOps.Profile.FileExtensions{1};
+            case 'animated gif file'
+                e0 = '.gif';
         end
-        [p,f,e] = fileparts(fn);
-        if isempty(e)
-            fn = [fn '.avi'];
+        %
+        if length(stream_args) >= 1
+            [pn,f,e] = fileparts(stream_args{1});
+            fn = [f,e];
+        else
+            [fn,pn]=uiputfile([savedir '*' e0], 'Specify output file ...');
+            if ~ischar(fn)
+                return
+            end
+            [~,~,e] = fileparts(fn);
         end
-        aviObj = avi('initialize');
-        aviObj = avi('open', aviObj, [pn, fn]);
-        streamObj.aviObj = aviObj;
-        streamObj.First = true;
-
-    case 'video file'
-        e0 = OPS.vidOps.Profile.FileExtensions{1};
-        [fn, pn] = uiputfile([savedir, '*', e0], 'Specify output file ...');
-        if ~ischar(fn)
-            return
-        end
-        [p,f,e] = fileparts(fn);
         if isempty(e)
             fn = [fn, e0];
         end
-        vidObj = VideoWriter([pn, fn], OPS.vidOps.Profile.Name);
-        vidObj.FrameRate = OPS.maxfps;
-        open(vidObj);
-        streamObj.vidObj = vidObj;
+        fn = fullfile(pn, fn);
+        stream_args = {fn};
+        %
+        switch OPS.Type
+            case 'avi file'
+                aviObj = avi('initialize');
+                aviObj = avi('open', aviObj, fn);
+                streamObj.aviObj = aviObj;
+                streamObj.First = true;
+            case 'video file'
+                vidObj = VideoWriter(fn, OPS.vidOps.Profile.Name);
+                vidObj.FrameRate = OPS.maxfps;
+                open(vidObj);
+                streamObj.vidObj = vidObj;
+            case 'animated gif file'
+                streamObj.fileName = fn;
+        end
 
     otherwise
         ext = strtok(OPS.Type);
-        [fn, pn] = uiputfile([savedir, '*.', ext], 'Specify location and base ...');
-        if ~ischar(fn)
-            return
+        if length(stream_args) >= 1
+            [pn,f,e] = fileparts(stream_args{1});
+        else
+            [fn, pn] = uiputfile([savedir, '*.', ext], 'Specify location and base ...');
+            if ~ischar(fn)
+                return
+            end
+            [~,f,e] = fileparts(fn);
         end
-        [p,f,e] = fileparts(fn);
+        %
         n = '';
-        while length(f)>0 && ismember(f(end),'0123456789')
+        while ~isempty(f) && ismember(f(end),'0123456789')
             n = [f(end),n];
             f = f(1:end-1);
         end
@@ -909,6 +967,7 @@ switch OPS.Type
             ndig = length(n);
             n = str2num(n);
         end
+        %
         if ~isempty(strmatch(lower(e),{'.tif','.tiff','.jpg','.jpeg','.png','.bmp'},'exact'))
             e = [e(2:end) '_'];
         elseif ~isempty(strmatch(lower(ext),{'tif','jpg','png','bmp'},'exact'))
@@ -916,6 +975,14 @@ switch OPS.Type
         else
             e = ext;
         end
+        %
+        if e(end)=='_'
+            ext = e(1:end-1);
+        else
+            ext = e;
+        end
+        stream_args = {fullfile(pn, [f, filenumber_string(ndig,n), '.', ext])};
+        %
         opsarg = {};
         for afgi = 1:length(figures)
             if length(figures)>1
@@ -952,44 +1019,55 @@ switch streamObj.Type
             md_print(figures, streamObj.printObj);
         end
         
-    case 'avi file'
-        if streamObj.First
-            Fig = getframe(figures(1));
-            [streamObj.aviObj, OK] = avi('addvideo', streamObj.aviObj, streamObj.maxfps, Fig.cdata);
-            if ~OK
-                error('Cannot add video stream to output file.')
-            end
-            streamObj.First = false;
-        end
-        Fig = getframe(figures(1));
-        streamObj.aviObj = avi('addframe', streamObj.aviObj, Fig.cdata);
-        
-    case 'video file'
+    case {'avi file','video file','animated gif file'}
         Fig = getframe(figures(1));
         if isfield(streamObj,'imageSize')
             if ~isequal(streamObj.imageSize, size(Fig.cdata))
                error('Image size should not change during recording. Initial size: %i x %i. New size: %i x %i.', ...
                    streamObj.imageSize(1), streamObj.imageSize(2), size(Fig.cdata, 1), size(Fig.cdata, 2))
             end
-        else
+            firstImage = false;
+        else % first image
             streamObj.imageSize = size(Fig.cdata);
+            firstImage = true;
         end
-        if strcmp(streamObj.vidObj.VideoFormat,'Indexed')
-            if isfield(streamObj,'Colormap')
-                X = rgb2ind(Fig.cdata,streamObj.Colormap);
-                Fig.cdata = X;
-                Fig.colormap = streamObj.Colormap;
-            else
-                [X,map] = rgb2ind(Fig.cdata,256);
-                Fig.cdata = X;
-                Fig.colormap = map;
-                streamObj.Colormap = map;
-            end
-            writeVideo(streamObj.vidObj, Fig);
-        else
-            writeVideo(streamObj.vidObj, Fig.cdata);
+        %
+        switch streamObj.Type
+            case 'avi file'
+                if firstImage
+                    [streamObj.aviObj, OK] = avi('addvideo', streamObj.aviObj, streamObj.maxfps, Fig.cdata);
+                    if ~OK
+                        error('Cannot add video stream to output file.')
+                    end
+                else
+                    streamObj.aviObj = avi('addframe', streamObj.aviObj, Fig.cdata);
+                end
+
+            case 'video file'
+                if strcmp(streamObj.vidObj.VideoFormat,'Indexed')
+                    if isfield(streamObj,'Colormap')
+                        X = rgb2ind(Fig.cdata,streamObj.Colormap);
+                        Fig.cdata = X;
+                        Fig.colormap = streamObj.Colormap;
+                    else
+                        [X,map] = rgb2ind(Fig.cdata,256);
+                        Fig.cdata = X;
+                        Fig.colormap = map;
+                        streamObj.Colormap = map;
+                    end
+                    writeVideo(streamObj.vidObj, Fig);
+                else
+                    writeVideo(streamObj.vidObj, Fig.cdata);
+                end
+            case 'animated gif file'
+                [A,map] = rgb2ind(Fig.cdata,256);
+                if firstImage
+                    imwrite(A,map,streamObj.fileName,'gif','LoopCount',inf,'DelayTime',1/streamObj.maxfps);
+                else
+                    imwrite(A,map,streamObj.fileName,'gif','WriteMode','append','DelayTime',1/streamObj.maxfps)
+                end
         end
-        
+
     otherwise
         for ifig = 1:length(figures)
             streamObj.imgSeries{ifig} = series_frame(figures(ifig), streamObj.imgSeries{ifig});
@@ -1015,6 +1093,11 @@ switch streamObj.Type
 end
 
 
+function str = filenumber_string(nDigits, number)
+formatString = strcat('%', num2str(nDigits), '.', num2str(nDigits), 'i');
+str = sprintf(formatString, number);
+
+
 function local_eval(scriptname, i)
 eval(scriptname,'')
 
@@ -1023,15 +1106,14 @@ function [Cancel,OPS] = runAnimationDialog(MinT,MaxT)
 output_ops = {...
     ... % name, background render, options
     'no output'   , 0, 0
-    'tif files'   , 1, 0
+    'bmp files'   , 1, 0
+    'gif files'   , 1, 0
     'jpg files'   , 1, 0
     'png files'   , 1, 0
-    'bmp files'   , 1, 0
-    'print/export', 1, 0};
-if 1
-    % VideoWriter
-    output_ops(end+1,:) = {'video file', 0, 1};
-end
+    'tif files'   , 1, 0
+    'print/export', 1, 0
+    'animated gif file', 1, 0
+    'video file'  , 0, 1}; % VideoWriter
 if strncmp(computer,'PC',2) && matlabversionnumber>=6
     % writeavi option available using Video for Windows
     output_ops(end+1,:) = {'avi file', 0, 1};

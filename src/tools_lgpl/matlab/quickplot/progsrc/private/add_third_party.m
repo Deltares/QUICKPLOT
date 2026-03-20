@@ -1,5 +1,7 @@
-function [cmd,cmdargs]=qp_cmdstr(cmdstr)
-%QP_CMDSTR Process QuickPlot command string.
+function add_third_party(type,name)
+%ADD_THIRD_PARTY Search for folders and jar-files to add to the path.
+%   add_third_party('folder',FOLDERNAME)
+%   add_third_party('jar',JARFILE)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -31,60 +33,38 @@ function [cmd,cmdargs]=qp_cmdstr(cmdstr)
 %   $HeadURL$
 %   $Id$
 
-cmdargs={};
-[cmd,rmndr]=strtok(cmdstr);
-cmd=lower(cmd);
-while ~isempty(rmndr)
-    idx=find(rmndr~=32);
-    if isempty(idx)
-        rmndr='';
-    else
-        switch rmndr(idx(1))
-            case ''''
-                rmndr=rmndr(idx(1)+1:end);
-                quotes=find(rmndr=='''');
-                i=1; endquote=[];
-                while i<=length(quotes) && isempty(endquote)
-                    if i==length(quotes) || quotes(i+1)~=quotes(i)+1
-                        endquote=quotes(i);
-                    else
-                        i=i+2;
-                    end
-                end
-                if isempty(endquote)
-                    error('Invalid command argument: unterminated string ''%s',rmndr)
-                else
-                    unquoted=rmndr(1:endquote-1);
-                    % reduce double quotes inside
-                    quotes_inside=quotes(quotes<endquote);
-                    quotes_inside(2:2:end)=[];
-                    unquoted(quotes_inside)=[];
-                    %
-                    if isempty(unquoted)
-                        unquoted = '';
-                    end
-                    cmdargs{end+1}=unquoted;
-                    rmndr=rmndr(endquote+1:end);
-                end
-            case '['
-                rmndr=rmndr(idx(1)+1:end);
-                n = strfind(rmndr,']');
-                if isempty(n)
-                    error('Invalid command argument: unterminated array [%s',rmndr)
-                end
-                cmdargs{end+1}=str2vec(rmndr(1:n(1)-1),'%f');
-
-                rmndr=rmndr(n(1)+1:end);
-            case {'1','2','3','4','5','6','7','8','9','0','.','-','+'}
-                [X,count,err,n]=sscanf(rmndr,'%f',1);
-                if count==1
-                    cmdargs{end+1}=X;
-                    rmndr=rmndr(n:end);
-                else
-                    error(err);
-                end
-            otherwise
-                error('Invalid command argument encountered: %s',rmndr)
+switch type
+    case 'folder'
+        check_dirs = get_check_dirs;
+        for i = 1:length(check_dirs)
+            test_dir = [check_dirs{i},filesep,name];
+            if exist(test_dir, 'dir')
+                addpath(test_dir)
+                break
+            end
         end
-    end
+
+    case 'jar'
+        check_dirs = get_check_dirs;
+        for i = 1:length(check_dirs)
+            test_file = [check_dirs{i},filesep,name];
+            if exist(test_file, 'file')
+                javaaddpath(test_file)
+                break
+            end
+        end
+
+    otherwise
+        error('Only "folder" or "jar" supported as first argument.')
 end
+
+function check_dirs = get_check_dirs
+qp_install_path = qp_basedir('exe');
+up = [filesep, '..'];
+check_dirs = {...
+    qp_install_path ... % new distribution root
+    [qp_install_path, filesep, 'netcdf'] ... % new distribution netcdf-root
+    [qp_install_path, up, up, up, up, filesep, 'third_party_open'] ... % source tree checkout root
+    [qp_install_path, up, up, up, up, filesep, 'third_party_open', filesep, 'netcdf', filesep, 'matlab'] ... % source tree checkout netcdf-root
+    [qp_install_path, up, up, filesep, 'io', filesep, 'netcdf'] ... % open earth tools checkout netcdf-root (obsolete)
+    };

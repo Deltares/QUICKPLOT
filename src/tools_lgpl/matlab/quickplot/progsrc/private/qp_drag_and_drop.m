@@ -1,5 +1,7 @@
-function [cmd,cmdargs]=qp_cmdstr(cmdstr)
-%QP_CMDSTR Process QuickPlot command string.
+function qp_drag_and_drop(cmd,varargin)
+%QP_DRAG_AND_DROP QuickPlot wrapper for drag 'n drop functionality.
+%   Currently only supported for Windows.
+%   Code throws Java exception on Linux.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -31,60 +33,24 @@ function [cmd,cmdargs]=qp_cmdstr(cmdstr)
 %   $HeadURL$
 %   $Id$
 
-cmdargs={};
-[cmd,rmndr]=strtok(cmdstr);
-cmd=lower(cmd);
-while ~isempty(rmndr)
-    idx=find(rmndr~=32);
-    if isempty(idx)
-        rmndr='';
-    else
-        switch rmndr(idx(1))
-            case ''''
-                rmndr=rmndr(idx(1)+1:end);
-                quotes=find(rmndr=='''');
-                i=1; endquote=[];
-                while i<=length(quotes) && isempty(endquote)
-                    if i==length(quotes) || quotes(i+1)~=quotes(i)+1
-                        endquote=quotes(i);
-                    else
-                        i=i+2;
-                    end
-                end
-                if isempty(endquote)
-                    error('Invalid command argument: unterminated string ''%s',rmndr)
-                else
-                    unquoted=rmndr(1:endquote-1);
-                    % reduce double quotes inside
-                    quotes_inside=quotes(quotes<endquote);
-                    quotes_inside(2:2:end)=[];
-                    unquoted(quotes_inside)=[];
-                    %
-                    if isempty(unquoted)
-                        unquoted = '';
-                    end
-                    cmdargs{end+1}=unquoted;
-                    rmndr=rmndr(endquote+1:end);
-                end
-            case '['
-                rmndr=rmndr(idx(1)+1:end);
-                n = strfind(rmndr,']');
-                if isempty(n)
-                    error('Invalid command argument: unterminated array [%s',rmndr)
-                end
-                cmdargs{end+1}=str2vec(rmndr(1:n(1)-1),'%f');
+if ~ispc
+    return
+end
 
-                rmndr=rmndr(n(1)+1:end);
-            case {'1','2','3','4','5','6','7','8','9','0','.','-','+'}
-                [X,count,err,n]=sscanf(rmndr,'%f',1);
-                if count==1
-                    cmdargs{end+1}=X;
-                    rmndr=rmndr(n:end);
-                else
-                    error(err);
-                end
-            otherwise
-                error('Invalid command argument encountered: %s',rmndr)
+switch cmd
+    case 'initialize'
+        try
+            addprop(groot,'ForceIndependentlyHostedFigures');
+        catch
         end
-    end
+        if ~isstandalone
+            add_third_party('folder','uiFileDnD')
+        end
+        
+    case 'activate'
+        try
+            fig_handle = varargin{1};
+            uiFileDnD(fig_handle, @(o,dat)d3d_qp('openfiles',dat.names{:}));
+        catch
+        end
 end

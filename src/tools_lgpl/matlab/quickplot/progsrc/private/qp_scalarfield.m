@@ -359,19 +359,9 @@ switch data.ValLocation
                         end
                         set(hNew,Ops.LineParams{:})
                     case 'contour patches'
-                        hNew=tricontourf(TRI,data.X,data.Y,Val,Ops.Thresholds,'clevel','index0','zplane',0);
-                        for i = 1:length(hNew)
-                            if ~Ops.PlotClass(i)
-                                set(hNew(i),'Visible','off')
-                            end
-                        end
+                        hNew=tricontourf(TRI,data.X,data.Y,Val,Ops.Thresholds,'clevel','index0','zplane',0,'plotclass',Ops.PlotClass);
                     case 'contour patches with lines'
-                        hNew1=tricontourf(TRI,data.X,data.Y,Val,Ops.Thresholds,'clevel','index0','zplane',0);
-                        for i = 1:length(hNew1)
-                            if ~Ops.PlotClass(i)
-                                set(hNew1(i),'Visible','off')
-                            end
-                        end
+                        hNew1=tricontourf(TRI,data.X,data.Y,Val,Ops.Thresholds,'clevel','index0','zplane',0,'plotclass',Ops.PlotClass);
                         hNew2=tricontour(TRI,data.X,data.Y,Val,Ops.Thresholds,'k');
                         set(hNew2,'color',Ops.colour,'linestyle',Ops.linestyle,'marker',Ops.marker,'markeredgecolor',Ops.markercolour,'markerfacecolor',Ops.markerfillcolour)
                         hNew = [hNew1 hNew2];

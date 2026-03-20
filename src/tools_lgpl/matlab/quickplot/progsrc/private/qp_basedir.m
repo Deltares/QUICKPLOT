@@ -3,9 +3,12 @@ function p=qp_basedir(t)
 %
 %   PATH=QP_BASEDIR(TYPE)
 %   where TYPE=
-%      'base' returns base directory of installation (default).
-%      'exe'  returns directory of executable.
-%      'pref' returns preference directory of installation.
+%      'deploy' returns directory of executable.
+%      'exe'    returns directory of executable (default).
+%      'pref'   returns preference directory of installation.
+
+%      'base'   returns base directory of installation if
+%               matlabversionnumber < 7 (obsolete).
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -38,7 +41,7 @@ function p=qp_basedir(t)
 %   $Id$
 
 if nargin==0
-    t='base';
+    t='exe';
 elseif ~ischar(t)
     error('Invalid input argument.');
 end
@@ -93,12 +96,23 @@ end
 function folder = exeroot
 c = computer;
 if strcmp(c(1:2),'PC')
-   [status, result] = system('set PATH');
+   [~, result] = system('set PATH');
+   linefeed = strfind(result,newline);
    eql = strfind(result,'=');
-   col = strfind(result,';');
-   folder = strtrim(result(eql(1)+1:col(1)-1));
-   filename = check_path([folder filesep 'd3d_qp.version']);
-   folder = fileparts(filename);
+   result = result(eql(1)+1:linefeed(1)-1);
+   folders = strsplit(result,';');
+   folder = '';
+   for i = 1:length(folders)
+       try % typically d3d_qp.exe is located in the first folder, but sometimes in the second one ...
+           filename = check_path([folders{i} filesep 'd3d_qp.exe']);
+           folder = fileparts(filename);
+           return
+       catch
+       end
+   end
+   if isempty(folder)
+       error('Unable to locate the QUICKPLOT executable.')
+   end
 else % Unix
    % call a mex file
    folder = fileparts(exepath);
@@ -125,28 +139,9 @@ if strcmp(c(1:2),'PC')
 else % Unix
     dd = fullfile(getenv('HOME'), '.Deltares', '');
 end
-curd=pwd;
-try
-    ensure_directory(dd);
-catch
+[success,~]=mkdir(dd); % need second output argument to avoid 'Directory already exists.' messages
+if ~success
     dd='';
-end
-cd(curd);
-%TODO: Shift to Deltares directory
-
-
-function ensure_directory(dirname)
-if ~exist(dirname, 'dir')
-    [parent, thisdir, ext] = fileparts(dirname);
-    thisdir = [thisdir ext];
-    ensure_directory(parent);
-    cd(parent)
-    c = computer;
-    if c(1:2) == 'PC'
-        s=dos(['mkdir "',thisdir,'"']);
-    else
-        s=unix(['mkdir -p ',thisdir]);
-    end
 end
 
 

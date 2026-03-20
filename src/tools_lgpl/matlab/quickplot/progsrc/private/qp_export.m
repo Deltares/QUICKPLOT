@@ -883,9 +883,11 @@ for f=1:ntim
                                 cv=[cv data(d).Val(:)];
                                 cLabels{end+1}=componentof;
                             end
+                            if ~isempty(cv)
+                                CV = cat(1,CV,cv);
+                            end
                             %
                             if ~isempty(xv)
-                                CV = cat(1,CV,cv);
                                 if size(fv,2) > size(FV,2) && ~isempty(FV)
                                     FV(:,end+1:size(fv,2)) = NaN;
                                 elseif size(fv,2) < size(FV,2)

@@ -1,4 +1,4 @@
-function [Thresholds, InRange] = compthresholds(Ops, minmax, classes_between_thresholds)
+function [Thresholds, InRange] = compthresholds(Ops, minmax_data, classes_between_thresholds)
 %COMPTHRESHOLDS Determine automatic threshold levels.
 %   THRESHOLDS = COMPTHRESHOLDS(OPS,LIMITS,BETWEEN) determines the
 %   threshold levels. OPS is a data structure. LIMITS is an array of length
@@ -57,37 +57,42 @@ if isempty(Thresholds)
     Thresholds = 10;
 end
 
+% use colour limits if provided
+if ~isempty(Ops.colourlimits)
+    minmax = Ops.colourlimits;
+    if isstruct(Thresholds) || is_positive_integer(Thresholds)
+        if any(~isfinite(minmax))
+            ui_message('warning','Infinite colour limits are not allowed when specifying only the number of thresholds or threshold step; using data range instead.')
+            minmax = minmax_data;
+        end
+    end
+else
+    minmax = minmax_data;
+end
+
+% use symmetric limits if requested
+if Ops.symmetriccolourlimits
+    minmax = [-1 1] * max(abs(minmax));
+end
 % broaden the range slightly to make sure that all values are within the
 % range
-if abs(minmax(1)) > eps(0)*1e6
+if abs(minmax(1)) > eps(0)*1e6 && isfinite(minmax(1))
     minmax(1) = minmax(1) - eps(minmax(1));
 end
-if abs(minmax(end)) > eps(0)*1e6
+if abs(minmax(end)) > eps(0)*1e6 && isfinite(minmax(end))
     minmax(end) = minmax(end) + eps(minmax(end));
 end
 
 if isstruct(Thresholds) % Threshold step given
+    thresholdsBasedOnMinmax = true;
 
     step = Thresholds.step;
-    % use colour limits if provided
-    if ~isempty(Ops.colourlimits)
-        minmax = Ops.colourlimits;
-    end
     Thresholds = step*(floor(minmax(1)/step):ceil(minmax(2)/step));
     Thresholds([1, end]) = minmax;
 
-elseif numel(Thresholds) == 1 && ...
-        isequal(Thresholds, round(Thresholds)) && ...
-        Thresholds > 0 % number of Thresholds given
+elseif is_positive_integer(Thresholds) % number of Thresholds given
+    thresholdsBasedOnMinmax = true;
 
-    % use colour limits if provided
-    if ~isempty(Ops.colourlimits)
-        minmax=Ops.colourlimits;
-    end
-    % use symmetric limits if requested
-    if Ops.symmetriccolourlimits
-        minmax=[-1 1]*max(abs(minmax));
-    end
     % transform to linear 
     if classes_between_thresholds
         LocStartClass = 0;
@@ -129,6 +134,7 @@ elseif numel(Thresholds) == 1 && ...
     end
 
 else % actual Thresholds given
+    thresholdsBasedOnMinmax = false;
 
     % use colour limits if provided
     if ~isempty(Ops.colourlimits) && isfield(Ops,'climclipping') && Ops.climclipping
@@ -153,34 +159,63 @@ elseif ~isempty(Ops.colourlimits)
     else
         InRange = true(1,length(Thresholds)-1);
         if Thresholds(1) > Ops.colourlimits(1)
-            Thresholds = [-inf, Ops.colourlimits(1), Thresholds];
-            InRange = [false, true, InRange];
+            if isfinite(Ops.colourlimits(1))
+                Thresholds = [-inf, Ops.colourlimits(1), Thresholds];
+                InRange = [false, true, InRange];
+            else
+                Thresholds = [-inf, Thresholds];
+                InRange = [true, InRange];
+            end
         elseif isfinite(Thresholds(1))
             Thresholds = [-inf, Thresholds];
             InRange = [false, InRange];
         end
-        if Thresholds(end) > Ops.colourlimits(2)
-            Thresholds = [Thresholds, Ops.colourlimits(2), inf];
-            InRange = [InRange, true, false];
+        if Thresholds(end) < Ops.colourlimits(2)
+            if isfinite(Ops.colourlimits(2))
+                Thresholds = [Thresholds, Ops.colourlimits(2), inf];
+                InRange = [InRange, true, false];
+            else
+                Thresholds = [Thresholds, inf];
+                InRange = [InRange, true];
+            end
         elseif isfinite(Thresholds(end))
             Thresholds = [Thresholds, inf];
             InRange = [InRange, false];
         end
     end
-else
+
+    if ~isfield(Ops,'climclipping') || ~Ops.climclipping
+        InRange(:) = true;
+    end
+
+else % no colour limits set, thus we depend on the dynamics data limits
+    % There are no data value smaller than minmax(1) and larger than
+    % minmax(2).
     if isempty(Thresholds)
-        Thresholds = [-inf, inf];
+        Thresholds = minmax;
     else
-        if isfinite(Thresholds(1)) && Thresholds(1) > minmax(1)
+        if minmax(1) < Thresholds(1)
+            Thresholds = [minmax(1), Thresholds];
+        elseif isfinite(Thresholds(1)) && ~thresholdsBasedOnMinmax
             Thresholds = [-inf, Thresholds];
+        else
+            % Thresholds(1) is already equal to -inf or minmax(1)
         end
-        if isfinite(Thresholds(end)) && Thresholds(end) < minmax(2)
+        if minmax(2) > Thresholds(end)
+            Thresholds = [Thresholds, minmax(2)];
+        elseif isfinite(Thresholds(end)) && ~thresholdsBasedOnMinmax
             Thresholds = [Thresholds, inf];
+        else
+            % Thresholds(end) is already equal to inf or minmax(2)
         end
     end
     InRange = true(1,length(Thresholds)-1);
 end
 
-if ~isfield(Ops,'climclipping') || ~Ops.climclipping
-    InRange(:) = true;
+
+function bool = is_positive_integer(value)
+if isscalar(value) && isequal(value, round(value)) && value > 0
+    bool = true;
+else
+    bool = false;
 end
