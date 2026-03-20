@@ -380,12 +380,19 @@ else
         % Correct any mismatch between the number of data columns and the
         % number of column labels on the label side ...
         %
-        if length(Params)<n
-            for i=n:-1:(length(Params)+1)
+        if isempty(Params)
+            Params = getcollabels(n,xyz.Header);
+            for i = 1:n
+                if isempty(Params{i})
+                    Params{i} = sprintf('Parameter %i',i);
+                end
+            end
+        elseif length(Params) < n
+            for i = n:-1:(length(Params)+1)
                 Params{i}=sprintf('Parameter %i',i);
             end
-        elseif length(Params)>n
-            Params=Params(1:n);
+        elseif length(Params) > n
+            Params = Params(1:n);
         end
         fclose(fid);
     catch err
@@ -421,10 +428,10 @@ if isstruct(xyz)
     xyz.Y = [];
     xyz.Time = [];
     for i = 1:length(xyz.Params)
-        switch lower(xyz.Params{i})
-            case {'longitude','lon','x','xp','x-coordinate','x coordinate','x_coordinate','x_gpp','distance','chainage'}
+        switch lower(strtok(xyz.Params{i}))
+            case {'longitude','lon','x','xp','x-coordinate','x_coordinate','x_gpp','distance','chainage'}
                 xyz.X = i;
-            case {'latitude' ,'lat','y','yp','y-coordinate','y coordinate','y_coordinate','y_gpp'}
+            case {'latitude' ,'lat','y','yp','y-coordinate','y_coordinate','y_gpp'}
                 xyz.Y = i;
             case 'time'
                 if i>1 && strcmpi(xyz.Params{i-1},'date')
@@ -432,7 +439,7 @@ if isstruct(xyz)
                 else
                     xyz.Time = i;
                 end
-            case {'datetime','date and time'}
+            case {'datetime','date'}
                 xyz.Time = i;
         end
     end
@@ -469,7 +476,7 @@ if isstruct(xyz)
             end
         end
         if isempty(iTime)
-            [Times,idum,iTime] = unique(gettimes(xyz.XYZ(:,xyz.Time)),'stable');
+            [Times,idum,iTime] = unique(gettimes(xyz.XYZ(:,xyz.Time),xyz.Params(xyz.Time)),'stable');
             nLoc = hist(iTime,max(iTime));
         end
         %
@@ -517,13 +524,19 @@ fprintf(fid,format,xyz);
 fclose(fid);
 
 
-function Times = gettimes(Times)
+function Times = gettimes(Times,ColLabels)
 if size(Times,2)==2 % gpp => 20140118 105120
     d = Times(:,1);
     s = Times(:,2);
-else % swan => 20140118.105120
-    d = floor(Times);
-    s = round((Times - d)*1000000);
+else
+    switch ColLabels{1}
+        case 'time (min)'
+            Times = Times/1440;
+            return
+        otherwise % swan => 20140118.105120
+            d = floor(Times);
+            s = round((Times - d)*1000000);
+    end
 end
 m = floor(d/100);
 d = d - 100*m;
