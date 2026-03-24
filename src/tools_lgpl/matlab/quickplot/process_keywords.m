@@ -73,7 +73,7 @@ for i = 1:length(d)
         %
         % process the keywords
         %
-        ValueOf = vararin{1};
+        ValueOf = varargin{1};
         Keywords = fieldnames(ValueOf);
         for l = 1:length(c)
             for k = 1:length(Keywords)
