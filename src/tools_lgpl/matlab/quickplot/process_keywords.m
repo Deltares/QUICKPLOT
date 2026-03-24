@@ -47,7 +47,7 @@ for i = 1:length(d)
         %
         % recursive processing of child directories
         %
-        svnstripfile([basedir filesep d(i).name],varargin{:})
+        process_keywords([basedir filesep d(i).name],varargin{:})
     else
         [p,f,e] = fileparts(d(i).name);
         if ~strcmp(e,'.m') && ~strcmp(e,'.c') && ~strcmp(e,'.cpp') && ~strcmp(e,'.ini')
