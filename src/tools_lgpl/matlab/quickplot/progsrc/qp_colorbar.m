@@ -15,8 +15,6 @@ function handle=qp_colorbar(varargin)
 %   If called with COLORBAR(H) or for an existing colorbar, don't change
 %   the NextPlot property.
 
-%   $Id$
-
 rloc=[];
 loc = 'vert';
 h = [];
