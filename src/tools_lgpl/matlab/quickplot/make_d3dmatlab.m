@@ -140,13 +140,10 @@ fstrrep([targetdir,filesep,'Contents.m'], '<VERSION>', qpversion)
 fstrrep([targetdir,filesep,'Contents.m'], '<RELEASE>', release)
 fstrrep([targetdir,filesep,'Contents.m'], '<CREATIONDATE>', DateStr) % MATLAB toolboxes don't have a time stamp
 
-fprintf('Stripping files ...\n');
-HeadURL_str = ['Source ', repo_url, ': ', hash];
-Id_str = ['Release ', release, ': ', DateTimeStr];
-svnstripfile(targetdir, HeadURL_str, Id_str)
-
-%fprintf('Pcoding files ...\n');
-%pmfile('dir',targetdir,targetdir,'-verbose')
+fprintf('Add source information to all files ...\n');
+Keywords.HeadURL = ['Source ', repo_url, ': ', hash];
+Keywords.Id = ['Release ', release, ': ', DateTimeStr];
+process_keywords(targetdir, Keywords)
 
 fprintf('Cleaning up directory ...\n');
 X = {'*.asv'
@@ -170,7 +167,7 @@ for i = 1:length(d)
     target = [targetdir filesep d(i).name];
     if d(i).isdir
         switch d(i).name
-            case {'.','..','.svn'}
+            case {'.','..'}
                 % skip
             otherwise
                 mkdir(target);

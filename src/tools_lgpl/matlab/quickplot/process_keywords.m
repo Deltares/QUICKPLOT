@@ -1,14 +1,9 @@
-function svnstripfile(basedir, varargin)
-%SVNSTRIPFILE Strip $-sign from SVN keywords in files.
-%    SVNSTRIPFILE(BaseDir) recursively processes all .m, .c and .cpp files in
-%    the directory BaseDir and below, stripping away the $-signs from the SVN
-%    keywords HeadURL and Id (more keywords can easily be added).
-%
-%    This tool should be run after checking out source code maintained in one
-%    location before committing it to another subversion location for
-%    distribution. If the $-signs are not stripped, then there is a fair chance
-%    that the revision data is used from the second location rather than the
-%    information from the first location where the code is actually maintained.
+function process_keywords(basedir, varargin)
+%PROCESS_KEYWORDS Replace keywords by strings
+%    PROCESS_KEYWORDS(BaseDir,KeywordValues) recursively processes all .m, .c
+%    and .cpp files in the directory BaseDir and below, replacing the keywords
+%    specified as fields in KeywordValues by the string value assigned to those
+%    fields.
 
 %----- LGPL --------------------------------------------------------------------
 %
@@ -40,7 +35,6 @@ function svnstripfile(basedir, varargin)
 %   $HeadURL$
 %   $Id$
 
-nstrings = length(varargin);
 d = dir(basedir);
 for i = 1:length(d)
     if d(i).isdir
@@ -77,20 +71,18 @@ for i = 1:length(d)
         end
         fclose(fid);
         %
-        % filter lines
+        % process the keywords
         %
-        Keywords = {'HeadURL','Id'};
+        ValueOf = vararin{1};
+        Keywords = fieldnames(ValueOf);
         for l = 1:length(c)
             for k = 1:length(Keywords)
-                j = strfind(c{l},['$' Keywords{k}]);
+                keyword = Keywords{k};
+                j = strfind(c{l},['$' keyword]);
                 if ~isempty(j)
                     j2 = strfind(c{l},'$');
                     j2 = min(j2(j2>j));
-                    if k > nstrings
-                        c{l} = [c{l}(1:j-1) c{l}(j+1:j2-1) c{l}(j2+1:end)];
-                    else
-                        c{l} = [c{l}(1:j-1) varargin{k} c{l}(j2+1:end)];
-                    end
+                    c{l} = [c{l}(1:j-1) ValueOf.(keyword) c{l}(j2+1:end)];
                 end
             end
         end
