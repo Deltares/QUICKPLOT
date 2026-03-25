@@ -18,7 +18,7 @@ function varargout=netcdffil(FI,domain,field,cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2025 Stichting Deltares.                                     
+%   Copyright (C) 2011-2026 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -197,6 +197,7 @@ switch cmd
         [XYRead, DataRead, DataInCell, ZRead]=gridcelldata(cmd);
 end
 
+DataRead = DataRead & Props.NVal ~= 0;
 DimFlag=Props.DimFlag;
 
 % initialize and read indices ...
@@ -224,6 +225,12 @@ if iSource > 0
     is_dflowfm = ~isempty(strfind(FI.Attribute(iSource).Value,'D-Flow FM'));
 else
     is_dflowfm = false;
+end
+if ~is_dflowfm
+    iHistory = ustrcmpi('history',gAtts);
+    if iHistory > 0
+        is_dflowfm = ~isempty(strfind(FI.Attribute(iHistory).Value,'D-Flow FM'));
+    end
 end
 if FI.NumDomains>1
     args = varargin;
@@ -998,8 +1005,18 @@ if XYRead || XYneeded || ZRead
         vCoordExtended = false;
         vdimid = Info.Z;
         CoordInfo = FI.Dataset(vdimid);
-        if is_dflowfm
-            if strend(CoordInfo.Name,'_zcc')
+        if is_dflowfm && DataInCell
+            if strend(CoordInfo.Name,'_c')
+                iName  = strrep(CoordInfo.Name,'_c','_w');
+                iDimid = strcmp(iName,{FI.Dataset.Name});
+                if none(iDimid)
+                    error('Unable to locate "%s" for the verical location of the cell interfaces.',iName)
+                end
+                CoordInfo = FI.Dataset(iDimid);
+                idx{K_} = unique([idx{K_} idx{K_}+1]);
+                Props.DimName{K_} = CoordInfo.Dimension{3};
+                vCoordExtended = true;
+            elseif strend(CoordInfo.Name,'_zcc')
                 iName  = strrep(CoordInfo.Name,'_zcc','_zw');
                 iDimid = strcmp(iName,{FI.Dataset.Name});
                 if none(iDimid)
@@ -2981,10 +2998,10 @@ if ~isempty(connect)
     else
         [Ans.FaceNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
         nNodes = sum(~isnan(Ans.FaceNodeConnect),2);
-        min_nNodes = min(nNodes);
-        if min_nNodes<3
-            nError = sum(nNodes==min_nNodes);
-            error('%i faces found with %i nodes. Number of nodes per face should be at least 3.',nError,min_nNodes)
+        nError = sum(nNodes<3);
+        if nError > 0
+            Ans.FaceNodeConnect(nNodes<3,:)=[];
+            ui_message('warning','%i faces found with less than 3 nodes. Those faces have been removed.',nError)
         end
         if isempty(FI.Dataset(iconnect).Attribute)
             istart = [];
@@ -3010,7 +3027,6 @@ if ~isempty(connect)
 end
 %
 connect = strmatch('edge_node_connectivity',meshAttribNames,'exact');
-iconnect = [];
 if isfield(Ans,'ValLocation') && strcmp(Ans.ValLocation,'EDGE')
     data_at_edges = true;
 elseif ~isfield(Ans,'ValLocation') && dloc == 1
@@ -3018,33 +3034,31 @@ elseif ~isfield(Ans,'ValLocation') && dloc == 1
 else
     data_at_edges = false;
 end
-if data_at_edges || ~isfield(Ans,'FaceNodeConnect') || (~DataRead && ~isempty(connect))
-    % "~DataRead" is a hack to load EdgeNodeConnect if available for use in GridView
+if ~isempty(connect) && (data_at_edges || ~isfield(Ans,'FaceNodeConnect') || ~DataRead)
+    % "~DataRead" is a hack to load EdgeNodeConnect if available for use in GridView (and for mesh plots)
     iconnect = strmatch(meshInfo.Attribute(connect).Value,{FI.Dataset.Name},'exact');
     if isempty(iconnect)
         ui_message('warning','The edge_node_connectivity variable "%s" could not be found! Using empty set.',meshInfo.Attribute(connect).Value)
         Ans.EdgeNodeConnect = zeros(0,2);
     else
         [Ans.EdgeNodeConnect, status] = qp_netcdf_get(FI,meshInfo.Attribute(connect).Value);
-    end
-end
-if isfield(Ans,'EdgeNodeConnect') && ~isempty(iconnect)
-    if isempty(FI.Dataset(iconnect).Attribute)
-        istart = [];
-    else
-        istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name},'exact');
-    end
-    if isempty(istart)
-        start = 0;
-    else
-        start = FI.Dataset(iconnect).Attribute(istart).Value;
-    end
-    start = verify_start_index(istart, start, min(Ans.EdgeNodeConnect(Ans.EdgeNodeConnect>=0)), max(Ans.EdgeNodeConnect(:)), length(Ans.X), 'node', meshInfo.Attribute(connect).Value);
-    Ans.EdgeNodeConnect = Ans.EdgeNodeConnect - start + 1;
-    edgeInvalid = any(Ans.EdgeNodeConnect<1,2);
-    if any(edgeInvalid)
-        ui_message('warning','%i invalid edges detected in edge-node connectivity variable %s; edges removed.',sum(edgeInvalid),meshInfo.Attribute(connect).Value)
-        Ans.EdgeNodeConnect(edgeInvalid,:) = [];
+        if isempty(FI.Dataset(iconnect).Attribute)
+            istart = [];
+        else
+            istart = strmatch('start_index',{FI.Dataset(iconnect).Attribute.Name},'exact');
+        end
+        if isempty(istart)
+            start = 0;
+        else
+            start = FI.Dataset(iconnect).Attribute(istart).Value;
+        end
+        start = verify_start_index(istart, start, min(Ans.EdgeNodeConnect(Ans.EdgeNodeConnect>=0)), max(Ans.EdgeNodeConnect(:)), length(Ans.X), 'node', meshInfo.Attribute(connect).Value);
+        Ans.EdgeNodeConnect = Ans.EdgeNodeConnect - start + 1;
+        edgeInvalid = any(Ans.EdgeNodeConnect<1,2);
+        if any(edgeInvalid)
+            ui_message('warning','%i invalid edges detected in edge-node connectivity variable %s; edges removed.',sum(edgeInvalid),meshInfo.Attribute(connect).Value)
+            Ans.EdgeNodeConnect(edgeInvalid,:) = [];
+        end
     end
 end
 %

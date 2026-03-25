@@ -125,6 +125,9 @@ end
 x0 = 1:nz0;
 y0 = (1:mz0)';
 
+x(isnan(x)) = min(x(:));
+y(isnan(y)) = min(y(:));
+
 if nin <= 2
     [mc,nc] = size(argin{1});
     lims = [1 nc 1 mc];

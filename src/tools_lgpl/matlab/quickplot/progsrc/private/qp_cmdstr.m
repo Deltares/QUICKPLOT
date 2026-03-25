@@ -3,7 +3,7 @@ function [cmd,cmdargs]=qp_cmdstr(cmdstr)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2025 Stichting Deltares.                                     
+%   Copyright (C) 2011-2026 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -60,6 +60,9 @@ while ~isempty(rmndr)
                     quotes_inside(2:2:end)=[];
                     unquoted(quotes_inside)=[];
                     %
+                    if isempty(unquoted)
+                        unquoted = '';
+                    end
                     cmdargs{end+1}=unquoted;
                     rmndr=rmndr(endquote+1:end);
                 end

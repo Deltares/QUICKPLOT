@@ -31,6 +31,7 @@ function SERINFO=series_init(varargin),
 %     'tif' or 'tiff'   Tagged Image File Format (TIFF)
 %     'jpg' or 'jpeg'   Joint Photographic Experts Group (JPEG)
 %     'bmp'             Windows Bitmap (BMP)
+%     'gif'             Graphics Interchange Format (GIF)
 %     'png'             Portable Network Graphics (PNG)
 %     'hdf'             Hierarchical Data Format (HDF)
 %     'pcx'             Windows Paintbrush (PCX)
@@ -43,7 +44,7 @@ function SERINFO=series_init(varargin),
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2025 Stichting Deltares.                                     
+%   Copyright (C) 2011-2026 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -94,7 +95,7 @@ while i<=nargin
                     error('Error while reading digits.');
                 end
                 subcase=varargin{i};
-            case {'tif_','tiff_','bmp_','png_','hdf_','tif','tiff','jpg','jpeg','bmp','png','hdf','pcx','xwd'}
+            case {'tif_','tiff_','bmp_','png_','hdf_','tif','tiff','jpg','jpeg','bmp','gif','png','hdf','pcx','xwd'}
                 Type=varargin{i};
             case 'tiff0' % backward compatibility
                 Type='tiff_';

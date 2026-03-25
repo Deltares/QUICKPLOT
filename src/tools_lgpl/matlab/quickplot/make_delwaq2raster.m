@@ -7,7 +7,7 @@ function make_delwaq2raster(basedir,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %
-%   Copyright (C) 2011-2025 Stichting Deltares.
+%   Copyright (C) 2011-2026 Stichting Deltares.
 %
 %   This library is free software; you can redistribute it and/or
 %   modify it under the terms of the GNU Lesser General Public
@@ -92,6 +92,7 @@ end
 copyfile('../../../../third_party_open/netcdf/matlab/netcdfAll-4.1.jar','.')
 addpath ../../../../third_party_open/netcdf/matlab/mexnc
 addpath ../../../../third_party_open/netcdf/matlab/snctools
+addpath ../../../../third_party_open/uiFileDnD
 %
 if nargin<4
     [qpversion,hash,repo_url] = get_qpversion;

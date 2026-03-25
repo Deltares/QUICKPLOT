@@ -12,7 +12,7 @@ function cmap=md_colormap(varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2025 Stichting Deltares.                                     
+%   Copyright (C) 2011-2026 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -306,7 +306,7 @@ switch cmd
         S = convertcolors(S,newspace);
     case 'save'
         try
-            qp_path=qp_basedir;
+            qp_path=qp_basedir('exe');
             clrmap_path=[qp_path filesep 'colormaps'];
         catch
             clrmap_path=pwd;
@@ -386,7 +386,7 @@ switch cmd
         switch cmd
             case 'load'
                 try
-                    qp_path=qp_basedir;
+                    qp_path=qp_basedir('exe');
                     clrmap_path=[qp_path filesep 'colormaps'];
                 catch
                     clrmap_path=pwd;

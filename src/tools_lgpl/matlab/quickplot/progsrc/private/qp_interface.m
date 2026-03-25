@@ -3,7 +3,7 @@ function fig=qp_interface(showUI)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2025 Stichting Deltares.                                     
+%   Copyright (C) 2011-2026 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -84,7 +84,9 @@ dims=[339+panewidth 400];
 pos(1:2)=PosUR-dims;
 pos(3:4)=dims;
 
+qp_drag_and_drop('initialize')
 mfig = qp_uifigure('Delft3D-QUICKPLOT','','Delft3D-QUICKPLOT',pos);
+qp_drag_and_drop('activate',mfig)
 try
     icon_filename = d3d_qp('iconpath');
     if exist(icon_filename,'file')
@@ -518,7 +520,8 @@ PM.OpnFig = qp_toolbarpush(PM.TB,'openfigure',0,'Load a figure from file');
 PM.SavFig = qp_toolbarpush(PM.TB,'savefigure',0,'Save a figure to a MATLAB fig file');
 PM.FigOpt = qp_toolbarpush(PM.TB,'figureoptions',0,'Set figure options');
 PM.ClsFig = qp_toolbarpush(PM.TB,'closefigure',0,'Close active figure (without confirmation)');
-set([PM.SavFig PM.FigOpt PM.ClsFig],'enable','off');
+PM.Animate = qp_toolbarpush(PM.TB,'startanim',0,'Start Animation');
+set([PM.SavFig PM.FigOpt PM.ClsFig PM.Animate],'enable','off');
 %
 PM.Separator = axes('Parent',PM.Fig, ...
     'Visible','off', ...

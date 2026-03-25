@@ -3,7 +3,7 @@ function [hNew,Param,Parent] = qp_plot_ugrid(hNew,Parent,Param,data,Ops,Props)
 
 %----- LGPL --------------------------------------------------------------------
 %
-%   Copyright (C) 2011-2025 Stichting Deltares.
+%   Copyright (C) 2011-2026 Stichting Deltares.
 %
 %   This library is free software; you can redistribute it and/or
 %   modify it under the terms of the GNU Lesser General Public
@@ -130,7 +130,7 @@ switch NVal
                         'markerfacecolor',Ops.markerfillcolour, ...
                         'parent',Parent);
                 end
-                set(hNew,'xdata',X,'ydata',Y);
+                set(hNew(1),'xdata',X,'ydata',Y);
                 set(hNew(2),'xdata',Xp,'ydata',Yp);
                 %
                 if strcmp(Ops.colourbar,'none')

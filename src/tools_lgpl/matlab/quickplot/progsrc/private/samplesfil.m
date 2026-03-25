@@ -18,7 +18,7 @@ function varargout=samplesfil(FI,domain,field,cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %
-%   Copyright (C) 2011-2025 Stichting Deltares.
+%   Copyright (C) 2011-2026 Stichting Deltares.
 %
 %   This library is free software; you can redistribute it and/or
 %   modify it under the terms of the GNU Lesser General Public
@@ -417,7 +417,7 @@ if (length(FI.nLoc)==1 && FI.nLoc<2) || isempty(FI.Y) || isempty(FI.X) || iscell
 end
 
 if isempty(FI.X) || isempty(FI.Y)
-    if (isempty(FI.X) && isempty(FI.Y) && FI.nLoc>1) || ...
+    if (isempty(FI.X) && isempty(FI.Y) && isscalar(FI.nLoc) && FI.nLoc>1) || ...
             (isfield(FI,'Table') && strcmp(FI.Table,'points'))
         for i=1:NPar
             Out(i+2).DimFlag(2) = 5;

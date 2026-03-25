@@ -19,7 +19,7 @@ function h = qp_colormap(MapName,M)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2025 Stichting Deltares.                                     
+%   Copyright (C) 2011-2026 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -70,7 +70,7 @@ if isempty(COLORMAPS) || strcmp(MapName,':reload')
     %
     % Retreive directory information from QP_BASEDIR.
     %
-    qp_path = qp_basedir('base');
+    qp_path = qp_basedir('exe');
     clrmap_path = [qp_path filesep 'colormaps'];
     %
     % Reset list of loaded colormaps.

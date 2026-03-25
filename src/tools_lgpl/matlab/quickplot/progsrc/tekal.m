@@ -67,7 +67,7 @@ function varargout = tekal(cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2025 Stichting Deltares.                                     
+%   Copyright (C) 2011-2026 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -710,22 +710,6 @@ else
 end
 
 fclose(fid);
-
-
-function ColLabels=getcollabels(ncol,Cmnt)
-ColLabels={}; % necessary for standalone version
-ColLabels(1:ncol,1)={''};
-if ~isempty(Cmnt)
-    for i=1:length(Cmnt)
-        [Tk,Rm]=strtok(Cmnt{i}(2:end));
-        if (length(Cmnt{i})>10) && strcmpi(Tk,'column')
-            [a,c,err,idx]=sscanf(Rm,'%i%*[ :=]%c',2);
-            if (c==2) && a(1)<=ncol && a(1)>0
-                ColLabels{a(1)}=deblank(Rm(idx-1:end));
-            end
-        end
-    end
-end
 
 
 function Time=gettimestamp(Cmnt)

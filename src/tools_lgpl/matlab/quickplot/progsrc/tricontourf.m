@@ -25,23 +25,23 @@ function H=tricontourf(tri,x,y,z,v,varargin)
 %      x=rand(20); y=rand(20); z=rand(20); tri=delaunay(x,y);
 %      thresholds=.3:.1:.8;
 %      subplot(2,2,1)
-%      tricontourf(tri,x,y,z,thresholds); title('classic'); colorbar
+%      tricontourf(tri,x,y,z,thresholds); title('classic'); qp_colorbar
 %      subplot(2,2,2)
 %      tricontourf(tri,x,y,z,thresholds,'clevel','min');
-%      title('min'); classbar(colorbar,thresholds)
+%      title('min'); classbar(qp_colorbar,thresholds)
 %      subplot(2,2,3)
 %      tricontourf(tri,x,y,z,thresholds,'clevel','max');
-%      title('max'); classbar(colorbar,thresholds,'max')
+%      title('max'); classbar(qp_colorbar,thresholds,'max')
 %      subplot(2,2,4)
 %      tricontourf(tri,x,y,z,thresholds,'clevel','index');
-%      title('index'); colorbar
-%      classbar(colorbar,1:length(thresholds)+1,'labelcolor','label',thresholds)
+%      title('index');
+%      classbar(qp_colorbar,1:length(thresholds)+1,'labelcolor','label',thresholds)
 %
 %   See also CONTOUR, CONTOURF, TRICONTOUR
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2025 Stichting Deltares.                                     
+%   Copyright (C) 2011-2026 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -638,17 +638,27 @@ for LevelNr=1:nLevels+1
                 clevel=LevelNr;
                 userdataopt={'userdata',level};
         end
-        visopt={};
-        if ~isfinite(clevel) || isempty(Coord) || ~plotThisClass
+        if plotThisClass && isfinite(clevel)
+            visopt={};
+            if isempty(Coord)
+                cdata = clevel;
+            else
+                cdata = repmat(clevel,size(TRI,1),1);
+            end
+        else
             visopt={'visible','off'};
+            cdata = NaN(size(TRI,1),1);
         end
         NewH = patch('Vertices',Coord(:,1:3), ...
             'Faces',TRI, ...
-            'facevertexcdata',clevel*ones(size(TRI,1),1), ...
+            'facevertexcdata',cdata, ...
             'edgecolor','none', ...
             'facecolor','flat', ...
             userdataopt{:}, ...
             visopt{:});
+        if isempty(Coord) && plotThisClass && isfinite(clevel)
+            set(NewH,'facevertexcdata',clevel)
+        end
         setappdata(NewH,'MinThreshold',plevel);
         setappdata(NewH,'MaxThreshold',level);
         H=[H NewH];

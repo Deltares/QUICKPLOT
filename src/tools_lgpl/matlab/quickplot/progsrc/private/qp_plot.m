@@ -3,7 +3,7 @@ function [hNewVec,Error,FileInfo,PlotState]=qp_plot(PlotState,Ops)
 
 %----- LGPL --------------------------------------------------------------------
 %
-%   Copyright (C) 2011-2025 Stichting Deltares.
+%   Copyright (C) 2011-2026 Stichting Deltares.
 %
 %   This library is free software; you can redistribute it and/or
 %   modify it under the terms of the GNU Lesser General Public
@@ -346,7 +346,7 @@ if isfield(Ops,'plotcoordinate')
     data = compute_plotcoordinate(data,Ops.plotcoordinate);
 end
 
-if length(data) == 1 && ...
+if isscalar(data) && ...
         (strcmp(Ops.axestype,'Time-Z') || ...
         strcmp(Ops.axestype,'Val-Z'))
     if isfield(data,'ValLocation')
@@ -759,22 +759,19 @@ if Props.NVal==6
         Ops.Thresholds = 1:length(data(1).Classes);
     end
     Ops.Thresholds(end+1) = inf;
+    Ops.PlotClass = isfinite(Ops.Thresholds);
 elseif isfield(Ops,'thresholds') && ~strcmp(Ops.thresholds,'none')
-    if isfield(Ops,'colourlimits') && isequal(size(Ops.colourlimits),[1 2])
-        minmax = Ops.colourlimits;
-    else
-        miv = inf;
-        mv  = -inf;
-        for d = 1:length(data)
-            miv = min(miv,min(data(d).Val(:)));
-            mv  = max(mv ,max(data(d).Val(:)));
-        end
-        if isfield(Ops,'symmetriccolourlimits') && Ops.symmetriccolourlimits
-            miv = min(miv,-mv);
-            mv = max(mv,-miv);
-        end
-        minmax = [miv mv];
+    miv = inf;
+    mv  = -inf;
+    for d = 1:length(data)
+        miv = min(miv,min(data(d).Val(:)));
+        mv  = max(mv ,max(data(d).Val(:)));
     end
+    if isfield(Ops,'symmetriccolourlimits') && Ops.symmetriccolourlimits
+        miv = min(miv,-mv);
+        mv = max(mv,-miv);
+    end
+    minmax = [miv mv];
     [Ops.Thresholds,Ops.PlotClass] = compthresholds(Ops,minmax,classes_between_thresholds);
 else
     Ops.Thresholds = 'none';
@@ -802,11 +799,11 @@ end
 stn='';
 if any(cellfun('isclass',Selected,'cell'))
     stn='';
-elseif isfield(data,'LocationName') && length(data)==1
+elseif isfield(data,'LocationName') && isscalar(data)
     if ischar(data.LocationName)
         stn = data.LocationName;
     elseif iscell(data.LocationName)
-        if length(data.LocationName)==1
+        if isscalar(data.LocationName)
             stn = data.LocationName{1};
         else
             stn = '<multiple>';
@@ -847,7 +844,7 @@ if ~isempty(SubField)
 end
 
 TStr='';
-if isfield(data,'Time') && length(data(1).Time)==1
+if isfield(data,'Time') && isscalar(data(1).Time)
     TStr = qp_time2str(data(1).Time,DimFlag(T_));
     if isfield(Ops,'axestimezone_shift') && ~isnan(Ops.axestimezone_shift)
         TStr = [TStr ' (' Ops.axestimezone_str ')'];
@@ -999,6 +996,7 @@ if isfield(Ops,'basicaxestype') && ~isempty(strfind(Ops.basicaxestype,'Z'))
     end
 end
 
+drawColourbar = isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none');
 ChangeCLim=1;
 
 diststr = 'x coordinate';
@@ -1108,7 +1106,6 @@ elseif NVal==-1
         %      setaxesprops(Parent,'<blocking>')
     end
 else
-    Param.ChangeCLim=1;
     Param.NVal=NVal;
     Param.multiple=multiple;
     Param.FirstFrame=FirstFrame;
@@ -1171,12 +1168,12 @@ else
     end
     hNew = hNew(1:length(data));
 
-    ChangeCLim = strcmp(Ops.Thresholds,'none') || ~isempty(Ops.colourlimits);
+    ChangeCLim = strcmp(Ops.Thresholds,'none') && ~isempty(Ops.colourlimits);
 
     hNewVec=cat(1,hNew{:});
 end
 
-if isempty(specialplot) && isfield(Ops,'basicaxestype') && ~isempty(Ops.basicaxestype) && length(Parent)==1
+if isempty(specialplot) && isfield(Ops,'basicaxestype') && ~isempty(Ops.basicaxestype) && isscalar(Parent)
     axestype = multiline(strtok(Ops.basicaxestype),'-','cell');
     nAxes = length(axestype);
     %
@@ -1282,7 +1279,10 @@ Error=0;
 
 if isfield(Ops,'colourlimits') && ~isempty(Ops.colourlimits)
     if ChangeCLim
-        set(Parent,'clim',Ops.colourlimits)
+        cl = Ops.colourlimits;
+        cl(1) = min(max(cl(1), -1e30), +1e30);
+        cl(2) = max(min(cl(2), +1e30),cl(1) + eps(cl(1)));
+        set(Parent,'clim',cl)
     end
 elseif isfield(Ops,'symmetriccolourlimits') && Ops.symmetriccolourlimits
     clim = limits(hNewVec,'clim');
@@ -1304,7 +1304,7 @@ if isfield(Ops,'colourmap') && ~isempty(Ops.colourmap)
     end
 end
 
-if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
+if drawColourbar
     Chld =allchild(pfig);
     isAx =strcmp(get(Chld,'type'),'axes');
     nonAx=Chld(~isAx);
@@ -1347,20 +1347,23 @@ if isfield(Ops,'colourbar') && ~strcmp(Ops.colourbar,'none')
             PlotClass = Ops.PlotClass;
             Classes = {};
             LineParams = {};
+            firstClass = find(PlotClass, 1, 'first');
+            lastClass = find(PlotClass, 1, 'last');
+            classRange = firstClass:lastClass;
+            threshRange = classRange;
             if Props.NVal==6
-                Thresholds = Thresholds(1:end-1);
-                PlotClass = PlotClass(1:end-1);
                 LabelStyle = {'labelcolor'};
                 Classes = {data(1).Classes};
             elseif classes_between_thresholds
                 LabelStyle = {};
+                threshRange = firstClass:lastClass+1;
             elseif isfield(Ops,'LineParams') && ~isempty(Ops.LineParams)
                 LabelStyle = {'labellines'};
                 LineParams = {'lineparams',Ops.LineParams};
             else
                 LabelStyle = {'labelcolor'};
             end
-            classbar(h,1:length(Thresholds),LabelStyle{:},'label',Thresholds,Classes{:},'plotselect',PlotClass,'climmode','new',LineParams{:})
+            classbar(h,threshRange,LabelStyle{:},'label',Thresholds(threshRange),Classes{:},'plotselect',PlotClass(classRange),'climmode','new',LineParams{:})
         end
     end
 end

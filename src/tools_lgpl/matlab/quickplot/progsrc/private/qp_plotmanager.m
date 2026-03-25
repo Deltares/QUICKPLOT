@@ -3,7 +3,7 @@ function outdata = qp_plotmanager(cmd,UD,logfile,logtype,cmdargs)
 
 %----- LGPL --------------------------------------------------------------------
 %
-%   Copyright (C) 2011-2025 Stichting Deltares.
+%   Copyright (C) 2011-2026 Stichting Deltares.
 %
 %   This library is free software; you can redistribute it and/or
 %   modify it under the terms of the GNU Lesser General Public
@@ -362,6 +362,7 @@ switch cmd
             set(UD.PlotMngr.FigList,'string',{''},'userdata',[],'value',1, ...
                 'enable','off','backgroundcolor',Inactive);
             set(UD.PlotMngr.SavFig,'enable','off');
+            set(UD.PlotMngr.Animate,'enable','off');
             set(UD.PlotMngr.ClsFig,'enable','off');
             set(UD.PlotMngr.FigAll,'enable','off');
             set(UD.PlotMngr.NewAx,'enable','off');
@@ -397,6 +398,7 @@ switch cmd
             set(UD.PlotMngr.FigList,'string',fignames,'userdata',Figs,'value',i, ...
                 'enable',enable,'backgroundcolor',backgroundcolor);
             set(UD.PlotMngr.SavFig,'enable','on');
+            set(UD.PlotMngr.Animate,'enable','on');
             set(UD.PlotMngr.ClsFig,'enable',enable);
             set(UD.PlotMngr.NewAx,'enable','on');
         end

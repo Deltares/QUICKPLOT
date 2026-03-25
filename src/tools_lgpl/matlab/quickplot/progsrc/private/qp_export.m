@@ -3,7 +3,7 @@ function cmdargs = qp_export(ExpType,DataState,cmdargs)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2025 Stichting Deltares.                                     
+%   Copyright (C) 2011-2026 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -889,9 +889,11 @@ for f=1:ntim
                                 cv=[cv data(d).Val(:)];
                                 cLabels{end+1}=componentof;
                             end
+                            if ~isempty(cv)
+                                CV = cat(1,CV,cv);
+                            end
                             %
                             if ~isempty(xv)
-                                CV = cat(1,CV,cv);
                                 if size(fv,2) > size(FV,2) && ~isempty(FV)
                                     FV(:,end+1:size(fv,2)) = NaN;
                                 elseif size(fv,2) < size(FV,2)

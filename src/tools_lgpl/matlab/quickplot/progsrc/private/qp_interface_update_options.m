@@ -3,7 +3,7 @@ function [DomainNr,Props,subf,selected,stats,Ops]=qp_interface_update_options(mf
 
 %----- LGPL --------------------------------------------------------------------
 %
-%   Copyright (C) 2011-2025 Stichting Deltares.
+%   Copyright (C) 2011-2026 Stichting Deltares.
 %
 %   This library is free software; you can redistribute it and/or
 %   modify it under the terms of the GNU Lesser General Public
@@ -56,12 +56,12 @@ setappdata(qv,'animate',strcmp(PlotType,'Animate'))
 set(findobj(mfig,'tag','loaddata'),'enable',onoff(EnableLoad))
 
 
-function [DomainNr,Props,subf,selected,stats,vslice,hslice]=get_basics(MW)
+function [DomainNr,Props,subf,selected,stationNames,vslice,hslice]=get_basics(MW)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 [DomainNr,Props,subf] = qpfield;
 selected = [];
-stats =[];
+stationNames = [];
 vslice=0;
 hslice=0;
 if isempty(Props)
@@ -78,15 +78,15 @@ if DimFlag(T_)
     end
 end
 if DimFlag(ST_)
-    stats=get(MW.StList,'userdata');
-    alls=get(MW.AllS,'value');
+    stationNames = get(MW.StList,'userdata');
+    alls = get(MW.AllS,'value');
     if alls
-        selected{ST_}=0;
+        selected{ST_} = 0;
     else
-        selected{ST_}=get(MW.EditS,'userdata');
+        selected{ST_} = get(MW.EditS,'userdata');
     end
 else
-    stats={};
+    stationNames = {};
 end
 
 if all(~DimFlag([M_ N_ K_]))
@@ -539,7 +539,11 @@ end
 Inactive=UD.Inactive;
 Active=UD.Active;
 
-set(setdiff(UD.Options.Handles,gcbo),'enable','off','backgroundcolor',Inactive)
+handles = UD.Options.Handles;
+if ishghandle(gcbo)
+    handles = setdiff(handles,gcbo);
+end
+set(handles,'enable','off','backgroundcolor',Inactive)
 
 h_axtype=findobj(OH,'tag','axestype=?');
 if length(axestype)>1

@@ -51,7 +51,7 @@ function [xy,cLabels,cv] = process_polygons(xy,fc,cv,Thresholds)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2025 Stichting Deltares.                                     
+%   Copyright (C) 2011-2026 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -129,93 +129,103 @@ function [xy,cv] = tri2polygons(xy,fc,cv)
 cv = mat2cell(cv,ones(1,size(cv,1)),2);
 for part = 1:length(xy)
     xyp = xy{part};
-    fcp = fc{part};
-    edp = [fcp(:,[1 2]);fcp(:,[2 3]);fcp(:,[3 1])];
-    sedp = sort(edp,2);
-    [uedp,iorg,isorted] = unique(sedp,'rows');
-    isedge = accumarray(isorted,1)==1;
-    edgenr = iorg(isedge);
-    edges = edp(edgenr,:);
-    %
-    contour = NaN(1,2*size(edges,1));
-    contour(1:2) = edges(1,:);
-    n1 = contour(1);
-    n2 = contour(2);
-    %
-    [snodes,irow] = sort(edges(:));
-    irow = mod(irow-1,size(edges,1))+1;
-    istart = cumsum([1;accumarray(snodes,1)]);
-    %
-    % mark edge as traversed
-    edges(1,:) = NaN;
-    %
-    i = 2;
-    while 1
-        %
-        % search for an edge that connects to node n2.
-        % these edges are numbered irow(istart(n2):istart(n2+1)-1)
-        % they may already be traversed, so let's check which one is available
-        %
-        for r2 = istart(n2):istart(n2+1)-1
-            l2 = irow(r2);
-            if edges(l2,1)==n2
-                n3 = edges(l2,2);
-                break
-            elseif edges(l2,2)==n2
-                n3 = edges(l2,1);
-                break
-            end
-        end
-        %
-        % add the node to the contour
-        i=i+1;
-        contour(i) = n3;
-        %
-        % mark edge as traversed
-        edges(l2,:) = NaN;
-        %
-        if n3==n1
-            % back at starting point
-            % search for any edges that haven't been traversed yet
-            todo = find(~isnan(edges(:,1)));
-            if isempty(todo)
-                % no more edges
-                break
-            else
-                % still some edges to go: pick first
-                e = todo(1);
-                contour(i+2:i+3) = edges(e,:);
-                n1 = contour(i+2);
-                n2 = contour(i+3);
-                i = i+3;
-                edges(e,:) = NaN;
-            end
-        else
-            % continue the search from the latest node
-            n2 = n3;
-        end
-    end
-    %
-    % put contour back into xy
-    contour = contour(1:i);
-    bpoint = isnan(contour);
-    nparts = sum(bpoint)+1;
-    if nparts==1
-        xy{part} = {xyp(contour,1:2)};
+    if isempty(xyp)
+        xypc = cell(0,1);
+        cvpc = zeros(0,2);
     else
-        bpoint = [0 find(bpoint) i+1];
-        xypc = cell(nparts,1);
-        for i = 1:nparts
-            xypc{i} = xyp(contour(bpoint(i)+1:bpoint(i+1)-1),1:2);
-        end
-        cvp = repmat(cv{part,:},nparts,1);
-        %[xypc,cvp] = clip_polygons(xypc,cvp,true);
-        xy{part} = xypc;
-        cv{part} = cvp;
+        [xypc,cvpc] = tri2polygons_single(xyp,fc{part},cv{part});
     end
+    xy{part} = xypc;
+    cv{part} = cvpc;
 end
 xy = cat(1,xy{:});
 cv = cat(1,cv{:});
+
+function [xypc,cvpc] = tri2polygons_single(xyp,fcp,cvp)
+edp = [fcp(:,[1 2]);fcp(:,[2 3]);fcp(:,[3 1])];
+sedp = sort(edp,2);
+[uedp,iorg,isorted] = unique(sedp,'rows');
+isedge = accumarray(isorted,1)==1;
+edgenr = iorg(isedge);
+edges = edp(edgenr,:);
+%
+contour = NaN(1,2*size(edges,1));
+contour(1:2) = edges(1,:);
+n1 = contour(1);
+n2 = contour(2);
+%
+[snodes,irow] = sort(edges(:));
+irow = mod(irow-1,size(edges,1))+1;
+istart = cumsum([1;accumarray(snodes,1)]);
+%
+% mark edge as traversed
+edges(1,:) = NaN;
+%
+i = 2;
+while 1
+    %
+    % search for an edge that connects to node n2.
+    % these edges are numbered irow(istart(n2):istart(n2+1)-1)
+    % they may already be traversed, so let's check which one is available
+    %
+    n3 = 0;
+    for r2 = istart(n2):istart(n2+1)-1
+        l2 = irow(r2);
+        if edges(l2,1)==n2
+            n3 = edges(l2,2);
+            break
+        elseif edges(l2,2)==n2
+            n3 = edges(l2,1);
+            break
+        end
+    end
+    if n3 == 0
+        error('Error converting a set of triangular patches to a set of closed polygons. Unable to locate next edge.')
+    end
+    %
+    % add the node to the contour
+    i=i+1;
+    contour(i) = n3;
+    %
+    % mark edge as traversed
+    edges(l2,:) = NaN;
+    %
+    if n3==n1
+        % back at starting point
+        % search for any edges that haven't been traversed yet
+        todo = find(~isnan(edges(:,1)));
+        if isempty(todo)
+            % no more edges
+            break
+        else
+            % still some edges to go: pick first
+            e = todo(1);
+            contour(i+2:i+3) = edges(e,:);
+            n1 = contour(i+2);
+            n2 = contour(i+3);
+            i = i+3;
+            edges(e,:) = NaN;
+        end
+    else
+        % continue the search from the latest node
+        n2 = n3;
+    end
+end
+%
+% put contour back into xy
+contour = contour(1:i);
+bpoint = isnan(contour);
+nparts = sum(bpoint)+1;
+if nparts==1
+    xypc = {xyp(contour,1:2)};
+else
+    bpoint = [0 find(bpoint) i+1];
+    xypc = cell(nparts,1);
+    for i = 1:nparts
+        xypc{i} = xyp(contour(bpoint(i)+1:bpoint(i+1)-1),1:2);
+    end
+end
+cvpc = repmat(cvp,nparts,1);
 
 
 function [xy,cv] = clip_polygons(xy,cv,quick)

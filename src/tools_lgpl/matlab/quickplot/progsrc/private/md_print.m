@@ -18,7 +18,7 @@ function [Settings, fileNameArg] = md_print(varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2025 Stichting Deltares.                                     
+%   Copyright (C) 2011-2026 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -585,6 +585,8 @@ printObj.NextNr = printObj.NextNr + 1;
 function printNoWarn(varargin)
 warnStruct = warning;
 warning('off', 'MATLAB:print:ExcludesUIInFutureRelease')
+warning('off', 'MATLAB:print:RasterNotSupportedInFutureRelease')
+warning('off', 'MATLAB:print:PostscriptNotSupportedInFutureRelease')
 print(varargin{:});
 warning(warnStruct)
 
