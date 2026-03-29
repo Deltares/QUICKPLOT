@@ -436,7 +436,9 @@ switch NVal
                 % get right component to plot: select the component in the plane
                 % to be plotted.
                 %
-                if isfield(data,'dX_tangential')
+                if ~isfield(data,'YComp')
+                    planecomp=data.XComp;
+                elseif isfield(data,'dX_tangential')
                     % arbcross
                     if length(data.dX_tangential) == length(s)
                         ex=data.dX_tangential;
