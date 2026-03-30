@@ -1602,7 +1602,7 @@ elseif isfield(data,'X')
     elseif size(data.X,1)==2 && size(data.X,2)>2
         data.X = (data.X(1,:,:) + data.X(2,:,:))/2;
     end
-    x = data.X(:,:,1);
+    x = max(data.X,[],3); % data.X(:,:,1) may be clipped for Skylla
     y = 0*x;
 end
 if isfield(data,'dX_tangential') && isempty(data.dX_tangential)
