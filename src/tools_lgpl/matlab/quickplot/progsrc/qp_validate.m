@@ -1103,9 +1103,9 @@ if iscell(str)
 else
     switch log_style
         case 'latex'
+            str = strrep(str,'\','\char`\\');
             str = strrep(str,'{','\{');
             str = strrep(str,'}','\}');
-            str = strrep(str,'\','\char`\\');
             str = strrep(str,'_','\_');
             str = strrep(str,'#','\#');
             str = strrep(str,'$','\$');
