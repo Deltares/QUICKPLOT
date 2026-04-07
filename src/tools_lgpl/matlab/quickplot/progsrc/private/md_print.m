@@ -421,12 +421,33 @@ else
 end
 switch printObj.Name
     case {'TIF file','BMP file','PNG file','JPG file','EPS file','PS file','EMF file','PDF file','Multi page PDF file'}
-        ih=get(fig,'inverthardcopy');
-        if isfield(printObj,'InvertHardcopy') && ~printObj.InvertHardcopy
-            set(fig,'inverthardcopy','off');
+        % recoding of "inverthardcopy" since MATLAB 2025a dropped support
+        ih = get(fig,'inverthardcopy');
+        set(fig,'inverthardcopy',false)
+        if isfield(printObj,'InvertHardcopy') && printObj.InvertHardcopy
+            colorChange = cell(1,100);
+            i = 1;
+            colorChange(i) = {fig,'color',get(fig,'color')};
+            set(fig,'color','w')
+            for a = findall(fig,'type','axes')'
+                for cprop = {'color','xcolor','ycolor','zcolor'}
+                    prop = cprop{1};
+                    i = i+1;
+                    colorChange(i) = {a,prop,get(a,prop)};
+                    switch prop
+                        case 'color'
+                            set(a,'color','w')
+                        otherwise
+                            set(a,prop,'k')
+                    end
+                end
+                t = get(a,'title');
+                i = i+1;
+                colorChange(i) = {t,'color',get(t,'color')};
+            end
+            colorChange = colorChage(1:i);
         else
-            printObj.InvertHardcopy=1;
-            set(fig,'inverthardcopy','on');
+            colorChange = {};
         end
         %
         if strcmp(printObj.Name,'Multi page PDF file') && printObj.NextNr > 1
@@ -511,6 +532,9 @@ switch printObj.Name
         %
         if ~isempty(normtext)
             set(normtext,'fontunits','normalized')
+        end
+        for i = 1:length(colorChange)
+            set(colorChange{i}{:})
         end
         set(fig,'inverthardcopy',ih);
         %
