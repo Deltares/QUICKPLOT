@@ -425,15 +425,15 @@ switch printObj.Name
         ih = get(fig,'inverthardcopy');
         set(fig,'inverthardcopy',false)
         if isfield(printObj,'InvertHardcopy') && printObj.InvertHardcopy
-            colorChange = cell(1,100);
+            colorChange = cell(100,3);
             i = 1;
-            colorChange(i) = {fig,'color',get(fig,'color')};
+            colorChange(i,:) = {fig,'color',get(fig,'color')};
             set(fig,'color','w')
             for a = findall(fig,'type','axes')'
                 for cprop = {'color','xcolor','ycolor','zcolor'}
                     prop = cprop{1};
                     i = i+1;
-                    colorChange(i) = {a,prop,get(a,prop)};
+                    colorChange(i,:) = {a,prop,get(a,prop)};
                     switch prop
                         case 'color'
                             set(a,'color','w')
@@ -443,11 +443,11 @@ switch printObj.Name
                 end
                 t = get(a,'title');
                 i = i+1;
-                colorChange(i) = {t,'color',get(t,'color')};
+                colorChange(i,:) = {t,'color',get(t,'color')};
             end
-            colorChange = colorChage(1:i);
+            colorChange = colorChage(1:i,:);
         else
-            colorChange = {};
+            colorChange = cell(0,3);
         end
         %
         if strcmp(printObj.Name,'Multi page PDF file') && printObj.NextNr > 1
@@ -533,8 +533,8 @@ switch printObj.Name
         if ~isempty(normtext)
             set(normtext,'fontunits','normalized')
         end
-        for i = 1:length(colorChange)
-            set(colorChange{i}{:})
+        for i = 1:size(colorChange,1)
+            set(colorChange{i,:})
         end
         set(fig,'inverthardcopy',ih);
         %
