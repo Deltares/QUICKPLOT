@@ -1,4 +1,10 @@
 function graphics_test
+Renderers = set(0, 'defaultfigurerenderer');
+fprintf('Available renderers: %s\n',Renderers{1});
+fprintf('                     %s\n',Renderers{2:end});
+fprintf('Default renderer   : %s\n',get(0,'defaultfigurerenderer'));
+fprintf('\n');
+
 fprintf('Opening a figure with forced "painters" rendering ... ')
 f = figure('renderer','painters');
 fprintf('OK\n');
