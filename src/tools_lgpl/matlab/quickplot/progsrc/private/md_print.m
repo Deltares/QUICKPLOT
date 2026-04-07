@@ -445,7 +445,7 @@ switch printObj.Name
                 i = i+1;
                 colorChange(i,:) = {t,'color',get(t,'color')};
             end
-            colorChange = colorChage(1:i,:);
+            colorChange = colorChange(1:i,:);
         else
             colorChange = cell(0,3);
         end
