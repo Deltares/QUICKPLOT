@@ -110,7 +110,7 @@ if isempty(PL)
                     1  'other Windows printer'       WD         2     0  0}];
         end
     else
-        [def_printer,printers] = findprinters;
+        [~,printers] = findprinters;
         PL_extra = repmat({1 '--' all 2 0 0},length(printers),1);
         PL_extra(:,2) = printers(:);
         PL = [PL; PL_extra];
@@ -369,7 +369,7 @@ if isempty(printObj.FileName) && ~isempty(printObj.ext)
         [printObj.BaseName,printObj.NextNr,printObj.FrmtNr] = DetectBaseAndNumber(printObj.FileName);
     end
 elseif ~isempty(printObj.ext) && ~isfield(printObj,'PDFName')
-    [f,p,e] = fileparts(printObj.FileName);
+    [~,~,e] = fileparts(printObj.FileName);
     if ~strcmp(e,['.' printObj.ext])
         printObj.FileName = [printObj.FileName '.' printObj.ext];
     end
@@ -419,12 +419,17 @@ if isnumeric(fig)
 else
     FigHandle = fig;
 end
+
+% Apply BlackAxesWhiteFig unless we're saving the figure meta data
+ih = get(fig,'inverthardcopy');
+set(fig,'inverthardcopy','off')
+colorChange = cell(0,3);
 switch printObj.Name
-    case {'TIF file','BMP file','PNG file','JPG file','EPS file','PS file','EMF file','PDF file','Multi page PDF file'}
-        % recoding of "inverthardcopy" since MATLAB 2025a dropped support
-        ih = get(fig,'inverthardcopy');
-        set(fig,'inverthardcopy',false)
-        if isfield(printObj,'InvertHardcopy') && printObj.InvertHardcopy
+    case {'MATLAB fig file','QUICKPLOT session file'}
+        % in this case we want to save the figure as is
+    otherwise
+        if isfield(printObj,'BlackAxesWhiteFig') && printObj.BlackAxesWhiteFig
+            % support for "inverthardcopy" was dropped in MATLAB 2025a
             colorChange = cell(100,3);
             i = 1;
             colorChange(i,:) = {fig,'color',get(fig,'color')};
@@ -438,7 +443,8 @@ switch printObj.Name
                         case 'color'
                             set(a,'color','w')
                         otherwise
-                            set(a,prop,'k')
+                            BLACKISH = 38/255*[1 1 1];
+                            set(a,prop,BLACKISH)
                     end
                 end
                 t = get(a,'title');
@@ -446,10 +452,11 @@ switch printObj.Name
                 colorChange(i,:) = {t,'color',get(t,'color')};
             end
             colorChange = colorChange(1:i,:);
-        else
-            colorChange = cell(0,3);
         end
-        %
+end
+
+switch printObj.Name
+    case {'TIF file','BMP file','PNG file','JPG file','EPS file','PS file','EMF file','PDF file','Multi page PDF file'}
         if strcmp(printObj.Name,'Multi page PDF file') && printObj.NextNr > 1
             append = {'-append'};
         else
@@ -533,10 +540,6 @@ switch printObj.Name
         if ~isempty(normtext)
             set(normtext,'fontunits','normalized')
         end
-        for i = 1:size(colorChange,1)
-            set(colorChange{i,:})
-        end
-        set(fig,'inverthardcopy',ih);
         %
         if strcmp(printObj.Name,'Multi page PDF file')
             switch printObj.PageLabels
@@ -552,7 +555,7 @@ switch printObj.Name
             printObj.Paper = getPaperType(fig);
         end
     case 'MATLAB fig file'
-        hgsave(fig,printObj.FileName);
+        savefig(fig,printObj.FileName);
     case 'QUICKPLOT session file'
         if isfield(printObj,'SES')
             appendto_SES = {printObj.SES};
@@ -563,18 +566,12 @@ switch printObj.Name
     otherwise
         ccd=cd;
         cd(tempdir);
-        ih=get(fig,'inverthardcopy');
-        if isfield(printObj,'InvertHardcopy') && ~printObj.InvertHardcopy
-            set(fig,'inverthardcopy','off');
-        else
-            printObj.InvertHardcopy=1;
-            set(fig,'inverthardcopy','on');
-        end
         switch printObj.Name
             case 'other Windows printer'
-                dvr='-dwin';
                 if printObj.Color
                     dvr='-dwinc';
+                else
+                    dvr='-dwin';
                 end
                 if isdeployed
                     deployprint(fig)
@@ -593,16 +590,18 @@ switch printObj.Name
                 end
                 printNoWarn(FigHandle,dvr,printObj.PrtMth{:})
             case 'Bitmap to clipboard'
-                set(fig,'inverthardcopy','off');
                 printNoWarn(FigHandle, '-dbitmap')
             case 'Metafile to clipboard'
                 printNoWarn(FigHandle, printObj.PrtMth{:}, '-dmeta')
             otherwise
                 printNoWarn(FigHandle,printObj.dvr,printObj.PrtMth{:})
         end
-        set(fig,'inverthardcopy',ih);
         cd(ccd)
 end
+for i = 1:size(colorChange,1)
+    set(colorChange{i,:})
+end
+set(fig,'inverthardcopy',ih);
 printObj.NextNr = printObj.NextNr + 1;
 
 
@@ -673,12 +672,12 @@ set(gcbf,'userdata',UD);
 
 
 function [Settings,FigID] = print_dialog(PL,CanApplyAll,Settings,SelectFrom,FigID)
-persistent PrtID Method DPI Clr InvertHardcopy PageLabels
+persistent PrtID Method DPI Clr BlackAxesWhiteFig PageLabels
 if isempty(PrtID)
     PrtID=1;
     Method=2;
     DPI=150;
-    InvertHardcopy=1;
+    BlackAxesWhiteFig=1;
     Clr=1;
     PageLabels=1;
 end
@@ -695,8 +694,8 @@ if nargin>2 && isstruct(Settings)
     if isfield(Settings,'DPI')
         DPI=Settings.DPI;
     end
-    if isfield(Settings,'InvertHardcopy')
-        InvertHardcopy=Settings.InvertHardcopy;
+    if isfield(Settings,'BlackAxesWhiteFig')
+        BlackAxesWhiteFig=Settings.BlackAxesWhiteFig;
     end
     if isfield(Settings,'Clr')
         Clr=Settings.Clr;
@@ -791,11 +790,11 @@ rect(4) = XX.But.Height;
 GUI.InvHard=uicontrol('style','checkbox', ...
     'position',rect, ...
     'parent',fig, ...
-    'value',InvertHardcopy==1, ...
+    'value',BlackAxesWhiteFig==1, ...
     'string','White Background and Black Axes', ...
     'backgroundcolor',XX.Clr.LightGray, ...
     'enable','on', ...
-    'callback',{@md_print_callback 'InvertHardcopy'});
+    'callback',{@md_print_callback 'BlackAxesWhiteFig'});
 
 rect(2) = rect(2)+rect(4);
 rect(3) = Fig_Width-2*XX.Margin;
@@ -1032,15 +1031,15 @@ while ~gui_quit
                 switch PL{PrtID,4}
                     case 0 % NEVER
                         set(GUI.Color,'enable','off','value',0);
-                        set(GUI.InvHard,'enable','on','value',InvertHardcopy==1);
+                        set(GUI.InvHard,'enable','on','value',BlackAxesWhiteFig==1);
                         Clr=0;
                     case 1 % USER SPECIFIED (DEFAULT ON)
                         set(GUI.Color,'enable','on','value',1);
-                        set(GUI.InvHard,'enable','on','value',InvertHardcopy==1);
+                        set(GUI.InvHard,'enable','on','value',BlackAxesWhiteFig==1);
                         Clr=1;
                     case 2 % ALWAYS
                         set(GUI.Color,'enable','off','value',1);
-                        set(GUI.InvHard,'enable','on','value',InvertHardcopy==1);
+                        set(GUI.InvHard,'enable','on','value',BlackAxesWhiteFig==1);
                         Clr=1;
                     case 3 % ALWAYS - No White Background & Black Axes
                         set(GUI.Color,'enable','off','value',1);
@@ -1069,8 +1068,8 @@ while ~gui_quit
             case 'OpenGL'
                 Method = update_renderer(PL{PrtID,1},GUI,3,DPI);
             case 'DPI'
-                X=eval(get(GUI.Resol,'string'),'NaN');
-                if isnumeric(X) && isequal(size(X),[1 1]) && (round(X)==X)
+                X=round(str2double(get(GUI.Resol,'string')));
+                if ~isnan(X)
                     if X<50
                         DPI=50;
                     elseif X>2400
@@ -1083,8 +1082,8 @@ while ~gui_quit
 
             case 'Color'
                 Clr=get(GUI.Color,'value');
-            case 'InvertHardcopy'
-                InvertHardcopy=get(GUI.InvHard,'value');
+            case 'BlackAxesWhiteFig'
+                BlackAxesWhiteFig=get(GUI.InvHard,'value');
         end
     end
 end
@@ -1096,7 +1095,7 @@ Settings.PrtID=PrtID;
 Settings.Method=Method;
 Settings.DPI=DPI;
 Settings.Color=Clr;
-Settings.InvertHardcopy=InvertHardcopy;
+Settings.BlackAxesWhiteFig=BlackAxesWhiteFig;
 Settings.PageLabels=PageLabels;
 
 if Cancel
