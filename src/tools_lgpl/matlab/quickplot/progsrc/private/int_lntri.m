@@ -9,14 +9,14 @@ function [xo,yo,po,mo,to,lo,dxt,dyt,out] = int_lntri(xPoly,yPoly,TRI,xMesh,yMesh
 %     vector
 %   yPoly - Y-coordinates of polyline
 %     vector
-%   TRI - connectivity (triangles OR polygons with NaN padding)
+%   TRI - connectivity (triangles OR faces with NaN padding)
 %     matrix of size nFaces x 3 or nFaces x maxNumNodes
 %   xMesh - X-coordinates of mesh nodes
 %     vector | matrix
 %   yMesh - Y-coordinates of mesh nodes
 %     vector | matrix
 %
-% OUTPUTS:
+% Output Arguments
 %   xo - X-coordinates of intersection points between polyline and mesh
 %     vector of size M x 1
 %   yo - Y-coordinates of intersection points between polyline and mesh
@@ -97,10 +97,10 @@ xMesh = xMesh(:);
 yMesh = yMesh(:);
 xyMesh = [xMesh yMesh];
 
-%% Convert polygon mesh to triangles
-map2polygon = size(TRI,2) > 3;
-if map2polygon
-    [TRI,tri2poly] = triangulateConvexFaces(TRI);
+%% Convert faces to triangles
+map2face = size(TRI,2) > 3;
+if map2face
+    [TRI,tri2face] = triangulateConvexFaces(TRI);
 end
 
 %% Precompute triangle geometry
@@ -247,8 +247,21 @@ dxt = dxt./mag;
 dyt = dyt./mag;
 out = isnan(triSegment);
 triSegment(out) = 1;
-if map2polygon
-    to = tri2poly(triSegment);
+if map2face
+    to = tri2face(triSegment);
+    inSameFace = to([1:end end]) == to([1 1:end]);
+    xyPoly = lo == round(lo);
+    delNode = inSameFace & ~xyPoly;
+    delEdge = delNode(2:end);
+    xo(delNode) = [];
+    yo(delNode) = [];
+    po(delNode,:) = [];
+    mo(delNode,:) = [];
+    lo(delNode) = [];
+    dxt(delEdge) = [];
+    dyt(delEdge) = [];
+    out(delEdge) = [];
+    to(delEdge) = [];
 else
     to = triSegment;
 end
@@ -303,26 +316,31 @@ yo = yi + lambda * dyi;
 end
 
 % -------------------------------------------------------------------------
-% Subfunction: triangulate convex polygon faces
+% Subfunction: triangulate convex faces
 % -------------------------------------------------------------------------
-function [TRI,tri2poly] = triangulateConvexFaces(F)
-nTriangles = sum(sum(~isnan(F),2)-2);
+function [TRI,tri2poly] = triangulateConvexFaces(faceNodeConnect)
+numNodes = sum(~isnan(faceNodeConnect),2);
+nTrianglesPerFace = max(numNodes,2) - 2;
+nTriangles = sum(nTrianglesPerFace);
 TRI = zeros(nTriangles,3);
 tri2poly = zeros(nTriangles,1);
 j = 0;
-for i = 1:size(F,1)
-    row = F(i,~isnan(F(i,:)));
-    if numel(row) == 3
-        j = j+1;
-        TRI(j,:) = row;
-        tri2poly(j) = i;
-    else
-        v1 = row(1);
-        for k = 2:(numel(row)-1)
+for i = 1:size(faceNodeConnect,1)
+    row = faceNodeConnect(i,~isnan(faceNodeConnect(i,:)));
+    switch numel(row)
+        case {0,1,2}
+            % no valid faces ... no valid triangles
+        case 3
             j = j+1;
-            TRI(j,:) = [v1 row(k) row(k+1)];
+            TRI(j,:) = row;
             tri2poly(j) = i;
-        end
+        otherwise
+            v1 = row(1);
+            for k = 2:(numel(row)-1)
+                j = j+1;
+                TRI(j,:) = [v1 row(k) row(k+1)];
+                tri2poly(j) = i;
+            end
     end
 end
 end

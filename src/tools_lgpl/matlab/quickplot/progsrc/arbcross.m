@@ -147,7 +147,7 @@ else
         VGRIDStr = 'VGRID';
         XGRID = varargin{1}(:,:,1);
         YGRID = varargin{2}(:,:,1);
-        [FaceNodeConnect,QUADTRI] = grid2tri(XGRID,YGRID);
+        [FaceNodeConnect,faceToGridIndex] = grid2faces(XGRID,YGRID);
         EdgeNodeConnect = [];
         layeredxy = size(varargin{1},3)>1;
         nFaces = 0;
@@ -213,7 +213,7 @@ else
         else
             EdgeNodeConnect = [];
         end
-        QUADTRI = [];
+        faceToGridIndex = [];
         nFaces = size(FaceNodeConnect,1);
     end
 
@@ -246,22 +246,9 @@ else
         end
     end
     %
-    % Remove diagonals ... maybe it would be faster to not put them in in
-    % the first place, but maybe I need them again in the future for
-    % consistency.
-    %
-    if ~isempty(QUADTRI)
-        iFace = QUADTRI(iFace);
-        rm = find((iFace(1:end-1)==iFace(2:end)) & ~isnan(x(2:end-1,1)));
-        x(rm+1,:)        =[];
-        y(rm+1,:)        =[];
-        wght(rm+1,:)     =[];
-        iFace(rm+1,:)    =[];
-        iNode(rm+1,:)    =[];
-        fracudist(rm+1,:)=[];
-        outside(rm,:)    =[];
-        dxt(rm,:)        =[];
-        dyt(rm,:)        =[];
+    % optionally map faces back to linear indices into the 2D grid arrays
+    if ~isempty(faceToGridIndex)
+        iFace = faceToGridIndex(iFace);
     end
     %
     % Expand coordinates to 3D if original x/y arrays were 3D.
@@ -373,27 +360,40 @@ for i = 1:nargin-input_offset-input_skip_end
 end
 
 
-function [tri,quadtri] = grid2tri(X,Y)
-%GRID2TRI converts a curvilinear grid into a triangular grid
-%   [TRI,QUADTRI]=GRID2TRI(XGRID,YGRID)
-%   Splits the quadrangles of the curvilinear grid along the main diagonal
-%   and returns the triangle definition table TRI (indicating the corner
-%   points of the triangles as indices into XGRID, YGRID) and an array
-%   QUADTRI that contains for every triangle the index of the quadrangle to
-%   which the triangle belongs (index into an array of size SIZE(XGRID)-1).
+function [faceNodeConnect,faceToGridIndex] = grid2faces(xGrid,yGrid)
+%GRID2FACES converts a curvilinear grid into a quad grid
+%
+% Syntax
+%   [faceNodeConnect,faceToGridIndex] = grid2faces(xGrid,yGrid)
+%
+% Input Arguments
+%   xGrid - X-coordinates of curvilinear grid
+%     array of size nRows x nCols
+%   yGrid - Y-coordinates of curvilinear grid
+%     array of size nRows x nCols
+%
+% Output Arguments
+%   faceNodeConnect - face-node connectivity: each row of the array lists
+%     the four linear indices of the nodes defining the boundary of the
+%     face. Only faces are defined for which the xGrid and yGrid values of
+%     all four nodes are not NaN.
+%     array of size nFaces x 4
+%   faceToGridIndex - the linear index of the grid cell for each defined
+%     face. The linear index of the grid cell is defined as the linear
+%     index of the grid cell in an array of size (nRows-1) x (nCols-1).
+%     vector of length nFaces
 
-szX = size(X);
-% [m,n]=ndgrid(1:szX(1),1:szX(2));
+% generate a node index array for the "lowest" node index
+szX = size(xGrid);
 I = reshape(1:prod(szX),szX);
 I = I(1:end-1,1:end-1);
 I = I(:);
-quad = (1:prod(szX-1))';
 
-tri = [I I+1 I+szX(1)+1; I I+szX(1) I+szX(1)+1];
-quadtri = [quad;quad];
-% mtri = [m(I);m(I)];
-% ntri = [n(I);n(I)];
+% generate full set of faces
+faceNodeConnect = [I I+1 I+szX(1)+1 I+szX(1)];
+faceToGridIndex = (1:prod(szX-1))';
 
-k = any(isnan(X(tri)) | isnan(Y(tri)),2);
-tri(k,:) = [];
-quadtri(k) = [];
+% reduce to fully defined cells only
+k = any(isnan(xGrid(faceNodeConnect)) | isnan(yGrid(faceNodeConnect)),2);
+faceNodeConnect(k,:) = [];
+faceToGridIndex(k) = [];
