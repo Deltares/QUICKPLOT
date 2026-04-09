@@ -317,7 +317,7 @@ for ivar = 1:nvars
     %
     nc.Dataset(ivar) = Info;
 end
-
+variablesListedAsCoordinates = unique(cat(2,nc.Dataset.Coordinates));
 %
 % Detect bounds variables (We don't want bounds directly listed as
 % coordinate variable.
@@ -408,6 +408,7 @@ for ivar = 1:nvars
     % standard_name not recognized (or time); look for known units
     %
     j = strmatch('units',Attribs,'exact');
+    unit = '';
     if ~isempty(j)
         unit = Info.Attribute(j).Value;
         if ~ischar(unit)
@@ -455,9 +456,7 @@ for ivar = 1:nvars
                 continue
             otherwise
                 try
-                    f = qp_unitconversion(unit1,'Pa');
-                    %
-                    if isnumeric(f)
+                    if unit_equivalent_to(unit1,'Pa')
                         % dimension unit is compatible with pressure (Pa)
                         % according CF 1.4 this must be a z-coordinate
                         nc = setType(nc,ivar,idim,'z-coordinate');
@@ -535,6 +534,17 @@ for ivar = 1:nvars
             nc = setType(nc,ivar,idim,'z-coordinate');
         end
         continue
+    end
+    %
+    if ismember(Info.Name,variablesListedAsCoordinates)
+        % if this should be a coordinate, let's check the variable again
+        if strncmpi(Info.Name,'x',1) && unit_equivalent_to(unit,'m')
+            nc = setType(nc,ivar,idim,'x-coordinate');
+            continue
+        elseif strncmpi(Info.Name,'y',1) && unit_equivalent_to(unit,'m')
+            nc = setType(nc,ivar,idim,'y-coordinate');
+            continue
+        end
     end
 end
 
@@ -2289,3 +2299,7 @@ EFC(C,1) = iface(ia);
 iedge(ia) = [];
 iface(ia) = [];
 EFC(iedge,2) = iface;
+
+function bool = unit_equivalent_to(unit,unit_ref)
+f = qp_unitconversion(unit,unit_ref);
+bool = isnumeric(f);
