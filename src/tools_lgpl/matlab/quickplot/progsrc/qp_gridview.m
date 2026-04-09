@@ -122,7 +122,8 @@ switch cmd
                         X = interp2cen(GRID.X);
                         Y = interp2cen(GRID.Y);
                     otherwise
-                        fprintf('To implement\n');
+                        error('qp_gridview:UnsupportedValLocation', ...
+                              'Unsupported GRID.ValLocation "%s" for sgrid.', GRID.ValLocation);
                 end
                 nTotal = 1+sum(sum(abs(diff(GRID.Selected.Range,1))));
                 XY = NaN(nTotal,2);

@@ -127,7 +127,7 @@ if strcmpi(Zone.type,'ORDERED')
 else
     switch Zone.elementType
         case 'LINESEG'
-            % TODO
+            error('Element type "LINESEG" not yet supported.');
         case {'TRIANGLE','QUADRILATERAL','POLYGON'}
             idxM = idx{M_};
             if XYRead
