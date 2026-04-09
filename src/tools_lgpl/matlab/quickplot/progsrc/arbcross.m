@@ -262,7 +262,10 @@ else
     %
     if ~isempty(EdgeNodeConnect)
         edgeCrossing = sum(~isnan(wght) & wght~=0,2)==2;
-        edgeNodes = sort(iNode(:,1:2),2);
+        edgeNodes = iNode;
+        edgeNodes(wght == 0 | isnan(wght)) = inf;
+        edgeNodes = sort(edgeNodes,2);
+        edgeNodes = edgeNodes(:,1:2);
         EdgeNodeConnect = sort(EdgeNodeConnect,2);
         [isEdge,edgeNr] = ismember(edgeNodes,EdgeNodeConnect,'rows');
         iEdge = NaN(size(wght,1),1);
