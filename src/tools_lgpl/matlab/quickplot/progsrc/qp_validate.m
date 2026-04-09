@@ -575,6 +575,10 @@ try
                 datacheck=inifile('get',CaseInfo,'datacheck','default',1);
                 quantities=Props{n_domains};
                 try
+                    if n_quantities == 0
+                        fprintf(logid2,'%s\n','\multicolumn{4}{|l|}{No fields in file} \\');
+                        emptyTable2 = false;
+                    end
                     for i_quantity=1:n_quantities
                         if progressbar((acc_dt+case_dt(i)*(i_quantity-1)/NT)/tot_dt,Hpb)<0
                             write_table2_line(logid2,Color.Table{TC2},'','','',''); % at least one line needed in table
@@ -1725,7 +1729,7 @@ end
 switch log_style
     case 'latex'
         if emptyTable
-            fprintf(logid,'%s\n','\STRUT & & \\');
+            fprintf(logid,'%s\n','\STRUT & & & \\');
         end
         fprintf(logid,'%s\n','[1ex] \hline');
         fprintf(logid,'%s\n','\end{longtable}');
