@@ -439,7 +439,11 @@ try
                         else
                             PrevProps=cmpFile.Data;
                         end
-                        DiffFound = vardiff(Props,PrevProps)>1;
+                        TempProps = Props;
+                        if isfield(TempProps,'QP_SortedStations')
+                            TempProps = rmfield(TempProps,{'QP_SortedStations','QP_StationOrder'});
+                        end
+                        DiffFound = vardiff(TempProps,PrevProps)>1;
                         write_log(logid2,'Comparing new and old fields:');
                         if DiffFound
                             DiffMessage = 1; % Failed

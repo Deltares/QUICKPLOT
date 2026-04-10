@@ -69,9 +69,9 @@ switch cmd
         Key   = Proxy.Data.Key;
         switch Key(1:4)
             case 'main'
-                [FI,FileName,Tp,Otherargs]=qp_fmem('open',Proxy.Name,Proxy.Otherargs{:});
+                [FI,~,~,~]=qp_fmem('open',Proxy.Name,Proxy.Otherargs{:});
             case 'grid'
-                [FI,FileName,Tp,Otherargs]=grid_fopen('open',Proxy.Name,Proxy.Otherargs{:});
+                [FI,~,~,~]=grid_fopen('open',Proxy.Name,Proxy.Otherargs{:});
         end
         if ~isempty(FI)
             save.(Key) = FI;

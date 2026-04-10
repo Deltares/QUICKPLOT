@@ -1,4 +1,4 @@
-function [varargout]=qp_getdata(varargin)
+function [varargout] = qp_getdata(varargin)
 %QP_GETDATA General interface for various data files
 %   Core implementation of QPREAD functionality. See QPREAD for syntax details.
 %   The only difference between QPREAD and this function is the treatment of
@@ -75,45 +75,40 @@ function [varargout]=qp_getdata(varargin)
 %   http://www.deltaressystems.com
 %   $HeadURL$
 %   $Id$
+T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 %
 % Initialize output array. Set the Success flag to 0.
 %
-varargout=cell(1,nargout);
-varargout{1}=0;
+varargout = cell(1,nargout);
+varargout{1} = 0;
 %
 % Determine file type for calling the appropriate function
 %
-X=varargin;
-if ~isempty(X) && isempty(X{1})
-    ui_message('warning','Empty file information supplied, cancelling operation.')
-    return
-else
-    Info=[];
-    if ~isempty(X) && isstruct(X{1})
-        tp = qp_gettype(X{1});
-        if strcmp(tp,'unknown file type')
-            % the second argument should then be of type DataFld
-            if  ~isfield(X,'Name') || ~isfield(X,'Units') || ~isfield(X,'DimFlag') || ~isfield(X,'NVal')
-                % This isn't a DataFld structure, so there is something
-                % wrong. Most likely the filetype cannot be identified
-                % because the structure didn't come from qpfopen.
-                error('Unable to identify filetype associated with the first argument.')
-            end
-        else
-            Info=X{1};
-            X=X(2:end);
-        end
-    end
+argin = varargin;
+Info = [];
+if isempty(argin)
     %
+    % Assume that the user intents to use the last-opened NEFIS file.
+    % This is consistent with the Delft3D-MATLAB functions.
+    %
+    Info = vs_use('lastread');
     if isempty(Info)
-        %
-        % Assume that the user intents to use the last-opened NEFIS file.
-        % This is consistent with the Delft3D-MATLAB functions.
-        %
-        Info=vs_use('lastread');
-        if isempty(Info)
-            error('No data file specified or data file not recognized.')
+        error('No data file specified or data file not recognized.')
+    end
+else
+    argin1 = argin{1};
+    if isempty(argin1)
+        ui_message('warning','Empty file information supplied, cancelling operation.')
+        return
+    elseif isstruct(argin1)
+        tp = qp_gettype(argin1);
+        if strcmp(tp,'unknown file type')
+            % currently not supported
+            error('Unable to identify filetype associated with the first argument.')
+        else
+            Info = argin{1};
+            argin = argin(2:end);
         end
     end
 end
@@ -128,17 +123,16 @@ end
 %
 % Try calling the function and catch errors.
 %
-lasterr('');
-calltype='';
+calltype = '';
 try
     %
     % Remove QuickPlot wrapper ...
     %
-    [FI,Info]=qp_unwrapfi(Info);
+    [FI,Info] = qp_unwrapfi(Info);
     %
     % Call function and pass results if requested.
     %
-    OK=1;
+    OK = 1;
     switch nargout
         case {0,1}
             %
@@ -146,8 +140,9 @@ try
             %
             % Add empty array for dummy domain argument.
             %
-            calltype='options1';
-            feval(Fcn,FI,[],X{:});
+            calltype = 'options1';
+            feval(Fcn,FI,[],argin{:});
+            
         case 2
             %
             % [Success,Dimensions]            = QP_GETDATA(FI,'dimensions')
@@ -170,8 +165,8 @@ try
             %
             % Check for domain index ... add if necessary
             %
-            if ~isempty(X)
-                if isequal(X{1},'domainname')
+            if ~isempty(argin)
+                if isequal(argin{1},'domainname')
                     %
                     % [Success,DomainName]            = QP_GETDATA(FI,'domainname')
                     %
@@ -183,11 +178,11 @@ try
                     end
                     varargout{1} = OK;
                     return
-                elseif isequal(X{1},'domains') || ...
-                        isequal(X{1},'domainname') || ...
-                        isequal(X{1},'dimensions') || ...
-                        isequal(X{1},'locations') || ...
-                        isequal(X{1},'quantities')
+                elseif isequal(argin{1},'domains') || ...
+                        isequal(argin{1},'domainname') || ...
+                        isequal(argin{1},'dimensions') || ...
+                        isequal(argin{1},'locations') || ...
+                        isequal(argin{1},'quantities')
                     %
                     % [Success,Dimensions]            = QP_GETDATA(FI,'dimensions')
                     % [Success,Locations ]            = QP_GETDATA(FI,'locations')
@@ -197,14 +192,14 @@ try
                     %
                     % Add empty array for dummy domain argument.
                     %
-                    calltype=X{1};
-                    X={[] X{1}};
-                elseif ischar(X{1}) && length(X)==1
+                    calltype = argin{1};
+                    argin = {[] argin{1}};
+                elseif ischar(argin{1}) && isscalar(argin)
                     %
                     % Cannot understand input.
                     %
                     error('Invalid input or incorrect number of arguments.')
-                elseif isnumeric(X{1}) && isequal(size(X{1}),[1 1])
+                elseif isnumeric(argin{1}) && isequal(size(argin{1}),[1 1])
                     %
                     % [Success,DataProps ]            = QP_GETDATA(FI,Domain)
                     % [Success,DataProps ]            = QP_GETDATA(FI,Domain,DimMask)
@@ -220,12 +215,12 @@ try
                     %
                     % Nothing to do, we already have a domain number.
                     %
-                    if length(X)>2
-                        calltype=X{3};
-                    elseif length(X)==2 && ischar(X{2})
-                        calltype=X{2};
+                    if length(argin)>2
+                        calltype = argin{3};
+                    elseif length(argin) == 2 && ischar(argin{2})
+                        calltype = argin{2};
                     else
-                        calltype='getprops2';
+                        calltype = 'getprops2';
                     end
                 else
                     %
@@ -242,18 +237,18 @@ try
                     %
                     % No domain number, so use default domain number 0.
                     %
-                    if length(X)>1
-                        if ~ischar(X{2})
-                            error('Encountered %s instead of command string.',class(X{2}))
+                    if length(argin)>1
+                        if ~ischar(argin{2})
+                            error('Encountered %s instead of command string.',class(argin{2}))
                         else
-                            calltype=X{2};
+                            calltype = argin{2};
                         end
-                    elseif length(X)==1 && ischar(X{1})
-                        calltype=X{1};
+                    elseif isscalar(argin) && ischar(argin{1})
+                        calltype = argin{1};
                     else
-                        calltype='getprops2';
+                        calltype = 'getprops2';
                     end
-                    X=cat(2,{0},X);
+                    argin = cat(2,{0},argin);
                 end
             else
                 %
@@ -262,62 +257,92 @@ try
                 % No parameters at all, so no domain number. Use default domain
                 % number 0.
                 %
-                calltype='getprops2';
-                X={0};
+                calltype = 'getprops2';
+                argin = {0};
             end
-            if ~isempty(X) && isnumeric(X{end}) && isequal(size(X{end}),[1 5]) && isequal(calltype,'getprops2')
-                %
-                % [Success,DataProps ]            = QP_GETDATA(FI,Domain,DimMask)
-                %
-                % Do not pass the DimMask filter to the function to be called ...
-                %
-                DataProps=feval(Fcn,FI,X{1:end-1});
-                %
-                % ... and apply DimMask filter afterwards.
-                %
-                dims=cat(1,DataProps.DimFlag);
-                flag=ismember(dims,X{end},'rows');
-                DataProps=DataProps(flag);
-                DataProps=separators(DataProps);
-                varargout{2}=DataProps;
+            if isequal(calltype,'getprops2')
+                if ~isempty(argin) && isnumeric(argin{end}) && isequal(size(argin{end}),[1 5])
+                    %
+                    % [Success,DataProps ]            = QP_GETDATA(FI,Domain,DimMask)
+                    %
+                    % Do not pass the DimMask filter to the function to be called ...
+                    %
+                    DimFlagPattern = argin{end};
+                    argin = argin(1:end);
+                    DataProps = feval(Fcn,FI,argin{:});
+                    %
+                    % ... and apply DimMask filter afterwards.
+                    %
+                    dims = cat(1,DataProps.DimFlag);
+                    matching = ismember(dims,DimFlagPattern,'rows');
+                    DataProps = DataProps(matching);
+                else
+                    %
+                    % [Success,DataProps ]            = QP_GETDATA(FI)
+                    % [Success,DataProps ]            = QP_GETDATA(FI,Domain)
+                    %
+                    DataProps = feval(Fcn,FI,argin{:});
+                end
+                % check whether the user has requested sorting of station names
+                DEFAULT = sort_stations('default');
+                stationSortMethod = qp_option(FI,'sortStations','default',DEFAULT);
+                if ~isequal(stationSortMethod,DEFAULT)
+                    % check if there is actually any data set in this file
+                    % that has a station dimension
+                    DimFlags = cat(1,DataProps.DimFlag);
+                    hasStationDim = find(DimFlags(:,ST_) ~= 0);
+                    for i = hasStationDim'
+                        % Loop over the fields that have a station dimension
+                        Stations = feval(Fcn,FI,argin{:},DataProps(i),'stations',0);
+                        [DataProps(i).QP_SortedStations,DataProps(i).QP_StationOrder] = sort_stations(Stations,stationSortMethod);
+                    end
+                end
+                DataProps = separators(DataProps);
+                varargout{2} = DataProps;
             else
                 %
                 % If DataFld is indicated by a character string (name) replace
                 % it by an element of the DataProps structure ...
                 %
-                if length(X)>2 && ischar(X{2}) && ischar(X{3})
-                    X{2}=qp_datafield_name2prop(Info,X{1},X{2});
+                if length(argin)>2 && ischar(argin{2}) && ischar(argin{3})
+                    argin{2} = qp_datafield_name2prop(Info,argin{1},argin{2});
                 end
                 %
-                % Add T array if not specified ...
+                % Add subfield, time, station index if not specified ...
                 %
-                if length(X)>=1 && isequal(X{end},'times')
-                    %
-                    % [Success,Times     ]            = QP_GETDATA(FI,Domain,DataFld,'times')
-                    %
-                    X{end+1}=0;
+                cacheUsed = false;
+                switch calltype
+                    case {'subfields','times'}
+                        if length(argin) == 3
+                            argin{end+1} = 0;
+                        end
+                    case {'stations'}
+                        if length(argin) == 3
+                            argin{end+1} = 0;
+                        end
+                        if isfield(argin{2},'QP_SortedStations')
+                            varargout{2} = argin{2}.QP_SortedStations;
+                            cacheUsed = true;
+                        end
                 end
                 %
                 % ... and call the appropriate function for the file type.
                 %
-                if ~any(strcmp(calltype,gridcelldata('types')))
+                if cacheUsed
+                    % ready
+                elseif ~any(strcmp(calltype,gridcelldata('types')))
                     %
                     % for calls like: domains, dimensions, times, stations, plot, ...
                     %
-                    varargout{2}=feval(Fcn,FI,X{:});
+                    varargout{2} = feval(Fcn,FI,argin{:});
                 else
                     %
                     % for calls like: data, gridcelldata, ...
                     %
-                    [varargout{2},dummy] = hvslice(Fcn,FI,X);
-                end
-                %
-                % ... in case of DataProps remove excessive separators
-                %
-                if length(X)==1
-                    varargout{2}=separators(varargout{2});
+                    [varargout{2},~] = hvslice(Fcn,FI,argin);
                 end
             end
+
         case 3
             %
             % [Success,NewFI     ,cmdargs]    = QP_GETDATA(FI,'options',OptionsFigure,OptionsCommand, ...)
@@ -332,33 +357,33 @@ try
             % If a NewFI argument is returned, it may have to be wrapped in a
             % QuickPlot wrapper. However, it is sometimes returned as the
             % second argument, sometimes as third. Select appropriate index
-            % using the variable fi. The default index is 3 ...
+            % using the variable iArgNewFI. The default index is 3 ...
             %
-            if isequal(X{1},'options')
+            if isequal(argin{1},'options')
                 %
                 % [Success,NewFI     ,cmdargs]    = QP_GETDATA(FI,'options',OptionsFigure,OptionsCommand, ...)
                 % NewFI returned as second argument ...
                 %
-                fi=2;
+                iArgNewFI = 2;
                 %
                 % Add empty array for dummy domain argument.
                 %
-                calltype=sprintf('options3/%s',X{3});
-                X=cat(2,{[]},X);
-                [varargout{2:3}]=feval(Fcn,FI,X{:});
-            elseif isequal(X{1},'data')
+                calltype = sprintf('options3/%s',argin{3});
+                argin = cat(2,{[]},argin);
+                [varargout{2:3}] = feval(Fcn,FI,argin{:});
+            elseif isequal(argin{1},'data')
                 %
                 % [Success,Data      ,NewFI]      = QP_GETDATA(FI,'data',Quantity,DimSelection)
                 % NewFI returned as third argument ...
                 %
-                fi=3;
+                iArgNewFI = 3;
                 %
-                calltype='objdata';
-                if ischar(X{2})
-                    X{2}=qp_datafield_name2prop(Info,'NEW_RESOURCE_CALL',X{2});
+                calltype = 'objdata';
+                if ischar(argin{2})
+                    argin{2} = qp_datafield_name2prop(Info,'NEW_RESOURCE_CALL',argin{2});
                 end
-                X=cat(2,{[]},X);
-                [varargout{2:3}]=feval(Fcn,FI,X{:});
+                argin = cat(2,{[]},argin);
+                [varargout{2:3}] = feval(Fcn,FI,argin{:});
             else
                 %
                 % [Success,TZshift   ,TZstr]      = QP_GETDATA(FI,...,'timezone')
@@ -366,7 +391,7 @@ try
                 %
                 % Check for domain number ... and add if necessary.
                 %
-                if isnumeric(X{1})
+                if isnumeric(argin{1})
                     %
                     % Case with domain number ...
                     %
@@ -382,7 +407,7 @@ try
                     % [Success,Data      ,NewFI]      = QP_GETDATA(FI,DataFld,...)
                     % No domain number, so use default domain number 0.
                     %
-                    X=cat(2,{0},X);
+                    argin = cat(2,{0},argin);
                 end
                 %
                 % [Success,TZshift   ,TZstr]      = QP_GETDATA(FI,Domain,DataFld,'timezone')
@@ -391,52 +416,54 @@ try
                 % If DataFld is indicated by a character string (name) replace
                 % it by an element of the DataProps structure ...
                 %
-                if ischar(X{2})
-                    X{2}=qp_datafield_name2prop(Info,X{1},X{2});
+                if ischar(argin{2})
+                    argin{2} = qp_datafield_name2prop(Info,argin{1},argin{2});
                 end
                 %
-                calltype=X{3};
-                if strcmp(calltype,'timezone')
-                    % [Success,TZshift   ,TZstr]      = QP_GETDATA(FI,Domain,DataFld,'timezone')
-                    %
-                    % NewFI not returned ...
-                    fi=[];
-                    [varargout{2:3}]=feval(Fcn,FI,X{:});
-                elseif strcmp(calltype,'plot')
-                    %
-                    % [Success,hNew      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'plot',Parent,Ops,hOld,subf,t,station,m,n,k)
-                    %
-                    %
-                    % NewFI returned as third argument ...
-                    fi=3;
-                    [varargout{2:3}]=feval(Fcn,FI,X{:});
-                else
-                    %
-                    % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'data',subf,t,station,m,n,k)
-                    % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'celldata',subf,t,station,m,n,k)
-                    % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'griddata',subf,t,station,m,n,k)
-                    % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'gridcelldata',subf,t,station,m,n,k)
-                    %
-                    % NewFI returned as third argument ...
-                    fi=3;
-                    %
-                    % Catch v_slice options for further processing a bit further down.
-                    %
-                    [arg2,arg3] = hvslice(Fcn,FI,X);
-                    %
-                    % Set output arguments.
-                    %
-                    varargout{2}=arg2;
-                    varargout{3}=arg3;
-                    %
+                calltype = argin{3};
+                switch calltype
+                    case 'timezone'
+                        % [Success,TZshift   ,TZstr]      = QP_GETDATA(FI,Domain,DataFld,'timezone')
+                        %
+                        % NewFI not returned ...
+                        iArgNewFI = [];
+                        [varargout{2:3}] = feval(Fcn,FI,argin{:});
+                    case 'plot'
+                        %
+                        % [Success,hNew      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'plot',Parent,Ops,hOld,subf,t,station,m,n,k)
+                        %
+                        %
+                        % NewFI returned as third argument ...
+                        iArgNewFI = 3;
+                        [varargout{2:3}] = feval(Fcn,FI,argin{:});
+                    otherwise
+                        %
+                        % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'data',subf,t,station,m,n,k)
+                        % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'celldata',subf,t,station,m,n,k)
+                        % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'griddata',subf,t,station,m,n,k)
+                        % [Success,Data      ,NewFI]      = QP_GETDATA(FI,Domain,DataFld,'gridcelldata',subf,t,station,m,n,k)
+                        %
+                        % NewFI returned as third argument ...
+                        iArgNewFI = 3;
+                        %
+                        % Catch v_slice options for further processing a bit further down.
+                        %
+                        [arg2,arg3] = hvslice(Fcn,FI,argin);
+                        %
+                        % Set output arguments.
+                        %
+                        varargout{2} = arg2;
+                        varargout{3} = arg3;
+                        %
                 end
             end
             %
             % If NewFI was returned, add QuickPlot wrapper if necessary ...
             %
-            if ~isempty(fi)
-                varargout{fi}=qp_wrapfi(varargout{fi},Info);
+            if ~isempty(iArgNewFI)
+                varargout{iArgNewFI} = qp_wrapfi(varargout{iArgNewFI},Info);
             end
+
         case 4
             %
             % [Success,DataFields,Dims ,NVal] = QP_GETDATA(FI,Domain)
@@ -444,16 +471,16 @@ try
             %
             % Check for domain number ... and add if necessary.
             %
-            calltype='getprops4';
-            if isempty(X)
+            calltype = 'getprops4';
+            if isempty(argin)
                 %
                 % [Success,DataFields,Dims ,NVal] = QP_GETDATA(FI)
                 %
                 % No parameters at all, so no domain number. Use default domain
                 % number 0.
                 %
-                X={0};
-            elseif isequal(size(X{1}),[1 1])
+                argin = {0};
+            elseif isequal(size(argin{1}),[1 1])
                 %
                 % [Success,DataFields,Dims ,NVal] = QP_GETDATA(FI,Domain)
                 % [Success,DataFields,Dims ,NVal] = QP_GETDATA(FI,Domain,DimMask)
@@ -466,26 +493,27 @@ try
                 %
                 % No domain number, so use default domain number 0.
                 %
-                X=cat(2,{0},X);
+                argin = cat(2,{0},argin);
             end
             %
             % Replace call by a call requesting a DataProps structure.
             %
-            [OK,DataProps]=qp_getdata(FI,X{:});
+            [OK,DataProps] = qp_getdata(FI,argin{:});
             %
             % Split DataProps into Name, DimFlag and NVal arrays ...
             %
             if OK
-                DataProps=separators(DataProps);
-                varargout(2:4)={transpose({DataProps.Name}) cat(1,DataProps.DimFlag) [DataProps.NVal]};
+                DataProps = separators(DataProps);
+                varargout(2:4) = {transpose({DataProps.Name}) cat(1,DataProps.DimFlag) [DataProps.NVal]};
             end
+
         otherwise
-            error('Unexpected number of output arguments');
+            error('Unexpected number of output arguments')
     end
     %
     % Set the success flag to 1.
     %
-    varargout{1}=OK;
+    varargout{1} = OK;
 catch Ex
     %
     % Catch errors and show the error message.
@@ -508,6 +536,27 @@ if ~isempty(feval(Fcn,FI,X{1:2},'subfields'))
     sf = 1;
 else
     sf = 0;
+end
+if DimFlag(T_)
+    idxT = 3+sf+sum(DimFlag(1:T_)~=0);
+    if length(X) < idxT % if no time specified, select the last
+        sz = feval(Fcn,FI,X{1:2},'size');
+        X{idxT} = sz(T_);
+    end
+end
+if DimFlag(ST_)
+    idxST = 3+sf+sum(DimFlag(1:ST_)~=0);
+    if length(X) < idxST % if no station specified, select all
+        X{idxST} = 0;
+    end
+    if isfield(Props,'QP_StationOrder')
+        renum = Props.QP_StationOrder;
+        if isequal(X{idxST},0)
+            X{idxST} = renum;
+        else
+            X{idxST} = renum(X{idxST});
+        end
+    end
 end
 if DimFlag(K_)
     idxK = 3+sf+sum(DimFlag(1:K_)~=0);
@@ -587,7 +636,7 @@ if isstruct(arg2)
         end
         [arg2.Units]=deal(Units);
         try
-            [conversion,SIunit,dimensions]=qp_unitconversion(Units,'relative');
+            [~,~,dimensions]=qp_unitconversion(Units,'relative');
             if dimensions.temperature~=0
                 if isfield(Props,'TemperatureType')
                     TempType = Props.TemperatureType;
@@ -596,6 +645,7 @@ if isstruct(arg2)
                 end
                 [arg2.TemperatureType] = deal(TempType);
             end
+        catch
         end
     end
 end

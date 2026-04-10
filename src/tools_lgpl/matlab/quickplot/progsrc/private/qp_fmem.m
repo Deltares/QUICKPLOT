@@ -1239,10 +1239,10 @@ switch cmd
             end
         end
 end
-if isempty(FI)
-    lasttp=[];
+if ~isempty(FI)
+    FI = qp_option(FI,'sortStations','alphabetically');
+    qp_settings('LastFileType',lasttp)
 end
-qp_settings('LastFileType',lasttp)
 
 
 function [isASCII,REASON] = verifyascii(arg)
