@@ -1785,7 +1785,7 @@ else
         Insert.DimName = cell(1,5);
         if strcmp(Info.Type,'simple_geometry')
             Insert.NVal = 0;
-        elseif strcmp(Info.Datatype,'char')
+        elseif ismember(Info.Datatype,{'char','string'})
             Insert.NVal = 4;
         elseif any(strcmp('flag_values',Attribs))
             Insert.NVal = 6;

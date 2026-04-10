@@ -444,10 +444,11 @@ switch NVal
                         ex=data.dX_tangential;
                         ey=data.dY_tangential;
                     else
-                        ex=data.dX_tangential([1:end end]);
-                        ey=data.dY_tangential([1:end end]);
-                        ex(ex~=ex([1 1:end-1]))=NaN;
-                        ey(isnan(ex))=NaN;
+                        ex = data.dX_tangential([1:end end]) + data.dX_tangential([1 1:end]);
+                        ey = data.dY_tangential([1:end end]) + data.dY_tangential([1 1:end]);
+                        mag = hypot(ex,ey);
+                        ex = ex./mag;
+                        ey = ey./mag;
                     end
                     %
                     repSize = [1 1];

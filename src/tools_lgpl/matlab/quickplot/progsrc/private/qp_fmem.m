@@ -503,7 +503,7 @@ switch cmd
                                     Tp = 'XMDF';
                                 end
                                 record = hdf5read(FI.FileName,'//File Version');
-                                FI.FileVersion = record.Data;
+                                FI.FileVersion = record;
                             end
                         end
                         FI.FileType = Tp;
