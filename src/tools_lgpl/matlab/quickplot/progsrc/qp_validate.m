@@ -458,7 +458,7 @@ try
                                 for i_domain=1:length(Props)
                                     %
                                     % Check for differences in the datafields
-                                    Prop = Props{i_domain};
+                                    Prop = TempProps{i_domain};
                                     PropRef = PrevProps{i_domain};
                                     if isempty(PropRef)
                                         write_log(logid2,'Old datafields record is empty.');
