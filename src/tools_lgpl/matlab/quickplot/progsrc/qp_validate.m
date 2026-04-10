@@ -426,6 +426,12 @@ try
                     ChkOK = szChkOK & ChkOK;
                     Props{i_domain}=quantities;
                 end
+                TempProps = Props;
+                for i_domain = 1:length(Props)
+                    if isfield(Props{i_domain},'QP_SortedStations')
+                        Props{i_domain} = rmfield(Props{i_domain},{'QP_SortedStations','QP_StationOrder'});
+                    end
+                end
                 write_log(logid2,'');
                 if ChkOK
                     CmpFile='datafields.mat';
@@ -439,11 +445,7 @@ try
                         else
                             PrevProps=cmpFile.Data;
                         end
-                        TempProps = Props;
-                        if isfield(TempProps,'QP_SortedStations')
-                            TempProps = rmfield(TempProps,{'QP_SortedStations','QP_StationOrder'});
-                        end
-                        DiffFound = vardiff(TempProps,PrevProps)>1;
+                        DiffFound = vardiff(Props,PrevProps)>1;
                         write_log(logid2,'Comparing new and old fields:');
                         if DiffFound
                             DiffMessage = 1; % Failed
@@ -458,7 +460,7 @@ try
                                 for i_domain=1:length(Props)
                                     %
                                     % Check for differences in the datafields
-                                    Prop = TempProps{i_domain};
+                                    Prop = Props{i_domain};
                                     PropRef = PrevProps{i_domain};
                                     if isempty(PropRef)
                                         write_log(logid2,'Old datafields record is empty.');
@@ -570,6 +572,7 @@ try
                     frresult=[FAILED ': Error while reading data.'];
                 end
                 %
+                Props = TempProps;
                 n_quantities=length(quantities);
                 n_logfiles = length(logfiles);
                 NT=n_quantities+n_logfiles;
