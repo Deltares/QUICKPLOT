@@ -422,12 +422,12 @@ end
 
 % Apply BlackAxesWhiteFig unless we're saving the figure meta data
 ih = get(fig,'inverthardcopy');
-set(fig,'inverthardcopy','off')
 colorChange = cell(0,3);
 switch printObj.Name
     case {'MATLAB fig file','QUICKPLOT session file'}
         % in this case we want to save the figure as is
     otherwise
+        set(fig,'inverthardcopy','off')
         if isfield(printObj,'BlackAxesWhiteFig') && printObj.BlackAxesWhiteFig
             % support for "inverthardcopy" was dropped in MATLAB 2025a
             colorChange = cell(100,3);

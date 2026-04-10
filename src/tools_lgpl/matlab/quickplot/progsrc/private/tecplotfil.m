@@ -162,13 +162,13 @@ DataProps={'-------'                ''      ''                ''     ''      [0 
 Out=cell2struct(DataProps,PropNames,2);
 
 if strcmpi(Zone.Type,'ORDERED')
-    if isfield(Zone,'iMax')
+    if isfield(Zone,'IMax')
         Out.DimFlag(M_) = 1;
     end
-    if isfield(Zone,'jMax')
+    if isfield(Zone,'JMax')
         Out.DimFlag(N_) = 1;
     end
-    if isfield(Zone,'kMax')
+    if isfield(Zone,'KMax')
         Out.DimFlag(K_) = 1;
     end
 else

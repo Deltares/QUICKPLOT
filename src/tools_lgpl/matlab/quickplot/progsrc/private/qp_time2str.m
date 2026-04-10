@@ -59,8 +59,12 @@ switch timeType
         else
             datefmt = 'dd-MMM-yyyy G HH:mm:ss';
         end
-        Date = datetime(timeValue,'ConvertFrom','datenum');
-        timeString = char(Date,datefmt);
+        try
+            Date = datetime(timeValue,'ConvertFrom','datenum');
+            timeString = char(Date,datefmt);
+        catch % older than version 2014b
+            timeString = datestr(timeValue,0);
+        end
     case {3,4} % day h:m:s
         % 3: discrete, 4: continuous
         timeString=cat(2,repmat('day ',nTimes,1),num2str(floor(timeValue)), ...

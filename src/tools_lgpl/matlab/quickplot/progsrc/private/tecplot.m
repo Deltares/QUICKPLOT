@@ -232,6 +232,25 @@ while i < nStrings || readFromCurrentLineOnly
     end
 end
 
+function [int_values,file] = get_int_list(file,nValues)
+int_values = zeros(1,nValues);
+i = 0;
+if nValues == 0
+    readFromCurrentLineOnly = true;
+else
+    readFromCurrentLineOnly = false;
+end
+while i < nValues || readFromCurrentLineOnly
+    i = i+1;
+    try
+        [int_values(i),file] = get_int(file, readFromCurrentLineOnly);
+    catch err
+        if readFromCurrentLineOnly
+            break
+        end
+    end
+end
+
 function FI=open_ascii(FI,file)
 zone_found = false;
 in_record = 'HEADER';
@@ -511,9 +530,9 @@ while ischar(file.line)
                 nVar =  length(FI.Variables);
                 %
                 if strcmpi(Zone.Type,'ORDERED')
-                    if isfield(Zone,'kMax') % 3D
+                    if isfield(Zone,'KMax') % 3D
                         blockSize = [Zone.IMax Zone.JMax Zone.KMax];
-                    elseif isfield(Zone,'jMax') % 2D
+                    elseif isfield(Zone,'JMax') % 2D
                         blockSize = [Zone.IMax Zone.JMax];
                     else % 1D
                         blockSize = Zone.IMax;
@@ -543,7 +562,7 @@ while ischar(file.line)
                 FI.Zone(z).Data = data;
                 %
                 if ~strcmpi(Zone.Type,'ORDERED')
-                    if isfield(Zone,'elementSize') && ~isempty(Zone.ElementSize)
+                    if isfield(Zone,'ElementSize') && ~isempty(Zone.ElementSize)
                         blockSize = [Zone.ElementSize FI.Zone(z).NElements];
                         [topo,nRead] = fscanf(file.fid,'%i',prod(blockSize));
                         if nRead < prod(blockSize)
@@ -609,6 +628,7 @@ while nTotalRead < numValues
                 value = value * 10^exponent;
             end
             newData = cat(1,newData(1:end-1),repmat(value,newData(end),1));
+            nRead = length(newData);
 
         otherwise
             if nTotalRead+nRead < numValues

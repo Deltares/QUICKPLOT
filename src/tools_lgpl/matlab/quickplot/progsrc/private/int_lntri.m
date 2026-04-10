@@ -191,13 +191,13 @@ noNeighborDefined = cellfun(@isempty,triNeighbors);
 if all(noNeighborDefined)
     % no intersections with points or lines at all
     % search triangle for one point
-    [Ti,p] = tsearch_safe(xyMesh,TRI,xi(1),yi(1));
+    [Ti,p] = tsearch_safe(xyMesh,TRI,xIntersect(1),yIntersect(1));
     if ~isnan(Ti) % inside a mesh face
         triSegment(:) = Ti;
         weightsIntersect(1,:) = p;
         nodesIntersect(1,:) = TRI(Ti,:);
         for i = 2:nIntersections
-            [~,p] = tsearch_safe(xyMesh,TRI(Ti,:),xi(1),yi(1));
+            [~,p] = tsearch_safe(xyMesh,TRI(Ti,:),xIntersect(i),yIntersect(i));
             weightsIntersect(i,:) = p;
             nodesIntersect(i,:) = TRI(Ti,:);
         end

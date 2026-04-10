@@ -133,12 +133,19 @@ switch cmd
                 XY(j,2) = Y(MN(1),MN(2));
                 for i = 2:size(GRID.Selected.Range,1)
                     dMN = GRID.Selected.Range(i,:) - MN;
-                    sMN = sign(dMN);
-                    for d = 1:max(abs(dMN))
-                        MN = MN + sMN;
-                        j = j + 1;
-                        XY(j,1) = X(MN(1),MN(2));
-                        XY(j,2) = Y(MN(1),MN(2));
+                    % follow Bresenham-style stepping in case
+                    % abs(dMN(1)) ~= abs(dMN(2))
+                    % which should never be the case.
+                    nSteps = max(abs(dMN));
+                    if nSteps > 0
+                        steps = (1:nSteps)';
+                        pathMN = round(repmat(MN,nSteps,1) + steps*(dMN/nSteps));
+                        for d = 1:nSteps
+                            MN = pathMN(d,:);
+                            j = j + 1;
+                            XY(j,1) = X(MN(1),MN(2));
+                            XY(j,2) = Y(MN(1),MN(2));
+                        end
                     end
                 end
             case 'ugrid'
