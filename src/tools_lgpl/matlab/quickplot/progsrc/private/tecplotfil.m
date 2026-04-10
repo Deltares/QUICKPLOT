@@ -1,5 +1,5 @@
 function varargout=tecplotfil(FI,domain,field,cmd,varargin)
-%TELEMACFIL QP support for Telemac files.
+%TECPLOTFIL QP support for Tecplot files.
 %   Domains                 = XXXFIL(FI,[],'domains')
 %   DataProps               = XXXFIL(FI,Domain)
 %   Size                    = XXXFIL(FI,Domain,DataFld,'size')
@@ -112,39 +112,39 @@ for i = 1:5
 end
 Zone = FI.Zone(domain);
 
-if strcmpi(Zone.type,'ORDERED')
+if strcmpi(Zone.Type,'ORDERED')
     spatialIndices = idx(fidx);
     if XYRead
-        Ans.X = Zone.data(spatialIndices{:},1);
-        Ans.Y = Zone.data(spatialIndices{:},2);
+        Ans.X = Zone.Data(spatialIndices{:},1);
+        Ans.Y = Zone.Data(spatialIndices{:},2);
         if length(spatialIndices)==3
-            Ans.Z = Zone.data(spatialIndices{:},3);
+            Ans.Z = Zone.Data(spatialIndices{:},3);
         end
     end
     if DataRead
-        Ans.Val = Zone.data(spatialIndices{:},Props.ival);
+        Ans.Val = Zone.Data(spatialIndices{:},Props.ival);
     end
 else
-    switch Zone.elementType
+    switch Zone.ElementType
         case 'LINESEG'
             error('Element type "LINESEG" not yet supported.');
         case {'TRIANGLE','QUADRILATERAL','POLYGON'}
             idxM = idx{M_};
             if XYRead
-                Ans.X = Zone.data(idxM,1);
-                Ans.Y = Zone.data(idxM,2);
-                renum = repmat(-1,Zone.nNodes,1);
+                Ans.X = Zone.Data(idxM,1);
+                Ans.Y = Zone.Data(idxM,2);
+                renum = repmat(-1,Zone.NNodes,1);
                 renum(idxM) = 1:length(idxM);
-                FNC = renum(Zone.topology);
+                FNC = renum(Zone.Topology);
                 FNC(any(FNC<=0,2),:) = [];
                 Ans.FaceNodeConnect = FNC;
             end
             if DataRead
-                Ans.Val = Zone.data(idxM,Props.ival);
+                Ans.Val = Zone.Data(idxM,Props.ival);
                 Ans.ValLocation = 'NODE';
             end
         otherwise
-            error('Element type "%s" not yet supported.',Zone.elementType)
+            error('Element type "%s" not yet supported.',Zone.ElementType)
     end
 end
 
@@ -161,7 +161,7 @@ PropNames={'Name'                   'Units' 'TemperatureType' 'Geom' 'Coords' 'D
 DataProps={'-------'                ''      ''                ''     ''      [0 0 0 0 0]  0           0      []       0     0      1};
 Out=cell2struct(DataProps,PropNames,2);
 
-if strcmpi(Zone.type,'ORDERED')
+if strcmpi(Zone.Type,'ORDERED')
     if isfield(Zone,'iMax')
         Out.DimFlag(M_) = 1;
     end
@@ -172,7 +172,7 @@ if strcmpi(Zone.type,'ORDERED')
         Out.DimFlag(K_) = 1;
     end
 else
-    switch Zone.elementType
+    switch Zone.ElementType
         case 'LINESEG'
             Out.Geom = 'UGRID1D-NODE';
             Out.Coords = 'xy';
@@ -182,9 +182,9 @@ else
         case {'POLYHEDRAL','TETRAHEDRON','BRICK'}
             Out.Geom = 'UGRID3D';
             Out.Coords = 'xyz';
-            error('3D element type "%s" not yet supported.',Zone.elementType)
+            error('3D element type "%s" not yet supported.',Zone.ElementType)
         otherwise
-            error('Element type "%s" not yet supported.',Zone.elementType)
+            error('Element type "%s" not yet supported.',Zone.ElementType)
     end
     Out.DimFlag(M_) = 6;
 end
@@ -201,22 +201,22 @@ function sz=getsize(FI,domain,Props)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 sz=[0 0 0 0 0];
 Zone = FI.Zone(domain);
-if strcmpi(Zone.type,'ORDERED')
+if strcmpi(Zone.Type,'ORDERED')
     if Props.DimFlag(M_)
-        sz(M_) = Zone.iMax;
+        sz(M_) = Zone.IMax;
     end
     if Props.DimFlag(N_)
-        sz(N_) = Zone.jMax;
+        sz(N_) = Zone.JMax;
     end
     if Props.DimFlag(K_)
-        sz(K_) = Zone.kMax;
+        sz(K_) = Zone.KMax;
     end
 else
     switch Props.Geom
         case {'UGRID1D-NODE','UGRID2D-NODE','UGRID3D-NODE'}
-            sz(M_) = Zone.nNodes;
+            sz(M_) = Zone.NNodes;
         case {'UGRID1D-EDGE','UGRID-FACE','UGRID3D-VOLUME'}
-            sz(M_) = Zone.nElements;
+            sz(M_) = Zone.NElements;
     end
 end
 % -----------------------------------------------------------------------------
@@ -230,9 +230,9 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 
 % -----------------------------------------------------------------------------
 function Domains=domains(FI)
-if isscalar(FI.Zone) && strcmp(FI.Zone.title,'zone 1')
+if isscalar(FI.Zone) && strcmp(FI.Zone.Title,'zone 1')
     Domains = {};
 else
-    Domains = {FI.Zone.title};
+    Domains = {FI.Zone.Title};
 end
 % -----------------------------------------------------------------------------

@@ -125,7 +125,7 @@ switch cmd
                         error('qp_gridview:UnsupportedValLocation', ...
                               'Unsupported GRID.ValLocation "%s" for sgrid.', GRID.ValLocation);
                 end
-                nTotal = 1+sum(sum(abs(diff(GRID.Selected.Range,1))));
+                nTotal = 1+sum(max(abs(diff(GRID.Selected.Range,1)),[],2));
                 XY = NaN(nTotal,2);
                 MN = GRID.Selected.Range(1,:);
                 j = 1;

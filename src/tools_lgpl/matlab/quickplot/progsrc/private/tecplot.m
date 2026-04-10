@@ -168,6 +168,9 @@ if n == 0 && nextindex == 1
 end
 
 function [str,file] = get_string(file, readFromCurrentLineOnly)
+if nargin<2
+    readFromCurrentLineOnly = true;
+end
 while true
     [~,n,~,nextindex] = sscanf_optional_space(file.line, '%["]', 1);
     if n == 0
@@ -270,24 +273,24 @@ while ischar(file.line)
             in_record = 'ZONE';
             zone_found = true;
             z = z+1;
-            FI.Zone(z).title = sprintf('zone %i',z);
-            FI.Zone(z).type = 'ORDERED';
+            FI.Zone(z).Title = sprintf('zone %i',z);
+            FI.Zone(z).Type = 'ORDERED';
         case 'T'
             file = check_symbol(file,'=');
             switch in_record
                 case 'ZONE' % zone title
-                    [FI.Zone(z).title,file] = get_string(file);
+                    [FI.Zone(z).Title,file] = get_string(file);
                 case 'TEXT' % text label (may be multi-line by including \\n)
-                    [FI.Text(t).label,file] = get_string(file);
+                    [FI.Text(t).Label,file] = get_string(file);
             end
         case 'ZONETYPE'
             file = check_symbol(file,'=');
-            [FI.Zone(z).type,file] = get_string(file);
-            switch upper(FI.Zone(z).type)
+            [FI.Zone(z).Type,file] = get_string(file);
+            switch upper(FI.Zone(z).Type)
                 case 'ORDERED'
                 case {'FELINESEG','FETRIANGLE','FEQUADRILATERAL','FEPOLYGON','FEPOLYHEDRAL','FETETRAHEDRON','FEBRICK'}
-                    FI.Zone(z).elementType = FI.Zone(z).type(3:end);
-                    FI.Zone(z).elementSize = element_size(FI.Zone(z).elementType);
+                    FI.Zone(z).ElementType = FI.Zone(z).Type(3:end);
+                    FI.Zone(z).ElementSize = element_size(FI.Zone(z).ElementType);
             end
         case 'C'
             file = check_symbol(file,'=');
@@ -295,230 +298,231 @@ while ischar(file.line)
         case 'D'
             file = check_symbol(file,'=');
             file = check_symbol(file,'(');
-            [FI.Zone(z).duplicateList,file] = get_int_list(file,0); % all < length(variables)
+            [FI.Zone(z).DuplicateList,file] = get_int_list(file,0); % all < length(variables)
             file = check_symbol(file,')');
         case {'E','ELEMENTS'}
             file = check_symbol(file,'=');
-            [FI.Zone(z).nElements,file] = get_int(file);
+            [FI.Zone(z).NElements,file] = get_int(file);
         case 'ET'
             file = check_symbol(file,'=');
-            [FI.Zone(z).elementType,file] = get_string(file);
-            FI.Zone(z).type = ['FE',FI.Zone(z).elementType];
-            FI.Zone(z).elementSize = element_size(FI.Zone(z).elementType);
-            if FI.Zone(z).elementSize <= 0
-                error('Unsupported element type %s for zone %i.',FI.Zone(z).elementType,z)
+            [FI.Zone(z).ElementType,file] = get_string(file);
+            FI.Zone(z).Type = ['FE',FI.Zone(z).ElementType];
+            FI.Zone(z).ElementSize = element_size(FI.Zone(z).ElementType);
+            if FI.Zone(z).ElementSize <= 0
+                error('Unsupported element type %s for zone %i.',FI.Zone(z).ElementType,z)
             end
         case 'F'
             file = check_symbol(file,'=');
             switch in_record
                 case 'ZONE'
-                    [FI.Zone(z).dataFormat,file] = get_string(file);
-                    switch upper(FI.Zone(z).dataFormat)
+                    [FI.Zone(z).DataFormat,file] = get_string(file);
+                    switch upper(FI.Zone(z).DataFormat)
                         case {'BLOCK','FEBLOCK'}
                             % all values of one variable together
-                            FI.Zone(z).dataFormat = 'BLOCK';
+                            FI.Zone(z).DataFormat = 'BLOCK';
                         case {'POINT','FEPOINT'}
                             % all values of one point/node together
-                             FI.Zone(z).dataFormat = 'POINT';
+                             FI.Zone(z).DataFormat = 'POINT';
                        otherwise
-                            error('Unsupported data format %s for zone %i.',FI.Zone(z).dataFormat,z)
+                            error('Unsupported data format %s for zone %i.',FI.Zone(z).DataFormat,z)
                     end
                 case 'TEXT'
                     [FI.Text(t).Font,file] = get_string(file);
             end
         case 'FACES'
             file = check_symbol(file,'=');
-            [FI.Zone(z).nFaces,file] = get_int(file);
+            [FI.Zone(z).NFaces,file] = get_int(file);
         case 'I'
             file = check_symbol(file,'=');
-            [FI.Zone(z).iMax,file] = get_int(file);
+            [FI.Zone(z).IMax,file] = get_int(file);
         case 'J'
             file = check_symbol(file,'=');
-            [FI.Zone(z).jMax,file] = get_int(file);
+            [FI.Zone(z).JMax,file] = get_int(file);
         case 'K'
             file = check_symbol(file,'=');
-            [FI.Zone(z).kMax,file] = get_int(file);
+            [FI.Zone(z).KMax,file] = get_int(file);
         case {'N','NODES'}
             file = check_symbol(file,'=');
-            [FI.Zone(z).nNodes,file] = get_int(file);
+            [FI.Zone(z).NNodes,file] = get_int(file);
         case 'TOTALNUMFACENODES'
             file = check_symbol(file,'=');
-            [FI.Zone(z).totalNumFaceNodes,file] = get_int(file);
+            [FI.Zone(z).TotalNumFaceNodes,file] = get_int(file);
         case 'NUMCONNECTEDBOUNDARYFACES'
             file = check_symbol(file,'=');
-            [FI.Zone(z).numConnectedBoundaryFaces,file] = get_int(file);
+            [FI.Zone(z).NumConnectedBoundaryFaces,file] = get_int(file);
         case 'TOTALNUMBOUNDARYCONNECTIONS'
             file = check_symbol(file,'=');
-            [FI.Zone(z).totalNumBoundaryConnections,file] = get_int(file);
+            [FI.Zone(z).TotalNumBoundaryConnections,file] = get_int(file);
         case 'FACENEIGHBORMODE'
             file = check_symbol(file,'=');
-            [FI.Zone(z).faceNeighborMode,file] = get_string(file);
-            switch upper(FI.Zone(z).faceNeighborMode)
+            [FI.Zone(z).FaceNeighborMode,file] = get_string(file);
+            switch upper(FI.Zone(z).FaceNeighborMode)
                 case {'LOCALONETOONE','LOCALONETOMANY','GLOBALONETOONE','GLOBALONETOMANY'}
                     % known options
                 otherwise
-                    error('Unsupported face neighbor mode %s for zone %i.',FI.Zone(z).faceNeighborMode,z)
+                    error('Unsupported face neighbor mode %s for zone %i.',FI.Zone(z).FaceNeighborMode,z)
             end
         case 'FACENEIGHBORCONNECTIONS'
             file = check_symbol(file,'=');
-            [FI.Zone(z).faceNeighborConnections,file] = get_int(file);
+            [FI.Zone(z).FaceNeighborConnections,file] = get_int(file);
         case 'DT'
             file = check_symbol(file,'=');
             file = check_symbol(file,'(');
-            [FI.Zone(z).dataTypes,file] = get_string_list(file,length(FI.Variables));
+            [FI.Zone(z).DataTypes,file] = get_string_list(file,length(FI.Variables));
             file = check_symbol(file,')');
-            for i = 1:length(FI.Zone(z).dataTypes)
-                switch upper(FI.Zone(z).dataTypes{i})
+            for i = 1:length(FI.Zone(z).DataTypes)
+                switch upper(FI.Zone(z).DataTypes{i})
                     case {'SINGLE','DOUBLE','LONGINT','SHORTINT','BYTE','BIT'}
                     otherwise
-                        error('Unsupported data type %s for variable %s.',FI.Zone(z).dataTypes{i},FI.Variables{i})
+                        error('Unsupported data type %s for variable %s.',FI.Zone(z).DataTypes{i},FI.Variables{i})
                 end
             end
         case 'DATAPACKING'
             file = check_symbol(file,'=');
-            [FI.Zone(z).dataPacking,file] = get_string(file);
-            switch upper(FI.Zone(z).dataPacking)
+            [FI.Zone(z).DataPacking,file] = get_string(file);
+            switch upper(FI.Zone(z).DataPacking)
                 case {'BLOCK','POINT'}
                 otherwise
-                    error('Unsupported data packing %s for zone %i.',FI.Zone(z).dataPacking,z)
+                    error('Unsupported data packing %s for zone %i.',FI.Zone(z).DataPacking,z)
             end
         case 'VARLOCATION'
             % example syntax: VARLOCATION = ([3,4]=CELLCENTERED)
             % two options: NODAL (default) and CELLCENTERED
             file = check_symbol(file,'=');
             file = check_symbol(file,'(');
-            error('Reading VARLOCATION keyword not yet implemented.')
+            error('Reading %s keyword not yet implemented.',keyw)
         case 'VARSHARELIST'
             % example syntax: VARSHARELIST=([4-6,11]=3, [20-23]=1, [13,15])
             % unspecified zone number: previous zone z-1
             file = check_symbol(file,'=');
             file = check_symbol(file,'(');
-            error('Reading VARSHARELIST keyword not yet implemented.')
+            error('Reading %s keyword not yet implemented.',keyw)
         case 'NV' % node value
             file = check_symbol(file,'=');
-            [FI.Zone(z).nodeValue,file] = get_int(file); % < length(variables)
+            [FI.Zone(z).NodeValue,file] = get_int(file); % < length(variables)
         case 'CONNECTIVITYSHAREZONE'
             file = check_symbol(file,'=');
-            [FI.Zone(z).connectivityShareZone,file] = get_int(file); % < length(zones)
+            [FI.Zone(z).ConnectivityShareZone,file] = get_int(file); % < length(zones)
         case 'STRANDID'
             file = check_symbol(file,'=');
-            [FI.Zone(z).strandID,file] = get_int(file);
+            [FI.Zone(z).StrandID,file] = get_int(file);
         case 'SOLUTIONTIME'
             file = check_symbol(file,'=');
-            [FI.Zone(z).solutionTime,file] = get_float(file);
+            [FI.Zone(z).SolutionTime,file] = get_float(file);
         case 'PASSIVEVARLIST'
             % example syntax: [4-5,20]
             file = check_symbol(file,'=');
+            error('Reading %s keyword not yet implemented.',keyw)
         case 'AUXDATA'
             % example syntax: AUXDATA EXPERIMENTDATE ="October 13, 2007, 8 A.M."
-            error('Reading AUXDATA keyword not yet implemented.')
+            error('Reading %s keyword not yet implemented.',keyw)
         case 'TEXT'
             in_record = 'TEXT';
             t = t+1;
         case 'X'
             file = check_symbol(file,'=');
-            [FI.Text(t).xCoord,file] = get_float(file);
+            [FI.Text(t).XCoord,file] = get_float(file);
         case 'Y'
             file = check_symbol(file,'=');
-            [FI.Text(t).yCoord,file] = get_float(file);
+            [FI.Text(t).YCoord,file] = get_float(file);
         case 'CS' % coordinate system
             file = check_symbol(file,'=');
-            [FI.Text(t).coordinateSystem,file] = get_string(file);
-            switch upper(FI.Text(t).coordinateSystem)
+            [FI.Text(t).CoordinateSystem,file] = get_string(file);
+            switch upper(FI.Text(t).CoordinateSystem)
                 case {'FRAME','GRID','GRID3D'}
                 otherwise
-                    error('Unsupported coordinate system %s.',FI.Text(t).coordinateSystem)
+                    error('Unsupported coordinate system %s.',FI.Text(t).CoordinateSystem)
             end
         case 'AN' % anchor
             file = check_symbol(file,'=');
-            [FI.Text(t).anchor,file] = get_string(file);
-            switch upper(FI.Text(t).anchor)
+            [FI.Text(t).Anchor,file] = get_string(file);
+            switch upper(FI.Text(t).Anchor)
                 case {'HEADLEFT','MIDLEFT','LEFT','HEADCENTER','MIDCENTER','CENTER','HEADRIGHT','MIDRIGHT','RIGHT'}
                 otherwise
-                    error('Unsupported anchor %s.',FI.Text(t).anchor)
+                    error('Unsupported anchor %s.',FI.Text(t).Anchor)
             end
         case 'HU' % height unit
             file = check_symbol(file,'=');
-            [FI.Text(t).heightUnit,file] = get_string(file);
-            switch upper(FI.Text(t).heightUnit)
+            [FI.Text(t).HeightUnit,file] = get_string(file);
+            switch upper(FI.Text(t).HeightUnit)
                 case {'FRAME','POINT','GRID'}
                 otherwise
-                    error('Unsupported anchor %s.',FI.Text(t).heightUnit)
+                    error('Unsupported anchor %s.',FI.Text(t).HeightUnit)
             end
         case 'H' % height
             file = check_symbol(file,'=');
-            [FI.Text(t).height,file] = get_floa(file);
+            [FI.Text(t).Height,file] = get_float(file);
         case 'LS' % line spacing (default: 1)
             file = check_symbol(file,'=');
-            [FI.Text(t).lineSpacing,file] = get_float(file);
+            [FI.Text(t).LineSpacing,file] = get_float(file);
         case 'BX' % box type: HOLLOW, FILLED, NOBOX
             file = check_symbol(file,'=');
-            [FI.Text(t).boxType,file] = get_string(file);
-            switch upper(FI.Text(t).boxType)
+            [FI.Text(t).BoxType,file] = get_string(file);
+            switch upper(FI.Text(t).BoxType)
                 case {'HOLLOW','FILLED','NOBOX'}
                 otherwise
-                    error('Unsupported anchor %s.',FI.Text(t).boxType)
+                    error('Unsupported anchor %s.',FI.Text(t).BoxType)
             end
         case 'BXF' % box fill color
             file = check_symbol(file,'=');
-            [FI.Time(t).boxFillColor,file] = get_color(file);
+            [FI.Text(t).BoxFillColor,file] = get_color(file);
         case 'BXO' % box outline color
             file = check_symbol(file,'=');
-            [FI.Time(t).boxOutlineColor,file] = get_color(file);
+            [FI.Text(t).BoxOutlineColor,file] = get_color(file);
         case 'BXM' % box margin
             file = check_symbol(file,'=');
-            [FI.Text(t).boxMargin,file] = get_float(file);
+            [FI.Text(t).BoxMargin,file] = get_float(file);
         case 'LT' % line thickness
             file = check_symbol(file,'=');
-            [FI.Text(t).lineThickness,file] = get_float(file);
+            [FI.Text(t).LineThickness,file] = get_float(file);
         case 'R' % radius for polar plots (see also THETA)
             file = check_symbol(file,'=');
-            [FI.Text(t).rCoord,file] = get_float(file);
+            [FI.Text(t).RCoord,file] = get_float(file);
         case 'THETA' % theta for polar plots (see also R)
             file = check_symbol(file,'=');
-            [FI.Text(t).thetaCoord,file] = get_float(file);
+            [FI.Text(t).ThetaCoord,file] = get_float(file);
         case 'MFC'
             file = check_symbol(file,'=');
-            [FI.Text(t).macroFunction,file] = get_string(file);
+            [FI.Text(t).MacroFunction,file] = get_string(file);
         case 'CLIPPING'
             file = check_symbol(file,'=');
-            [FI.Text(t).clipping,file] = get_string(file);
-            switch upper(FI.Text(t).clipping)
+            [FI.Text(t).Clipping,file] = get_string(file);
+            switch upper(FI.Text(t).Clipping)
                 case {'CLIPTOVIEWPORT','CLIPTOFRAME'}
                 otherwise
-                    error('Unsupported clipping %s.',FI.Text(t).clipping)
+                    error('Unsupported clipping %s.',FI.Text(t).Clipping)
             end
         case 'S' % scope
             file = check_symbol(file,'=');
-            [FI.Text(t).scope,file] = get_string(file);
-            switch upper(FI.Text(t).scope)
+            [FI.Text(t).Scope,file] = get_string(file);
+            switch upper(FI.Text(t).Scope)
                 case {'GLOBAL','LOCAL'}
                 otherwise
-                    error('Unsupported scope %s.',FI.Text(t).scope)
+                    error('Unsupported scope %s.',FI.Text(t).Scope)
             end
         otherwise
             if isnan(str2double(keyw))
                 error('Unsupported keyword %s encountered while reading %s.',keyw,FI.FileName)
             else
                 % reached data block
-                FI.Zone(z).dataStart = loc;
+                FI.Zone(z).DataStart = loc;
                 fseek(file.fid,loc,-1);
                 Zone = FI.Zone(z);
                 nVar =  length(FI.Variables);
                 %
-                if strcmpi(Zone.type,'ORDERED')
+                if strcmpi(Zone.Type,'ORDERED')
                     if isfield(Zone,'kMax') % 3D
-                        blockSize = [Zone.iMax Zone.jMax Zone.kMax];
+                        blockSize = [Zone.IMax Zone.JMax Zone.KMax];
                     elseif isfield(Zone,'jMax') % 2D
-                        blockSize = [Zone.iMax Zone.jMax];
+                        blockSize = [Zone.IMax Zone.JMax];
                     else % 1D
-                        blockSize = Zone.iMax;
+                        blockSize = Zone.IMax;
                     end
                 else % unstructured elements
-                    blockSize = Zone.nNodes;
+                    blockSize = Zone.NNodes;
                 end
                 %
-                switch Zone.dataFormat
+                switch Zone.DataFormat
                     case 'BLOCK'
                         % all values of one variable together
                         % following implementation assumes all variables
@@ -536,11 +540,11 @@ while ischar(file.line)
                         data = reshape(data,[nVar prod(blockSize)]).';
                 end
                 data = reshape(data,[blockSize nVar]);
-                FI.Zone(z).data = data;
+                FI.Zone(z).Data = data;
                 %
-                if ~strcmpi(Zone.type,'ORDERED')
-                    if isfield(Zone,'elementSize') && ~isempty(Zone.elementSize)
-                        blockSize = [Zone.elementSize FI.Zone(z).nElements];
+                if ~strcmpi(Zone.Type,'ORDERED')
+                    if isfield(Zone,'elementSize') && ~isempty(Zone.ElementSize)
+                        blockSize = [Zone.ElementSize FI.Zone(z).NElements];
                         [topo,nRead] = fscanf(file.fid,'%i',prod(blockSize));
                         if nRead < prod(blockSize)
                             error('Error while reading element-node connectivity.')
@@ -550,8 +554,8 @@ while ischar(file.line)
                         topo = [];
                     end
                     %
-                    FI.Zone(z).data = data;
-                    FI.Zone(z).topology = topo.';
+                    FI.Zone(z).Data = data;
+                    FI.Zone(z).Topology = topo.';
                 end
                 file = init_file(file.fid);
             end
@@ -670,6 +674,7 @@ switch FI.Version
     otherwise
         error('Unsupported Tecplot binary data file version %u.',FI.Version)
 end
+error('Tecplot binary data file format %u recognized. Reading not yet supported.',FI.Version)
 
 
 function FI=Local_write_file(filename,FileInfo)
