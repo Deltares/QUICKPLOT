@@ -90,7 +90,7 @@ switch cmd
         return
     case 'stations'
         if Props.DimFlag(ST_)~=0
-            S=readsts(FI,Props);
+            S=readsts(FI,Props,varargin{:});
             varargout={S};
         else
             varargout={{}};
@@ -927,7 +927,7 @@ end
 
 
 % -----------------------------------------------------------------------------
-function S=readsts(FI,Props)
+function S=readsts(FI,Props,t)
 
 %======================== SPECIFIC CODE =======================================
 switch Props.WaqIO
@@ -947,5 +947,8 @@ switch Props.WaqIO
         if ~any(strcmp('stsubst',Props.WaqIO))
             S=deblank(waquaio(FI,Props.Exper,'transtat'));
         end
+end
+if nargin>2 && ~isequal(t,0)
+    S = S(t);
 end
 % -----------------------------------------------------------------------------

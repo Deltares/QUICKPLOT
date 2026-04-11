@@ -89,7 +89,7 @@ switch cmd
         [varargout{1:2}]=gettimezone(FI,domain,Props);
         return
     case 'stations'
-        varargout={readsts(FI,domain,Props,0)};
+        varargout={readsts(FI,domain,Props,varargin{:})};
         return
     case 'subfields'
         varargout={{}};

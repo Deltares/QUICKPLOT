@@ -89,7 +89,7 @@ switch cmd
         [varargout{1:2}]=gettimezone(FI,domain,Props);
         return
     case 'stations'
-        varargout={readsts(FI,domain,Props,0)};
+        varargout={readsts(FI,domain,Props,varargin{:})};
         return
     case 'subfields'
         varargout={{}};
@@ -448,4 +448,7 @@ switch FI.FileType
 end
 
 S=cellstr(S);
+if nargin>3 && ~isequal(t,0)
+   S = S(t);
+end
 % -----------------------------------------------------------------------------

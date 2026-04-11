@@ -556,4 +556,7 @@ switch Props.Group
         S = vs_get(FI,'POINTS','NAME-PTS','quiet');
 end
 S=cellstr(S);
+if nargin>2 && ~isequal(t,0)
+   S = S(t);
+end
 % -----------------------------------------------------------------------------

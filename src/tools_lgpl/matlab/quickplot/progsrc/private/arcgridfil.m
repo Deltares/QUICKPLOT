@@ -89,7 +89,7 @@ switch cmd
         [varargout{1:2}]=gettimezone(FI,domain,Props);
         return
     case 'stations'
-        varargout={readsts(FI,Props,0)};
+        varargout={readsts(FI,Props,varargin{:})};
         return
     case 'subfields'
         varargout={getsubfields(FI,Props,varargin{:})};
@@ -501,14 +501,6 @@ if ~isempty(FI.Times)
 else
     T=0;
 end
-% -----------------------------------------------------------------------------
-
-
-% -----------------------------------------------------------------------------
-function S=readsts(FI,Props,t)
-
-%======================== SPECIFIC CODE =======================================
-S={};
 % -----------------------------------------------------------------------------
 
 % -----------------------------------------------------------------------------

@@ -1227,7 +1227,7 @@ switch Attrib.FileType
     case {'cross-sections','barriers'}
         S = Attrib.Name;
 end
-if nargin>2
+if nargin>2 && ~isequal(t,0)
     S=S(t);
 end
 % -----------------------------------------------------------------------------

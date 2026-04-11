@@ -844,7 +844,7 @@ T=delwaq('read',FI.Data{Props.DFil},1,1,t);
 
 
 % -----------------------------------------------------------------------------
-function S=readsts(FI,domain,Props)
+function S=readsts(FI,domain,Props,t)
 %======================== SPECIFIC CODE =======================================
 switch Props.Geom
     case 'SEG-NODE'
@@ -861,6 +861,9 @@ switch Props.Geom
                 S{i} = [ID ':' Name];
             end
         end
+end
+if nargin>3 && ~isequal(t,0)
+    S = S(t);
 end
 % -----------------------------------------------------------------------------
 

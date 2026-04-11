@@ -181,7 +181,7 @@ switch cmd
         [varargout{1:2}]=gettimezone(useFI,domain,Props);
         return
     case 'stations'
-        varargout={readsts(useFI,Props,0)};
+        varargout={readsts(useFI,Props,varargin{:})};
         return
     case 'subfields'
         varargout={getsubfields(useFI,Props,varargin{:})};
@@ -2588,7 +2588,7 @@ if FI.Dataset(stcrd).CharDim==FI.Dataset(stcrd).Dimid(1)
 else
     [Stations, ~] = qp_netcdf_get(FI,stcrd-1,FI.Dataset(stcrd).Dimension);
 end
-if t~=0
+if ~isequal(t,0)
     if isa(Stations,'string')
         Stations = Stations(t);
     else
