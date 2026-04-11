@@ -287,14 +287,13 @@ try
                 DEFAULT = sort_stations('default');
                 stationSortMethod = qp_option(FI,'sortStations','default',DEFAULT);
                 if ~isequal(stationSortMethod,DEFAULT)
-                    % check if there is actually any data set in this file
-                    % that has a station dimension
-                    DimFlags = cat(1,DataProps.DimFlag);
-                    hasStationDim = find(DimFlags(:,ST_) ~= 0);
-                    for i = hasStationDim'
-                        % Loop over the fields that have a station dimension
-                        Stations = feval(Fcn,FI,argin{:},DataProps(i),'stations',0);
-                        [DataProps(i).QP_SortedStations,DataProps(i).QP_StationOrder] = sort_stations(Stations,stationSortMethod);
+                    for i = 1:length(DataProps)
+                        DimFlags = DataProps(i).DimFlag;
+                        if length(DimFlags) > ST_ && DimFlags(ST_) ~= 0
+                            % only for quantities that have a station dimension
+                            Stations = feval(Fcn,FI,argin{:},DataProps(i),'stations',0);
+                            [DataProps(i).QP_SortedStations,DataProps(i).QP_StationOrder] = sort_stations(Stations,stationSortMethod);
+                        end
                     end
                 end
                 DataProps = separators(DataProps);

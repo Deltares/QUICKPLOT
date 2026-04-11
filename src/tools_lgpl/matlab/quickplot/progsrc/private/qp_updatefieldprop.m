@@ -527,7 +527,7 @@ for m_ = 2:10 % limit to 10 supported dimensions
                     numberLength = ceil(log10(nStations+1));
                     numberFormat = strcat('%-',num2str(numberLength),'i');
                     stationNumbers = sprintf(numberFormat, 1:nStations);
-                    stationNames = cat(2,repmat('station ',nStations,1),reshape(stationNumbers,[Statw,nStations])');
+                    stationNames = cat(2,repmat('station ',nStations,1),reshape(stationNumbers,[numberLength,nStations])');
                     stationNames = cellstr(stationNames);
                 end
                 if showStationNames
