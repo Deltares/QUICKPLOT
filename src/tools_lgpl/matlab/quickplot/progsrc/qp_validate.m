@@ -426,12 +426,6 @@ try
                     ChkOK = szChkOK & ChkOK;
                     Props{i_domain}=quantities;
                 end
-                TempProps = Props;
-                for i_domain = 1:length(Props)
-                    if isfield(Props{i_domain},'QP_SortedStations')
-                        Props{i_domain} = rmfield(Props{i_domain},{'QP_SortedStations','QP_StationOrder'});
-                    end
-                end
                 write_log(logid2,'');
                 if ChkOK
                     CmpFile='datafields.mat';
@@ -572,7 +566,6 @@ try
                     frresult=[FAILED ': Error while reading data.'];
                 end
                 %
-                Props = TempProps;
                 n_quantities=length(quantities);
                 n_logfiles = length(logfiles);
                 NT=n_quantities+n_logfiles;
