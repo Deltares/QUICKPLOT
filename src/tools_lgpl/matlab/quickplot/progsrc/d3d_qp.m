@@ -5177,9 +5177,9 @@ switch cmd
             'showinactiveopt', 'defaultfigurepos','timezonehandling', ...
             'enforcedtimezone', 'netcdf_use_fillvalue','export_max_ntimes', ...
             'update_showversion', 'defaultrenderer','defaultsmoothing', ...
-            'ghostscript', 'ghostscript_browse'}
+            'ghostscript', 'ghostscript_browse','station_sorting'}
         args = qp_prefs(UD,mfig,cmd,cmdargs);
-        if logfile
+        if logfile && ~ismember(cmd,{'preferences','prefpane'})
             writelog(logfile,logtype,args{:});
         end
         

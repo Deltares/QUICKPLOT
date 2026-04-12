@@ -37,8 +37,49 @@ else
     switch cmd
         case 'timezonehandling'
             argout = {'Ignored','As in dataset','Enforced'};
+
         case 'enforcedtimezone'
             [~,argout] = gettimezone('supported');
+
+        case 'figure_positions'
+            argout = {'Auto','Manual'};
+            MonPos = get(0,'MonitorPositions');
+            NumMon = size(MonPos,1);
+            if NumMon>1
+                argout{3+NumMon} = '';
+                argout{3} = 'QP Main';
+                for nr = NumMon:-1:1
+                    argout{3+nr} = sprintf('Monitor %i',nr);
+                end
+            end
+
+        case 'renderers'
+            figures = findall(0,'type','figure');
+            if isempty(figures)
+                tempFigure = figure('visible','off');
+                figures = tempFigure;
+            else
+                tempFigure = [];
+            end
+            argout = setdiff(set(figures(1),'renderer'),'None');
+            delete(tempFigure)
+
+        case 'default_renderer'
+            renderers = qp_preferences_interface('renderers');
+            i = ustrcmpi('zbuffer', renderers);
+            if i < 0
+                i = ustrcmpi('OpenGL', renderers);
+                if i < 0
+                    i = 1;
+                end
+            end
+            argout = renderers{i};
+
+        case 'sorters'
+            argout = sort_stations('methods');
+
+        case 'default_station_sorter'
+            argout = sort_stations('default');
     end
 end
 
@@ -202,6 +243,35 @@ Panes(end+1,1:2)={'General' handles};
 handles=[]; VOffset = dims(2)-Margin-20;
 %--------------------------------------------------------------------------
 handles(end+1)=uicontrol('style','text', ...
+    'position',[HOffset VOffset-2 90 18], ...
+    'string','Station Names', ...
+    'horizontalalignment','left', ...
+    'parent',mfig);
+sorters = qp_preferences_interface('sorters');
+sorter = qp_preferences_interface('default_station_sorter');
+sorter = qp_settings('station_sorter', sorter);
+j = ustrcmpi(sorter, sorters);
+if j>0
+    i = j;
+end
+handles(end+1)=uicontrol('style','popupmenu', ...
+    'position',[HOffset+100 VOffset dims(2)-121 20], ...
+    'string',sorters, ...
+    'value',i, ...
+    'tag','station_sorting', ...
+    'callback','d3d_qp station_sorting', ...
+    'backgroundcolor',Active, ...
+    'horizontalalignment','left', ...
+    'parent',mfig);
+%-------------
+%VOffset = VOffset-30;
+%--------------------------------------------------------------------------
+Panes(end+1,1:2)={'Data Fields' handles};
+set(handles,'visible','off')
+%=============
+handles=[]; VOffset = dims(2)-Margin-20;
+%--------------------------------------------------------------------------
+handles(end+1)=uicontrol('style','text', ...
     'position',[HOffset VOffset-2 150 18], ...
     'string','Quick View Figure Layout', ...
     'horizontalalignment','left', ...
@@ -268,16 +338,7 @@ handles(end+1)=uicontrol('style','text', ...
     'string','Figure Position', ...
     'horizontalalignment','left', ...
     'parent',mfig);
-FigPos = {'Auto','Manual'};
-MonPos = get(0,'MonitorPositions');
-NumMon = size(MonPos,1);
-if NumMon>1
-    FigPos{3+NumMon} = '';
-    FigPos{3} = 'QP Main';
-    for nr = NumMon:-1:1
-        FigPos{3+nr} = sprintf('Monitor %i',nr);
-    end
-end
+FigPos = qp_preferences_interface('figure_positions');
 fp = qp_settings('defaultfigurepos');
 fpval = find(strcmpi(fp,FigPos));
 if isempty(fpval)
@@ -322,15 +383,9 @@ handles(end+1)=uicontrol('style','text', ...
     'string','Renderer', ...
     'horizontalalignment','left', ...
     'parent',mfig);
-renderers = setdiff(set(mfig,'renderer'),'None');
-i = ustrcmpi('zbuffer', renderers);
-if i < 0
-    i = ustrcmpi('OpenGL', renderers);
-    if i < 0
-        i = 1;
-    end
-end
-rndr = qp_settings('defaultrenderer', renderers{i});
+renderers = qp_preferences_interface('renderers');
+rndr = qp_preferences_interface('default_renderer');
+rndr = qp_settings('defaultrenderer', rndr);
 j = ustrcmpi(rndr, renderers);
 if j>0
     i = j;
@@ -381,6 +436,7 @@ handles(end+1)=uicontrol('style','pushbutton', ...
     'position',[HOffset+170 VOffset 25 20], ...
     'callback','d3d_qp defaultaxescolor', ...
     'backgroundcolor',qp_settings('defaultaxescolor')/255, ...
+    'tag','defaultaxescolor', ...
     'enable','on', ...
     'parent',mfig);
 %-------------
@@ -390,6 +446,7 @@ handles(end+1)=uicontrol('style','checkbox', ...
     'string','Closed Bounding Box', ...
     'value',qp_settings('boundingbox'), ...
     'callback','d3d_qp boundingbox', ...
+    'tag','boundingbox', ...
     'parent',mfig);
 VOffset = VOffset-25;
 handles(end+1)=uicontrol('style','edit', ...
@@ -398,6 +455,7 @@ handles(end+1)=uicontrol('style','edit', ...
     'backgroundcolor',Active, ...
     'horizontalalignment','right', ...
     'callback','d3d_qp colorbar_ratio', ...
+    'tag','colorbar_ratio', ...
     'parent',mfig);
 handles(end+1)=uicontrol('style','text', ...
     'position',[HOffset+37 VOffset-2 200 18], ...

@@ -1,8 +1,8 @@
 function [out1,out2] = sort_stations(in1,stationSortMethod)
 %sort_stations Routine to sort station names
 
-NONE = 'no_sorting';
-ALPHABETICAL = 'alphabetically';
+NONE = 'No Sorting';
+ALPHABETICAL = 'Sorted Alphabetically';
 
 if nargin == 1 && nargout <= 1
     switch in1

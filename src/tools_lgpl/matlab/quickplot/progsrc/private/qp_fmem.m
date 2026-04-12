@@ -1240,7 +1240,9 @@ switch cmd
         end
 end
 if ~isempty(FI)
-    FI = qp_option(FI,'sortStations','alphabetically');
+    sorter = qp_preferences_interface('default_station_sorter');
+    sorter = qp_settings('station_sorter', sorter);
+    FI = qp_option(FI,'sortStations',sorter);
     qp_settings('LastFileType',lasttp)
 end
 
