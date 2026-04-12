@@ -116,7 +116,16 @@ end
 szV=getsize(FI,Props);
 xidx=idx;
 for i=1:5
-    if isequal(idx{i},0)
+    if isempty(idx{i})
+        switch i
+            case T_
+                idx{i}=szV(i);
+            case ST_
+                % keep empty
+            otherwise
+                idx{i}=1:szV(i);
+        end
+    elseif isequal(idx{i},0)
         idx{i}=1:szV(i);
     end
     xidx{i}=idx{i};

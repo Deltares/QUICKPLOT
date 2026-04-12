@@ -346,7 +346,7 @@ switch cmd
                                     end
                                     if ~isstruct(G) % cancel for grid -> use indices
                                         Statw=ceil(log10(NfsSeg+1));
-                                        FI.SegmentName=num2cell(reshape(sprintf(strcat('%-',num2str(Statw),'i'),1:NfsSeg),Statw,NfsSeg)',2);
+                                        FI.SegmentName=deblank(num2cell(reshape(sprintf(strcat('%-',num2str(Statw),'i'),1:NfsSeg),Statw,NfsSeg)',2));
                                         FI.SubType=[FI.SubType(1:end-3) 'his'];
                                     else
                                         Otherargs{1}=GridFileName;
@@ -575,7 +575,7 @@ switch cmd
                                     end
                                     if ~isstruct(G) % cancel for grid -> use indices
                                         Statw=ceil(log10(FI.NumSegm+1));
-                                        FI.SegmentName=num2cell(reshape(sprintf(strcat('%-',num2str(Statw),'i'),1:FI.NumSegm),Statw,FI.NumSegm)',2);
+                                        FI.SegmentName=deblank(num2cell(reshape(sprintf(strcat('%-',num2str(Statw),'i'),1:FI.NumSegm),Statw,FI.NumSegm)',2));
                                         FI.FileType='DelwaqHIS';
                                     else
                                         Otherargs{1}=GridFileName;
