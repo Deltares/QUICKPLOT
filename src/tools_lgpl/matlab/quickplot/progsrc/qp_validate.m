@@ -108,6 +108,7 @@ TC1 = 1;
 includes = {};
 logid1=-1;
 t1=[];
+logid_previous_failed_case = [];
 logid2=[];
 extlog=[];
 FAILED = 'FAILED';
@@ -288,14 +289,15 @@ try
     %end
     %% loop over validation test cases
     for i=1:length(d)
-        progressbar(acc_dt/tot_dt,Hpb,'title',d(i).name);
-        ui_message('',['Case: ',d(i).name])
+        CaseName = d(i).name;
+        progressbar(acc_dt/tot_dt,Hpb,'title',CaseName);
+        ui_message('',['Case: ',CaseName])
         if teamcity
-            fprintf('##teamcity[testStarted name=''%s'']\n', d(i).name);
+            fprintf('##teamcity[testStarted name=''%s'']\n', CaseName);
         else
-            fprintf('----- %s %s\n', d(i).name, repmat('-',1,93 - length(d(i).name)));
+            fprintf('----- %s %s\n', CaseName, repmat('-',1,93 - length(CaseName)));
         end
-        includes{i,1} = [d(i).name '/'];
+        includes{i,1} = [CaseName '/'];
         includes{i,2} = logname;
         NTested=NTested+1;
         DiffFound=0;
@@ -311,7 +313,7 @@ try
         dt2_old=0;
         Crash = [];
         try
-            cd(fullfile(val_dir,d(i).name));
+            cd(fullfile(val_dir,CaseName));
             CaseInfo='case.ini';
             if isempty(dir('data'))
                 f = dir('*');
@@ -333,7 +335,7 @@ try
                 CaseInfo=inifile('open',CaseInfo);
                 logid2=fopen(logname,'w','n','US-ASCII');
                 dt2_old = d(i).dt;
-                t2 = write_header(logid2,d(i).name,Color);
+                t2 = write_header(logid2,CaseName,Color);
                 emptyTable2 = true;
                 %
                 % check for log files to run ...
@@ -949,10 +951,8 @@ try
                 end
             end
             if ~isempty(t2)
-                [dt2,dt2_str,slower] = write_footer(logid2,d(i).name,Color,t2,dt2_old);
+                [dt2,dt2_str,slower] = write_footer(logid2,CaseName,Color,t2,dt2_old);
             end
-            fclose(logid2);
-            logid2=[];
             %
             if isnan(dt2_old)
                 timid = fopen([reference_folder,'timing.txt'],'w','n','US-ASCII');
@@ -978,13 +978,25 @@ try
         CaseScriptFailed = strncmp(FAILED,lgresult,5);
         CaseCrashed = strncmp(FAILED,result,5) & ~(CaseReadFailed | CaseScriptFailed);
         CaseFailed = CaseReadFailed | CaseScriptFailed | CaseCrashed;
+        if CaseFailed
+            if is_fid(logid_previous_failed_case)
+                write_reference_to_next_failing_case(logid_previous_failed_case,CaseName)
+                fclose(logid_previous_failed_case);
+            end
+            logid_previous_failed_case = logid2;
+            logid2 = [];
+        end
+        if is_fid(logid2)
+            fclose(logid2);
+            logid2=[];
+        end
         if teamcity && CaseFailed
             if CaseCrashed
-                fprintf('##teamcity[testFailed name=''%s'' message=''case crashed.'']\n', d(i).name)
+                fprintf('##teamcity[testFailed name=''%s'' message=''case crashed.'']\n', CaseName)
             elseif CaseReadFailed
-                fprintf('##teamcity[testFailed name=''%s'' message=''differences when checking data.'']\n', d(i).name)
+                fprintf('##teamcity[testFailed name=''%s'' message=''differences when checking data.'']\n', CaseName)
             elseif CaseScriptFailed
-                fprintf('##teamcity[testFailed name=''%s'' message=''differences when running script.'']\n', d(i).name)
+                fprintf('##teamcity[testFailed name=''%s'' message=''differences when running script.'']\n', CaseName)
             end
         end
         NReadFailed = NReadFailed + CaseReadFailed;
@@ -1005,15 +1017,15 @@ try
             UserInterrupt=1;
         end
         if ~isempty(result)
-            extlog = write_table1_line(logid1,extlog,Color,CaseReadFailed,CaseScriptFailed,CaseCrashed,Color.Table{TC1},d(i).name,color,result,[],[],logname,dt2_str);
+            extlog = write_table1_line(logid1,extlog,Color,CaseReadFailed,CaseScriptFailed,CaseCrashed,Color.Table{TC1},CaseName,color,result,[],[],logname,dt2_str);
             TC1=3-TC1;
         else
-            extlog = write_table1_line(logid1,extlog,Color,CaseReadFailed,CaseScriptFailed,CaseCrashed,Color.Table{TC1},d(i).name,frcolor,frresult,lgcolor,lgresult,logname,dt2_str);
+            extlog = write_table1_line(logid1,extlog,Color,CaseReadFailed,CaseScriptFailed,CaseCrashed,Color.Table{TC1},CaseName,frcolor,frresult,lgcolor,lgresult,logname,dt2_str);
             TC1=3-TC1;
         end
         flush(logid1);
         if teamcity
-            fprintf('##teamcity[testFinished name=''%s'']\n', d(i).name)
+            fprintf('##teamcity[testFinished name=''%s'']\n', CaseName)
         end
         if UserInterrupt
             break
@@ -1021,9 +1033,6 @@ try
         acc_dt = acc_dt + case_dt(i);
     end
 catch err
-    if ~isempty(logid2)
-        fclose(logid2);
-    end
     if logid1>0
         write_table_error(logid1,extlog,Color,err)
         AnyFail=1;
@@ -1036,6 +1045,12 @@ end
 %end
 if ishandle(Hpb)
     delete(Hpb);
+end
+if is_fid(logid2)
+    fclose(logid2);
+end
+if is_fid(logid_previous_failed_case)
+    fclose(logid_previous_failed_case);
 end
 cd(currdir)
 if ~isempty(current_procdef)
@@ -1142,6 +1157,11 @@ switch log_style
         %str = strrep(str,'_','\_');
 end
 
+function write_reference_to_next_failing_case(logid,casename)
+switch log_style
+    case 'latex'
+        fprintf(logid,'Jump to next failing case: %s{Sec:%s}\n','\autoref',makelabel(casename));
+end
 
 function t = write_header(logid,casename,Color,extlog)
 stalone='';
@@ -1923,4 +1943,13 @@ for i_prefix = 1:length(PREFIXES)
     if in_list
         reference_files(i) = [];
     end
+end
+
+function ok = is_fid(something)
+if isnumeric(something) && ...
+        isscalar(something) && ...
+        all(something(:) == round(something(:)))
+    ok = ~isempty(fopen(something));
+else
+    ok = false;
 end
