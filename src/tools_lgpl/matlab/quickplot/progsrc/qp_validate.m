@@ -1161,10 +1161,11 @@ end
 function write_reference_to_next_failing_case(logid,casename)
 switch log_style
     case 'latex'
+        write_section(logid,'Failing cases');
         if isempty(casename)
-            fprintf(logid,'\n\nThis is the last failing case.\nBack to %s{Chap:Summary}.\n','\nameref');
+            fprintf(logid,'This is the last failing case.\nReturn to %s{Chap:Summary}.\n','\nameref');
         else
-            fprintf(logid,'\n\nJump to next failing case: %s{Sec:%s}.\n','\nameref',makelabel(casename));
+            fprintf(logid,'Jump to next failing case: %s{Sec:%s}.\n','\nameref',makelabel(casename));
         end
 end
 
