@@ -1050,6 +1050,7 @@ if is_fid(logid2)
     fclose(logid2);
 end
 if is_fid(logid_previous_failed_case)
+    write_reference_to_next_failing_case(logid_previous_failed_case,'')
     fclose(logid_previous_failed_case);
 end
 cd(currdir)
@@ -1160,7 +1161,11 @@ end
 function write_reference_to_next_failing_case(logid,casename)
 switch log_style
     case 'latex'
-        fprintf(logid,'Jump to next failing case: %s{Sec:%s}\n','\autoref',makelabel(casename));
+        if isempty(casename)
+            fprintf(logid,'\n\nThis is the last failing case.\nBack to %s{Chap:Summary}.\n','\nameref');
+        else
+            fprintf(logid,'\n\nJump to next failing case: %s{Sec:%s}.\n','\nameref',makelabel(casename));
+        end
 end
 
 function t = write_header(logid,casename,Color,extlog)
