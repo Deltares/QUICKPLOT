@@ -199,6 +199,7 @@ DefFigProp.defaultaxescolor = qp_settings('defaultaxescolor',-999);
 qp_settings('defaultaxescolor',[255 255 255])
 DefFigProp.boundingbox = qp_settings('boundingbox',-999);
 qp_settings('boundingbox',0)
+qp_settings('station_sorter','No Sorting')
 current_procdef='';
 inTable2 = false;
 try
