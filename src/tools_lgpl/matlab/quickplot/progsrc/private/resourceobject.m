@@ -314,7 +314,7 @@ end
 % -----------------------------------------------------------------------------
 function S = readsts(DataRes,domain,field,s)
 S = DataRes.Location(domain).Quantity(field).StationNames;
-if nargin>3 && s~=0
+if nargin>3 && ~isequal(s,0)
     S = S(s);
 end
 % -----------------------------------------------------------------------------

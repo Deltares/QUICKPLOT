@@ -112,6 +112,7 @@ F={'Delft3D-com'                'd3d_comfil'
     'XMDF'                       'hdffil'
     'SWAN spectral'              'swanfil'
     'TRITON'                     'nfs_tritonfil'
+    'Tecplot'                    'tecplotfil'
     'bil/hdr'                    'bilhdrfil'
     'QP Data Resource Object'    'resourceobject'
     'ecomsed-binary'             'ecomsedfil'
@@ -176,6 +177,7 @@ F={'Delft3D-com'                'd3d_comfil'
 %#function swanfil
 %#function usrdeffil
 %#function nfs_tritonfil
+%#function tecplotfil
 %#function bilhdrfil
 %#function resourceobject
 %#function ecomsedfil

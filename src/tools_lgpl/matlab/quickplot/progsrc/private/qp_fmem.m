@@ -194,6 +194,8 @@ switch cmd
                     try_next='grib';
                 case {'.tek','.ann','.ldb','.pol','.spl','.tka','.tkp','.tkf','.pli','.pliz'}
                     try_next='tekal';
+                case {'.plt','.tpl','.tp'}
+                    try_next='Tecplot';
                 case {'.dxf'}
                     try_next='AutoCAD DXF';
                 case {'.geojson'}
@@ -344,7 +346,7 @@ switch cmd
                                     end
                                     if ~isstruct(G) % cancel for grid -> use indices
                                         Statw=ceil(log10(NfsSeg+1));
-                                        FI.SegmentName=num2cell(reshape(sprintf(strcat('%-',num2str(Statw),'i'),1:NfsSeg),Statw,NfsSeg)',2);
+                                        FI.SegmentName=deblank(num2cell(reshape(sprintf(strcat('%-',num2str(Statw),'i'),1:NfsSeg),Statw,NfsSeg)',2));
                                         FI.SubType=[FI.SubType(1:end-3) 'his'];
                                     else
                                         Otherargs{1}=GridFileName;
@@ -501,7 +503,7 @@ switch cmd
                                     Tp = 'XMDF';
                                 end
                                 record = hdf5read(FI.FileName,'//File Version');
-                                FI.FileVersion = record.Data;
+                                FI.FileVersion = record;
                             end
                         end
                         FI.FileType = Tp;
@@ -573,7 +575,7 @@ switch cmd
                                     end
                                     if ~isstruct(G) % cancel for grid -> use indices
                                         Statw=ceil(log10(FI.NumSegm+1));
-                                        FI.SegmentName=num2cell(reshape(sprintf(strcat('%-',num2str(Statw),'i'),1:FI.NumSegm),Statw,FI.NumSegm)',2);
+                                        FI.SegmentName=deblank(num2cell(reshape(sprintf(strcat('%-',num2str(Statw),'i'),1:FI.NumSegm),Statw,FI.NumSegm)',2));
                                         FI.FileType='DelwaqHIS';
                                     else
                                         Otherargs{1}=GridFileName;
@@ -906,6 +908,12 @@ switch cmd
                                 FI.Options=FI.can_be_ldb;
                             end
                         end
+                    case 'Tecplot'
+                        FI = tecplot('open',FileName);
+                        if ~isempty(FI)
+                            FI.Options=0;
+                            Tp=FI.FileType;
+                        end
                     case 'AutoCAD DXF'
                         Data=dxf('read',FileName);
                         tp = zeros(1,length(Data));
@@ -1231,10 +1239,12 @@ switch cmd
             end
         end
 end
-if isempty(FI)
-    lasttp=[];
+if ~isempty(FI)
+    sorter = qp_preferences_interface('default_station_sorter');
+    sorter = qp_settings('station_sorter', sorter);
+    FI = qp_option(FI,'sortStations',sorter);
+    qp_settings('LastFileType',lasttp)
 end
-qp_settings('LastFileType',lasttp)
 
 
 function [isASCII,REASON] = verifyascii(arg)

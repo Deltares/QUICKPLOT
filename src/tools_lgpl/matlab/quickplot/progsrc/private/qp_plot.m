@@ -1516,6 +1516,13 @@ end
 if isfield(data,'XUnits')
     sUnits = data(1).XUnits;
 end
+if isfield(data,'XComp') && ~isfield(data,'dX_tangential')
+    % due to the p-loop over data below, we cannot change the number of
+    % fields inside the get_plotcoordinate function. So, we need to
+    % pre-add these fields.
+    data(1).dX_tangential=[];
+    data(1).dY_tangential=[];
+end
 for i = 1:length(data)
     % data(i) is modified inside the get_plotcoordinate call, but fields
     % cannot be added or removed there since then the data structure will
@@ -1543,62 +1550,74 @@ end
 
 
 function [s,sName,sUnits,data] = get_plotcoordinate(data,sName,sUnits,plotcoordinate)
+% we can't change the fieldnames of data because there is an outside loop.
+if isfield(data,'FaceNodeConnect') || isfield(data,'EdgeNodeConnect')
+    switch data.ValLocation
+        case 'FACE'
+            % here we should actually identify the point at
+            % which we go from one face to the next. Such that
+            % we get N data and N+1 coordinates.
+            X = data.X;
+            Y = data.Y;
+            X(end+1,:) = 0;
+            Y(end+1,:) = 0;
+            FNC = data.FaceNodeConnect;
+            nNodes = sum(~isnan(FNC),2);
+            FNC(isnan(FNC)) = length(X);
+            data.X = sum(X(FNC),2)./nNodes;
+            data.Y = sum(Y(FNC),2)./nNodes;
+        case 'EDGE'
+            iNode = stitch_edges(data.EdgeNodeConnect);
+            nodeMask = iNode==0;
+            iNode(nodeMask) = 1;
+            data.X = data.X(iNode);
+            data.Y = data.Y(iNode);
+            if any(nodeMask)
+                data.X(nodeMask) = NaN;
+                data.Y(nodeMask) = NaN;
+                edgeMask = nodeMask(1:end-1) | nodeMask(2:end);
+                data.Val(~edgeMask) = data.Val;
+                data.Val(edgeMask) = NaN;
+            end
+        case 'NODE'
+            % data.X/Y already contains the node coordinates
+    end
+    x = data.X;
+    y = data.Y;
+elseif isfield(data,'Y')
+    if size(data.X,2)==2 && size(data.X,1)>2
+        % The following lines are not valid for geographic coordinates!
+        data.X = (data.X(:,1,:) + data.X(:,2,:))/2;
+        data.Y = (data.Y(:,1,:) + data.Y(:,2,:))/2;
+    elseif size(data.X,1)==2 && size(data.X,2)>2
+        % The following lines are not valid for geographic coordinates!
+        data.X = (data.X(1,:,:) + data.X(2,:,:))/2;
+        data.Y = (data.Y(1,:,:) + data.Y(2,:,:))/2;
+    end
+    x = data.X(:,:,1);
+    y = data.Y(:,:,1);
+elseif isfield(data,'X')
+    if size(data.X,2)==2 && size(data.X,1)>2
+        data.X = (data.X(:,1,:) + data.X(:,2,:))/2;
+    elseif size(data.X,1)==2 && size(data.X,2)>2
+        data.X = (data.X(1,:,:) + data.X(2,:,:))/2;
+    end
+    x = max(data.X,[],3); % data.X(:,:,1) may be clipped for Skylla
+    y = 0*x;
+end
+if isfield(data,'dX_tangential') && isempty(data.dX_tangential)
+    dx = diff(x(:));
+    dy = diff(y(:));
+    dx = (dx([1 1:end]) + dx([1:end end]))/2;
+    dy = (dy([1 1:end]) + dy([1:end end]))/2;
+    ds = sqrt(dx.^2+dy.^2);
+    ds(ds == 0) = 1;
+    data.dX_tangential = dx./ds;
+    data.dY_tangential = dy./ds;
+end
 switch plotcoordinate
     case {'path distance','reverse path distance'}
-        if isfield(data,'FaceNodeConnect') || isfield(data,'EdgeNodeConnect')
-            switch data.ValLocation
-                case 'FACE'
-                    % here we should actually identify the point at
-                    % which we go from one face to the next. Such that
-                    % we get N data and N+1 coordinates.
-                    X = data.X;
-                    Y = data.Y;
-                    X(end+1,:) = 0;
-                    Y(end+1,:) = 0;
-                    FNC = data.FaceNodeConnect;
-                    nNodes = sum(~isnan(FNC),2);
-                    FNC(isnan(FNC)) = length(X);
-                    data.X = sum(X(FNC),2)./nNodes;
-                    data.Y = sum(Y(FNC),2)./nNodes;
-                case 'EDGE'
-                    iNode = stitch_edges(data.EdgeNodeConnect);
-                    nodeMask = iNode==0;
-                    iNode(nodeMask) = 1;
-                    data.X = data.X(iNode);
-                    data.Y = data.Y(iNode);
-                    if any(nodeMask)
-                        data.X(nodeMask) = NaN;
-                        data.Y(nodeMask) = NaN;
-                        edgeMask = nodeMask(1:end-1) | nodeMask(2:end);
-                        data.Val(~edgeMask) = data.Val;
-                        data.Val(edgeMask) = NaN;
-                    end
-                case 'NODE'
-                    % data.X/Y already contains the node coordinates
-            end
-            x = data.X;
-            y = data.Y;
-        elseif isfield(data,'Y')
-            if size(data.X,2)==2 && size(data.X,1)>2
-                % The following lines are not valid for geographic coordinates!
-                data.X = (data.X(:,1,:) + data.X(:,2,:))/2;
-                data.Y = (data.Y(:,1,:) + data.Y(:,2,:))/2;
-            elseif size(data.X,1)==2 && size(data.X,2)>2
-                % The following lines are not valid for geographic coordinates!
-                data.X = (data.X(1,:,:) + data.X(2,:,:))/2;
-                data.Y = (data.Y(1,:,:) + data.Y(2,:,:))/2;
-            end
-            x = data.X(:,:,1);
-            y = data.Y(:,:,1);
-        elseif isfield(data,'X')
-            if size(data.X,2)==2 && size(data.X,1)>2
-                data.X = (data.X(:,1,:) + data.X(:,2,:))/2;
-            elseif size(data.X,1)==2 && size(data.X,2)>2
-                data.X = (data.X(1,:,:) + data.X(2,:,:))/2;
-            end
-            x = data.X(:,:,1);
-            y = 0*x;
-        end
+        % TODO: take into account the EdgeGeometry length if present
         if strcmp(plotcoordinate,'reverse path distance')
             x = rot90(x,2);
             y = rot90(y,2);
@@ -1609,26 +1628,20 @@ switch plotcoordinate
         else
             s = pathdistance(x,y);
         end
-        %if ~isequal(size(data.X),size(data.Val)) && ~isfield(data,'dX_tangential')
-        %    ds = s(min(find(s>0)))/2;
-        %    if ~isempty(ds)
-        %        s = s-ds;
-        %    end
-        %end
         if strcmp(plotcoordinate,'reverse path distance')
             s = rot90(s,2);
         end
         s = reshape(repmat(s,[1 1 size(data.X,3)]),size(data.X));
     case {'coordinate','index'}
         if isfield(data,'X')
-            s = data.X;
+            s = x;
         else
             s = 1:numel(data.Val);
         end
     case 'x coordinate'
-        s = data.X;
+        s = x;
     case 'y coordinate'
-        s = data.Y;
+        s = y;
         if isfield(data,'YName')
             sName = data.YName;
         end
@@ -1636,12 +1649,15 @@ switch plotcoordinate
             sUnits = data.YUnits;
         end
     case 'time'
-        s = repmat(data.Time,[1 size(data.X,3)]);
+        s = repmat(data.Time,[1 size(x,3)]);
         sUnits = [];
 end
 
 % squeeze all arrays to remove unnecessary singleton dimensions
 s = squeeze(s);
+if isvector(s)
+    s = s(:);
+end
 flds = {'Z','Val','XComp','YComp','ZComp'};
 for i = 1:length(flds)
     fld = flds{i};

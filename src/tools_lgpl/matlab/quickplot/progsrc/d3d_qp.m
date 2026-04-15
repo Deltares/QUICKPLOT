@@ -4609,13 +4609,13 @@ switch cmd
                                 I.Method=2;
                                 I.AllFigures=1;
                                 I.DPI=72;
-                                I.InvertHardcopy=0;
+                                I.BlackAxesWhiteFig=0;
                                 md_print(Fig,I)
                             case 'clipmeta'
                                 I.PrtID='Metafile to clipboard';
                                 I.Method=1;
                                 I.AllFigures=1;
-                                I.InvertHardcopy=1;
+                                I.BlackAxesWhiteFig=1;
                                 md_print(Fig,I)
                             otherwise
                                 if ~isempty(cmdargs)
@@ -4625,9 +4625,9 @@ switch cmd
                                     I.AllFigures=1;
                                     I.Color=cmdargs{5};
                                     if length(cmdargs)>5
-                                        I.InvertHardcopy=cmdargs{6};
+                                        I.BlackAxesWhiteFig=cmdargs{6};
                                     else
-                                        I.InvertHardcopy=1;
+                                        I.BlackAxesWhiteFig=1;
                                     end
                                     if length(cmdargs)>6
                                         I.PageLabels=cmdargs{7};
@@ -4641,7 +4641,7 @@ switch cmd
                                     I.DPI=qp_settings('print_DPI');
                                     I.AllFigures=0;
                                     I.Color=qp_settings('print_colour');
-                                    I.InvertHardcopy=qp_settings('print_inverthardcopy');
+                                    I.BlackAxesWhiteFig=qp_settings('print_inverthardcopy');
                                     I.PageLabels=qp_settings('print_pagelabels');
                                     I.SelectFrom=get_nondialogs;
                                     [I,FigNew]=md_print('getsettings',Fig,I);
@@ -4680,9 +4680,9 @@ switch cmd
                                 qp_settings('print_method',I.Method);
                                 qp_settings('print_DPI',I.DPI);
                                 qp_settings('print_colour',I.Color);
-                                qp_settings('print_inverthardcopy',I.InvertHardcopy);
+                                qp_settings('print_inverthardcopy',I.BlackAxesWhiteFig);
                                 qp_settings('print_pagelabels',I.PageLabels);
-                                args={filename  I.PrtID  I.Method  I.DPI  I.Color  I.InvertHardcopy I.PageLabels};
+                                args={filename  I.PrtID  I.Method  I.DPI  I.Color  I.BlackAxesWhiteFig I.PageLabels};
                         end
                         set(sld,'vis','on')
                         set(psh,'vis','on')
@@ -5177,9 +5177,9 @@ switch cmd
             'showinactiveopt', 'defaultfigurepos','timezonehandling', ...
             'enforcedtimezone', 'netcdf_use_fillvalue','export_max_ntimes', ...
             'update_showversion', 'defaultrenderer','defaultsmoothing', ...
-            'ghostscript', 'ghostscript_browse'}
+            'ghostscript', 'ghostscript_browse','station_sorting'}
         args = qp_prefs(UD,mfig,cmd,cmdargs);
-        if logfile
+        if logfile && ~ismember(cmd,{'preferences','prefpane'})
             writelog(logfile,logtype,args{:});
         end
         

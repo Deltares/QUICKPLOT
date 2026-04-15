@@ -88,7 +88,7 @@ switch cmd
         [varargout{1:2}]=gettimezone(FI,domain,Props);
         return
     case 'stations'
-        varargout={readsts(FI,Props,0)};
+        varargout={readsts(FI,Props,varargin{:})};
         return
     case 'subfields'
         varargout={getsubfields(FI,Props,varargin{:})};
@@ -517,5 +517,8 @@ end
 if ~iscell(S)
     S=multiline(S(1:end-1));
     S=cellstr(S);
+end
+if nargin>2 && ~isequal(t,0)
+    S=S(t);
 end
 % -----------------------------------------------------------------------------

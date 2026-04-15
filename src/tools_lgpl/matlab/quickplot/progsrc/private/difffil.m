@@ -587,7 +587,7 @@ end
 % -----------------------------------------------------------------------------
 function subf=getsubfields(FI,domain,Props,f)
 subf = Props.SubFld;
-if nargin>3
+if nargin>3 && ~isequal(f,0)
     subf = subf(f);
 end
 % -----------------------------------------------------------------------------

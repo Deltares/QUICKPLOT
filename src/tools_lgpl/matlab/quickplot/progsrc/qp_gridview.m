@@ -114,7 +114,40 @@ switch cmd
         GRID=get(G,'userdata');
         switch GRID.Type
             case 'sgrid'
-                fprintf('To implement\n');
+                switch GRID.ValLocation
+                    case 'NODE'
+                        X = GRID.X;
+                        Y = GRID.Y;
+                    case 'FACE'
+                        X = interp2cen(GRID.X);
+                        Y = interp2cen(GRID.Y);
+                    otherwise
+                        error('qp_gridview:UnsupportedValLocation', ...
+                              'Unsupported GRID.ValLocation "%s" for sgrid.', GRID.ValLocation);
+                end
+                nTotal = 1+sum(max(abs(diff(GRID.Selected.Range,1)),[],2));
+                XY = NaN(nTotal,2);
+                MN = GRID.Selected.Range(1,:);
+                j = 1;
+                XY(j,1) = X(MN(1),MN(2));
+                XY(j,2) = Y(MN(1),MN(2));
+                for i = 2:size(GRID.Selected.Range,1)
+                    dMN = GRID.Selected.Range(i,:) - MN;
+                    % follow Bresenham-style stepping in case
+                    % abs(dMN(1)) ~= abs(dMN(2))
+                    % which should never be the case.
+                    nSteps = max(abs(dMN));
+                    if nSteps > 0
+                        steps = (1:nSteps)';
+                        pathMN = round(repmat(MN,nSteps,1) + steps*(dMN/nSteps));
+                        for d = 1:nSteps
+                            MN = pathMN(d,:);
+                            j = j + 1;
+                            XY(j,1) = X(MN(1),MN(2));
+                            XY(j,2) = Y(MN(1),MN(2));
+                        end
+                    end
+                end
             case 'ugrid'
                 switch GRID.ValLocation
                     case 'NODE'

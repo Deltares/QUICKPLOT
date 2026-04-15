@@ -158,56 +158,105 @@ switch cmd
             d3d_qp hideversion
         end
 
+        % Data Fields
+
+    case 'station_sorting'
+        ss = findobj(F,'tag','station_sorting');
+        sorters = qp_preferences_interface('sorters');
+        if ~isempty(cmdargs)
+            sorter = cmdargs{1};
+            isorter = find(strcmpi(sorter,sorters));
+            if isempty(isorter)
+                sorter = qp_preferences_interface('default_station_sorter');
+                sorter = qp_settings('station_sorter', sorter);
+                isorter = find(strcmpi(sorter,sorters));
+            end
+        else
+            isorter = get(ss,'value');
+            sorter = sorters{isorter};
+        end
+        argout{2} = sorter;
+        qp_settings('station_sorter', sorter);
+        set(ss,'value',isorter)
+
         % Default Figure
 
-    case {'defaultnewfigure','defaultloadfigure'}
+    case {'defaultnewfigure','defaultfigure','defaultloadfigure','defaultfigurecolor'}
         rb1=findobj(F,'tag','defaultnewfigure');
         dfct=findobj(F,'tag','defaultfigurecolortext');
         dfc=findobj(F,'callback','d3d_qp defaultfigurecolor');
         rb2=findobj(F,'tag','defaultloadfigure');
         select=findobj(F,'callback','d3d_qp defaultfigure');
         df=findobj(F,'tag','defaultfigure');
-        if strcmp(cmd,'defaultnewfigure')
+        fn = '';
+        color = qp_settings('defaultfigurecolor')/255;
+        if ~isempty(cmdargs)
+            if ischar(cmdargs{1})
+                fn = cmdargs{1};
+            else
+                clr = cmdargs{1};
+                if isnumeric(clr) && isequal(size(clr),[1 3])
+                    if all(clr>=0 & clr<=1)
+                        color = clr;
+                    elseif all(clr==round(clr) & clr>=0 & clr<=255)
+                        color = clr/255;
+                    end
+                end
+            end
+
+        else
+            switch cmd
+                case 'defaultfigurecolor'
+                    newclr = uisetcolor(color);
+                    if ~isequal(newclr,0)
+                        color = newclr;
+                    end
+
+                case {'defaultfigure','defaultloadfigure'}
+                    currentdir = pwd;
+                    try
+                        orig_fn = qp_settings('defaultfigure');
+                        if ~isempty(orig_fn)
+                            targetdir = fileparts(orig_fn);
+                        else
+                            targetdir = '';
+                        end
+                        if isempty(targetdir)
+                            targetdir = qp_basedir('exe');
+                        end
+                        cd(targetdir)
+                        [fn,pn] = uigetfile({'*.fig', 'MATLAB Figures (*.fig)'},'Select Default Figure File ...');
+                        cd(currentdir)
+                        if ischar(fn)
+                            fn = [pn fn];
+                        elseif isempty(orig_fn)
+                            color = qp_settings('defaultfigurecolor')/255;
+                        end
+                    catch
+                        cd(currentdir)
+                    end
+            end
+        end
+        argout{1} = 'defaultfigure';
+        if isempty(fn)
             set(rb1,'value',1)
             set([dfct dfc],'enable','on')
-            set(dfc,'backgroundcolor',qp_settings('defaultfigurecolor')/255)
+            set(dfc,'backgroundcolor',color)
             set(rb2,'value',0)
             set(select,'enable','off')
             set(df,'string','','enable','off')
             qp_settings('defaultfigure',[])
+            qp_settings('defaultfigurecolor', color*255)
+            argout{2} = color*255;
         else
             set(rb1,'value',0)
             set([dfct dfc],'enable','off')
             set(dfc,'backgroundcolor',get(F,'color'))
             set(rb2,'value',1)
             set(select,'enable','on')
-            set(df,'string','','enable','inactive')
-            d3d_qp defaultfigure
-        end
-
-    case 'defaultfigure'
-        currentdir=pwd;
-        try
-            orig_fn=qp_settings('defaultfigure');
-            targetdir='';
-            if ~isempty(orig_fn)
-                targetdir=fileparts(orig_fn);
-            end
-            if isempty(targetdir)
-                targetdir=qp_basedir('exe');
-            end
-            cd(targetdir);
-            [fn,pn]=uigetfile({'*.fig', 'MATLAB Figures (*.fig)'},'Select Default Figure File ...');
-            cd(currentdir);
-            if ischar(fn)
-                fn = [pn fn];
-                set(findobj(F,'tag','defaultfigure'),'string',fn)
-                qp_settings('defaultfigure',fn);
-            elseif isempty(orig_fn)
-                d3d_qp defaultnewfigure
-            end
-        catch
-            cd(currentdir);
+            set(df,'string',fn,'enable','inactive')
+            qp_settings('defaultfigure',fn)
+            argout{2} = fn;
         end
         
     case 'defaultfigurepos'
@@ -216,16 +265,26 @@ switch cmd
         %
         dfpm = findobj(F,'tag','defaultfigurepos-menu');
         dfpe = findobj(F,'tag','defaultfigurepos-edit');
-        FigPos = get(dfpm,'string');
-        fpval = get(dfpm,'value');
+        FigPos = qp_preferences_interface('figure_positions');
+        fpval = [];
+        pos = [];
+        if ~isempty(cmdargs)
+            if ischar(cmdargs{1})
+                fpval = find(strcmpi(cmdargs{1},FigPos));
+            else
+                fpval = 2;
+                pos = cmdargs{1};
+            end
+        end
+        if isempty(fpval)
+            fpval = get(dfpm,'value');
+        end
         if fpval==2 % Manual
             if isequal(gcbo,dfpe)
                 fp = get(dfpe,'string');
                 pos = sscanf(fp,'%i')';
-                if length(pos)~=4 || pos(3)<=0 || pos(4)<=0
-                    pos = [];
-                end
-            else
+            end
+            if ~isnumeric(pos) || numel(pos)~=4 || pos(3)<=0 || pos(4)<=0
                 pos = [];
             end
             if isempty(pos)
@@ -239,52 +298,86 @@ switch cmd
                 'string',fp, ...
                 'backgroundcolor',Active)
             qp_settings('defaultfigurepos',fp)
+            argout{2} = pos;
         else
             qp_settings('defaultfigurepos',lower(FigPos{fpval}))
             set(dfpe,'enable','off', ...
                 'string','', ...
                 'backgroundcolor',Inactive)
-        end
-        
-        
-    case {'defaultfigurecolor'}
-        clr = qp_settings(cmd)/255;
-        newclr = uisetcolor(clr);
-        if ~isequal(newclr,0)
-            qp_settings(cmd,newclr*255)
-            set(gcbo,'backgroundcolor',newclr)
+            argout{2} = lower(FigPos{fpval});
         end
 
     case 'defaultrenderer'
         dfr = findobj(F,'tag','defaultrenderer');
-        Renderers = get(dfr,'string');
-        rval = get(dfr,'value');
-        rndr = Renderers{rval};
+        Renderers = qp_preferences_interface('renderers');
+        if ~isempty(cmdargs)
+            rndr = cmdargs{1};
+            if ~ismember(rndr,Renderers)
+                rndr = qp_preferences_interface('default_renderer');
+                rndr = qp_settings('defaultrenderer', rndr);
+            end
+            rval = find(strcmpi(rndr,Renderers));
+        else
+            rval = get(dfr,'value');
+            rndr = Renderers{rval};
+        end
+        set(dfr,'value',rval);
         qp_settings('defaultrenderer', rndr)
+        argout{2} = rndr;
         
     case 'defaultsmoothing'
         dfs = findobj(F,'tag','defaultsmoothing');
-        smo = get(dfs,'value');
+        if ~isempty(cmdargs)
+            smo = cmdargs{1};
+        else
+            smo = get(dfs,'value');
+        end
+        set(dfs,'value',smo)
         qp_settings('graphicssmoothing', smo)
+        argout{2} = smo;
         
         % Default Axes
         
     case {'defaultaxescolor'}
-        clr = qp_settings(cmd)/255;
-        newclr = uisetcolor(clr);
-        if ~isequal(newclr,0)
-            qp_settings(cmd,newclr*255)
-            set(gcbo,'backgroundcolor',newclr)
+        dac = findobj(F,'tag','defaultaxescolor');
+        clr = qp_settings('defaultaxescolor')/255;
+        if ~isempty(cmdargs)
+            newclr = cmdargs{1};
+        else
+            newclr = uisetcolor(clr);
         end
-        
+        if isnumeric(newclr) && isequal(size(newclr),[1 3])
+            if all(newclr>=0 & newclr<=1)
+                clr = newclr;
+            elseif all(newclr == round(newclr) & newclr>=0 & newclr <= 255)
+                clr = newclr/255;
+            end
+        end
+        set(dac,'backgroundcolor',clr)
+        qp_settings('defaultaxescolor',clr*255)
+        argout{2} = clr*255;
+
     case {'boundingbox'}
-        newval = get(gcbo,'value');
-        qp_settings(cmd,newval);
+        bb = findobj(F,'tag','boundingbox');
+        if ~isempty(cmdargs)
+            newval = cmdargs{1};
+        else
+            newval = get(bb,'value');
+        end
+        set(bb,'value',newval)
+        qp_settings('boundingbox',newval);
+        argout{2} = newval;
 
     case {'colorbar_ratio'}
-        newval = round(str2double(get(gcbo,'string')));
+        cbr = findobj(F,'tag','colorbar_ratio');
+        if ~isempty(cmdargs)
+            newval = cmdargs{1};
+        else
+            newval = round(str2double(get(cbr,'string')));
+        end
+        set(cbr,'string',num2str(newval))
         qp_settings(cmd,newval);
-        set(gcbo,'string',num2str(newval))
+        argout{2} = newval;
         
         % Grid View
         

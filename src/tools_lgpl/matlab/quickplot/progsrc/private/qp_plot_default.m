@@ -233,7 +233,6 @@ switch NVal
                                 set(hNew(i),'zdata',data.Z(:,i));
                             end
                         end
-                        %set(get(Parent,'zlabel'),'string','elevation (m) \rightarrow')
                     end
                 else
                     if isfield(data,'Z')
@@ -259,7 +258,7 @@ switch NVal
                     set(Parent,'NextPlot','add');
                     switch Ops.presentationtype
                         case {'values','markers'}
-                            if isfield(data,'Z') && 0
+                            if isfield(data,'Z') && isequal(axestype,'X-Y-Z')
                                 hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'QUAD',data.X,data.Y,data.Z,data.Val,Ops);
                             else
                                 hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'QUAD',data.X,data.Y,[],data.Val,Ops);
@@ -285,7 +284,7 @@ switch NVal
                         data.Val = data.Classes(data.Val);
                         data.Val(miss) = {''};
                     end
-                    if isfield(data,'Z') && 0
+                    if isfield(data,'Z') && isequal(axestype,'X-Y-Z')
                         hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'QUAD',data.X,data.Y,data.Z,data.Val,Ops);
                     elseif isfield(data,'X')
                         hNew = qp_scalarfield(Parent,hNew,Ops.presentationtype,'QUAD',data.X,data.Y,[],data.Val,Ops);
@@ -437,16 +436,19 @@ switch NVal
                 % get right component to plot: select the component in the plane
                 % to be plotted.
                 %
-                if isfield(data,'dX_tangential')
+                if ~isfield(data,'YComp')
+                    planecomp=data.XComp;
+                elseif isfield(data,'dX_tangential')
                     % arbcross
                     if length(data.dX_tangential) == length(s)
                         ex=data.dX_tangential;
                         ey=data.dY_tangential;
                     else
-                        ex=data.dX_tangential([1:end end]);
-                        ey=data.dY_tangential([1:end end]);
-                        ex(ex~=ex([1 1:end-1]))=NaN;
-                        ey(isnan(ex))=NaN;
+                        ex = data.dX_tangential([1:end end]) + data.dX_tangential([1 1:end]);
+                        ey = data.dY_tangential([1:end end]) + data.dY_tangential([1 1:end]);
+                        mag = hypot(ex,ey);
+                        ex = ex./mag;
+                        ey = ey./mag;
                     end
                     %
                     repSize = [1 1];
@@ -532,7 +534,7 @@ switch NVal
                     qp_title(Parent,{TStr},'quantity',Quant,'unit',Units,'time',TStr)
                 end
                 
-            case {'X-Y','Lon-Lat','X-Y-Val','Lon-Lat-Val'}
+            case {'X-Y','X-Y-Z','Lon-Lat','X-Y-Val','Lon-Lat-Val'}
                 data.XComp((data.XComp==0) & (data.YComp==0))=NaN;
                 I=~isnan(data.XComp(:));
                 %
@@ -545,11 +547,14 @@ switch NVal
                 delete(hNew);
                 if any(I)
                     %
-                    data.X=data.X(I);
-                    data.Y=data.Y(I);
-                    data.XComp=data.XComp(I);
-                    data.YComp=data.YComp(I);
+                    if ~isequal(size(data.X),size(data.XComp)) % 3D
+                        data.X = repmat(data.X,size(data.XComp)./size(data.X));
+                        data.Y = repmat(data.Y,size(data.XComp)./size(data.Y));
+                    end
                     if isfield(data,'Z')
+                        if isequal(size(data.Z),size(data.XComp)+[0 1]) % before updating data.XComp!
+                            data.Z = (data.Z(:,1:end-1) + data.Z(:,2:end))/2;
+                        end
                         data.Z=data.Z(I);
                     end
                     if isfield(data,'ZComp')
@@ -558,6 +563,10 @@ switch NVal
                     if isfield(data,'Val')
                         data.Val=data.Val(I);
                     end
+                    data.X=data.X(I);
+                    data.Y=data.Y(I);
+                    data.XComp=data.XComp(I);
+                    data.YComp=data.YComp(I);
                     %
                     if isfield(data,'ZComp')
                         hNew=qp_vector(Parent,Ops.vectorstyle,data.X,data.Y,data.Z,data.XComp,data.YComp,data.ZComp,quivopt{:});
@@ -583,7 +592,7 @@ switch NVal
                 else
                     hNew=line(1,1,'xdata',[],'ydata',[]);
                 end
-                if isempty(Selected{K_})
+                if isempty(Selected{K_}) || isequal(Selected{K_},0) || length(Selected{K_})>1
                     str=PName;
                     lyr={};
                 else

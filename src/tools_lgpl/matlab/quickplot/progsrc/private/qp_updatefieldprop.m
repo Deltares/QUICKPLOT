@@ -176,7 +176,7 @@ if strcmpi(TZhandling,'ignored')
     set(MW.TZtxt,'visible','off')
 else
     if sz(T_)>0
-        [Chk,TZshift,TZstr]=qp_getdata(Info,DomainNr,Props(fld),'timezone');
+        [~,TZshift,TZstr]=qp_getdata(Info,DomainNr,Props(fld),'timezone');
         if isnan(TZshift)
             TZstr = 'unknown';
         elseif ~strcmpi(TZhandling,'as in dataset')
@@ -269,7 +269,7 @@ c10=char(10);
 %
 % Show station selection or MNK/XYZ selection controls
 %
-stlist=1;
+showStationNames = false;
 if DimFlag(ST_)
     %
     % Stations, so show station selection controls and hide MNK/XYZ
@@ -282,10 +282,10 @@ if DimFlag(ST_)
     if sz(ST_)>30000 || ~ismember(DimFlag(ST_),[0 3 5 13 15])
         set(MW.Stat,'visible','on')
         set(MW.StList,'visible','off')
-        stlist=0;
     else
         set(MW.Stat,'visible','off')
         set([MW.S MW.AllS MW.StList],'visible','on')
+        showStationNames = true;
     end
 else
     %
@@ -485,7 +485,7 @@ for m_ = 2:10 % limit to 10 supported dimensions
             set(UDM,'string',mstr,'enable','on',vis{:})
             set(UDAllM,'enable',allmon,'value',allm,'userdata',{allm selm sz(m_)},vis{:})
             set(UDEditM,'string',vec2str(selm,'nobrackets','noones'),'userdata',selm,vis{:})
-            if allm,
+            if allm
                 set(UDEditM,'enable','off','backgroundcolor',Inactive);
             else
                 set(UDEditM,'enable','on','backgroundcolor',Active);
@@ -517,29 +517,28 @@ for m_ = 2:10 % limit to 10 supported dimensions
         % been disabled.
         %
         if m_==ST_
-            [Chk,Stats]=qp_getdata(Info,DomainNr,Props(fld),'stations');
-            if stlist
-                if isempty(Stats) && sz(ST_)==0
-                    set(MW.S,'enable','off')
-                    set(MW.StList,'visible','on','enable','off','value',1,'string',' ','backgroundcolor',Inactive)
-                else
-                    if isempty(Stats)
-                        x=sz(ST_);
-                        Statw=ceil(log10(x+1));
-                        Stats=sprintf(strcat('%-',num2str(Statw),'i'),1:x);
-                        Stats=cat(2,repmat('station ',x,1),reshape(Stats,[Statw,x])');
-                        %for j=sz(ST_):-1:1, Stats{j}=sprintf('station %i',j); end
-                    elseif iscellstr(Stats)
-                        Stats=char(Stats); % use char instead of strvcat to keep empty names
-                    end
-                    if allm
-                        set(MW.StList,'visible','on','enable','off','value',1,'string',Stats,'backgroundcolor',Inactive,'userdata',Stats)
-                    else
-                        set(MW.StList,'visible','on','enable','on','value',selm,'string',Stats,'backgroundcolor',Active,'userdata',Stats)
-                    end
-                end
+            nStations = sz(ST_);
+            if sz(ST_) == 0
+                set(MW.S,'enable','off')
+                set(MW.StList,'visible','on','enable','off','value',1,'string',' ','backgroundcolor',Inactive)
             else
-                set(MW.StList,'visible','off','enable','off','userdata',Stats)
+                [~,stationNames]=qp_getdata(Info,DomainNr,Props(fld),'stations');
+                if length(stationNames) ~= nStations
+                    numberLength = ceil(log10(nStations+1));
+                    numberFormat = strcat('%-',num2str(numberLength),'i');
+                    stationNumbers = sprintf(numberFormat, 1:nStations);
+                    stationNames = cat(2,repmat('station ',nStations,1),reshape(stationNumbers,[numberLength,nStations])');
+                    stationNames = cellstr(stationNames);
+                end
+                if showStationNames
+                    if allm
+                        set(MW.StList,'visible','on','enable','off','value',1,'string',stationNames,'backgroundcolor',Inactive,'userdata',stationNames)
+                    else
+                        set(MW.StList,'visible','on','enable','on','value',selm,'string',stationNames,'backgroundcolor',Active,'userdata',stationNames)
+                    end
+                else
+                    set(MW.StList,'visible','off','enable','off','userdata',stationNames)
+                end
             end
         end
     else
@@ -582,7 +581,7 @@ if strcmp(get(MW.HSelType,'enable'),'on')
 
     if DimFlag(M_) && DimFlag(N_)
         % structured 2D domain
-        [mnexp,mn1]=piecewise(mn,sz([M_ N_]));
+        [~,mn1]=piecewise(mn,sz([M_ N_]));
     else
         %unstructured domain
         mmax = get(MW.MaxM,'userdata');
@@ -607,7 +606,7 @@ if strcmp(get(MW.HSelType,'enable'),'on')
             mnstr(end-1:end)=[];
         else
             mnstr='';
-            mnl=[];
+            mn1=[];
         end
         set(MW.EditMN,'string',mnstr,'userdata',mn1)
     end

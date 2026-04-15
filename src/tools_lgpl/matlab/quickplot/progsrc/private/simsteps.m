@@ -315,4 +315,3 @@ end
 set(Ax,'clim',clm);
 C=qp_colorbar('horz');
 xlabel(C,[val ' \rightarrow'])
-set(findall(gcf),'deletefcn','')

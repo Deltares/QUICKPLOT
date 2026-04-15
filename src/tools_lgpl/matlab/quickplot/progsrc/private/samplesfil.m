@@ -512,7 +512,7 @@ end
 % -----------------------------------------------------------------------------
 function S=readsts(FI,Props,t)
 %======================== SPECIFIC CODE =======================================
-if nargin<3 || t==0
+if nargin<3 || isequal(t,0)
     S = cell(1,FI.nLoc);
     t=1:FI.nLoc;
 else

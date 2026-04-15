@@ -181,7 +181,7 @@ switch cmd
         [varargout{1:2}]=gettimezone(useFI,domain,Props);
         return
     case 'stations'
-        varargout={readsts(useFI,Props,0)};
+        varargout={readsts(useFI,Props,varargin{:})};
         return
     case 'subfields'
         varargout={getsubfields(useFI,Props,varargin{:})};
@@ -1785,7 +1785,7 @@ else
         Insert.DimName = cell(1,5);
         if strcmp(Info.Type,'simple_geometry')
             Insert.NVal = 0;
-        elseif strcmp(Info.Datatype,'char')
+        elseif ismember(Info.Datatype,{'char','string'})
             Insert.NVal = 4;
         elseif any(strcmp('flag_values',Attribs))
             Insert.NVal = 6;
@@ -2584,12 +2584,12 @@ function S=readsts(FI,Props,t)
 stcrd = FI.Dataset(get_varid(Props)+1).Station;
 if FI.Dataset(stcrd).CharDim==FI.Dataset(stcrd).Dimid(1)
     % PRESERVE_FVD=true
-    [Stations, status] = qp_netcdf_get(FI,stcrd-1,fliplr(FI.Dataset(stcrd).Dimension));
+    [Stations, ~] = qp_netcdf_get(FI,stcrd-1,fliplr(FI.Dataset(stcrd).Dimension));
 else
-    [Stations, status] = qp_netcdf_get(FI,stcrd-1,FI.Dataset(stcrd).Dimension);
+    [Stations, ~] = qp_netcdf_get(FI,stcrd-1,FI.Dataset(stcrd).Dimension);
 end
-if t~=0
-    if isa(Station,'string')
+if ~isequal(t,0)
+    if isa(Stations,'string')
         Stations = Stations(t);
     else
         Stations = Stations(t,:);

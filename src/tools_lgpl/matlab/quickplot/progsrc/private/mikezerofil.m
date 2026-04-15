@@ -527,7 +527,7 @@ end
 
 % -----------------------------------------------------------------------------
 function S=readsts(FI,Props,t)
-if nargin<3 || t==0
+if nargin<3 || isequal(t,0)
     t = 1:length(FI.CrossSection.Name);
 end
 S = cell(length(t),1);

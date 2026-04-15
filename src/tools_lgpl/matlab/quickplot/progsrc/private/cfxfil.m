@@ -78,7 +78,7 @@ switch cmd
         [varargout{1:2}]=gettimezone(FI,domain,Props);
         return
     case 'stations'
-        varargout={{}};
+        varargout={readsts(FI,Props,varargin{:})};
         return
     case 'subfields'
         varargout={{}};
@@ -322,12 +322,4 @@ T=FI.Encaps.Time(:);
 if ~isequal(t,0)
     T=T(t);
 end
-% -----------------------------------------------------------------------------
-
-
-% -----------------------------------------------------------------------------
-function S=readsts(FI,Props,t)
-
-%======================== SPECIFIC CODE =======================================
-S={};
 % -----------------------------------------------------------------------------

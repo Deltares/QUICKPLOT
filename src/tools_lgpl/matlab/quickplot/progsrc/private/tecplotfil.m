@@ -1,5 +1,5 @@
-function varargout=gribfil(FI,domain,field,cmd,varargin)
-%GRIBFIL QP support for GRIB files.
+function varargout=tecplotfil(FI,domain,field,cmd,varargin)
+%TECPLOTFIL QP support for Tecplot files.
 %   Domains                 = XXXFIL(FI,[],'domains')
 %   DataProps               = XXXFIL(FI,Domain)
 %   Size                    = XXXFIL(FI,Domain,DataFld,'size')
@@ -18,7 +18,7 @@ function varargout=gribfil(FI,domain,field,cmd,varargin)
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
-%   Copyright (C) 2011-2026 Stichting Deltares.                                     
+%   Copyright (C) 2011-2025 Stichting Deltares.                                     
 %                                                                               
 %   This library is free software; you can redistribute it and/or                
 %   modify it under the terms of the GNU Lesser General Public                   
@@ -89,7 +89,7 @@ switch cmd
         [varargout{1:2}]=gettimezone(FI,domain,Props);
         return
     case 'stations'
-        varargout={readsts(FI,domain,Props,varargin{:})};
+        varargout={{}};
         return
     case 'subfields'
         varargout={{}};
@@ -99,107 +99,54 @@ switch cmd
 end
 
 DimFlag=Props.DimFlag;
+sz=getsize(FI,domain,Props);
 
 % initialize and read indices ...
-idx={[] [] 0 0 0};
-fidx=find(DimFlag);
-idx(fidx(1:length(varargin)))=varargin;
-
-% select appropriate timestep ...
-sz=getsize(FI,domain,Props);
-if DimFlag(T_)
-    if isempty(idx{T_})
-        idx{T_}=sz(T_);
-    end
-    if isequal(idx{T_},0)
-        idx{T_}=1:sz(T_);
+idx = {[] [] [] [] []};
+fidx = find(DimFlag);
+idx(fidx(1:length(varargin))) = varargin;
+for i = 1:5
+    if DimFlag(i) && (isempty(idx{i}) || isequal(idx{i},0))
+        idx{i} = 1:sz(i);
     end
 end
+Zone = FI.Zone(domain);
 
-%========================= GENERAL CODE =======================================
-allidx=zeros(size(sz));
-for i=[M_ N_ K_]
-    if DimFlag(i)
-        if isequal(idx{i},0) || isequal(idx{i},1:sz(i))
-            idx{i}=1:sz(i);
-            allidx(i)=1;
+if strcmpi(Zone.Type,'ORDERED')
+    spatialIndices = idx(fidx);
+    if XYRead
+        Ans.X = Zone.Data(spatialIndices{:},1);
+        Ans.Y = Zone.Data(spatialIndices{:},2);
+        if length(spatialIndices)==3
+            Ans.Z = Zone.Data(spatialIndices{:},3);
         end
     end
-end
-
-if max(idx{T_})>sz(T_)
-    error('Selected timestep (%i) larger than number of timesteps (%i) in file.',max(idx{T_}),sz(T_))
-end
-
-nT = length(idx{T_});
-nM = length(idx{M_});
-nN = length(idx{N_});
-firstblock = 1;
-for ib = 1:nT
-    b1 = Props.SubFld1(idx{T_}(ib));
-    if firstblock && XYRead
-        [val1,y,x,t,TRI] = grib('read',FI,b1);
-    else
-        [val1,dumy,dumx,t,TRI] = grib('readdata',FI,b1);
+    if DataRead
+        Ans.Val = Zone.Data(spatialIndices{:},Props.ival);
     end
-    val2 = [];
-    %
-    if isempty(TRI)
-        if firstblock
+else
+    switch Zone.ElementType
+        case 'LINESEG'
+            error('Element type "LINESEG" not yet supported.');
+        case {'TRIANGLE','QUADRILATERAL','POLYGON'}
+            idxM = idx{M_};
             if XYRead
-                Ans.X=x(idx{M_},idx{N_});
-                Ans.Y=y(idx{M_},idx{N_});
+                Ans.X = Zone.Data(idxM,1);
+                Ans.Y = Zone.Data(idxM,2);
+                renum = repmat(-1,Zone.NNodes,1);
+                renum(idxM) = 1:length(idxM);
+                FNC = renum(Zone.Topology);
+                FNC(any(FNC<=0,2),:) = [];
+                Ans.FaceNodeConnect = FNC;
             end
-            if isempty(val2)
-                Ans.Val = zeros(nT,nM,nN);
-            else
-                Ans.XComp = zeros(nT,nM,nN);
-                Ans.YComp = zeros(nT,nM,nN);
+            if DataRead
+                Ans.Val = Zone.Data(idxM,Props.ival);
+                Ans.ValLocation = 'NODE';
             end
-        end
-        Ans.Time(ib) = t;
-        if isempty(val2)
-            Ans.Val(ib,:,:) = reshape(val1(idx{M_},idx{N_}),[1 nM nN]);
-        else
-            Ans.XComp(ib,:,:)=reshape(val1(idx{M_},idx{N_}),[1 nM nN]);
-            Ans.YComp(ib,:,:)=reshape(val2(idx{M_},idx{N_}),[1 nM nN]);
-        end
-    else
-        if firstblock
-            if XYRead
-                if ~allidx(M_)
-                    Translate=zeros(sz(M_),1);
-                    Translate(idx{M_})=1:length(idx{M_});
-                    TRI = Translate(TRI);
-                    TRI = TRI(all(TRI,2),:);
-                end
-                Ans.TRI=TRI;
-                %
-                Ans.XYZ = cat(4,x(idx{M_}),y(idx{M_}));
-            end
-            Ans.Val = zeros(nT,nM);
-        end
-        %
-        Ans.Val(ib,:) = reshape(val1(idx{M_}),[1 nM]);
+        otherwise
+            error('Element type "%s" not yet supported.',Zone.ElementType)
     end
-    %
-    % reshape if a single timestep is selected ...
-    if DimFlag(T_) && isequal(size(idx{T_}),[1 1])
-        Flds = {'Val','XComp','YComp'};
-        for f = 1:length(Flds)
-            fld = Flds{f};
-            if isfield(Ans,fld)
-                sz=size(Ans.(fld));
-                sz=[sz(2:end) 1];
-                Ans.(fld)=reshape(Ans.(fld),sz);
-            end
-        end
-    end
-%
-    firstblock = 0;
 end
-Ans.XUnits = 'deg';
-Ans.YUnits = 'deg';
 
 varargout={Ans FI};
 % -----------------------------------------------------------------------------
@@ -208,54 +155,69 @@ varargout={Ans FI};
 % -----------------------------------------------------------------------------
 function Out=infile(FI,domain)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
-%======================== SPECIFIC CODE =======================================
-PropNames={'Name'              'Units'  'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Tri' 'SubFld1' 'SubFld2'};
-DataProps={''                  ''      [0 0 0 0 0]  0           1     ''         0     []        []};
-for b = 1:length(FI.Block)
-    if FI.Block(b).Edition<=1
-        Info = FI.Block(b).Info;
-        DataProps(end+1,:) = DataProps(1,:);
-        DataProps{end,1} = Info.ParamName;
-        DataProps{end,2} = Info.ParamUnit;
-        if isfield(Info.Grid,'Ni')
-            if length(Info.Grid.Ni)>1
-                DataProps{end,3} = [1 0 6 0 0];
-                DataProps{end,7} = 1;
-            else
-                DataProps{end,3} = [1 0 1 1 0];
-            end
-        end
-        DataProps{end,8} = b;
+Zone = FI.Zone(domain);
+
+PropNames={'Name'                   'Units' 'TemperatureType' 'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVal' 'SubFld' 'MNK' 'ival' 'UseGrid'};
+DataProps={'-------'                ''      ''                ''     ''      [0 0 0 0 0]  0           0      []       0     0      1};
+Out=cell2struct(DataProps,PropNames,2);
+
+if strcmpi(Zone.Type,'ORDERED')
+    if isfield(Zone,'IMax')
+        Out.DimFlag(M_) = 1;
     end
+    if isfield(Zone,'JMax')
+        Out.DimFlag(N_) = 1;
+    end
+    if isfield(Zone,'KMax')
+        Out.DimFlag(K_) = 1;
+    end
+else
+    switch Zone.ElementType
+        case 'LINESEG'
+            Out.Geom = 'UGRID1D-NODE';
+            Out.Coords = 'xy';
+        case {'TRIANGLE','QUADRILATERAL','POLYGON'}
+            Out.Geom = 'UGRID2D-NODE';
+            Out.Coords = 'xy';
+        case {'POLYHEDRAL','TETRAHEDRON','BRICK'}
+            Out.Geom = 'UGRID3D';
+            Out.Coords = 'xyz';
+            error('3D element type "%s" not yet supported.',Zone.ElementType)
+        otherwise
+            error('Element type "%s" not yet supported.',Zone.ElementType)
+    end
+    Out.DimFlag(M_) = 6;
 end
-%
-DataProps(1,:)=[];
-[b,i,j]=unique(DataProps(:,1));
-compactDataProps = DataProps(i,:);
-for i=1:length(b)
-    compactDataProps{i,8} = cat(2,DataProps{j==i,8});
-end
-%
-Out=cell2struct(compactDataProps,PropNames,2);
-[Out.UseGrid]=deal(1);
-% -----------------------------------------------------------------------------
+nVar = length(FI.Variables);
+Out = repmat(Out,1,nVar);
+[Out.Name] = deal(FI.Variables{:});
+[Out.NVal] = deal(1);
+ival_cell = num2cell(1:nVar);
+[Out.ival] = deal(ival_cell{:});
 
 
 % -----------------------------------------------------------------------------
 function sz=getsize(FI,domain,Props)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 sz=[0 0 0 0 0];
-
-%======================== SPECIFIC CODE =======================================
-sz(T_) = length(Props.SubFld1);
-Info = FI.Block(Props.SubFld1(1)).Info;
-if ~isfield(Info.Grid,'Ni')
-    error('Grid type ''%s'' not supported.',Info.Grid.TypeName)
-elseif length(Info.Grid.Ni)>1
-    sz(M_) = sum(Info.Grid.Ni);
+Zone = FI.Zone(domain);
+if strcmpi(Zone.Type,'ORDERED')
+    if Props.DimFlag(M_)
+        sz(M_) = Zone.IMax;
+    end
+    if Props.DimFlag(N_)
+        sz(N_) = Zone.JMax;
+    end
+    if Props.DimFlag(K_)
+        sz(K_) = Zone.KMax;
+    end
 else
-    sz(M_) = Info.Grid.Ni;
-    sz(N_) = Info.Grid.Nj;
+    switch Props.Geom
+        case {'UGRID1D-NODE','UGRID2D-NODE','UGRID3D-NODE'}
+            sz(M_) = Zone.NNodes;
+        case {'UGRID1D-EDGE','UGRID-FACE','UGRID3D-VOLUME'}
+            sz(M_) = Zone.NElements;
+    end
 end
 % -----------------------------------------------------------------------------
 
@@ -264,13 +226,13 @@ end
 function T=readtim(FI,domain,Props,t)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 
-%======================== SPECIFIC CODE =======================================
-T = zeros(1,length(Props.SubFld1));
-for i = 1:length(Props.SubFld1)
-    Info = FI.Block(Props.SubFld1(i)).Info;
-    T(i) = grib('time',Info);
-end
-if t~=0
-    T = T(t);
+% -----------------------------------------------------------------------------
+
+% -----------------------------------------------------------------------------
+function Domains=domains(FI)
+if isscalar(FI.Zone) && strcmp(FI.Zone.Title,'zone 1')
+    Domains = {};
+else
+    Domains = {FI.Zone.Title};
 end
 % -----------------------------------------------------------------------------

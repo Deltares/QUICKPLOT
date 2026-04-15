@@ -260,9 +260,6 @@ end
 % -----------------------------------------------------------------------------
 function S=readsts(FI,Props,t)
 %======================== SPECIFIC CODE =======================================
-if nargin==2
-    t=':';
-end
 if isfield(FI,'Directions')
     if ~isempty(Props.Fld)
         % remove locations at which all quantities at all times are non-specified
@@ -284,7 +281,9 @@ else
         S{i} = sprintf('(%.2f m,%.2f m)',Locs(i,:));
     end
 end
-S=S(t);
+if nargin>2 && ~isequal(t,0)
+    S=S(t);
+end
 % -----------------------------------------------------------------------------
 
 

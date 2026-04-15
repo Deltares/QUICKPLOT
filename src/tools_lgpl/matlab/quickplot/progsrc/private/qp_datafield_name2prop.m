@@ -1,4 +1,4 @@
-function Prop=qp_datafield_name2prop(FI,Domain,Name)
+function Prop = qp_datafield_name2prop(FI,Domain,Name)
 %QP_DATAFIELD_NAME2PROP Convert data field string to structure.
 %
 %   PropStruct = qp_datafield_name2prop(FileInfo,Domain,DataFieldName)
