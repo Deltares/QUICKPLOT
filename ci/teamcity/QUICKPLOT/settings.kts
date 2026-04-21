@@ -144,7 +144,7 @@ object Linux_LnxCompileQuickplot : BuildType({
             id = "include_mex_files"
             scriptContent = """
                 cp mex_files_linux/exepath.mexa64 src/tools_lgpl/matlab/quickplot/progsrc/private
-                cp mex_files_linux/reducepoints.mexa64 src/tools_lgpl/matlab/quickplot/progsrc
+                cp mex_files_linux/reducepoints.mexa64 src/tools_lgpl/matlab/quickplot/progsrc/private
             """.trimIndent()
         }
         script {
@@ -845,8 +845,8 @@ object Windows_WinCompileQuickplot : BuildType({
             scriptContent = """
                 copy /Y mex_files_windows\CloseSplashScreen.mexw64 src\tools_lgpl\matlab\quickplot\progsrc\private
                 copy /Y mex_files_linux\exepath.mexa64 src\tools_lgpl\matlab\quickplot\progsrc\private
-                copy /Y mex_files_linux\reducepoints.mexa64 src\tools_lgpl\matlab\quickplot\progsrc
-                copy /Y mex_files_windows\reducepoints.mexw64 src\tools_lgpl\matlab\quickplot\progsrc
+                copy /Y mex_files_linux\reducepoints.mexa64 src\tools_lgpl\matlab\quickplot\progsrc\private
+                copy /Y mex_files_windows\reducepoints.mexw64 src\tools_lgpl\matlab\quickplot\progsrc\private
                 copy /Y mex_files_windows\writeavi.mexw64 src\tools_lgpl\matlab\quickplot\progsrc\private
             """.trimIndent()
         }
@@ -1407,15 +1407,30 @@ object Windows_WinUpdateOpenEarthToolsLink : BuildType({
             id = "Commit_change"
             scriptContent = """
                 git config user.name "SVC TeamCity Ansible"
-                git commit -a -m "Updating Delft3D-MATLAB include to %build.vcs.number.MatlabTools_GithubQuickplot%"
+                if [ -n "$(git status --porcelain)" ]; then
+                    git commit -a -m "Updating Delft3D-MATLAB include to %build.vcs.number.MatlabTools_GithubQuickplot%"
+                else
+                    echo "No changes to commit."
+                fi
             """.trimIndent()
         }
         script {
             name = "Push change"
             id = "Push_change"
             scriptContent = """
-                git remote set-url origin https://%github_openearth_matlabtools_commit_access_token%@github.com/openearth/matlab-tools
-                git push
+                set "ASKPASS=%teamcity.build.tempDir%\git-askpass-openearth.cmd"
+                (
+                    echo @echo off
+                    echo if "%%~1"=="Username for 'https://github.com':" ^(
+                    echo     echo x-access-token
+                    echo ^) else ^(
+                    echo     echo %github_openearth_matlabtools_commit_access_token%
+                    echo ^)
+                ) > "%ASKPASS%"
+                set "GIT_ASKPASS=%ASKPASS%"
+                set "GIT_TERMINAL_PROMPT=0"
+                git push origin HEAD
+                del "%ASKPASS%"
             """.trimIndent()
         }
     }
