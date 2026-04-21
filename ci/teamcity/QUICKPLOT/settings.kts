@@ -920,11 +920,6 @@ object Windows_WinQuickplotReleaseZip : BuildType({
     artifactRules = "QUICKPLOT*.zip"
     buildNumberPattern = "QP ${Windows_WinCompileQuickplot.depParamRefs["build.vcs.number"]}"
 
-    params {
-        param("svn_buildserver_write_username", "fun_teamcitywrite")
-        password("svn_buildserver_write_password", "zxx52405a55c36f2e93e8aa7cf73aa98585", label = "svn_buildserver_write_password", display = ParameterDisplay.HIDDEN)
-    }
-
     vcs {
         cleanCheckout = true
     }
