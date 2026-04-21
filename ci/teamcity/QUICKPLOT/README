@@ -1,0 +1,7 @@
+The archive contains settings for a TeamCity project.
+
+To edit the settings in IntelliJ Idea, open the pom.xml and
+select the 'Open as a project' option.
+
+In this repository, the TeamCity DSL is stored in
+ci/teamcity/QUICKPLOT when kept in version control.
