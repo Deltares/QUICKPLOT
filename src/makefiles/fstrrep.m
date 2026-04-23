@@ -40,18 +40,21 @@ function fstrrep(file,orgtext,newtext)
 %
 % Read the target file and replace the orgtext by the newtext.
 %
-fid=fopen(file,'r');
-i=1;
-str={};
+fid = fopen(file, 'r');
+if fid < 0
+    error('Cannot open the file %s.', file)
+end
+i = 1;
+str = {};
 while ~feof(fid)
-    tmp=fgetl(fid);
-    str{i}=strrep(tmp,orgtext,newtext);
-    i=i+1;
+    tmp = fgetl(fid);
+    str{i} = strrep(tmp, orgtext, newtext);
+    i = i + 1;
 end
 fclose(fid);
 %
 % Write the updated file.
 %
-fid=fopen(file,'w');
-fprintf(fid,'%s\n',str{:});
+fid = fopen(file, 'w');
+fprintf(fid,'%s\n', str{:});
 fclose(fid);

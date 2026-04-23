@@ -131,9 +131,11 @@ for i = 1:length(d)
                 % skip
             otherwise
                 mkdir(target);
+                fprintf('  [Entering: %s]\n', d(i).name);
                 exportsrc(source,target)
         end
     else
+        fprintf('  %s -> %s\n', d(i).name, target);
         copyfile(source,target)
     end
 end
