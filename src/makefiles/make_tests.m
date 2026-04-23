@@ -42,10 +42,6 @@ if nargin>0
 end
 err = [];
 try
-    if ~exist('testcodes','dir')
-        error('Cannot locate source folder "testcodes".')
-    end
-    cd testcodes
     make_hello_world
     make_matlab_sysinfo
     make_graphics_test
