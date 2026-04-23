@@ -58,8 +58,8 @@ object Linux_LnxBuildMexFiles : BuildType({
     name = "[lnx] Build mex files"
 
     artifactRules = """
-        +:src/tools_lgpl/matlab/quickplot/progsrc/private/exepath.mexa64
-        +:src/tools_lgpl/matlab/quickplot/progsrc/private/reducepoints.mexa64
+        +:src/delft3d_matlab/private/exepath.mexa64
+        +:src/delft3d_matlab/private/reducepoints.mexa64
     """.trimIndent()
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
@@ -71,19 +71,25 @@ object Linux_LnxBuildMexFiles : BuildType({
         script {
             name = "Build mex files"
             id = "B"
-            workingDir = "src/tools_lgpl/matlab/quickplot/"
+            workingDir = "src/makefiles/"
             scriptContent = """
                 #!/bin/bash
+                echo Running in `pwd`
+                
+                echo -----------------------------------------
                 . /usr/share/Modules/init/bash
                 module use --append /opt/apps/modules
+                
                 echo -----------------------------------------
                 echo Listing of available modules:
                 module avail
+                
                 echo -----------------------------------------
                 echo Activating matlab/2023b module:
                 module load matlab/2023b
+                
                 echo -----------------------------------------
-                echo Running in ${'$'}PWD
+                echo Building mex files:
                 matlab -batch make_mex
             """.trimIndent()
         }
@@ -111,23 +117,22 @@ object Linux_LnxCompileQuickplot : BuildType({
     name = "[lnx] Compile QUICKPLOT"
 
     artifactRules = """
-        src/tools_lgpl/matlab/quickplot/quickplot64/run_d3d_qp.sh => 64bit/
-        src/tools_lgpl/matlab/quickplot/quickplot64/d3d_qp => 64bit/
-        src/tools_lgpl/matlab/quickplot/quickplot64/d3d_qp.version => 64bit/
-        src/tools_lgpl/matlab/quickplot/quickplot64/netcdfAll-4.1.jar => 64bit/
-        src/tools_lgpl/matlab/quickplot/quickplot64/colormaps/* => 64bit/colormaps
-        src/tools_lgpl/matlab/quickplot/quickplot64/private/d3d_qp.png => 64bit/colormaps/
-        src/tools_lgpl/matlab/quickplot/delwaq2raster64/run_delwaq2raster.sh => 64bit/
-        src/tools_lgpl/matlab/quickplot/delwaq2raster64/delwaq2raster => 64bit/
-        src/tools_lgpl/matlab/quickplot/ecoplot64/run_ecoplot.sh => 64bit/
-        src/tools_lgpl/matlab/quickplot/ecoplot64/ecoplot => 64bit/
-        src/tools_lgpl/matlab/quickplot/sim2ugrid64/run_sim2ugrid.sh => 64bit/
-        src/tools_lgpl/matlab/quickplot/sim2ugrid64/sim2ugrid => 64bit/
-        src/tools_lgpl/matlab/quickplot/delft3d_matlab/**/* => delft3d_matlab
-        src/tools_lgpl/matlab/quickplot/testcodes/hello_world => 64bit/
-        src/tools_lgpl/matlab/quickplot/testcodes/graphics_test => 64bit/
-        src/tools_lgpl/matlab/quickplot/testcodes/matlab_sysinfo => 64bit/
-        src/tools_lgpl/matlab/quickplot/testcodes/*.sh => 64bit/
+        src/quickplot64/run_d3d_qp.sh => 64bit/
+        src/quickplot64/d3d_qp => 64bit/
+        src/quickplot64/d3d_qp.version => 64bit/
+        src/quickplot64/netcdfAll-4.1.jar => 64bit/
+        src/quickplot64/colormaps/* => 64bit/colormaps
+        src/quickplot64/private/d3d_qp.png => 64bit/colormaps/
+        src/delwaq2raster64/run_delwaq2raster.sh => 64bit/
+        src/delwaq2raster64/delwaq2raster => 64bit/
+        src/ecoplot64/run_ecoplot.sh => 64bit/
+        src/ecoplot64/ecoplot => 64bit/
+        src/sim2ugrid64/run_sim2ugrid.sh => 64bit/
+        src/sim2ugrid64/sim2ugrid => 64bit/
+        src/testcodes/hello_world => 64bit/
+        src/testcodes/graphics_test => 64bit/
+        src/testcodes/matlab_sysinfo => 64bit/
+        src/testcodes/*.sh => 64bit/
     """.trimIndent()
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
     publishArtifacts = PublishMode.ALWAYS
@@ -143,21 +148,21 @@ object Linux_LnxCompileQuickplot : BuildType({
             name = "include mex files"
             id = "include_mex_files"
             scriptContent = """
-                cp mex_files_linux/exepath.mexa64 src/tools_lgpl/matlab/quickplot/progsrc/private
-                cp mex_files_linux/reducepoints.mexa64 src/tools_lgpl/matlab/quickplot/progsrc/private
+                cp mex_files_linux/exepath.mexa64 src/delft3d_matlab/private
+                cp mex_files_linux/reducepoints.mexa64 src/delft3d_matlab/private
             """.trimIndent()
         }
         script {
             name = "Run make_all in MATLAB"
             id = "Run_make_all_in_MATLAB"
-            workingDir = "src/tools_lgpl/matlab/quickplot/"
+            workingDir = "src/makefiles/"
             scriptContent = """
                 #!/bin/bash
                 . /usr/share/Modules/init/bash
                 module use --append /opt/apps/modules
                 module load matlab/2023b
                 
-                echo Running in ${'$'}PWD
+                echo Running in `pwd`
                 export TEAMCITY_BUILD_BRANCH="%teamcity.build.branch%"
                 matlab -batch make_all
             """.trimIndent()
@@ -427,20 +432,26 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
             scriptContent = """
                 #!/bin/bash
                 echo Running in `pwd`
+                
                 echo ----- Listing of root folder -----------------------------------------------------------------------
                 ls -l
+                
                 echo ----- Listing of QUICKPLOT folder ------------------------------------------------------------------
                 ls -l quickplot
+                
                 echo ----- Listing of QUICKPLOT x64 folder --------------------------------------------------------------
                 cd quickplot/x64
                 chmod +x *.sh
                 chmod +x d3d_qp delwaq2raster ecoplot sim2ugrid hello_world matlab_sysinfo graphics_test
                 cd ../..
                 ls -l quickplot/x64
+                
                 echo ----- Copy common to testbench\common --------------------------------------------------------------
                 /bin/cp -rf common testbench/common
+                
                 echo ----- Listing of test bench folder -----------------------------------------------------------------
                 ls -l testbench
+                
                 echo --------------------------------------------------------------
             """.trimIndent()
         }
@@ -470,13 +481,16 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
             scriptContent = """
                 #!/bin/bash
                 echo The PATH is set to `pwd`
+                
                 echo ----------------
                 echo Removing diary ...
                 rm -rf diary
+                
                 echo ----------------
                 echo Starting QUICKPLOT ...
                 ./run_d3d_qp.sh /opt/apps/matlab/2023b validation ../../testbench teamcity finish exit
                 echo ... QUICKPLOT ended
+                
                 echo ----------------
                 echo Printing diary ...
                 cat diary
@@ -596,40 +610,55 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
                 . /usr/share/Modules/init/bash
                 
                 echo Running in `pwd`
+                
                 echo ----- Listing of root folder -----------------------------------------------------------------------
                 ls .
+                
                 echo ----- Listing of code folder -----------------------------------------------------------------------
                 ls code
+                
                 echo ----- Listing of QUICKPLOT source folder -----------------------------------------------------------
-                ls code/src/tools_lgpl/matlab/quickplot/progsrc
+                ls code/src/delft3d_matlab
+                
                 echo ----- Listing of QUICKPLOT private folder -----------------------------------------------------------
-                ls code/src/tools_lgpl/matlab/quickplot/progsrc/private
-                echo ----- Listing of MATLAB netCDF folder -----------------------------------------------------------
-                ls code/src/third_party_open/netcdf/matlab
+                ls code/src/delft3d_matlab/private
+                
+                echo ----- Listing of third party folder -----------------------------------------------------------
+                ls code/src/third_party
+                
                 echo ----- Listing of MATLAB snctools folder -----------------------------------------------------------
-                ls code/src/third_party_open/netcdf/matlab/snctools
+                ls code/src/third_party/snctools
+                
                 echo ----- Listing of MATLAB mexnc folder -----------------------------------------------------------
-                ls code/src/third_party_open/netcdf/matlab/mexnc
+                ls code/src/third_party/mexnc
+                
                 echo ----- Copy common to testbench/common --------------------------------------------------------------
                 cp -r common testbench/common
+                
                 echo ----- Listing of test bench folder -----------------------------------------------------------------
                 ls testbench
+                
                 echo --------------------------------------------------------------
             """.trimIndent()
         }
         script {
             name = "Run QUICKPLOT test bench within MATLAB"
             id = "Run_QUICKPLOT_test_bench_within_MATLAB"
-            workingDir = "code/src/tools_lgpl/matlab/quickplot/progsrc/"
+            workingDir = "code/src/delft3d_matlab/"
             scriptContent = """
                 #!/bin/bash
+                echo Running in `pwd`
+                
+                echo ----- Initialize bash ------------------------------------------------------------------------------
                 . /usr/share/Modules/init/bash
+                
+                echo ----- Initialize MATLAB ----------------------------------------------------------------------------
                 module use --append /opt/apps/modules
                 module load matlab/2023b
                 
                 echo Running in `pwd`
                 echo ----- Starting MATLAB ------------------------------------------------------------------------------
-                echo qp_validate\(\'../../../../../../testbench\'\) > run_testbench.m
+                echo qp_validate\(\'../../../testbench\'\) > run_testbench.m
                 matlab -batch run_testbench
                 echo ----- End of MATLAB --------------------------------------------------------------------------------
             """.trimIndent()
@@ -723,9 +752,9 @@ object Windows_WinBuildMexFiles : BuildType({
     name = "[win] Build mex files"
 
     artifactRules = """
-        +:src/tools_lgpl/matlab/quickplot/progsrc/private/reducepoints.mexw64
-        +:src/tools_lgpl/matlab/quickplot/progsrc/private/writeavi.mexw64
-        +:src/tools_lgpl/matlab/quickplot/SplashScreen/finish/CloseSplashScreen.mexw64
+        +:src/delft3d_matlab/private/reducepoints.mexw64
+        +:src/delft3d_matlab/private/writeavi.mexw64
+        +:src/quickplot_splash_screen/finish/CloseSplashScreen.mexw64
     """.trimIndent()
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
@@ -737,7 +766,7 @@ object Windows_WinBuildMexFiles : BuildType({
         script {
             name = "Build mex files"
             id = "Build_mex_files"
-            workingDir = """src\tools_lgpl\matlab\quickplot\"""
+            workingDir = """src\makefiles\"""
             scriptContent = """
                 echo Running in %%cd%%
                 "c:\Program Files\Matlab\R2023a\bin\matlab.exe" -batch make_mex
@@ -766,7 +795,7 @@ object Windows_WinBuildMexFiles : BuildType({
 object Windows_WinBuildQuickplotSplashScreen : BuildType({
     name = "[win] Build QUICKPLOT splash screen"
 
-    artifactRules = "+:src/tools_lgpl/matlab/quickplot/SplashScreen/build/Release/*"
+    artifactRules = "+:src/quickplot_splash_screen/build/Release/*"
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
     vcs {
@@ -777,7 +806,7 @@ object Windows_WinBuildQuickplotSplashScreen : BuildType({
         script {
             name = "Build Splash Screen"
             id = "Build_Splash_Screen"
-            workingDir = "src/tools_lgpl/matlab/quickplot/SplashScreen"
+            workingDir = "src/quickplot_splash_screen"
             scriptContent = """
                 rem Create subdirectory
                 mkdir build
@@ -820,16 +849,16 @@ object Windows_WinCompileQuickplot : BuildType({
 
     artifactRules = """
         splash_screen/d3d_qp.exe => 64bit/
-        src/tools_lgpl/matlab/quickplot/quickplot64/d3d_qp.exec => 64bit/
-        src/tools_lgpl/matlab/quickplot/quickplot64/d3d_qp.version => 64bit/
-        src/tools_lgpl/matlab/quickplot/quickplot64/netcdfAll-4.1.jar => 64bit/
-        src/tools_lgpl/matlab/quickplot/quickplot64/colormaps/* => 64bit/colormaps
-        src/tools_lgpl/matlab/quickplot/quickplot64/private/d3d_qp.png => 64bit/private/
-        src/tools_lgpl/matlab/quickplot/delwaq2raster64/delwaq2raster.exe => 64bit/
-        src/tools_lgpl/matlab/quickplot/ecoplot64/ecoplot.exe => 64bit/
-        src/tools_lgpl/matlab/quickplot/sim2ugrid64/sim2ugrid.exe => 64bit/
-        src/tools_lgpl/matlab/quickplot/delft3d_matlab/**/* => delft3d_matlab
-        src/tools_lgpl/matlab/quickplot/testcodes/*.exe => 64bit_testcodes/
+        src/quickplot64/d3d_qp.exec => 64bit/
+        src/quickplot64/d3d_qp.version => 64bit/
+        src/quickplot64/netcdfAll-4.1.jar => 64bit/
+        src/quickplot64/colormaps/* => 64bit/colormaps
+        src/quickplot64/private/d3d_qp.png => 64bit/private/
+        src/delwaq2raster64/delwaq2raster.exe => 64bit/
+        src/ecoplot64/ecoplot.exe => 64bit/
+        src/sim2ugrid64/sim2ugrid.exe => 64bit/
+        src/delft3d_matlab_release/**/* => delft3d_matlab
+        src/testcodes/*.exe => 64bit_testcodes/
     """.trimIndent()
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
     maxRunningBuilds = 1
@@ -843,16 +872,16 @@ object Windows_WinCompileQuickplot : BuildType({
             name = "Include mex files"
             id = "Include_mex_files"
             scriptContent = """
-                copy /Y mex_files_windows\CloseSplashScreen.mexw64 src\tools_lgpl\matlab\quickplot\progsrc\private
-                copy /Y mex_files_linux\exepath.mexa64 src\tools_lgpl\matlab\quickplot\progsrc\private
-                copy /Y mex_files_linux\reducepoints.mexa64 src\tools_lgpl\matlab\quickplot\progsrc\private
-                copy /Y mex_files_windows\reducepoints.mexw64 src\tools_lgpl\matlab\quickplot\progsrc\private
-                copy /Y mex_files_windows\writeavi.mexw64 src\tools_lgpl\matlab\quickplot\progsrc\private
+                copy /Y mex_files_windows\CloseSplashScreen.mexw64 src\delft3d_matlab\private
+                copy /Y mex_files_linux\exepath.mexa64 src\delft3d_matlab\private
+                copy /Y mex_files_linux\reducepoints.mexa64 src\delft3d_matlab\private
+                copy /Y mex_files_windows\reducepoints.mexw64 src\delft3d_matlab\private
+                copy /Y mex_files_windows\writeavi.mexw64 src\delft3d_matlab\private
             """.trimIndent()
         }
         script {
             name = "Run make_all in MATLAB"
-            workingDir = """src\tools_lgpl\matlab\quickplot\"""
+            workingDir = """src\makefiles\"""
             scriptContent = """
                 echo Running in %%cd%%
                 set TEAMCITY_BUILD_BRANCH=%teamcity.build.branch%
@@ -1268,7 +1297,7 @@ object Windows_WinRunQuickplotTestBenchWithinMatlab : BuildType({
                 echo ----- Listing of code folder -----------------------------------------------------------------------
                 dir code
                 echo ----- Listing of QUICKPLOT source folder -----------------------------------------------------------
-                dir code\src\tools_lgpl\matlab\quickplot\progsrc
+                dir code\src\delft3d_matlab
                 echo ----- Copy common to testbench\common --------------------------------------------------------------
                 xcopy common testbench\common\ /f /s /e
                 echo ----- Listing of test bench folder -----------------------------------------------------------------
@@ -1278,14 +1307,14 @@ object Windows_WinRunQuickplotTestBenchWithinMatlab : BuildType({
         }
         script {
             name = "Run QUICKPLOT test bench within MATLAB"
-            workingDir = """code\src\tools_lgpl\matlab\quickplot\progsrc\"""
+            workingDir = """code\src\delft3d_matlab\"""
             scriptContent = """
                 set SVGA_ALLOW_LLVMPIPE=0
                 echo The SVGA_ALLOW_LLVMPIPE is set to %%SVGA_ALLOW_LLVMPIPE%%
                 echo ----------------
                 echo Running in %%cd%%
                 echo ----- Starting MATLAB ------------------------------------------------------------------------------
-                echo qp_validate('..\..\..\..\..\..\testbench') > run_testbench.m
+                echo qp_validate('..\..\..\testbench') > run_testbench.m
                 "c:\Program Files\Matlab\R2023a\bin\matlab.exe" -batch run_testbench
                 echo ----- End of MATLAB --------------------------------------------------------------------------------
             """.trimIndent()

@@ -37,12 +37,6 @@ function make_d3dmatlab(basedir,varargin)
 
 curdir = pwd;
 addpath(curdir)
-%
-% comment lines for
-% consistency with
-% make_quickplot and
-% make_ecoplot
-%
 if nargin>0
     cd(basedir);
 end
@@ -60,63 +54,36 @@ if ~isempty(err)
 end
 
 
-function localmake(varargin)
-
-if ~exist('progsrc','dir')
-    error('Cannot locate source folder "progsrc".')
-end
-sourcedir=[pwd,filesep,'progsrc'];
-
-% set defaults
-[qpversion,hash,repo_url] = get_qpversion;
-T = now;
-
-% overrule using input arguments
-for i = 1:2:length(varargin)
-    switch (varargin{i})
-        case 'version'
-            qpversion = varargin{i+1};
-        case 'url'
-            repo_url = varargin{i+1};
-        case 'hash'
-            hash = varargin{i+1};
-        case 'time'
-            T = varargin{i+1};
-        case 'release'
-            release = varargin{i+1};
-        otherwise
-            error('Unknown argument: %s',varargin{i})
-    end
+function localmake(qpversion,repo_url,hash,T,release)
+if nargin<4
+    [qpversion,hash,repo_url] = get_qpversion;
+    T = now;
+    release = 'UNKNOWN'
 end
 
-
-tdir = 'delft3d_matlab';
+target_dir = 'delft3d_matlab_release';
 targetname = 'Delft3D-MATLAB interface';
-targetdir = [pwd,filesep,tdir];
+main_file = 'd3d_qp.m';
+source_dir = pwd;
+target_dir = [pwd,filesep,'..',filesep,target_dir];
 
-if ~exist(targetdir, 'dir')
-    fprintf('Creating %s directory ...\n', tdir);
-    mkdir(tdir);
+if ~exist(target_dir, 'dir')
+    fprintf('Creating %s directory ...\n', target_dir);
+    mkdir(target_dir);
 end
-cd(tdir)
-% diary make_quickplot_diary % no diary to avoid clutter in the distribution folder ...
+cd(target_dir)
+diary off % no diary to avoid clutter in the distribution folder ...
 
 fprintf('Copying files ...\n');
-exportsrc(sourcedir,targetdir)
+exportsrc(source_dir,target_dir)
 
 fprintf('Including netCDF files ...\n');
-if ~exist('netcdf','dir')
-    mkdir('netcdf');
-end
-copyfile('../../../../third_party_open/netcdf/matlab/netcdfAll-4.1.jar','netcdf')
-if ~exist('netcdf/mexnc','dir')
-    mkdir('netcdf/mexnc');
-    exportsrc('../../../../third_party_open/netcdf/matlab/mexnc', 'netcdf/mexnc')
-end
-if ~exist('netcdf/snctools','dir')
-    mkdir('netcdf/snctools');
-    exportsrc('../../../../third_party_open/netcdf/matlab/snctools', 'netcdf/snctools')
-end
+mkdir('netcdf');
+copyfile('../../third_party/netcdfAll-4.1.jar','netcdf')
+mkdir('netcdf/mexnc');
+exportsrc('../../third_party/mexnc', 'netcdf/mexnc')
+mkdir('netcdf/snctools');
+exportsrc('../../third_party/snctools', 'netcdf/snctools')
 
 % strip off the platform flag (binaries for Windows and Linux are included)
 % ... but don't strip of (changed)
@@ -132,39 +99,32 @@ fprintf('\nBuilding %s version %s\n\n', targetname, qpversion_);
 fprintf('Current date and time           : %s\n', DateTimeStr);
 
 fprintf('Modifying files ...\n');
-fstrrep([targetdir,filesep,'d3d_qp.m'], '<VERSION>', qpversion)
-fstrrep([targetdir,filesep,'d3d_qp.m'], '<CREATIONDATE>', DateTimeStr)
-fstrrep([targetdir,filesep,'d3d_qp.m'], '<GITHASH>', hash)
-fstrrep([targetdir,filesep,'d3d_qp.m'], '<GITREPO>', repo_url)
-fstrrep([targetdir,filesep,'Contents.m'], '<VERSION>', qpversion)
-fstrrep([targetdir,filesep,'Contents.m'], '<RELEASE>', release)
-fstrrep([targetdir,filesep,'Contents.m'], '<CREATIONDATE>', DateStr) % MATLAB toolboxes don't have a time stamp
+fstrrep(main_file, '<VERSION>', qpversion)
+fstrrep(main_file, '<CREATIONDATE>', DateTimeStr)
+fstrrep(main_file, '<GITHASH>', hash)
+fstrrep(main_file, '<GITREPO>', repo_url)
+fstrrep('Contents.m', '<VERSION>', qpversion)
+fstrrep('Contents.m', '<RELEASE>', release)
+fstrrep('Contents.m', '<CREATIONDATE>', DateStr) % MATLAB toolboxes don't have a time stamp
 
 fprintf('Add source information to all files ...\n');
 Keywords.HeadURL = ['Source ', repo_url, ': ', hash];
 Keywords.Id = ['Release ', release, ': ', DateTimeStr];
-process_keywords(targetdir, Keywords)
+process_keywords(target_dir, Keywords)
 
 fprintf('Cleaning up directory ...\n');
-X = {'*.asv'
-    '*.bak'
-    '*.scc'
-    'bin'
-    'compileonly'};
+X = {}; % nothing to do ...
 cleanup(X)
-
-fprintf('Removing unneeded subdirectories ...\n');
-X = {'org'};
-cleanup(X)
-cd ..
+diary off
+cd(source_dir)
 fprintf('Finished.\n');
 
 
-function exportsrc(sourcedir,targetdir)
-d = dir(sourcedir);
+function exportsrc(source_dir,target_dir)
+d = dir(source_dir);
 for i = 1:length(d)
-    source = [sourcedir filesep d(i).name];
-    target = [targetdir filesep d(i).name];
+    source = [source_dir filesep d(i).name];
+    target = [target_dir filesep d(i).name];
     if d(i).isdir
         switch d(i).name
             case {'.','..'}

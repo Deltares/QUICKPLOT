@@ -58,32 +58,34 @@ end
 
 
 function localmake(qpversion,repo_url,hash,T)
-if ~exist('progsrc','dir')
-    error('Cannot locate source folder "progsrc".')
+if nargin<4
+    [qpversion,hash,repo_url] = get_qpversion;
+    T = now;
 end
-sourcedir=[pwd,filesep,'progsrc'];
 
 if strncmp(fliplr(computer),'46',2)
-    tdir = 'quickplot64';
+    target_dir = 'quickplot64';
 else
-    tdir = 'quickplot32';
+    target_dir = 'quickplot32';
 end
 targetname = 'Delft3D-QUICKPLOT';
-targetdir = [pwd,filesep,tdir];
+main_file = 'd3d_qp.m';
+source_dir = pwd;
+target_dir = [pwd,filesep,'..',filesep,target_dir];
 
-if ~exist(targetdir, 'dir')
-    fprintf('Creating %s directory ...\n', tdir);
-    mkdir(tdir);
+if ~exist(target_dir, 'dir')
+    fprintf('Creating %s directory ...\n', target_dir);
+    mkdir(target_dir);
 end
-cd(tdir)
+cd(target_dir)
 diary make_quickplot_diary
 
 fprintf('Copying files ...\n');
 if isunix
-    unix('cp -rf ../progsrc/* .');
+    unix(['cp -rf ', source_dir, '/* .']);
     unix('mv compileonly/* .');
 else
-    [s, msg] = dos('xcopy "..\progsrc\*.*" "." /E /Y');
+    [s, msg] = dos(['xcopy "', source_dir, '\*.*" "." /E /Y']);
     if s == 0
         [s, msg] = dos('move compileonly\*.*  .');
     end
@@ -93,28 +95,21 @@ else
 end
 
 fprintf('Including netCDF files ...\n');
-copyfile('../../../../third_party_open/netcdf/matlab/netcdfAll-4.1.jar','.')
-addpath ../../../../third_party_open/netcdf/matlab/mexnc
-addpath ../../../../third_party_open/netcdf/matlab/snctools
-addpath ../../../../third_party_open/uiFileDnD
+copyfile('../../third_party/netcdfAll-4.1.jar','.')
+addpath ../../third_party/mexnc
+addpath ../../third_party/snctools
+addpath ../../third_party/uiFileDnD
 
-if nargin<4
-    [qpversion,hash,repo_url] = get_qpversion;
-    T = now;
-end
-
-TStr = datestr(T);
+DateTimeStr = datestr(T);
 fprintf('\nBuilding %s version %s\n\n', targetname, qpversion);
-fprintf('Current date and time           : %s\n', TStr);
+fprintf('Current date and time           : %s\n', DateTimeStr);
 
 fprintf('Modifying files ...\n');
-fstrrep([targetdir,filesep,'d3d_qp.m'], '<VERSION>', qpversion)
-fstrrep([targetdir,filesep,'d3d_qp.m'], '<CREATIONDATE>', TStr)
-fstrrep([targetdir,filesep,'d3d_qp.m'], '<GITHASH>', hash)
-fstrrep([targetdir,filesep,'d3d_qp.m'], '<GITREPO>', repo_url)
-fstrrep([targetdir,filesep,'wl_identification.c'], '<VERSION>', qpversion)
-fstrrep([targetdir,filesep,'wl_identification.c'], '<CREATIONDATE>', TStr)
-if ~d3d_qp('version',qpversion,repo_url,hash,TStr)
+fstrrep(main_file, '<VERSION>', qpversion)
+fstrrep(main_file, '<CREATIONDATE>', DateTimeStr)
+fstrrep(main_file, '<GITHASH>', hash)
+fstrrep(main_file, '<GITREPO>', repo_url)
+if ~d3d_qp('version',qpversion,repo_url,hash,DateTimeStr)
     error('Unable to write correct d3d_qp.version file.')
 end
 
@@ -125,38 +120,28 @@ if ~isempty(g)
 end
 
 fprintf('Building executable ...\n');
-make_exe
+if isunix
+    appopt={'-m'};
+else
+    appopt={'-e'};
+end
+mcc(appopt,'-a','./units.ini','-a','./grib','-v',main_file)
 if ispc
    movefile('d3d_qp.exe','d3d_qp.exec');
 end
 
 fprintf('Cleaning up directory ...\n');
-X = {'*.asv'
-    '*.bak'
-    '*.m'
+X = {'*.m'
+    '*.mat'
     '*.c'
     '*.cpp'
     '*.h'
-    '*.o'
-    '*.obj'
-    '*.a'
-    '*.lib'
-    '*.scc'
-    'compileonly'
+    'private'
     '@qp_data'
-    '@qp_data_resource'};
-if isunix
-    X = cat(1,X,{'*.dll'
-        '*.mexw*'});
-else
-    X = cat(1,X,{'*.mexglx'
-        '*.mexa64'
-        '*.exp'});
-end
+    '@qp_data_resource'
+    '*.dll'
+    '*.mex*'};
 cleanup(X)
-cd private
-cleanup(X)
-cd ..
 diary off
-cd ..
+cd(source_dir)
 fprintf('Finished.\n');

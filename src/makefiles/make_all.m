@@ -38,7 +38,7 @@ function make_all(release)
 %   $Id$
 
 curdir = pwd;
-sourcedir = [curdir,filesep,'progsrc'];
+sourcedir = [curdir,filesep,'..',filesep,'delft3d_matlab'];
 
 [qpversion,hash,repo_url] = get_qpversion;
 T = now;
@@ -71,7 +71,7 @@ if nargin == 0
 end
 
 if strcmp(computer,'PCWIN64')
-   make_d3dmatlab(curdir,'version',qpversion,'url',repo_url,'hash',hash,'time',T,'release',release)
+   make_d3dmatlab(curdir,qpversion,repo_url,hash,T,release)
 end
 make_quickplot(curdir,qpversion,repo_url,hash,T)
 make_ecoplot(curdir,qpversion,repo_url,hash,T)
