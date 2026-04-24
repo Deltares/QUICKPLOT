@@ -36,7 +36,7 @@ function make_mex
 %   $HeadURL$
 %   $Id$
 
-src_root = [pwd, filesep, '..'];
+src_root = [pwd, filesep, '..', filesep, 'src'];
 
 % not on Windows
 if ~ispc
