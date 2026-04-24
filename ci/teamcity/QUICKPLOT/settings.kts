@@ -129,10 +129,10 @@ object Linux_LnxCompileQuickplot : BuildType({
         src/ecoplot64/ecoplot => 64bit/
         src/sim2ugrid64/run_sim2ugrid.sh => 64bit/
         src/sim2ugrid64/sim2ugrid => 64bit/
-        src/testcodes/hello_world => 64bit/
-        src/testcodes/graphics_test => 64bit/
-        src/testcodes/matlab_sysinfo => 64bit/
-        src/testcodes/*.sh => 64bit/
+        src/system_tests/hello_world => 64bit/
+        src/system_tests/graphics_test => 64bit/
+        src/system_tests/matlab_sysinfo => 64bit/
+        src/system_tests/*.sh => 64bit/
     """.trimIndent()
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
     publishArtifacts = PublishMode.ALWAYS
@@ -858,7 +858,7 @@ object Windows_WinCompileQuickplot : BuildType({
         src/ecoplot64/ecoplot.exe => 64bit/
         src/sim2ugrid64/sim2ugrid.exe => 64bit/
         src/delft3d_matlab_release/**/* => delft3d_matlab
-        src/testcodes/*.exe => 64bit_testcodes/
+        src/system_tests/*.exe => 64bit_system_tests/
     """.trimIndent()
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
     maxRunningBuilds = 1
@@ -1124,9 +1124,9 @@ object Windows_WinRunQuickplotTestBenchStandalone : BuildType({
             """.trimIndent()
         }
         script {
-            name = "Run test codes ..."
-            id = "Run_test_codes"
-            workingDir = """quickplot\64bit_testcodes"""
+            name = "Run system tests ..."
+            id = "Run_system_tests"
+            workingDir = """quickplot\64bit_system_tests"""
             scriptContent = """
                 set SVGA_ALLOW_LLVMPIPE=0
                 echo The SVGA_ALLOW_LLVMPIPE is set to %%SVGA_ALLOW_LLVMPIPE%%

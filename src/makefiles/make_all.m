@@ -79,6 +79,6 @@ make_ecoplot(sourcedir,qpversion,repo_url,hash,T)
 make_delwaq2raster(sourcedir,qpversion,repo_url,hash,T)
 make_sim2ugrid(sourcedir,qpversion,repo_url,hash,T)
 
-sourcedir = [curdir,filesep,'..',filesep,'testcodes'];
+sourcedir = [curdir,filesep,'..',filesep,'system_tests'];
 
 make_tests(sourcedir,qpversion,repo_url,hash,T)
