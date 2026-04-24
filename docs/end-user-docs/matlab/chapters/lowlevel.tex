@@ -1,0 +1,474 @@
+\svnid{$Id: lowlevel.tex 74563 2022-02-13 20:35:17Z jagers $}
+
+\chapter{Low level routines} \label{Chp:LowLevelRoutines}
+A set of MATLAB files has been created to access NEFIS files from within MATLAB.
+The following functions have been implemented:
+
+\begin{guilist}
+\item[\vsuse] open NEFIS file
+\item[\vsdisp]display information of groups and elements contained in a NEFIS file
+\item[\vslet/\vsget] get data from a NEFIS file
+\item[\vstype] determine type of a NEFIS file
+\item[\vsfind] find group to which an element belongs
+\item[\vsdiff] find differences between two NEFIS files
+\end{guilist}
+
+If no NEFIS file is specified when using the commands \vsdisp, \vslet, \vsget, \vstype~and \vsfind~the last opened NEFIS is used.
+The commands are discussed below in more detail.
+
+\begin{Remark}
+\item Spatial data sets are stored in the NEFIS file with the M and N dimensions reversed.
+\end{Remark}
+
+\section{Open NEFIS file: \vsuse}
+
+\subsection*{Purpose}
+Open/scan NEFIS file
+
+\subsection*{Syntax}
+\begin{Verbatim}
+Nfs = vs_use(FileName)
+\end{Verbatim}
+
+\subsection*{Description}
+\command{Nfs = vs\_use(FileName)} opens a NEFIS file where the filename is the name of either the definition or the data file, and returns a handle \command{Nfs} to the file, which must be used when calling the other commands.
+When no filename is specified, the command will ask for one.
+
+The \vsuse command scans the structure of the definition and data files; this will take some time.
+MATLAB can store the structure information in a file with the same name base (as indicated by filename) and extension \file{$\ast$.mat}, and read that information when the file is re-opened a next time.
+This used to be the default behaviour but is now optional: use option usemat.
+The old option nomat is still accepted and overrules usemat.
+If changes were made to the \file{$\ast$.def} and/or \file{$\ast$.dat} files, you should add refresh as additional argument to prevent reading the existing mat-file.
+The addition of the argument quiet as last argument reads the file structure without showing the wait bar.
+When the option debug is used a file \file{vs\_use.dbg} is created in the default temporary directory, containing information on the reading of the data structure from the NEFIS file.
+
+The returned \command{Nfs} can be interpreted as a file handle as used in all programming environments for file access.
+However, it is not an integer but a structure containing the internal structure of the NEFIS file.
+
+\subsection*{Example}
+\begin{Verbatim}
+>> Nfs=vs_use
+
+Nfs =
+
+    FileName: `I:\OCTOPUS\sbod_gf3.66_tot\output\TS11520000\com-d16'
+      DatExt: `.dat'
+      DefExt: `.def'
+      Format: `b'
+      gNames: [21x368 char  ]
+       gData: [21x27  double]
+      eNames: [89x112 char  ]
+       eData: [89x11  double]
+\end{Verbatim}
+
+\section{Display information of groups and elements: \vsdisp}
+
+\subsection*{Purpose}
+Display NEFIS file contents.
+
+\subsection*{Syntax}
+\begin{Verbatim}
+vs_disp(Nfs)
+Output = vs_disp(Nfs)
+vs_disp(Nfs, [])
+Output = vs_disp(Nfs, [])
+vs_disp(Nfs, GroupName)
+Output = vs_disp(Nfs, GroupName)
+Output = vs_disp(Nfs, GroupName, [])
+Output = vs_disp(Nfs, GroupName, ElementName)
+\end{Verbatim}
+
+\subsection*{Description}
+\command{vs\_disp(Nfs)} lists all group names, group elements, and all group and element properties like the \command{disp stat} command of the Viewer Selector.
+\command{vs\_disp(Nfs, [])} lists group names, group dimensions, and number of elements per group only.
+This can be used as a short summary of the file contents.
+\command{Output = vs\_disp(Nfs)} and \command{Output = vs\_disp(Nfs, [])} return a char matrix containing the names of the groups.
+
+\command{vs\_disp(Nfs, GroupName)} lists all group elements, and all element properties like the \command{disp GroupName} command of Viewer Selector.
+\command{Output = vs\_disp(Nfs, GroupName)} returns a char matrix containing the names of the elements of the group.
+
+\command{Output = vs\_disp(Nfs, GroupName, [])} gives detailed data about the specified group contained in the Nfs structure.
+The information includes group data name, cell name, definition name, number of elements, dimensions, and the offsets within the NEFIS file at which locations data of the group are stored.
+\command{Output = vs\_disp(Nfs, GroupName, ElementName)} gives detailed data about the specified element contained in the Nfs structure.
+The information includes element description, unit and size.
+
+\subsection*{Examples}
+\begin{Verbatim}
+>> vs_disp(Nfs)
+Groupname:BOTNT            Dimensions:(1)
+  No attributes
+    NTBOT          INTEGER *  4             [   -   ]       ( 1 )
+        Number of bottom fields in group BOTTIM
+
+Groupname:BOTTIM           Dimensions:(24)
+  No attributes
+    TIMBOT         INTEGER *  4             [ TSCALE]       ( 1 )
+        Communication times bottom fields rel. to reference date/time
+    DP             REAL    *  4             [   M   ]      ( 98 62 )
+        Bottom depth in bottom points, positive downwards
+\end{Verbatim}
+and so on ...
+\begin{Verbatim}
+
+
+>> vs_disp(Nfs,[])
+BOTNT           (1) - No attributes, 1 element(s).
+BOTTIM          (24)  No attributes, 2 element(s).
+PARAMS          (1) - No attributes, 8 element(s).
+GRID            (1) - No attributes, 16 element(s).
+SPECPOINTS      (1) - No attributes, 4 element(s).
+BOUNDCNST       (1) - No attributes, 8 element(s).
+KENMCNST        (1) - No attributes, 3 element(s).
+INITBOT         (1) - No attributes, 4 element(s).
+ROUGHNESS       (1) - No attributes, 3 element(s).
+TEMPOUT         (1) - No attributes, 4 element(s).
+com-version     (1) - No attributes, 3 element(s).
+KENMNT          (1) - No attributes, 1 element(s).
+KENMTIM         (1) - No attributes, 3 element(s).
+CURNT           (1) - No attributes, 1 element(s).
+CURTIM          (1) - No attributes, 7 element(s).
+DWQTIM          (1) - No attributes, 5 element(s).
+TAUTIM          (1) - No attributes, 1 element(s).
+INITI           (1) - No attributes, 1 element(s).
+TRANNT          (1) - No attributes, 2 element(s).
+BOUNDMOR        (1) - No attributes, 1 element(s).
+TRANSTIM        (1) - No attributes, 11 element(s).
+
+
+>> Output=vs_disp(Nfs) %or Output=vs_disp(Nfs,[])
+
+Output =
+
+BOTNT
+BOTTIM
+PARAMS
+GRID
+SPECPOINTS
+BOUNDCNST
+KENMCNST
+INITBOT
+ROUGHNESS
+TEMPOUT
+com-version
+KENMNT
+KENMTIM
+CURNT
+CURTIM
+DWQTIM
+TAUTIM
+INITI
+TRANNT
+BOUNDMOR
+TRANSTIM
+
+
+>> vs_disp(Nfs,`BOTTIM')
+Groupname:BOTTIM           Dimensions:(24)
+  No attributes
+    TIMBOT         INTEGER *  4            [ TSCALE]        ( 1 )
+        Communication times bottom fields rel. to reference date/time
+    DP             REAL    *  4            [   M   ]       ( 98 62 )
+        Bottom depth in bottom points, positive downwards
+
+
+>> Output=vs_disp(Nfs,`BOTTIM')
+
+Output =
+
+TIMBOT
+DP
+
+
+>> Output=vs_disp(Nfs,`BOTTIM',[]) % get group information
+
+Output =
+
+              Name: `BOTTIM'
+    GroupDatOffset: 8560
+           DefName: `BOTTIM'
+    GroupDefOffset: 12728
+          CellName: `BOTTIM'
+     CellDefOffset: 12660
+         CellNByte: 24308
+          CellNElm: 2
+              NDim: 1
+            VarDim: 1
+           SizeDim: 24
+          OrderDim: 1
+            Attrib: [1x1 struct]
+
+
+>> Output=vs_disp(Nfs,`BOTTIM',`DP') % get element information
+
+Output =
+
+          GrpNname: `BOTTIM'
+           ElmName: `DP'
+       ElmQuantity: `'
+          ElmUnits: `[   M   ]'
+    ElmDescription: `Bottom depth in bottom points, positive downwards'
+      ElmDefOffset: 12496
+              NDim: 2
+           SizeDim: [98 62]
+           TypeVal: 5
+          NByteVal: 4
+             NByte: 24304
+\end{Verbatim}
+
+\section{Get data from a NEFIS file: \vslet/\vsget}
+
+\subsection*{Purpose}
+ Read data from file (groups as columns or cells).
+
+\subsection*{Syntax}
+\begin{Verbatim}
+[Data, Succes] = vs_let(Nfs, GroupName, GroupIndex, ElementName, ElementIndex)
+[Data, Succes] = vs_get(Nfs, GroupName, GroupIndex, ElementName, ElementIndex)
+\end{Verbatim}
+
+\subsection*{Description}
+\begin{Verbatim}
+Data = vs_let(Nfs, GroupName, GroupIndex, ElementName, ElementIndex)
+Data = vs_get(Nfs, GroupName, GroupIndex, ElementName, ElementIndex)
+\end{Verbatim}
+
+These commands read the requested element from the specified group from the specified file.
+The \command{GroupIndex} should be a 1xN cell array, where N equals the number of dimensions of the group.
+Each element of the cell array should contain either 0 (zero) or the indices of the cells that should be read.
+The 0 means that all cells should be read.
+The \command{ElementIndex} should be a 1xM cell array, where M equals the number of dimensions of the element.
+Again, each element of the cell array should contain either 0 (zero) or the indices of the elements that should be read, where 0 means that the complete dimension should be read.
+When the option debug is used a file \file{vs\_let.dbg} is created in the default temporary directory, containing information on the reading of the data from the NEFIS file.
+
+The command \vslet~reads all data in one big matrix, using the first dimensions for the groups and the last dimensions for the elements.
+The command \vsget~returns a matrix containing the data if data from only one group is read, and a cell array of matrices when data from more than one group is read.
+An additional output option succes \command{[Data,Succes] = ...} indicates whether the data has been read successfully.
+
+When the \command{GroupIndex} and/or \command{ElementIndex} are skipped all fields of the group/element are selected.
+When no \command{GroupName} or \command{ElementName} is specified or when an error is encountered while interpreting the input a graphical user interface is presented to enter the selection.
+To help new users to get acquainted to the command line syntax of the \vsget~and \vslet~routines, the command option line \command{-cmdhelp} is provided.
+When used, the routine does not actually load the data, but it displays the command line equivalent of the selection that you have made in the user interface.
+
+\subsection*{Examples}
+ For example: To read from the depth data the first 10 rows (and of those rows all columns) of the 1st, 3rd, 5th, 7th, and 9th time steps, you should type:
+
+\begin{Verbatim}
+>> Data=vs_let(Nfs,`BOTTIM',{1:2:10},`DP',{1:10 0});
+\end{Verbatim}
+
+which returns a 5x10x62 matrix; or
+
+\begin{Verbatim}
+>> Data=vs_get(Nfs,`BOTTIM',{1:2:10},`DP',{1:10 0})
+
+Data =
+
+    [10x62 double]
+    [10x62 double]
+    [10x62 double]
+    [10x62 double]
+    [10x62 double]
+\end{Verbatim}
+
+Indicating that a 5 x 1 cell array is returned, each cell containing one bottom field (10 x 62 data points).
+Character strings are contained in cell arrays.
+The most common cases of reading from are:
+
+\begin{Verbatim}
+Data=vs_get(Nfs,`BOTTIM',{0},`DP',{0 0})
+\end{Verbatim}
+
+Read all bottom data completely.
+Group/Element indices containing only zeros don't have to be specified.
+So, the following is also accepted:
+
+\begin{Verbatim}
+Data=vs_get(Nfs,`BOTTIM',`DP')
+
+Data=vs_get(Nfs,`BOTTIM',{0},`DP',{n 0}), or
+Data=vs_get(Nfs,`BOTTIM',`DP',{n 0})
+\end{Verbatim}
+
+Read cross-section n at all time steps
+
+\begin{Verbatim}
+Data=vs_get(Nfs,`BOTTIM',{t},`DP',{0 0}), or
+Data=vs_get(Nfs,`BOTTIM',{t},`DP')
+\end{Verbatim}
+
+Read the bottom at time step t.
+This will return a 10 x 62 matrix if \vsget~is used, and a 1x10x62 matrix if \vslet~is used.
+
+\begin{Verbatim}
+Data=vs_get(Nfs,`BOTTIM',{0},`DP',{n m}), or
+Data=vs_get(Nfs,`BOTTIM',`DP',{n m})
+\end{Verbatim}
+
+Read the variation of the bottom at indicated (n,m)-point.
+If this is followed by a \command{Data = [Data{:}];} command to convert the cell array containing single values into a vector; it can be replaced by
+
+\begin{Verbatim}
+Data=vs_let(Nfs,`BOTTIM',`DP',{m n})
+\end{Verbatim}
+
+which gives that result immediately and is faster.
+
+When besides the \command{Nfs} no further arguments are used (or when no element name is specified), an interface will appear asking for the other arguments.
+Adding the string \command{quiet} as last input argument will suppress the wait bar during loading.
+When \command{`*'} is specified as element name all elements of the group are returned; if an element index is specified it is ignored.
+
+\subsection*{Example}
+\begin{Verbatim}
+Data=vs_let(Nfs,`BOTTIM',{1:2:10},`*')
+\end{Verbatim}
+
+returns
+
+\begin{Verbatim}
+Data =
+
+   TIMBOT: [5x1     double]
+       DP: [5x10x62 double]
+\end{Verbatim}
+
+and
+
+\begin{Verbatim}
+Data=vs_get(Nfs,`BOTTIM',{1:2:10},`*')
+\end{Verbatim}
+
+returns the data of five time steps
+
+\begin{Verbatim}
+Data =
+
+5x1 struct array with fields:
+    TIMBOT
+    DP
+\end{Verbatim}
+
+To assist the novice user with the syntax of the \vslet~and \vsget~commands a help functionality has been added to these functions which allows the interactive generation of command lines.
+This functionality is activated by supplying \command{-cmdhelp} as one of the input arguments.
+For instance:
+
+\begin{Verbatim}
+>> vs_let -cmdhelp
+\end{Verbatim}
+
+results after the following data has been entered in the user interface in the following output string
+
+\begin{Verbatim}
+Data=vs_let(NFStruct,`BOTTIM',{[ 1:2:9 ]},`DP',{[ 1:10 ],0});
+\end{Verbatim}
+
+You can copy this string into a text editor for use in a script.
+As indicated above, variations on the syntax are allowed.
+The following line is also valid
+
+\begin{Verbatim}
+Data=vs_let(`BOTTIM',{1:2:9},`DP',{1:10,1:73});
+\end{Verbatim}
+
+The result will be exactly the same provided that the variable NFStruct in the first command line contains the information of the last opened NEFIS file.
+
+\section{Determine the type of a NEFIS file: \vstype}
+
+\subsection*{Purpose}
+Show type of NEFIS file.
+
+\subsection*{Syntax}
+\begin{Verbatim}
+Type=vs_type(Nfs)
+\end{Verbatim}
+
+\subsection*{Description}
+The function returns the type of the loaded NEFIS file.
+Currently the following NEFIS files are detected: `Delft3D-com', `Delft3D-trim', `Delft3D-trih', `Delft3D-trid', `Delft3D-tram', `Delft3D-trah', `Delft3D-botm'.
+Other NEFIS files will return `unknown'.
+For example:
+
+\subsection*{Example}
+\begin{Verbatim}
+>> Type=vs_type(Nfs)
+
+Type =
+
+Delft3D-com
+\end{Verbatim}
+
+\section{Find group to which element belongs: \vsfind}
+
+\subsection*{Purpose}
+Find elements in a NEFIS file.
+
+\subsection*{Syntax}
+\begin{Verbatim}
+Groups=vs_find(Nfs, ElementName)
+\end{Verbatim}
+
+\subsection*{Description}
+The function returns a list of group names containing the specified element.
+For example the element `TIMCUR' occurs in several groups of the com-file:
+
+\subsection*{Example}
+\begin{Verbatim}
+>> Groups=vs_find(Nfs,`TIMCUR')
+
+Groups =
+
+KENMTIM
+CURTIM
+DWQTIM
+\end{Verbatim}
+
+\section{Find differences between two NEFIS files: \vsdiff}
+
+\subsection*{Purpose}
+Compare NEFIS file contents and find differences in groups, elements and data.
+
+\subsection*{Syntax}
+\begin{Verbatim}
+vs_diff(Nfs1,Nfs2)
+\end{Verbatim}
+
+\subsection*{Description}
+The function analyses the specified NEFIS files for differences.
+The analyses searches first for differences in the contained groups.
+If it finds differences it stops, if not it continues to search for differences in the elements, element properties, and element data.
+
+\subsection*{Example}
+The following comparison between two com-files, of which the first was obtained by a restart run from the second one, indicates
+
+\begin{itemize}
+\item differences in the water and sediment transport data fields;
+\item a difference in the group properties of the BOTTIM group (which is caused by one additional depth field); and
+\item differences in the `RUNTXT' and `SIMDAT' texts.
+\end{itemize}
+
+\begin{Verbatim}
+>> vs_diff(Nfs,Nfs2)
+Comparing NEFIS files ...
+File 1: I:\OCTOPUS\sbod_gf3.66_tot\output\TS11520000\com-d16
+File 2: I:\OCTOPUS\sbod_gf3.66_tot\output\TS11160000\com-d16
+
+Data of element NTBOT of group BOTNT differ.
+Group properties differ for: BOTTIM
+Data of element QU of group CURTIM differ.
+Data of element QV of group CURTIM differ.
+Data of element S1 of group CURTIM differ.
+Data of element TIMCUR of group CURTIM differ.
+Data of element U1 of group CURTIM differ.
+Data of element V1 of group CURTIM differ.
+Data of element TIMCUR of group DWQTIM differ.
+Data of element KFU of group KENMTIM differ.
+Data of element KFV of group KENMTIM differ.
+Data of element TIMCUR of group KENMTIM differ.
+Data of element TAUMAX of group TAUTIM differ.
+Data of element TSEDB of group TRANSTIM differ.
+Data of element TSEDE of group TRANSTIM differ.
+Data of element TTXA of group TRANSTIM differ.
+Data of element TTYA of group TRANSTIM differ.
+Data of element RUNTXT of group com-version differ.
+Data of element SIMDAT of group com-version differ.
+... comparison finished.
+\end{Verbatim}

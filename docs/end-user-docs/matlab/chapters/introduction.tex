@@ -1,0 +1,32 @@
+\svnid{$Id: introduction.tex 74563 2022-02-13 20:35:17Z jagers $}
+
+\chapter{Introduction}
+The MATLAB interface for Delft3D has been developed to expand the flexibility in the processing of Delft3D data in general and of NEFIS data files in particular.
+The interface consists of three parts:
+
+\begin{itemize}
+\item First, generic low level routines to access data stored in NEFIS files by the \dfoursuite.
+The routines are described in the second chapter of this manual.
+A thorough knowledge of the Delft3D system is required.
+
+\item Second, high level routines to access the data.
+This includes routines for reading and writing \dflow restart files, grid and depth files.
+Routines to load and plot grid, thin dams, and velocity data directly from the \dfoursuite result files.
+Finally a set of routines to open and read data from any file supported by QUICKPLOT; this includes the result files of both the \dfoursuite and the \dfmsuite.
+For a full overview of all supported file formats see the appendix of \citet{QP_UM}.
+These routines are described in Chapter \ref{Chp:HighLevelRoutines}.
+
+\item Third, a graphical user interface for basic plotting.
+The QUICKPLOT\ interface is described in Chapter \ref{Chp:QuickPlot}.
+\end{itemize}
+
+All functions are provided in source code under LGPL v2.1 conditions.
+The routines described in chapters three and four can be used as examples for development of other routines.
+
+\section{Version information}
+This manual describes the functionality of \DMATLAB\ interface version 2.60 and later versions.
+
+\section{Compatibility}
+The routines have been tested for compatibility with MATLAB versions ranging from 6.5 (R13) until 2022a.
+Although quotes in commands are sometimes rendered in this manual as \command{'}, every quote is intended to be a straight quote \textcode{'}.
+

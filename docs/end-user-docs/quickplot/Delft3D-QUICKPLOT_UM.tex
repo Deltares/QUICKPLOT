@@ -1,0 +1,101 @@
+\documentclass[git]{deltares_manual}
+
+\svnid{$Id: Delft3D-QUICKPLOT_UM.tex 80815 2026-02-17 17:10:15Z jagers $}
+
+\input{../common/program_names}
+
+\newcommand\FileAndFormat[2]{%
+\begin{tabular}{@{}p{60pt}@{}p{\textwidth-60pt}@{}}
+File&#1\\
+File format&#2
+\end{tabular}}
+
+\newenvironment{QUL-table}%
+{\begin{longtable}{@{}p{\textwidth-50mm-24pt}|p{20mm}|p{30mm}@{}}
+\STRUT \textbf{Quantity} & \textbf{Unit} & \textbf{Location} \\ [1ex] \hline \endhead}%
+{\end{longtable}}
+
+\newcommand\bQUL{%
+    \begin{longtable}{@{}p{\textwidth-50mm-24pt}|p{20mm}|p{30mm}@{}}%
+    \STRUT \textbf{Quantity} & \textbf{Unit} & \textbf{Location} \\ [1ex] \hline \endhead
+}
+\newcommand\eQUL{%
+\end{longtable}%
+}
+ 
+\newcounter{enum_brackets}
+\newenvironment{enumerate_brackets}%
+{ \begin{list}{$^{(\arabic{enum_brackets})}$ }{\usecounter{enum_brackets}%
+  \setlength{\labelsep}{0pt}%
+  \setlength{\leftmargin}{0pt}%
+  \setlength{\labelwidth}{0pt}%
+  \setlength{\listparindent}{0pt}}}%
+{\end{list}}
+
+\def\ENi{$^{(1)}$}
+\def\ENii{$^{(2)}$}
+\def\ENiii{$^{(3)}$}
+\def\ENiv{$^{(4)}$}
+\def\ENv{$^{(5)}$}
+
+%------------------------------------------------------------------------------
+\makeatletter
+\version{2.72}
+\hypersetup
+{
+    pdfauthor   = {Deltares},
+    pdftitle    = {\QUICKPLOT\ User Manual},
+    pdfkeywords = {Deltares User Manual \QUICKPLOT\ QP}
+}
+\makeatother
+
+%------------------------------------------------------------------------------
+%
+\renewcommand\BackgroundPicChapter{
+    \put(0,0){
+    \parbox[b][\paperheight]{\paperwidth}{%
+        \vspace{4\baselineskip}
+        \hspace{220mm}
+        \includegraphics[width=15mm]{pictures/delft3d-chapter-ribbon.jpg}%
+        \vfill
+        }
+    }
+}
+
+%------------------------------------------------------------------------------
+%
+\begin{document}
+\pagestyle{empty}
+\includepdf[pages=1,offset=72 -70]{pictures/delft3d-cover_quickplot.pdf} % links-rechts past precies
+\cleardoublepage
+
+\title{\QUICKPLOT}
+\subtitle{Visualisation and animation program for analysis of simulation results}
+\manualtype{User Manual}
+\distribution{Hydro-Morphodynamics \& Water Quality}
+\manualtitle
+
+\include{introduction}
+\include{frequent_questions}
+\include{getting_started}
+\include{plotting_options}
+\include{exporting_options}
+\include{digging_deeper}
+\include{plot_styles}
+
+%-------------------------------------------------------------------------------
+%\nocite{NO_CITE}
+%\nonumchapter{References}
+%\bibliography{../common/deltares_manual}
+%-------------------------------------------------------------------------------
+
+\appendix
+\include{supported_formats}
+
+\cleardoublepage
+%
+\newpage
+\pagestyle{empty}
+\mbox{}
+\includepdf[pages=2,offset=-72 -70]{pictures/delft3d-cover_quickplot.pdf} % links-rechts past precies
+\end{document}
