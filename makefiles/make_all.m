@@ -81,4 +81,4 @@ make_sim2ugrid(sourcedir,qpversion,repo_url,hash,T)
 
 sourcedir = [curdir,filesep,'..',filesep,'src',filesep,'system_tests'];
 
-make_tests(sourcedir,qpversion,repo_url,hash,T)
+make_system_tests(sourcedir,qpversion,repo_url,hash,T)
