@@ -114,9 +114,9 @@ end
 
 fprintf('Building executable ...\n');
 if isunix
-    appopt={'-m'};
+    appopt='-m';
 else
-    appopt={'-e'};
+    appopt='-e';
 end
 mcc(appopt,'-a','./units.ini','-a','./grib','-v',main_file)
 if ispc

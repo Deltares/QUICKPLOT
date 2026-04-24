@@ -110,7 +110,7 @@ if ~isempty(g)
 end
 
 fprintf('Building executable ...\n');
-appopt={'-m'};
+appopt='-m';
 mcc(appopt,'-a','./units.ini','-a','./grib','-v',main_file)
 
 fprintf('Cleaning up directory ...\n');
