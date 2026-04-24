@@ -71,7 +71,7 @@ object Linux_LnxBuildMexFiles : BuildType({
         script {
             name = "Build mex files"
             id = "B"
-            workingDir = "src/makefiles/"
+            workingDir = "makefiles/"
             scriptContent = """
                 #!/bin/bash
                 echo Running in `pwd`
@@ -155,7 +155,7 @@ object Linux_LnxCompileQuickplot : BuildType({
         script {
             name = "Run make_all in MATLAB"
             id = "Run_make_all_in_MATLAB"
-            workingDir = "src/makefiles/"
+            workingDir = "makefiles/"
             scriptContent = """
                 #!/bin/bash
                 . /usr/share/Modules/init/bash
@@ -766,7 +766,7 @@ object Windows_WinBuildMexFiles : BuildType({
         script {
             name = "Build mex files"
             id = "Build_mex_files"
-            workingDir = """src\makefiles\"""
+            workingDir = """makefiles\"""
             scriptContent = """
                 echo Running in %%cd%%
                 "c:\Program Files\Matlab\R2023a\bin\matlab.exe" -batch make_mex
@@ -881,7 +881,7 @@ object Windows_WinCompileQuickplot : BuildType({
         }
         script {
             name = "Run make_all in MATLAB"
-            workingDir = """src\makefiles\"""
+            workingDir = """makefiles\"""
             scriptContent = """
                 echo Running in %%cd%%
                 set TEAMCITY_BUILD_BRANCH=%teamcity.build.branch%

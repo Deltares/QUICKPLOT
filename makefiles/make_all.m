@@ -69,7 +69,7 @@ if nargin == 0
     release = sprintf('Build %d.%2.2d',yr,mn);
 end
 
-sourcedir = [curdir,filesep,'..',filesep,'delft3d_matlab'];
+sourcedir = [curdir,filesep,'..',filesep,'src',filesep,'delft3d_matlab'];
 
 if strcmp(computer,'PCWIN64')
    make_d3dmatlab(sourcedir,qpversion,repo_url,hash,T,release)
@@ -79,6 +79,6 @@ make_ecoplot(sourcedir,qpversion,repo_url,hash,T)
 make_delwaq2raster(sourcedir,qpversion,repo_url,hash,T)
 make_sim2ugrid(sourcedir,qpversion,repo_url,hash,T)
 
-sourcedir = [curdir,filesep,'..',filesep,'system_tests'];
+sourcedir = [curdir,filesep,'..',filesep,'src',filesep,'system_tests'];
 
 make_tests(sourcedir,qpversion,repo_url,hash,T)

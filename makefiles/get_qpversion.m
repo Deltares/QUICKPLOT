@@ -35,7 +35,7 @@ thisfile = mfilename('fullpath');
 thisdir = fileparts(thisfile);
 
 search_path = path;
-addpath([thisdir,filesep,'..',filesep,'delft3d_matlab',filesep],'-begin')
+addpath([thisdir,filesep,'..',filesep,'src',filesep,'delft3d_matlab',filesep],'-begin')
 [version,hash,repo_url] = d3d_qp('version');
 path(search_path);
 
