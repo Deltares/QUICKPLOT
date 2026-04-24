@@ -238,10 +238,10 @@ object Linux_LnxDetermineGitProperties : BuildType({
                 echo "-- Git short hash --"
                 git rev-parse --short HEAD
                 echo "-- writing gitsettings file --"
-                echo "\\def\\@gitrepository{`git remote get-url origin`}" > gitsettings
-                echo "\\def\\@gitbranch{%teamcity.build.branch%}" >> gitsettings
-                echo "\\def\\@githashlong{%build.revisions.revision%}" >> gitsettings
-                echo "\\def\\@githashshort{%build.revisions.short%}" >> gitsettings
+                echo "\\def\\@gitrepository{\\detokenize{`git remote get-url origin`}}" > gitsettings
+                echo "\\def\\@gitbranch{\\detokenize{%teamcity.build.branch%}}" >> gitsettings
+                echo "\\def\\@githashlong{\\detokenize{%build.revisions.revision%}}" >> gitsettings
+                echo "\\def\\@githashshort{\\detokenize{%build.revisions.short%}}" >> gitsettings
             """.trimIndent()
         }
     }
