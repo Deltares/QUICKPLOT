@@ -1,5 +1,5 @@
-function make_tests(basedir, varargin)
-%MAKE_TESTS Build some test binaries
+function make_system_tests(basedir, varargin)
+%MAKE_SYSTEM_TESTS Build some system test binaries
 
 %----- LGPL --------------------------------------------------------------------
 %
@@ -42,9 +42,12 @@ if nargin>0
 end
 err = [];
 try
-    make_hello_world
-    make_matlab_sysinfo
-    make_graphics_test
+    d = dir;
+    for i = 1:length(d)
+        if ~d(i).isdir
+            mcc('-m','-v',d(i).name)
+        end
+    end
 catch err
 end
 if nargin>0
