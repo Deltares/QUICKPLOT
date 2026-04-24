@@ -83,15 +83,8 @@ diary make_quickplot_diary
 fprintf('Copying files ...\n');
 if isunix
     unix(['cp -rf ', source_dir, '/* .']);
-    unix('mv compileonly/* .');
 else
     [s, msg] = dos(['xcopy "', source_dir, '\*.*" "." /E /Y']);
-    if s == 0
-        [s, msg] = dos('move compileonly\*.*  .');
-    end
-    if s ~= 0
-        error(msg)
-    end
 end
 
 fprintf('Including netCDF files ...\n');
