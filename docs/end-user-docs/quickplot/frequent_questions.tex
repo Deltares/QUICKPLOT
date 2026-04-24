@@ -1,0 +1,13 @@
+
+\svnid{$Id: quickplot-1.tex 80147 2025-03-26 08:47:40Z jagers $}
+
+\chapter{Frequently Asked Questions} \label{Chp:FAQ}
+
+\section{Why is part of my data missing? (typically values less than -999)} \label{FAQ:fillValue}
+If you're working with Delft3D data in netCDF format, you may encounter that parts of the model domain, large reverse discharge, large depth values, or similar data blocks are missing.
+In most cases this is due to the \keyw{\_FillValue} used in the netCDF file for the relevant variables.
+\Sref{Sec:NetCDFPrefs}.
+By default, \QUICKPLOT\ will clip values "more extreme" than \keyw{\_FillValue} following the recommendation by the netCDF user group.
+However, Deltares software often uses the value of \num{-999} as \keyw{\_FillValue} and clipping values beyond that value may cause problems with coordinates, depths/elevations, and discharges.
+The behaviour of \QUICKPLOT\ can be changed in the Preferences dialog (see \Sref{Sec:NetCDFPrefs}).
+Change the setting for the interpretation of \keyw{\_FillValue} from the default "Use \keyw{\_FillValue} to define \keyw{valid\_range} (NUG)" to "Clip only \keyw{\_FillValue}".

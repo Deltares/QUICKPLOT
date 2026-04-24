@@ -1,0 +1,103 @@
+\documentclass[svn]{deltares_manual}
+
+\svnid{$Id: Delft3D-MATLAB_UM.tex 79761 2024-10-16 09:47:51Z hutten $}
+
+%------------------------------------------------------------------------------
+% the following code defines a \textcode{} command that sets the text
+% in verbatim mode very similar to \command{}, but it prints straight
+% quotes. Unfortunately, contrary to \command{} it seems that it doesn't
+% work in headings. So, this command is only used once in the compatibility
+% section for a remark on rendered quotes.
+%------------------------------------------------------------------------------
+\ExplSyntaxOn
+\NewDocumentCommand{\textcode}{v}
+ {
+  \ian_textcode:n { #1 }
+ }
+
+\tl_new:N \l_ian_textcode_tl
+
+\cs_new_protected:Npn \ian_textcode:n #1
+ {
+  \tl_set:Nn \l_ian_textcode_tl { #1 }
+  \tl_replace_all:Nnn \l_ian_textcode_tl { ' } { \textquotesingle }
+  \texttt { \l_ian_textcode_tl }
+ }
+\ExplSyntaxOff
+%------------------------------------------------------------------------------
+ 
+\input{../common/program_names}
+
+\newcommand{\vsuse}{\command{vs\_use}}
+\newcommand{\vsdisp}{\command{vs\_disp}}
+\newcommand{\vslet}{\command{vs\_let}}
+\newcommand{\vsget}{\command{vs\_get}}
+\newcommand{\vstype}{\command{vs\_type}}
+\newcommand{\vsfind}{\command{vs\_find}}
+\newcommand{\vsdiff}{\command{vs\_diff}}
+
+%------------------------------------------------------------------------------
+\makeatletter
+\version{2.40}
+\hypersetup
+{
+    pdfinfo={
+        Author   = {Deltares},
+        Title    = {\DMATLAB\ User Manual},
+        Keywords = {Deltares User Manual MATLAB \DMATLAB},
+        Creator  = {LaTeX hyperref},
+        Suite    = {\@version},
+        Revision = {\@svn@rev}
+    }
+}
+\makeatother
+
+%------------------------------------------------------------------------------
+%
+\renewcommand\BackgroundPicPart{
+    \put(0,0){
+        \parbox[b][\paperheight]{\paperwidth}{%
+            \vspace{8\baselineskip}
+            \hspace{44mm} % 20mm wegens leftmarginskip + 24 mm ~ 1 inch
+            \includegraphics[width=\paperwidth, height=\paperheight, keepaspectratio]{pictures/deltares_delft3d_part.png}%
+            \vfill
+        }
+    }
+}
+\renewcommand\BackgroundPicChapter{
+    \put(0,0){
+    \parbox[b][\paperheight]{\paperwidth}{%
+        \vspace{4\baselineskip}
+        \hspace{220mm}
+        \includegraphics[width=15mm]{pictures/delft3d-chapter-ribbon.jpg}%
+        \vfill
+        }
+    }
+}
+
+%------------------------------------------------------------------------------
+%
+\begin{document}
+\pagestyle{empty}
+\includepdf[pages=1,offset=72 -70]{pictures/delft3d-cover_matlab.pdf} % links-rechts past precies
+\cleardoublepage
+
+\title{\DMATLAB}
+\subtitle{Interface to MATLAB for flexibility in visualisation and data analysis}
+\manualtype{User Manual}
+\distribution{Hydro-Morphodynamics \& Water Quality}
+\manualtitle
+
+\include{chapters/introduction}
+\include{chapters/lowlevel}
+\include{chapters/highlevel}
+\include{chapters/quickplot}
+\include{chapters/references}
+
+\cleardoublepage
+%
+\newpage
+\pagestyle{empty}
+\mbox{}
+\includepdf[pages=2,offset=-72 -70]{pictures/delft3d-cover_matlab.pdf} % links-rechts past precies
+\end{document}

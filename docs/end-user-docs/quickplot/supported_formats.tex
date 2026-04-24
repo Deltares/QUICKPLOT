@@ -1,0 +1,1927 @@
+\svnid{$Id: supported_formats.tex 80815 2026-02-17 17:10:15Z jagers $}
+
+\chapter{Supported file formats} \label{Chp:SupportedFileFormats}
+The following sections list for each supported file format the quantities that may be read from the indicated file.
+Often the file will not contain all the data sets specified.
+The following abbreviations are used to indicate the location:
+
+\begin{tabular}{l|l}
+\STRUT \textbf{Abbreviation} & \textbf{Meaning} \\ [1ex] \hline
+\STRUT
+D & depth points, corners of grid cells \\
+Z & water level points, cell centres of grid \\
+UV & velocity points \\
+Z (UV) & data averaged to water level points (data on file defined at velocity points) \\
+c & defined at cell centres in vertical direction \\
+i & defined at cell interfaces in vertical direction
+\end{tabular}
+
+
+
+%------------------------------------------------------------------------------
+\section{ArcInfo grid files} \label{Sec:FileASC}
+\FileAndFormat{\file{$\ast$.asc}}{Ascii file}
+
+Special support for extensions used by Delft-FLS and SOBEK Overland Flow module: \file{$\ast$.adp}, \file{$\ast$.amu}, \file{$\ast$.amv}, \file{$\ast$.amh}, \file{$\ast$.amz}, \file{$\ast$.amc}, \file{$\ast$.aht}, \file{$\ast$.afb}, \file{$\ast$.afw}, \file{$\ast$.acx}, \file{$\ast$.ahx}
+
+\begin{QUL-table}
+\STRUT
+datafield  & & cell centres
+\end{QUL-table}
+
+
+
+%------------------------------------------------------------------------------
+\section{ArcInfo (un)generate file (as land boundary file)} \label{Sec:FileGEN}
+\FileAndFormat{\file{$\ast$.gen}}{Ascii file}
+
+\begin{QUL-table}
+\STRUT
+line & & xy
+\end{QUL-table}
+
+
+
+%------------------------------------------------------------------------------
+\section{Ascii mesh files} \label{Sec:FileAsciimesh}
+\FileAndFormat{Various, see below.}{Ascii file}
+
+This option supports various Ascii mesh file formats:
+\begin{itemize}
+\item Adcirc mesh files: \file{$\ast$.14}, \file{$\ast$.gr3} \\
+\item EasyMesh and Triangle mesh files: pairs of \file{$\ast$.node} and \file{$\ast$.ele}, or \file{$\ast$.n} and \file{$\ast$.e} \\
+\item GeoSystems mesh file: \file{$\ast$.gem} \\
+\item MIKE mesh files: \file{$\ast$.mesh} \\
+\item SHYFEM mesh files: \file{$\ast$.shy} \\
+\item SMS/TUFLOW mesh files: \file{$\ast$\_grd.dat}, \file{$\ast$.2dm} \\
+\end{itemize}
+
+\begin{QUL-table}
+\STRUT
+mesh & & nodes \\
+mesh - node indices & & nodes \\
+mesh - face indices & & faces \\
+values\ENi & & nodes \\
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item This field contains the vertical coordinate when included in the file.
+\end{enumerate_brackets}
+
+%------------------------------------------------------------------------------
+\section{Auke/PC file} \label{Sec:FileAUKE}
+\FileAndFormat{\file{\emph{name}.seq} and \file{\emph{name}.dat}}%
+{\begin{tabular}[t]{@{}l}
+\file{$\ast$.seq}: Ascii file\\
+\file{$\ast$.dat}: Binary file
+\end{tabular}}
+
+\begin{QUL-table}
+\STRUT
+data fields\ENi & & data channel
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item The list of data fields will be automatically expanded based on file contents.
+\end{enumerate_brackets}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{BIL/HDR files} \label{Sec:FileBIL}
+\FileAndFormat{\file{\emph{name}.hdr} and \file{\emph{name}.bil}, \file{\emph{name}.bip} or \file{\emph{name}.bsq}}%
+{\begin{tabular}[t]{@{}l}
+\file{$\ast$.hdr}: Ascii file\\
+\file{$\ast$.bil}, \file{$\ast$.bip}, \file{$\ast$.bsq}: Binary file
+\end{tabular}}
+
+\begin{QUL-table}
+\STRUT
+datafield & & cell centres
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{Bitmap files} \label{Sec:FileBMP}
+\FileAndFormat{\file{$\ast$.bmp};\file{$\ast$.jpg};\file{$\ast$.tif};\file{$\ast$.png}}{Binary file}
+
+\begin{QUL-table}
+\STRUT
+bitmap & & user specified
+\end{QUL-table}
+
+\begin{figure}
+\center{\includegraphics{Apa/file_options_bitmap_file.png}}
+\caption{File options dialog for a bitmap file.}
+\label{fig:A.9}
+\end{figure}
+
+The file options dialog for a bitmap file allows you to:
+
+\begin{enumerate}
+\item specify the lower-left co-ordinates of the bitmap as well as the width for georeferencing.
+These data are used when plotting the bitmap.
+\item create a figure containing an axes object such that the plotted bitmap exactly fits the figure.
+\end{enumerate}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{BNA file (Atlas Boundary format)} \label{Sec:FileBNA}
+\FileAndFormat{\file{$\ast$.bna}}{Ascii file}
+
+\begin{QUL-table}
+\STRUT
+line & & xy
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{\DWAQ\ balance file} \label{Sec:FileWAQBAL}
+\FileAndFormat{\file{$\ast$.bal}}{Binary or unformatted}
+
+\begin{QUL-table}
+\STRUT
+constituents\ENi & \ENi & station \\
+balances\ENi \ENii & \ENi & station
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item These fields are expanded depending on the contents of the data file.
+\item The balances result in special plots showing the contribution of all relevant processes in the mass balance of the constituent considered over time.
+See \Fref{fig:A.6} for an example.
+\end{enumerate_brackets}
+
+\begin{figure}[H]
+\center{\includegraphics{Apa/balance_plot.png}}
+\caption{Example of a balance plot.}
+\label{fig:A.6}
+\end{figure}
+
+\begin{Remark}
+\item It is currently only possible to create balance plots for the whole simulation period.
+\item It is currently not possible to change the colour settings of the balance plot
+\end{Remark}
+
+The file options dialog for a \DWAQ\ balance file allows you to (see \Fref{fig:A.7}):
+
+\begin{enumerate}
+\item switch to \DWAQ\ history file handling
+\item plot net transports instead of both in and out transports
+\end{enumerate}
+
+\begin{figure}
+\center{\includegraphics{Apa/file_options_balance_file.png}}
+\caption{File options dialog for \DWAQ\ balance file.}
+\label{fig:A.7}
+\end{figure}
+
+
+
+%------------------------------------------------------------------------------
+\section{\DWAQ\ grid file} \label{Sec:FileLGACCO}
+\FileAndFormat{\file{\emph{name}.lga} and \file{\emph{name}.cco}}{Binary or unformatted}
+
+\begin{QUL-table}
+\STRUT
+aggregated grid & & D \\
+segment number & & centres
+\end{QUL-table}
+
+
+
+%------------------------------------------------------------------------------
+\section{\DWAQ\ or Delft3D-PART history file} \label{Sec:FileWAQHIS}
+\FileAndFormat{\file{$\ast$.his}}{Binary or unformatted}
+
+\FileAndFormat{\begin{tabular}[t]{@{}l}
+\file{\emph{runid}.hda} and \file{\emph{runid}.hdf} \\
+\file{his-\emph{runid}.dat} and \file{his-\emph{runid}.def}\end{tabular}}{NEFIS}
+
+\begin{QUL-table}
+\STRUT
+total chlorophyll in algae (limiting factors) & \ENi & station \\
+constituents\ENii & \ENii & station \\
+constituents (bed layer)\ENii\ENiii & \ENii & station
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item The total chlorophyll quantity results in a special plot showing the development of the chlorophyll concentration over time and the factors that limit its growth.
+See \Fref{fig:A.4}.
+\item These fields are expanded depending on the contents of the data file.
+\item The bed layer quantities will only occur for output files of a Delft3D-PART simulation with sedimentation process switched on.
+\end{enumerate_brackets}
+
+\begin{figure}[H]
+\center{\includegraphics{Apa/limiting_factors.png}}
+\caption{Example of a limiting factors plot.}
+\label{fig:A.4}
+\end{figure}
+
+\begin{Remark}
+\item It is currently only possible to create limiting factors plots for the whole simulation period.
+\item It is currently not possible to change the colour settings of the limiting factors plot.
+\end{Remark}
+
+The file options dialog for a \DWAQ\ or PART history file allows you to (see \Fref{fig:A.5}):
+
+\begin{enumerate}
+\item switch between station based data selection (default) or to treat all stations as lying on one line as a 1D model
+\item switch to \DWAQ\ balance file handling (see \Apref{Sec:FileWAQBAL})
+\end{enumerate}
+
+\begin{figure}
+\center{\includegraphics{Apa/file_options_part_his_file.png}}
+\caption{File options dialog for \DWAQ\ or PART history file.}
+\label{fig:A.5}
+\end{figure}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{\DWAQ\ or Delft3D-PART map file} \label{Sec:FileWAQMAP}
+\FileAndFormat{\file{$\ast$.map}}{Binary or unformatted}
+
+\FileAndFormat{\begin{tabular}[t]{@{}l}
+\file{\emph{runid}.ada} and \file{\emph{runid}.adf} \\
+\file{map-\emph{runid}.dat} and \file{map-\emph{runid}.def}\end{tabular}}{NEFIS}
+
+Required extra files: \DWAQ\ grid file (\file{\emph{name}.lga} and \file{\emph{name}.cco}) otherwise the files are treated as \DWAQ\ and PART history files.
+
+\begin{QUL-table}
+\STRUT
+aggregated grid & & D \\
+segment number & & centres \\
+constituents\ENi & \ENi & centres
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item These fields are expanded depending on the contents of the data file.
+\end{enumerate_brackets}
+
+
+
+%------------------------------------------------------------------------------
+\section{\DWAQ\ tim files} \label{Sec:FileWAQTIM}
+\FileAndFormat{\file{$\ast$.tim}}{Ascii file}
+
+\begin{QUL-table}
+\STRUT
+location - quantity\ENi & & station
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item These fields are expanded depending on the contents of the data file.
+\end{enumerate_brackets}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{Delft-FLS or SOBEK incremental file} \label{Sec:FileINC}
+\FileAndFormat{\file{$\ast$.inc}}{Ascii file}
+
+Optionally plotted as added dataset on Delft3D grid file (see \Apref{Sec:FileGRD}).
+
+\begin{QUL-table}
+\STRUT
+classified waterdepth & & Z \\
+classified velocity & & Z \\
+classified waterlevel & & Z \\
+classified u-velocity & & Z \\
+classified v-velocity & & Z
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{Delft-FLS point history file} \label{Sec:FileFLSBIN}
+\FileAndFormat{\file{$\ast$.bin}}{Binary file}
+
+\FileAndFormat{\file{$\ast$.his}}{Ascii file}
+
+\begin{QUL-table}
+\STRUT
+waterdepth & m & station \\
+waterlevel & m & station \\
+velocity & m/s & station
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{Delft-FLS cross-section history file} \label{Sec:FileFLSCRS}
+\FileAndFormat{\file{$\ast$.crs}}{Ascii file}
+
+\begin{QUL-table}
+\STRUT
+discharge & m\textsuperscript{3}/s & cross-section
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{Delft3D communication file} \label{Sec:FileCOM}
+\FileAndFormat{\file{com-\emph{runid}.dat} and \file{com-\emph{runid}.def}}{NEFIS}
+
+\begin{QUL-table}
+\STRUT
+morphologic grid & & D\ENi \\
+hydrodynamic grid & & Z \\
+inactive water level points & & Z \\
+thin dams & & UV \\
+temporarily inactive velocity points & & UV \\
+wind velocity & m/s & Z \\
+hrms wave height & m & Z \\
+hrms wave vector & m & Z \\
+tp wave period & s & Z \\
+wave dissipation & W/m\textsuperscript{2} & Z \\
+wave force & N/m\textsuperscript{2} & Z (UV) \\
+mass flux & (m\textsuperscript{3}/m)/s & Z (UV) \\
+water level & m & Z \\
+velocity (horizontal) & m/s & Z (UV), c \\
+velocity in depth averaged flow direction & m/s & Z (UV), c \\
+velocity normal to depth averaged flow direction & m/s & Z (UV), c \\
+depth averaged velocity & m/s & Z (UV) \\
+unit discharge (horizontal) & m\textsuperscript{2}/s & Z (UV), c \\
+depth averaged unit discharge & m\textsuperscript{2}/s & Z (UV) \\
+discharge potential & m\textsuperscript{3}/s & D \\
+spiral flow intensity & m/s & Z \\
+u roughness parameter\ENii & \ENii & Z (U) \\
+v roughness parameter\ENii & \ENii & Z (V) \\
+max.\ bottom friction & N/m\textsuperscript{2} & Z \\
+salinity & ppt & Z, c \\
+temperature & \degr C & Z, c \\
+vertical eddy diffusivity & m\textsuperscript{2}/s & Z, c \\
+initial bedload transport & m\textsuperscript{3}/m & Z \\
+avg bedload transport & (m\textsuperscript{3}/m)/s & Z \\
+initial susp.\ transport & m\textsuperscript{3}/m & Z \\
+avg susp.\ transport & (m\textsuperscript{3}/m)/s & Z \\
+initial bed level & m & D \\
+fixed layer & m & D \\
+sed.\ layer above fixed bed & m & D \\
+time-varying bed level & m & D \\
+cum.\ erosion/sedimentation & m & D \\
+transport layer thickness & m & D \\
+transp.\ l.\ thickness (wlvl) & m & Z \\
+median grainsize & m & Z \\
+transport layer & - & D \\
+transport layer (wlvl) & - & Z \\
+exchange layer & - & D \\
+GUU grid distance & m & Z (U) \\
+GVU grid distance & m & Z (U) \\
+GVV grid distance & m & Z (V) \\
+GUV grid distance & m & Z (V) \\
+cell area water level point & m\textsuperscript{2} & Z \\
+cell area bottom point & m\textsuperscript{2} & D \\
+other fields\ENiii & & Z\ENiii
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item In the current version of the program, the hydrodynamic grid connects the 3D co-ordinates of the cell centres of the computation grid points.
+This may change in a future release to represent the bounding boxes of the grid cells.
+\item The names and units of these fields are adjusted according to the roughness formulation used in the simulation.
+Units: Manning n in s/m$^{1/3}$, White-Colebrook/Nikuradse k in m, Ch\'ezy in m$^{1/2}$/s, z0 in m.
+\item New 2D and 3D fields of the same dimension as the grid are automatically detected.
+They are assume to be located at water level points.
+\end{enumerate_brackets}
+
+\begin{Remark}
+\item If the program detects that the opened file is part of a series of files named 'com-<runid>-\allowbreak<number>.dat/def' where the <runid> is an arbitrary string that may contain additional hyphens, then it will try to open the whole series of files.
+If the data set contains the results of a partitioned simulaiton, it will generate a list of partitions, and two extra options: 'all partitions' and 'merged partitions'.
+The individual partitions and the 'all partitions' option return the full data including ghost cells that overlap the neighbouring partitions.
+The 'merged partitions' option presents the data as one dataset, and the ghost cells are removed in the merging process.
+\end{Remark}
+
+The file options dialog for a Delft3D communication file allows you to (see \Fref{fig:A.3}):
+
+\begin{enumerate}
+\item perform a time step analysis using the data of the last flow time step on the communication file (requires also the \DFLOW\ map file)
+\end{enumerate}
+
+\begin{figure}[H]
+\center{\includegraphics{Apa/file_options_com_file.png}}
+\caption{File options dialog for Delft3D communication file.}
+\label{fig:A.3}
+\end{figure}
+
+
+
+%------------------------------------------------------------------------------
+\section{Delft3D grid file} \label{Sec:FileGRD}
+\FileAndFormat{\file{$\ast$.grd}}{Ascii file}
+
+\begin{QUL-table}
+\STRUT
+morphologic grid & & D \\
+hydrodynamic grid & & Z\ENi
+\end{QUL-table}
+\begin{enumerate_brackets}
+\item In the current version of the program, the hydrodynamic grid connects the co-ordinates of the cell centres of the computation grid points.
+This may change in a future release to represent the bounding boxes of the grid cells (i.e.\ equal to morphologic grid in plan).
+\end{enumerate_brackets}
+
+The file options dialog for a Delft3D grid file allows you to (see \Fref{fig:A.8}):
+
+\begin{enumerate}
+\item load additional attribute files (\DQUICKIN\ depth file, \DFLOW\ restart file, \DFLOW\ enclosure file, \DFLOW\ thin dam file, \DFLOW\ dry points file, \DFLOW\ observation point file, \DFLOW\ cross-section file, \DFLOW\ discharge station file, \DFLOW\ 2D weir file, Delft3D-MOR dredge map output file, Incremental file, Delft3D-MOR field file, SIMONA box file, SIMONA/Baseline 2d weir file, SIMONA/Baseline thin dam file, \DFLOW\ trachytope area file) onto the grid
+\item in case of a \DFLOW\ restart file: select the number of layers, substances, and turbulent quantities.
+\item in case of a \DFLOW\ restart file: convert between PC and UNIX platforms (and optionally change the number of layers)
+\item in case of a \DQUICKIN\ depth file: select the data location, data ordering and \DFLOW\ dpsopt option for interpolation to cell centres.
+\end{enumerate}
+
+\begin{figure}
+\center{\includegraphics{Apa/file_options_delft3d_grid_file.png}}
+\caption{File options dialog for Delft3D grid file.}
+\label{fig:A.8}
+\end{figure}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{\DFLOW\ map file} \label{Sec:FileTRIM}
+\FileAndFormat{\file{trim-\emph{runid}.dat} and \file{trim-\emph{runid}.def}}{NEFIS}
+
+\begin{QUL-table}
+\STRUT
+morphologic grid & & D \\
+hydrodynamic grid & & Z\ENi \\
+domain decomposition boundaries & & UV \\
+open boundaries  & & UV \\
+closed boundaries & & UV \\
+thin dams & & UV \\
+temporarily inactive water level points & & Z \\
+temporarily inactive velocity points & & UV \\
+air temperature & $\degr$C & Z \\
+cloud coverage & \% & Z \\
+relative air humidity & \% & Z \\
+wind speed & m/s & Z \\
+wave height & m & Z \\
+wave vector & m & Z \\
+orbital velocity amplitude & m/s & Z \\
+wave period & s & Z \\
+wave length & m & Z \\
+short-wave energy & J/m\textsuperscript{2} & Z \\
+roller energy & J/m\textsuperscript{2} & Z \\
+transport velocity of roller energy & m/s & Z (UV) \\
+transport velocity of wave energy & m/s & Z (UV) \\
+wave force & N/m\textsuperscript{2} & Z (UV) \\
+roller force & N/m\textsuperscript{2} & Z (UV) \\
+water level (when dry: bed level) & m & Z \\
+water level & m & Z \\
+water depth & m & Z \\
+depth averaged velocity & m/s & Z (UV) \\
+horizontal velocity & m/s & Z (UV), c \\
+velocity & m/s & Z (UV), c \\
+vertical velocity & m/s & Z, c \\
+velocity in depth averaged flow direction & m/s & Z (UV), c \\
+velocity normal to depth averaged flow direction & m/s & Z (UV), c \\
+filtered depth averaged velocity & m/s & Z (UV), c \\
+d.a.\ velocity fluctuations & m/s & Z (UV), c \\
+froude number & - & Z \\
+head & m & Z \\
+density & kg/m\textsuperscript{3} & Z, c \\
+non-hydrostatic pressure & Pa & Z, c \\
+constituents\ENii & \ENii & Z, c \\
+constituents flux\ENii & \ENii*m\textsuperscript{3}/s & Z (UV), c \\
+constituents cumulative flux\ENii & \ENii*m\textsuperscript{3} & Z (UV), c \\
+turbulent quantities\ENii & \ENii & Z, i \\
+vertical eddy viscosity & m\textsuperscript{2}/s & Z, i \\
+vertical eddy diffusivity & m\textsuperscript{2}/s & Z, i \\
+horizontal viscosity & m\textsuperscript{2}/s & Z,i \\
+Richardson number & - & Z, i \\
+vorticity & 1/s & Z, c \\
+enstrophy & 1/s\textsuperscript{2} & Z, c \\
+characteristic velocity & m/s & Z \\
+characteristic velocity magnitude & m/s & Z \\
+height above bed for characteristic velocity &  m & Z \\
+bed shear velocity magnitude & m/s & Z \\
+settling velocity & m/s & Z, i \\
+equilibrium concentration & kg/m\textsuperscript{3} & Z, c \\
+bed load transport due to currents (zeta point) & \ENiv & Z \\
+bed load transport due to currents & \ENiv & Z (UV) \\
+bed load transport due to waves (zeta point) & \ENiv & Z \\
+bed load transport due to waves & \ENiv & Z (UV) \\
+suspended load transport due to waves (zeta point) & \ENiv & Z \\
+suspended load transport due to waves & \ENiv & Z (UV) \\
+bed load transport & \ENiv & Z (UV) \\
+d.a.\ suspended transport & \ENiv & Z (UV) \\
+total transport & \ENiv & Z (UV) \\
+mean bed load transport & \ENiv & Z (UV) \\
+mean d.a.\ suspended transport & \ENiv & Z (UV) \\
+mean total transport & \ENiv & Z (UV) \\
+concentration & kg/m\textsuperscript{3} & Z, c (gen.sig.) \\
+settling velocity & m/s & Z, i (gen.sig.) \\
+bed shear stress & N/m\textsuperscript{2} & Z (UV) \\
+maximum bed shear stress & N/m\textsuperscript{2} & Z \\
+excess bed shear ratio & - & Z \\
+initial bed level & m & D \ENiii \\
+bed level in water level points & m & Z\ENiii \\
+bed slope & - & Z (UV) \\
+cum.\ erosion/sedimentation & m & Z\ENiii \\
+morphological acceleration factor & - & - \\
+available mass of sediment & kg/m\textsuperscript{2} & Z \\
+sediment fraction in top layer & - & Z \\
+mud fraction in top layer & - & Z \\
+sediment fraction & - & Z, c (bed) \\
+cumulative mass error & m & Z \\
+arithmic mean  sediment diameter & m & Z \\
+geometric mean  sediment diameter & m & Z \\
+hiding and exposure & - & Z \\
+reduction factor due to limited sediment thickness & - & Z \\
+other fields & \ENv & Z\ENiv \\
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item In the current version of the program, the hydrodynamic grid connects the 3D co-ordinates of the cell centres of the computation grid points.
+This may change in a future release to represent the bounding boxes of the grid cells.
+\item These fields are expanded depending on the contents of the data file.
+Units: temperature in $\degr C$, salinity in ppt, secondary flow in m/s, sediment concentrations in kg/m\textsuperscript{3}, turbulent kinetic energy in m\textsuperscript{2}/s\textsuperscript{2}, energy dissipation in m\textsuperscript{2}/s\textsuperscript{3}.
+The user defined tracer concentrations are in unknown units.
+\item These locations are only valid if the correct drying/flooding setting is selected in the file options dialog.
+\item Units depend on the model input.
+By default the units are (m\textsuperscript{3}/m)/s where the volume represents m\textsuperscript{3} stone.
+It can also be switched to (m\textsuperscript{3}/m)/s where the volume represents m\textsuperscript{3} bed volume, or kg/(ms).
+\item New 2D and 3D fields of the same dimension as the grid are automatically detected.
+They are assumed to be located at water level points.
+\end{enumerate_brackets}
+
+\begin{Remark}
+\item If the program detects that the opened file is part of a series of files named 'trim-<runid>-\allowbreak<number>.dat/def' where the <runid> is an arbitrary string that may contain additional hyphens, then it will try to open the whole series of files.
+If the data set contains the results of a partitioned simulaiton, it will generate a list of partitions, and two extra options: 'all partitions' and 'merged partitions'.
+The individual partitions and the 'all partitions' option return the full data including ghost cells that overlap the neighbouring partitions.
+The 'merged partitions' option presents the data as one dataset, and the ghost cells are removed in the merging process.
+\end{Remark}
+
+The file options dialog for a \DFLOW\ map file allows you to (see \Fref{fig:A.1}):
+
+\begin{enumerate}
+\item select dpsopt for old output files that do not yet contain that information
+\item select a time step and export the data to a binary \DFLOW\ restart file (hydrodynamics only) or to a one time step \DFLOW\ map file (for restarting morphological simulations)
+\item select a time step and perform a time step analysis using the data of that time step
+\item export bed stratigraphy (sediment fraction) to Golder ASCII file format for further analysis in Petrel software
+\item switch between hydrodynamic time and morphological time
+\end{enumerate}
+
+\begin{figure}[H]
+\center{\includegraphics{Apa/file_options_map_file.png}}
+\caption{File options dialog for \DFLOW\ map file.}
+\label{fig:A.1}
+\end{figure}
+
+
+%------------------------------------------------------------------------------
+\section{\DFLOW\ history file} \label{Sec:FileTRIH}
+\FileAndFormat{\file{trih-\emph{runid}.dat} and \file{trih-\emph{runid}.def}}{NEFIS}
+
+\begin{QUL-table}
+\STRUT
+water level & m & station (Z) \\
+depth averaged velocity & m/s & station (Z) \\
+horizontal velocity & m/s & station (Z), c \\
+vertical velocity & m/s & station (Z), c \\
+depth averaged discharge & m\textsuperscript{3}/s & station (Z) \\
+discharge & m\textsuperscript{3}/s & station (Z), c \\
+density & kg/m\textsuperscript{3} & station (Z), c \\
+non-hydrostatic pressure & Pa & station (Z), c \\
+constituents\ENi & \ENi & station (Z), c \\
+turbulent quantities\ENi & \ENi & station (Z), i \\
+vertical eddy viscosity & m\textsuperscript{2}/s & station (Z), i \\
+vertical eddy diffusivity & m\textsuperscript{2}/s & station (Z), i \\
+Richardson number & - & station (Z), i \\
+significant wave height & m & station (Z) \\
+peak wave period & s & station (Z) \\
+wave direction & deg & station (Z) \\
+wave length & m & station (Z) \\
+peak near-bed orbital velocity & m/s & station (Z) \\
+settling velocity & m/s & station (Z), i \\
+equilibrium concentration & kg/m\textsuperscript{3} & station (Z), c \\
+available mass of sediment & kg/m\textsuperscript{2} & station (Z) \\
+bed load transport & (m\textsuperscript{3}/m)/s & station (Z) \\
+d.a.\ suspended transport & (m\textsuperscript{3}/m)/s & station (Z) \\
+total transport & (m\textsuperscript{3}/m)/s & station (Z) \\
+bed shear stress & N/m\textsuperscript{2} & station (Z) \\
+bed level at station & m & station (Z) \\
+cum.\ erosion/sedimentation & m & station (Z) \\
+morphological acceleration factor & - & - \\
+instantaneous discharge & m\textsuperscript{3}/s & cross-s, culverts \\
+cumulative discharge & m\textsuperscript{3}/s & cross-s, culverts \\
+concentration\ENi & \ENi & culverts \\
+cum.\ advective transport\ENi & \ENi*m\textsuperscript{3} & cross-sections \\
+cum.\ dispersive transport\ENi & \ENi*m\textsuperscript{3} & cross-sections \\
+instantaneous bed load transport & \ENii/s & station (Z) \\
+instantaneous suspended transport & \ENii/s & station (Z) \\
+instantaneous total transport & \ENii/s & station (Z) \\
+cumulative bed load transport & \ENii & station (Z) \\
+cumulative suspended transport & \ENii & station (Z) \\
+cumulative total transport & \ENii & station (Z) \\
+dimensionless sediment diameter & - & station (Z) \\
+current-related bed roughness height & m & station (Z) \\
+wave-related bed roughness height & m & station (Z) \\
+critical bed shear stress & N/m\textsuperscript{2} & station (Z) \\
+current-related bed shear stress & N/m\textsuperscript{2} & station (Z) \\
+wave-related bed shear stress & N/m\textsuperscript{2} & station (Z) \\
+efficiency factor - current & - & station (Z) \\
+efficiency factor - waves & - & station (Z) \\
+thickness of near-bed sediment mixing layer & m & station (Z) \\
+sediment reference height & m & station (Z) \\
+dimensionless sediment suspension parameter & - & station (Z) \\
+near-bed reference concentration of sediment & kg/m\textsuperscript{3} & station (Z) \\
+suspended sediment particle size & m & station (Z) \\
+vertical sediment diffusion coefficient & m\textsuperscript{2}/s & station (Z), i \\
+wave orbital velocity in onshore direction & m/s & station (Z) \\
+wave orbital velocity in offshore direction & m/s & station (Z) \\
+magnitude of (unadjusted) bedload transport vector & (m\textsuperscript{3}/m)/s & station (Z), i \\
+magnitude of current-related bedload transport vector & (m\textsuperscript{3}/m)/s & station (Z), i \\
+magnitude of wave-related bedload transport vector & (m\textsuperscript{3}/m)/s & station (Z), i \\
+magnitude of wave-related near-bed transport vector & (m\textsuperscript{3}/m)/s & station (Z), i \\
+cumulative dredged material & m\textsuperscript{3} & station (Z), i
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item These fields are expanded depending on the contents of the data file.
+Units: temperature in $\degr$C, salinity in ppt, secondary flow in m/s, sediment concentrations in kg/m\textsuperscript{3}, turbulent kinetic energy in m\textsuperscript{2}/s\textsuperscript{2}, energy dissipation in m\textsuperscript{2}/s\textsuperscript{3}.
+The user defined tracer concentrations are in unknown units.
+\item Units depend on the model input.
+By default the units are (m\textsuperscript{3}/m)/s where the volume represents m\textsuperscript{3} stone.
+It can also be switched to (m\textsuperscript{3}/m)/s where the volume represents m\textsuperscript{3} bed volume, or kg/sm.
+\end{enumerate_brackets}
+
+The file options dialog for a \DFLOW\ history file allows you to (see \Fref{fig:A.2}):
+
+\begin{enumerate}
+\item switch between hydrodynamic time and morphological time
+\end{enumerate}
+
+\begin{figure}
+\center{\includegraphics{Apa/file_options_his_file.png}}
+\caption{File options dialog for \DFLOW\ history file.}
+\label{fig:A.2}
+\end{figure}
+
+
+
+%------------------------------------------------------------------------------
+\section{\DFLOW\ drogues file} \label{Sec:FileTRID}
+\FileAndFormat{\file{trid-\emph{runid}.dat} and \file{trid-\emph{runid}.def}}{NEFIS}
+
+\begin{QUL-table}
+\STRUT
+drogue track & & -
+\end{QUL-table}
+
+
+
+%------------------------------------------------------------------------------
+\section{\DFLOW\ boundary condition files} \label{Sec:FileBCT}
+\FileAndFormat{\file{$\ast$.bct};\file{$\ast$.bcc};\file{$\ast$.dis}}{Ascii file}
+
+\begin{QUL-table}
+\STRUT
+location - quantity\ENi & & station
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item These fields are expanded depending on the contents of the data file.
+\end{enumerate_brackets}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{\DFLOW\ 2d weir file} \label{Sec:File2DW}
+\FileAndFormat{\file{$\ast$.2dw}}{Ascii file}
+
+Plotted as added dataset on Delft3D grid file (see \Apref{Sec:FileGRD}).
+
+\begin{QUL-table}
+\STRUT
+weirs & m & UV
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{\DFLOW\ observation point file} \label{Sec:FileOBS}
+\FileAndFormat{\file{$\ast$.obs}}{Ascii file}
+
+Plotted as added dataset on Delft3D grid file (see \Apref{Sec:FileGRD}).
+
+\begin{QUL-table}
+\STRUT
+observation points & & station
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{\DFLOW\ discharge station file} \label{Sec:FileSRC}
+\FileAndFormat{\file{$\ast$.src}}{Ascii file}
+
+Plotted as added dataset on Delft3D grid file (see \Apref{Sec:FileGRD}).
+
+\begin{QUL-table}
+\STRUT
+discharge stations & & station
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{\DFLOW\ dry point file} \label{Sec:FileDRY}
+\FileAndFormat{\file{$\ast$.dry}}{Ascii file}
+
+Plotted as added dataset on Delft3D grid file (see \Apref{Sec:FileGRD}).
+
+\begin{QUL-table}
+\STRUT
+dry points & & Z
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{\DFLOW\ cross-section file} \label{Sec:FileCRS}
+\FileAndFormat{\file{$\ast$.crs}}{Ascii file}
+
+Plotted as added dataset on Delft3D grid file (see \Apref{Sec:FileGRD}).
+
+\begin{QUL-table}
+\STRUT
+cross-sections & & UV
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{Delft3D-FLOW input file} \label{Sec:FileMORTREE}
+\FileAndFormat{\file{\emph{runid}.mdf}}{Ascii file}
+
+\begin{QUL-table}
+\STRUT
+grid & & D \\
+bed levels & m & Z/D \\
+thin dams & & UV \\
+dry points & & Z \\
+observation points & & station
+\end{QUL-table}
+
+
+%------------------------------------------------------------------------------
+\section{\DFLOW\ trachytope area file} \label{Sec:FileARU}
+\FileAndFormat{\file{$\ast$.aru} or \file{$\ast$.arv}}{Ascii file}
+
+Plotted as added dataset on Delft3D grid file (see \Apref{Sec:FileGRD}).
+This file format is equivalent to the SIMONA Nikuradse area files generated by the Baseline preprocessing system.
+
+\begin{QUL-table}
+\STRUT
+area fraction\ENi & & Z
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item Subfields based on roughness codes encountered in the data file.
+\end{enumerate_brackets}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{\DFLOW\ restart file} \label{Sec:FileTRIRST}
+\FileAndFormat{\file{tri-rst.\emph{runid}}}{Unformatted file}
+
+Plotted as added dataset on Delft3D grid file (see \Apref{Sec:FileGRD}).
+
+\begin{QUL-table}
+\STRUT
+water level & m & Z \\
+(horizontal) velocity & m/s & Z (UV), c \\
+substance & & Z, c \\
+turb.\ quantity & & Z, i \\
+data field\ENi & & Z
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item These fields are expanded depending on the contents of the data file.
+\end{enumerate_brackets}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{\DFLOW\ thin dam file} \label{Sec:FileTHD}
+\FileAndFormat{\file{$\ast$.thd}}{Ascii file}
+
+Plotted as added dataset on Delft3D grid file (see \Apref{Sec:FileGRD}).
+
+\begin{QUL-table}
+\STRUT
+thindams & & UV
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{Delft3D-MOR transport map file} \label{Sec:FileTRAM}
+\FileAndFormat{\file{tram-\emph{runid}.dat} and \file{tram-\emph{runid}.def}}{NEFIS}
+
+\begin{QUL-table}
+\STRUT
+morphologic grid & & D \\
+hydrodynamic grid & & Z\ENi \\
+water level & m & Z \\
+water depth & m & Z \\
+velocity (horizontal) & m/s & Z (UV), c \\
+velocity in depth averaged flow direction & m/s & Z (UV), c \\
+velocity normal to depth averaged flow direction & m/s & Z (UV), c \\
+depth averaged velocity & m/s & Z (UV) \\
+spiral flow intensity & m/s & Z \\
+u roughness Chezy C & m$^{1/2}$/s & Z (U) \\
+v roughness Chezy C & m$^{1/2}$/s & Z (V) \\
+initial bedload transport & m\textsuperscript{3}/m & Z \\
+avg bedload transport & (m\textsuperscript{3}/m)/s & Z \\
+bedload transport per frac & (m\textsuperscript{3}/m)/s & Z \\
+total bedload transport & (m\textsuperscript{3}/m)/s & Z \\
+initial susp.\ transport & m\textsuperscript{3}/m & Z \\
+avg susp.\ transport & (m\textsuperscript{3}/m)/s & Z \\
+susp.\ transport per frac & (m\textsuperscript{3}/m)/s & Z \\
+total susp.\ transport & (m\textsuperscript{3}/m)/s & Z \\
+concentration & m\textsuperscript{3}/m\textsuperscript{3} & Z \\
+bed exchange contribution & m\textsuperscript{3}/m\textsuperscript{3} & D \\
+bed level increment & m & D \\
+time-varying bed level & m & D \\
+D50 (char.\ diam.\ 1) & m & D \\
+D90 (char.\ diam.\ 2) & m & D \\
+transport layer thickness & m & D \\
+median grainsize & m & D \\
+D10 & m & D \\
+D50 & m & D \\
+D90 & m & D \\
+transport layer & - & D \\
+exchange layer & - & D \\
+GUU grid distance & m & Z (U) \\
+GVU grid distance & m & Z (U) \\
+GVV grid distance & m & Z (V) \\
+GUV grid distance & m & Z (V) \\
+cell area water level point & m\textsuperscript{2} & Z \\
+cell area bottom point & m\textsuperscript{2} & D \\
+other fields\ENii & & Z\ENii
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item In the current version of the program, the hydrodynamic grid connects the 3D co-ordinates of the cell centres of the computation grid points.
+This may change in a future release to represent the bounding boxes of the grid cells.
+
+\item New 2D and 3D fields of the same dimension as the grid are automatically detected.
+They are assume to be located at water level points.
+\end{enumerate_brackets}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{Delft3D-MOR transport history file} \label{Sec:FileTRAH}
+\FileAndFormat{\file{trah-\emph{runid}.dat} and \file{trah-\emph{runid}.def}}{NEFIS}
+
+\begin{QUL-table}
+\STRUT
+water level & m & station (Z) \\
+velocity & m/s & station (Z), c \\
+u roughness Chezy C & m$^{1/2}$/s & station (Z) \\
+v roughness Chezy C & m$^{1/2}$/s & station (Z) \\
+sediment transport of a fraction & (m\textsuperscript{3}/m)/s & station (Z) \\
+sediment transport magnitude of a fraction & (m\textsuperscript{3}/m)/s & station (Z) \\
+sediment transport & (m\textsuperscript{3}/m)/s & station (Z) \\
+transport magnitude & (m\textsuperscript{3}/m)/s & station (Z) \\
+concentration & m\textsuperscript{3}/m\textsuperscript{3} & station (Z), c \\
+bed level & m & station (Z) \\
+source term & m\textsuperscript{3}/m\textsuperscript{3}s & station (Z) \\
+transport layer & - & station (Z) \\
+exchange layer & - & station (Z) \\
+underlayer & - & station (Z) \\
+transport layer thickness & m & station (Z) \\
+D10 & m & station (Z) \\
+D50 & m & station (Z) \\
+D90 & m & station (Z) \\
+median diameter & m & station (Z) \\
+U cross-sec.\ sed.\ transport of a fraction & m\textsuperscript{3}/s & U cross-sections \\
+U cross-sec.\ sed.\ transport & m\textsuperscript{3}/s & U cross-sections \\
+V cross-sec.\ sed.\ transport of a fraction & m\textsuperscript{3}/s & V cross-sections \\
+V cross-sec.\ sed.\ transport & m\textsuperscript{3}/s & V cross-sections
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{Delft3D-MOR bottom map file} \label{Sec:FileBOTM}
+\FileAndFormat{\file{botm-\emph{runid}.dat} and \file{botm-\emph{runid}.def}}{NEFIS}
+
+\begin{QUL-table}
+\STRUT
+morphologic grid & & D \\
+bedload transport & m\textsuperscript{3}/m & Z \\
+entrainment & m\textsuperscript{3}/m\textsuperscript{3} & D \\
+bed level & m & D \\
+cumulative erosion/sedimentation & m & D \\
+GUU grid distance & m & Z (U) \\
+GVU grid distance & m & Z (U) \\
+GVV grid distance & m & Z (V) \\
+GUV grid distance & m & Z (V) \\
+cell area water level point & m\textsuperscript{2} & Z \\
+cell area bottom point & m\textsuperscript{2} & D \\
+other fields\ENi & & Z\ENi
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item New 2D and 3D fields of the same dimension as the grid are automatically detected.
+They are assume to be located at water level points.
+\end{enumerate_brackets}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{Delft3D-MOR bottom history file} \label{Sec:FileBOTH}
+\FileAndFormat{\file{both-\emph{runid}.dat} and \file{both-\emph{runid}.def}}{NEFIS}
+
+\begin{QUL-table}
+\STRUT
+bedload sediment transport & m\textsuperscript{3}/m & station \\
+entrainment & m\textsuperscript{3}/m\textsuperscript{3} & station \\
+bed level & m & station
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{Delft3D-MOR dredging option 1 map file} \label{Sec:FileBAGR}
+\FileAndFormat{\file{bagr-\emph{runid}.dat} and \file{bagr-\emph{runid}.def}}{NEFIS}
+
+\begin{QUL-table}
+\STRUT
+morphologic grid & & D \\
+contract dredging depth & m & Z \\
+cumulative dredging depth & m & D \\
+bed level & m & D \\
+GUU grid distance & m & Z (U) \\
+GVU grid distance & m & Z (U) \\
+GVV grid distance & m & Z (V) \\
+GUV grid distance & m & Z (V) \\
+cell area water level point & m\textsuperscript{2} & Z \\
+cell area bottom point & m\textsuperscript{2} & D \\
+\end{QUL-table}
+
+
+
+%------------------------------------------------------------------------------
+\section{Delft3D-MOR dredging option 2 map files} \label{Sec:FileBAGB}
+\FileAndFormat{\file{bagbgv*.\emph{runid}};\file{bagbgc*.\emph{runid}};\file{bagdzi*.\emph{runid}}}{Ascii file}
+
+Plotted as added dataset on Delft3D grid file (see \Apref{Sec:FileGRD}).
+
+\begin{QUL-table}
+\STRUT
+dredged volume & m\textsuperscript{3} & D \\
+dumped volume & m\textsuperscript{3} & D \\
+cumulative dredged volume & m\textsuperscript{3} & D \\
+cumulative dumped volume & m\textsuperscript{3} & D \\
+bed level increment & m & D
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{Delft3D-MOR dredging option 2 depot file} \label{Sec:FileBAGD}
+\FileAndFormat{\file{bagdpt*.\emph{runid}}}{Ascii file}
+
+\begin{QUL-table}
+\STRUT
+volume in depot & m\textsuperscript{3} & \\
+dredged volume & m\textsuperscript{3} & \\
+dumped volume & m\textsuperscript{3} &
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{Delft3D-MOR tree file} \label{Sec:FileMORTREE}
+\FileAndFormat{\file{morf.\emph{runid}}}{Ascii file}
+
+\begin{QUL-table}
+\STRUT
+morf tree & & \\
+morf tree with time management & &
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{Delft3D-PART plot file} \label{Sec:FilePARPLOT}
+\FileAndFormat{\file{$\ast$.plo};\file{$\ast$.psf}}{Binary or unformatted}
+
+\FileAndFormat{\begin{tabular}[t]{@{}l}
+\file{plo-\emph{runid}.dat} and \file{plo-\emph{runid}.def}\\
+\file{psf-\emph{runid}.dat} and \file{psf-\emph{runid}.def}
+\end{tabular}}{NEFIS}
+~
+\begin{QUL-table}
+\STRUT
+constituents\ENi & \ENi & centres \\
+constituents (bed layer)\ENi\ENii & \ENi & centres
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item These fields are expanded depending on the contents of the data file.
+\item The bed layer quantities will only occur for output files of a Delft3D-PART simulation with sedimentation process switched on.
+\end{enumerate_brackets}
+
+
+
+%------------------------------------------------------------------------------
+\section{Delft3D-PART particle track file} \label{Sec:FilePARTRK}
+\FileAndFormat{\file{trk-\emph{runid}.dat} and \file{trk\emph{runid}.def}}{NEFIS}
+
+\begin{QUL-table}
+\STRUT
+particle track & & -
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{\DWAVE\ map file} \label{Sec:FileWAVM}
+\FileAndFormat{\begin{tabular}[t]{@{}l}
+\file{hwgxy\emph{runid}.dat} and \file{hwgxy\emph{runid}.def}, or \\
+\file{wavm-\emph{runid}.dat} and \file{wavm-\emph{runid}.def}
+\end{tabular}}{NEFIS}
+
+\begin{QUL-table}
+\STRUT
+wave grid & & D \\
+wind velocity & m/s & D \\
+water depth & m & D \\
+current velocity & m/s & D \\
+hsig wave height & m & D \\
+hsig wave vector (mean direction) & m & D \\
+hsig wave vector (peak direction) & m & D \\
+mean wave period & s & D \\
+relative peak wave period & s & D \\
+mean wave steepness & - & D \\
+mean wave length & m & D \\
+directional spreading & deg & D \\
+dissipation & N/ms & D \\
+leakage & J/m\textsuperscript{2}s & D \\
+fraction breaking & - & D \\
+energy transport & W/m & D \\
+orbital velocity near bottom & m/s & D \\
+other fields\ENi & & D\ENi
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item New 2D and 3D fields of the same dimension as the grid are automatically detected.
+They are assume to be located at wave points (i.e.\ depth points).
+\end{enumerate_brackets}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{DHI MIKE zero files} \label{Sec:FileMIKE}
+\FileAndFormat{\file{$\ast$.dt0};\file{$\ast$.dt1};\file{$\ast$.dt2};\file{$\ast$.dfs0};\file{$\ast$.dfs1};\file{$\ast$.dfs2};\file{$\ast$.dfs3};\file{$\ast$.dfsu}}{Binary file}
+
+\begin{QUL-table}
+\STRUT
+data fields\ENi & & grid points
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item The list of data fields will be automatically expanded based on file contents.
+\end{enumerate_brackets}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{ESRI shape file} \label{Sec:FileSHP}
+\FileAndFormat{\file{\emph{name}.shp} and \file{\emph{name}.shx} and \file{\emph{name}.dbf}}{Binary file}
+
+\begin{QUL-table}
+\STRUT
+line & & xy
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{Gmsh mesh file} \label{Sec:FileSHP}
+\FileAndFormat{\file{$\ast$.msh}}{Ascii or binary file; Gmsh file formats 1, 2.2 and 4.1 supported.}
+
+\begin{QUL-table}
+\STRUT
+mesh & & nodes \\
+mesh - node indices & & nodes \\
+mesh - face indices & & faces \\
+value\ENi & & nodes
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item This field contains the vertical coordinate.
+Other data quantities that may be stored in the Gmsh file are not yet supported.
+\end{enumerate_brackets}
+
+
+%------------------------------------------------------------------------------
+\section{JS Post file} \label{Sec:FileJSPOST}
+\FileAndFormat{\file{\emph{runid}.stu} and \file{\emph{runid}.pst}}%
+{\begin{tabular}[t]{@{}l}
+\file{\emph{runid}.stu}: Ascii file\\
+\file{\emph{runid}.pst}: Binary file
+\end{tabular}}
+
+\begin{QUL-table}
+\STRUT constituents\ENi & & station
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item These fields are expanded depending on the contents of the data file.
+\end{enumerate_brackets}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{MATLAB files (exported from \QUICKPLOT)} \label{Sec:FileMAT}
+\FileAndFormat{\file{$\ast$.mat}}{Binary file}
+
+The MATLAB file should contain a structure 'data' as exported from \QUICKPLOT.
+Note that there are different versions of MATLAB files.
+When using older \QUICKPLOT\ versions or when running \QUICKPLOT\ within older MATLAB versions, make sure to use a MATLAB format supported by the MATLAB version being used (see the About box).
+
+\begin{QUL-table}
+\STRUT
+data field\ENi & \ENi & \ENi
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item Field name, unit and location are determined from the contents of the data file.
+\end{enumerate_brackets}
+
+\subsection{MATLAB figure files} \label{Sec:FileFIG}
+\FileAndFormat{\file{$\ast$.fig}}{Binary file}
+
+The MATLAB figure file is a regular MATLAB file containing a MATLAB handle graphics data structure 'hgS\_070000'.
+Note that there are different versions of MATLAB files.
+When using older \QUICKPLOT\ versions or when running \QUICKPLOT\ within older MATLAB versions, make sure to use a MATLAB format supported by the MATLAB version being used (see the About box).
+
+The figure stored in the file will be recreated.
+This file does not contain other data that can be selected.
+
+
+
+
+%------------------------------------------------------------------------------
+\section{NetCDF file} \label{Sec:FileNC}
+\FileAndFormat{\file{$\ast$.nc}}{NetCDF 3, NetCDF 4}
+
+\begin{Remark}
+\item The implementation supports CF and UGRID conventions.
+\item This component includes extensive support for various netCDF data files of the \dfmsuite and the \dhydrosuite.
+See \Autoref{Sec:FileNC_dfm} for details.
+\item Check the frequently asked question: \nameref{FAQ:fillValue}.
+\item There are some special quantities added if the data file contains a quantity 'discharge' on the edges of a 2D UGRID mesh, or if the data file contains a quantity with a long name containing the string 'discharge through flow link'.
+More details about that in the remarks of \Autoref{Sec:FileNC_map}.
+\item Also there is some functionality to series of netCDF files that together may form the output of a parallel simulation.
+This option becomes active if the file name equals '<base>\_\allowbreak<number>\_<end>.<extension>' with <base> and <end> arbitrary strings and <number> representing a series of numbers from zero to the total number of files minus one.
+More details about that in the remarks of \Autoref{Sec:FileNC_dfm}.
+\end{Remark}
+
+\begin{QUL-table}
+\STRUT
+data fields\ENi & \ENi & \ENi
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item The list of data fields will be automatically expanded based on file contents.
+\end{enumerate_brackets}
+
+
+\subsection{NetCDF file of \dfmsuite}\label{Sec:FileNC_dfm}
+\FileAndFormat{\file{$\ast$\_net.nc}, \file{$\ast$\_map.nc}, \file{$\ast$\_classmap.nc}, \file{$\ast$\_fou.nc}, \file{$\ast$\_his.nc}, \file{$\ast$\_waqgeom.nc}}{NetCDF 3, NetCDF 4}
+
+\begin{Remark}
+\item This feature includes support for map, history and (Fourier) data analysis files written by \dflowfmfull, \dmorphology, \dwaves, \dwaq, D-FAST Morphological Impact, D-FAST Bank Erosion, XBeach and SFINCS.
+\item For details on the \file{$\ast$\_map.nc} of \dflowfm, see \Autoref{Sec:FileNC_map}.
+\item If the program detects that the opened file is part of a series of files named '<base>\_\allowbreak<number>\_<end>.<extension>' where the <base> may contain additional underscores, but the <end> cannot, then it will try to open the whole series of files.
+If the data set contains a partitioned 2D UGRID mesh, it will generate a list of partitions, and two extra options: 'all partitions' and 'merged partitions'.
+The individual partitions and the 'all partitions' option return the full data including ghost cells that overlap the neighbouring partitions.
+The 'merged partitions' option presents the data as one dataset, and the ghost cells are removed in the merging process.
+This has been tested for \file{$\ast$\_net.nc}, \file{$\ast$\_map.nc} and \file{$\ast$\_fou.nc}.
+\end{Remark}
+
+
+\subsection{Map file of \dflowfm}\label{Sec:FileNC_map}
+\FileAndFormat{\file{$\ast$\_map.nc}}{NetCDF 3, NetCDF 4}
+
+\begin{QUL-table}
+\STRUT
+Average morphological factor over elapsed morphological time & - & \\
+Current morphological time & s & \\
+Flow element corner bedlevel (zk) & m & CN \\
+Main channel averaged bed level & m & S \\
+Available sediment mass in the bed in flow cell center & kg m\textsuperscript{\SI{-2}{}} & S \\
+stem diameter of vegetation & m & S \\
+Sediment thickness in the bed in flow cell center & m & S \\
+global flow element numbering & & S \\
+RMS wave height & m & S \\
+Available sediment mass in a layer of the bed in flow cell center & kg m\textsuperscript{\SI{-2}{}} & S \\
+stem density per square meter & m\textsuperscript{\SI{-2}{}} & S \\
+Equilibrium sediment concentration & kg m\textsuperscript{\SI{-3}{}} & S \\
+Water level on previous timestep & m & S \\
+Water level & m & S \\
+Salinity in flow element & 10\textsuperscript{\SI{-3}{}} & S \\
+Bed load transport due to currents, x-component & <transpunit> & S \\
+Bed load transport due to currents, y-component & <transpunit> & S \\
+Bed load transport due to waves, x-component & <transpunit> & S \\
+Bed load transport due to waves, y-component & <transpunit> & S \\
+Suspended load transport due to currents, x-component & <transpunit> & S \\
+Suspended load transport due to currents, y-component & <transpunit> & S \\
+Suspended load transport due to waves, x-component & <transpunit> & S \\
+Suspended load transport due to waves, y-component & <transpunit> & S \\
+stem height of vegetation & m & S \\
+Total bed shear stress magnitude & N m\textsuperscript{\SI{-2}{}} & S \\
+Temperature in flow element & \degr C & S \\
+Thickness of a layer of the bed in flow cell center & m & S \\
+Wave period & s & S \\
+Flow element center eulerian velocity magnitude & m s\textsuperscript{\SI{-1}{}} & S \\
+Flow element center eulerian velocity vector, x-component & m s\textsuperscript{\SI{-1}{}} & S \\
+Flow element center eulerian velocity vector, y-component & m s\textsuperscript{\SI{-1}{}} & S \\
+Wave orbital velocity & m s\textsuperscript{\SI{-1}{}} & S \\
+volume of water in grid cell & m\textsuperscript{3} & S \\
+Water depth at pressure points & m & S \\
+velocity of air on flow element center, x-component & m s\textsuperscript{\SI{-1}{}} & S \\
+velocity of air on flow element center, y-component & m s\textsuperscript{\SI{-1}{}} & S \\
+Actual evaporation rate at pressure points & m s\textsuperscript{\SI{-1}{}} & S \\
+Near-bed reference concentration height & m & S \\
+Sea\_surface\_wave\_group\_celerity & m s\textsuperscript{\SI{-1}{}} & S \\
+Cloudiness &1& S \\
+Courant number &1& S \\
+Sea\_surface\_wave\_refraction\_celerity & rad s\textsuperscript{\SI{-1}{}} & S \\
+Cumulative total net inflow via all connected 1d2d links at each 1D node & m\textsuperscript{3} & S \\
+Cumulative total net inflow via all laterals at each 1D node & m\textsuperscript{3} & S \\
+Current total net inflow via all connected 1d2d links at each 1D node & m\textsuperscript{3} s\textsuperscript{\SI{-1}{}} & S \\
+Current total net inflow via all laterals at each 1D node & m\textsuperscript{3} s\textsuperscript{\SI{-1}{}} & S \\
+Sea\_surface\_wave\_phase\_celerity & m s\textsuperscript{\SI{-1}{}} & S \\
+Chezy roughness in flow element center & m\textsuperscript{1/2}s\textsuperscript{\SI{-1}{}} & S \\
+Wave breaking energy dissipation per square meter & W m\textsuperscript{\SI{-2}{}} & S \\
+depth-averaged particle concentration & m\textsuperscript{\SI{-3}{}} & S \\
+Wave bottom energy dissipation per square meter & W m\textsuperscript{\SI{-2}{}} & S \\
+Geometric mean sediment diameter & m & S \\
+Geometric standard deviation of particle size mix & m & S \\
+Mean direction of wave propagation relative to ksi-dir. ccw & deg & S \\
+Wave energy dissipation rate at the free surface & w m\textsuperscript{\SI{-2}{}} & S \\
+Wave energy dissipation rate due to white capping & w m\textsuperscript{\SI{-2}{}} & S \\
+Arithmetic mean sediment diameter & m & S \\
+Roller energy dissipation per square meter & W m\textsuperscript{\SI{-2}{}} & S \\
+Time step per cell based on CFL & s & S \\
+Time-varying dune height in flow cell center & m & S \\
+Time-varying dune length in flow cell center & m & S \\
+dxdescr & m & S \\
+Wave energy per square meter & J m\textsuperscript{\SI{-2}{}} & S \\
+Erodable layer thickness per size fraction in flow element centers & m & S \\
+Reduction factor due to limited sediment thickness & - & S \\
+cell\_area & m\textsuperscript{2} & S \\
+Flow element center bedlevel (bl) & m & S \\
+domain number of flow element & & S \\
+Availability fraction in top layer & - & S \\
+Freeboard & m & S \\
+Wave force, x-component & N m\textsuperscript{\SI{-2}{}} & S \\
+Wave force, y-component & N m\textsuperscript{\SI{-2}{}} & S \\
+Hiding and exposure factor & - & S \\
+Waterdepth in interception layer & m & S \\
+Bottom layer for sed calculations & - & S \\
+Bedform roughness height in flow cell center & m & S \\
+Dune roughness height in flow cell center & m & S \\
+Megaripple roughness height in flow cell center & m & S \\
+Ripple roughness height in flow cell center & m & S \\
+Sea\_surface\_wave\_wavenumber & rad m\textsuperscript{\SI{-1}{}} & S \\
+Sea\_surface\_wave\_wavelength & m & S \\
+Number of times a node was limiting for the computational time step &1& S \\
+Cumulative number of times a node was limiting for the computational time step &1& S \\
+Volume fraction in a layer of the bed in flow cell center & - & S \\
+Sediment mass in fluff layer & kg m\textsuperscript{\SI{-2}{}} & S \\
+Main channel cell area & m\textsuperscript{2} & S \\
+Time-varying bottom level in flow cell center & m & S \\
+Mud fraction in top layer & - & S \\
+Wave-induced volume flux in x-direction & m\textsuperscript{3} s\textsuperscript{\SI{-1}{}} m\textsuperscript{\SI{-1}{}} & S \\
+Wave-induced volume flux in y-direction & m\textsuperscript{3} s\textsuperscript{\SI{-1}{}} m\textsuperscript{\SI{-1}{}} & S \\
+Number of times negative depth was calculated &1& S \\
+Cumulative number of times negative depth was calculated &1& S \\
+domain number of netcell & & S \\
+global netcell number & & S \\
+Number of times no nonlinear convergence was caused &1& S \\
+Cumulative number of times no nonlinear convergence was caused &1& S \\
+Number of times flow element was Courant limiting &1& S \\
+Sea\_surface\_wave\_ratio\_group\_phase\_speed & - & S \\
+Atmospheric pressure near surface & N m\textsuperscript{\SI{-2}{}} & S \\
+Porosity of a layer of the bed in flow cell center & - & S \\
+Potential evaporation rate at pressure points & m s\textsuperscript{\SI{-1}{}} & S \\
+Prescribed evaporation rate at pressure points & m s\textsuperscript{\SI{-1}{}} & S \\
+Sensible heat flux & W m\textsuperscript{\SI{-2}{}} & S \\
+Evaporative heat flux & W m\textsuperscript{\SI{-2}{}} & S \\
+Free convection sensible heat flux & W m\textsuperscript{\SI{-2}{}} & S \\
+Free convection evaporative heat flux & W m\textsuperscript{\SI{-2}{}} & S \\
+Sum of all water influx & m\textsuperscript{3} s\textsuperscript{\SI{-1}{}} & S \\
+Long wave back radiation & W m\textsuperscript{\SI{-2}{}} & S \\
+Solar influx & W m\textsuperscript{\SI{-2}{}} & S \\
+Total heat flux & W m\textsuperscript{\SI{-2}{}} & S \\
+Roller energy per square meter & J m\textsuperscript{\SI{-2}{}} & S \\
+Rainfall rate & m s\textsuperscript{\SI{-1}{}} & S \\
+Near-bed reference concentration & kg m\textsuperscript{\SI{-3}{}} & S \\
+Relative humidity near surface & & S \\
+Sand fraction in top layer & - & S \\
+Bed load transport due to currents (reconstructed), x-component & <transpunit> & S \\
+Bed load transport due to currents (reconstructed), y-component & <transpunit> & S \\
+Bed load transport due to waves (reconstructed), x-component & <transpunit> & S \\
+Bed load transport due to waves (reconstructed), y-component & <transpunit> & S \\
+Time-averaged bed load transport, x-component & <transpunit> & S \\
+Time-averaged bed load transport, x-component & <transpunit> & S \\
+Time-averaged bed load transport, y-component & <transpunit> & S \\
+Time-averaged bed load transport, y-component & <transpunit> & S \\
+Sediment concentration & kg m\textsuperscript{\SI{-3}{}} & S \\
+Sea\_surface\_wave\_mean\_frequency & rad s\textsuperscript{\SI{-1}{}} & S \\
+Sink term suspended sediment fractions & s\textsuperscript{\SI{-1}{}} & S \\
+Source term suspended sediment fractions & kg m\textsuperscript{\SI{-3}{}} s\textsuperscript{\SI{-1}{}} & S \\
+Flow streamline curvature & 1/m & S \\
+Spiral flow intensity & m/s & S \\
+Suspended load transport due to currents (reconstructed), x-component & <transpunit> & S \\
+Suspended load transport due to currents (reconstructed), y-component & <transpunit> & S \\
+Suspended load transport due to waves (reconstructed), x-component & <transpunit> & S \\
+Suspended load transport due to waves (reconstructed), y-component & <transpunit> & S \\
+Time-averaged suspended load transport, x-component & <transpunit> & S \\
+Time-averaged suspended load transport, x-component & <transpunit> & S \\
+Time-averaged suspended load transport, y-component & <transpunit> & S \\
+Time-averaged suspended load transport, y-component & <transpunit> & S \\
+Cumulative subsidence/uplift & m & S \\
+wind source term on wave energy & J m\textsuperscript{\SI{-2}{}} s\textsuperscript{\SI{-1}{}} & S \\
+wind source term on wave period & s s\textsuperscript{\SI{-1}{}} & S \\
+Bottom layer wave forcing term, x-component & N m\textsuperscript{\SI{-2}{}} & S \\
+Water body wave forcing term, x-component & N m\textsuperscript{\SI{-2}{}} & S \\
+Total sediment transport in flow cell center (reconstructed), x-component & <transpunit> & S \\
+Surface layer wave forcing term, x-component & N m\textsuperscript{\SI{-2}{}} & S \\
+Surface layer wave forcing term, x-component & N m\textsuperscript{\SI{-2}{}} & S \\
+Radiation stress, x-component & N m\textsuperscript{\SI{-2}{}} & S \\
+Radiation stress, xy-component & N m\textsuperscript{\SI{-2}{}} & S \\
+Bottom layer wave forcing term, y-component & N m\textsuperscript{\SI{-2}{}} & S \\
+Water body wave forcing term, y-component & N m\textsuperscript{\SI{-2}{}} & S \\
+Total sediment transport in flow cell center (reconstructed), y-component & <transpunit> & S \\
+Surface layer wave forcing term, y-component & N m\textsuperscript{\SI{-2}{}} & S \\
+Surface layer wave forcing term, y-component & N m\textsuperscript{\SI{-2}{}} & S \\
+Radiation stress, y-component & N m\textsuperscript{\SI{-2}{}} & S \\
+Air temperature near surface & \degr C & S \\
+Bed shear stress for morphology & N m\textsuperscript{\SI{-2}{}} & S \\
+Excess bed shear ratio & - & S \\
+Bed shear stress magnitude for morphology & N m\textsuperscript{\SI{-2}{}} & S \\
+Total bed shear stress vector, x-component & N m\textsuperscript{\SI{-2}{}} & S \\
+Total bed shear stress vector, y-component & N m\textsuperscript{\SI{-2}{}} & S \\
+Wave from direction & deg from N & S \\
+Cumulative time water above ground level & s & S \\
+Nudging relaxing time & s & S \\
+Peak wave period & s & S \\
+Flow element center depth-averaged GLM velocity magnitude & m s\textsuperscript{\SI{-1}{}} & S \\
+Flow element center GLM depth-averaged velocity, x-component & m s\textsuperscript{\SI{-1}{}} & S \\
+Flow element center eulerian velocity vector based on discharge, x-component & m s\textsuperscript{\SI{-1}{}} & S \\
+Flow element center GLM depth-averaged velocity, y-component & m s\textsuperscript{\SI{-1}{}} & S \\
+Flow element center eulerian velocity vector based on discharge, y-component & m s\textsuperscript{\SI{-1}{}} & S \\
+Characteristic velocity magnitude in cell centre & m s\textsuperscript{\SI{-1}{}} & S \\
+Stokes drift, x-component & m s\textsuperscript{\SI{-1}{}} & S \\
+Bed shear velocity in cell centre & m s\textsuperscript{\SI{-1}{}} & S \\
+Characteristic velocity in cell centre, x-component & m s\textsuperscript{\SI{-1}{}} & S \\
+Volume above ground level & m\textsuperscript{3} & S \\
+Stokes drift, y-component & m s\textsuperscript{\SI{-1}{}} & S \\
+Characteristic velocity in cell centre, y-component & m s\textsuperscript{\SI{-1}{}} & S \\
+Water quality mass balance areas & & S \\
+Waterdepth above ground level & m & S \\
+wind stress on flow element center, x-component & N m\textsuperscript{\SI{-2}{}} & S \\
+wind stress on flow element center, y-component & N m\textsuperscript{\SI{-2}{}} & S \\
+Height above bed for characteristic velocity in cell centre & m & S \\
+<constituent> in flow element & <unit> & S \\
+<WAQ bed quantity> & <unit> & S \\
+Flow element center velocity vector, z-component & m s\textsuperscript{\SI{-1}{}} & S3D \\
+Vertical coordinate of layer centres at pressure points & m & S3D \\
+Bounds of vertical coordinate of layers at pressure points & m & S3D \\
+Difference of nudging salinity with salinity & 1e\textsuperscript{\SI{-3}{}} & S3D \\
+Difference of nudging temperature with temperature & \degr C & S3D \\
+Nudging salinity & 1e\textsuperscript{\SI{-3}{}} & S3D \\
+Nudging temperature & \degr C & S3D \\
+Flow element center mass density & kg m\textsuperscript{\SI{-3}{}} & S3D \\
+Sediment concentration in flow cell & kg m\textsuperscript{\SI{-3}{}} & S3D \\
+<WAQ 3D quantity> & <unit> & S3D \\
+normal flow area between two neighbouring grid cells & m\textsuperscript{2} & U \\
+Horizontal eddy diffusivity & m\textsuperscript{2} s\textsuperscript{\SI{-1}{}} & U \\
+water depth at velocity points & m & U \\
+Discharge through flow link at current time & m\textsuperscript{3} s\textsuperscript{\SI{-1}{}} & U \\
+Main channel discharge through flow link at current time & m3 s\textsuperscript{\SI{-1}{}} & U \\
+Velocity at velocity point, n-component & m s\textsuperscript{\SI{-1}{}} & U \\
+Horizontal eddy viscosity & m\textsuperscript{2} s\textsuperscript{\SI{-1}{}} & U \\
+Calibration factor for roughness & & U \\
+Chezy roughness from trachytopes & & U \\
+Input roughness on flow links & - & U \\
+Input roughness type on flow links & - & U \\
+Chezy roughness on flow links & m\textsuperscript{1/2}s\textsuperscript{\SI{-1}{}} & U \\
+Bed slope, n-component & - & U \\
+Bed slope, t-component & - & U \\
+Near-bed transport correction in face-normal direction & <transpunit> & U \\
+Main channel cell width at flow link & m & U \\
+Bed load transport, n-component & <transpunit> & U \\
+Bed load transport, t-component & <transpunit> & U \\
+Suspended load transport, n-component & <transpunit> & U \\
+Suspended load transport, t-component & <transpunit> & U \\
+Velocity at velocity point at previous time step, n-component & m s\textsuperscript{\SI{-1}{}} & U \\
+Stokes drift, t-component & m s\textsuperscript{\SI{-1}{}} & U \\
+Water level gradient at each 1D flow link &1& U \\
+Wave force at velocity point, n-component & N m\textsuperscript{\SI{-2}{}} & U \\
+Wave force at velocity point, t-component & N m\textsuperscript{\SI{-2}{}} & U \\
+velocity of air on flow links, x-component & m s\textsuperscript{\SI{-1}{}} & U \\
+velocity of air on flow links, y-component & m s\textsuperscript{\SI{-1}{}} & U \\
+Current related roughness height & m & U \\
+Current-wave related roughness height & m & U \\
+Stokes drift, n-component & m s\textsuperscript{\SI{-1}{}} & U \\
+Vertical coordinate of layer centres at velocity points & m & U3D \\
+Bounds of vertical coordinate of layers at velocity points & m & U3D \\
+Vertical coordinate of layer interfaces at pressure points & m & W \\
+Sediment settling velocity & m s\textsuperscript{\SI{-1}{}} & W \\
+Upward velocity on vertical interface, n-component & m s\textsuperscript{\SI{-1}{}} & W \\
+turbulent kinetic energy & m\textsuperscript{2} s\textsuperscript{\SI{-2}{}} & WU \\
+turbulent energy dissipation & m\textsuperscript{2} s\textsuperscript{\SI{-3}{}} & WU \\
+turbulent time scale & s\textsuperscript{\SI{-1}{}} & WU \\
+turbulent vertical eddy viscosity & m\textsuperscript{2} s\textsuperscript{\SI{-1}{}} & WU
+\end{QUL-table}
+
+\begin{Remark}
+\item If the data file contains a quantity 'discharge' on the edges of a 2D UGRID mesh, or if the data file contains a quantity with a long name containing the string 'discharge through flow link', then \QUICKPLOT\ will generate a derived quantity 'stream function' defined at the mesh nodes.
+See \Autoref{Sec:stream_function} for the algorithm.
+\item If the file \emph{also} contains the 'edge\_face\_connectivity' data for the UGRID mesh, then \QUICKPLOT\ will also generate a derived quantity 'net discharge into cell' defined at the mesh faces.
+See \Autoref{Sec:net_discharge} for the algorithm.
+\end{Remark}
+
+
+\subsection{Algorithm for the 'stream function'}\label{Sec:stream_function}
+\begin{enumerate}
+\item Set the intermediate stream function $\tilde\Psi(i)$ equal to 0 for the node $i=1$.
+\item For each edge $\ell$ connecting nodes $i_1$ and $i_2$ with known value of $\tilde\Phi(i_1)$ and unknown $\tilde\Phi(i_2)$, set $\tilde\Phi(i_2) = \tilde\Phi(i_1)+Q_\ell$ where $Q_\ell$ is the discharge across edge $\ell$.
+\item For each edge $\ell$ connecting nodes $i_1$ and $i_2$ with known value of $\tilde\Phi(i_2)$ and unknown $\tilde\Phi(i_1)$, set $\tilde\Phi(i_1) = \tilde\Phi(i_2)-Q_\ell$.
+\item Loop over steps 2 and 3 until no edges are found any more.
+\item Compute the final stream function values by subtracting the minimum value such that all values will be positive $\Psi(k) = \tilde\Psi(i) - \min_i \tilde\Psi(i)$.
+\end{enumerate}
+
+
+\subsection{Algorithm for the 'net discharge into cell'}\label{Sec:net_discharge}
+\begin{enumerate}
+\item Set the net discharge $Q_{net}$ equal to 0 for all faces/cells $k$.
+\item For each edge/link $\ell$ between face/cell $k_1$ to face/cell $k_2$ increase $Q_{net}(k_2)$ by $Q_\ell$ and decrease  $Q_{net}(k_1)$ by $Q_\ell$ where $Q_\ell$ is the discharge across edge $\ell$.
+\end{enumerate}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{PC-Raster file} \label{Sec:FilePCRASTER}
+\FileAndFormat{\file{$\ast$.map}}{Binary file}
+
+\begin{QUL-table}
+\STRUT
+drainage plot\ENi & & \\
+data field\ENii & &
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item The drainage plot results in special plot as shown in \Fref{fig:A.11}.
+\item The name of the quantity will be automatically determined from the file contents.
+\end{enumerate_brackets}
+
+\begin{figure}[H]
+\center{\includegraphics{Apa/drainage_plot.png}}
+\caption{Example of a drainage plot.}
+\label{fig:A.11}
+\end{figure}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{PHAROS file} \label{Sec:FilePHAROS}
+\FileAndFormat{\file{\emph{name1}admin\emph{name2}.dat} and \file{\emph{name1}admin\emph{name2}.def}}{NEFIS/netCDF}
+
+\begin{QUL-table}
+\STRUT
+grid & & vertices \\
+water level & m & vertices \\
+bed level & m & vertices \\
+water depth & m & vertices \\
+velocity & m/s & vertices \\
+breaking coefficient gamma & & vertices \\
+weighted mean wave height dir.\ & m & vertices \\
+wave height & m & vertices \\
+wave phase & & vertices \\
+wave image & m & vertices \\
+maximum velocity & m/s & vertices \\
+maximum velocity direction & radians & vertices \\
+minimum velocity & m/s & vertices \\
+wave number & & vertices \\
+phase velocity & m/s & vertices \\
+group velocity & m/s & vertices \\
+potential (real part) & & vertices \\
+potential (imag part) & & vertices \\
+seiches potential (real part) & & vertices \\
+seiches potential (imag part) & & vertices \\
+weighted period Tm-1,0 & s & vertices \\
+wave number based on Tm-1,0 & & vertices \\
+radial frequency based on Tm-1,0 & & vertices \\
+data fields\ENi & & vertices \\
+data fields (frequency graph)\ENi\ENii & & stations
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item These fields are expanded depending on the contents of the data file.
+\item These quantities result in special frequency graphs.
+\end{enumerate_brackets}
+
+\begin{figure}
+\center{\includegraphics{Apa/frequency_plot.png}}
+\caption{Example of a frequency plot.}
+\label{fig:A.10}
+\end{figure}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{\DQUICKIN\ depth file} \label{Sec:FileDEP}
+\FileAndFormat{\file{$\ast$.dep}}{Ascii file}
+
+Plotted as added dataset on Delft3D grid file (see \Apref{Sec:FileGRD}).
+
+\begin{QUL-table}
+\STRUT
+data field\ENi & & D / user defined
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item These fields are expanded depending on the contents of the data file.
+\end{enumerate_brackets}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{\DQUICKIN\ and Tekal land boundary file} \label{Sec:FileLDB}
+\FileAndFormat{\file{$\ast$.ldb}}{Ascii file}
+
+\begin{QUL-table}
+\STRUT
+line & & xy
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{\DQUICKIN\ samples file} \label{Sec:FileXYZ}
+\FileAndFormat{\file{$\ast$.xyz}}{Ascii file}
+
+\begin{QUL-table}
+\STRUT
+samples & & xy
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{SIMONA box file} \label{Sec:FileBOX}
+\FileAndFormat{\file{$\ast$.dep}}{Ascii file}
+
+Plotted as added dataset on Delft3D grid file (see \Apref{Sec:FileGRD}).
+The SIMONA system itself does not have a strict definition of a depth file.
+The box file currently supported should start with the BOX record and it should contain all records below that level.
+
+\begin{QUL-table}
+\STRUT
+data field\ENi & & D
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item These fields are expanded depending on the contents of the data file.
+\end{enumerate_brackets}
+
+
+
+%------------------------------------------------------------------------------
+\section{SIMONA/Baseline thin dam file} \label{Sec:FileSCHOT}
+\FileAndFormat{\file{schot-u.*} or \file{schot-v.*}}{Ascii file}
+
+Plotted as added dataset on Delft3D grid file (see \Apref{Sec:FileGRD}). The SIMONA system itself does not have a strict definition of a thin dam file.
+The thin dam ("schotjes") files generated by the Baseline preprocessing system are currently supported.
+
+\begin{QUL-table}
+\STRUT
+thindams & & UV
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{SIMONA/Baseline 2d weir file} \label{Sec:FileOVERLAAT}
+\FileAndFormat{\file{overlaat.*}}{Ascii file}
+
+Plotted as added dataset on Delft3D grid file (see \Apref{Sec:FileGRD}).
+The SIMONA system itself does not have a strict definition of a 2d weir file.
+The 2d weir ("overlaten") files generated by the Baseline preprocessing system are currently supported.
+
+\begin{QUL-table}
+\STRUT
+weirs & m & UV
+\end{QUL-table}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{SIMONA SDS file} \label{Sec:FileSDS}
+\FileAndFormat{\file{SDS\emph{runid}}}{Binary SIMONA file}
+
+\begin{QUL-table}
+\STRUT
+depth grid & & D \\
+hydrodynamic grid & & Z\ENi \\
+thin dams & & UV \\
+temporarily inactive velocity points & & UV \\
+weir crest level & m & UV \\
+weir sill level (low M/N) & m & UV \\
+weir sill level (high M/N) & m & UV \\
+weir crest level & m & UV \\
+weir slope (low M/N) & - & UV \\
+weir slope (high M/N) & - & UV \\
+weir vegetation height & m & UV \\
+weir vegetation density & & UV \\
+weir vegetation drag & & UV \\
+wind & m/s & Z \\
+pressure & Pa & Z \\
+wave height & m & Z \\
+wave vector & m & Z \\
+wave period & s & Z \\
+wave number & - & Z \\
+wave force  & N/m\textsuperscript{2} & Z \\
+stokes drift velocity & m/s & Z \\
+water level & m & Z \\
+water depth & m & Z \\
+horizontal velocity & m/s & Z (UV), c \\
+velocity & m/s & Z (UV), c \\
+unit discharge & m\textsuperscript{2}/s & Z (UV) \\
+discharge potential & m\textsuperscript{3}/s & D \\
+roughness Chezy C & m$^{1/2}$/s & UV \\
+head & m & Z \\
+horizontal viscosity & m\textsuperscript{2}/s & Z \\
+weir unit discharge & m\textsuperscript{3}/m & UV \\
+weir overflow depth & m & UV \\
+weir velocity & m/s & UV \\
+weir head loss & m & UV \\
+non-hydrostatic pressure & Pa & Z, c \\
+substances\ENii & & Z, c \\
+turbulent kinetic energy & m\textsuperscript{2}/s\textsuperscript{2} & Z, i \\
+energy dissipation & m\textsuperscript{2}/s\textsuperscript{3} & Z, i \\
+classified water depth & - & Z \\
+classified water level & - & Z \\
+classified u velocity & - & Z \\
+classified v velocity & - & Z \\
+classified velocity magnitude & - & Z \\
+classified velocity angle & - & Z \\
+minimum/maximum\ENiii & & Z \\
+bed shear stress & N/m\textsuperscript{2} & Z \\
+bed level & m & D \\
+water level stations & & xy \\
+velocity stations & & xy \\
+water level (station) & m & station (Z) \\
+horizontal velocity (station) & m/s & station (Z),c \\
+vertical velocity (station) & m/s & station (Z), c \\
+substances\ENii & & station (Z), c \\
+instantaneous discharges (transect) & m\textsuperscript{3}/s & cross-section \\
+cumulative discharges (transect) & m\textsuperscript{3} & cross-section \\
+gate level (barrier) & m & barrier \\
+water level (barrier, high M/N side) & m & barrier \\
+water level (barrier, low M/N side) & m & barrier \\
+sill level (barrier) & m & barrier \\
+flow-through height (barrier) & m & barrier \\
+width (barrier) & m & barrier \\
+discharge (barrier) & m\textsuperscript{3}/s & barrier \\
+velocity (barrier, high M/N side) & m/s & barrier \\
+velocity (barrier) & m/s & barrier \\
+velocity (barrier, low M/N side) & m/s & barrier \\
+energy loss (barrier) & & barrier
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item In the current version of the program, the hydrodynamic grid connects the 3D co-ordinates of the cell centres of the computation grid points.
+This may change in a future release to represent the bounding boxes of the grid cells.
+\item These fields are expanded depending on the contents of the data file.
+\item The minimum/maximum field is expanded depending on the contents of the data file into quantities named `$<$variable1$>$ at $<$minimum$|$maximum$>$ $<$variable2$>$', e.g.\ `water level at maximum velocity magnitude'.
+The name is abbreviated to `$<$minimum$|$maximum$>$ $<$variable2$>$' if $<$variable1$>$ equals $<$variable2$>$, e.g.\ `minimum velocity in m-direction'.
+\end{enumerate_brackets}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{SHIPMA file} \label{Sec:FileSHIPMA}
+\FileAndFormat{\file{*.sma}}{(Zipped) XML file}
+
+\begin{QUL-table}
+\STRUT
+default figures & & \\
+desired ship track & & \\
+realized ship track & & \\
+distance ticks & & \\
+distance values at ticks & & \\
+ship at distance ticks & & \\
+ship snapshots & & \\
+ship & & \\
+swept path & & \\
+fairway contour & & \\
+bank suction lines & & \\
+wind & m/s & \\
+waves & m & \\
+swell & m & \\
+current & m/s & \\
+depth & m & \\
+ship speed & m/s & \\
+history data\ENi & \ENi &
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item These fields are expanded depending on the contents of the history data file.
+\end{enumerate_brackets}
+
+%------------------------------------------------------------------------------
+\section{SKYLLA file} \label{Sec:FileSKYLLA}
+\FileAndFormat{\file{anim\emph{runid}.dat} and \file{anim\emph{runid}.def}}{NEFIS}
+\begin{QUL-table}
+\STRUT
+cell fill rate & & \\
+pressure/density & m\textsuperscript{2}/m\textsuperscript{2} & \\
+rotation & 1/s & \\
+velocity & m/s & \\
+pressure at station & Pa & station \\
+velocity at station & m/s & station
+\end{QUL-table}
+
+
+
+%------------------------------------------------------------------------------
+\section{SOBEK network data} \label{Sec:FileSOBEK}
+\FileAndFormat{\file{deftop.1} (SOBEK-RE) or \file{network.ntw} (SOBEK-River/Rural/Urban)
+Depending on network characteristics other files also required.}%
+{Ascii files and optional binary data files}
+
+\begin{QUL-table}
+\STRUT
+network & & xy \\
+datafields\ENi & & xy
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item These fields are expanded depending on the contents of the flowmap.his, minmax.his, gsedmap.his, kafhmap.his, kafpmap.his, kafrmap.his, kaphmap.his, kappmap.his, saltmap.his, sedtmap.his, morpmap.his, sobekwq.map, calcpnt.his and reachseg.his files in the same directory.
+\end{enumerate_brackets}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{Tekal annotation file} \label{Sec:FileTEKANN}
+\FileAndFormat{\file{$\ast$.ann}}{Ascii file}
+
+\begin{QUL-table}
+\STRUT
+data fields\ENi & & xy
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item These fields are expanded depending on the contents of the data file.
+\end{enumerate_brackets}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{Tekal data files} \label{Sec:FileTEK}
+\FileAndFormat{\file{$\ast$.tek};\file{$\ast$.map}}{Ascii file}
+
+\begin{QUL-table}
+\STRUT
+data fields\ENi & & \ENii
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item These fields are expanded depending on the contents of the data file.
+\item Location depends on file contents: time-series or 1D/2D/3D spatial data.
+\end{enumerate_brackets}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{Telemac file} \label{Sec:FileTELEMAC}
+\FileAndFormat{\file{$\ast$.slf}}{Binary file}
+
+\begin{QUL-table}
+\STRUT
+grid & & vertices \\
+data fields\ENi & & vertices
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item The list of data fields will be automatically expanded based on file contents.
+\end{enumerate_brackets}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{TRITON file} \label{Sec:FileTRITON}
+\FileAndFormat{\file{\emph{runid}.dat} and \file{\emph{runid}.def}}{NEFIS}
+
+\begin{QUL-table}
+\STRUT
+grid & & grid points \\
+coarse grid & & coarse grid points \\
+points & & observation points \\
+ray slice\ENi & & ray points \\
+water level & m & \ENii \\
+velocity & m/s & \ENii \\
+bed level & m & \ENiii \\
+H1/3 & m & \ENii \\
+Hrms & m & \ENii \\
+H1\% & m & \ENii \\
+H2\% & m & \ENii \\
+Tm & s & \ENii \\
+T1/3 & s & \ENii \\
+Hm0 & m & \ENii \\
+Tm-1,0 & s & \ENii \\
+Tm0,1 & s & \ENii \\
+Svar & m\textsuperscript{2}/Hz & \ENii
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item The list of cross-sectional rays will be automatically expanded based on file contents.
+\item Variable defined on coarse grid, points, or rays.
+\item Variable defined on grid, coarse grid, points, rays.
+\end{enumerate_brackets}
+
+
+
+
+%------------------------------------------------------------------------------
+\section{UNIBEST output} \label{Sec:FileUNIBEST}
+\FileAndFormat{\file{\emph{name}.daf} and \file{\emph{name}.fun}}%
+{\begin{tabular}[t]{@{}l}
+\file{$\ast$.fun}: Ascii file\\
+\file{$\ast$.daf}: Binary file
+\end{tabular}}
+
+\begin{QUL-table}
+\STRUT
+grid & & \\
+data fields\ENi & &
+\end{QUL-table}
+
+\begin{enumerate_brackets}
+\item These fields are expanded depending on the contents of the data file.
+\end{enumerate_brackets}
+
+
+
+
