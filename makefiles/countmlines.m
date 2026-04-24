@@ -1,7 +1,6 @@
 function countmlines(maindir)
-%COUNTMLINES Count lines in QUICKPLOT source code
-%   Count number of lines in the m-files in the
-%   directories progsrc and progsrc/private
+%COUNTMLINES Count lines in MATLAB source code
+%   Count number of lines in the m-files in the specified folder
 
 %----- LGPL --------------------------------------------------------------------
 %
@@ -34,7 +33,7 @@ function countmlines(maindir)
 %   $Id$
 
 if nargin==0
-    maindir = 'progsrc';
+    maindir = '../src/delft3d_matlab';
 end
 [X1,n1,nc1] = countmlines_recursive(maindir);
 fprintf('Grand total: %i (%i) in %i files\n',n1,nc1,size(X1,1));

@@ -1,5 +1,11 @@
-function make_tests(basedir, varargin)
-%MAKE_TESTS Build some test binaries
+function fstrrep(file,orgtext,newtext)
+%FSTRREP Replace string in file
+%   FSTRREP(FileName,OrgText,NewText)
+%   replace the OrgText by NewText in the specified file.
+%
+%   FSTRREP(FileName,'<version>','2.05.00')
+%
+%   See Also: STRREP
 
 %----- LGPL --------------------------------------------------------------------
 %
@@ -31,30 +37,24 @@ function make_tests(basedir, varargin)
 %   $HeadURL$
 %   $Id$
 
-
-curdir = pwd;
-addpath(curdir)
-if ~exist('mcc')
-    error('Cannot find MATLAB compiler. Use another MATLAB installation!')
+%
+% Read the target file and replace the orgtext by the newtext.
+%
+fid = fopen(file, 'r');
+if fid < 0
+    error('Cannot open the file %s.', file)
 end
-if nargin>0
-    cd(basedir);
+i = 1;
+str = {};
+while ~feof(fid)
+    tmp = fgetl(fid);
+    str{i} = strrep(tmp, orgtext, newtext);
+    i = i + 1;
 end
-err = [];
-try
-    if ~exist('testcodes','dir')
-        error('Cannot locate source folder "testcodes".')
-    end
-    cd testcodes
-    make_hello_world
-    make_matlab_sysinfo
-    make_graphics_test
-catch err
-end
-if nargin>0
-    cd(curdir);
-end
-rmpath(curdir)
-if ~isempty(err)
-    rethrow(err)
-end
+fclose(fid);
+%
+% Write the updated file.
+%
+fid = fopen(file, 'w');
+fprintf(fid,'%s\n', str{:});
+fclose(fid);

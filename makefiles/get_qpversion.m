@@ -1,10 +1,5 @@
-function make_mex
-%MAKE_MEX Build all mex files from source
-%   Builds on Linux
-%     * exepath           (not on Windows)
-%     * reducepoints      (all platforms)
-%     * writeavi          (Windows only)
-%     * CloseSplashScreen (Windows only)
+function [version,hash,repo_url] = get_qpversion
+%GET_QPVERSION retrieve version number from quickplot
 
 %----- LGPL --------------------------------------------------------------------
 %
@@ -36,38 +31,12 @@ function make_mex
 %   $HeadURL$
 %   $Id$
 
-cwd = pwd;
+thisfile = mfilename('fullpath');
+thisdir = fileparts(thisfile);
 
-% not on Windows
-if ~ispc
-   compile('exepath', ...
-       [cwd, filesep, 'progsrc', filesep, 'private'], ...
-       'exepath.c')
-end
+search_path = path;
+addpath([thisdir,filesep,'..',filesep,'src',filesep,'delft3d_matlab',filesep],'-begin')
+[version,hash,repo_url] = d3d_qp('version');
+path(search_path);
 
-% all platforms
-compile('reducepoints', ...
-    [cwd, filesep, 'progsrc', filesep, 'private'], ...
-    'reducepoints.c')
-
-% Windows only
-if ispc
-   compile('writeavi', ...
-       [cwd, filesep, 'progsrc', filesep, 'private'], ...
-       'writeavi.cpp', 'vfw32.lib', 'user32.lib')
-
-   compile('CloseSplashScreen', ...
-       [cwd, filesep, 'SplashScreen', filesep, 'finish'], ...
-       'CloseSplashScreen.cpp', '-I..\include')
-end
-
-
-function compile(caseid, folder, varargin)
-fprintf('##teamcity[testStarted name=''%s'']\n', caseid);
-try
-    cd(folder)
-    mex(varargin{:})
-    fprintf('##teamcity[testFinished name=''%s'']\n', caseid)
-catch
-    fprintf('##teamcity[testFailed name=''%s'' message=''case crashed.'']\n', caseid)
-end
+version = version(13:end); % strip "source code "

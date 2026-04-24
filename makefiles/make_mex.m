@@ -1,11 +1,10 @@
-function fstrrep(file,orgtext,newtext)
-%FSTRREP Replace string in file
-%   FSTRREP(FileName,OrgText,NewText)
-%   replace the OrgText by NewText in the specified file.
-%
-%   FSTRREP(FileName,'<version>','2.05.00')
-%
-%   See Also: STRREP
+function make_mex
+%MAKE_MEX Build all mex files from source
+%   Builds on Linux
+%     * exepath           (not on Windows)
+%     * reducepoints      (all platforms)
+%     * writeavi          (Windows only)
+%     * CloseSplashScreen (Windows only)
 
 %----- LGPL --------------------------------------------------------------------
 %
@@ -37,21 +36,38 @@ function fstrrep(file,orgtext,newtext)
 %   $HeadURL$
 %   $Id$
 
-%
-% Read the target file and replace the orgtext by the newtext.
-%
-fid=fopen(file,'r');
-i=1;
-str={};
-while ~feof(fid)
-    tmp=fgetl(fid);
-    str{i}=strrep(tmp,orgtext,newtext);
-    i=i+1;
+src_root = [pwd, filesep, '..', filesep, 'src'];
+
+% not on Windows
+if ~ispc
+   compile('exepath', ...
+       [src_root, filesep, 'delft3d_matlab', filesep, 'private'], ...
+       'exepath.c')
 end
-fclose(fid);
-%
-% Write the updated file.
-%
-fid=fopen(file,'w');
-fprintf(fid,'%s\n',str{:});
-fclose(fid);
+
+% all platforms
+compile('reducepoints', ...
+    [src_root, filesep, 'delft3d_matlab', filesep, 'private'], ...
+    'reducepoints.c')
+
+% Windows only
+if ispc
+   compile('writeavi', ...
+       [src_root, filesep, 'delft3d_matlab', filesep, 'private'], ...
+       'writeavi.cpp', 'vfw32.lib', 'user32.lib')
+
+   compile('CloseSplashScreen', ...
+       [src_root, filesep, 'quickplot_splash_screen', filesep, 'finish'], ...
+       'CloseSplashScreen.cpp', '-I..\include')
+end
+
+
+function compile(caseid, folder, varargin)
+fprintf('##teamcity[testStarted name=''%s'']\n', caseid);
+try
+    cd(folder)
+    mex(varargin{:})
+    fprintf('##teamcity[testFinished name=''%s'']\n', caseid)
+catch
+    fprintf('##teamcity[testFailed name=''%s'' message=''case crashed.'']\n', caseid)
+end

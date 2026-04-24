@@ -1,8 +1,8 @@
-function make_sim2ugrid(basedir,varargin)
-%MAKE_SIM2UGRID Compile sim2ugrid executable
-%   Compile MATLAB code to sim2ugrid executable
+function make_quickplot(basedir,varargin)
+%MAKE_QUICKPLOT Compile QUICKPLOT executable
+%   Compile MATLAB code to QUICKPLOT executable
 %
-%   MAKE_SIM2UGRID(BASEDIR)
+%   MAKE_QUICKPLOT(BASEDIR)
 %   Use specified directory instead of current directory as base directory
 
 %----- LGPL --------------------------------------------------------------------
@@ -35,7 +35,7 @@ function make_sim2ugrid(basedir,varargin)
 %   $HeadURL$
 %   $Id$
 
-curdir=pwd;
+curdir = pwd;
 addpath(curdir)
 if ~exist('mcc')
     error('Cannot find MATLAB compiler. Use another MATLAB installation!')
@@ -43,7 +43,7 @@ end
 if nargin>0
     cd(basedir);
 end
-err=[];
+err = [];
 try
     localmake(varargin{:});
 catch err
@@ -58,83 +58,83 @@ end
 
 
 function localmake(qpversion,repo_url,hash,T)
-if ~exist('progsrc','dir')
-    error('Cannot locate source')
-end
-sourcedir=[pwd,filesep,'progsrc'];
-disp('Copying files ...')
-if strncmp(fliplr(computer),'46',2)
-    exedir = 'sim2ugrid64';
-else
-    exedir = 'sim2ugrid32';
-end
-if ~exist([pwd,filesep,exedir])
-    [success,message] = mkdir(exedir);
-    if ~success
-        error(message)
-    end
-end
-cd(exedir);
-diary make_sim2ugrid_diary
-if isunix
-    unix('cp -rf ../progsrc/* .');
-    unix('mv compileonly/* .');
-else
-    [s,msg]=dos('xcopy "..\progsrc\*.*" "." /E /Y');
-    if s==0
-        [s,msg]=dos('move compileonly\*.*  .');
-    end
-    if s~=0
-        error(msg)
-    end
-end
-%
-copyfile('../../../../third_party_open/netcdf/matlab/netcdfAll-4.1.jar','.')
-addpath ../../../../third_party_open/netcdf/matlab/mexnc
-addpath ../../../../third_party_open/netcdf/matlab/snctools
-addpath ../../../../third_party_open/uiFileDnD
-
-%
 if nargin<4
     [qpversion,hash,repo_url] = get_qpversion;
     T = now;
 end
-fprintf('\nBuilding Delft3D-SIM2UGRID version %s\n\n',qpversion);
-TStr = datestr(T);
-fstrrep('sim2ugrid.m','<VERSION>',qpversion)
-fstrrep('sim2ugrid.m','<CREATIONDATE>',TStr)
-fstrrep('sim2ugrid.m', '<GITHASH>', hash)
-fstrrep('sim2ugrid.m', '<GITREPO>', repo_url)
+
+if strncmp(fliplr(computer),'46',2)
+    target_dir = 'quickplot64';
+else
+    target_dir = 'quickplot32';
+end
+targetname = 'Delft3D-QUICKPLOT';
+main_file = 'd3d_qp.m';
+source_dir = pwd;
+target_dir = [pwd,filesep,'..',filesep,target_dir];
+
+if ~exist(target_dir, 'dir')
+    fprintf('Creating %s directory ...\n', target_dir);
+    mkdir(target_dir);
+end
+cd(target_dir)
+diary make_quickplot_diary
+
+fprintf('Copying files ...\n');
+if isunix
+    unix(['cp -rf ', source_dir, '/* .']);
+else
+    [s, msg] = dos(['xcopy "', source_dir, '\*.*" "." /E /Y']);
+end
+
+fprintf('Including netCDF files ...\n');
+copyfile('../../third_party/netcdfAll-4.1.jar','.')
+addpath ../../third_party/mexnc
+addpath ../../third_party/snctools
+addpath ../../third_party/uiFileDnD
+
+DateTimeStr = datestr(T);
+fprintf('\nBuilding %s version %s\n\n', targetname, qpversion);
+fprintf('Current date and time           : %s\n', DateTimeStr);
+
+fprintf('Modifying files ...\n');
+fstrrep(main_file, '<VERSION>', qpversion)
+fstrrep(main_file, '<CREATIONDATE>', DateTimeStr)
+fstrrep(main_file, '<GITHASH>', hash)
+fstrrep(main_file, '<GITREPO>', repo_url)
+if ~d3d_qp('version',qpversion,repo_url,hash,DateTimeStr)
+    error('Unable to write correct d3d_qp.version file.')
+end
+
+fprintf('Include GhostScript for printing ...\n');
 g = which('-all','gscript');
 if ~isempty(g)
     copyfile(g{1},'.')
 end
-%
-mcc('-m','-a','./units.ini','-a','./grib','-v','sim2ugrid.m')
-%
-X={'*.asv'
-    '*.bak'
-    '*.m'
+
+fprintf('Building executable ...\n');
+if isunix
+    appopt='-m';
+else
+    appopt='-e';
+end
+mcc(appopt,'-a','./units.ini','-a','./grib','-v',main_file)
+if ispc
+   movefile('d3d_qp.exe','d3d_qp.exec');
+end
+
+fprintf('Cleaning up directory ...\n');
+X = {'*.m'
+    '*.mat'
     '*.c'
     '*.cpp'
     '*.h'
-    '*.o'
-    '*.obj'
-    '*.a'
-    '*.lib'
-    '*.scc'
     'private'
-    'compileonly'
     '@qp_data'
-    '@qp_data_resource'};
-if isunix
-    X=cat(1,X,{'*.dll'
-        '*.mexw*'});
-else
-    X=cat(1,X,{'*.mexglx'
-        '*.mexa64'
-        '*.exp'});
-end
+    '@qp_data_resource'
+    '*.dll'
+    '*.mex*'};
 cleanup(X)
 diary off
-cd ..
+cd(source_dir)
+fprintf('Finished.\n');

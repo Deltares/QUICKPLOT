@@ -38,7 +38,6 @@ function make_all(release)
 %   $Id$
 
 curdir = pwd;
-sourcedir = [curdir,filesep,'progsrc'];
 
 [qpversion,hash,repo_url] = get_qpversion;
 T = now;
@@ -70,11 +69,16 @@ if nargin == 0
     release = sprintf('Build %d.%2.2d',yr,mn);
 end
 
+sourcedir = [curdir,filesep,'..',filesep,'src',filesep,'delft3d_matlab'];
+
 if strcmp(computer,'PCWIN64')
-   make_d3dmatlab(curdir,'version',qpversion,'url',repo_url,'hash',hash,'time',T,'release',release)
+   make_d3dmatlab(sourcedir,qpversion,repo_url,hash,T,release)
 end
-make_quickplot(curdir,qpversion,repo_url,hash,T)
-make_ecoplot(curdir,qpversion,repo_url,hash,T)
-make_delwaq2raster(curdir,qpversion,repo_url,hash,T)
-make_sim2ugrid(curdir,qpversion,repo_url,hash,T)
-make_tests(curdir,qpversion,repo_url,hash,T)
+make_quickplot(sourcedir,qpversion,repo_url,hash,T)
+make_ecoplot(sourcedir,qpversion,repo_url,hash,T)
+make_delwaq2raster(sourcedir,qpversion,repo_url,hash,T)
+make_sim2ugrid(sourcedir,qpversion,repo_url,hash,T)
+
+sourcedir = [curdir,filesep,'..',filesep,'src',filesep,'system_tests'];
+
+make_system_tests(sourcedir,qpversion,repo_url,hash,T)

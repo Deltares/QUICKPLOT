@@ -64,7 +64,6 @@ up = [filesep, '..'];
 check_dirs = {...
     qp_install_path ... % new distribution root
     [qp_install_path, filesep, 'netcdf'] ... % new distribution netcdf-root
-    [qp_install_path, up, up, up, up, filesep, 'third_party_open'] ... % source tree checkout root
-    [qp_install_path, up, up, up, up, filesep, 'third_party_open', filesep, 'netcdf', filesep, 'matlab'] ... % source tree checkout netcdf-root
+    [qp_install_path, up, up, filesep, 'third_party'] ... % source tree third party root
     [qp_install_path, up, up, filesep, 'io', filesep, 'netcdf'] ... % open earth tools checkout netcdf-root (obsolete)
     };

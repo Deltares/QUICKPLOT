@@ -1,5 +1,5 @@
-function [version,hash,repo_url] = get_qpversion
-%GET_QPVERSION retrieve version number from quickplot
+function make_system_tests(basedir, varargin)
+%MAKE_SYSTEM_TESTS Build some system test binaries
 
 %----- LGPL --------------------------------------------------------------------
 %
@@ -31,12 +31,29 @@ function [version,hash,repo_url] = get_qpversion
 %   $HeadURL$
 %   $Id$
 
-thisfile = mfilename('fullpath');
-thisdir = fileparts(thisfile);
 
-search_path = path;
-addpath([thisdir,filesep,'progsrc',filesep],'-begin')
-[version,hash,repo_url] = d3d_qp('version');
-path(search_path);
-
-version = version(13:end); % strip "source code "
+curdir = pwd;
+addpath(curdir)
+if ~exist('mcc')
+    error('Cannot find MATLAB compiler. Use another MATLAB installation!')
+end
+if nargin>0
+    cd(basedir);
+end
+err = [];
+try
+    d = dir;
+    for i = 1:length(d)
+        if ~d(i).isdir
+            mcc('-m','-v',d(i).name)
+        end
+    end
+catch err
+end
+if nargin>0
+    cd(curdir);
+end
+rmpath(curdir)
+if ~isempty(err)
+    rethrow(err)
+end
