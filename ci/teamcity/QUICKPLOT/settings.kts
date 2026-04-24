@@ -6,7 +6,9 @@ import jetbrains.buildServer.configs.kotlin.buildFeatures.pullRequests
 import jetbrains.buildServer.configs.kotlin.buildSteps.powerShell
 import jetbrains.buildServer.configs.kotlin.buildSteps.script
 import jetbrains.buildServer.configs.kotlin.failureConditions.BuildFailureOnMetric
+import jetbrains.buildServer.configs.kotlin.failureConditions.BuildFailureOnText
 import jetbrains.buildServer.configs.kotlin.failureConditions.failOnMetricChange
+import jetbrains.buildServer.configs.kotlin.failureConditions.failOnText
 import jetbrains.buildServer.configs.kotlin.triggers.VcsTrigger
 import jetbrains.buildServer.configs.kotlin.triggers.finishBuildTrigger
 import jetbrains.buildServer.configs.kotlin.triggers.vcs
@@ -752,9 +754,70 @@ object Windows : Project({
     buildType(Windows_WinCompileQuickplot)
     buildType(Windows_WinQuickplotReleaseZip)
     buildType(Windows_WinBuildMexFiles)
+    buildType(Windows_WinLatexManualGeneration)
     buildType(Windows_WinUpdateOpenEarthToolsLink)
     buildTypesOrder = arrayListOf(Windows_WinRunQuickplotTestBenchWithinMatlab, Windows_WinBuildMexFiles, Windows_WinBuildQuickplotSplashScreen, Windows_WinCompileQuickplot, Windows_WinRunQuickplotTestBenchStandalone, Windows_WinQuickplotReleaseZip)
 })
+
+
+object Windows_WinLatexManualGeneration : BuildType({
+    name = "[win] Latex Manual Generation"
+
+    artifactRules = """
+        +:docs/*.pdf
+        +:docs/*.log
+    """.trimIndent()
+    buildNumberPattern = "QP ${DslContext.settingsRoot.paramRefs.buildVcsNumber}"
+
+    vcs {
+        root(DslContext.settingsRoot)
+    }
+
+    steps {
+        script {
+            name = "Generate QUICKPLOT Manual"
+            workingDir = "docs\end-user-docs\quickplot"
+            scriptContent = """
+                pdflatex Delft3D-QUICKPLOT_UM
+                pdflatex Delft3D-QUICKPLOT_UM
+                pdflatex Delft3D-QUICKPLOT_UM
+            """.trimIndent()
+        }
+        script {
+            name = "Generate Delft3D-MATLAB Manual"
+            executionMode = BuildStep.ExecutionMode.RUN_ON_FAILURE
+            workingDir = "docs\end-user-docs\matlab"
+            scriptContent = """
+                pdflatex Delft3D-MATLAB_UM
+                bibtex Delft3D-MATLAB_UM
+                pdflatex Delft3D-MATLAB_UM
+                pdflatex Delft3D-MATLAB_UM
+            """.trimIndent()
+        }
+    }
+
+    triggers {
+        vcs {
+            enabled = false
+        }
+    }
+
+    failureConditions {
+        failOnText {
+            conditionType = BuildFailureOnText.ConditionType.REGEXP
+            pattern = "Output written on Delft3D-QUICKPLOT_UM.pdf"
+            failureMessage = "generation failed"
+            reverse = true
+        }
+        failOnText {
+            conditionType = BuildFailureOnText.ConditionType.CONTAINS
+            pattern = "Output written on Delft3D-MATLAB_UM.pdf"
+            failureMessage = "generation failed"
+            reverse = true
+        }
+    }
+})
+
 
 object Windows_WinBuildMexFiles : BuildType({
     name = "[win] Build mex files"
