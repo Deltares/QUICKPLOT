@@ -776,7 +776,7 @@ object Windows_WinLatexManualGeneration : BuildType({
     steps {
         script {
             name = "Generate QUICKPLOT Manual"
-            workingDir = "docs\end-user-docs\quickplot"
+            workingDir = """docs\end-user-docs\quickplot"""
             scriptContent = """
                 pdflatex Delft3D-QUICKPLOT_UM
                 pdflatex Delft3D-QUICKPLOT_UM
@@ -786,7 +786,7 @@ object Windows_WinLatexManualGeneration : BuildType({
         script {
             name = "Generate Delft3D-MATLAB Manual"
             executionMode = BuildStep.ExecutionMode.RUN_ON_FAILURE
-            workingDir = "docs\end-user-docs\matlab"
+            workingDir = """docs\end-user-docs\matlab"""
             scriptContent = """
                 pdflatex Delft3D-MATLAB_UM
                 bibtex Delft3D-MATLAB_UM
