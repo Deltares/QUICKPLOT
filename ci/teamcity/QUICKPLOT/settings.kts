@@ -209,6 +209,9 @@ object Linux_LnxCompileQuickplot : BuildType({
 object Linux_LnxDetermineGitProperties : BuildType({
     name = "[lnx] Determine Git properties"
 
+    artifactRules = """
+        +:gitsettings
+    """.trimIndent()
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
     vcs {
@@ -232,6 +235,11 @@ object Linux_LnxDetermineGitProperties : BuildType({
                 git rev-parse HEAD
                 echo "-- Git short hash --"
                 git rev-parse --short HEAD
+                echo "-- writing gitsettings file --"
+                echo "\\def\\@gitrepository{`git remote get-url origin`}" > gitsettings
+                echo "\\def\\@gitbranch{%teamcity.build.branch%}" >> gitsettings
+                echo "\\def\\@githashlong{%build.revisions.revision%}" >> gitsettings
+                echo "\\def\\@githashshort{%build.revisions.short%}" >> gitsettings
             """.trimIndent()
         }
     }
