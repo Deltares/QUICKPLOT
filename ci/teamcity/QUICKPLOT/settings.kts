@@ -764,8 +764,8 @@ object Windows_WinLatexManualGeneration : BuildType({
     name = "[win] Latex Manual Generation"
 
     artifactRules = """
-        +:docs/end-user-docs/**/*.pdf
-        +:docs/end-user-docs/**/*.log
+        +:docs/end-user-docs/**/*UM.pdf => pdf
+        +:docs/end-user-docs/**/*UM.log => log
     """.trimIndent()
     buildNumberPattern = "QP ${DslContext.settingsRoot.paramRefs.buildVcsNumber}"
 
