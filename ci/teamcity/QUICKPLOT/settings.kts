@@ -771,7 +771,7 @@ object Windows_WinLatexManualGeneration : BuildType({
 
     vcs {
         root(DslContext.settingsRoot)
-        root(AbsoluteId("MatlabTools_HttpsGithubComDeltaresLatexInstallation"), "*=>deltares_latex")
+        root(AbsoluteId("MatlabTools_HttpsGithubComDeltaresLatexInstallation"), "+:. => deltares_latex")
         cleanCheckout = true
     }
     
