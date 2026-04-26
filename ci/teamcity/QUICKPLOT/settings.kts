@@ -771,9 +771,30 @@ object Windows_WinLatexManualGeneration : BuildType({
 
     vcs {
         root(DslContext.settingsRoot)
+        root(AbsoluteId("MatlabTools_HttpsGithubComDeltaresLatexInstallation"), "*=>deltares_latex")
+        cleanCheckout = true
     }
-
+    
     steps {
+        script {
+            name = "Install Deltares Latex tools"
+            workingDir = """deltares_latex"""
+            scriptContent = """
+                echo -----------------------------------------------------
+                echo Run install.bat ...
+                install.bat
+
+                echo -----------------------------------------------------
+                echo Run initexmf.exe ...
+                initexmf.exe --admin --update-fndb
+
+                echo -----------------------------------------------------
+                echo Run miktexpm.exe ...
+                miktexpm --admin --verbose --update
+                
+                echo -----------------------------------------------------
+            """.trimIndent()
+        }
         script {
             name = "Generate QUICKPLOT Manual"
             workingDir = """docs\end-user-docs\quickplot"""
