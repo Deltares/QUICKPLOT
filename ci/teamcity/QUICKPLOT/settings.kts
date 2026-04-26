@@ -837,6 +837,10 @@ object Windows_WinLatexManualGeneration : BuildType({
             reverse = true
         }
     }
+
+    requirements {
+        startsWith("teamcity.agent.jvm.os.name", "Windows")
+    }
 })
 
 
