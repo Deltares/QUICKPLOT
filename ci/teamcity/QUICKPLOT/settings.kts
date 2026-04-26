@@ -764,8 +764,10 @@ object Windows_WinLatexManualGeneration : BuildType({
     name = "[win] Latex Manual Generation"
 
     artifactRules = """
-        +:docs/end-user-docs/**/*UM.pdf => pdf
-        +:docs/end-user-docs/**/*UM.log => log
+        +:docs/end-user-docs/matlab/Delft3D-MATLAB_UM.pdf => pdf
+        +:docs/end-user-docs/quickplot/Delft3D-QUICKPLOT_UM.pdf => pdf
+        +:docs/end-user-docs/matlab/Delft3D-MATLAB_UM.log => log
+        +:docs/end-user-docs/quickplot/Delft3D-QUICKPLOT_UM.log => log
     """.trimIndent()
     buildNumberPattern = "QP ${DslContext.settingsRoot.paramRefs.buildVcsNumber}"
 
