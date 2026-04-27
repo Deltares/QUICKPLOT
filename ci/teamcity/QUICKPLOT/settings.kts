@@ -801,6 +801,7 @@ object Windows_WinLatexManualGeneration : BuildType({
             name = "Generate QUICKPLOT Manual"
             workingDir = """docs\end-user-docs\quickplot"""
             scriptContent = """
+                copy ..\..\..\gitsettings\gitsettings .
                 pdflatex Delft3D-QUICKPLOT_UM
                 pdflatex Delft3D-QUICKPLOT_UM
                 pdflatex Delft3D-QUICKPLOT_UM
@@ -811,6 +812,7 @@ object Windows_WinLatexManualGeneration : BuildType({
             executionMode = BuildStep.ExecutionMode.RUN_ON_FAILURE
             workingDir = """docs\end-user-docs\matlab"""
             scriptContent = """
+                copy ..\..\..\gitsettings\gitsettings .
                 pdflatex Delft3D-MATLAB_UM
                 bibtex Delft3D-MATLAB_UM
                 pdflatex Delft3D-MATLAB_UM
@@ -840,6 +842,19 @@ object Windows_WinLatexManualGeneration : BuildType({
         }
     }
 
+
+    dependencies {
+        dependency(Linux_LnxDetermineGitProperties) {
+            snapshot {
+                onDependencyFailure = FailureAction.FAIL_TO_START
+            }
+
+            artifacts {
+                artifactRules = "+:*=>gitsettings"
+            }
+        }
+    }
+    
     requirements {
         startsWith("teamcity.agent.jvm.os.name", "Windows")
     }
