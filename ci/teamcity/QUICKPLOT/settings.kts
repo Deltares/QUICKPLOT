@@ -802,7 +802,7 @@ object Windows_WinLatexManualGeneration : BuildType({
             scriptContent = """
                 echo -----------------------------------------------------
                 echo Run install.bat ...
-                install.bat
+                call install.bat
 
                 echo -----------------------------------------------------
                 echo Run initexmf.exe ...
