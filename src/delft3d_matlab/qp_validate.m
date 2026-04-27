@@ -1185,7 +1185,7 @@ switch log_style
     case 'latex'
         if strcmp(casename,'MAIN')
             % main document
-            fprintf(logid,'%s\n','\documentclass[table]{deltares_manual}');
+            fprintf(logid,'%s\n','\documentclass[table,git]{deltares_manual}');
             fprintf(logid,'%s\n','\usepackage{pdflscape}');
             fprintf(logid,'%s\n','\usepackage{pifont}% http://ctan.org/pkg/pifont');
             fprintf(logid,'%s\n','\newcommand{\cmark}{\ding{51}}%');

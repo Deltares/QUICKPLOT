@@ -517,6 +517,7 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
                 module use --append /opt/apps/modules
                 module load texlive
                 
+                cp ../gitsettings/gitsettings .
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
@@ -582,6 +583,15 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
 
             artifacts {
                 artifactRules = "delft3d_matlab/**=>quickplot/delft3d_matlab"
+            }
+        }
+        dependency(Linux_LnxDetermineGitProperties) {
+            snapshot {
+                onDependencyFailure = FailureAction.FAIL_TO_START
+            }
+
+            artifacts {
+                artifactRules = "+:*=>gitsettings"
             }
         }
     }
@@ -684,6 +694,7 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
                 module use --append /opt/apps/modules
                 module load texlive
                 
+                cp ../gitsettings/gitsettings .
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
@@ -734,7 +745,14 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
     }
 
     dependencies {
-        snapshot(Linux_LnxDetermineGitProperties) {
+        dependency(Linux_LnxDetermineGitProperties) {
+            snapshot {
+                onDependencyFailure = FailureAction.FAIL_TO_START
+            }
+
+            artifacts {
+                artifactRules = "+:*=>gitsettings"
+            }
         }
     }
 
@@ -1308,6 +1326,7 @@ object Windows_WinRunQuickplotTestBenchStandalone : BuildType({
             name = "Generate report"
             workingDir = "testbench"
             scriptContent = """
+                copy ..\gitsettings\gitsettings .
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
@@ -1375,6 +1394,15 @@ object Windows_WinRunQuickplotTestBenchStandalone : BuildType({
                 artifactRules = "**=>quickplot"
             }
         }
+        dependency(Linux_LnxDetermineGitProperties) {
+            snapshot {
+                onDependencyFailure = FailureAction.FAIL_TO_START
+            }
+
+            artifacts {
+                artifactRules = "+:*=>gitsettings"
+            }
+        }
     }
 
     requirements {
@@ -1437,6 +1465,7 @@ object Windows_WinRunQuickplotTestBenchWithinMatlab : BuildType({
             executionMode = BuildStep.ExecutionMode.RUN_ON_FAILURE
             workingDir = "testbench"
             scriptContent = """
+                copy ..\gitsettings\gitsettings .
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
@@ -1498,7 +1527,14 @@ object Windows_WinRunQuickplotTestBenchWithinMatlab : BuildType({
     }
 
     dependencies {
-        snapshot(Linux_LnxDetermineGitProperties) {
+        dependency(Linux_LnxDetermineGitProperties) {
+            snapshot {
+                onDependencyFailure = FailureAction.FAIL_TO_START
+            }
+
+            artifacts {
+                artifactRules = "+:*=>gitsettings"
+            }
         }
     }
 
