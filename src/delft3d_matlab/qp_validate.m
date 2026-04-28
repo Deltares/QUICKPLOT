@@ -1206,7 +1206,7 @@ switch log_style
             fprintf(logid,'%s\n','\input{common/program_names}');
             fprintf(logid,'\n');
             fprintf(logid,'%s\n','\title{\QUICKPLOT\ Testing}');
-            fprintf(logid,'%s\n','\subtitle{\emph{repo:} \gitrepo\\ \emph{branch:} \gitbranch\\ \emph{hash:} \githash}');
+            fprintf(logid,'%s\n','\subtitle{\emph{repo:} \gitrepo\\ \emph{branch:} \gitbranch}');
             fprintf(logid,'%s\n','\manualtype{Regression Document}');
             fprintf(logid,'%s\n','\distribution{}');
             fprintf(logid,'%s{%s%s}\n','\version',versionstr,stalone);

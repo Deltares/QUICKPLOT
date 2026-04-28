@@ -38,6 +38,7 @@ function [revString,repoUrl,hash] = determine_revision(dirname,dbid)
 % get hash
 cwd = pwd;
 cd(dirname)
+fprintf('determine_revision running in: %s\n',pwd)
 [a,b] = system_plain('git -P log -n 1 -v --decorate')
 % if we could remove -n 1, we could look for the latest hash available
 % at the origin, but that triggers a pager to wait for keypresses. The
@@ -119,7 +120,9 @@ if any(isCheckString)
         if length(folderAndFile) == 1 || strcmp(folderAndFile{1}, 'private')
             % file in current folder
             % or file in private folder or below
-            if mexExcept && ~isempty(strfind(folderAndFile{end}, '.mex'))
+            if strcmp(folderAndFile{end},'run_testbench.m')
+                % always skip run_testbench.m used on TeamCity
+            elseif mexExcept && ~isempty(strfind(folderAndFile{end}, '.mex'))
                 % we need to ignore added mex files for the build process
             else
                 if ~checkResult
