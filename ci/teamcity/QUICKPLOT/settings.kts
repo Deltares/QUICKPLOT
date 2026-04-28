@@ -66,7 +66,7 @@ object Linux_LnxBuildMexFiles : BuildType({
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
     vcs {
-        root(AbsoluteId("MatlabTools_GithubQuickplot"))
+        root(DslContext.settingsRoot)
     }
 
     steps {
@@ -140,7 +140,7 @@ object Linux_LnxCompileQuickplot : BuildType({
     publishArtifacts = PublishMode.ALWAYS
 
     vcs {
-        root(AbsoluteId("MatlabTools_GithubQuickplot"))
+        root(DslContext.settingsRoot)
 
         cleanCheckout = true
     }
@@ -217,7 +217,7 @@ object Linux_LnxDetermineGitProperties : BuildType({
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
     vcs {
-        root(AbsoluteId("MatlabTools_GithubQuickplot"))
+        root(DslContext.settingsRoot)
     }
 
     steps {
@@ -428,9 +428,9 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
     buildNumberPattern = "${Windows_WinCompileQuickplot.depParamRefs.buildNumber}"
 
     vcs {
-        root(AbsoluteId("MatlabTools_GithubQuickplot"), checkoutDir = "code")
-        root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), checkoutDir = "testbench")
-        root(AbsoluteId("Quickplot_ReposDsCommon"), checkoutDir = "common")
+        root(DslContext.settingsRoot, checkoutDir = "code")
+        root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:. = >testbench")
+        root(AbsoluteId("Quickplot_ReposDsCommon"), "+:. => common")
 
         checkoutMode = CheckoutMode.ON_SERVER
         cleanCheckout = true
@@ -614,8 +614,8 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
     buildNumberPattern = "Tests %build.vcs.number.Quickplot_DSCTestbenchTestsQuickplot%: QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
     vcs {
+        root(DslContext.settingsRoot, "+:. => code")
         root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:.=>testbench")
-        root(AbsoluteId("MatlabTools_GithubQuickplot"), "+:. => code")
         root(AbsoluteId("Quickplot_ReposDsCommon"), "+:.=>common")
 
         checkoutMode = CheckoutMode.ON_SERVER
@@ -927,7 +927,7 @@ object Windows_WinBuildMexFiles : BuildType({
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
     vcs {
-        root(AbsoluteId("MatlabTools_GithubQuickplot"))
+        root(DslContext.settingsRoot)
     }
 
     steps {
@@ -967,7 +967,7 @@ object Windows_WinBuildQuickplotSplashScreen : BuildType({
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
     vcs {
-        root(AbsoluteId("MatlabTools_GithubQuickplot"))
+        root(DslContext.settingsRoot)
     }
 
     steps {
@@ -1032,7 +1032,7 @@ object Windows_WinCompileQuickplot : BuildType({
     maxRunningBuilds = 1
 
     vcs {
-        root(AbsoluteId("MatlabTools_GithubQuickplot"))
+        root(DslContext.settingsRoot)
     }
 
     steps {
@@ -1266,9 +1266,9 @@ object Windows_WinRunQuickplotTestBenchStandalone : BuildType({
     buildNumberPattern = "${Windows_WinCompileQuickplot.depParamRefs.buildNumber}"
 
     vcs {
+        root(DslContext.settingsRoot, "+:.=>code")
         root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:.=>testbench")
         root(AbsoluteId("Quickplot_ReposDsCommon"), "+:. => common")
-        root(AbsoluteId("MatlabTools_GithubQuickplot"), "+:.=>code")
 
         cleanCheckout = true
     }
@@ -1458,7 +1458,7 @@ object Windows_WinRunQuickplotTestBenchWithinMatlab : BuildType({
     buildNumberPattern = "Tests %build.vcs.number.Quickplot_DSCTestbenchTestsQuickplot%: QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
     vcs {
-        root(AbsoluteId("MatlabTools_GithubQuickplot"), "+:.=>code")
+        root(DslContext.settingsRoot, "+:.=>code")
         root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:.=>testbench")
         root(AbsoluteId("Quickplot_ReposDsCommon"), "+:.=>common")
 
@@ -1589,7 +1589,7 @@ object Windows_WinUpdateOpenEarthToolsLink : BuildType({
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
     vcs {
-        root(AbsoluteId("MatlabTools_GithubQuickplot"))
+        root(DslContext.settingsRoot)
 
         checkoutMode = CheckoutMode.MANUAL
         cleanCheckout = true
