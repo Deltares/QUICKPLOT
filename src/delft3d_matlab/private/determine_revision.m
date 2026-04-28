@@ -39,6 +39,7 @@ function [revString,repoUrl,hash] = determine_revision(dirname,dbid)
 cwd = pwd;
 cd(dirname)
 fprintf('determine_revision running in: %s\n',pwd)
+fprintf('executing the command: [a,b] = system_plain(''git -P log -n 1 -v --decorate'')\n')
 [a,b] = system_plain('git -P log -n 1 -v --decorate')
 % if we could remove -n 1, we could look for the latest hash available
 % at the origin, but that triggers a pager to wait for keypresses. The

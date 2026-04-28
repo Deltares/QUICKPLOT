@@ -665,6 +665,29 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
             """.trimIndent()
         }
         script {
+            name = "Git precheck"
+            id = "Git_precheck"
+            workingDir = "code/src/delft3d_matlab/"
+            scriptContent = """
+                #!/bin/bash
+                
+                echo ----- Git log ----------------------------------------------------------------------------
+                echo Running in `pwd`
+                git -P log -n 1 -v --decorate
+                
+                echo ----- Git log ----------------------------------------------------------------------------
+                cd ..
+                echo Running in `pwd`
+                git -P log -n 1 -v --decorate
+                
+                echo ----- Git log ----------------------------------------------------------------------------
+                cd ..
+                echo Running in `pwd`
+                git -P log -n 1 -v --decorate
+                echo ------------------------------------------------------------------------------------------
+            """.trimIndent()
+        }
+        script {
             name = "Run QUICKPLOT test bench within MATLAB"
             id = "Run_QUICKPLOT_test_bench_within_MATLAB"
             workingDir = "code/src/delft3d_matlab/"
