@@ -428,7 +428,9 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
     buildNumberPattern = "${Windows_WinCompileQuickplot.depParamRefs.buildNumber}"
 
     vcs {
-        root(DslContext.settingsRoot, checkoutDir = "code")
+        root(DslContext.settingsRoot) {
+           checkoutDir = "code"
+        }
         root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:. = >testbench")
         root(AbsoluteId("Quickplot_ReposDsCommon"), "+:. => common")
 
