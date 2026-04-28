@@ -38,7 +38,7 @@ function [revString,repoUrl,hash] = determine_revision(dirname,dbid)
 % get hash
 cwd = pwd;
 cd(dirname)
-[a,b] = system_plain('git -P log -n 1 -v --decorate');
+[a,b] = system_plain('git -P log -n 1 -v --decorate')
 % if we could remove -n 1, we could look for the latest hash available
 % at the origin, but that triggers a pager to wait for keypresses. The
 % option --no-pager before log seems to work on the command line, but
@@ -60,7 +60,7 @@ else
     [hash, b] = strtok(b); % takes the <hash>
     b = strsplit(b, local_newline); % splits to a cell string of which the first entry is the (HEAD ...) part
     
-    teamcity_build_branch = getenv('TEAMCITY_BUILD_BRANCH');
+    teamcity_build_branch = getenv('TEAMCITY_VERSION');
     if ~isempty(teamcity_build_branch)
         % running on TeamCity ... don't look for origin ...
         hasLocalCommits = false;
