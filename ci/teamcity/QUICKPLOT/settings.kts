@@ -614,7 +614,7 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
     buildNumberPattern = "Tests %build.vcs.number.Quickplot_DSCTestbenchTestsQuickplot%: QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
     vcs {
-        root(DslContext.settingsRoot)
+        root(DslContext.settingsRoot, "+:.=>code")
         root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:.=>testbench")
         root(AbsoluteId("Quickplot_ReposDsCommon"), "+:.=>common")
 
@@ -634,25 +634,57 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
                 echo Running in `pwd`
                 ls -al .
                 echo ##teamcity[testFinished name='listing root folder']
+
+                # The following is necessary because the server-side Linux
+                # checkout doesn't keep the Git meta data
+                echo ##teamcity[testStarted name='clone code again']
+                echo Step into code folder ...
+                cd code
+                echo Delete everything ...
+                find . -mindepth 1 -delete
+                echo Clone repository ...
+                git clone %vcsroot.MatlabTools_GithubQuickplot.url% .
+                echo Fetch appropriate branch ...
+                [[ "%teamcity.build.branch%" == main ]]; then
+                   # that's what we got by default
+                elif [[ "%teamcity.build.branch%" == pull* ]]; then
+                   echo Get pull request %teamcity.build.branch% ...
+                   git fetch origin %teamcity.build.branch%/merge:%teamcity.build.branch%
+                   if [ $? -ne 0 ]; then
+                      echo Pull request doesn't have merge version ...
+                      git fetch origin %teamcity.build.branch%:%teamcity.build.branch%
+                   fi
+                else
+                   echo Get branch %teamcity.build.branch% ...
+                   git fetch origin %teamcity.build.branch%:%teamcity.build.branch%
+                fi
+                git checkout %teamcity.build.branch%
+                echo Step back to root folder ...
+                cd ..
+                echo ##teamcity[testFinished name='clone code again']
+                
+                echo ##teamcity[testStarted name='listing code folder']
+                ls -al code
+                echo ##teamcity[testFinished name='listing code folder']
                 
                 echo ##teamcity[testStarted name='listing quickplot folder']
-                ls -al src/delft3d_matlab
+                ls -al code/src/delft3d_matlab
                 echo ##teamcity[testFinished name='listing quickplot folder']
                 
                 echo ##teamcity[testStarted name='listing private folder']
-                ls -al src/delft3d_matlab/private
+                ls -al code/src/delft3d_matlab/private
                 echo ##teamcity[testFinished name='listing private folder']
 
                 echo ##teamcity[testStarted name='listing third-party folder']
-                ls -al third_party
+                ls -al code/third_party
                 echo ##teamcity[testFinished name='listing third-party folder']
                 
                 echo ##teamcity[testStarted name='listing snctools folder']
-                ls -al third_party/snctools
+                ls -al code/third_party/snctools
                 echo ##teamcity[testFinished name='listing snctools folder']
                 
                 echo ##teamcity[testStarted name='listing mexnc folder']
-                ls -al third_party/mexnc
+                ls -al code/third_party/mexnc
                 echo ##teamcity[testFinished name='listing mexnc folder']
                 
                 echo ##teamcity[testStarted name='environment variables']
@@ -671,7 +703,7 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
         script {
             name = "Git precheck"
             id = "Git_precheck"
-            workingDir = "src/delft3d_matlab/"
+            workingDir = "code/src/delft3d_matlab/"
             scriptContent = """
                 #!/bin/bash
                 
@@ -699,7 +731,7 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
         script {
             name = "Run QUICKPLOT test bench within MATLAB"
             id = "Run_QUICKPLOT_test_bench_within_MATLAB"
-            workingDir = "src/delft3d_matlab/"
+            workingDir = "code/src/delft3d_matlab/"
             scriptContent = """
                 #!/bin/bash
                 echo Running in `pwd`
@@ -713,7 +745,7 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
                 
                 echo Running in `pwd`
                 echo ----- Starting MATLAB ------------------------------------------------------------------------------
-                echo qp_validate\(\'../../testbench\'\) > run_testbench.m
+                echo qp_validate\(\'../../../testbench\'\) > run_testbench.m
                 matlab -batch run_testbench
                 echo ----- End of MATLAB --------------------------------------------------------------------------------
             """.trimIndent()
