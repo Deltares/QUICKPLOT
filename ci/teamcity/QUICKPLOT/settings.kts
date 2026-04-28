@@ -630,36 +630,42 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
                 #!/bin/bash
                 . /usr/share/Modules/init/bash
                 
+                echo ##teamcity[testStarted name='listing root folder']
                 echo Running in `pwd`
+                ls -al .
+                echo ##teamcity[testFinished name='listing root folder']
                 
-                echo ----- Listing of environment -----------------------------------------------------------------------
+                echo ##teamcity[testStarted name='listing quickplot folder']
+                ls -al src/delft3d_matlab
+                echo ##teamcity[testFinished name='listing quickplot folder']
+                
+                echo ##teamcity[testStarted name='listing private folder']
+                ls -al src/delft3d_matlab/private
+                echo ##teamcity[testFinished name='listing private folder']
+
+                echo ##teamcity[testStarted name='listing third-party folder']
+                ls -al third_party
+                echo ##teamcity[testFinished name='listing third-party folder']
+                
+                echo ##teamcity[testStarted name='listing snctools folder']
+                ls -al third_party/snctools
+                echo ##teamcity[testFinished name='listing snctools folder']
+                
+                echo ##teamcity[testStarted name='listing mexnc folder']
+                ls -al third_party/mexnc
+                echo ##teamcity[testFinished name='listing mexnc folder']
+                
+                echo ##teamcity[testStarted name='environment variables']
                 set
-                
-                echo ----- Listing of root folder -----------------------------------------------------------------------
-                ls .
-                
-                echo ----- Listing of QUICKPLOT source folder -----------------------------------------------------------
-                ls src/delft3d_matlab
-                
-                echo ----- Listing of QUICKPLOT private folder -----------------------------------------------------------
-                ls src/delft3d_matlab/private
-                
-                echo ----- Listing of third party folder -----------------------------------------------------------
-                ls src/third_party
-                
-                echo ----- Listing of MATLAB snctools folder -----------------------------------------------------------
-                ls src/third_party/snctools
-                
-                echo ----- Listing of MATLAB mexnc folder -----------------------------------------------------------
-                ls src/third_party/mexnc
-                
-                echo ----- Copy common to testbench/common --------------------------------------------------------------
+                echo ##teamcity[testFinished name='environment variables']
+                                
+                echo ##teamcity[testStarted name='copy common']
                 cp -r common testbench/common
+                echo ##teamcity[testFinished name='copy common']
                 
-                echo ----- Listing of test bench folder -----------------------------------------------------------------
-                ls testbench
-                
-                echo --------------------------------------------------------------
+                echo ##teamcity[testStarted name='listing testbench folder']
+                ls -al testbench
+                echo ##teamcity[testFinished name='listing testbench folder']
             """.trimIndent()
         }
         script {
