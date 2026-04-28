@@ -614,7 +614,7 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
     buildNumberPattern = "Tests %build.vcs.number.Quickplot_DSCTestbenchTestsQuickplot%: QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
     vcs {
-        root(DslContext.settingsRoot, "+:. => code")
+        root(DslContext.settingsRoot)
         root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:.=>testbench")
         root(AbsoluteId("Quickplot_ReposDsCommon"), "+:.=>common")
 
@@ -638,23 +638,20 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
                 echo ----- Listing of root folder -----------------------------------------------------------------------
                 ls .
                 
-                echo ----- Listing of code folder -----------------------------------------------------------------------
-                ls code
-                
                 echo ----- Listing of QUICKPLOT source folder -----------------------------------------------------------
-                ls code/src/delft3d_matlab
+                ls src/delft3d_matlab
                 
                 echo ----- Listing of QUICKPLOT private folder -----------------------------------------------------------
-                ls code/src/delft3d_matlab/private
+                ls src/delft3d_matlab/private
                 
                 echo ----- Listing of third party folder -----------------------------------------------------------
-                ls code/src/third_party
+                ls src/third_party
                 
                 echo ----- Listing of MATLAB snctools folder -----------------------------------------------------------
-                ls code/src/third_party/snctools
+                ls src/third_party/snctools
                 
                 echo ----- Listing of MATLAB mexnc folder -----------------------------------------------------------
-                ls code/src/third_party/mexnc
+                ls src/third_party/mexnc
                 
                 echo ----- Copy common to testbench/common --------------------------------------------------------------
                 cp -r common testbench/common
@@ -668,7 +665,7 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
         script {
             name = "Git precheck"
             id = "Git_precheck"
-            workingDir = "code/src/delft3d_matlab/"
+            workingDir = "src/delft3d_matlab/"
             scriptContent = """
                 #!/bin/bash
                 
@@ -690,18 +687,13 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
                 echo Listing `pwd`
                 ls -al
 
-                echo ----- Listing ----------------------------------------------------------------------------
-                cd ..
-                echo Listing `pwd`
-                ls -al
-
                 echo ------------------------------------------------------------------------------------------
             """.trimIndent()
         }
         script {
             name = "Run QUICKPLOT test bench within MATLAB"
             id = "Run_QUICKPLOT_test_bench_within_MATLAB"
-            workingDir = "code/src/delft3d_matlab/"
+            workingDir = "src/delft3d_matlab/"
             scriptContent = """
                 #!/bin/bash
                 echo Running in `pwd`
@@ -715,7 +707,7 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
                 
                 echo Running in `pwd`
                 echo ----- Starting MATLAB ------------------------------------------------------------------------------
-                echo qp_validate\(\'../../../testbench\'\) > run_testbench.m
+                echo qp_validate\(\'../../testbench\'\) > run_testbench.m
                 matlab -batch run_testbench
                 echo ----- End of MATLAB --------------------------------------------------------------------------------
             """.trimIndent()
