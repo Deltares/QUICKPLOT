@@ -225,6 +225,7 @@ object Linux_LnxDetermineGitProperties : BuildType({
             name = "Get Git properties"
             id = "Get_Git_properties"
             scriptContent = """
+                ls -al
                 echo "-- Git status --"
                 git status
                 echo "-- Git origin --"
@@ -684,6 +685,16 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
                 cd ..
                 echo Running in `pwd`
                 git -P log -n 1 -v --decorate
+                
+                echo ----- Listing ----------------------------------------------------------------------------
+                echo Listing `pwd`
+                ls -al
+
+                echo ----- Listing ----------------------------------------------------------------------------
+                cd ..
+                echo Listing `pwd`
+                ls -al
+
                 echo ------------------------------------------------------------------------------------------
             """.trimIndent()
         }
