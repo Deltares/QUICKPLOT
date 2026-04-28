@@ -428,9 +428,9 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
     buildNumberPattern = "${Windows_WinCompileQuickplot.depParamRefs.buildNumber}"
 
     vcs {
-        root(AbsoluteId("MatlabTools_GithubQuickplot"), "+:.=>code")
-        root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:.=>testbench")
-        root(AbsoluteId("Quickplot_ReposDsCommon"), "+:.=>common")
+        root(AbsoluteId("MatlabTools_GithubQuickplot"), checkoutDir = "code")
+        root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), checkoutDir = "testbench")
+        root(AbsoluteId("Quickplot_ReposDsCommon"), checkoutDir = "common")
 
         checkoutMode = CheckoutMode.ON_SERVER
         cleanCheckout = true
