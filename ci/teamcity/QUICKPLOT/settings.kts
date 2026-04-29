@@ -241,7 +241,7 @@ object Linux_LnxDetermineGitProperties : BuildType({
                 
                 echo "##teamcity[testStarted name='checking git hash']"
                 githash=`git rev-parse HEAD`
-                tc_hash=%build.revisions.revision%
+                tc_hash="%build.vcs.number.MatlabTools_GithubQuickplot%"
                 if [[ ${'$'}{githash:0:8} == ${'$'}{tc_hash:0:8} ]]; then
                    echo "##teamcity[testFinished name='checking git hash']"
                 else
@@ -659,7 +659,7 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
 
                 echo "##teamcity[testStarted name='checking git hash']"
                 githash=`git rev-parse HEAD`
-                tc_hash=%build.revisions.revision%
+                tc_hash="%build.vcs.number.MatlabTools_GithubQuickplot%"
                 if [[ ${'$'}{githash:0:8} == ${'$'}{tc_hash:0:8} ]]; then
                    echo "##teamcity[testFinished name='checking git hash']"
                 else
