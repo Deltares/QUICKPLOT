@@ -285,20 +285,6 @@ object Linux_LnxQuickplotReleaseZip : BuildType({
 
     steps {
         script {
-            name = "Unzip user manuals"
-            id = "Unzip_user_manuals"
-            scriptContent = "unzip -o delft3d4_manuals.zip -d all_manuals"
-        }
-        script {
-            name = "Copy relevant user manuals"
-            id = "Copy_relevant_user_manuals"
-            scriptContent = """
-                mkdir manuals
-                /bin/cp -rf all_manuals/delft3d4/Delft3D-MATLAB_User_Manual.pdf manuals
-                /bin/cp -rf all_manuals/delft3d4/Delft3D-QUICKPLOT_User_Manual.pdf manuals
-            """.trimIndent()
-        }
-        script {
             name = "Collect all files for Delft3D FM zip-file"
             id = "Collect_all_files_for_Delft3D_FM_tgz_file"
             scriptContent = """
@@ -403,9 +389,14 @@ object Linux_LnxQuickplotReleaseZip : BuildType({
                 artifactRules = "+:delft3d_matlab=>delft3d_matlab"
             }
         }
-        artifacts(AbsoluteId("DsDoc_ManualsValdationFunctionalityDocuments_ManualsLatexPdfReleaseDelft3D4manua")) {
-            buildRule = lastSuccessful()
-            artifactRules = "delft3d4_manuals.zip"
+        dependency(Windows_WinLatexManualGeneration) {
+            snapshot {
+                onDependencyFailure = FailureAction.FAIL_TO_START
+            }
+            
+            artifacts {
+               artifactRules = "+:pdf/Delft3D*.pdf => manuals"
+            }
         }
     }
 
@@ -898,12 +889,6 @@ object Windows_WinLatexManualGeneration : BuildType({
         }
     }
 
-    triggers {
-        vcs {
-            enabled = false
-        }
-    }
-
     failureConditions {
         failOnText {
             conditionType = BuildFailureOnText.ConditionType.REGEXP
@@ -918,7 +903,18 @@ object Windows_WinLatexManualGeneration : BuildType({
             reverse = true
         }
     }
-
+    
+    features {
+        pullRequests {
+            vcsRootExtId = "MatlabTools_GithubQuickplot"
+            provider = github {
+                authType = token {
+                    token = "%github_deltares-service-account_access_token%"
+                }
+                filterAuthorRole = PullRequests.GitHubRoleFilter.MEMBER
+            }
+        }
+    }
 
     dependencies {
         dependency(Linux_LnxDetermineGitProperties) {
@@ -1144,20 +1140,6 @@ object Windows_WinQuickplotReleaseZip : BuildType({
     }
 
     steps {
-        powerShell {
-            name = "Unzip user manuals"
-            scriptMode = script {
-                content = "Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('delft3d4_manuals.zip', 'all_manuals');"
-            }
-        }
-        script {
-            name = "Copy relevant user manuals"
-            scriptContent = """
-                mkdir manuals
-                xcopy all_manuals\delft3d4\Delft3D-MATLAB_User_Manual.pdf manuals /S /R /Y
-                xcopy all_manuals\delft3d4\Delft3D-QUICKPLOT_User_Manual.pdf manuals /S /R /Y
-            """.trimIndent()
-        }
         script {
             name = "Merge signed bins into tree"
             scriptContent = """xcopy x64_signedbins dist_delft3d4\bin /S /R /Y"""
@@ -1260,9 +1242,14 @@ object Windows_WinQuickplotReleaseZip : BuildType({
                 artifactRules = "quickplot_x64_signedbins_*.zip!/x64 => x64_signedbins"
             }
         }
-        artifacts(AbsoluteId("DsDoc_ManualsValdationFunctionalityDocuments_ManualsLatexPdfReleaseDelft3D4manua")) {
-            buildRule = lastSuccessful()
-            artifactRules = "delft3d4_manuals.zip"
+        dependency(Windows_WinLatexManualGeneration) {
+            snapshot {
+                onDependencyFailure = FailureAction.FAIL_TO_START
+            }
+            
+            artifacts {
+               artifactRules = "+:pdf/Delft3D*.pdf => manuals"
+            }
         }
         artifacts(Windows_WinCompileQuickplot) {
             artifactRules = """
