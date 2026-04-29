@@ -72,7 +72,7 @@ object Linux_LnxBuildMexFiles : BuildType({
     steps {
         script {
             name = "Build mex files"
-            id = "B"
+            id = "Build_mex_files"
             workingDir = "makefiles/"
             scriptContent = """
                 #!/bin/bash
@@ -223,18 +223,30 @@ object Linux_LnxDetermineGitProperties : BuildType({
             id = "Get_Git_properties"
             scriptContent = """
                 ls -al
+                
                 echo "-- Git status --"
                 git status
+                
                 echo "-- Git origin --"
                 git remote get-url origin
+                
                 echo "-- Git branch --"
                 git rev-parse --abbrev-ref HEAD
+                
                 echo "-- Git branch according TeamCity --"
                 echo "%teamcity.build.branch%"
+                
                 echo "-- Git hash --"
                 git rev-parse HEAD
-                echo "-- Git short hash --"
-                git rev-parse --short HEAD
+                
+                echo "##teamcity[testStarted name='checking git hash']"
+                githash=`git rev-parse --short HEAD`
+                if [[ "${'$'}githash" == "%build.revisions.short%" ]]; then
+                   echo "##teamcity[testFinished name='checking git hash']"
+                else
+                   echo "##teamcity[testFailed name='checking git hash' message='${'$'}githash != %build.revisions.short%']"
+                fi
+                
                 echo "-- writing gitsettings file --"
                 echo "\\def\\@gitrepository{\\detokenize{`git remote get-url origin`}}" > gitsettings
                 echo "\\def\\@gitbranch{\\detokenize{%teamcity.build.branch%}}" >> gitsettings
