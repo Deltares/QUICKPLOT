@@ -197,9 +197,6 @@ object Linux_LnxCompileQuickplot : BuildType({
                 artifactRules = "+:*=>mex_files_linux"
             }
         }
-        snapshot(Windows_WinCompileQuickplot) {
-            onDependencyFailure = FailureAction.FAIL_TO_START
-        }
     }
 
     requirements {
@@ -429,7 +426,7 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
 
     vcs {
         root(DslContext.settingsRoot, "+:. => code")
-        root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:. = >testbench")
+        root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:. => testbench")
         root(AbsoluteId("Quickplot_ReposDsCommon"), "+:. => common")
 
         checkoutMode = CheckoutMode.ON_SERVER
