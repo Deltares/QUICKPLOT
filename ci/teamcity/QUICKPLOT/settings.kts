@@ -241,10 +241,11 @@ object Linux_LnxDetermineGitProperties : BuildType({
                 
                 echo "##teamcity[testStarted name='checking git hash']"
                 githash=`git rev-parse --short HEAD`
-                if [[ "${'$'}githash" == "%build.revisions.short%" ]]; then
+                tc_hash=%build.revisions.short%
+                if [[ ${'$'}{githash:0:7} == ${'$'}{tc_hash:0:7} ]]; then
                    echo "##teamcity[testFinished name='checking git hash']"
                 else
-                   echo "##teamcity[testFailed name='checking git hash' message='${'$'}githash != %build.revisions.short%']"
+                   echo "##teamcity[testFailed name='checking git hash' message='${'$'}githash != {'$'}tc_hash']"
                 fi
                 
                 echo "-- writing gitsettings file --"
