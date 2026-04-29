@@ -646,7 +646,7 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
 
                 echo "##teamcity[testStarted name='checking git hash']"
                 githash=`git rev-parse --short HEAD`
-                if [[ "$githash" == %build.revisions.short% ]]; then
+                if [[ "$githash" == "%build.revisions.short%" ]]; then
                    echo "##teamcity[testFinished name='checking git hash']"
                 else
                    echo "##teamcity[testFailed name='checking git hash' message='$githash != %build.revisions.short%']"
