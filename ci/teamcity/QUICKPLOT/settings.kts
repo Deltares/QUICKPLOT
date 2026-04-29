@@ -645,11 +645,7 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
                    echo "Working on main ..."
                 elif [[ "%teamcity.build.branch%" == pull* ]]; then
                    echo "Fetch pull request %teamcity.build.branch% ..."
-                   git fetch origin %teamcity.build.branch%/merge:%teamcity.build.branch%
-                   if [ $? -ne 0 ]; then
-                      echo "Pull request doesn't have merge version ..."
-                      git fetch origin %teamcity.build.branch%:%teamcity.build.branch%
-                   fi
+                   git fetch origin %teamcity.build.branch%:%teamcity.build.branch%
                 else
                    echo "Fetch branch %teamcity.build.branch% ..."
                    git fetch origin %teamcity.build.branch%:%teamcity.build.branch%
