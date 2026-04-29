@@ -240,12 +240,12 @@ object Linux_LnxDetermineGitProperties : BuildType({
                 git rev-parse HEAD
                 
                 echo "##teamcity[testStarted name='checking git hash']"
-                githash=`git rev-parse --short HEAD`
-                tc_hash=%build.revisions.short%
-                if [[ ${'$'}{githash:0:7} == ${'$'}{tc_hash:0:7} ]]; then
+                githash=`git rev-parse HEAD`
+                tc_hash=%build.revisions.revision%
+                if [[ ${'$'}{githash:0:8} == ${'$'}{tc_hash:0:8} ]]; then
                    echo "##teamcity[testFinished name='checking git hash']"
                 else
-                   echo "##teamcity[testFailed name='checking git hash' message='${'$'}githash != {'$'}tc_hash']"
+                   echo "##teamcity[testFailed name='checking git hash' message='${'$'}{githash:0;8} != {'$'}{tc_hash:0:8}']"
                 fi
                 
                 echo "-- writing gitsettings file --"
@@ -658,12 +658,14 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
                 echo "##teamcity[testFinished name='clone code again']"
 
                 echo "##teamcity[testStarted name='checking git hash']"
-                githash=`git rev-parse --short HEAD`
-                if [[ "${'$'}githash" == "%build.revisions.short%" ]]; then
+                githash=`git rev-parse HEAD`
+                tc_hash=%build.revisions.revision%
+                if [[ ${'$'}{githash:0:8} == ${'$'}{tc_hash:0:8} ]]; then
                    echo "##teamcity[testFinished name='checking git hash']"
                 else
-                   echo "##teamcity[testFailed name='checking git hash' message='${'$'}githash != %build.revisions.short%']"
+                   echo "##teamcity[testFailed name='checking git hash' message='${'$'}{githash:0;8} != {'$'}{tc_hash:0:8}']"
                 fi
+                
                 echo "Step back to root folder ..."
                 cd ..
                 
