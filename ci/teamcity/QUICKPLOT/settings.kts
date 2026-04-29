@@ -635,16 +635,24 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
                 if [[ "%teamcity.build.branch%" == main ]]; then
                    echo "Working on main ..."
                 elif [[ "%teamcity.build.branch%" == pull* ]]; then
-                   echo "Fetch pull request %teamcity.build.branch% ..."
-                   git fetch origin %teamcity.build.branch%:%teamcity.build.branch%
+                   echo "Fetch pull request %teamcity.build.branch% head ..."
+                   git fetch origin %teamcity.build.branch%/head:%teamcity.build.branch%
                 else
                    echo "Fetch branch %teamcity.build.branch% ..."
                    git fetch origin %teamcity.build.branch%:%teamcity.build.branch%
                 fi
                 git checkout %teamcity.build.branch%
+                echo "##teamcity[testFinished name='clone code again']"
+
+                echo "##teamcity[testStarted name='checking git hash']"
+                githash=`git rev-parse --short HEAD`
+                if [[ "$githash" == %build.revisions.short% ]]; then
+                   echo "##teamcity[testFinished name='checking git hash']"
+                else
+                   echo "##teamcity[testFailed name='checking git hash' message='$githash != %build.revisions.short%']"
+                fi
                 echo "Step back to root folder ..."
                 cd ..
-                echo "##teamcity[testFinished name='clone code again']"
                 
                 echo "##teamcity[testStarted name='listing code folder']"
                 ls -al code
@@ -684,34 +692,6 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
             """.trimIndent()
         }
         script {
-            name = "Git precheck"
-            id = "Git_precheck"
-            workingDir = "code/src/delft3d_matlab/"
-            scriptContent = """
-                #!/bin/bash
-                
-                echo ----- Git log ----------------------------------------------------------------------------
-                echo Running in `pwd`
-                git -P log -n 1 -v --decorate
-                
-                echo ----- Git log ----------------------------------------------------------------------------
-                cd ..
-                echo Running in `pwd`
-                git -P log -n 1 -v --decorate
-                
-                echo ----- Git log ----------------------------------------------------------------------------
-                cd ..
-                echo Running in `pwd`
-                git -P log -n 1 -v --decorate
-                
-                echo ----- Listing ----------------------------------------------------------------------------
-                echo Listing `pwd`
-                ls -al
-
-                echo ------------------------------------------------------------------------------------------
-            """.trimIndent()
-        }
-        script {
             name = "Run QUICKPLOT test bench within MATLAB"
             id = "Run_QUICKPLOT_test_bench_within_MATLAB"
             workingDir = "code/src/delft3d_matlab/"
@@ -744,7 +724,11 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
                 module use --append /opt/apps/modules
                 module load texlive
                 
+                echo ----- Copy gitsettings -----------------------------------------------------------------------------
                 cp ../gitsettings/gitsettings .
+                ls -al
+
+                echo ----- Build report ---------------------------------------------------------------------------------
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
