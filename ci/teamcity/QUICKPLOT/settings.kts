@@ -824,7 +824,7 @@ object Windows : Project({
     buildType(Windows_WinBuildMexFiles)
     buildType(Windows_WinLatexManualGeneration)
     buildType(Windows_WinUpdateOpenEarthToolsLink)
-    buildTypesOrder = arrayListOf(Windows_WinRunQuickplotTestBenchWithinMatlab, Windows_WinBuildMexFiles, Windows_WinBuildQuickplotSplashScreen, Windows_WinCompileQuickplot, Windows_WinRunQuickplotTestBenchStandalone, Windows_WinQuickplotReleaseZip)
+    buildTypesOrder = arrayListOf(Windows_WinRunQuickplotTestBenchWithinMatlab, Windows_WinBuildMexFiles, Windows_WinBuildQuickplotSplashScreen, Windows_WinCompileQuickplot, Windows_WinRunQuickplotTestBenchStandalone, Windows_WinLatexManualGeneration, Windows_WinQuickplotReleaseZip)
 })
 
 
@@ -889,6 +889,15 @@ object Windows_WinLatexManualGeneration : BuildType({
         }
     }
 
+    triggers {
+        vcs {
+            branchFilter = """
+                +pr: sourceRepo=same draft=false
+                +:<default>
+            """.trimIndent()
+        }
+    }
+
     failureConditions {
         failOnText {
             conditionType = BuildFailureOnText.ConditionType.REGEXP
@@ -912,6 +921,15 @@ object Windows_WinLatexManualGeneration : BuildType({
                     token = "%github_deltares-service-account_access_token%"
                 }
                 filterAuthorRole = PullRequests.GitHubRoleFilter.MEMBER
+            }
+        }
+        commitStatusPublisher {
+            vcsRootExtId = "MatlabTools_GithubQuickplot"
+            publisher = github {
+                githubUrl = "https://api.github.com"
+                authType = personalToken {
+                    token = "%github_deltares-service-account_access_token%"
+                }
             }
         }
     }
