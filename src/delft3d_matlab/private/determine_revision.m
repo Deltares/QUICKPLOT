@@ -60,7 +60,7 @@ else
     [hash, b] = strtok(b); % takes the <hash>
     b = strsplit(b, local_newline); % splits to a cell string of which the first entry is the (HEAD ...) part
     
-    teamcity_build_branch = getenv('TEAMCITY_BUILD_BRANCH');
+    teamcity_build_branch = getenv('TEAMCITY_VERSION');
     if ~isempty(teamcity_build_branch)
         % running on TeamCity ... don't look for origin ...
         hasLocalCommits = false;
@@ -119,7 +119,9 @@ if any(isCheckString)
         if length(folderAndFile) == 1 || strcmp(folderAndFile{1}, 'private')
             % file in current folder
             % or file in private folder or below
-            if mexExcept && ~isempty(strfind(folderAndFile{end}, '.mex'))
+            if strcmp(folderAndFile{end},'run_testbench.m')
+                % always skip run_testbench.m used on TeamCity
+            elseif mexExcept && ~isempty(strfind(folderAndFile{end}, '.mex'))
                 % we need to ignore added mex files for the build process
             else
                 if ~checkResult

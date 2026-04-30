@@ -66,13 +66,13 @@ object Linux_LnxBuildMexFiles : BuildType({
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
     vcs {
-        root(AbsoluteId("MatlabTools_GithubQuickplot"))
+        root(DslContext.settingsRoot)
     }
 
     steps {
         script {
             name = "Build mex files"
-            id = "B"
+            id = "Build_mex_files"
             workingDir = "makefiles/"
             scriptContent = """
                 #!/bin/bash
@@ -140,7 +140,7 @@ object Linux_LnxCompileQuickplot : BuildType({
     publishArtifacts = PublishMode.ALWAYS
 
     vcs {
-        root(AbsoluteId("MatlabTools_GithubQuickplot"))
+        root(DslContext.settingsRoot)
 
         cleanCheckout = true
     }
@@ -197,9 +197,6 @@ object Linux_LnxCompileQuickplot : BuildType({
                 artifactRules = "+:*=>mex_files_linux"
             }
         }
-        snapshot(Windows_WinCompileQuickplot) {
-            onDependencyFailure = FailureAction.FAIL_TO_START
-        }
     }
 
     requirements {
@@ -217,7 +214,7 @@ object Linux_LnxDetermineGitProperties : BuildType({
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
     vcs {
-        root(AbsoluteId("MatlabTools_GithubQuickplot"))
+        root(DslContext.settingsRoot)
     }
 
     steps {
@@ -225,18 +222,32 @@ object Linux_LnxDetermineGitProperties : BuildType({
             name = "Get Git properties"
             id = "Get_Git_properties"
             scriptContent = """
+                ls -al
+                
                 echo "-- Git status --"
                 git status
+                
                 echo "-- Git origin --"
                 git remote get-url origin
+                
                 echo "-- Git branch --"
                 git rev-parse --abbrev-ref HEAD
+                
                 echo "-- Git branch according TeamCity --"
                 echo "%teamcity.build.branch%"
+                
                 echo "-- Git hash --"
                 git rev-parse HEAD
-                echo "-- Git short hash --"
-                git rev-parse --short HEAD
+                
+                echo "##teamcity[testStarted name='checking git hash']"
+                githash=`git rev-parse HEAD`
+                tc_hash="%build.vcs.number.MatlabTools_GithubQuickplot%"
+                if [[ ${'$'}{githash:0:8} == ${'$'}{tc_hash:0:8} ]]; then
+                   echo "##teamcity[testFinished name='checking git hash']"
+                else
+                   echo "##teamcity[testFailed name='checking git hash' message='${'$'}{githash:0;8} != {'$'}{tc_hash:0:8}']"
+                fi
+                
                 echo "-- writing gitsettings file --"
                 echo "\\def\\@gitrepository{\\detokenize{`git remote get-url origin`}}" > gitsettings
                 echo "\\def\\@gitbranch{\\detokenize{%teamcity.build.branch%}}" >> gitsettings
@@ -286,20 +297,6 @@ object Linux_LnxQuickplotReleaseZip : BuildType({
     }
 
     steps {
-        script {
-            name = "Unzip user manuals"
-            id = "Unzip_user_manuals"
-            scriptContent = "unzip -o delft3d4_manuals.zip -d all_manuals"
-        }
-        script {
-            name = "Copy relevant user manuals"
-            id = "Copy_relevant_user_manuals"
-            scriptContent = """
-                mkdir manuals
-                /bin/cp -rf all_manuals/delft3d4/Delft3D-MATLAB_User_Manual.pdf manuals
-                /bin/cp -rf all_manuals/delft3d4/Delft3D-QUICKPLOT_User_Manual.pdf manuals
-            """.trimIndent()
-        }
         script {
             name = "Collect all files for Delft3D FM zip-file"
             id = "Collect_all_files_for_Delft3D_FM_tgz_file"
@@ -405,9 +402,14 @@ object Linux_LnxQuickplotReleaseZip : BuildType({
                 artifactRules = "+:delft3d_matlab=>delft3d_matlab"
             }
         }
-        artifacts(AbsoluteId("DsDoc_ManualsValdationFunctionalityDocuments_ManualsLatexPdfReleaseDelft3D4manua")) {
-            buildRule = lastSuccessful()
-            artifactRules = "delft3d4_manuals.zip"
+        dependency(Windows_WinLatexManualGeneration) {
+            snapshot {
+                onDependencyFailure = FailureAction.FAIL_TO_START
+            }
+            
+            artifacts {
+               artifactRules = "+:pdf/Delft3D*.pdf => manuals"
+            }
         }
     }
 
@@ -427,9 +429,9 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
     buildNumberPattern = "${Windows_WinCompileQuickplot.depParamRefs.buildNumber}"
 
     vcs {
-        root(AbsoluteId("MatlabTools_GithubQuickplot"), "+:.=>code")
-        root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:.=>testbench")
-        root(AbsoluteId("Quickplot_ReposDsCommon"), "+:.=>common")
+        root(DslContext.settingsRoot, "+:. => code")
+        root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:. => testbench")
+        root(AbsoluteId("Quickplot_ReposDsCommon"), "+:. => common")
 
         checkoutMode = CheckoutMode.ON_SERVER
         cleanCheckout = true
@@ -517,6 +519,7 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
                 module use --append /opt/apps/modules
                 module load texlive
                 
+                cp ../gitsettings/gitsettings .
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
@@ -584,6 +587,15 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
                 artifactRules = "delft3d_matlab/**=>quickplot/delft3d_matlab"
             }
         }
+        dependency(Linux_LnxDetermineGitProperties) {
+            snapshot {
+                onDependencyFailure = FailureAction.FAIL_TO_START
+            }
+
+            artifacts {
+                artifactRules = "+:*=>gitsettings"
+            }
+        }
     }
 
     requirements {
@@ -603,8 +615,8 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
     buildNumberPattern = "Tests %build.vcs.number.Quickplot_DSCTestbenchTestsQuickplot%: QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
     vcs {
+        root(DslContext.settingsRoot, "+:.=>code")
         root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:.=>testbench")
-        root(AbsoluteId("MatlabTools_GithubQuickplot"), "+:. => code")
         root(AbsoluteId("Quickplot_ReposDsCommon"), "+:.=>common")
 
         checkoutMode = CheckoutMode.ON_SERVER
@@ -619,36 +631,79 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
                 #!/bin/bash
                 . /usr/share/Modules/init/bash
                 
-                echo Running in `pwd`
+                echo "##teamcity[testStarted name='listing root folder']"
+                echo "Running in `pwd`"
+                ls -al .
+                echo "##teamcity[testFinished name='listing root folder']"
+
+                # The following is necessary because the server-side Linux
+                # checkout doesn't keep the Git meta data
+                echo "##teamcity[testStarted name='clone code again']"
+                echo "Step into code folder ..."
+                cd code
+                echo "Delete everything ..."
+                find . -mindepth 1 -delete
+                echo "Clone repository ..."
+                git clone %vcsroot.MatlabTools_GithubQuickplot.url% .
+                if [[ "%teamcity.build.branch%" == main ]]; then
+                   echo "Working on main ..."
+                elif [[ "%teamcity.build.branch%" == pull* ]]; then
+                   echo "Fetch pull request %teamcity.build.branch% head ..."
+                   git fetch origin %teamcity.build.branch%/head:%teamcity.build.branch%
+                else
+                   echo "Fetch branch %teamcity.build.branch% ..."
+                   git fetch origin %teamcity.build.branch%:%teamcity.build.branch%
+                fi
+                git checkout %teamcity.build.branch%
+                echo "##teamcity[testFinished name='clone code again']"
+
+                echo "##teamcity[testStarted name='checking git hash']"
+                githash=`git rev-parse HEAD`
+                tc_hash="%build.vcs.number.MatlabTools_GithubQuickplot%"
+                if [[ ${'$'}{githash:0:8} == ${'$'}{tc_hash:0:8} ]]; then
+                   echo "##teamcity[testFinished name='checking git hash']"
+                else
+                   echo "##teamcity[testFailed name='checking git hash' message='${'$'}{githash:0;8} != {'$'}{tc_hash:0:8}']"
+                fi
                 
-                echo ----- Listing of root folder -----------------------------------------------------------------------
-                ls .
+                echo "Step back to root folder ..."
+                cd ..
                 
-                echo ----- Listing of code folder -----------------------------------------------------------------------
-                ls code
+                echo "##teamcity[testStarted name='listing code folder']"
+                ls -al code
+                echo "##teamcity[testFinished name='listing code folder']"
                 
-                echo ----- Listing of QUICKPLOT source folder -----------------------------------------------------------
-                ls code/src/delft3d_matlab
+                echo "##teamcity[testStarted name='listing quickplot folder']"
+                ls -al code/src/delft3d_matlab
+                echo "##teamcity[testFinished name='listing quickplot folder']"
                 
-                echo ----- Listing of QUICKPLOT private folder -----------------------------------------------------------
-                ls code/src/delft3d_matlab/private
+                echo "##teamcity[testStarted name='listing private folder']"
+                ls -al code/src/delft3d_matlab/private
+                echo "##teamcity[testFinished name='listing private folder']"
+
+                echo "##teamcity[testStarted name='listing third-party folder']"
+                ls -al code/third_party
+                echo "##teamcity[testFinished name='listing third-party folder']"
                 
-                echo ----- Listing of third party folder -----------------------------------------------------------
-                ls code/src/third_party
+                echo "##teamcity[testStarted name='listing snctools folder']"
+                ls -al code/third_party/snctools
+                echo "##teamcity[testFinished name='listing snctools folder']"
                 
-                echo ----- Listing of MATLAB snctools folder -----------------------------------------------------------
-                ls code/src/third_party/snctools
+                echo "##teamcity[testStarted name='listing mexnc folder']"
+                ls -al code/third_party/mexnc
+                echo "##teamcity[testFinished name='listing mexnc folder']"
                 
-                echo ----- Listing of MATLAB mexnc folder -----------------------------------------------------------
-                ls code/src/third_party/mexnc
-                
-                echo ----- Copy common to testbench/common --------------------------------------------------------------
+                echo "##teamcity[testStarted name='environment variables']"
+                set
+                echo "##teamcity[testFinished name='environment variables']"
+                                
+                echo "##teamcity[testStarted name='copy common']"
                 cp -r common testbench/common
+                echo "##teamcity[testFinished name='copy common']"
                 
-                echo ----- Listing of test bench folder -----------------------------------------------------------------
-                ls testbench
-                
-                echo --------------------------------------------------------------
+                echo "##teamcity[testStarted name='listing testbench folder']"
+                ls -al testbench
+                echo "##teamcity[testFinished name='listing testbench folder']"
             """.trimIndent()
         }
         script {
@@ -684,6 +739,11 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
                 module use --append /opt/apps/modules
                 module load texlive
                 
+                echo ----- Copy gitsettings -----------------------------------------------------------------------------
+                cp ../gitsettings/gitsettings .
+                ls -al
+
+                echo ----- Build report ---------------------------------------------------------------------------------
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
@@ -734,7 +794,14 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
     }
 
     dependencies {
-        snapshot(Linux_LnxDetermineGitProperties) {
+        dependency(Linux_LnxDetermineGitProperties) {
+            snapshot {
+                onDependencyFailure = FailureAction.FAIL_TO_START
+            }
+
+            artifacts {
+                artifactRules = "+:*=>gitsettings"
+            }
         }
     }
 
@@ -756,7 +823,7 @@ object Windows : Project({
     buildType(Windows_WinBuildMexFiles)
     buildType(Windows_WinLatexManualGeneration)
     buildType(Windows_WinUpdateOpenEarthToolsLink)
-    buildTypesOrder = arrayListOf(Windows_WinRunQuickplotTestBenchWithinMatlab, Windows_WinBuildMexFiles, Windows_WinBuildQuickplotSplashScreen, Windows_WinCompileQuickplot, Windows_WinRunQuickplotTestBenchStandalone, Windows_WinQuickplotReleaseZip)
+    buildTypesOrder = arrayListOf(Windows_WinRunQuickplotTestBenchWithinMatlab, Windows_WinBuildMexFiles, Windows_WinBuildQuickplotSplashScreen, Windows_WinCompileQuickplot, Windows_WinRunQuickplotTestBenchStandalone, Windows_WinLatexManualGeneration, Windows_WinQuickplotReleaseZip)
 })
 
 
@@ -764,23 +831,47 @@ object Windows_WinLatexManualGeneration : BuildType({
     name = "[win] Latex Manual Generation"
 
     artifactRules = """
-        +:docs/end-user-docs/**/*.pdf
-        +:docs/end-user-docs/**/*.log
+        +:docs/end-user-docs/matlab/Delft3D-MATLAB_UM.pdf => pdf
+        +:docs/end-user-docs/quickplot/Delft3D-QUICKPLOT_UM.pdf => pdf
+        +:docs/end-user-docs/matlab/Delft3D-MATLAB_UM.log => log
+        +:docs/end-user-docs/quickplot/Delft3D-QUICKPLOT_UM.log => log
     """.trimIndent()
     buildNumberPattern = "QP ${DslContext.settingsRoot.paramRefs.buildVcsNumber}"
 
     vcs {
         root(DslContext.settingsRoot)
+        root(AbsoluteId("MatlabTools_HttpsGithubComDeltaresLatexInstallation"), "+:. => deltares_latex")
+        cleanCheckout = true
     }
-
+    
     steps {
+        script {
+            name = "Install Deltares Latex tools"
+            workingDir = """deltares_latex"""
+            scriptContent = """
+                echo -----------------------------------------------------
+                echo Run install.bat ...
+                call install.bat
+
+                echo -----------------------------------------------------
+                echo Run initexmf.exe ...
+                initexmf.exe --admin --update-fndb
+
+                echo -----------------------------------------------------
+                echo Run miktexpm.exe ...
+                miktexpm --admin --verbose --update
+                
+                echo -----------------------------------------------------
+            """.trimIndent()
+        }
         script {
             name = "Generate QUICKPLOT Manual"
             workingDir = """docs\end-user-docs\quickplot"""
             scriptContent = """
-                pdflatex Delft3D-QUICKPLOT_UM
-                pdflatex Delft3D-QUICKPLOT_UM
-                pdflatex Delft3D-QUICKPLOT_UM
+                copy ..\..\..\gitsettings\gitsettings .
+                pdflatex -shell-escape -interaction=nonstopmode Delft3D-QUICKPLOT_UM
+                pdflatex -shell-escape -interaction=nonstopmode Delft3D-QUICKPLOT_UM
+                pdflatex -shell-escape -interaction=nonstopmode Delft3D-QUICKPLOT_UM
             """.trimIndent()
         }
         script {
@@ -788,17 +879,21 @@ object Windows_WinLatexManualGeneration : BuildType({
             executionMode = BuildStep.ExecutionMode.RUN_ON_FAILURE
             workingDir = """docs\end-user-docs\matlab"""
             scriptContent = """
-                pdflatex Delft3D-MATLAB_UM
+                copy ..\..\..\gitsettings\gitsettings .
+                pdflatex -shell-escape -interaction=nonstopmode Delft3D-MATLAB_UM
                 bibtex Delft3D-MATLAB_UM
-                pdflatex Delft3D-MATLAB_UM
-                pdflatex Delft3D-MATLAB_UM
+                pdflatex -shell-escape -interaction=nonstopmode Delft3D-MATLAB_UM
+                pdflatex -shell-escape -interaction=nonstopmode Delft3D-MATLAB_UM
             """.trimIndent()
         }
     }
 
     triggers {
         vcs {
-            enabled = false
+            branchFilter = """
+                +pr: sourceRepo=same draft=false
+                +:<default>
+            """.trimIndent()
         }
     }
 
@@ -816,6 +911,43 @@ object Windows_WinLatexManualGeneration : BuildType({
             reverse = true
         }
     }
+    
+    features {
+        pullRequests {
+            vcsRootExtId = "MatlabTools_GithubQuickplot"
+            provider = github {
+                authType = token {
+                    token = "%github_deltares-service-account_access_token%"
+                }
+                filterAuthorRole = PullRequests.GitHubRoleFilter.MEMBER
+            }
+        }
+        commitStatusPublisher {
+            vcsRootExtId = "MatlabTools_GithubQuickplot"
+            publisher = github {
+                githubUrl = "https://api.github.com"
+                authType = personalToken {
+                    token = "%github_deltares-service-account_access_token%"
+                }
+            }
+        }
+    }
+
+    dependencies {
+        dependency(Linux_LnxDetermineGitProperties) {
+            snapshot {
+                onDependencyFailure = FailureAction.FAIL_TO_START
+            }
+
+            artifacts {
+                artifactRules = "+:*=>gitsettings"
+            }
+        }
+    }
+    
+    requirements {
+        startsWith("teamcity.agent.jvm.os.name", "Windows")
+    }
 })
 
 
@@ -830,7 +962,7 @@ object Windows_WinBuildMexFiles : BuildType({
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
     vcs {
-        root(AbsoluteId("MatlabTools_GithubQuickplot"))
+        root(DslContext.settingsRoot)
     }
 
     steps {
@@ -870,7 +1002,7 @@ object Windows_WinBuildQuickplotSplashScreen : BuildType({
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
     vcs {
-        root(AbsoluteId("MatlabTools_GithubQuickplot"))
+        root(DslContext.settingsRoot)
     }
 
     steps {
@@ -935,7 +1067,7 @@ object Windows_WinCompileQuickplot : BuildType({
     maxRunningBuilds = 1
 
     vcs {
-        root(AbsoluteId("MatlabTools_GithubQuickplot"))
+        root(DslContext.settingsRoot)
     }
 
     steps {
@@ -1025,20 +1157,6 @@ object Windows_WinQuickplotReleaseZip : BuildType({
     }
 
     steps {
-        powerShell {
-            name = "Unzip user manuals"
-            scriptMode = script {
-                content = "Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('delft3d4_manuals.zip', 'all_manuals');"
-            }
-        }
-        script {
-            name = "Copy relevant user manuals"
-            scriptContent = """
-                mkdir manuals
-                xcopy all_manuals\delft3d4\Delft3D-MATLAB_User_Manual.pdf manuals /S /R /Y
-                xcopy all_manuals\delft3d4\Delft3D-QUICKPLOT_User_Manual.pdf manuals /S /R /Y
-            """.trimIndent()
-        }
         script {
             name = "Merge signed bins into tree"
             scriptContent = """xcopy x64_signedbins dist_delft3d4\bin /S /R /Y"""
@@ -1141,9 +1259,14 @@ object Windows_WinQuickplotReleaseZip : BuildType({
                 artifactRules = "quickplot_x64_signedbins_*.zip!/x64 => x64_signedbins"
             }
         }
-        artifacts(AbsoluteId("DsDoc_ManualsValdationFunctionalityDocuments_ManualsLatexPdfReleaseDelft3D4manua")) {
-            buildRule = lastSuccessful()
-            artifactRules = "delft3d4_manuals.zip"
+        dependency(Windows_WinLatexManualGeneration) {
+            snapshot {
+                onDependencyFailure = FailureAction.FAIL_TO_START
+            }
+            
+            artifacts {
+               artifactRules = "+:pdf/Delft3D*.pdf => manuals"
+            }
         }
         artifacts(Windows_WinCompileQuickplot) {
             artifactRules = """
@@ -1169,9 +1292,9 @@ object Windows_WinRunQuickplotTestBenchStandalone : BuildType({
     buildNumberPattern = "${Windows_WinCompileQuickplot.depParamRefs.buildNumber}"
 
     vcs {
+        root(DslContext.settingsRoot, "+:.=>code")
         root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:.=>testbench")
         root(AbsoluteId("Quickplot_ReposDsCommon"), "+:. => common")
-        root(AbsoluteId("MatlabTools_GithubQuickplot"), "+:.=>code")
 
         cleanCheckout = true
     }
@@ -1266,6 +1389,7 @@ object Windows_WinRunQuickplotTestBenchStandalone : BuildType({
             name = "Generate report"
             workingDir = "testbench"
             scriptContent = """
+                copy ..\gitsettings\gitsettings .
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
@@ -1333,6 +1457,15 @@ object Windows_WinRunQuickplotTestBenchStandalone : BuildType({
                 artifactRules = "**=>quickplot"
             }
         }
+        dependency(Linux_LnxDetermineGitProperties) {
+            snapshot {
+                onDependencyFailure = FailureAction.FAIL_TO_START
+            }
+
+            artifacts {
+                artifactRules = "+:*=>gitsettings"
+            }
+        }
     }
 
     requirements {
@@ -1351,7 +1484,7 @@ object Windows_WinRunQuickplotTestBenchWithinMatlab : BuildType({
     buildNumberPattern = "Tests %build.vcs.number.Quickplot_DSCTestbenchTestsQuickplot%: QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
     vcs {
-        root(AbsoluteId("MatlabTools_GithubQuickplot"), "+:.=>code")
+        root(DslContext.settingsRoot, "+:.=>code")
         root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:.=>testbench")
         root(AbsoluteId("Quickplot_ReposDsCommon"), "+:.=>common")
 
@@ -1363,6 +1496,9 @@ object Windows_WinRunQuickplotTestBenchWithinMatlab : BuildType({
             name = "Verify checkout and copy common"
             scriptContent = """
                 echo Running in %%cd%%
+                echo ----- Listing of environment -----------------------------------------------------------------------
+                set
+                
                 echo ----- Listing of root folder -----------------------------------------------------------------------
                 dir .
                 echo ----- Listing of code folder -----------------------------------------------------------------------
@@ -1395,6 +1531,7 @@ object Windows_WinRunQuickplotTestBenchWithinMatlab : BuildType({
             executionMode = BuildStep.ExecutionMode.RUN_ON_FAILURE
             workingDir = "testbench"
             scriptContent = """
+                copy ..\gitsettings\gitsettings .
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
                 pdflatex -shell-escape -interaction=nonstopmode "validation_log.tex"
@@ -1456,7 +1593,14 @@ object Windows_WinRunQuickplotTestBenchWithinMatlab : BuildType({
     }
 
     dependencies {
-        snapshot(Linux_LnxDetermineGitProperties) {
+        dependency(Linux_LnxDetermineGitProperties) {
+            snapshot {
+                onDependencyFailure = FailureAction.FAIL_TO_START
+            }
+
+            artifacts {
+                artifactRules = "+:*=>gitsettings"
+            }
         }
     }
 
@@ -1471,7 +1615,7 @@ object Windows_WinUpdateOpenEarthToolsLink : BuildType({
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
 
     vcs {
-        root(AbsoluteId("MatlabTools_GithubQuickplot"))
+        root(DslContext.settingsRoot)
 
         checkoutMode = CheckoutMode.MANUAL
         cleanCheckout = true
