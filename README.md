@@ -5,7 +5,7 @@ QUICKPLOT does not only support Delft3D data files but a wide variety of other f
 For details, see the [QUICKPLOT user manual](https://content.oss.deltares.nl/delft3d4/Delft3D-QUICKPLOT_User_Manual.pdf) and the [Delft3D-MATLAB user manual](https://content.oss.deltares.nl/delft3d4/Delft3D-MATLAB_User_Manual.pdf).
 
 <div align="center">
-<img src="src/tools_lgpl/matlab/quickplot/progsrc/private/d3d_qp.png" width="20%">
+<img src="src/delft3d_matlab/private/d3d_qp.png" width="20%">
 </div>
 
 # Repository structure
