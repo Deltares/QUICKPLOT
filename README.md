@@ -10,9 +10,13 @@ For details, see the [QUICKPLOT user manual](https://content.oss.deltares.nl/del
 
 # Repository structure
 [Link](https://github.com/Deltares/QUICKPLOT) to the main source code repository.
-The QUICKPLOT source code was from 2011 until 2025 included in the Delft3D 4 source code repository.
-The current folder structure is a consequence of that period.
-It may change in the future, but we keep it as is for our internal automated testing and build processes.
+The repository contains six folders:
+- `src` contains the source code. In particular the folder `src/delft3d_matlab` can act as a pre-release version of the Delft3D-MATLAB interfce and it represents the MATLAB source of QUICKPLOT. The `src` folder also includes: `quickplot_splash_screen` (for the C++ code handling the splash screen logic used on Windows), `system_tests` (for three small programs useful for identifying runtime issues when QUICKPLOT fails to start), and a folder `to_be_moved` containing some other MATLAB code unrelated to QUICKPLOT and the Delft3D-MATLAB interface.
+- `makefiles` contains the files used forcreating the stand alone QUICKPLOT, and the release versions of the Delft3D-MATLAB interface.
+- `docs` contains the end user documentation: the LaTeX source files of QUICKPLOT and Delft3D-MATLAB user manuals.
+- `third_party` contains the files of some third party libraries used by QUICKPLOT and Delft3D-MATLAB for netCDF and drag-and-drop support.
+- `ci` contains the configuration of our in-house TeamCity CI/CD pipeline.
+- `.github` contains a workflow for backing up the GitHub repository to an internal GitLab repository, and a template for pull requests.
 
 # License
 The QUICKPLOT source code is governed by [LGPL 2.1 or later](LICENSE).
