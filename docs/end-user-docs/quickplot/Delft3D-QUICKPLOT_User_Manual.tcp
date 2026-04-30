@@ -3,7 +3,7 @@ Type=TeXnicCenterProjectInformation
 Version=4
 
 [ProjectInfo]
-MainFile=Delft3D-QUICKPLOT_UM.tex
+MainFile=Delft3D-QUICKPLOT_User_Manual.tex
 UseBibTeX=1
 UseMakeIndex=0
 ActiveProfile=LaTeX ⇨ PDF

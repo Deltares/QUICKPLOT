@@ -831,10 +831,10 @@ object Windows_WinLatexManualGeneration : BuildType({
     name = "[win] Latex Manual Generation"
 
     artifactRules = """
-        +:docs/end-user-docs/matlab/Delft3D-MATLAB_UM.pdf => pdf
-        +:docs/end-user-docs/quickplot/Delft3D-QUICKPLOT_UM.pdf => pdf
-        +:docs/end-user-docs/matlab/Delft3D-MATLAB_UM.log => log
-        +:docs/end-user-docs/quickplot/Delft3D-QUICKPLOT_UM.log => log
+        +:docs/end-user-docs/matlab/Delft3D-MATLAB_User_Manual.pdf => pdf
+        +:docs/end-user-docs/quickplot/Delft3D-QUICKPLOT_User_Manual.pdf => pdf
+        +:docs/end-user-docs/matlab/Delft3D-MATLAB_User_Manual.log => log
+        +:docs/end-user-docs/quickplot/Delft3D-QUICKPLOT_User_Manual.log => log
     """.trimIndent()
     buildNumberPattern = "QP ${DslContext.settingsRoot.paramRefs.buildVcsNumber}"
 
@@ -869,9 +869,9 @@ object Windows_WinLatexManualGeneration : BuildType({
             workingDir = """docs\end-user-docs\quickplot"""
             scriptContent = """
                 copy ..\..\..\gitsettings\gitsettings .
-                pdflatex -shell-escape -interaction=nonstopmode Delft3D-QUICKPLOT_UM
-                pdflatex -shell-escape -interaction=nonstopmode Delft3D-QUICKPLOT_UM
-                pdflatex -shell-escape -interaction=nonstopmode Delft3D-QUICKPLOT_UM
+                pdflatex -shell-escape -interaction=nonstopmode Delft3D-QUICKPLOT_User_Manual
+                pdflatex -shell-escape -interaction=nonstopmode Delft3D-QUICKPLOT_User_Manual
+                pdflatex -shell-escape -interaction=nonstopmode Delft3D-QUICKPLOT_User_Manual
             """.trimIndent()
         }
         script {
@@ -880,10 +880,10 @@ object Windows_WinLatexManualGeneration : BuildType({
             workingDir = """docs\end-user-docs\matlab"""
             scriptContent = """
                 copy ..\..\..\gitsettings\gitsettings .
-                pdflatex -shell-escape -interaction=nonstopmode Delft3D-MATLAB_UM
-                bibtex Delft3D-MATLAB_UM
-                pdflatex -shell-escape -interaction=nonstopmode Delft3D-MATLAB_UM
-                pdflatex -shell-escape -interaction=nonstopmode Delft3D-MATLAB_UM
+                pdflatex -shell-escape -interaction=nonstopmode Delft3D-MATLAB_User_Manual
+                bibtex Delft3D-MATLAB_User_Manual
+                pdflatex -shell-escape -interaction=nonstopmode Delft3D-MATLAB_User_Manual
+                pdflatex -shell-escape -interaction=nonstopmode Delft3D-MATLAB_User_Manual
             """.trimIndent()
         }
     }
@@ -900,13 +900,13 @@ object Windows_WinLatexManualGeneration : BuildType({
     failureConditions {
         failOnText {
             conditionType = BuildFailureOnText.ConditionType.REGEXP
-            pattern = "Output written on Delft3D-QUICKPLOT_UM.pdf"
+            pattern = "Output written on Delft3D-QUICKPLOT_User_Manual.pdf"
             failureMessage = "generation failed"
             reverse = true
         }
         failOnText {
             conditionType = BuildFailureOnText.ConditionType.CONTAINS
-            pattern = "Output written on Delft3D-MATLAB_UM.pdf"
+            pattern = "Output written on Delft3D-MATLAB_User_Manual.pdf"
             failureMessage = "generation failed"
             reverse = true
         }
