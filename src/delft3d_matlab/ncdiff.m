@@ -137,7 +137,7 @@ for i = 1:length(flds)
             case 'Dimensions'
                 anydiff = check_fields(info1, info2, dimension_diff_reporter('local'));
             otherwise
-                vardiff(fld1,fld2)
+                vardiff(fld1,fld2,1,'',[name,'(1).',flds{i}],[name,'(2).',flds{i}])
         end
     end
 end
@@ -166,7 +166,7 @@ if isequal(info1.Size,info2.Size)
                 anydiff = true;
                 fprintf('=> variable %s:\n', name);
             end
-            vardiff(varData1, varData2)
+            vardiff(varData1, varData2,1,'',[name,'(1).Data'],[name,'(2).Data'])
     end
 end
 
