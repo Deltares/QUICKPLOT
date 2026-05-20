@@ -45,3 +45,4 @@ else
         error('File specifies start_index %g for %s and the largest %s index in file is %g, but the last %s is only %g.', start_index, variable, location, maxIndex, location, limitIndex)
     end
 end
+start_index = double(start_index);
