@@ -53,6 +53,12 @@ for i = 1:stacklen
     [p,f] = fileparts(stack(i).file);
     if ~strcmp(f,stack(i).name)
         fcn = sprintf('>%s',stack(i).name);
+    elseif strcmp(f,'d3d_qp')
+        try
+            fcn = [' ',d3d_qp('version')];
+        catch
+            fcn = ' v***';
+        end
     else
         fcn = '';
     end
