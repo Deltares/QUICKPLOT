@@ -653,9 +653,10 @@ elseif ~multiple(M_) && ...
         ~multiple (N_) && ...
         (~multiple(K_) || hslice) && ...
         (strcmp(axestype,'X-Y') || strcmp(axestype,'X-Z') || strcmp(axestype,'X-Y-Z'))
-    % if it's a single point in a spatial plot, we'll plot it as a track,
-    % so don't animate
-    animate = 0;
+    % if it's a single point in a spatial plot, we might do an animation or
+    % plot a track ... not sure yet ... keep it switched on until we know
+    % for sure that it's a track
+    animate = 1;
 elseif strcmp(axestype,'Distance-Val')
     % this is probably also a track and we'll plot the value as function of
     % the distance moved
@@ -1166,6 +1167,14 @@ end
 
 % if ismember(axestype,{'X-Y','X-Z','X-Y-Z'}) && (isequal(geometry,'PNT') && multiple(T_) && ~isempty(coordinates)) || (isequal(geometry,'POLYL') && strcmp(coordinates,'xyz'))
 if tracks
+    % tracks don't animate for now since they represent the time
+    % development already (they are assumed to represent particle tracks or
+    % streaklines), but one could also think of tracks representing the
+    % streamlines for a particular point which change over time as the flow
+    % field adjusts. Maybe that will be a set of line geometries with time
+    % dimension instead of tracks.
+    animate = 0;
+
     coltrack=findobj(OH,'tag','colourtracks');
     if nval == 0
         set(coltrack,'enable','on','style','checkbox')
