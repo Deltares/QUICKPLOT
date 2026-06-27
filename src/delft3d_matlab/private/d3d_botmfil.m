@@ -411,14 +411,14 @@ function Out=infile(FI,domain);
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'                   'Units'   'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc'  'Loc3D' 'Group'          'Val1'    'Val2'  'SubFld' 'MNK'};
 DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    ''        'd'   'd'       ''      'GRID'           'XCOR'    ''       []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''                ''       ''       []       0
+    qp_separator                   ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''                ''       ''       []       0
     'bedload transport'         'm^3/m'  [1 0 1 1 0]  1         2    'u'       'z'   'z'       ''      'MAPBOTTIM'      'TX'      'TY'     []       0
     'entrainment'               'm'      [1 0 1 1 0]  1         1    ''        'd'   'd'       ''      'MAPBOTTIM'      'EN'      ''       []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''                ''       ''       []       0
+    qp_separator                   ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''                ''       ''       []       0
     'bed level'                 'm'      [1 0 1 1 0]  1         1    ''        'd'   'd'       ''      'MAPBOTTIM'      'DP'      ''       []       0
     'cum. erosion/sedimentation' ...
     'm'      [1 0 1 1 0]  1         1    ''        'd'   'd'       ''      'MAPBOTTIM'      'DP'      ''       []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''                ''       ''       []       0
+    qp_separator                   ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''                ''       ''       []       0
     'GUU grid distance'         'm'      [1 0 1 1 0]  1         1    ''        'u'   'u'       ''      'GRID'           'GUU'     ''       []       0
     'GVU grid distance'         'm'      [1 0 1 1 0]  1         1    ''        'u'   'u'       ''      'GRID'           'GVU'     ''       []       0
     'GVV grid distance'         'm'      [1 0 1 1 0]  1         1    ''        'v'   'v'       ''      'GRID'           'GVV'     ''       []       0

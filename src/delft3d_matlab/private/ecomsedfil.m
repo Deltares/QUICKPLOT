@@ -265,17 +265,17 @@ switch FI.SubType
    case 'GCMPLT'
       DataProps={'grid'             ''       'sQUAD' 'xy'     [0 0 1 1 0]  0          0     ''        ''    ''       ''         ''           1         ''
          'inactive points'          '-'      'sQUAD' 'xy'     [0 0 1 1 0]  1          1     ''        ''    ''       'FSM'      ''           1         ''
-         '-------'                  ''       'sQUAD' 'xy'     [0 0 0 0 0]  0          0     ''        ''    ''       ''         ''           1         ''
+         qp_separator                  ''       'sQUAD' 'xy'     [0 0 0 0 0]  0          0     ''        ''    ''       ''         ''           1         ''
          'water level'              'm'      'sQUAD' 'xy'     [3 0 1 1 0]  1          1     ''        ''    ''       'ARCET'    ''           1         ''
          'velocity'                 'm/s'    'sQUAD' 'xy'     [3 0 1 1 5]  1          2     ''        ''    ''       'ARCU'     'ARCV'       1         ''
          'unit discharge per layer' 'm^2/s'  'sQUAD' 'xy'     [3 0 1 1 5]  1          2     ''        ''    ''       'ARCUX'    'ARCVX'      1         ''
-         '-------'                  ''       'sQUAD' 'xy'     [0 0 0 0 0]  0          0     ''        ''    ''       ''         ''           1         ''
+         qp_separator                  ''       'sQUAD' 'xy'     [0 0 0 0 0]  0          0     ''        ''    ''       ''         ''           1         ''
          'tracer concentration'     ''       'sQUAD' 'xy'     [3 0 1 1 0]  1          1     ''        ''    ''       'ARCC'     ''           1         ''
          'cohesive sediment concentration' ...
             'mg/l'                           'sQUAD' 'xy'     [3 0 1 1 0]  1          1     ''        ''    ''       'ARCSED1'  ''           1         ''
          'non-cohesive sediment concentration' ...
             'mg/l'                           'sQUAD' 'xy'     [3 0 1 1 0]  1          1     ''        ''    ''       'ARCSED2'  ''           1         ''
-         '-------'                  ''       'sQUAD' 'xy'     [0 0 0 0 0]  0          0     ''        ''    ''       ''         ''           1         ''
+         qp_separator                  ''       'sQUAD' 'xy'     [0 0 0 0 0]  0          0     ''        ''    ''       ''         ''           1         ''
          'bed level'                'm'      'sQUAD' 'xy'     [0 0 1 1 0]  1          1     ''        ''    ''       'H'        ''           1         ''
          'bed elevation change'     'cm'     'sQUAD' 'xy'     [3 0 1 1 0]  1          1     ''        ''    ''       'ARCTHIK'  ''           1         ''
          'cohesive sediment-bound tracer concentration' ...
@@ -284,7 +284,7 @@ switch FI.SubType
             'ug/l'                           'sQUAD' 'xy'     [3 0 1 1 1]  1          1     ''        ''    ''       'ARCCHEM1' ''           1         ''
          'bed concentration sediment-bound tracer'  ...
             'ppm'                            'sQUAD' 'xy'     [3 0 1 1 0]  1          1     ''        ''    ''       'ARCPBED'  ''           1         ''
-         '-------'                  ''       'sQUAD' 'xy'     [0 0 0 0 0]  0          0     ''        ''    ''       ''         ''           1         ''
+         qp_separator                  ''       'sQUAD' 'xy'     [0 0 0 0 0]  0          0     ''        ''    ''       ''         ''           1         ''
          'distance first dimension' 'm'      'sQUAD' 'xy'     [0 0 1 1 0]  1          1     ''        ''    ''       'DX1'      ''           1         ''
          'distance second dimension' 'm'     'sQUAD' 'xy'     [0 0 1 1 0]  1          1     ''        ''    ''       'DX2'      ''           1         ''
          'grid angle'               'rad'    'sQUAD' 'xy'     [0 0 1 1 0]  1          1     ''        ''    ''       'ANG'      ''           1         ''};
@@ -292,7 +292,7 @@ switch FI.SubType
       DataProps={'water level'      'm'      'sQUAD'   'xy'     [3 3 0 0 0]  0          1     ''        ''    ''       'ESAVE'     1           1         ''
          'water depth'              'm'      'sQUAD'   'xy'     [3 3 0 0 0]  0          1     ''        ''    ''       'DZSAVE'    1           1         ''
          'velocity'                 'm/s'    'sQUAD'   'xy'     [3 3 0 0 5]  0          2     ''        ''    ''       'UVSTZSAVE' [1 2]       2         ''
-         '-------'                  ''       'sQUAD'   'xy'     [0 0 0 0 0]  0          0     ''        ''    ''       ''         ''           1         ''
+         qp_separator                  ''       'sQUAD'   'xy'     [0 0 0 0 0]  0          0     ''        ''    ''       ''         ''           1         ''
          'temperature'              '°C'     'sQUAD'   'xy'     [3 3 0 0 5]  0          1     ''        ''    ''       'UVSTZSAVE' 3           2         ''
          'salinity'                 'psu'    'sQUAD'   'xy'     [3 3 0 0 5]  0          1     ''        ''    ''       'UVSTZSAVE' 4           2         ''
          'tracer concentration'     ''       'sQUAD'   'xy'     [3 3 0 0 0]  0          1     ''        ''    ''       'C1ZSAVE'  ''           2         ''
@@ -305,7 +305,7 @@ end
 Out=cell2struct(DataProps,PropNames,2);
 %======================== SPECIFIC CODE REMOVE ================================
 for i=length(Out):-1:1
-   if strcmp(Out(i).Name,'-------')
+   if strcmp(Out(i).Name,qp_separator)
       % don't remove separators
    elseif strcmp(Out(i).Name,'grid')
       % don't remove grid

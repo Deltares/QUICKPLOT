@@ -411,7 +411,7 @@ try
                     szFail = {};
                     szChkOK = true;
                     for i_quantity=1:length(quantities)
-                        if strcmp(quantities(i_quantity).Name,'-------')
+                        if strcmp(quantities(i_quantity).Name,qp_separator)
                             quantities(i_quantity).Size=[0 0 0 0 0];
                         else
                             [Chk,quantities(i_quantity).Size]=qp_getdata(FI,i_domain,quantities(i_quantity),'size');
@@ -590,7 +590,7 @@ try
                             UserInterrupt=1;
                             error('User interrupt');
                         end
-                        if ~strcmp(quantities(i_quantity).Name,'-------')
+                        if ~strcmp(quantities(i_quantity).Name,qp_separator)
                             if quantities(i_quantity).NVal<0
                                 write_table2_line(logid2,Color.Table{TC2},quantities(i_quantity).Name,NOTAPP,'','Check not applicable.');
                                 emptyTable2 = false;

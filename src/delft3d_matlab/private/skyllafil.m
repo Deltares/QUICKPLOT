@@ -309,7 +309,7 @@ DataProps={'cell fill rate'             ''       [5 0 1 0 1]      0         1   
     'pressure/density'          'm^2/s^2' [5 0 1 0 1]      0         1     ''        'z'   'z'      'PRESSURE'  'Pij'        ''          ''           []
     'rotation'                   '1/s'    [5 0 1 0 1]      0         1     ''        'z'   'z'      'ROTATION'  'Rij'        ''          ''           []
     'velocity'                   'm/s'    [5 0 1 0 1]      0         'xz'  'u'       ''    'z'      'U_VELOC'   'Uij'        'V_VELOC'   'Vij'        []
-    '-------'                    ''       [0 0 0 0 0]      0         0     ''        ''    ''       ''          ''           ''          ''           []
+    qp_separator                    ''       [0 0 0 0 0]      0         0     ''        ''    ''       ''          ''           ''          ''           []
     'pressure at station'        'Pa'     [3 5 0 0 1]      0         1     ''        'z'   'z'      'raai'      'Pressure'   ''          ''           []
     'velocity at station'        'm/s'    [3 5 0 0 1]      0         'xz'  ''        'z'   'z'      'raai'      'U-velocity' 'raai'      'V-velocity' []};
 
@@ -331,7 +331,7 @@ if isstruct(Info)
 end
 %======================== SPECIFIC CODE REMOVE ================================
 for i=size(Out,1):-1:1
-    if ~strcmp(Out(i).Name,'-------')
+    if ~strcmp(Out(i).Name,qp_separator)
         Info1=vs_disp(FI,Out(i).Group1,Out(i).Val1);
         if ~isempty(Out(i).Group2)
             Info2=vs_disp(FI,Out(i).Group2,Out(i).Val2);

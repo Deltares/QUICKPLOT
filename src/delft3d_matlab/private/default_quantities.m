@@ -42,7 +42,7 @@ for Domain = 1:ndoms
         continue
     end
     % remove separators
-    DataProps(strmatch('-------',{DataProps.Name},'exact'))=[];
+    DataProps(strmatch(qp_separator,{DataProps.Name},'exact'))=[];
     %
     c = struct2cell(DataProps);
     f = fieldnames(DataProps);

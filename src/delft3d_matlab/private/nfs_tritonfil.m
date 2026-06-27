@@ -295,53 +295,53 @@ switch dms{domain}
     case 'grid'
         DataProps={...
             'grid'                        ''       [0 0 1 1 0]  0         0    'GRID'           'X'       'Y'      []
-            '-------'                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
+            qp_separator                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
             'bed level'                  'm'       [0 0 1 1 0]  1         1    'BOTTOMS'        'BOTTOM'  ''       []
-            '-------'                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []      };
+            qp_separator                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []      };
     case 'coarse grid'
         DataProps={...
             'grid'                        ''       [0 0 1 1 0]  0         0    'COARSEGRID'     'X-CG'    'Y-CG'   []
-            '-------'                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
+            qp_separator                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
             'water level'                'm'       [7 0 1 1 0]  0         1    'COARSEGRIDTS'   'ZETA-CG' ''       []
             'velocity'                  'm/s'      [7 0 1 1 0]  0         2    'COARSEGRIDTS'   'U-CG'    'V-CG'   []
             'bed level'                  'm'       [7 0 1 1 0]  0         1    'COARSEGRIDTS'   'BOTTOM-CG' ''     []
-            '-------'                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
+            qp_separator                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
             'H_{1/3}'                    'm'       [0 0 1 1 0]  0         1    'COARSEGRIDTD'   'H13-CG'  ''       []
             'H_{rms}'                    'm'       [0 0 1 1 0]  0         1    'COARSEGRIDTD'   'HRMS-CG' ''       []
             'H_{1%}'                     'm'       [0 0 1 1 0]  0         1    'COARSEGRIDTD'   'H1PERCENT-CG' ''  []
             'H_{2%}'                     'm'       [0 0 1 1 0]  0         1    'COARSEGRIDTD'   'H2PERCENT-CG' ''  []
             'T_m'                        's'       [0 0 1 1 0]  0         1    'COARSEGRIDTD'   'TM-CG'   ''       []
             'T_{1/3}'                    's'       [0 0 1 1 0]  0         1    'COARSEGRIDTD'   'T13-CG'  ''       []
-            '-------'                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
+            qp_separator                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
             'HM0'                        'm'       [0 0 1 1 0]  0         1    'COARSEGRIDSD'   'HM0-CG'  ''       []
             'T_{m-1,0}'                  's'       [0 0 1 1 0]  0         1    'COARSEGRIDSD'   'TM-10-CG' ''      []
             'T_{m01}'                    's'       [0 0 1 1 0]  0         1    'COARSEGRIDSD'   'TM01-CG' ''       []
             'T_p'                        's'       [0 0 1 1 0]  0         1    'COARSEGRIDSD'   'TP-CG'   ''       []
             'S_{energy}'               'J/m^2/Hz'  [0 0 1 1 0]  0         1    'COARSEGRIDSD'   'Senergy-CG' ''    'f'
             'S_{var}'                    'm^2/Hz'  [0 0 1 1 0]  0         1    'COARSEGRIDSD'   'Svar-CG' ''       'f'
-            '-------'                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []      };
+            qp_separator                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []      };
     case 'points'
         DataProps={...
             'point'                       ''       [0 3 0 0 0]  0         0    'POINTS'         'X-PTS'   'Y-PTS'  []
-            '-------'                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
+            qp_separator                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
             'water level'                'm'       [7 3 0 0 0]  0         1    'POINTSTS'       'ZETA-PTS' ''      []
             'velocity'                  'm/s'      [7 3 0 0 0]  0         2    'POINTSTS'       'U-PTS'   'V-PTS'  []
             'bed level'                  'm'       [7 3 0 0 0]  0         1    'POINTSTS'       'BOTTOM-PTS' ''    []
-            '-------'                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
+            qp_separator                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
             'H_{1/3}'                    'm'       [0 3 0 0 0]  0         1    'POINTSTD'       'H13-PTS' ''       []
             'H_{rms}'                    'm'       [0 3 0 0 0]  0         1    'POINTSTD'       'HRMS-PTS' ''      []
             'H_{1%}'                     'm'       [0 3 0 0 0]  0         1    'POINTSTD'       'H1PERCENT-PTS' '' []
             'H_{2%}'                     'm'       [0 3 0 0 0]  0         1    'POINTSTD'       'H2PERCENT-PTS' '' []
             'T_m'                        's'       [0 3 0 0 0]  0         1    'POINTSTD'       'TM-PTS'  ''       []
             'T_{1/3}'                    's'       [0 3 0 0 0]  0         1    'POINTSTD'       'T13-PTS' ''       []
-            '-------'                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
+            qp_separator                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
             'HM0'                        'm'       [0 3 0 0 0]  0         1    'POINTSSD'       'HM0-PTS' ''       []
             'T_{m-1,0}'                  's'       [0 3 0 0 0]  0         1    'POINTSSD'       'TM-10-PTS' ''     []
             'T_{m01}'                    's'       [0 3 0 0 0]  0         1    'POINTSSD'       'TM01-PTS' ''      []
             'T_p'                        's'       [0 3 0 0 0]  0         1    'POINTSSD'       'TP-PTS'  ''       []
             'S_{energy}'               'J/m^2/Hz'  [0 3 0 0 0]  0         1    'POINTSSD'       'Senergy-PTS' ''   'f'
             'S_{var}'                    'm^2/Hz'  [0 3 0 0 0]  0         1    'POINTSSD'       'Svar-PTS' ''      'f'
-            '-------'                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []      };
+            qp_separator                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []      };
     otherwise
         i = 1;
         while ismember(dms{i},{'grid','coarse grid','points'})
@@ -351,25 +351,25 @@ switch dms{domain}
         %
         DataProps={...
             'grid'                        ''       [0 0 1 1 0]  0         0    'RAY-xx'         'XRAY-xx' 'YRAY-xx' []
-            '-------'                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
+            qp_separator                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
             'water level'                'm'       [7 0 1 1 0]  0         1    'RAYTS-xx'       'ZETARAY-xx' ''    []
             'velocity'                  'm/s'      [7 0 1 1 0]  0         2    'RAYTS-xx'       'URAY-xx' 'VRAY-xx' []
             'bed level'                  'm'       [7 0 1 1 0]  0         1    'RAYTS-xx'       'BOTTOMRAY-xx' ''  []
-            '-------'                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
+            qp_separator                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
             'H_{1/3}'                    'm'       [0 0 1 1 0]  0         1    'RAYTD-xx'       'H13-xx'  ''       []
             'H_{rms}'                    'm'       [0 0 1 1 0]  0         1    'RAYTD-xx'       'HRMS-xx' ''       []
             'H_{1%}'                     'm'       [0 0 1 1 0]  0         1    'RAYTD-xx'       'H1PERCENT-xx' ''  []
             'H_{2%}'                     'm'       [0 0 1 1 0]  0         1    'RAYTD-xx'       'H2PERCENT-xx' ''  []
             'T_m'                        's'       [0 0 1 1 0]  0         1    'RAYTD-xx'       'TM-xx'   ''       []
             'T_{1/3}'                    's'       [0 0 1 1 0]  0         1    'RAYTD-xx'       'T13-xx'  ''       []
-            '-------'                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
+            qp_separator                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []
             'HM0'                        'm'       [0 0 1 1 0]  0         1    'RAYSD-xx'       'HM0-xx'  ''       []
             'T_{m-1,0}'                  's'       [0 0 1 1 0]  0         1    'RAYSD-xx'       'TM-10-xx' ''      []
             'T_{m01}'                    's'       [0 0 1 1 0]  0         1    'RAYSD-xx'       'TM01-xx' ''       []
             'T_p'                        's'       [0 0 1 1 0]  0         1    'RAYSD-xx'       'TP-xx'   ''       []
             'S_{energy}'               'J/m^2/Hz'  [0 0 1 1 0]  0         1    'RAYSD-xx'       'Senergy-xx' ''    'f'
             'S_{var}'                    'm^2/Hz'  [0 0 1 1 0]  0         1    'RAYSD-xx'       'Svar-xx' ''       'f'
-            '-------'                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []      };
+            qp_separator                     ''       [0 0 0 0 0]  0         0    ''               ''        ''       []      };
         %
         for c = 1:length(DataProps(:))
             if ischar(DataProps{c})

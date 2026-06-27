@@ -1071,7 +1071,7 @@ if ~isempty(mshname)
     mshname = relpath(md_path,mshname);
     [NetFile,Q] = getmesh(mshname);
     MF.mesh.nc_file = NetFile;
-    imeshquant = find(([Q.NVal]==0 & ~strcmp({Q.Name},'-------') & [Q.UseGrid]~=0) | [Q.NVal]==4);
+    imeshquant = find(([Q.NVal]==0 & ~strcmp({Q.Name},qp_separator) & [Q.UseGrid]~=0) | [Q.NVal]==4);
     MF.mesh.quant = Q(imeshquant);
     %
     ismesh = cellfun(@iscell,{Q.varid}) & [Q.NVal]==0;

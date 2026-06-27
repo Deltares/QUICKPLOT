@@ -325,18 +325,18 @@ DataProps={'water level'               'm'      [1 5 0 0 0]  0         1     '' 
     'velocity'                  'm/s'    [1 5 0 0 1]  0         2     ''       'z'   'z'       ''      'HISTRAN'        'ZU'       'ZV'       []       0
     'u roughness Chezy C'    'm^{1/2}/s' [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'HISTRAN'        'ZCZU'     ''         []       0
     'v roughness Chezy C'    'm^{1/2}/s' [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'HISTRAN'        'ZCZV'     ''         []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    qp_separator                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'sediment transport of a fraction' ...
     'm^3/sm' [1 5 0 0 0]  0         2     ''       'z'   'z'       ''      'HISTRAN'        'ZSEDX'    'ZSEDY'    []       0
     'sediment transport magnitude of a fraction' ...
     'm^3/sm' [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'HISTRAN'        'ZSEDR'    ''         []       0
     'sediment transport'        'm^3/sm' [1 5 0 0 0]  0         2     ''       'z'   'z'       ''      'HISTRAN'        'ZSEDTX'   'ZSEDTY'   []       0
     'transport magnitude'       'm^3/sm' [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'HISTRAN'        'ZSEDTR'   ''         []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    qp_separator                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'concentration'            'm^3/m^3' [1 5 0 0 1]  0         1     ''       'z'   'z'       ''      'HISTRAN'        'CONCED'   ''         []       0
     'bed level'                 'm'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'HISTRAN'        'ZZB'      ''         []       0
     'source term'             'm^3/m^3s' [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'HISTRAN'        'RLSILS'   ''         []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    qp_separator                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'transport layer'           '-'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'HISTRAG'        'PTRLA'    ''         []       0
     'exchange layer'            '-'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'HISTRAG'        'PEXLA'    ''         []       0
     'underlayer'                '-'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'HISTRAG'        'P0LA'     ''         []       0
@@ -345,7 +345,7 @@ DataProps={'water level'               'm'      [1 5 0 0 0]  0         1     '' 
     'D50'                       'm'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'HISTRAG'        'D50AR'    ''         []       1
     'D90'                       'm'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'HISTRAG'        'D90AR'    ''         []       1
     'median diameter'           'm'      [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'HISTRAG'        'DMEDAR'   ''         []       1
-    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    qp_separator                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'U cross-sec. sed. transport of a fraction' ...
     'm^3/s'  [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'HISTRAN'        'SXRA'     ''         []       0
     'U cross-sec. sed. transport' ...

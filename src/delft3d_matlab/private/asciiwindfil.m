@@ -240,7 +240,7 @@ function Out=infile(FI,domain)
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'               'Units'  'DimFlag' 'DataInCell' 'NVal'   'Sign'  'Q' };
 DataProps={'grid'               ''        [0 0 1 1 0]  0         0         0      0
-    '-------'                   ''        [0 0 0 0 0]  0         0         0      0
+    qp_separator                   ''        [0 0 0 0 0]  0         0         0      0
     'data'                      ''        [1 0 1 1 0]  0         1         1      1  };
 %------------------------------------------------------------------------------
 Out = cell2struct(DataProps,PropNames,2);

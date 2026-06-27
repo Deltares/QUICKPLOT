@@ -551,7 +551,7 @@ function Out=infile(FI,domain)
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'                           'Units' 'Geom'  'Coords' 'DimFlag' 'DataInCell' 'NVal' 'DFil' 'Subs' 'UseGrid'};
 DataProps={'1D flow network'                ''      'SEG-NODE' 'xy' [0 0 6 0 0]   0           0      0      0      1};
-separator={'-------'                        ''      ''         ''   [0 0 0 0 0]   0           0      0      0      0};
+separator={qp_separator                        ''      ''         ''   [0 0 0 0 0]   0           0      0      0      0};
 %
 if strcmp(FI.FileType,'SOBEK River network')
     dom = 'Flow 1D';

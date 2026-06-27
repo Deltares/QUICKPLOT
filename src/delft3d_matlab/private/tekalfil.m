@@ -617,7 +617,7 @@ switch FI.FileType
         if isfield(FI,'plotonpoly')
             DataProps={'polygon'           'POLYL' 'xy'    [0 0 1 0 0]   0           0       1       0       1          []      {}  };
             DataProps=repmat(DataProps,2+length(FI.Field.ColLabels),1);
-            DataProps{2,1} = '-------';
+            DataProps{2,1} = qp_separator;
             DataProps(3:end,1)=FI.Field.ColLabels;
             DataProps(3:end,6)={1};
             for i=1:length(FI.Field.ColLabels)

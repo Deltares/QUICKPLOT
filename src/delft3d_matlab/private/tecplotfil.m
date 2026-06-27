@@ -158,7 +158,7 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 Zone = FI.Zone(domain);
 
 PropNames={'Name'                   'Units' 'TemperatureType' 'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVal' 'SubFld' 'MNK' 'ival' 'UseGrid'};
-DataProps={'-------'                ''      ''                ''     ''      [0 0 0 0 0]  0           0      []       0     0      1};
+DataProps={qp_separator                ''      ''                ''     ''      [0 0 0 0 0]  0           0      []       0     0      1};
 Out=cell2struct(DataProps,PropNames,2);
 
 if strcmpi(Zone.Type,'ORDERED')
