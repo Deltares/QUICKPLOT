@@ -225,7 +225,7 @@ else
 end
 if isfield(FI,'Bnd') && ~isempty(FI.Bnd)
     Out(end+1) = Out(end);
-    Out(end).Name = '------';
+    Out(end).Name = '-------';
     bndTypes = unique({FI.Bnd.Type});
     for b = 1:length(bndTypes)
         Out(end+1) = Out(end);
