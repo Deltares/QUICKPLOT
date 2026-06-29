@@ -33,4 +33,4 @@ function str = qp_separator
 %   $HeadURL$
 %   $Id$
 
-Str = '-------';
+str = '-------';
