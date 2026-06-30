@@ -213,9 +213,9 @@ try
                     case 25
                         BndType = 'internal barrier with pipes, weak formulation, free slip';
                     case 30
-                        BndType = 'Sommerfield radiation';
+                        BndType = 'Sommerfeld radiation';
                     case 32
-                        BndType = 'combined discharge and Sommerfield radiation';
+                        BndType = 'combined discharge and Sommerfeld radiation';
                     case 40
                         BndType = 'zero normal velocity gradient, internal point method';
                     case 41

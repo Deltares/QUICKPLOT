@@ -138,6 +138,7 @@ switch Props.Geom
         end
         %
         varargout={Ans FI};
+        return
 end
 
 if strcmp(FI.FileType,'Gmsh')
@@ -212,6 +213,8 @@ DataProps={'mesh'                   ''      'UGRID2D-NODE' 'xy'    [0 0 6 0 0]  
            'mesh - node indices'    ''      'UGRID2D-NODE' 'xy'    [0 0 6 0 0]  0            1      []         0            1
            'mesh - face indices'    ''      'UGRID2D-FACE' 'xy'    [0 0 6 0 0]  1            1      []         0            1
            'value'                  ''      'UGRID2D-NODE' 'xy'    [0 0 6 0 0]  0            1      []         0            1};
+Separator={qp_separator             ''      ''             ''      [0 0 0 0 0]  0            0      []         0            0};
+Bounds   ={'boundaries'             ''      'POLYL'        'xy'    [0 0 6 0 0]  0            0      []         0            0};
 if strcmp(FI.FileType,'Gmsh')
     Out=cell2struct(DataProps,PropNames,2);
 else
@@ -224,17 +227,25 @@ else
     end
 end
 if isfield(FI,'Bnd') && ~isempty(FI.Bnd)
-    Out(end+1) = Out(end);
-    Out(end).Name = qp_separator;
+    Separator = cell2struct(Separator,PropNames,2);
+    Separator = match(Separator, Out);
+    Out(end+1) = Separator;
+    
+    Bounds = cell2struct(Bounds,PropNames,2);
+    Bounds = match(Bounds, Out);
+    
     bndTypes = unique({FI.Bnd.Type});
     for b = 1:length(bndTypes)
-        Out(end+1) = Out(end);
+        Out(end+1) = Bounds;
         Out(end).Name = [bndTypes{b}, ' boundaries'];
-        Out(end).Geom = 'POLYL';
-        Out(end).NVal = 0; % maybe the values ...
     end
 end
 % -----------------------------------------------------------------------------
+
+function newItem = match(newItem, Out)
+if isfield(Out,'ElmLayer')
+    newItem.ElmLayer = [];
+end
 
 % -----------------------------------------------------------------------------
 function sz=getsize(FI,Props)
