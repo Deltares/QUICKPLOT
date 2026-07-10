@@ -283,6 +283,9 @@ switch FI.FileType
         end
         ifeature = find(ismember(geotypes,geoset));
         Data = FI.features.data(2,ifeature(idx{M_}));
+        if strcmp(Props.Name,'point')
+            Data = cat(1,Data{:});
+        end
     case 'AutoCAD DXF'
         if strcmp(Props.Coords,'xyz')
             Data=FI.Lines(1:3,:)';
