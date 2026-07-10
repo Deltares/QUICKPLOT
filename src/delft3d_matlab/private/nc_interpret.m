@@ -548,6 +548,30 @@ for ivar = 1:nvars
     end
 end
 
+% safety net for D-Flow FM
+% check if spatial coordinates do actually contain data
+skip_coords=false(1,nvars);
+for ivar = 1:nvars
+    switch nc.Dataset(ivar).Type
+        case {'longitude','latitude'}
+            % read ... should be okay ... it's not time-dependent ...
+            coord_data = nc_varget(nc.Filename, nc.Dataset(ivar).Name);
+            if isempty(coord_data)
+                nc.Dataset(ivar).Type = 'unknown';
+                skip_coords(ivar) = true;
+            elseif min(coord_data(:)) ~= max(coord_data(:))
+                continue
+            elseif isnan(coord_data(1)) || isequal(coord_data(1),-999)
+                % constant may be fine for very simple models, but not missing
+                nc.Dataset(ivar).Type = 'unknown';
+                skip_coords(ivar) = true;
+            end
+    end
+end
+if any(skip_coords)
+    skip_coords_str = sprintf('%s, ',nc.Dataset(skip_coords).Name);
+    ui_message('warning','File: %s\nNo data found for coordinates: %s.',nc.Filename,skip_coords_str(1:end-2))
+end
 iCoords = ~strcmp({nc.Dataset.Type},'unknown');
 AuxCoordVars = varNames(iCoords);
 
