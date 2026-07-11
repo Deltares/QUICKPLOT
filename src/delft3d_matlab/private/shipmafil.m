@@ -907,7 +907,7 @@ man = 0;
 %
 V=inf; % unknown/variable number of points indicated by infinity
 PropNames={'Name'                       'Units' 'DimFlag'   'DataInCell' 'NVal' 'Geom'   'Coords' 'ClosedPoly' 'Project' 'Case' 'Scenery' 'Manoeuvre' 'Var'   };
-Sep      ={'-------'                    ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse    scn       man          0      }; 
+Sep      ={qp_separator                    ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse    scn       man          0      }; 
 if domain > length(FI.Case.Project)
     Out=cell2struct(Sep,PropNames,2);
     Out(1:end,:)=[];
@@ -915,7 +915,7 @@ if domain > length(FI.Case.Project)
 elseif cse>0
     scn=FI.Project(prj).Cases.Data(cse).sceneryNr;
     DataProps={'default figures'        ''      [0 0 0 0 0] 0            -2     ''       ''       0            prj       cse    scn       man          0
-        '-------'                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse    scn       man          0
+        qp_separator                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse    scn       man          0
         'desired ship track'            ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse    scn       man          -1
         'realized ship track'           ''      [9 0 0 0 0] 0             0     'PNT'    'xy'     0            prj       cse    scn       man          0
         'distance ticks'                ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse    scn       man          0
@@ -926,13 +926,13 @@ elseif cse>0
         'swept path'                    ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse    scn       man          0
         'fairway contour'               ''      [0 0 0 0 0] 0             0     'POLYG'  'xy'     1            prj       cse    scn       man          -1
         'bank suction lines'            ''      [0 0 0 0 0] 0             0     'POLYL'  'xy'     0            prj       cse    scn       man          -1
-        '-------'                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse    scn       man          0
+        qp_separator                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse    scn       man          0
         'wind'                          'm/s'   [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse    scn       man          -1
         'waves'                         'm'     [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse    scn       man          -1
         'swell'                         'm'     [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse    scn       man          -1
         'current'                       'm/s'   [0 0 V 0 0] 0             2     'TRI'    'xy'     0            prj       cse    scn       man          -1
         'depth'                         'm'     [0 0 V 0 0] 0             1     'TRI'    'xy'     0            prj       cse    scn       man          -1
-        '-------'                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse    scn       man          0
+        qp_separator                       ''      [0 0 0 0 0] 0             0     ''       ''       0            prj       cse    scn       man          0
         'ship speed'                    'm/s'   [9 0 0 0 0] 0             1     'PNT'    'd'      0            prj       cse    scn       man          0
         'his-data'                      ''      [9 0 0 0 0] 0             1     'PNT'    'd'      0            prj       cse    scn       man          0       };
     Out=cell2struct(DataProps,PropNames,2);

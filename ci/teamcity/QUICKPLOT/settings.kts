@@ -1470,6 +1470,7 @@ object Windows_WinRunQuickplotTestBenchStandalone : BuildType({
 
     requirements {
         contains("teamcity.agent.jvm.os.name", "Windows")
+        doesNotContain("teamcity.agent.hostname", "32917")
     }
 })
 
@@ -1606,6 +1607,7 @@ object Windows_WinRunQuickplotTestBenchWithinMatlab : BuildType({
 
     requirements {
         contains("teamcity.agent.jvm.os.name", "Windows")
+        doesNotContain("teamcity.agent.hostname", "32917")
     }
 })
 

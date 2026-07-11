@@ -199,7 +199,7 @@ nLayers_WAQ    = waq_info.Grid.MNK(3);
 nSeg2D         = waq_info.DwqBin.NumSegm/nLayers_WAQ;
 dwq            = waq_info.DwqBin;
 waq_qnt        = qpread(waq_info);
-waq_qnt(strcmp('-------',{waq_qnt.Name}'))=[];
+waq_qnt(strcmp(qp_separator,{waq_qnt.Name}'))=[];
 %
 fprintf(1,'Reading FLOW data file(s) ...\n');
 [p,f,e] = fileparts(flwfile);

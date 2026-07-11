@@ -212,7 +212,7 @@ T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'                       'Units' 'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc' 'Tri' 'UseGrid' 'Val1'    'Val2' 'Val3'};
 DataProps={'grid'                       ''       [0 0 6 0 0]  0          0     ''        ''    ''       1     1         0         []     []
-    '-------'                    ''       [0 0 0 0 0]  0          0     ''        ''    ''       0     0         []        []     []};
+    qp_separator                    ''       [0 0 0 0 0]  0          0     ''        ''    ''       0     0         []        []     []};
 
 %======================== SPECIFIC CODE ADD ===================================
 T=3;

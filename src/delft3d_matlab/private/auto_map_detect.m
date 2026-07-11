@@ -181,10 +181,10 @@ function [DataProps,fld] = addsep(DataProps,fld,propversion)
 switch propversion
     case 0
         fld = fld+1;
-        DataProps(fld,:)={'-------'                       ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''           ''        ''       []       0};
+        DataProps(fld,:)={qp_separator                       ''       [0 0 0 0 0]  0         0    ''        ''    ''        ''      ''           ''        ''       []       0};
     case 2
         fld = fld+1;
-        DataProps(fld,:)={'-------'                       ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''           ''        ''       []       0};
+        DataProps(fld,:)={qp_separator                       ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''           ''        ''       []       0};
     otherwise
         % no separators
 end

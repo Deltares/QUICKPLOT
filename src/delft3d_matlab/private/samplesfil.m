@@ -326,7 +326,7 @@ PropNames = {'Name'                       'Units' 'DimFlag' 'DataInCell' 'NVal' 
 DataProps = {'locations'                  ''       [0 0 1 0 0]  0          0     ''        ''    ''      'PNT'   'xy'      []
     'locations as line'                 ''       [0 0 1 0 0]  0          0     ''        ''    ''      'sSEG'  'xy'      []
     'triangulated locations'            ''       [0 0 1 0 0]  0          0     ''        ''    ''      'TRI'   'xy'      []
-    '-------'                           ''       [0 0 0 0 0]  0          0     ''        ''    ''      ''      ''        []
+    qp_separator                           ''       [0 0 0 0 0]  0          0     ''        ''    ''      ''      ''        []
     'sample data'                       ''       [0 0 1 0 0]  0          1     ''        ''    ''      'TRI'   'xy'      -999};
 
 Out = cell2struct(DataProps, PropNames, 2);
@@ -365,7 +365,7 @@ if ~isempty(FI.Times)
     %
     Out(end).DimFlag(1) = 1;
     for i = 1:length(Out)
-        if ~strcmp(Out(i).Name, '-------')
+        if ~strcmp(Out(i).Name, qp_separator)
             Out(i).DimFlag(3) = f3;
         end
     end

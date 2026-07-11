@@ -253,7 +253,7 @@ function Out=infile(FI,domain)
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'               'Units'  'DimFlag' 'DataInCell' 'NVal'   'Sign'   };
 DataProps={'grid'               ''        [0 0 1 1 0]  0         0         0
-    '-------'                   ''        [0 0 0 0 0]  0         0         0
+    qp_separator                   ''        [0 0 0 0 0]  0         0         0
     'data'                      ''        [3 0 1 1 0]  1         1         1
     'negated data'              ''        [3 0 1 1 0]  1         1        -1      };
 %------------------------------------------------------------------------------

@@ -277,12 +277,15 @@ switch FI.FileType
         geotypes = FI.features.data(1,:);
         switch Props.Name
             case 'line'
-                geoset = {'MultiLineString'};
+                geoset = {'MultiLineString','LineString'};
             case 'point'
                 geoset = {'Point'};
         end
         ifeature = find(ismember(geotypes,geoset));
         Data = FI.features.data(2,ifeature(idx{M_}));
+        if strcmp(Props.Name,'point')
+            Data = cat(1,Data{:});
+        end
     case 'AutoCAD DXF'
         if strcmp(Props.Coords,'xyz')
             Data=FI.Lines(1:3,:)';
@@ -617,7 +620,7 @@ switch FI.FileType
         if isfield(FI,'plotonpoly')
             DataProps={'polygon'           'POLYL' 'xy'    [0 0 1 0 0]   0           0       1       0       1          []      {}  };
             DataProps=repmat(DataProps,2+length(FI.Field.ColLabels),1);
-            DataProps{2,1} = '-------';
+            DataProps{2,1} = qp_separator;
             DataProps(3:end,1)=FI.Field.ColLabels;
             DataProps(3:end,6)={1};
             for i=1:length(FI.Field.ColLabels)
@@ -862,7 +865,7 @@ switch FI.FileType
         DataProps={'line'                      'POLYL' 'xy'  [0 0 1 0 0]  0          0       0       0       1          []      {}
                    'point'                     'PNT'   'xy'  [0 0 1 0 0]  0          0       0       0       1          []      {}  };
         geotypes = unique(FI.features.data(1,:));
-        if ~ismember('MultiLineString',geotypes)
+        if ~ismember('MultiLineString',geotypes) && ~ismember('LineString',geotypes)
             DataProps(strcmp('line',DataProps(:,1)),:) = [];
         end
         if ~ismember('Point',geotypes)
@@ -1043,7 +1046,7 @@ switch FI.FileType
         geotypes = FI.features.data(1,:);
         switch Props.Name
             case 'line'
-                geoset = {'MultiLineString'};
+                geoset = {'MultiLineString','LineString'};
             case 'point'
                 geoset = {'Point'};
         end

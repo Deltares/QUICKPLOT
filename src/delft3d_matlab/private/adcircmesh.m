@@ -134,45 +134,114 @@ try
     %
     Line = fgetl(fid);
     if ischar(Line)
-        nOpenBndSeg = sscanf(Line,'%i',1);
+        nWaterlevelBndSeg = sscanf(Line,'%i',1);
         fgetl(fid); % line contains total number of open boundary nodes
-        for seg = 1:nOpenBndSeg
+        for seg = 1:nWaterlevelBndSeg
             Line = fgetl(fid);
             nBndSegNod = sscanf(Line,'%i',1);
-            S.Bnd(seg).Type = 'open';
+            S.Bnd(seg).Type = 'waterlevel';
             S.Bnd(seg).Nodes = readmat(fid,1,nBndSegNod,sprintf('open boundary segment %i',seg));
         end
         %
         Line = fgetl(fid);
         if ischar(Line)
-            nLandBndSeg = sscanf(Line,'%i',1);
+            nDischargeBndSeg = sscanf(Line,'%i',1);
             fgetl(fid); % line contains total number of land boundary nodes
-            for seg = 1:nLandBndSeg
+            for seg = 1:nDischargeBndSeg
                 Line = fgetl(fid);
                 N = sscanf(Line,'%i',2);
-                if length(N)==1
+                if isscalar(N)
                     N(2) = -999;
                 end
-                S.Bnd(nOpenBndSeg+seg).Type = N(2);
                 switch N(2)
-                    case 0 % EXTERNAL NO NORMAL FLOW - ESSENTIAL, FREE SLIP
+                    case {0,1,2,10,11,12,20,21,22,30}
                         NVal = 1;
-                    case 3 % EXTERNAL BARRIER - ESSENTIAL, FREE SLIP
-                        % NODE NO.,BARLANHT, BARLANCFSP
+                        Values = {'ndx'};
+                    case {3,13,23}
                         NVal = 3;
-                    case 24 % INTERNAL BARRIER - NATURAL, FREE SLIP
-                        % NODE NO.,IBCONN,BARINHT,BARINCFSB,BARINCFSP
+                        Values = {'ndx','barrier height','barrier supercritical flow coefficient'};
+                    case {4,24}
                         NVal = 5;
+                        Values = {'ndx','ndx2','barrier height','barrier subcritical flow coefficient','barrier supercritical flow coefficient'};
+                    case {5,25}
+                        % NODE NO.,IBCONN,BARINHT,BARINCFSB,BARINCFSP,PIPEHT,PIPECOEF,PIPEDIAM
+                        NVal = 8;
+                        Values = {'ndx','ndx2','barrier height','barrier subcritical flow coefficient','barrier supercritical flow coefficient','pipe height','pipe friction factor','pipe diameter'};
                     otherwise
-                        % don't know, try to be smart ...
+                        % auto detect the number of values per boundary node ...
                         here = ftell(fid);
                         Line = fgetl(fid);
-                        [dummy,NVal] = sscanf(Line,'%f');
+                        [~,NVal] = sscanf(Line,'%f');
                         fseek(fid,here,-1);
+                        Values = {'ndx'};
+                        for n = NVal:-1:2
+                            Values{n} = sprintf('boundary parameter %d',n-1);
+                        end
                 end
+                % interpret boundary index
+                switch N(2)
+                    case 0
+                        BndType = 'external closed, free slip';
+                    case 1
+                        BndType = 'island closed, free slip';
+                    case 2
+                        BndType = 'external discharge, free slip';
+                    case 3
+                        BndType = 'external barrier, free slip';
+                    case 4
+                        BndType = 'internal barrier, free slip';
+                    case 5
+                        BndType = 'internal barrier with pipes, free slip';
+                    case 10
+                        BndType = 'external closed, no slip';
+                    case 11
+                        BndType = 'island closed, no slip';
+                    case 12
+                        BndType = 'external discharge, no slip';
+                    case 13
+                        BndType = 'external barrier, no slip';
+                    case 20
+                        BndType = 'external closed, weak formulation, free slip';
+                    case 21
+                        BndType = 'island closed, weak formulation, free slip';
+                    case 22
+                        BndType = 'external discharge, weak formulation, free slip';
+                    case 23
+                        BndType = 'external barrier, weak formulation, free slip';
+                    case 24
+                        BndType = 'internal barrier, weak formulation, free slip';
+                    case 25
+                        BndType = 'internal barrier with pipes, weak formulation, free slip';
+                    case 30
+                        BndType = 'Sommerfeld radiation';
+                    case 32
+                        BndType = 'combined discharge and Sommerfeld radiation';
+                    case 40
+                        BndType = 'zero normal velocity gradient, internal point method';
+                    case 41
+                        BndType = 'zero normal velocity gradient, Galerkin method';
+                    case 52
+                        BndType = 'periodic boundary, free slip';
+                    case 102
+                        BndType = 'external discharge, baroclinic, free slip';
+                    case 112
+                        BndType = 'external discharge, baroclinic, no slip';
+                    case 122
+                        BndType = 'external discharge, weak formulation, baroclinic, free slip';
+                    otherwise
+                        BndType = sprintf('unknown boundary type %d',N(2));
+                end
+                S.Bnd(nWaterlevelBndSeg+seg).Type = BndType;
                 Data = readmat(fid,NVal,N(1),sprintf('land boundary segment %i',seg));
-                S.Bnd(nOpenBndSeg+seg).Nodes = Data(1,:);
-                S.Bnd(nOpenBndSeg+seg).Data = Data(2:end,:);
+                S.Bnd(nWaterlevelBndSeg+seg).Nodes = Data(1,:);
+                if length(Values)>1 && strcmp(Values{2},'ndx2')
+                    S.Bnd(nWaterlevelBndSeg+seg).Nodes2 = Data(2,:);
+                    ndx=2;
+                else
+                    ndx=1;
+                end
+                S.Bnd(nWaterlevelBndSeg+seg).Data = Data(ndx+1:end,:);
+                S.Bnd(nWaterlevelBndSeg+seg).Values = Values(ndx+1:end);
             end
         end
     end

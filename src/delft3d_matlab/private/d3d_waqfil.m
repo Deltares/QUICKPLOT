@@ -1215,7 +1215,7 @@ switch Type
     case {'delwaqlga'}
         DataProps={'grid'          ''     '' 'xy'     [0 0 1 1 0]  0         0     ''       'd'   'd'       ''      ''               ''              ''    []       0 0
             'segment number'       ''     '' 'xy'     [0 0 1 1 0]  1         1     ''       'z'   'z'       'c'     ''               ''              ''    []       0 0
-            '-------'              ''     '' ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''              ''    []       0 0};
+            qp_separator              ''     '' ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''              ''    []       0 0};
         Out=cell2struct(DataProps,PropNames,2);
         if FI.MNK(3)>1
             Out(2).DimFlag(K_) = 1;
@@ -1310,7 +1310,7 @@ switch Type
         mass_per='cell';
     otherwise
         DataProps={'segment number'       ''     '' 'xy'     [0 5 0 0 0]  1         1     ''       'z'   'z'       'c'     ''               ''              ''    []       0 0
-            '-------'              ''     '' ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''              ''    []       0 0
+            qp_separator              ''     '' ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''              ''    []       0 0
             '--constituents'       ''     '' 'xy'     [1 5 0 0 0]  1         1     ''       'z'   'z'       'c'     casemod('DELWAQ_RESULTS') casemod('SUBST_001')     ''    []       0 0};
         mass_per='cell';
         if isfield(FI,'Grid') && ~isempty(FI.Grid)
@@ -1909,7 +1909,7 @@ if ~isempty(icnst)
         end
         if i>1
             j0=j(1)+i-2;
-            Ins(j0).Name='-------';
+            Ins(j0).Name=qp_separator;
             Ins(j0).Units='';
             Ins(j0).DimFlag=[0 0 0 0 0];
             Ins(j0).Group='';
@@ -1929,7 +1929,7 @@ if isfield(FI,'Grid') && ~isempty(FI.Grid) && includegrid
         Out(2).Name='segment number';
         Out(2).Units='';
         %
-        Out(3).Name='-------';
+        Out(3).Name=qp_separator;
         Out(3).Units='';
         Out(3).DimFlag=[0 0 0 0 0];
         Out(3).Group='';
@@ -1999,7 +1999,7 @@ if isPartFile(FI)
     for i = 1:length(Out)
         if isempty(Out(i).Units)
             switch Out(i).Name
-                case {'grid','segment number','-------'}
+                case {'grid','segment number',qp_separator}
                 otherwise
                     Out(i).Units = 'kg/m^3';
             end

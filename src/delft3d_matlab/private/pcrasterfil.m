@@ -262,7 +262,7 @@ else
                 DataProps{2+i,end-1} = FI.Table{i,1};
                 DataProps{2+i,4} = 5;
             end
-            DataProps(2,1:4) = {'-------' [0 0 0 0 0] 0 0};
+            DataProps(2,1:4) = {qp_separator [0 0 0 0 0] 0 0};
             DataProps(1,4) = {6};
     end
 end

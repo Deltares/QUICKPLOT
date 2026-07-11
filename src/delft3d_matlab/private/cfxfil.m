@@ -263,7 +263,7 @@ if ~isempty(B1)
         DataProps(end+1,:)={vars{i}                    [5 0 1 1 1]  1         1    0  1  i 1};
     end
     if length(dmp.Block)>1
-        DataProps(end+1,:)={'-------'                    [0 0 0 0 0]  0          0   0  0  0 1};
+        DataProps(end+1,:)={qp_separator                    [0 0 0 0 0]  0          0   0  0  0 1};
     end
 end
 if length(dmp.Block)>1
@@ -281,7 +281,7 @@ if length(dmp.Block)>1
             DataProps(end+1,:)={[blk vars{i}]                    [5 0 1 1 1]  1         1    b  1  i 1};
         end
         if b<length(dmp.Block)
-            DataProps(end+1,:)={'-------'                    [0 0 0 0 0]  0          0   0  0  0 1};
+            DataProps(end+1,:)={qp_separator                    [0 0 0 0 0]  0          0   0  0  0 1};
         end
     end
 end

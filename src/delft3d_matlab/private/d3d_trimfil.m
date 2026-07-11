@@ -1325,7 +1325,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    'sQU
                                        ''       [1 0 1 1 0]  1         0.9  'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-series'     'KFUMIN'  'KFVMIN' []       0
     'parallel partition numbers'       ''       [0 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-const'      'PPARTITION'  ''       []       0
     'partition boundaries'             ''       [0 0 1 1 0]  0         0    'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-const'      'PPARTITION' ''    []       0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    qp_separator                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
     'air pressure'                     'N/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'PATM'    ''       []       0
     'air temperature'                  '°C'     [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'AIRTEM'  ''       []       0
     'cloud coverage'                   '%'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'CLOUDS'  ''       []       0
@@ -1341,7 +1341,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    'sQU
     'free convection of sensible heat' 'W/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'HFREE'   ''       []       0
     'free convection of latent heat'   'W/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'EFREE'   ''       []       0
     'computed minus derived heat flux' 'W/m^2'  [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'QMIS'    ''       []       0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''                 ''        ''       []       0    
+    qp_separator                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''                 ''        ''       []       0    
     'fraction high ground'             ''       [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'poros'   ''       []       0    
     'high bed level'                   'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'dpH'     ''       []       0
     'low bed level'                    'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'dpL'     ''       []       0
@@ -1354,7 +1354,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    'sQU
     'ghost u-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPu1'   ''       []       0
     'ghost v-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPv1'   ''       []       0
     'ghost s-point reconstruction'     ''       [1 0 1 1 0]  0        -1    ''      ''       ''        ''    ''        ''      'map-series'       'mGPs1'   ''       []       0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    qp_separator                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
     'wave height'                      'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-trit-series'  'WAVE_HEIGHT' ''  []       0
     'significant wave height'          'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-rol-series'   'HS'     ''       []       0
     'wave vector'                      'm'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'm'       'z'   'z'       ''      'map-trit-series'  'WAVE_HEIGHT' 'DIR' []     0
@@ -1375,7 +1375,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    'sQU
     'wave force'                       'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-trit-series'  'WAVE_FORCE_X' 'WAVE_FORCE_Y' []      0
     'roller force'                     'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-rol-series'   'WSU'     'WSV'    []       0
     'roller force'                     'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-trit-series'  'ROLLER_FORCE_X' 'ROLLER_FORCE_Y'  [] 0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''                 ''         ''      []       0
+    qp_separator                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''                 ''         ''      []       0
     'snow thickness on ice cover'      'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'H_SNOW'   ''      []       0
     'area fraction covered by ice'     '-'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-ice-series'   'ICEFRAC'  ''      []       0
     'area fraction covered by ice'     '-'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'A_ICE'    ''      []       0
@@ -1383,7 +1383,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    'sQU
     'thickness of ice cover'           'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'       'H_ICE'    ''      []       0
     'pressure of ice cover'            'Pa'     [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-ice-series'   'ICEPRESS' ''      []       0
     'ice drift velocity'               'm/s'    [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-series'       'U_ICE'    'V_ICE' []       0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    qp_separator                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
     'water level (when dry: bed level)' 'm'     [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'S1'      ''       []       0
     'water level'                      'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'S1'      ''       []       0
     'water depth'                      'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-series'     'S1'      ''       []       0
@@ -1401,7 +1401,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    'sQU
     'd.a. velocity fluctuations'       'm/s'    [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-series'     'UMNLDF'  'VMNLDF' []       1
     'froude number'                    '-'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-series'     'U1'      'V1'     []       0
     'head'                             'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-series'     'U1'      'V1'     []       0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    qp_separator                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
     'acceleration (GLM coordinates)'   'm/s^2'  [1 0 1 1 1]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'MOM_DUDT'        'MOM_DVDT'        []       1
     'acc. due to density'              'm/s^2'  [1 0 1 1 1]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'MOM_UDENSITY'    'MOM_VDENSITY'    []       1
     'acc. due to flow resistance'      'm/s^2'  [1 0 1 1 1]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'MOM_URESISTANCE' 'MOM_VRESISTANCE' []       1
@@ -1414,7 +1414,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    'sQU
     'acc. due to waves'                'm/s^2'  [1 0 1 1 1]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'MOM_UWAVES'      'MOM_VWAVES'      []       1
     'acc. due to streamw. momentum transp.' 'm/s^2' [1 0 1 1 1] 1      2    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'MOM_UDUDX'       'MOM_VDVDY'       []       1
     'acc. due to lateral momentum transp.'  'm/s^2' [1 0 1 1 1] 1      2    'sQUAD' 'xy'     'u'       'u'   'z'       'c'     'map-series'     'MOM_VDUDY'       'MOM_UDVDX'       []       1
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    qp_separator                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
     'density'                          'kg/m^3' [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'c'     'map-series'     'RHO'     ''       []       0
     'hydrostatic pressure'             'Pa'     [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'c'     'map-series'     'RHO'     ''       []       0
     'non-hydrostatic pressure'         'Pa'     [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'c'     'map-series'     'HYDPRES' ''       []       0
@@ -1434,7 +1434,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    'sQU
     'richardson number'                '-'      [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'i'     'map-series'     'RICH'    ''       []       0
     'vorticity'                        '1/s'    [1 0 1 1 5]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'c'     'map-series'     'VORTIC'  ''       []       0
     'enstrophy'                        '1/s^2'  [1 0 1 1 5]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       'c'     'map-series'     'ENSTRO'  ''       []       0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    qp_separator                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
     'characteristic velocity'          'm/s'    [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'z'   'z'       ''      'map-sed-series' 'UUU'     'VVV'    []       1
     'characteristic velocity magnitude' 'm/s'   [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'UMOD'    ''       []       0
     'height above bed for characteristic velocity' ...
@@ -1442,7 +1442,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    'sQU
     'bed shear velocity magnitude'     'm/s'    [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'USTAR'   ''       []       0
     'settling velocity'                'm/s'    [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        ''    'z'       'i'     'map-sedgs-series' 'WSS'   ''       's1'     0
     'settling velocity'                'm/s'    [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        ''    'z'       'i'     'map-sed-series' 'WS'      ''       's1'     0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    qp_separator                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
     'equilibrium concentration'        'kg/m^3' [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        ''    'z'       'c'     'map-sed-series' 'RSEDEQ'  ''       's1'     0
     'bed load transport due to currents (zeta point)' ...
                                        '*'      [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'z'   'z'       ''      'map-sed-series' 'SBCU'    'SBCV'   'sb'     1
@@ -1470,7 +1470,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    'sQU
                                       'kg/m^3/s' [1 0 1 1 0] 1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'SOURSE'  ''       's'      1
     'sink term suspended sediment fractions'   ...
                                        '1/s'    [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'SINKSE'  ''       's'      1
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    qp_separator                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
     'near bed reference concentration' 'kg/m^3' [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'RCA'     ''       's'      0
     'bed shear stress'                 'N/m^2'  [1 0 1 1 0]  1         2    'sQUAD' 'xy'     'u'       'u'   'z'       ''      'map-series'     'TAUKSI'  'TAUETA' []       1
     'staggered bed shear stress'       'N/m^2'  [1 0 1 1 0]  1         1.9  'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-series'     'TAUKSI'  'TAUETA' []       1
@@ -1488,7 +1488,7 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    'sQU
     'staggered bed slope'              '-'      [1 0 1 1 0]  1         1.9  'sQUAD' 'xy'     ''        'd'   'd'       ''      'map-sed-series' 'DZDUU'   'DZDVV'  []       1
     'cum. erosion/sedimentation'       'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'd'   'z'       ''      'map-const'      'DP0'     ''       []       0
     'morphological acceleration factor' '-'     [1 0 0 0 0]  0         1    ''      ''       ''        'NA'  ''        ''    'map-infsed-serie' 'MORFAC'  ''       []       0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    qp_separator                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
     'available mass in fluff layer'    'kg/m^2' [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        ''    'z'       ''      'map-sed-series' 'MFLUFF'  ''       's'      0
     'available mass of sediment'       'kg/m^2' [1 0 1 1 1]  1         1    'sQUAD' 'xy'     ''        ''    'z'       'b'     'map-sed-series' 'MSED'    ''       'sb'     0
     'available mass of sediment'       'kg/m^2' [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        ''    'z'       ''      'map-sed-series' 'BODSED'  ''       'sb'     0
@@ -1512,9 +1512,9 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0    'sQU
     'base level of sediment layer'     'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'DP_BEDLYR' ''       []       0
     'base level of sediment layer'     'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'THLYR'   ''       []       0
     'base level of sediment layer'     'm'      [1 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-sed-series' 'DPSED'   ''       []       0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
+    qp_separator                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0
     'grid cell surface area'           'm^2'    [0 0 1 1 0]  1         1    'sQUAD' 'xy'     ''        'z'   'z'       ''      'map-const'      'XCOR'    ''       []       0
-    '-------'                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0};
+    qp_separator                          ''       [0 0 0 0 0]  0         0    ''      ''       ''        ''    ''        ''      ''               ''        ''       []       0};
 
 %============================= AUTODETECTION ==============================
 Info=vs_disp(FI,'map-const','XCOR');
@@ -1868,7 +1868,7 @@ DataProps = {...
     'temporarily inactive water level points'            ''       'logical'     'Time' 'Faces2D'  ''       ''       'map-series'       'KFU'            'KFV'
     'temporarily inactive velocity points'               ''       'logical'     'Time' 'Edges2D'  ''       ''       'map-series'       'KFU'            'KFV'
     'parallel partition numbers'                         ''       'float'       ''     'Faces2D'  ''       ''       'map-const'        'PPARTITION'     ''
-    %   '-------'                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
+    %   qp_separator                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
     'air pressure'                                       'N/m^2'  'float'       'Time' 'Faces2D'  ''       ''       'map-series'       'PATM'           ''
     'air temperature'                                    '°C'     'float'       'Time' 'Faces2D'  ''       ''       'map-series'       'AIRTEM'         ''
     'cloud coverage'                                     '%'      'float'       'Time' 'Faces2D'  ''       ''       'map-series'       'CLOUDS'         ''
@@ -1876,7 +1876,7 @@ DataProps = {...
     'wind speed'                                         'm/s'    'vector(xy)'  'Time' 'Faces2D'  ''       ''       'map-series'       'WINDU'          'WINDV'
     'precipitation rate'                                 'mm/h'   'float'       'Time' 'Faces2D'  ''       ''       'map-series'       'PRECIP'         ''
     'evaporation rate'                                   'mm/h'   'float'       'Time' 'Faces2D'  ''       ''       'map-series'       'EVAP'           ''
-    %   '-------'                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
+    %   qp_separator                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
     'wave height'                                        'm'      'float'       'Time' 'Faces2D'  ''       ''       'map-trit-series'  'WAVE_HEIGHT'    ''
     'significant wave height'                            'm'      'float'       'Time' 'Faces2D'  ''       ''       'map-rol-series'   'HS'             ''
     'wave vector'                                        'm'      'vector(xy)'  'Time' 'Faces2D'  ''       ''       'map-trit-series'  'WAVE_HEIGHT'    'DIR'
@@ -1891,7 +1891,7 @@ DataProps = {...
     'wave force'                                         'N/m^2'  'vector(ij)'  'Time' 'Edges2D'  ''       ''       'map-trit-series'  'WAVE_FORCE_X'   'WAVE_FORCE_Y'
     'roller force'                                       'N/m^2'  'vector(ij)'  'Time' 'Edges2D'  ''       ''       'map-rol-series'   'WSU'            'WSV'
     'roller force'                                       'N/m^2'  'vector(ij)'  'Time' 'Edges2D'  ''       ''       'map-trit-series'  'ROLLER_FORCE_X' 'ROLLER_FORCE_Y'
-    %   '-------'                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
+    %   qp_separator                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
     'water level (when dry: bed level)'                  'm'      'level'       'Time' 'Faces2D'  ''       ''       'map-series'       'S1'             ''
     'water level'                                        'm'      'level'       'Time' 'Faces2D'  ''       ''       'map-series'       'S1'             ''
     'water depth'                                        'm'      'float'       'Time' 'Faces2D'  ''       ''       'map-series'       'S1'             ''
@@ -1905,7 +1905,7 @@ DataProps = {...
     'd.a. velocity fluctuations'                         'm/s'    'vector(ij)'  'Time' 'Edges2D'  ''       ''       'map-series'       'UMNLDF'         'VMNLDF'
     'froude number'                                      '-'      'float'       'Time' 'Faces2D'  ''       ''       'map-series'       'U1'             'V1'
     'head'                                               'm'      'level'       'Time' 'Faces2D'  ''       ''       'map-series'       'U1'             'V1'
-    %   '-------'                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
+    %   qp_separator                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
     'density'                                            'kg/m^3' 'float'       'Time' 'Voxels3D' ''       'F'      'map-series'       'RHO'            ''
     'hydrostatic pressure'                               'Pa'     'float'       'Time' 'Voxels3D' ''       'F'      'map-series'       'RHO'            ''
     'non-hydrostatic pressure'                           'Pa'     'float'       'Time' 'Voxels3D' ''       'F'      'map-series'       'HYDPRES'        ''
@@ -1919,13 +1919,13 @@ DataProps = {...
     'richardson number'                                  '-'      'float'       'Time' 'HFaces3D' ''       'F'      'map-series'       'RICH'           ''
     'vorticity'                                          '1/s'    'float'       'Time' 'Voxels3D' ''       'F'      'map-series'       'VORTIC'         ''
     'enstrophy'                                          '1/s^2'  'float'       'Time' 'Voxels3D' ''       'F'      'map-series'       'ENSTRO'         ''
-    %   '-------'                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
+    %   qp_separator                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
     'characteristic velocity'                            'm/s'    'vector(ij)'  'Time' 'Edges2D'  ''       ''       'map-sed-series'   'UUU'            'VVV'
     'characteristic velocity magnitude'                  'm/s'    'float'       'Time' 'Faces2D'  ''       ''       'map-sed-series'   'UMOD'           ''
     'height above bed for characteristic velocity'       'm'      'float'       'Time' 'Faces2D'  ''       ''       'map-sed-series'   'ZUMOD'          ''
     'bed shear velocity magnitude'                       'm/s'    'float'       'Time' 'Faces2D'  ''       ''       'map-sed-series'   'USTAR'          ''
     'settling velocity'                                  'm/s'    'float'       'Time' 'HFaces3D' 's1'     'F'      'map-sed-series'   'WS'             ''
-    %   '-------'                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
+    %   qp_separator                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
     'equilibrium concentration'                          'kg/m^3' 'float'       'Time' 'Voxels3D' 's1'     'F'      'map-sed-series'   'RSEDEQ'         ''
     'bed load transport due to currents (zeta point)'    '*'      'vector(ij)'  'Time' 'Faces2D'  'sb1'    ''       'map-sed-series'   'SBCU'           'SBCV'
     'bed load transport due to currents'                 '*'      'vector(ij)'  'Time' 'Edges2D'  'sb1'    ''       'map-sed-series'   'SBCUU'          'SBCVV'
@@ -1942,11 +1942,11 @@ DataProps = {...
     'mean total transport'                               '*'      'vector(ij)'  'Time' 'Edges2D'  's1'     ''       'map-avg-series'   'SSUUA'          'SSVVA'
     'source term suspended sediment fractions'         'kg/m^3/s' 'float'       'Time' 'Faces2D'  's1'     ''       'map-sed-series'   'SOURSE'         ''
     'sink term suspended sediment fractions'           '1/s'      'float'       'Time' 'Faces2D'  's1'     ''       'map-sed-series'   'SINKSE'         ''
-    %   '-------'                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
+    %   qp_separator                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
     'z coordinate gensig'                                'm'      'level'       'Time' 'HFaces3D' ''       'G'      'map-sedgs-series' 'Z_INTERF'       ''
     'concentration'                                      'kg/m^3' 'float'       'Time' 'Voxels3D' 's1'     'G'      'map-sedgs-series' 'RZED1'          ''
     'settling velocity'                                  'm/s'    'float'       'Time' 'HFaces3D' 's1'     'G'      'map-sedgs-series' 'WSS'            ''
-    %   '-------'                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
+    %   qp_separator                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
     'near bed reference concentration'                   'kg/m^3' 'float'       'Time' 'Faces2D'  's1'     ''       'map-sed-series'   'RCA'            ''
     'bed shear stress'                                   'N/m^2'  'vector(ij)'  'Time' 'Edges2D'  ''       ''       'map-series'       'TAUKSI'         'TAUETA'
     'maximum bed shear stress'                           'N/m^2'  'float'       'Time' 'Faces2D'  ''       ''       'map-series'       'TAUMAX'         ''
@@ -1956,7 +1956,7 @@ DataProps = {...
     'bed slope'                                          '-'      'vector(ij)'  'Time' 'Edges2D'  ''       ''       'map-sed-series'   'DZDUU'          'DZDVV'
     'cum. erosion/sedimentation'                         'm'      'float'       'Time' 'Faces2D'  ''       ''       'map-const'        'DP0'            ''
     'morphological acceleration factor'                  '-'      'float'       'Time' ''         ''       ''       'map-infsed-serie' 'MORFAC'         ''
-    %   '-------'                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
+    %   qp_separator                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
     'sediment fraction in top layer'                     '-'      'float'       'Time' 'Faces2D'  'sb1'    ''       'map-sed-series'   'FRAC'           ''
     'mud fraction in top layer'                          '-'      'float'       'Time' 'Faces2D'  ''       ''       'map-sed-series'   'MUDFRAC'        ''
     'cumulative mass error'                              'm'      'float'       'Time' 'Faces2D'  ''       ''       'map-sed-series'   'LYRFRAC'        ''
@@ -1964,14 +1964,14 @@ DataProps = {...
     'geometric mean sediment diameter'                   'm'      'float'       'Time' 'Faces2D'  ''       ''       'map-sed-series'   'DG'             ''
     'hiding and exposure'                                '-'      'float'       'Time' 'Faces2D'  'sb1'    ''       'map-sed-series'   'HIDEXP'         ''
     'reduction factor due to limited sediment thickness' '-'      'float'       'Time' 'Faces2D'  'sb1'    ''       'map-sed-series'   'FIXFAC'         ''
-    %   '-------'                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
+    %   qp_separator                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
     'available mass of sediment'                         'kg/m^2' 'float'       'Time' 'Faces2D'  'sb1'    ''       'map-sed-series'   'BODSED'         ''
     'available mass of sediment'                         'kg/m^2' 'float'       'Time' 'Faces2D'  'sb1'    ''       'map-mor-series'   'BODSED'         ''
     'z coordinate bed'                                   'm'      'level'       'Time' 'HFaces3D' ''       'B'      'map-sed-series'   'THLYR'          ''
     'sediment fraction'                                  '-'      'float'       'Time' 'Voxels3D' 'sb1'    'B'      'map-sed-series'   'LYRFRAC'        ''
     'bed porosity'                                       '-'      'float'       'Time' 'Voxels3D' ''       'B'      'map-sed-series'   'EPSPOR'         ''
     'maximum historical load'                            'kg/m^2' 'float'       'Time' 'Voxels3D' ''       'B'      'map-sed-series'   'PRELOAD'        ''
-    %   '-------'                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
+    %   qp_separator                                            ''       ''            ''     ''         ''       ''       ''                 ''               ''
     };
 
 % Autodetect any additional 2D or 3D data fields.

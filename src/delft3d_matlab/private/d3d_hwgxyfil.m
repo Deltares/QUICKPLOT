@@ -426,9 +426,9 @@ function Out=infile(FI,domain)
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'                   'Units'   'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc'  'Loc3D' 'Group'          'Val1'     'Val2'    'SubFld' 'MNK'};
 DataProps={'wave grid'          ''       [0 0 1 1 0]  0         0     ''       'd'   'd'       ''      'map-series'     'XP'       'YP'       []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    qp_separator                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'wind velocity'             'm/s'    [1 0 1 1 0]  1         2     'x'      'd'   'd'       ''      'WIND'           'WINDU'    'WINDV'    []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    qp_separator                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'total wave energy'         'J/m^2'  [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'HSIGN'    ''         []       0
     'total wave variance'       'm2'     [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'HSIGN'    ''         []       0
     'hsig wave height'          'm'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'HSIGN'    ''         []       0
@@ -450,21 +450,21 @@ DataProps={'wave grid'          ''       [0 0 1 1 0]  0         0     ''       '
                                 's'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'DRTM01'   ''         []       0
     'mean wave steepness'       '-'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'STEEPW'   ''         []       0
     'mean wave length'          'm'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'WLENGTH'  ''         []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    qp_separator                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'directional spreading'     'deg'    [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'DSPR'     ''         []       0
     'dissipation'               'N/ms'   [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'DISSIP'   ''         []       0
     'leakage'                   'J/m^2s' [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'LEAK'     ''         []       0
     'fraction breaking'         '-'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'QB'       ''         []       0
     'energy transport'          'W/m'    [1 0 1 1 0]  1         2     'x'      'd'   'd'       ''      'map-series'     'TRANSP-X' 'TRANSP-Y' []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    qp_separator                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'set-up due to waves'       'm'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'SETUP'    ''         []       0
     'water depth'               'm'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'DEPTH'    ''         []       0
     'current velocity'          'm/s'    [1 0 1 1 0]  1         2     'x'      'd'   'd'       ''      'map-series'     'VELOC-X'  'VELOC-Y'  []       0
     'wave induced force'        'N/m^2'  [1 0 1 1 0]  1         2     'x'      'd'   'd'       ''      'map-series'     'FX'       'FY'       []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    qp_separator                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'orbital velocity near bottom' ...
                                 'm/s'    [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'map-series'     'UBOT'     ''         []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0};
+    qp_separator                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0};
 
 %============================= AUTODETECTION ==================================
 Info=vs_disp(FI,'map-series','XP');

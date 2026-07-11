@@ -846,11 +846,11 @@ DataProps={'morphologic grid'         'sQUAD' 'xy'    [0 0 1 1 0]  0          0 
     'hydrodynamic grid'               'sQUAD' 'xy'    [0 0 1 1 0]  0          0     ''        'z'   'z'      'i'     0      0
     Str                               'sQUAD' 'xy'    [0 0 1 1 0]  0          0     ''        'd'   'd'      ''     -1      1
     'clipped grid'                    'sQUAD' 'xy'    [0 0 1 1 0]  0          0     ''        'd'   'd'      ''      0      0
-    '-------'                         ''      ''      [0 0 0 0 0]  0          0     ''        ''    ''       ''      0      0
+    qp_separator                         ''      ''      [0 0 0 0 0]  0          0     ''        ''    ''       ''      0      0
     '(m,n) node indices'              'sQUAD' 'xy'    [0 0 1 1 0]  0          4     ''        'd'   'd'      'i'     0      0
     'nm node index'                   'sQUAD' 'xy'    [0 0 1 1 0]  0          1     ''        'd'   'd'      'i'     0      0
     'nm node index (DD simulation)'   'sQUAD' 'xy'    [0 0 1 1 0]  0          1     ''        'd'   'd'      'i'     0      0
-    '-------'                         ''      ''      [0 0 0 0 0]  0          0     ''        ''    ''       ''      0      0
+    qp_separator                         ''      ''      [0 0 0 0 0]  0          0     ''        ''    ''       ''      0      0
     '(m,n) cell indices'              'sQUAD' 'xy'    [0 0 1 1 0]  1          4     ''        'z'   'z'      'i'     0      0
     'nm cell index'                   'sQUAD' 'xy'    [0 0 1 1 0]  1          1     ''        'z'   'z'      'i'     0      0
     'nm cell index (DD simulation)'   'sQUAD' 'xy'    [0 0 1 1 0]  1          1     ''        'z'   'z'      'i'     0      0   };

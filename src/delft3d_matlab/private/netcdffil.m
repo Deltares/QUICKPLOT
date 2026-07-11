@@ -96,13 +96,13 @@ if nargin==2
             
             iq = 1;
             for iq2 = 1:length(infileStruct2)
-                if strcmp(infileStruct2(iq2).Name,'-------')
+                if strcmp(infileStruct2(iq2).Name,qp_separator)
                     % in case of a separator, merge it only if the
                     % reference is also a separator
                     if iq > length(infileStruct)
                         % append
                         infileStruct = insert_quantity(infileStruct,iq,infileStruct2(iq2));
-                    elseif strcmp(infileStruct(iq).Name,'-------')
+                    elseif strcmp(infileStruct(iq).Name,qp_separator)
                         % merge ... nothing to do
                     else
                         % insert
@@ -1682,7 +1682,7 @@ nvars = length(FI.Dataset);
 ngatts = length(FI.Attribute);
 %
 Dummy = Out;
-Dummy.Name='-------';
+Dummy.Name=qp_separator;
 %
 % Following lines are a hack to detect vector quantities for XBeach netcdf files
 % NOTE: also [min(x-component) min(y-component)] is incorrectly detected as vector quantity

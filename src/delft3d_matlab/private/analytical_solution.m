@@ -150,7 +150,7 @@ function Out=infile(FI,idom)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'                   'Units' 'Geom' 'Coords' 'DimFlag' 'DataInCell' 'NVal' 'SubFld' 'MNK' 'varid'  'DimName' 'hasCoords' 'VectorDef' 'ClosedPoly' 'UseGrid'};
-DataProps={'-------'                ''      ''     ''      [0 0 0 0 0]  0           0      []       0     []          {}          0         0          0          0};
+DataProps={qp_separator                ''      ''     ''      [0 0 0 0 0]  0           0      []       0     []          {}          0         0          0          0};
 Out=cell2struct(DataProps,PropNames,2);
 switch FI.Type
     case 'Dam break'

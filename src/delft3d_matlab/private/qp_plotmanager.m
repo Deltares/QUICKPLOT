@@ -546,7 +546,6 @@ switch cmd
             else
                 [Items, UserDatas, Tags] = qp_get_items(Ax);
                 %---
-                separator='------';
                 if isempty(Items)
                     set(UD.PlotMngr.ItList,'string',{''},'userdata',[],'value',1, ...
                         'enable','off','backgroundcolor',Inactive);
@@ -565,7 +564,7 @@ switch cmd
                         % Backward compatible with cell version of PlotState ...
                         %
                         if isequal(UserDatas{it},'---')
-                            Nms{it}=separator;
+                            Nms{it}=qp_separator;
                             if prevseparator
                                 Nms(it)=[];
                                 UserDatas(it)=[];
@@ -598,7 +597,7 @@ switch cmd
                         it_same_name=find(strcmp(Nms{it},Nms));
                         extend=1;
                         out_of_options=0;
-                        while length(it_same_name)>1 && ~strcmp(Nms{it},separator)
+                        while length(it_same_name)>1 && ~strcmp(Nms{it},qp_separator)
                             extrastr = repmat({''},1,length(Items));
                             cancut = 0;
                             for itloc=it_same_name
@@ -770,25 +769,25 @@ switch cmd
                     end
                     %
                     % If no item with same name was found, then select the
-                    % first item that's not a separator.
+                    % first item that's not a qp_separator.
                     %
                     if isempty(val)
                         val=1;
-                        while val<length(Nms) && strcmp(Nms{val},separator)
+                        while val<length(Nms) && strcmp(Nms{val},qp_separator)
                             val=val+1;
                         end
                     end
                     %
                     % if there are only separators, select none
                     %
-                    if all(strcmp(Nms(val),separator))
+                    if all(strcmp(Nms(val),qp_separator))
                         val=[];
                     end
                     set(UD.PlotMngr.ItList,'string',Nms, ...
                         'userdata',{Tags Items},'value',val, ...
                         'enable','on','backgroundcolor',Active);
                     %
-                    % buttons should not be enabled if a separator is selected
+                    % buttons should not be enabled if a qp_separator is selected
                     %
                     enable='on';
                     if isempty(val)

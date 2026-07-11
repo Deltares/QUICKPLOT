@@ -87,7 +87,9 @@ for f = 1:nfeat
     switch G.type
         case 'Point'
             C = cat(2,C{:});
-        %case 'LineString'
+        case 'LineString'
+            C = cat(1,C{:});
+            C = cell2mat(C);
         %case 'Polygon'
         %case 'MultiPoint'
         case 'MultiLineString'

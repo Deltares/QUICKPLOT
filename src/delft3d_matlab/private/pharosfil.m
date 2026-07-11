@@ -402,13 +402,13 @@ DataProps={'grid'             ''         'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0 
     'open boundary'            ''        'SEG'          'xy'     [0 0 6 0 0]  0          0     ''        ''    ''       'GRID_adm'   'LELNR'          ''           2         ''
     'transmission boundaries'  ''        'SEG'          'xy'     [0 0 6 0 0]  0          0     ''        ''    ''       'GRID_adm'   'LELNR'          ''           2         ''
     'closed boundaries'        ''        'SEG'          'xy'     [0 0 6 0 0]  0          0     ''        ''    ''       'GRID_adm'   'LELNR'          ''           2         ''
-    '-------'                  ''        ''             ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''
+    qp_separator                  ''        ''             ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''
     'water level'              'm'       'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'H_depth'        ''           1         ''
     'bed level'                'm'       'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'H_depth'        ''           1         ''
     'water depth'              'm'       'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'H_depth'        ''           1         ''
     'velocity'                 'm/s'     'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          2     ''        ''    ''       'CURRENT'    'Ux_veloc'       'Uy_veloc'   1         ''
     %'relative radiation frequency' '1/s' 'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'CURRENT'    'Omega_rel'      ''           1         ''
-    '-------'                  ''        ''             ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''
+    qp_separator                  ''        ''             ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''
     'relative breaking intensity' ''     'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'BREAKING'   'Gamma_b'        ''           1         'nfreq'
     'weighted mean wave height dir.' 'm' 'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'HS_dir'     'HS_directional' ''           1         'md'
     'wave height'              'm'       'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'POTENTIALS' 'PHI_r'          'PHI_i'      1         'nrun'
@@ -422,7 +422,7 @@ DataProps={'grid'             ''         'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0 
                                'radians' 'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'UDIR'           ''           1         'sf'
     %   'maximum velocity'     'm/s'     'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          2     ''        ''    ''       'SEICH_res'  'UMAX'           'UDIR'       1         'sf'
     'minimum velocity'         'm/s'     'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'UMIN'           ''           1         'sf'
-    '-------'                  ''        ''             ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''
+    qp_separator                  ''        ''             ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''
     'wave number'              ''        'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'K_wave'         ''           1         'nfreq'
     'phase velocity'           'm/s'     'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'C_wave'         ''           1         'nfreq'
     'group velocity'           'm/s'     'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'GRID'       'Cg_wave'        ''           1         'nfreq'
@@ -430,13 +430,13 @@ DataProps={'grid'             ''         'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0 
     'potential (imag part)'    ''        'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'POTENTIALS' 'PHI_i'          ''           1         'nrun'
     'seiches potential (real part)' ''   'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'PHIs_r'         ''           1         'sf'
     'seiches potential (imag part)' ''   'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SEICH_res'  'PHIs_i'         ''           1         'sf'
-    '-------'                  ''        ''             ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''
+    qp_separator                  ''        ''             ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''
     'weighted period Tm-1,0'   's'       'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SPECTRAL-PAR' 'TM10'         ''           1         ''
     'wave number based on Tm-1,0' ...
                                ''        'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SPECTRAL-PAR' 'KTM10'        ''           1         ''
     'radial frequency based on Tm-1,0' ...
                                ''        'UGRID2D-NODE' 'xy'     [0 0 6 0 0]  0          1     ''        ''    ''       'SPECTRAL-PAR' 'OMEGATM10'    ''           1         ''
-    '-------'                  ''        ''             ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''};
+    qp_separator                  ''        ''             ''       [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''};
 %======================== SPECIFIC CODE DIMENSIONS ============================
 SkipGroup={};
 SkipElem={'RKN_roughness'};
@@ -493,7 +493,7 @@ for i=1:length(Grps)
         end
     end
     fld=fld+1;
-    DataProps(fld,:)={'-------'                  ''   ''  ''   [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''};
+    DataProps(fld,:)={qp_separator                  ''   ''  ''   [0 0 0 0 0]  0          0     ''        ''    ''       ''           ''               ''           1         ''};
 end
 %======================== DataProps conversion ================================
 Out=cell2struct(DataProps,PropNames,2);

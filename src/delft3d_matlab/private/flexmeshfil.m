@@ -106,15 +106,49 @@ fidx=find(DimFlag);
 idx(fidx(1:length(varargin)))=varargin;
 
 if strcmp(FI.FileType,'Gmsh')
-    Faces = FI.Element.Nodes';
     NodeCoor = FI.Node.Coords';
+else
+    NodeCoor = FI.NodeCoor;
+end
+
+switch Props.Geom
+    case 'POLYL'
+        bndTypes = {FI.Bnd.Type};
+        iBnd = find(strcmp(bndTypes,Props.Name(1:end-11)));
+        if ~isequal(idx{M_},0)
+            iBnd = iBnd(idx{M_});
+        end
+        nBnd = length(iBnd);
+        if isfield(FI.Bnd,'Nodes2') && ~isempty(FI.Bnd(iBnd(1)).Nodes2)
+            has_Nodes2 = true;
+            ipoly = 2*nBnd;
+        else
+            has_Nodes2 = false;
+            ipoly = nBnd;
+        end
+        for b = nBnd:-1:1
+            if has_Nodes2
+                nodes = FI.Bnd(iBnd(b)).Nodes2;
+                Ans.XY{ipoly} = NodeCoor(nodes,1:2);
+                ipoly = ipoly-1;
+            end
+            nodes = FI.Bnd(iBnd(b)).Nodes;
+            Ans.XY{ipoly} = NodeCoor(nodes,1:2);
+            ipoly = ipoly-1;
+        end
+        %
+        varargout={Ans FI};
+        return
+end
+
+if strcmp(FI.FileType,'Gmsh')
+    Faces = FI.Element.Nodes';
 else
     if isfield(Props,'ElmLayer')
         Faces = FI.Faces(FI.ElmLyr==Props.ElmLayer,:);
     else
         Faces = FI.Faces;
     end
-    NodeCoor = FI.NodeCoor;
 end
 iFaces = [];
 lFaces = [];
@@ -136,28 +170,6 @@ Faces(i) = renumFaces;
 NodeCoor = NodeCoor(iNodes,:);
 %
 switch Props.Geom
-    case 'POLYG'
-        X = Faces;
-        Y = Faces;
-        X(i) = NodeCoor(Faces(i),1);
-        Y(i) = NodeCoor(Faces(i),2);
-        X(~i) = NaN;
-        Y(~i) = NaN;
-        X(:,end+1:end+2) = NaN;
-        Y(:,end+1:end+2) = NaN;
-        for i=1:size(X,1)
-            for j=1:size(X,2)
-                if isnan(X(i,j))
-                    X(i,j) = X(i,1);
-                    Y(i,j) = Y(i,1);
-                    break
-                end
-            end
-        end
-        X = X';
-        Y = Y';
-        Ans.X = X(:);
-        Ans.Y = Y(:);
     case 'TRI'
         Ans.TRI = Faces;
         sz = size(NodeCoor);
@@ -201,6 +213,8 @@ DataProps={'mesh'                   ''      'UGRID2D-NODE' 'xy'    [0 0 6 0 0]  
            'mesh - node indices'    ''      'UGRID2D-NODE' 'xy'    [0 0 6 0 0]  0            1      []         0            1
            'mesh - face indices'    ''      'UGRID2D-FACE' 'xy'    [0 0 6 0 0]  1            1      []         0            1
            'value'                  ''      'UGRID2D-NODE' 'xy'    [0 0 6 0 0]  0            1      []         0            1};
+Separator={qp_separator             ''      ''             ''      [0 0 0 0 0]  0            0      []         0            0};
+Bounds   ={'boundaries'             ''      'POLYL'        'xy'    [0 0 6 0 0]  0            0      []         0            0};
 if strcmp(FI.FileType,'Gmsh')
     Out=cell2struct(DataProps,PropNames,2);
 else
@@ -212,30 +226,50 @@ else
         [Out.ElmLayer] = deal(FI.Layers(domain));
     end
 end
+if isfield(FI,'Bnd') && ~isempty(FI.Bnd)
+    Separator = cell2struct(Separator,PropNames,2);
+    Separator = match(Separator, Out);
+    Out(end+1) = Separator;
+    
+    Bounds = cell2struct(Bounds,PropNames,2);
+    Bounds = match(Bounds, Out);
+    
+    bndTypes = unique({FI.Bnd.Type});
+    for b = 1:length(bndTypes)
+        Out(end+1) = Bounds;
+        Out(end).Name = [bndTypes{b}, ' boundaries'];
+    end
+end
 % -----------------------------------------------------------------------------
+
+function newItem = match(newItem, Out)
+if isfield(Out,'ElmLayer')
+    newItem.ElmLayer = [];
+end
 
 % -----------------------------------------------------------------------------
 function sz=getsize(FI,Props)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 sz=[0 0 0 0 0];
-if strcmp(FI.FileType,'Gmsh')
-    switch Props.Geom
-        case 'UGRID2D-NODE'
+switch Props.Geom
+    case 'UGRID2D-NODE'
+        if strcmp(FI.FileType,'Gmsh')
             sz(M_) = size(FI.Node.Coords,2);
-        case 'UGRID2D-FACE'
-            sz(M_) = size(FI.Element.Nodes,2);
-    end
-else
-    switch Props.Geom
-        case 'UGRID2D-NODE'
+        else
             sz(M_) = size(FI.NodeCoor,1);
-        case 'UGRID2D-FACE'
-            if isfield(Props,'ElmLayer')
-                sz(M_) = sum(FI.ElmLyr==Props.ElmLayer);
-            else
-                sz(M_) = size(FI.Faces,1);
-            end
-    end
+        end
+    case 'UGRID2D-FACE'
+        if strcmp(FI.FileType,'Gmsh')
+            sz(M_) = size(FI.Element.Nodes,2);
+        elseif isfield(Props,'ElmLayer')
+            sz(M_) = sum(FI.ElmLyr==Props.ElmLayer);
+        else
+            sz(M_) = size(FI.Faces,1);
+        end
+    case 'POLYL'
+        bndTypes = {FI.Bnd.Type};
+        iBnd = strcmp(bndTypes,Props.Name(1:end-11));
+        sz(M_) = sum(iBnd);
 end
 % -----------------------------------------------------------------------------
 

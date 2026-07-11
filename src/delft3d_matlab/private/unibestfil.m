@@ -187,7 +187,7 @@ function Out=infile(FI,domain)
 %======================== SPECIFIC CODE =======================================
 PropNames={'Name'                   'Units'   'DimFlag' 'DataInCell' 'NVal' 'Quant1' 'Quant2' 'MNK' 'Coords'};
 DataProps={'grid'                      ''       [0 0 1 0 0]  0         0       0      0        0    'x'
-    '-------'                          ''       [3 0 1 0 0]  0         1      -1      0        1    'x'};
+    qp_separator                          ''       [3 0 1 0 0]  0         1      -1      0        1    'x'};
 if isfield(FI,'RefDate')
     DataProps{2,3}=[1 0 1 0 0];
 end

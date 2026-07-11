@@ -457,7 +457,7 @@ Out = cell2struct(cell(12,length(Q1)),{'Name','Units','Geom','Coords','DimFlag',
 q2 = {Q2.Name};
 j = 0;
 for i=1:length(Q1)
-    if strcmp(Q1(i).Name,'-------')
+    if strcmp(Q1(i).Name,qp_separator)
         j=j+1;
         Out(j).Name = Q1(i).Name;
         Out(j).Units = '';

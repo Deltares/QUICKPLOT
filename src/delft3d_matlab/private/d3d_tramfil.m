@@ -527,7 +527,7 @@ function Out=infile(FI,domain);
 PropNames={'Name'                   'Units'   'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc'  'Loc3D' 'Group'          'Val1'     'Val2'    'SubFld' 'MNK'};
 DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0     ''       'd'   'd'       ''      'GRID'           'XCOR'     ''         []       0
     'hydrodynamic grid'         ''       [1 0 1 1 1]  0         0     ''       'z'   'z'       'i'     'MAPTTRAN'       'SL'       ''         []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    qp_separator                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'water level'               'm'      [1 0 1 1 0]  1         1     ''       'z'   'z'       ''      'MAPTTRAN'       'SL'       ''         []       0
     'water depth'               'm'      [1 0 1 1 0]  1         1     ''       'z'   'z'       ''      'MAPTTRAN'       'SL'       ''         []       0
     'velocity (horizontal)'     'm/s'    [1 0 1 1 1]  1         2     'u'      'u'   'z'       'c'     'MAPTTRAN'       'U'        'V'        []       1
@@ -537,10 +537,10 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0     '' 
     'm/s'    [1 0 1 1 1]  1         1     'u'      'u'   'z'       'c'     'MAPTTRAN'       'U'        'V'        []       0
     'depth averaged velocity'   'm/s'    [1 0 1 1 0]  1         2     'u'      'u'   'z'       ''      'MAPTTRAN'       'U'        'V'        []       1
     'spiral flow intensity'     'm/s'    [1 0 1 1 0]  1         1     ''       'z'   'z'       ''      'MAPTTRAN'       'RSP'      ''         []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    qp_separator                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'u roughness Chezy C'    'm^{1/2}/s' [1 0 1 1 0]  1         1     ''       'u'   'u'       ''      'MAPTTRAN'       'CZU'      ''         []       0
     'v roughness Chezy C'    'm^{1/2}/s' [1 0 1 1 0]  1         1     ''       'v'   'v'       ''      'MAPTTRAN'       'CZV'      ''         []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    qp_separator                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'initial bedload transport' 'm^3/m'  [1 0 1 1 0]  1         2     'u'      'z'   'z'       ''      'MAPATRAN'       'TTXI'     'TTYI'     []       1
     'avg bedload transport'    'm^3/m/s' [1 0 1 1 0]  1         2     'u'      'z'   'z'       ''      'MAPATRAN'       'TTXA'     'TTYA'     []       1
     'bedload transport per frac' 'm^3/m/s' [1 0 1 1 0]  1         2     'u'      'z'   'z'       ''      'MAPTTRAN'       'SX'       'SY'       []       1
@@ -550,11 +550,11 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0     '' 
     'susp. transport per frac' 'm^3/m/s' [1 0 1 1 0]  1         2     'u'      'u'   'z'       ''      'MAPTTRAN'       'SXS'      'SYS'      []       1
     'total susp. transport'    'm^3/m/s' [1 0 1 1 0]  1         2     'u'      'u'   'z'       ''      'MAPTTRAN'       'STXS'     'STYS'     []       1
     'concentration'            'm^3/m^3' [1 0 1 1 0]  1         1     ''       'z'   'z'       ''      'MAPTTRAN'       'CONC'     ''         []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    qp_separator                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'bed exchange contribution' 'm^3/m^3' [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'MAPTTRAN'       'RLSILT'   ''         []       0
     'bed level increment'       'm'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'MAPATRAN'       'DZBSIL'   ''         []       0
     'time-varying bed level'    'm'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'MAPTTRAN'       'ZB'       ''         []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    qp_separator                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'D50 (char. diam. 1)'       'm'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'MAPITRAN'       'DD50'     ''         1        0
     'D90 (char. diam. 2)'       'm'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'MAPITRAN'       'DD90'     ''         1        0
     'transport layer thickness' 'm'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'MAPTTRAG'       'DEFF'     ''         []       0
@@ -564,14 +564,14 @@ DataProps={'morphologic grid'          ''       [0 0 1 1 0]  0         0     '' 
     'D90'                       'm'      [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'MAPTTRAG'       'D90'      ''         1        0
     'transport layer'           ''       [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'MAPTTRAG'       'PTRLA'    ''         []       0
     'exchange layer'            ''       [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'MAPTTRAG'       'PEXLA'    ''         []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    qp_separator                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'GUU grid distance'         'm'      [1 0 1 1 0]  1         1     ''       'u'   'u'       ''      'GRID'           'GUU'      ''         []       0
     'GVU grid distance'         'm'      [1 0 1 1 0]  1         1     ''       'u'   'u'       ''      'GRID'           'GVU'      ''         []       0
     'GVV grid distance'         'm'      [1 0 1 1 0]  1         1     ''       'v'   'v'       ''      'GRID'           'GVV'      ''         []       0
     'GUV grid distance'         'm'      [1 0 1 1 0]  1         1     ''       'v'   'v'       ''      'GRID'           'GUV'      ''         []       0
     'cell area water level point' 'm^2'  [1 0 1 1 0]  1         1     ''       'z'   'z'       ''      'GRID'           'GSQS'     ''         []       0
     'cell area bottom point'    'm^2'    [1 0 1 1 0]  1         1     ''       'd'   'd'       ''      'GRID'           'GSQD'     ''         []       0
-    '-------'                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0};
+    qp_separator                   ''       [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0};
 
 %============================= AUTODETECTION ==================================
 Info=vs_disp(FI,'GRID','XCOR');

@@ -297,7 +297,7 @@ function Out=infile(FI,domain);
 PropNames={'Name'                   'Units'   'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc'  'Loc3D' 'Group'          'Val1'     'Val2'    'SubFld' 'MNK'};
 DataProps={'bedload sediment transport' 'm^3/m' [1 5 0 0 0]  0         2     ''       'z'   'z'       ''      'HISBOTTIM'      'TXHIS'    'TYHIS'    []       0
     'entrainment'                'm'     [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'HISBOTTIM'      'ENHIS'    ''         []       0
-    '-------'                    ''      [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
+    qp_separator                    ''      [0 0 0 0 0]  0         0     ''       ''    ''        ''      ''               ''         ''         []       0
     'bed level'                  'm'     [1 5 0 0 0]  0         1     ''       'z'   'z'       ''      'HISBOTTIM'      'DPHIS'    ''         []       0};
 Out=cell2struct(DataProps,PropNames,2);
 

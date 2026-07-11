@@ -218,7 +218,7 @@ for i=1:N
     end
 end
 %
-Out(end+1).Name = '-------';
+Out(end+1).Name = qp_separator;
 %
 Out(end+1).Name = 'data locations';
 Out(end).Units = '';
