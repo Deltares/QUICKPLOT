@@ -277,7 +277,7 @@ switch FI.FileType
         geotypes = FI.features.data(1,:);
         switch Props.Name
             case 'line'
-                geoset = {'MultiLineString'};
+                geoset = {'MultiLineString','LineString'};
             case 'point'
                 geoset = {'Point'};
         end
@@ -865,7 +865,7 @@ switch FI.FileType
         DataProps={'line'                      'POLYL' 'xy'  [0 0 1 0 0]  0          0       0       0       1          []      {}
                    'point'                     'PNT'   'xy'  [0 0 1 0 0]  0          0       0       0       1          []      {}  };
         geotypes = unique(FI.features.data(1,:));
-        if ~ismember('MultiLineString',geotypes)
+        if ~ismember('MultiLineString',geotypes) && ~ismember('LineString',geotypes)
             DataProps(strcmp('line',DataProps(:,1)),:) = [];
         end
         if ~ismember('Point',geotypes)
@@ -1046,7 +1046,7 @@ switch FI.FileType
         geotypes = FI.features.data(1,:);
         switch Props.Name
             case 'line'
-                geoset = {'MultiLineString'};
+                geoset = {'MultiLineString','LineString'};
             case 'point'
                 geoset = {'Point'};
         end
