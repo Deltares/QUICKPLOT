@@ -1602,7 +1602,7 @@ object Windows_WinRunQuickplotTestBenchWithinMatlab : BuildType({
             artifacts {
                 artifactRules = "+:*=>gitsettings"
             }
-/        }
+        }
     }
 
     requirements {
