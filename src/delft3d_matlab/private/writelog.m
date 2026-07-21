@@ -1,5 +1,5 @@
-function writelog(logfile,logtype,varargin)
-%WRITELOG Write QuickPlot logfile or MATLAB script.
+function writelog(fid,logtype,varargin)
+%WRITELOG Write QuickPlot macro-file or MATLAB script.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -101,5 +101,5 @@ if logtype==3 | logtype==4
 elseif logtype==5 | logtype==6
     fprintf(1,Format,Args{:});
 else
-    fprintf(logfile,Format,Args{:});
+    fprintf(fid,Format,Args{:});
 end

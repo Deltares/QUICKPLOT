@@ -3305,16 +3305,19 @@ switch cmd
             logfile=0;
         end
         
-    case {'logfile','scriptfile','logfiletomw','scriptfiletomw','recordtomw','scriptfiletomcw'}
+    case {'macrofile','logfile','scriptfile','macrofiletomw','logfiletomw','scriptfiletomw','recordtomw','scriptfiletomcw'}
         switch cmd
+            case 'macrofile'
+                logtype=1;
+                ftype='*.qpmacro';
             case 'logfile'
                 logtype=1;
                 ftype='*.qplog';
             case 'scriptfile'
                 logtype=2;
                 ftype='*.m';
-            case {'recordtomw','logfiletomw'}
-                logtype=3; % Quickplot Log file
+            case {'recordtomw','logfiletomw','macrofiletomw'}
+                logtype=3; % Quickplot macro file
             case 'scriptfiletomw'
                 logtype=4; % MATLAB statements
             case 'scriptfiletomcw'
@@ -4699,7 +4702,7 @@ switch cmd
         PAR = rmfield(PAR,'X');
         blockcomment=0;
         if isempty(cmdargs)
-            [fn,pn]=uigetfile('*.qplog;*.m');
+            [fn,pn]=uigetfile('*.qpmacro;*.qplog;*.m');
             if ischar(fn)
                 runfil=fopen([pn fn],'r','n','UTF-8');
             else
@@ -5273,7 +5276,7 @@ switch cmd
         elseif exist(cmd)==2
             [p,f,e]=fileparts(cmd);
             switch lower(e)
-                case {'.qplog','.m'}
+                case {'.qpmacro','.qplog','.m'}
                     d3d_qp('run',cmd,cmdargs{:})
                 case {'.fig','.qpses'}
                     d3d_qp('openfigure',cmd,cmdargs{:})

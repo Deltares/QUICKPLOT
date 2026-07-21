@@ -254,7 +254,7 @@
 %   updateuicontrols            - Force an update of the uicontrol properties.
 %   uv2cen                      - Interpolate velocities.
 %   vec2str                     - Create a string representation of a vector.
-%   writelog                    - Write QuickPlot logfile or MATLAB script.
+%   writelog                    - Write QuickPlot macro-file or MATLAB script.
 %   xx_constants                - Define several constants.
 %   xx_logo                     - Plot a logo in an existing coordinate system.
 %   xyz_or_mnk                  - Determine MNK flag for vector components to retrieve.

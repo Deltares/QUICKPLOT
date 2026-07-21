@@ -339,14 +339,15 @@ try
                 t2 = write_header(logid2,CaseName,Color);
                 emptyTable2 = true;
                 %
-                % check for log files to run ...
+                % check for macro files to run ...
                 %
                 if isempty(dir('logfiles'))
                     ensure_directory('logfiles');
                 end
+                macrofiles=dir(['logfiles' fs '*.qpmacro']);
                 logfiles=dir(['logfiles' fs '*.qplog']);
                 mfiles=dir(['logfiles' fs '*.m']);
-                logfiles=cat(1,logfiles,mfiles);
+                logfiles=cat(1,macrofiles,logfiles,mfiles);
                 %
                 % check for reference directory...
                 %
