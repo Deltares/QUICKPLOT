@@ -4717,8 +4717,8 @@ switch cmd
                     PAR = cmdargs{i+1};
                 elseif isequal('-data',cmdargs{i})
                     %
-                    % Both data file and log file specified. First load
-                    % data file and then run log file.
+                    % Both data file and macro file specified. First load
+                    % data file and then run macro file.
                     %
                     d3d_qp('openfile',cmdargs{i+1:end})
                     cmdargs(i:end)=[];
