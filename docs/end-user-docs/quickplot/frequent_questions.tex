@@ -11,3 +11,11 @@ By default, \QUICKPLOT\ will clip values "more extreme" than \keyw{\_FillValue} 
 However, Deltares software often uses the value of \num{-999} as \keyw{\_FillValue} and clipping values beyond that value may cause problems with coordinates, depths/elevations, and discharges.
 The behaviour of \QUICKPLOT\ can be changed in the Preferences dialog (see \Sref{Sec:NetCDFPrefs}).
 Change the setting for the interpretation of \keyw{\_FillValue} from the default "Use \keyw{\_FillValue} to define \keyw{valid\_range} (NUG)" to "Clip only \keyw{\_FillValue}".
+
+\section{How to access your dialog when switching screen configuration?} \label{FAQ:missingDialog}
+When you switch your screen configuration, some \QUICKPLOT dialogs may end up (partly) outside the scope of your screens.
+As a result, you may no longer be able to access them.
+\QUICKPLOT has a shortcut key to get them back.
+You can select the the off-screen dialog via the Windows Taskbar (although it's outside the screen area, you can still activate it) and press \keyw{Ctrl} + \keyw{S}; this will move the selected dialog back into the visible screen area.
+Alternatively, you can select any \QUICKPLOT dialog and press \keyw{Alt} + \keyw{Ctrl} + \keyw{S}; this will move \emph{all} \QUICKPLOT dialogs back into the visible screen area.
+Note that the moved dialogs may still be invisible because they are behind other windows.
