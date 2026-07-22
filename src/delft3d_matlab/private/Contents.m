@@ -181,7 +181,7 @@
 %   procargs                    - General function for argument processing.
 %   protectstring               - Protect special characters in strings.
 %   ps2pdf                      - Function to convert a PostScript file to PDF using Ghostscript
-%   qp_basedir                  - Get various base directories.
+%   qp_basedir                  - Get various characteristic directories.
 %   qp_cmdstr                   - Process QuickPlot command string.
 %   qp_colormap                 - QuickPlot colormap repository.
 %   qp_createaxes               - Create an axes for plotting.

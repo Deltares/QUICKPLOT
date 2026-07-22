@@ -1,18 +1,17 @@
 function p=qp_basedir(t)
-%QP_BASEDIR Get various base directories.
+%QP_BASEDIR Get various characteristic directories.
 %
-%   PATH=QP_BASEDIR(TYPE)
-%   where TYPE=
-%      'deploy' returns the unpack directory of deployed executable (source
-%               folder for source code).
-%      'exe'    returns the directory where the deployed executable is located
-%               (source folder for source code). This is the default return
-%               argument if no TYPE has been specified.
-%      'pref'   returns directory where the preference configuration is
-%               located.
-
-%      'base'   returns base directory of installation if
-%               matlabversionnumber < 7 (obsolete).
+%   PATH = QP_BASEDIR(TYPE) where TYPE should be one of the following strings
+%      'ctfroot' returns the root directory in which the unpacked source
+%          files including toolboxes and meta-data of the deployed executable
+%          are located (root of GitHub clone for source code).
+%      'deploy' returns the directory in which d3d_qp.m of the deployed
+%          executable is located (source folder for source code).
+%      'exe' returns the directory where the deployed executable is located
+%          (source folder for source code). This is the default return argument
+%          if no TYPE has been specified.
+%      'pref' returns directory where the preference configuration is
+%          located.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -47,54 +46,55 @@ function p=qp_basedir(t)
 if nargin==0
     t='exe';
 elseif ~ischar(t)
-    error('Invalid input argument.');
+    error('Invalid first QP_BASEDIR argument: should be string.');
 end
 t=lower(t);
 if isstandalone
     if matlabversionnumber<7
-       p=matlabroot;
-       switch t
-           case 'exe'
-               % default correct
-           case 'deploy'
-               % default correct
-           case 'pref'
-               p=qp_prefdir;
-           otherwise
-               slash=strfind(p,filesep);
-               p=p(1:(slash(end-1)-1));
-       end
+       error('MATLAB versions 7 and older are no longer supported.')
     else
        p=exeroot;
        switch t
            case 'exe'
                % default correct
-           case 'deploy'
+           case 'ctfroot'
                p=ctfroot;
+           case 'deploy'
+               p=[ctfroot filesep 'd3d_qp'];
            case 'pref'
                p=qp_prefdir;
            otherwise
-               % default correct
+               error('Unknown TYPE string passed to QP_BASEDIR: "%s".',t)
        end
     end
 else
-    p=which('d3d_qp');
-    if ~isempty(p)
-        slash=strfind(p,filesep);
-        p=p(1:(slash(end)-1));
-    end
+    p = which('d3d_qp');
+    p = check_and_strip_after_last_slash(p, 'd3d_qp.m');
     switch t
         case 'exe'
             % default correct
+        case 'ctfroot'
+            % locate root of GitHub clone
+            p = check_and_strip_after_last_slash(p, 'delft3d_matlab');
+            p = check_and_strip_after_last_slash(p, 'src');
         case 'deploy'
             % default correct
         case 'pref'
             p=qp_prefdir;
         otherwise
-            % default correct
+            error('Unknown TYPE string passed to QP_BASEDIR: "%s".',t)
     end
 end
 
+function p = check_and_strip_after_last_slash(p, check_str)
+if ~isempty(p)
+    slash = strfind(p, filesep);
+    if ~isempty(slash)
+        if nargin > 1 && isequal(p(slash(end)+1:end), check_str)
+            p=p(1:(slash(end)-1));
+        end
+    end
+end
 
 %=======================
 function folder = exeroot
