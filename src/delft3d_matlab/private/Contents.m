@@ -52,7 +52,6 @@
 %   contourfcorr                - Filled contour plot (corrected).
 %   getnormpos                  - Select an area (using normalized units).
 %   hls2rgb                     - Convert hue-lightness-saturation to red-green-blue colors.
-%   idx2rgb                     - Converts an indexed image into a true color RGB image.
 %   lddplot                     - Plot local drainage direction for PC-Raster LDD data file.
 %   progressbar                 - Display progress bar.
 %   qncmap                      - QuickIn color map.
@@ -87,8 +86,6 @@
 %   setProperty                 - Generic routine to set values in PropertyName-PropertyValue pairs
 %   stdbeep                     - Produce beep sound.
 %   trim2rst                    - Extract Delft3D-FLOW restart file from TRIM-file.
-%   ui_type                     - Simple selection dialog.
-%   ui_typeandname              - Selection dialog with name specification.
 %   writeavi                    - MEX interface to Windows AVI functions.
 %
 % QuickPlot file dependent routines

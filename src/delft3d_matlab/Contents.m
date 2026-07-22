@@ -82,6 +82,7 @@
 %   classbar            - Converts a color bar into a classbar.
 %   colquiver           - Color quiver plot.
 %   drawgrid            - Plots the grid.
+%   idx2rgb             - Converts an indexed image into a true color RGB image.
 %   md_clock            - Create a clock or calendar.
 %   md_paper            - Add border to plot.
 %   plotlimitingfactors - Create a limiting factors plot.
@@ -100,6 +101,8 @@
 %   nccopy              - Copy data from one NetCDF file to a new NetCDF file.
 %   ncdiff              - Compares the content of two NetCDF files.
 %   qp_unitconversion   - Convert unit strings.
+%   ui_type             - Simple selection dialog.
+%   ui_typeandname      - Selection dialog with name specification.
 %   ustrcmpi            - Find a unique string.
 %   var2str             - Generic "display" function with string output.
 %   vardiff             - Determines the differences between two variables.

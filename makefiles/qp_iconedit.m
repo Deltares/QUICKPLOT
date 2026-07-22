@@ -1,4 +1,4 @@
-function Iout=qp_iconedit(cmd)
+function Iout = qp_iconedit(cmd)
 %QP_ICONEDIT Icon editor
 %   Interactive icon editor
 %
@@ -79,7 +79,8 @@ if nargin>0 & ischar(cmd)
             resetPath=pwd;
             cd(UD.Path);
             [FN,PN] = uigetfile(...
-                {'*.bmp;*.cur;*.ico;*.gif;*.jpg;*.pbm;*.pcx;*.pgm;*.png;*.pnm;*.ppm;*.ras;*.tif;*.xwd', 'Bitmap Files'}, 'Select File');
+                {'*.bmp;*.cur;*.ico;*.gif;*.jpg;*.pbm;*.pcx;*.pgm;*.png;*.pnm;*.ppm;*.ras;*.tif;*.xwd', 'Bitmap Files'
+                '*.mat', 'QUICKPLOT Icon Library'}, 'Select File');
             cd(resetPath);
             if ischar(FN)
                 UD.Path=PN;
@@ -106,7 +107,8 @@ if nargin>0 & ischar(cmd)
             resetPath=pwd;
             cd(UD.Path);
             [FN,PN] = uiputfile(...
-                {'*.png;*.bmp', 'PNG/BMP Files'}, 'Specify Export File Name');
+                {'*.png;*.bmp', 'PNG/BMP Files'
+                '*.mat', 'QUICKPLOT Icon Library'}, 'Specify Export File Name');
             cd(resetPath);
             if ischar(FN)
                 FN = [PN FN];
@@ -116,43 +118,39 @@ if nargin>0 & ischar(cmd)
                     FN=[FN '.png'];
                 end
                 if isequal(lower(EX2),'.mat')
-                    if isstandalone
-                        errordlg('Saving to MAT file not yet implemented.','Error','modal')
-                    else
-                        Icons = load(FN);
-                        iconNames = fieldnames(Icons);
-                        NewIcon={};
-                        def='';
-                        while isempty(NewIcon)
-                            NewIcon=inputdlg('Enter name of icon in file','Icon Name',1,{def});
-                            if isempty(NewIcon)
-                                break
+                    Icons = load(FN);
+                    iconNames = fieldnames(Icons);
+                    NewIcon={};
+                    def='';
+                    while isempty(NewIcon)
+                        NewIcon=inputdlg('Enter name of icon in file','Icon Name',1,{def});
+                        if isempty(NewIcon)
+                            break
+                        end
+                        NewIcon=lower(NewIcon{1});
+                        if strmatch(NewIcon,iconNames,'exact')
+                            Replace=questdlg({sprintf('Icon named "%s" already exists.',NewIcon),'Do you want to replace it?'}, ...
+                                'Icon Name Conflict', ...
+                                'Yes','No','No');
+                            if isequal(Replace,'No')
+                                def=NewIcon;
+                                NewIcon={};
                             end
-                            NewIcon=lower(NewIcon{1});
-                            if strmatch(NewIcon,iconNames,'exact')
-                                Replace=questdlg({sprintf('Icon named "%s" already exists.',NewIcon),'Do you want to replace it?'}, ...
-                                    'Icon Name Conflict', ...
-                                    'Yes','No','No');
-                                if isequal(Replace,'No')
-                                    def=NewIcon;
-                                    NewIcon={};
+                        end
+                        if ~iscell(NewIcon)
+                            lasterr('')
+                            try
+                                % Icons = setfield(Icons,NewIcon,UD.Icon);
+                                eval([NewIcon '=UD.Icon;'])
+                                ops={};
+                                if matlabversionnumber>=7
+                                    ops={'-v6'};
                                 end
-                            end
-                            if ~iscell(NewIcon)
-                                lasterr('')
-                                try
-                                    % Icons = setfield(Icons,NewIcon,UD.Icon);
-                                    eval([NewIcon '=UD.Icon;'])
-                                    ops={};
-                                    if matlabversionnumber>=7
-                                        ops={'-v6'};
-                                    end
-                                    save(FN,NewIcon,'-append')
-                                catch
-                                    uiwait(errordlg(lasterr,'Error','modal'))
-                                    def=NewIcon;
-                                    NewIcon={};
-                                end
+                                save(FN,NewIcon,'-append')
+                            catch
+                                uiwait(errordlg(lasterr,'Error','modal'))
+                                def=NewIcon;
+                                NewIcon={};
                             end
                         end
                     end
@@ -191,8 +189,7 @@ else
     Fig = figure('doublebuffer','on', ...
         'menubar','none', ...
         'numbertitle','off', ...
-        'name','Icon Editor v1.00', ...
-        'resizefcn','qp_iconedit resize');
+        'name','Icon Editor v1.00');
     FileMenu = uimenu('parent',Fig,'label','&File');
     uimenu('parent',FileMenu,'label','&Open ...','callback','qp_iconedit open')
     uimenu('parent',FileMenu,'label','Save &As ...','callback','qp_iconedit saveas')
@@ -208,39 +205,41 @@ else
     Cmap_RGB = idx2rgb((1:Ncolors)',UD.Icon.cmap);
     Color = idx2rgb(UD.CurrentColor,UD.Icon.cmap);
 
-    axes('position',[0.05 0.1 0.7 0.8])
+    EditAxes=axes('position',[0.05 0.1 0.7 0.8]);
     UD.Bitmap=imagesc(Icon_RGB);
     set(UD.Bitmap,'buttondownfcn','qp_iconedit changepoint')
-    set(gcf,'windowbuttonupfcn','qp_iconedit stopchangepoint')
-    set(gca,'da',[1 1 1],'xtick',[],'ytick',[])
+    set(Fig,'windowbuttonupfcn','qp_iconedit stopchangepoint')
+    set(EditAxes,'da',[1 1 1],'xtick',[],'ytick',[])
     title('Enlarged Bitmap','fontsize',8)
 
-    axes('position',[0.8 0.1 0.15 0.6])
+    ColorAxes=axes('position',[0.8 0.1 0.15 0.6]);
     UD.Colorbar=imagesc(Cmap_RGB);
     UD.Hatch = line( ...
         [1.5 0.5 1.5 0.5 NaN 1.0 1.5 NaN 0.5 1.0], ...
         Ncolors+[0.5 0.5 1.5 1.5 NaN 0.5 1.0 NaN 1.0 1.5], ...
         'color','k', ...
         'userdata',[Ncolors 1]);
-    set([UD.Colorbar UD.Hatch gca],'buttondownfcn','qp_iconedit selcolor')
-    set(gca,'da',[1 1 1],'xtick',[],'ytick',[],'ylim',[0.5 Ncolors+1.5])
+    set([UD.Colorbar UD.Hatch ColorAxes],'buttondownfcn','qp_iconedit selcolor')
+    set(ColorAxes,'da',[1 1 1],'xtick',[],'ytick',[],'ylim',[0.5 Ncolors+1.5])
     title('Color Map','fontsize',8)
 
-    axes('position',[0.8 0.8 0.05 0.05])
+    CurrentColor=axes('position',[0.8 0.8 0.05 0.05]);
     UD.C=imagesc(Color);
-    set(gca,'da',[1 1 1],'xtick',[],'ytick',[])
+    set(CurrentColor,'da',[1 1 1],'xtick',[],'ytick',[])
     title({'Current','Color'},'fontsize',8)
 
     UD.Tool(1) = uipushtool('cdata',Icon_RGB,'enable','on','tooltip','Enabled state');
     UD.Tool(2) = uipushtool('cdata',Icon_RGB,'enable','off','separator','on','tooltip','Disabled state');
     uipushtool('enable','off','separator','on');
 
-    UD.SmallPrevAxes = axes('position',[0 0 1 1],'units','pixels');
+    UD.SmallPrevAxes = axes('units','normalized', ...
+        'position',[0.9 0.8 0.05 0.1], ...
+        'units','pixels');
     UD.Bitmap2=imagesc(Icon_RGB);
-    set(gca,'da',[1 1 1],'xtick',[],'ytick',[])
+    set(UD.SmallPrevAxes,'da',[1 1 1],'xtick',[],'ytick',[])
     title({'Normal Size','Bitmap'},'fontsize',8)
 
-    set(gcf,'userdata',UD,'closerequestfcn','qp_iconedit close')
+    set(gcf,'userdata',UD,'closerequestfcn','qp_iconedit close','resizefcn','qp_iconedit resize')
     waitfor(gcf,'visible')
     UD=get(gcf,'userdata');
     delete(gcf)
