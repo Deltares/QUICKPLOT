@@ -618,7 +618,7 @@ function initialize_unittable
 table=basisunittable;
 search_elem('newtable',table);
 %
-filename=[qp_basedir('exe') filesep 'units.ini'];
+filename=[qp_basedir('deploy') filesep 'units.ini'];
 fid=fopen(filename,'r');
 if fid<0
     % for ease of debugging ...

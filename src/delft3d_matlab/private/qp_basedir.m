@@ -3,9 +3,13 @@ function p=qp_basedir(t)
 %
 %   PATH=QP_BASEDIR(TYPE)
 %   where TYPE=
-%      'deploy' returns directory of executable.
-%      'exe'    returns directory of executable (default).
-%      'pref'   returns preference directory of installation.
+%      'deploy' returns the unpack directory of deployed executable (source
+%               folder for source code).
+%      'exe'    returns the directory where the deployed executable is located
+%               (source folder for source code). This is the default return
+%               argument if no TYPE has been specified.
+%      'pref'   returns directory where the preference configuration is
+%               located.
 
 %      'base'   returns base directory of installation if
 %               matlabversionnumber < 7 (obsolete).
