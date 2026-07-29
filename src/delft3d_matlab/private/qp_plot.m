@@ -346,9 +346,13 @@ if isfield(Ops,'plotcoordinate')
     data = compute_plotcoordinate(data,Ops.plotcoordinate);
 end
 
+multiple_spatial = multiple;
+multiple_spatial(T_) = [];
 if isscalar(data) && ...
+        none(multiple_spatial) && ...
         (strcmp(Ops.axestype,'Time-Z') || ...
-        strcmp(Ops.axestype,'Val-Z'))
+        strcmp(Ops.axestype,'Val-Z') || ...
+        strcmp(Ops.basicaxestype,'Time-Val'))
     if isfield(data,'ValLocation')
         switch data.ValLocation
             case 'FACE'
@@ -356,14 +360,23 @@ if isscalar(data) && ...
                 missing = isnan(FNC);
                 nNodes = size(missing,2)-sum(missing,2);
                 FNC(missing) = 1;
+
                 data.X = reshape(data.X(FNC),size(FNC));
                 data.X(missing) = 0;
                 data.X = sum(data.X,2)./nNodes;
-                if isfield(data,'Y')
-                    data.Y = reshape(data.Y(FNC),size(FNC));
-                    data.Y(missing) = 0;
-                    data.Y = sum(data.Y,2)./nNodes;
-                end
+
+                data.Y = reshape(data.Y(FNC),size(FNC));
+                data.Y(missing) = 0;
+                data.Y = sum(data.Y,2)./nNodes;
+
+            case 'EDGE'
+                ENC = data.EdgeNodeConnect;
+
+                data.X = mean(data.X(ENC));
+                data.Y = mean(data.Y(ENC));
+
+            case 'NODE'
+                % X and Y should already be scalars
         end
         data.Geom = 'sSEG';
         for c = {'FaceNodeConnect','EdgeNodeConnect','ValLocation','ZLocation','SEG','XY','XYZ','TRI','EdgeGeometry'}
