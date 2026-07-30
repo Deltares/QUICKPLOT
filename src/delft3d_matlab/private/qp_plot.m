@@ -1345,7 +1345,7 @@ if drawColourbar
             xlabel(h,PName)
     end
     if ~isempty(h)
-        set(pfig,'children',[nonAx;h;Ax(ishandle(Ax) & (Ax~=h))])
+        %set(pfig,'children',[nonAx;h;Ax(ishandle(Ax) & (Ax~=h))])
         cbratio = qp_settings('colorbar_ratio');
         if cbratio>1
             switch Ops.colourbar
