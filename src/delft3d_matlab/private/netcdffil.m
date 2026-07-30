@@ -2376,6 +2376,11 @@ else
     Val     = zeros(1,0);
     for d = 1:nSubFld
         nval = Props.SubFld{d,2};
+        if isfield(Props,'Partitions')
+            for ip = Props.iPart
+                nval = max(nval,Props.Partitions{ip}.SubFld{d,2});
+            end
+        end
         sfld = Props.SubFld{d,1};
         if size(Props.SubFld,2)==3
             strs = Props.SubFld{d,3};
