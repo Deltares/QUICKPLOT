@@ -2375,10 +2375,12 @@ else
     Subf    = {''};
     Val     = zeros(1,0);
     for d = 1:nSubFld
+        % length of subfields may vary per partition, e.g. maximum number
+        % of nodes per mesh ... use the maximum
         nval = Props.SubFld{d,2};
-        if isfield(Props,'Partitions')
-            for ip = Props.iPart
-                nval = max(nval,Props.Partitions{ip}.SubFld{d,2});
+        if isfield(Props,'iPart') && length(Props.iPart) > 1
+            for p = Props.iPart
+                nval = max(nval,Props.Partitions{p}.SubFld{d,2});
             end
         end
         sfld = Props.SubFld{d,1};
