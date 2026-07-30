@@ -412,12 +412,19 @@ if FI.NumDomains>1
 end
 
 % modify SubFld content for reading ...
+subfieldNotAvailable = false;
 if isempty(subf)
     % initialize and read indices ...
     Props.SubFld = rec;
 else
     % initialize and read indices ...
-    rec.Val = rec.Val(varargin{1},:);
+    subfield = varargin{1};
+    if subfield <= size(rec.Val,1)
+        rec.Val = rec.Val(subfield,:);
+    else
+        rec.Val = rec.Val(1,:);
+        subfieldNotAvailable = true;
+    end
     Props.SubFld = rec;
 end
 
@@ -1648,6 +1655,15 @@ if ~isempty(FI.Attribute)
         if min(Ans.X(:))<-360 || max(Ans.X(:))>360
             Ans.XUnits = 'm';
             Ans.YUnits = 'm';
+        end
+    end
+end
+
+if subfieldNotAvailable
+    for cfld = {'Val','XComp','YComp','ZComp'}
+        fld = cfld{1};
+        if isfield(Ans,fld)
+            Ans.(fld) = repmat(NaN,size(Ans.(fld)));
         end
     end
 end
