@@ -2034,6 +2034,10 @@ for mesh = NumMeshes:-1:1
                         % for com files ...
                         iFaces{p} = nc_varget(file,'FlowElemGlobalNr');
                         faceDomain{p} = nc_varget(file,'FlowElemDomain');
+                        if length(iFaces{p}) > nFaces(p) % nFlowElemWithBnd
+                            iFaces{p} = iFaces{p}(1:nFaces(p));
+                            faceDomain{p} = faceDomain{p}(1:nFaces(p));
+                        end
                     case 4
                         % fallback, use all values of domain 1
                         if isempty(faceDim)
