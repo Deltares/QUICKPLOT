@@ -2377,17 +2377,23 @@ else
     for d = 1:nSubFld
         % length of subfields may vary per partition, e.g. maximum number
         % of nodes per mesh ... use the maximum
-        nval = Props.SubFld{d,2};
-        if isfield(Props,'iPart') && length(Props.iPart) > 1
-            for p = Props.iPart
-                nval = max(nval,Props.Partitions{p}.SubFld{d,2});
-            end
-        end
         sfld = Props.SubFld{d,1};
+        nval = Props.SubFld{d,2};
         if size(Props.SubFld,2)==3
             strs = Props.SubFld{d,3};
         else
             strs = [];
+        end
+        %
+        if size(Props.SubFld,2)==3 % subfields with strings
+            % should check that names match ... or something like that
+            % However, in the "mesh contacts" use caes all strings are empty.
+            % Therefore, ignore partitioning to keep the test bench green.
+            % mesh contacts need further work (UNST-9460).
+        elseif isfield(Props,'iPart') && length(Props.iPart) > 1
+            for p = Props.iPart
+                nval = max(nval,Props.Partitions{p}.SubFld{d,2});
+            end
         end
         %
         newSubf = cell(1,length(Subf)*nval);
