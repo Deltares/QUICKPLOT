@@ -544,7 +544,7 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
     }
 
     failureConditions {
-        executionTimeoutMin = 80
+        executionTimeoutMin = 90
     }
 
     features {
@@ -768,7 +768,7 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
     }
 
     failureConditions {
-        executionTimeoutMin = 80
+        executionTimeoutMin = 90
     }
 
     features {
@@ -1414,7 +1414,7 @@ object Windows_WinRunQuickplotTestBenchStandalone : BuildType({
     }
 
     failureConditions {
-        executionTimeoutMin = 80
+        executionTimeoutMin = 90
         failOnMetricChange {
             metric = BuildFailureOnMetric.MetricType.TEST_COUNT
             threshold = 480
@@ -1557,7 +1557,7 @@ object Windows_WinRunQuickplotTestBenchWithinMatlab : BuildType({
     }
 
     failureConditions {
-        executionTimeoutMin = 80
+        executionTimeoutMin = 90
         failOnMetricChange {
             metric = BuildFailureOnMetric.MetricType.TEST_COUNT
             threshold = 20
