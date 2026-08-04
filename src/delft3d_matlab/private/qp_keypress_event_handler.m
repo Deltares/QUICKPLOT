@@ -1,14 +1,21 @@
-function H=qp_uifigure(Name,closecom,tag,pos,callbackfcn)
-%QP_UIFIGURE Create a new empty dialog figure.
-%    H = QP_UIFIGURE(NAME,CLOSECOM,TAG,POS,CBF) creates a new dialog figure
-%    with the title set equal to NAME, tag equal to TAG, position equal to
-%    POS (shifted to on screen), resizing off, and close request function
-%    set to
-%        [CBF ' ' CLOSECOM] if CBF and CLOSECOM are strings
-%        {CBF CLOSECOM} otherwise
-%    The figure visibility is set to 'off'.
+function qp_keypress_event_handler(handle,event)
+%QP_KEYPRESS_EVENT_HANDLER Handle keypress events for QUICKPLOT.
+%    QP_KEYPRESS_EVENT_HANDLER(HANDLE, EVENT) handles the keypress EVENT
+%    associated with object HANDLE. The keypress event is expected to have
+%    the following fields:
 %
-%    See also QP_UIMENU, FIGURE, UIMENU, UICONTROL.
+%      Character: the interpretation of the key-combination pressed, e.g.
+%        'a', 'A', '=', etc.
+%      Modifier: cell array containing the key modifiers, i.e. empty or a
+%        combination of 'control', 'alt' and 'shift'. Note: caps lock is
+%        not visible as modifier, it's noticeable as a difference in the
+%        character field.
+%      Key: the base name of the key pressed, i.e. a lower case character,
+%        digit or key name, e.g. 'equal'.
+%      Source: the object generating the event
+%      EventName: event name, always: 'KeyPress'
+%
+%    See also QP_UIFIGURE, QP_CREATEFIG.
 
 %----- LGPL --------------------------------------------------------------------
 %                                                                               
@@ -40,57 +47,12 @@ function H=qp_uifigure(Name,closecom,tag,pos,callbackfcn)
 %   $HeadURL$
 %   $Id$
 
-Inactive=qp_settings('UIInActiveColor');%[0.5 0.5 1];%
-%
-if nargin<5
-    callbackfcn='d3d_qp';
-end
-%
-uicontrolfont = qp_fontsettings('DefaultUicontrolFont');
-%
-%Force onscreen:
-%MATLAB 6 and one screen: movegui(H,'onscreen')
-MonPos = qp_getscreen(pos);
-pos(1:2)=max(pos(1:2),MonPos(1:2));
-pos(1:2)=min(pos(1:2),MonPos(1:2)+MonPos(3:4)-pos(3:4)-[0 70]);
-% -[0 70] added such that toolbar, menu and window title will be on screen
-% also in R13 compiled mode
-%
-if ~isempty(closecom)
-    if ischar(callbackfcn)
-        closecom = [callbackfcn ' ' closecom];
-    else
-        closecom = {callbackfcn closecom};
-    end
-end
-%
-% create_figure = @uifigure; % uifigures allow you to set the Icon, but they are slower ...
-create_figure = @figure;
-
-H = create_figure('Visible','off', ...
-    'DefaultUicontrolBackgroundColor',Inactive, ...
-    'DefaultUicontrolForegroundColor',qp_settings('UIForeGroundColor'), ...
-    uicontrolfont, ...
-    'Units','pixels', ...
-    'Color',Inactive, ...
-    'IntegerHandle','off', ...
-    'MenuBar','none', ...
-    'Name',Name, ...
-    'CloseRequestFcn',closecom, ...
-    'NumberTitle','off', ...
-    'Resize','off', ...
-    'Position',pos, ...
-    'KeyPressFcn',@qp_keypress_event_handler, ...
-    'Handlevisibility','off', ...
-    'Tag',tag);
-setappdata(H,'WL_UserInterface',1)
-if matlabversionnumber >= 7
-    set(H,'WindowStyle','normal')
-end
-if true %is_uifigure(H)
-    set(H,'WindowStyle','normal','AutoResizeChildren','off')
-else    
-    if matlabversionnumber >= 7
-        set(H,'WindowStyle','normal','DockControls','off')
+if ismember('control',event.Modifier)
+    if isequal(event.Key,'t') || isequal(event.Key,'s')
+        if ismember('alt',event.Modifier)
+            d3d_qp('move_onscreen')
+        else
+            d3d_qp('move_onscreen',handle)
+        end
     end
 end

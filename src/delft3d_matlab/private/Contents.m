@@ -52,7 +52,6 @@
 %   contourfcorr                - Filled contour plot (corrected).
 %   getnormpos                  - Select an area (using normalized units).
 %   hls2rgb                     - Convert hue-lightness-saturation to red-green-blue colors.
-%   idx2rgb                     - Converts an indexed image into a true color RGB image.
 %   lddplot                     - Plot local drainage direction for PC-Raster LDD data file.
 %   progressbar                 - Display progress bar.
 %   qncmap                      - QuickIn color map.
@@ -87,8 +86,6 @@
 %   setProperty                 - Generic routine to set values in PropertyName-PropertyValue pairs
 %   stdbeep                     - Produce beep sound.
 %   trim2rst                    - Extract Delft3D-FLOW restart file from TRIM-file.
-%   ui_type                     - Simple selection dialog.
-%   ui_typeandname              - Selection dialog with name specification.
 %   writeavi                    - MEX interface to Windows AVI functions.
 %
 % QuickPlot file dependent routines
@@ -181,7 +178,7 @@
 %   procargs                    - General function for argument processing.
 %   protectstring               - Protect special characters in strings.
 %   ps2pdf                      - Function to convert a PostScript file to PDF using Ghostscript
-%   qp_basedir                  - Get various base directories.
+%   qp_basedir                  - Get various characteristic directories.
 %   qp_cmdstr                   - Process QuickPlot command string.
 %   qp_colormap                 - QuickPlot colormap repository.
 %   qp_createaxes               - Create an axes for plotting.
@@ -254,7 +251,7 @@
 %   updateuicontrols            - Force an update of the uicontrol properties.
 %   uv2cen                      - Interpolate velocities.
 %   vec2str                     - Create a string representation of a vector.
-%   writelog                    - Write QuickPlot logfile or MATLAB script.
+%   writelog                    - Write QuickPlot macro-file or MATLAB script.
 %   xx_constants                - Define several constants.
 %   xx_logo                     - Plot a logo in an existing coordinate system.
 %   xyz_or_mnk                  - Determine MNK flag for vector components to retrieve.

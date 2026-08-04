@@ -1395,7 +1395,7 @@ switch cmd
                     cd(fileparts(fp))
                 end
                 filter = {'*.qpses' 'QUICKPLOT Session File'
-                    '*.qplog;*.m' 'QUICKPLOT Macro File'};
+                    '*.qpmacro;*.qplog;*.m' 'QUICKPLOT Macro File'};
                 [f,p]=uigetfile(filter,'Select Session File ...');
                 cd(curdir)
                 if ischar(f)
@@ -1424,7 +1424,7 @@ switch cmd
             else
                 [p,f,e] = fileparts(fp);
                 switch e
-                    case {'.qpses','.qplog','.m'}
+                    case {'.qpses','.qpmacro','.qplog','.m'}
                         % OK
                     otherwise
                         ui_message('error','File extension "%s" not supported',e(2:end))

@@ -39,6 +39,7 @@ if isempty(istart)
         start_index = 0;
     end
 else
+    start_index = double(start_index);
     if minIndex-start_index+1 < 1
         error('File specifies start_index %g for %s, but lowest %s index in file is %g.', start_index, variable, location, minIndex)
     elseif maxIndex-start_index+1 > limitIndex

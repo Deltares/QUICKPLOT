@@ -412,12 +412,19 @@ if FI.NumDomains>1
 end
 
 % modify SubFld content for reading ...
+subfieldNotAvailable = false;
 if isempty(subf)
     % initialize and read indices ...
     Props.SubFld = rec;
 else
     % initialize and read indices ...
-    rec.Val = rec.Val(varargin{1},:);
+    subfield = varargin{1};
+    if subfield <= size(rec.Val,1)
+        rec.Val = rec.Val(subfield,:);
+    else
+        rec.Val = rec.Val(1,:);
+        subfieldNotAvailable = true;
+    end
     Props.SubFld = rec;
 end
 
@@ -1652,6 +1659,15 @@ if ~isempty(FI.Attribute)
     end
 end
 
+if subfieldNotAvailable
+    for cfld = {'Val','XComp','YComp','ZComp'}
+        fld = cfld{1};
+        if isfield(Ans,fld)
+            Ans.(fld) = repmat(NaN,size(Ans.(fld)));
+        end
+    end
+end
+
 varargout={Ans OrigFI};
 % -----------------------------------------------------------------------------
 
@@ -2359,12 +2375,25 @@ else
     Subf    = {''};
     Val     = zeros(1,0);
     for d = 1:nSubFld
-        nval = Props.SubFld{d,2};
+        % length of subfields may vary per partition, e.g. maximum number
+        % of nodes per mesh ... use the maximum
         sfld = Props.SubFld{d,1};
+        nval = Props.SubFld{d,2};
         if size(Props.SubFld,2)==3
             strs = Props.SubFld{d,3};
         else
             strs = [];
+        end
+        %
+        if size(Props.SubFld,2)==3 % subfields with strings
+            % should check that names match ... or something like that
+            % However, in the "mesh contacts" use caes all strings are empty.
+            % Therefore, ignore partitioning to keep the test bench green.
+            % mesh contacts need further work (UNST-9460).
+        elseif isfield(Props,'iPart') && length(Props.iPart) > 1
+            for p = Props.iPart
+                nval = max(nval,Props.Partitions{p}.SubFld{d,2});
+            end
         end
         %
         newSubf = cell(1,length(Subf)*nval);

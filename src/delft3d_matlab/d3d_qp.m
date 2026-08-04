@@ -34,7 +34,7 @@ function varargout = d3d_qp(cmd,varargin)
 %   $HeadURL$
 %   $Id$
 
-%VERSION = 2.72
+%VERSION = 2.73
 
 try
     if nargin==0
@@ -102,7 +102,7 @@ if nargout~=0
         outdata = {isequal(qp_settings('WLextensions','off'),'on')};
         return
     elseif strcmp(cmd,'iconpath')
-        outdata = {[qp_basedir('exe') filesep 'private' filesep 'd3d_qp.png']};
+        outdata = {[qp_basedir('deploy') filesep 'private' filesep 'd3d_qp.png']};
         return
     elseif strcmp(cmd,'version')
         if nargin>1
@@ -3305,16 +3305,19 @@ switch cmd
             logfile=0;
         end
         
-    case {'logfile','scriptfile','logfiletomw','scriptfiletomw','recordtomw','scriptfiletomcw'}
+    case {'macrofile','logfile','scriptfile','macrofiletomw','logfiletomw','scriptfiletomw','recordtomw','scriptfiletomcw'}
         switch cmd
+            case 'macrofile'
+                logtype=1;
+                ftype='*.qpmacro';
             case 'logfile'
                 logtype=1;
                 ftype='*.qplog';
             case 'scriptfile'
                 logtype=2;
                 ftype='*.m';
-            case {'recordtomw','logfiletomw'}
-                logtype=3; % Quickplot Log file
+            case {'recordtomw','logfiletomw','macrofiletomw'}
+                logtype=3; % Quickplot macro file
             case 'scriptfiletomw'
                 logtype=4; % MATLAB statements
             case 'scriptfiletomcw'
@@ -4699,7 +4702,7 @@ switch cmd
         PAR = rmfield(PAR,'X');
         blockcomment=0;
         if isempty(cmdargs)
-            [fn,pn]=uigetfile('*.qplog;*.m');
+            [fn,pn]=uigetfile('*.qpmacro;*.qplog;*.m');
             if ischar(fn)
                 runfil=fopen([pn fn],'r','n','UTF-8');
             else
@@ -4714,8 +4717,8 @@ switch cmd
                     PAR = cmdargs{i+1};
                 elseif isequal('-data',cmdargs{i})
                     %
-                    % Both data file and log file specified. First load
-                    % data file and then run log file.
+                    % Both data file and macro file specified. First load
+                    % data file and then run macro file.
                     %
                     d3d_qp('openfile',cmdargs{i+1:end})
                     cmdargs(i:end)=[];
@@ -5273,7 +5276,7 @@ switch cmd
         elseif exist(cmd)==2
             [p,f,e]=fileparts(cmd);
             switch lower(e)
-                case {'.qplog','.m'}
+                case {'.qpmacro','.qplog','.m'}
                     d3d_qp('run',cmd,cmdargs{:})
                 case {'.fig','.qpses'}
                     d3d_qp('openfigure',cmd,cmdargs{:})

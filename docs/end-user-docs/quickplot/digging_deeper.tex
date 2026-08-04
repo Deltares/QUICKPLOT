@@ -13,7 +13,7 @@ This chapter describes how to
 \item define your own derived variables (\Sref{Sec:DefVariables}),
 \item define your own colour maps (\Sref{Sec:DefColourMap}),
 \item use the Grid selection window (\Sref{Sec:GridView}), and
-\item use command logging to create macros (\Sref{Sec:Macros}).
+\item use create and use macros (\Sref{Sec:Macros}).
 \end{itemize}
 
 \section{Setting preferences} \label{Sec:Preferences}
@@ -195,7 +195,7 @@ Often you will run multiple simulations to study the effect of certain parameter
 If the effect is (initially) small, it may sometimes be difficult to spot the essence of the differences between two simulations.
 The option to define and combine variables (described in \Sref{Sec:DefVariables}) allows you to define and subtract individual variables to look at the net effect of a model input change.
 However, this method is quite laborous and error prone if you want to look at the differences of multiple quantities (possibly in multiple files).
-The option to use logfiles (see \Sref{Sec:Macros}) to repeat some steps helps but is not always straightforward to use.
+The option to use macro files (see \Sref{Sec:Macros}) to repeat some steps helps but is not always straightforward to use.
 For this reason we have added a new feature called `Diff Files' to quickly subtract the contents of two data files.
 The new option is available from the \menu{File} menu.
 When you select the menu item, you will see the dialog shown in \Fref{fig:difffiles}.
@@ -605,14 +605,14 @@ Acceptable file formats are Tekal two column landboundary files, BNA files, ArcI
 \label{fig:5.28}
 \end{figure}
 
-\section{Using log files as macros} \label{Sec:Macros}
-\QUICKPLOT\ has log file functionality for all actions of the main program window and some secondary interfaces, such as the file options dialog.
+\section{Creating and using macros} \label{Sec:Macros}
+\QUICKPLOT\ has functionality to record all actions of the main program window and some secondary interfaces, such as the file options dialog, to a macro file.
 This functionality can be accessed from the Macro menu and the macro icons on the toolbar of the main program interface as shown in \Fref{fig:5.29}.
 
 \begin{figure}
 \center{\includegraphics{Ch05/5-21a.png}
 \includegraphics{Ch05/5-21b.png}}
-\caption{Logfile icons in the main program interface.}
+\caption{Macro file icons in the main program interface.}
 \label{fig:5.29}
 \end{figure}
 
@@ -621,21 +621,21 @@ The icons have (from left to right) the follow purpose:
 \begin{itemize}
 \item Open the \QUICKPLOT\ command line interface (menu item: Show Command Line).
 In general you will not need this, it is used for testing out new functionality.
-\item Record commands to a log file (menu item: Record Log File).
+\item Record commands to a macro file (menu item: Record Macro File).
 \item Record commands to a MATLAB script file (menu item: Record MATLAB Script).
 \item Stop recording the commands (menu item: Stop Recording)
-\item Play/re-run a log file (menu item: Run Log File).
+\item Play/re-run a macro file (menu item: Run Macro File).
 \end{itemize}
 
-When the recording of commands is started all commands will be written in ASCII format to a file (extension .qplog) specified by you until you stop the recording.
-The commands stored in a log file can be played back, that is, log files can be used as macros.
-To repeat the list of commands stored in a log file, select the Run Log File option and select the file.
-The MATLAB script file is intended for use with the \DMATLAB\ interface, but can be re-run using the Run Log File option as well.
+When the recording of commands is started all commands will be written in ASCII format to a file (extension .qpmacro) specified by you until you stop the recording.
+The commands stored in a macro file can be played back.
+To execute the list of commands stored in a macro file, select the Run Macro File option and select the file.
+The MATLAB script file is intended for use with the \DMATLAB\ interface, but can be re-run using the Run Macro File option as well.
 
-In addition to writing the commands to a log or script file, it is possible to echo the commands to the \QUICKPLOT\ Message Window.
+In addition to writing the commands to a macro or MATLAB script file, it is possible to echo the commands to the \QUICKPLOT\ Message Window.
 
-This manual does not explain the commands in the log file.
-Below you find an example of the log file of the procedure to define the Froude variable in \Sref{Sec:DefVariables} from the opening of the file until the first plot.
+This manual does not explain the commands in the macro file.
+Below you find an example of the macro file of the procedure to define the Froude variable in \Sref{Sec:DefVariables} from the opening of the file until the first plot.
 
 \begin{Verbatim}
 openfile 'd:\Delft3D\tutorial\waq\f34\com-f34-waq.dat'
@@ -669,13 +669,13 @@ quickview
 
 \begin{figure}
 \center{\includegraphics{Ch05/result_matlab_script.png}}
-\caption{End result of the example log file and MATLAB script.}
+\caption{End result of the example macro file and MATLAB script.}
 \label{fig:5.30}
 \end{figure}
 
 \begin{Remark}
 \item Interactive commands (manipulation of plots) are not recorded.
-\item As an alternative to a log file, you can write a MATLAB script file.
+\item As an alternative to a macro file, you can write a MATLAB script file.
 Its basic syntax is the same, but it consists of valid MATLAB commands to be used in combination with the \DMATLAB\ interface that allows for integration of \QUICKPLOT\ features and the tools of the MATLAB environment.
 The equivalent MATLAB script reads:
 \end{Remark}

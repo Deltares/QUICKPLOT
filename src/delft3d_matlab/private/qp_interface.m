@@ -111,14 +111,14 @@ m1=qp_uimenu(mfig,'&File', ...
     'close','E&xit',1,1,1});
 %=============
 m1=qp_uimenu(mfig,'&Macro', ...
-    {'logfile','Record &Log File',1,1,0
+    {'macrofile','Record Macro &File',1,1,0
     'scriptfile','Record MATLAB &Script',1,1,0
     '','Record to Message &Window',1,1,0
     'scriptfiletomcw','Record to &MATLAB Command Window',1,1,0
     'stoprecord','&Stop Recording',1,0,0
-    'run','&Run Log File',1,1,1});
+    'run','&Run Macro File',1,1,1});
 qp_uimenu(findobj(mfig,'tag','Record to Message &Window'), ...
-    {'logfiletomw','&Log File Commands',1,1,0; ...
+    {'macrofiletomw','&Macro File Commands',1,1,0; ...
     'scriptfiletomw','MATLAB &Script Commands',1,1,0});
 MW.StartRec=m1(2:5);
 %=============
@@ -182,11 +182,11 @@ set(MW.OFl,'userdata','')
 MW.OpnFig = qp_toolbarpush(MW.TB,'openfigure',1,'Load a figure from file');
 %=============
 MW.TB_CL = qp_toolbartoggle(MW.TB,'comline',1,'Show/hide command line');
-MW.RecTB(1) = qp_toolbarpush(MW.TB,'logfile',0,'Record a macro/log file');
+MW.RecTB(1) = qp_toolbarpush(MW.TB,'macrofile',0,'Record a macro file');
 MW.RecTB(2) = qp_toolbarpush(MW.TB,'scriptfile',0,'Record a MATLAB script file');
 MW.StopRec = qp_toolbarpush(MW.TB,'stoprecord',0,'Stop recording');
-MW.Run = qp_toolbarpush(MW.TB,'run',0,'Run a macro/log file');
-MW.Rerun = qp_toolbarpush(MW.TB,'rerun',0,'Run previous macro/log file again');
+MW.Run = qp_toolbarpush(MW.TB,'run',0,'Run a macro file');
+MW.Rerun = qp_toolbarpush(MW.TB,'rerun',0,'Run previous macro file again');
 set(MW.StopRec,'enable','off')
 set(MW.Rerun,'enable','off')
 %=============

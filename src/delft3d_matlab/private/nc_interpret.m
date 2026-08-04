@@ -548,6 +548,28 @@ for ivar = 1:nvars
     end
 end
 
+unknownType = strcmp({nc.Dataset.Type}, 'unknown');
+varsListedButTypeUnknown = ismember(variablesListedAsCoordinates, varNames(unknownType));
+if any(varsListedButTypeUnknown)
+    coordinatesTypeUnknown = variablesListedAsCoordinates(varsListedButTypeUnknown);
+    for i = 1:length(coordinatesTypeUnknown)
+        if contains(coordinatesTypeUnknown{i},'x')
+            % probably an x-coordinate, search for corresponding
+            % y-coordinate
+            xCoordinate = coordinatesTypeUnknown{i};
+            yCoordinate = xCoordinate;
+            yCoordinate(yCoordinate=='x') = 'y';
+            matchesY = strcmp(coordinatesTypeUnknown,yCoordinate);
+            if any(matchesY)
+                % an x,y-pair found, this must be x- and y-coordinates
+                ix = strcmp(varNames,xCoordinate);
+                nc = setType(nc,ix,[],'x-coordinate');
+                iy = strcmp(varNames,yCoordinate);
+                nc = setType(nc,iy,[],'y-coordinate');
+            end
+        end
+    end
+end
 % safety net for D-Flow FM
 % check if spatial coordinates do actually contain data
 skip_coords=false(1,nvars);
@@ -2034,6 +2056,10 @@ for mesh = NumMeshes:-1:1
                         % for com files ...
                         iFaces{p} = nc_varget(file,'FlowElemGlobalNr');
                         faceDomain{p} = nc_varget(file,'FlowElemDomain');
+                        if length(iFaces{p}) > nFaces(p) % nFlowElemWithBnd
+                            iFaces{p} = iFaces{p}(1:nFaces(p));
+                            faceDomain{p} = faceDomain{p}(1:nFaces(p));
+                        end
                     case 4
                         % fallback, use all values of domain 1
                         if isempty(faceDim)
