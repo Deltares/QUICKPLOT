@@ -1193,6 +1193,9 @@ for i = 1:size(attfiles,1)
                 if none(ibl2d)
                     ibl2d = strcmp('node_z',VNames);
                 end
+                if none(ibl2d)
+                    ibl2d = strcmp('mesh2d_node_z',VNames);
+                end
                 loc = 'UGRID2D-NODE';
             end
             %

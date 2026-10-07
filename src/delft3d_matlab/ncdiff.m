@@ -166,6 +166,21 @@ if isequal(info1.Size,info2.Size)
                 anydiff = true;
                 fprintf('=> variable %s:\n', name);
             end
+            if ismember('time',{info1.Dimensions.Name})
+                itime = strcmp('time',{info1.Dimensions.Name});
+                if length(itime) == 1
+                    timeEqual = varData1==varData2;
+                else
+                    timeEqual = all(varData1==varData2,find(itime~=1));
+                end
+                firstTimeDiff = find(~timeEqual,1,'first');
+                lastTimeEqual = find(timeEqual,1,'last');
+                if isempty(lastTimeEqual)
+                    fprintf('Data different for all time steps.\n');
+                else % firstTimeDiff can't be empty since vardiff ~= 0
+                    fprintf('Data still equal at time=%i; first difference at time=%i.\n',lastTimeEqual,firstTimeDiff);
+                end
+            end
             vardiff(varData1, varData2)
     end
 end
