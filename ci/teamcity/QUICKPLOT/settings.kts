@@ -262,6 +262,7 @@ object Linux_LnxDetermineGitProperties : BuildType({
             branchFilter = """
                 +pr: sourceRepo=same draft=false
                 +:<default>
+                -:*
             """.trimIndent()
         }
     }
@@ -893,6 +894,7 @@ object Windows_WinLatexManualGeneration : BuildType({
             branchFilter = """
                 +pr: sourceRepo=same draft=false
                 +:<default>
+                -:*
             """.trimIndent()
         }
     }
