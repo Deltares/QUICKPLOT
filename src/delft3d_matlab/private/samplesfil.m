@@ -143,34 +143,41 @@ if strcmp(Props.Name,'dominant area trachytope') || ...
     % we need to check the tdd file to do this properly ... or assume RWS conventions.
     % for 2D trachytopes all area fractions should be less or equal 1
     nPnt = Props.SubFld;
-    non2D_entries = FI.XYZ(:,5) > 1;
-    non2D_trachy = unique(FI.XYZ(non2D_entries,4));
-    filter2d = ~ismember(FI.XYZ(:,4),non2D_trachy);
-    [Ans.XYZ,iPnt] = unique(FI.XYZ(:,1:2),'rows');
+    trachy_nr = FI.XYZ(:,4);
+    area = FI.XYZ(:,5);
+    non2D_entries = area > 1;
+    non2D_trachy = unique(trachy_nr(non2D_entries));
+    filter2d = ~ismember(trachy_nr,non2D_trachy);
+    [Ans.XYZ,~,iPnt] = unique(FI.XYZ(:,1:2),'rows');
 
     Ans.XYZ = permute(Ans.XYZ,[3 1 4 2]);
     Ans.TRI = zeros(0,3);
     switch Props.Name
         case 'dominant area trachytope'
-            Area = zeros(nPnt,1);
+            largestAreaProcessed = zeros(nPnt,1);
             Ans.Val = zeros(nPnt,1);
             for i = 1:length(iPnt)
                 if filter2d(i)
-                    thisArea = FI.XYZ(i,5);
+                    thisArea = area(i);
                     ip = iPnt(i);
-                    if thisArea > Area(ip)
-                        Ans.Val(ip) = FI.XYZ(i,4);
-                        Area(ip) = thisArea;
+                    if thisArea > largestAreaProcessed(ip)
+                        Ans.Val(ip) = trachy_nr(i);
+                        largestAreaProcessed(ip) = thisArea;
                     end
                 end
             end
-            Ans.Val = accumarray(iPnt(filter2d),FI.XYZ(filter2d,4),[nPnt 1],@max);
+            % this would return the highest trachytope number in use
+            % Ans.Val = accumarray(iPnt(filter2d),trachy_nr(filter2d),[nPnt 1],@max);
         case 'number of area trachytopes specified'
-            Ans.Val = accumarray(iPnt(filter2d),ones(size(filter2d)),[nPnt 1]);
+            Ans.Val = accumarray(iPnt(filter2d),ones(sum(filter2d),1),[nPnt 1]);
         case 'total weight of area trachytopes'
             Ans.Val = accumarray(iPnt(filter2d),FI.XYZ(filter2d,5),[nPnt 1]);
     end
     
+    if ~isequal(idxM,0)
+        Ans.XYZ = Ans.XYZ(:,idxM,:,:);
+        Ans.Val = Ans.Val(idxM,:);
+    end
     varargout={Ans FI};
     return
 end

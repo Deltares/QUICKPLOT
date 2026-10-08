@@ -169,9 +169,9 @@ if isequal(info1.Size,info2.Size)
             if ismember('time',{info1.Dimensions.Name})
                 itime = strcmp('time',{info1.Dimensions.Name});
                 if length(itime) == 1
-                    timeEqual = varData1==varData2;
+                    timeEqual = (varData1==varData2) | (isnan(varData1) & isnan(varData2));
                 else
-                    timeEqual = all(varData1==varData2,find(itime~=1));
+                    timeEqual = all((varData1==varData2) | (isnan(varData1) & isnan(varData2)),find(itime~=1));
                 end
                 firstTimeDiff = find(~timeEqual,1,'first');
                 lastTimeEqual = find(timeEqual,1,'last');
