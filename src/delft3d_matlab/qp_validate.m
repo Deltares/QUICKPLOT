@@ -1196,6 +1196,10 @@ switch log_style
             fprintf(logid,'%s\n','\def\gitrepo{\@gitrepository}');
             fprintf(logid,'%s\n','\def\gitbranch{\@gitbranch}');
             fprintf(logid,'%s\n','\def\githash{\@githashshort}');
+            fprintf(logid,'%s\n','\StrGobbleRight{\@gitrepository}{4}[\gitbase]');
+	    fprintf(logid,'%s\n','\edef\gitbranchurl{\gitbase/tree/\@gitbranch}');
+	    fprintf(logid,'%s\n','\def\branchtitle{\emph{repo:} \href{@gitrepository}{\@gitrepository}\\ \emph{branch:} \href{\gitbranchurl}{\@gitbranch}}');
+
             fprintf(logid,'%s\n','\makeatother');
             fprintf(logid,'\n');
             fprintf(logid,'%s\n','\begin{document}');
