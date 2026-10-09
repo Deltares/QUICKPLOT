@@ -136,6 +136,52 @@ else
     idxM = idx{M_};
     szM = sz(M_);
 end
+
+if strcmp(Props.Name,'dominant area trachytope') || ...
+        strcmp(Props.Name,'number of area trachytopes specified') || ...
+        strcmp(Props.Name,'total weight of area trachytopes')
+    % we need to check the tdd file to do this properly ... or assume RWS conventions.
+    % for 2D trachytopes all area fractions should be less or equal 1
+    nPnt = Props.SubFld;
+    trachy_nr = FI.XYZ(:,4);
+    area = FI.XYZ(:,5);
+    non2D_entries = area > 1;
+    non2D_trachy = unique(trachy_nr(non2D_entries));
+    filter2d = ~ismember(trachy_nr,non2D_trachy);
+    [Ans.XYZ,~,iPnt] = unique(FI.XYZ(:,1:2),'rows');
+
+    Ans.XYZ = permute(Ans.XYZ,[3 1 4 2]);
+    Ans.TRI = zeros(0,3);
+    switch Props.Name
+        case 'dominant area trachytope'
+            largestAreaProcessed = zeros(nPnt,1);
+            Ans.Val = zeros(nPnt,1);
+            for i = 1:length(iPnt)
+                if filter2d(i)
+                    thisArea = area(i);
+                    ip = iPnt(i);
+                    if thisArea > largestAreaProcessed(ip)
+                        Ans.Val(ip) = trachy_nr(i);
+                        largestAreaProcessed(ip) = thisArea;
+                    end
+                end
+            end
+            % this would return the highest trachytope number in use
+            % Ans.Val = accumarray(iPnt(filter2d),trachy_nr(filter2d),[nPnt 1],@max);
+        case 'number of area trachytopes specified'
+            Ans.Val = accumarray(iPnt(filter2d),ones(sum(filter2d),1),[nPnt 1]);
+        case 'total weight of area trachytopes'
+            Ans.Val = accumarray(iPnt(filter2d),FI.XYZ(filter2d,5),[nPnt 1]);
+    end
+    
+    if ~isequal(idxM,0)
+        Ans.XYZ = Ans.XYZ(:,idxM,:,:);
+        Ans.Val = Ans.Val(idxM,:);
+    end
+    varargout={Ans FI};
+    return
+end
+
 if isempty(FI.Time)
     if strncmp(Props.Name,'weight of trachytope number',27)
         dim1 = find(FI.XYZ(:,4) == Props.SubFld);
@@ -345,11 +391,28 @@ end
 
 function Out = infile_trachytope(FI, Out)
 trachytopes = unique(FI.XYZ(:,4));
-Out(5).Geom = 'PNT';
+
+uniqueXY = unique(FI.XYZ(:,1:2),'rows');
+nPnts = size(uniqueXY,1);
+
+N = 5;
+Out(N).Geom = 'PNT';
+Out(N).Name = sprintf('total weight of area trachytopes');
+Out(N).SubFld = nPnts;
+%linear, point
+
+N = N+1;
+Out(N) = Out(N-1);
+Out(N).Name = sprintf('number of area trachytopes specified');
+
+N = N+1;
+Out(N) = Out(N-1);
+Out(N).Name = sprintf('dominant area trachytope');
+
 for i = length(trachytopes):-1:1
-    Out(4+i) = Out(5);
-    Out(4+i).Name = sprintf('weight of trachytope number %i', trachytopes(i));
-    Out(4+i).SubFld = trachytopes(i);
+    Out(N+i) = Out(N);
+    Out(N+i).Name = sprintf('weight of trachytope number %i', trachytopes(i));
+    Out(N+i).SubFld = trachytopes(i);
 end
 
 
@@ -476,7 +539,11 @@ function sz=getsize(FI,Props)
 T_=1; ST_=2; M_=3; N_=4; K_=5;
 sz=[0 0 0 0 0];
 %======================== SPECIFIC CODE =======================================
-if strncmp(Props.Name,'weight of trachytope number',27)
+if strcmp(Props.Name,'dominant area trachytope') || ...
+        strcmp(Props.Name,'number of area trachytopes specified') || ...
+        strcmp(Props.Name,'total weight of area trachytopes')
+    sz(M_) = Props.SubFld;
+elseif strncmp(Props.Name,'weight of trachytope number',27)
     sz(M_) = sum(FI.XYZ(:,4) == Props.SubFld);
 else
     if Props.DimFlag(T_)
