@@ -1613,13 +1613,24 @@ line & & xy
 
 
 %------------------------------------------------------------------------------
-\section{\DQUICKIN\ samples file} \label{Sec:FileXYZ}
+\section{samples file} \label{Sec:FileXYZ}
 \FileAndFormat{\file{$\ast$.xyz}}{Ascii file}
+
+The \DQUICKIN\ samples files are covered by this category, but also the trachytope \file{$\ast$.arl} files of \dflowfm.
 
 \begin{QUL-table}
 \STRUT
-samples & & xy
+samples & & xy \\
+dominant area trachytope\ENi & - & xy \\
+number of area trachytopes specified\ENi & - & xy \\
+total weight of area trachytopes\ENi & - & xy \\
+weight of trachytope number\ENi\ENii & - & xy
 \end{QUL-table}
+
+\begin{enumerate_brackets}
+\item This field is only available for trachytope \file{$\ast$.arl} files.
+\item This field is expanded for all trachytopes listed in the \file{$\ast$.arl} files.
+\end{enumerate_brackets}
 
 
 
