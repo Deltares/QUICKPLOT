@@ -64,7 +64,9 @@ object Linux_LnxBuildMexFiles : BuildType({
         +:src/delft3d_matlab/private/reducepoints.mexa64
     """.trimIndent()
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
-
+    maxRunningBuildsPerBranch = "*:1"
+    runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
+    
     vcs {
         root(DslContext.settingsRoot)
     }
@@ -138,6 +140,8 @@ object Linux_LnxCompileQuickplot : BuildType({
     """.trimIndent()
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
     publishArtifacts = PublishMode.ALWAYS
+    maxRunningBuildsPerBranch = "*:1"
+    runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
 
     vcs {
         root(DslContext.settingsRoot)
@@ -212,6 +216,8 @@ object Linux_LnxDetermineGitProperties : BuildType({
         +:gitsettings
     """.trimIndent()
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
+    maxRunningBuildsPerBranch = "*:1"
+    runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
 
     vcs {
         root(DslContext.settingsRoot)
@@ -260,9 +266,9 @@ object Linux_LnxDetermineGitProperties : BuildType({
     triggers {
         vcs {
             branchFilter = """
+                -:*
                 +pr: sourceRepo=same draft=false
                 +:<default>
-                -:*
             """.trimIndent()
         }
     }
@@ -292,6 +298,8 @@ object Linux_LnxQuickplotReleaseZip : BuildType({
 
     artifactRules = "QUICKPLOT*.zip"
     buildNumberPattern = "QP ${Windows_WinCompileQuickplot.depParamRefs["build.revisions.revision"]}"
+    maxRunningBuildsPerBranch = "*:1"
+    runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
 
     vcs {
         cleanCheckout = true
@@ -428,6 +436,8 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
         testbench/**/work/* => diff.zip
     """.trimIndent()
     buildNumberPattern = "${Windows_WinCompileQuickplot.depParamRefs.buildNumber}"
+    maxRunningBuildsPerBranch = "*:1"
+    runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
 
     vcs {
         root(DslContext.settingsRoot, "+:. => code")
@@ -614,6 +624,8 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
         testbench/**/work/* => diff.zip
     """.trimIndent()
     buildNumberPattern = "Tests %build.vcs.number.Quickplot_DSCTestbenchTestsQuickplot%: QP %build.vcs.number.MatlabTools_GithubQuickplot%"
+    maxRunningBuildsPerBranch = "*:1"
+    runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
 
     vcs {
         root(DslContext.settingsRoot, "+:.=>code")
@@ -838,6 +850,8 @@ object Windows_WinLatexManualGeneration : BuildType({
         +:docs/end-user-docs/quickplot/Delft3D-QUICKPLOT_User_Manual.log => log
     """.trimIndent()
     buildNumberPattern = "QP ${DslContext.settingsRoot.paramRefs.buildVcsNumber}"
+    maxRunningBuildsPerBranch = "*:1"
+    runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
 
     vcs {
         root(DslContext.settingsRoot)
@@ -962,6 +976,8 @@ object Windows_WinBuildMexFiles : BuildType({
         +:src/quickplot_splash_screen/finish/CloseSplashScreen.mexw64
     """.trimIndent()
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
+    maxRunningBuildsPerBranch = "*:1"
+    runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
 
     vcs {
         root(DslContext.settingsRoot)
@@ -1002,6 +1018,8 @@ object Windows_WinBuildQuickplotSplashScreen : BuildType({
 
     artifactRules = "+:src/quickplot_splash_screen/build/Release/*"
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
+    maxRunningBuildsPerBranch = "*:1"
+    runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
 
     vcs {
         root(DslContext.settingsRoot)
@@ -1066,7 +1084,8 @@ object Windows_WinCompileQuickplot : BuildType({
         src/system_tests/*.exe => 64bit_system_tests/
     """.trimIndent()
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
-    maxRunningBuilds = 1
+    maxRunningBuildsPerBranch = "*:1"
+    runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
 
     vcs {
         root(DslContext.settingsRoot)
@@ -1153,6 +1172,8 @@ object Windows_WinQuickplotReleaseZip : BuildType({
 
     artifactRules = "QUICKPLOT*.zip"
     buildNumberPattern = "QP ${Windows_WinCompileQuickplot.depParamRefs["build.vcs.number"]}"
+    maxRunningBuildsPerBranch = "*:1"
+    runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
 
     vcs {
         cleanCheckout = true
@@ -1292,6 +1313,8 @@ object Windows_WinRunQuickplotTestBenchStandalone : BuildType({
         testbench/**/work/* => diff.zip
     """.trimIndent()
     buildNumberPattern = "${Windows_WinCompileQuickplot.depParamRefs.buildNumber}"
+    maxRunningBuildsPerBranch = "*:1"
+    runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
 
     vcs {
         root(DslContext.settingsRoot, "+:.=>code")
@@ -1485,6 +1508,8 @@ object Windows_WinRunQuickplotTestBenchWithinMatlab : BuildType({
         testbench/**/work/* => diff.zip
     """.trimIndent()
     buildNumberPattern = "Tests %build.vcs.number.Quickplot_DSCTestbenchTestsQuickplot%: QP %build.vcs.number.MatlabTools_GithubQuickplot%"
+    maxRunningBuildsPerBranch = "*:1"
+    runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
 
     vcs {
         root(DslContext.settingsRoot, "+:.=>code")
@@ -1617,6 +1642,8 @@ object Windows_WinUpdateOpenEarthToolsLink : BuildType({
     name = "[win] Update OpenEarthTools link"
 
     buildNumberPattern = "QP %build.vcs.number.MatlabTools_GithubQuickplot%"
+    maxRunningBuildsPerBranch = "*:1"
+    runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
 
     vcs {
         root(DslContext.settingsRoot)
