@@ -104,6 +104,8 @@ switch cmd
         M=varargin{4};
         %
         QH = FI.Table(Props.Fld).Data;
+        q_unit = get_unit(FI.Table(Props.Fld).Parameter(1));
+        zw_unit = get_unit(FI.Table(Props.Fld).Parameter(2));
         if M~=0
             QH = QH(M,:);
         end
@@ -116,8 +118,8 @@ switch cmd
             'markerfacecolor',Ops.markerfillcolour);
         setappdata(Parent,'AxesType','<blocking>')
         set(get(Parent,'title'),'string',FI.Table(Props.Fld).Location,'interpreter','none')
-        set(get(Parent,'xlabel'),'string','discharge (m^3) \rightarrow')
-        set(get(Parent,'ylabel'),'string','elevation (m) \rightarrow')
+        set(get(Parent,'xlabel'),'string',['discharge (',q_unit,') \rightarrow'])
+        set(get(Parent,'ylabel'),'string',['elevation (',zw_unit,') \rightarrow'])
         varargout={hNew FI};
         return
     otherwise
@@ -166,7 +168,7 @@ varargout={Ans FI};
 % -----------------------------------------------------------------------------
 function Out=infile(FI,domain)
 %======================== SPECIFIC CODE =======================================
-PropNames={'Name'                       'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc' 'Loc3D' 'Fld' 'Prm'};
+PropNames={'Name'                       'Units' 'DimFlag' 'DataInCell' 'NVal' 'VecType' 'Loc' 'ReqLoc' 'Loc3D' 'Fld' 'Prm'};
 DataProps={};
 
 %======================== SPECIFIC CODE DIMENSIONS ============================
@@ -174,17 +176,32 @@ l=0;
 for i=1:length(FI.Table)
     for j=2:size(FI.Table(i).Parameter,2)
         l=l+1;
+        unit = get_unit(FI.Table(i).Parameter(j));
         if strcmp(FI.Table(i).Parameter(1).Name,'total discharge (t)')
-            DataProps(l,:)={[FI.Table(i).Location ' - QH Table'] ...
+            DataProps(l,:)={[FI.Table(i).Location ' - QH Table'] unit ...
                 [0 0 1 0 0]  0         -1     ''        ''   ''      ''      i    j };
         else
-            DataProps(l,:)={[FI.Table(i).Location ' - ' FI.Table(i).Parameter(j).Name] ...
+            DataProps(l,:)={[FI.Table(i).Location ' - ' FI.Table(i).Parameter(j).Name] unit ...
                 [1 0 0 0 0]  0          1     ''        ''   ''      ''      i    j };
         end
     end
 end
 Out=cell2struct(DataProps,PropNames,2);
 % -----------------------------------------------------------------------------
+
+
+function unit = get_unit(Parameter)
+if isfield(Parameter,'Unit')
+    unit = Parameter.Unit;
+    if ~isempty(unit) && unit(1) == '[' && unit(end) == ']'
+        unit = strtrim(unit(2:end-1));
+    end
+    if strcmp(unit,'m**/s')
+        unit = 'm^3/s';
+    end
+else
+    unit = '';
+end
 
 
 % -----------------------------------------------------------------------------

@@ -895,6 +895,9 @@ if isequal(Program,UNSPECIFIED)
         MFile = mdwread(MFile,master_path);
     elseif inifile('existsi',master,'General','fileType')
         fileType = propget(master,'General','fileType');
+        if strcmp(fileType,'boundConds')
+            error('Boundary condition files should be read using bct_io.')
+        end
         fversion = inifile('getstringi',master,'General','fileVersion','');
         if isempty(fversion)
             mversion = inifile('getstringi',master,'General','majorVersion','');
