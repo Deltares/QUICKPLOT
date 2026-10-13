@@ -1192,10 +1192,13 @@ switch log_style
             fprintf(logid,'%s\n','\newcommand{\cmark}{\ding{51}}%');
             fprintf(logid,'%s\n','\newcommand{\xmark}{\ding{55}}%');
             fprintf(logid,'\n');
+            fprintf(logid,'%s\n','\ExplSyntaxOn \cs_generate_variant:Nn \str_range:nnn { enn } \cs_new:Npn \makegitbranchurl #1#2 { \str_if_eq:eeTF { \str_range:enn {#2} {1} {4} } { pull } { #1/#2 } { #1/tree/#2 } } \ExplSyntaxOff');
+            fprintf(logid,'\n');
             fprintf(logid,'%s\n','\makeatletter');
-            fprintf(logid,'%s\n','\def\gitrepo{\@gitrepository}');
-            fprintf(logid,'%s\n','\def\gitbranch{\@gitbranch}');
-            fprintf(logid,'%s\n','\def\githash{\@githashshort}');
+            fprintf(logid,'%s\n','\StrGobbleRight{\@gitrepository}{4}[\gitbase]');
+	    fprintf(logid,'%s\n','\edef\gitbranchurl{\makegitbranchurl{\gitbase}{\@gitbranch}}');
+	    fprintf(logid,'%s\n','\def\branchtitle{\emph{repo:} \href{\@gitrepository}{\@gitrepository}\\ \emph{branch:} \href{\gitbranchurl}{\@gitbranch}}');
+
             fprintf(logid,'%s\n','\makeatother');
             fprintf(logid,'\n');
             fprintf(logid,'%s\n','\begin{document}');
@@ -1207,7 +1210,7 @@ switch log_style
             fprintf(logid,'%s\n','\input{common/program_names}');
             fprintf(logid,'\n');
             fprintf(logid,'%s\n','\title{\QUICKPLOT\ Testing}');
-            fprintf(logid,'%s\n','\subtitle{\emph{repo:} \gitrepo\\ \emph{branch:} \gitbranch}');
+            fprintf(logid,'%s\n','\subtitle{\branchtitle}');
             fprintf(logid,'%s\n','\manualtype{Regression Document}');
             fprintf(logid,'%s\n','\distribution{}');
             fprintf(logid,'%s{%s%s}\n','\version',versionstr,stalone);

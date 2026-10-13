@@ -50,7 +50,7 @@ filtertbl={...
     '*.mesh;*.node;*.ele;*.n;*.e'                          'EasyMesh and Triangle Mesh Files'  'nodelemesh'         0 ''
     '*.gem'                                                'GeoSystems Mesh Files'             'geomesh'            0 ''
     '*.msh'                                                'Gmsh Files'                        'gmsh'               0 ''
-    '*.bct;*.bcc;*.bcb;*.bc'                               'Delft3D-FLOW Bound. Cond. Files'   'bct'                0 ''
+    '*.bct;*.bcc;*.bcb;*.bc'                               'Delft3D Bound. Cond. Files'        'bct'                0 ''
     'bagdpt*.*'                                            'Delft3D-MOR Ascii Dredging Output' 'bagdpt'             0 '*.*'
     '*.am?;*.spw;*.wnd'                                    'Delft3D/SOBEK Meteo Files'         'asciiwind'          0 ''
     'gcmplt.*;gcmtsr.*'                                    'ECOMSED Binary Files'              'ecomsed-binary'     0 '*.*'

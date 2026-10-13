@@ -133,13 +133,12 @@ function Info = Local_read_bct(filename)
 if exist(filename,'file')~=2
     error('File does not exist: %s',filename)
 end
-fid=fopen(filename,'r','n','US-ASCII');
+fid=fopen(filename,'r','n');
 Info.Check='NotOK';
 Info.FileName=filename;
 Info.NTables=0;
 
-floc=ftell(fid);
-Line=fgetl(fid);
+[floc,Line] = get_next_line(fid);
 line=lower(Line);
 switch deblank(line)
     case '[forcing]'
@@ -147,18 +146,14 @@ switch deblank(line)
         return
     case '[general]' %SOBEK-3 header, we cycle until we get to [boundary]; In FM-1D input there is [forcing]
         while ~strcmp(line,'[boundary]') && ~strcmp(line,'[forcing]')
-            line=lower(fgetl(fid));
+            [~,Line] = get_next_line(fid);
             if feof(fid)
-                error('The file seems to be from SOBEK-3 or Delft3D FM 1D. I could not find the [boundary] or [forcing] block')
+                error('This might be a boundary file without any [boundary] or [forcing] block.')
             end
+            line=lower(Line);
         end
         Info = Local_read_bc(Info,fid);
         return
-end
-%
-while ischar(Line) && ~isempty(Line) && Line(1)=='#'
-    floc=ftell(fid);
-    Line=fgetl(fid);
 end
 
 i=1;
@@ -210,8 +205,7 @@ try
                 NPar=0;
                 Info.NTables=Info.NTables+1;
         end
-        floc=ftell(fid);
-        Line=fgetl(fid);
+        [floc,Line] = get_next_line(fid);
     end
 catch
     fclose(fid);
@@ -222,6 +216,15 @@ if Info.NTables==0
     error('No tables in bct file?')
 end
 Info.Check='OK';
+
+
+function [floc,Line] = get_next_line(fid)
+floc=ftell(fid);
+Line=fgetl(fid);
+while ischar(Line) && (isempty(deblank(Line)) || Line(1)=='#')
+    floc=ftell(fid);
+    Line=fgetl(fid);
+end
 
 
 function Info = Local_read_bc(Info,fid)

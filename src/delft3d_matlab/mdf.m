@@ -895,6 +895,9 @@ if isequal(Program,UNSPECIFIED)
         MFile = mdwread(MFile,master_path);
     elseif inifile('existsi',master,'General','fileType')
         fileType = propget(master,'General','fileType');
+        if strcmp(fileType,'boundConds')
+            error('Boundary condition files should be read using bct_io.')
+        end
         fversion = inifile('getstringi',master,'General','fileVersion','');
         if isempty(fversion)
             mversion = inifile('getstringi',master,'General','majorVersion','');
@@ -1192,6 +1195,9 @@ for i = 1:size(attfiles,1)
                 ibl2d = strcmp('NetNode_z',VNames);
                 if none(ibl2d)
                     ibl2d = strcmp('node_z',VNames);
+                end
+                if none(ibl2d)
+                    ibl2d = strcmp('mesh2d_node_z',VNames);
                 end
                 loc = 'UGRID2D-NODE';
             end
