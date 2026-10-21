@@ -273,6 +273,16 @@ else
             if nargin>2
                 Msg = sprintf(varargin{:});
             end
+            if isempty(Msg)
+                % ok
+            elseif isstring(Msg) || ischar(Msg)
+                Msg = cellstr(Msg);
+            elseif iscellstr(Msg)
+                % ok
+            else
+                % other data types ignored
+                return
+            end
             if UD.Buffer
                 UD.BufferedMessages = cat(1,UD.BufferedMessages,{Cmd,Msg});
             else
@@ -293,8 +303,8 @@ else
                 end
                 if isempty(Msg)
                     Msg={};
-                elseif iscellstr(Msg)
-                    % Does any cellstring contain char(10) ?
+                else
+                    % Does any cellstring contain char(10)/newline ?
                     i0=0;
                     cMsg = cell(1,1000);
                     for j = 1:length(Msg)
@@ -313,21 +323,6 @@ else
                         i0 = i0 + nLinesAdded;
                     end
                     Msg=cMsg(1:i0);
-                elseif ischar(Msg)
-                    if size(Msg,1)>1
-                        Msg=cellstr(Msg);
-                    else
-                        % Does it contain newline?
-                        LBr=strfind([newline Msg newline],newline);
-                        nLinesAdded = length(LBr)-1;
-                        cMsg = cell(1,nLinesAdded);
-                        for i=1:nLinesAdded
-                            cMsg{i}=Msg(LBr(i):(LBr(i+1)-2));
-                        end
-                        Msg=cMsg;
-                    end
-                else
-                    return
                 end
                 while length(Msg)>1 && isempty(Msg{end})
                     Msg(end)=[];
