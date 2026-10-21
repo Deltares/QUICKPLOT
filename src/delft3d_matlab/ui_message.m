@@ -244,14 +244,12 @@ else
             i = 0;
             while i < size(Msg,1)
                 i = i+1;
-sameMessages = false(size(Msg,1),1);
-sameMessages(i) = true;
-for j = i+1:size(Msg,1)
-    sameMessages(j) = strcmp(Msg{j,1},Msg{i,1}) && isequal(Msg{j,2},Msg{i,2});
-end
-Msg{i,3} = sum(sameMessages);
-sameMessages(i) = false;
-Msg(sameMessages,:) = [];
+                sameMessages = false(size(Msg,1),1);
+                for j = i+1:size(Msg,1)
+                    sameMessages(j) = strcmp(Msg{j,1},Msg{i,1}) && isequal(Msg{j,2},Msg{i,2});
+                end
+                Msg{i,3} = 1+sum(sameMessages);
+                Msg(sameMessages,:) = [];
             end
 
             UD.Buffer = false;
