@@ -43,21 +43,21 @@ else
     message = '';
 end
 if isequal(message(1:min(20,end)),'Error using <a href=')
-    newline = find(message==char(10));
-    message = message(newline(1)+1:end);
+    newlines = find(message==newline);
+    message = message(newlines(1)+1:end);
 elseif isequal(message(1:min(15,end)),'Error: <a href=')
     file = sscanf(message,'%*[^(](''%[^'']'',%i',[1 inf]);
     line = file(end);
     file = char(file(1:end-1));
-    [p,f,e] = fileparts(file);
+    [~,f,~] = fileparts(file);
     stackline = stack2str(cell2struct({file,f,line},{'file','name','line'},2));
     stacklist = [stackline;stacklist];
     %
-    newline = find(message==char(10));
-    message = message(newline(1)+5:end);
+    newlines = find(message==newline);
+    message = message(newlines(1)+5:end);
 end
 if iscell(msg)
-    ui_message('error',{msg{:},message,stacklist{:}})
+    ui_message('error',[msg(:)',{message},stacklist(:)'])
 else
-    ui_message('error',{msg,message,stacklist{:}})
+    ui_message('error',[{msg},{message},stacklist(:)'])
 end

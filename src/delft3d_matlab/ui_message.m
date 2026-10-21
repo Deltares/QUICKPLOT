@@ -19,6 +19,13 @@ function H = ui_message(Cmd,varargin)
 %   messages; multiple regular messages (i.e. those without separator)
 %   count as 1. The default value of the maximum number of messages is 10.
 %
+%   UI_MESSAGE('start_buffer') buffers messages instead of reporting them
+%   immediately.
+%
+%   UI_MESSAGE('end_buffer') stops buffering and reports a summary of the
+%   buffered messages: each message is only reported once. If a message
+%   occurred N > 1 times, the message is preceeded by "[Nx] ".
+%
 %   Example
 %      ui_message('','First message')
 %      ui_message('','Second message continues first')
@@ -128,13 +135,10 @@ if isempty(UD)
         UD.errors={};
         UD.MessageOffset=[];
         UD.LastType='error';
+        UD.Buffer=false;
+        UD.BufferedMessages={};
     end
 end
-
-MaxNMessages=UD.MaxNMessages;
-errors=UD.errors;
-MessageOffset=UD.MessageOffset;
-LastType=UD.LastType;
 
 if isempty(fig) || ~ishandle(fig)
     
@@ -211,7 +215,7 @@ if isempty(fig) || ~ishandle(fig)
         'callback','ui_message select', ...
         'position',rect, ...
         'parent',fig, ...
-        'string',errors, ...
+        'string',UD.errors, ...
         'max',2, ...
         'tag','errorlist', ...
         'backgroundcolor',XX.Clr.White, ...
@@ -232,71 +236,114 @@ else
         Msg = '';
     end
     switch lower(Cmd)
+        case 'start_buffer'
+            UD.Buffer = true;
+        case 'end_buffer'
+            Msg = UD.BufferedMessages;
+            Msg(:,3) = deal({1});
+            i = 0;
+            while i < size(Msg,1)
+                i = i+1;
+                sameMessages = strcmp(Msg(:,1),Msg(i,1));
+                for j = i+1:length(sameMessages)
+                    sameMessages(j) = sameMessages(j) && isequal(Msg{j,2},Msg{i,2});
+                end
+                Msg{i,3} = sum(sameMessages);
+                sameMessages(i) = false;
+                Msg(sameMessages,:) = [];
+            end
+
+            UD.Buffer = false;
+            UD.BufferedMessages = {};
+            set(fig,'userdata',UD)
+            for i = 1:size(Msg,1)
+                if Msg{i,3} == 1
+                    ui_message(Msg{i,1},Msg{i,2})
+                else
+                    rep = sprintf('[%ix] ',Msg{i,3});
+                end
+                if iscell(Msg{i,2})
+                    Msg{i,2}{1} = [rep Msg{i,2}{1}];
+                    ui_message(Msg{i,1},Msg{i,2})
+                else
+                    ui_message(Msg{i,1},[rep Msg{i,2}])
+                end
+            end
+            UD = get(fig,'userdata');
         case {'error','warning','message',''}
             if nargin>2
                 Msg = sprintf(varargin{:});
             end
-            if strcmp(Cmd,'error')
-                stdbeep
-                bring_to_front(fig)
-            elseif strcmp(Cmd,'warning')
-                bring_to_front(fig)
-            end
-            Separator={};
-            if isempty(errors)
-                MessageOffset=1;
+            if UD.Buffer
+                UD.BufferedMessages = cat(1,UD.BufferedMessages,{Cmd,Msg});
             else
-                if ~isempty(Cmd) || ~isempty(LastType)
-                    Separator={'---------'};
-                    MessageOffset=[MessageOffset length(errors)+2];
+                if strcmp(Cmd,'error')
+                    stdbeep
+                    bring_to_front(fig)
+                elseif strcmp(Cmd,'warning')
+                    bring_to_front(fig)
                 end
-            end
-            if isempty(Msg)
-                Msg={};
-            elseif iscellstr(Msg)
-                % Does any cellstring contain char(10) ?
-                i0=0;
-                for j=1:length(Msg)
-                    if size(Msg{j},1)==1
-                        LBr=strfind([char(10) Msg{j} char(10)],char(10));
-                        for i=1:(length(LBr)-1)
-                            cMsg{i0+i}=Msg{j}(LBr(i):(LBr(i+1)-2));
-                        end
-                    else
-                        for i=1:size(Msg{j},1)
-                            cMsg{i0+i}=Msg{j}(i,:);
-                        end
-                    end
-                    i0=length(cMsg);
-                end
-                Msg=cMsg;
-            elseif ischar(Msg)
-                if size(Msg,1)>1
-                    Msg=cellstr(Msg);
+                Separator={};
+                if isempty(UD.errors)
+                    UD.MessageOffset = 1;
                 else
-                    % Does it contain char(10) ?
-                    LBr=strfind([char(10) Msg char(10)],char(10));
-                    for i=1:(length(LBr)-1)
-                        cMsg{i}=Msg(LBr(i):(LBr(i+1)-2));
+                    if ~isempty(Cmd) || ~isempty(UD.LastType)
+                        Separator={'---------'};
+                        UD.MessageOffset = [UD.MessageOffset length(UD.errors)+2];
                     end
-                    Msg=cMsg;
                 end
-            else
-                return
+                if isempty(Msg)
+                    Msg={};
+                elseif iscellstr(Msg) || isstring(Msg)
+                    % Does any cellstring contain char(10) ?
+                    i0=0;
+                    cMsg = cell(1,1000);
+                    for j = 1:length(Msg)
+                        if size(Msg{j},1) == 1
+                            LBr = strfind([newline Msg{j} newline],newline);
+                            nLinesAdded = length(LBr)-1;
+                            for i = 1:nLinesAdded
+                                cMsg{i0+i} = Msg{j}(LBr(i):(LBr(i+1)-2));
+                            end
+                        else
+                            nLinesAdded = size(Msg{j},1);
+                            for i = 1:nLinesAdded
+                                cMsg{i0+i} = Msg{j}(i,:);
+                            end
+                        end
+                        i0 = i0 + nLinesAdded;
+                    end
+                    Msg=cMsg(1:i0);
+                elseif ischar(Msg)
+                    if size(Msg,1)>1
+                        Msg=cellstr(Msg);
+                    else
+                        % Does it contain newline?
+                        LBr=strfind([newline Msg newline],newline);
+                        nLinesAdded = length(LBr)-1;
+                        cMsg = cell(1,nLinesAdded);
+                        for i=1:nLinesAdded
+                            cMsg{i}=Msg(LBr(i):(LBr(i+1)-2));
+                        end
+                        Msg=cMsg;
+                    end
+                else
+                    return
+                end
+                while length(Msg)>1 && isempty(Msg{end})
+                    Msg(end)=[];
+                end
+                Msg = strrep(Msg,char(9),'   ');
+                UD.errors = [UD.errors(:)' Separator(:)' Msg(:)'];
+                if length(UD.MessageOffset) > UD.MaxNMessages
+                    UD.MessageOffset(1) = [];
+                    UD.errors(1:(UD.MessageOffset(1)-1)) = [];
+                    UD.MessageOffset = UD.MessageOffset - UD.MessageOffset(1) + 1;
+                end
+                NL=length(Msg);
+                set(findobj(fig,'tag','errorlist'),'string',UD.errors,'value',length(UD.errors)+1-(1:NL));
+                UD.LastType = Cmd;
             end
-            while length(Msg)>1 && isempty(Msg{end})
-                Msg(end)=[];
-            end
-            Msg = strrep(Msg,char(9),'   ');
-            errors=[errors(:)' Separator(:)' Msg(:)'];
-            if length(MessageOffset)>MaxNMessages
-                MessageOffset(1)=[];
-                errors(1:(MessageOffset(1)-1))=[];
-                MessageOffset=MessageOffset-MessageOffset(1)+1;
-            end
-            NL=length(Msg);
-            set(findobj(fig,'tag','errorlist'),'string',errors,'value',length(errors)+1-(1:NL));
-            LastType=Cmd;
         case 'select'
             if strcmp(get(gcbf,'SelectionType'),'open')
                 S = get(gcbo,'string');
@@ -310,9 +357,9 @@ else
                     else
                         prevLine = S{v-1};
                     end
-                    if strncmp(thisLine,'In ',3) && ~isempty(strfind(thisLine,' at line '))
+                    if strncmp(thisLine,'In ',3) && contains(thisLine,' at line ')
                         locationLine = thisLine;
-                    elseif strncmp(prevLine,'In ',3) && ~isempty(strfind(prevLine,' at line '))
+                    elseif strncmp(prevLine,'In ',3) && contains(prevLine,' at line ')
                         locationLine = prevLine;
                     else
                         % nothing to do
@@ -330,19 +377,19 @@ else
                 end
             end
         case 'clear'
-            errors={};
-            MessageOffset=[];
-            set(findobj(fig,'tag','errorlist'),'string',errors,'listboxtop',1);
+            UD.errors = {};
+            UD.MessageOffset = [];
+            set(findobj(fig,'tag','errorlist'),'string',UD.errors,'listboxtop',1);
         case 'clipboard'
             i=sort(get(findobj(fig,'tag','errorlist'),'value')); % always copy lines from top to bottom
-            clipboard('copy',sprintf('%s\n',errors{i}))
+            clipboard('copy',sprintf('%s\n',UD.errors{i}))
         case 'saveas'
             [f,p]=uiputfile('*.txt','Save Message List As');
             if ~ischar(f)
                 return
             end
             pf=[p f];
-            [p,f,e]=fileparts(pf);
+            [~,~,e]=fileparts(pf);
             if isempty(e)
                 pf=[pf '.txt'];
             end
@@ -351,7 +398,7 @@ else
                 ui_message('error',['Cannot open output file: ',pf]);
                 return
             end
-            fprintf(fid,'%s\n',errors{:});
+            fprintf(fid,'%s\n',UD.errors{:});
             fclose(fid);
         case 'close'
             set(fig,'visible','off');
@@ -359,23 +406,19 @@ else
             if ischar(Msg)
                 Msg = str2double(Msg);
             end
-            MaxNMessages=max(1,Msg);
-            while length(MessageOffset)>MaxNMessages
-                MessageOffset(1)=[];
-                errors(1:(MessageOffset(1)-1))=[];
-                MessageOffset=MessageOffset-MessageOffset(1)+1;
+            UD.MaxNMessages = max(1,Msg);
+            while length(UD.MessageOffset) > UD.MaxNMessages
+                UD.MessageOffset(1) = [];
+                UD.errors(1:(UD.MessageOffset(1)-1)) = [];
+                UD.MessageOffset = UD.MessageOffset - UD.MessageOffset(1) + 1;
             end
             NL=length(Msg);
-            set(findobj(fig,'tag','errorlist'),'string',errors,'value',length(errors)+1-(1:NL));
+            set(findobj(fig,'tag','errorlist'),'string',UD.errors,'value',length(UD.errors)+1-(1:NL));
         case 'getall'
-            H = errors;
+            H = UD.errors;
     end
 end
-UD.errors=errors;
-UD.MessageOffset=MessageOffset;
-UD.MaxNMessages=MaxNMessages;
-UD.LastType=LastType;
-set(fig,'userdata',UD);
+set(fig,'userdata',UD)
 
 function bring_to_front(fig)
 try
