@@ -279,19 +279,26 @@ if FI.NumDomains>1
         Data = netcdffil(FI.Partitions{p},1,Props.Partitions{p},cmd,args{:});
     else
         Data = [];
-        ui_message('start_buffer')
         NumPartitions = max(Props.iPart);
+        ui_message('start_buffer')
         hPB = progressbar(0, 'title', sprintf('Reading %i files ...',length(Props.iPart)));
-        for i = Props.iPart
-            Data2 = netcdffil(FI,i,Props.Partitions{i},cmd,args{:});
-            progressbar(i/NumPartitions, hPB);
-            flds = fieldnames(Data2);
-            for j = 1:length(flds)
-                Data(i).(flds{j}) = Data2.(flds{j});
+        Exception = [];
+        try
+            for i = Props.iPart
+                Data2 = netcdffil(FI,i,Props.Partitions{i},cmd,args{:});
+                progressbar(i/NumPartitions, hPB);
+                flds = fieldnames(Data2);
+                for j = 1:length(flds)
+                    Data(i).(flds{j}) = Data2.(flds{j});
+                end
             end
+        catch Exception
         end
         delete(hPB)
         ui_message('end_buffer')
+        if ~isempty(Exception)
+            rethrow(Exception)
+        end
     end
     if merge_needed
         % merged partitions

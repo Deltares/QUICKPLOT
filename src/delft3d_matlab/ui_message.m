@@ -24,7 +24,7 @@ function H = ui_message(Cmd,varargin)
 %
 %   UI_MESSAGE('end_buffer') stops buffering and reports a summary of the
 %   buffered messages: each message is only reported once. If a message
-%   occurred N > 1 times, the message is preceeded by "[Nx] ".
+%   occurred N > 1 times, the message is preceded by "[Nx] ".
 %
 %   Example
 %      ui_message('','First message')
@@ -294,7 +294,7 @@ else
                 end
                 if isempty(Msg)
                     Msg={};
-                elseif iscellstr(Msg) || isstring(Msg)
+                elseif iscellstr(Msg)
                     % Does any cellstring contain char(10) ?
                     i0=0;
                     cMsg = cell(1,1000);
