@@ -240,7 +240,7 @@ else
             UD.Buffer = true;
         case 'end_buffer'
             Msg = UD.BufferedMessages;
-            Msg(:,3) = deal({1});
+            Msg(1:size(Msg,1),3) = {1};
             i = 0;
             while i < size(Msg,1)
                 i = i+1;
@@ -257,7 +257,7 @@ else
             set(fig,'userdata',UD)
             for i = 1:size(Msg,1)
                 if Msg{i,3} == 1
-                    ui_message(Msg{i,1},Msg{i,2})
+                    rep = '';
                 else
                     rep = sprintf('[%ix] ',Msg{i,3});
                 end
