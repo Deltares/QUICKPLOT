@@ -279,12 +279,25 @@ if FI.NumDomains>1
         Data = netcdffil(FI.Partitions{p},1,Props.Partitions{p},cmd,args{:});
     else
         Data = [];
-        for i = Props.iPart
-            Data2 = netcdffil(FI,i,Props.Partitions{i},cmd,args{:});
-            flds = fieldnames(Data2);
-            for j = 1:length(flds)
-                Data(i).(flds{j}) = Data2.(flds{j});
+        NumPartitions = max(Props.iPart);
+        ui_message('start_buffer')
+        hPB = progressbar(0, 'title', sprintf('Reading %i files ...',length(Props.iPart)));
+        Exception = [];
+        try
+            for i = Props.iPart
+                Data2 = netcdffil(FI,i,Props.Partitions{i},cmd,args{:});
+                progressbar(i/NumPartitions, hPB);
+                flds = fieldnames(Data2);
+                for j = 1:length(flds)
+                    Data(i).(flds{j}) = Data2.(flds{j});
+                end
             end
+        catch Exception
+        end
+        delete(hPB)
+        ui_message('end_buffer')
+        if ~isempty(Exception)
+            rethrow(Exception)
         end
     end
     if merge_needed
@@ -1483,7 +1496,7 @@ if XYRead || XYneeded || ZRead
             end
         catch Ex
             qp_error({sprintf('Retrieving vertical coordinate "%s" failed, continuing with layer index as vertical coordinate.',CoordInfo.Name),'The error message encountered reads:'},Ex,'netcdffil')
-            kDim = length(szData);
+            kDim = length(hdim);
             kVec = ones(1,max(2,kDim));
             kVec(kDim) = length(idx{K_});
             if vCoordExtended
@@ -1763,6 +1776,9 @@ else
         j = strmatch('units',Attribs,'exact');
         if ~isempty(j)
             Insert.Units = Info.Attribute(j).Value;
+            if ~isempty(Insert.Units) && Insert.Units(1) == '(' && Insert.Units(end) == ')' && sum(Insert.Units == ')') == 1
+                Insert.Units = Insert.Units(2:end-1);
+            end
         else
             Insert.Units = '';
         end

@@ -1,7 +1,7 @@
 import jetbrains.buildServer.configs.kotlin.*
-import jetbrains.buildServer.configs.kotlin.buildFeatures.PullRequests
 import jetbrains.buildServer.configs.kotlin.buildFeatures.commitStatusPublisher
 import jetbrains.buildServer.configs.kotlin.buildFeatures.perfmon
+import jetbrains.buildServer.configs.kotlin.buildFeatures.PullRequests
 import jetbrains.buildServer.configs.kotlin.buildFeatures.pullRequests
 import jetbrains.buildServer.configs.kotlin.buildSteps.powerShell
 import jetbrains.buildServer.configs.kotlin.buildSteps.script
@@ -548,6 +548,7 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
             """.trimIndent()
 
             branchFilter = """
+                -:*
                 +pr: sourceRepo=same draft=false
                 +:<default>
             """.trimIndent()
@@ -774,6 +775,7 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
             """.trimIndent()
 
             branchFilter = """
+                -:*
                 +pr: sourceRepo=same draft=false
                 +:<default>
             """.trimIndent()
@@ -1432,6 +1434,7 @@ object Windows_WinRunQuickplotTestBenchStandalone : BuildType({
             """.trimIndent()
 
             branchFilter = """
+                -:*
                 +pr: sourceRepo=same draft=false
                 +:<default>
             """.trimIndent()
@@ -1577,6 +1580,7 @@ object Windows_WinRunQuickplotTestBenchWithinMatlab : BuildType({
             """.trimIndent()
 
             branchFilter = """
+                -:*
                 +pr: sourceRepo=same draft=false
                 +:<default>
             """.trimIndent()

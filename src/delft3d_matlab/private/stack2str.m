@@ -1,8 +1,14 @@
 function str = stack2str(stack,basefunction)
 %STACK2STR Convert exception stack into cell string.
 %
-%   CELLSTR = STACK2STR(STACK)
-%   where STACK is a stack as obtained from MException.stack.
+%   CELLSTR = STACK2STR(STACK) where STACK is a stack as obtained from
+%   MException.stack converts the full stack of function calls to a cell
+%   string.
+%
+%   CELLSTR = STACK2STR(STACK,BASEFUNC) where STACK is a stack as obtained
+%   from MException.stack and BASEFUNC the name of a function converts only
+%   the top part of the stack up to the (first) call from BASEFUNC to a
+%   cell string.
 %
 %   See also MException.
 
@@ -62,24 +68,26 @@ for i = 1:stacklen
             z(j) = length(mpath{j});
         end
     end
-    [len,j] = max(z);
+    len = max(z);
     p = p(len+1:end);
     if ~isempty(p) && isequal(p(1),filesep)
         p = p(2:end);
     end
-    if ~isempty(p)
-        p = [p filesep];
+    if isempty(p)
+        psep = p;
+    else
+        psep = [p filesep];
     end
     i2 = i2+1;
     try
-        lineStr = getline([p,f,'.m'],stack(i).line);
-        str{i2} = sprintf('In %s%s%s at line %i:',p,f,fcn,stack(i).line);
+        lineStr = getline([psep,f,'.m'],stack(i).line);
+        str{i2} = sprintf('In %s%s%s at line %i:',psep,f,fcn,stack(i).line);
         i2 = i2+1;
         str{i2} = ['  ', strtrim(lineStr)];
     catch
         % couldn't find the line ... don't trigger and error while
         % processing and error ... just write the same line without colon
-        str{i2} = sprintf('In %s%s%s at line %i',p,f,fcn,stack(i).line);
+        str{i2} = sprintf('In %s%s%s at line %i',psep,f,fcn,stack(i).line);
     end
 end
 str(i2+1:end) = [];
