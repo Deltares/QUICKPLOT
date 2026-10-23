@@ -223,12 +223,6 @@ object Linux_LnxDetermineGitProperties : BuildType({
 
     vcs {
         root(DslContext.settingsRoot)
-        
-        branchFilter = """
-            -:*
-            +:pull/*
-            +:<default>
-        """.trimIndent()
     }
 
     steps {
@@ -249,6 +243,23 @@ object Linux_LnxDetermineGitProperties : BuildType({
                 
                 echo "-- Git branch according TeamCity --"
                 echo "%teamcity.build.branch%"
+                branch="%teamcity.build.branch%"
+                
+                echo "-- Triggered by according TeamCity --"
+                echo "%teamcity.build.triggeredBy%"
+                trigger="%teamcity.build.triggeredBy%"
+                
+                echo "-- Checking build branch and triggered by --"
+                echo "##teamcity[testStarted name='checking build branch']"
+                if [[ "${'$'}trigger" == Git ]]; then
+                   if [[ "${'$'}branch" != pull/* && "${'$'}branch" != main ]]; then
+                      echo "##teamcity[testFailed name='checking build branch' message='Git trigger only accepted for main and pull requests.']"
+                   else
+                      echo "##teamcity[testFinished name='checking build branch']"
+                   fi
+                else
+                   echo "##teamcity[testFinished name='checking build branch']"
+                fi
                 
                 echo "-- Git hash --"
                 git rev-parse HEAD
