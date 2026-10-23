@@ -223,6 +223,11 @@ object Linux_LnxDetermineGitProperties : BuildType({
 
     vcs {
         root(DslContext.settingsRoot)
+        
+        branchFilter = """
+            -:*
+            +:<default>
+        """.trimIndent()
     }
 
     steps {
