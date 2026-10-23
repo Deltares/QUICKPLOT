@@ -35,7 +35,7 @@ To debug in IntelliJ Idea, open the 'Maven Projects' tool window (View
 'Debug' option is available in the context menu for the task.
 */
 
-version = "2025.11"
+version = "2026.2"
 
 project {
 
@@ -107,6 +107,7 @@ object Linux_LnxBuildMexFiles : BuildType({
                     token = "%github_deltares-service-account_access_token%"
                 }
                 filterAuthorRole = PullRequests.GitHubRoleFilter.MEMBER
+                ignoreDrafts = true
             }
         }
     }
@@ -187,6 +188,7 @@ object Linux_LnxCompileQuickplot : BuildType({
                     token = "%github_deltares-service-account_access_token%"
                 }
                 filterAuthorRole = PullRequests.GitHubRoleFilter.MEMBER
+                ignoreDrafts = true
             }
         }
     }
@@ -267,7 +269,7 @@ object Linux_LnxDetermineGitProperties : BuildType({
         vcs {
             branchFilter = """
                 -:*
-                +:pull/*
+                +pr: sourceRepo=same github_role=member draft=false
                 +:<default>
             """.trimIndent()
         }
@@ -538,19 +540,12 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
         }
     }
 
-    triggers {
-        vcs {
-            quietPeriodMode = VcsTrigger.QuietPeriodMode.USE_CUSTOM
-            quietPeriod = 60
-            triggerRules = """
-                -:root=Quickplot_DSCTestbenchTestsQuickplot:**
-                -:root=Quickplot_ReposDsCommon:**
-            """.trimIndent()
 
-            branchFilter = """
-                -:*
-                +:<default>
-            """.trimIndent()
+    triggers {
+        finishBuildTrigger {
+            buildType = "${Linux_LnxDetermineGitProperties.id}"
+            successfulOnly = true
+            branchFilter = ""
         }
     }
 
@@ -765,18 +760,10 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
     }
 
     triggers {
-        vcs {
-            quietPeriodMode = VcsTrigger.QuietPeriodMode.USE_CUSTOM
-            quietPeriod = 60
-            triggerRules = """
-                -:root=Quickplot_DSCTestbenchTestsQuickplot:**
-                -:root=Quickplot_ReposDsCommon:**
-            """.trimIndent()
-
-            branchFilter = """
-                -:*
-                +:<default>
-            """.trimIndent()
+        finishBuildTrigger {
+            buildType = "${Linux_LnxDetermineGitProperties.id}"
+            successfulOnly = true
+            branchFilter = ""
         }
     }
 
@@ -903,15 +890,6 @@ object Windows_WinLatexManualGeneration : BuildType({
         }
     }
 
-    triggers {
-        vcs {
-            branchFilter = """
-                -:*
-                +:<default>
-            """.trimIndent()
-        }
-    }
-
     failureConditions {
         failOnText {
             conditionType = BuildFailureOnText.ConditionType.REGEXP
@@ -935,6 +913,7 @@ object Windows_WinLatexManualGeneration : BuildType({
                     token = "%github_deltares-service-account_access_token%"
                 }
                 filterAuthorRole = PullRequests.GitHubRoleFilter.MEMBER
+                ignoreDrafts = true
             }
         }
         commitStatusPublisher {
@@ -1002,6 +981,7 @@ object Windows_WinBuildMexFiles : BuildType({
                     token = "%github_deltares-service-account_access_token%"
                 }
                 filterAuthorRole = PullRequests.GitHubRoleFilter.MEMBER
+                ignoreDrafts = true
             }
         }
     }
@@ -1056,6 +1036,7 @@ object Windows_WinBuildQuickplotSplashScreen : BuildType({
                     token = "%github_deltares-service-account_access_token%"
                 }
                 filterAuthorRole = PullRequests.GitHubRoleFilter.MEMBER
+                ignoreDrafts = true
             }
         }
     }
@@ -1127,6 +1108,7 @@ object Windows_WinCompileQuickplot : BuildType({
                     token = "%github_deltares-service-account_access_token%"
                 }
                 filterAuthorRole = PullRequests.GitHubRoleFilter.MEMBER
+                ignoreDrafts = true
             }
         }
     }
@@ -1422,18 +1404,10 @@ object Windows_WinRunQuickplotTestBenchStandalone : BuildType({
     }
 
     triggers {
-        vcs {
-            quietPeriodMode = VcsTrigger.QuietPeriodMode.USE_CUSTOM
-            quietPeriod = 60
-            triggerRules = """
-                -:root=Quickplot_DSCTestbenchTestsQuickplot:**
-                -:root=Quickplot_ReposDsCommon:**
-            """.trimIndent()
-
-            branchFilter = """
-                -:*
-                +:<default>
-            """.trimIndent()
+        finishBuildTrigger {
+            buildType = "${Linux_LnxDetermineGitProperties.id}"
+            successfulOnly = true
+            branchFilter = ""
         }
     }
 
@@ -1567,18 +1541,10 @@ object Windows_WinRunQuickplotTestBenchWithinMatlab : BuildType({
     }
 
     triggers {
-        vcs {
-            quietPeriodMode = VcsTrigger.QuietPeriodMode.USE_CUSTOM
-            quietPeriod = 60
-            triggerRules = """
-                -:root=Quickplot_DSCTestbenchTestsQuickplot:**
-                -:root=Quickplot_ReposDsCommon:**
-            """.trimIndent()
-
-            branchFilter = """
-                -:*
-                +:<default>
-            """.trimIndent()
+        finishBuildTrigger {
+            buildType = "${Linux_LnxDetermineGitProperties.id}"
+            successfulOnly = true
+            branchFilter = ""
         }
     }
 
