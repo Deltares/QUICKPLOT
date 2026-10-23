@@ -890,15 +890,6 @@ object Windows_WinLatexManualGeneration : BuildType({
         }
     }
 
-    triggers {
-        vcs {
-            branchFilter = """
-                -:*
-                +:<default>
-            """.trimIndent()
-        }
-    }
-
     failureConditions {
         failOnText {
             conditionType = BuildFailureOnText.ConditionType.REGEXP
