@@ -226,6 +226,7 @@ object Linux_LnxDetermineGitProperties : BuildType({
         
         branchFilter = """
             -:*
+            +:pull/*
             +:<default>
         """.trimIndent()
     }
@@ -550,7 +551,7 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
         finishBuildTrigger {
             buildType = "${Linux_LnxDetermineGitProperties.id}"
             successfulOnly = true
-            branchFilter = ""
+            branchFilter = "+:*"
         }
     }
 
@@ -768,7 +769,7 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
         finishBuildTrigger {
             buildType = "${Linux_LnxDetermineGitProperties.id}"
             successfulOnly = true
-            branchFilter = ""
+            branchFilter = "+:*"
         }
     }
 
@@ -1412,7 +1413,7 @@ object Windows_WinRunQuickplotTestBenchStandalone : BuildType({
         finishBuildTrigger {
             buildType = "${Linux_LnxDetermineGitProperties.id}"
             successfulOnly = true
-            branchFilter = ""
+            branchFilter = "+:*"
         }
     }
 
@@ -1549,7 +1550,7 @@ object Windows_WinRunQuickplotTestBenchWithinMatlab : BuildType({
         finishBuildTrigger {
             buildType = "${Linux_LnxDetermineGitProperties.id}"
             successfulOnly = true
-            branchFilter = ""
+            branchFilter = "+:*"
         }
     }
 
