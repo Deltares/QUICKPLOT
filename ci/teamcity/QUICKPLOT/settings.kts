@@ -540,19 +540,12 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
         }
     }
 
-    triggers {
-        vcs {
-            quietPeriodMode = VcsTrigger.QuietPeriodMode.USE_CUSTOM
-            quietPeriod = 60
-            triggerRules = """
-                -:root=Quickplot_DSCTestbenchTestsQuickplot:**
-                -:root=Quickplot_ReposDsCommon:**
-            """.trimIndent()
 
-            branchFilter = """
-                -:*
-                +:<default>
-            """.trimIndent()
+    triggers {
+        finishBuildTrigger {
+            buildType = "${Linux_LnxDetermineGitProperties.id}"
+            successfulOnly = true
+            branchFilter = ""
         }
     }
 
@@ -767,18 +760,10 @@ object Linux_LnxRunQuickplotTestBenchWithinMatlab : BuildType({
     }
 
     triggers {
-        vcs {
-            quietPeriodMode = VcsTrigger.QuietPeriodMode.USE_CUSTOM
-            quietPeriod = 60
-            triggerRules = """
-                -:root=Quickplot_DSCTestbenchTestsQuickplot:**
-                -:root=Quickplot_ReposDsCommon:**
-            """.trimIndent()
-
-            branchFilter = """
-                -:*
-                +:<default>
-            """.trimIndent()
+        finishBuildTrigger {
+            buildType = "${Linux_LnxDetermineGitProperties.id}"
+            successfulOnly = true
+            branchFilter = ""
         }
     }
 
@@ -1428,18 +1413,10 @@ object Windows_WinRunQuickplotTestBenchStandalone : BuildType({
     }
 
     triggers {
-        vcs {
-            quietPeriodMode = VcsTrigger.QuietPeriodMode.USE_CUSTOM
-            quietPeriod = 60
-            triggerRules = """
-                -:root=Quickplot_DSCTestbenchTestsQuickplot:**
-                -:root=Quickplot_ReposDsCommon:**
-            """.trimIndent()
-
-            branchFilter = """
-                -:*
-                +:<default>
-            """.trimIndent()
+        finishBuildTrigger {
+            buildType = "${Linux_LnxDetermineGitProperties.id}"
+            successfulOnly = true
+            branchFilter = ""
         }
     }
 
@@ -1573,18 +1550,10 @@ object Windows_WinRunQuickplotTestBenchWithinMatlab : BuildType({
     }
 
     triggers {
-        vcs {
-            quietPeriodMode = VcsTrigger.QuietPeriodMode.USE_CUSTOM
-            quietPeriod = 60
-            triggerRules = """
-                -:root=Quickplot_DSCTestbenchTestsQuickplot:**
-                -:root=Quickplot_ReposDsCommon:**
-            """.trimIndent()
-
-            branchFilter = """
-                -:*
-                +:<default>
-            """.trimIndent()
+        finishBuildTrigger {
+            buildType = "${Linux_LnxDetermineGitProperties.id}"
+            successfulOnly = true
+            branchFilter = ""
         }
     }
 
