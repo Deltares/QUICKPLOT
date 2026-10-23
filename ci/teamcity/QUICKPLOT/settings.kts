@@ -107,6 +107,7 @@ object Linux_LnxBuildMexFiles : BuildType({
                     token = "%github_deltares-service-account_access_token%"
                 }
                 filterAuthorRole = PullRequests.GitHubRoleFilter.MEMBER
+                ignoreDrafts = true
             }
         }
     }
@@ -187,6 +188,7 @@ object Linux_LnxCompileQuickplot : BuildType({
                     token = "%github_deltares-service-account_access_token%"
                 }
                 filterAuthorRole = PullRequests.GitHubRoleFilter.MEMBER
+                ignoreDrafts = true
             }
         }
     }
@@ -267,7 +269,7 @@ object Linux_LnxDetermineGitProperties : BuildType({
         vcs {
             branchFilter = """
                 -:*
-                +:pull/*
+                +pr: sourceRepo=same github_role=member draft=false
                 +:<default>
             """.trimIndent()
         }
@@ -935,6 +937,7 @@ object Windows_WinLatexManualGeneration : BuildType({
                     token = "%github_deltares-service-account_access_token%"
                 }
                 filterAuthorRole = PullRequests.GitHubRoleFilter.MEMBER
+                ignoreDrafts = true
             }
         }
         commitStatusPublisher {
@@ -1002,6 +1005,7 @@ object Windows_WinBuildMexFiles : BuildType({
                     token = "%github_deltares-service-account_access_token%"
                 }
                 filterAuthorRole = PullRequests.GitHubRoleFilter.MEMBER
+                ignoreDrafts = true
             }
         }
     }
@@ -1056,6 +1060,7 @@ object Windows_WinBuildQuickplotSplashScreen : BuildType({
                     token = "%github_deltares-service-account_access_token%"
                 }
                 filterAuthorRole = PullRequests.GitHubRoleFilter.MEMBER
+                ignoreDrafts = true
             }
         }
     }
@@ -1127,6 +1132,7 @@ object Windows_WinCompileQuickplot : BuildType({
                     token = "%github_deltares-service-account_access_token%"
                 }
                 filterAuthorRole = PullRequests.GitHubRoleFilter.MEMBER
+                ignoreDrafts = true
             }
         }
     }
