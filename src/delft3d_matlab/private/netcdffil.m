@@ -640,6 +640,7 @@ if DataRead && Props.NVal>0
     hdim = 1-cellfun('isempty',Props.DimName);
     hdim(M_) = hdim(M_)*2;
     hdim(N_) = hdim(N_)*2;
+    hdim(6:end) = [];
     hdim(hdim==0)=[];
     hdim = hdim==2;
     %
@@ -1505,6 +1506,7 @@ if XYRead || XYneeded || ZRead
                 Z = reshape(idx{K_},kVec);
             end
             if kDim > 1
+                szData(length(szData)+1:kDim) = 1;
                 Z = repmat(Z,szData(1:kDim-1));
             end
         end

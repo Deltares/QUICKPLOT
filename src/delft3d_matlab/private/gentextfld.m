@@ -129,17 +129,21 @@ if isfield(Ops,'thinningmode') && strcmp(Ops.thinningmode,'dynamic')
             end
             
             f = @(i) (XYZ(:,1)-XYZ(i,1)).^2 + (XYZ(:,2)-XYZ(i,2)).^2;
-            I = zeros(1,K);
-            I(1) = 1; % minimum value
-            dist = f(1);
-            I(2) = N; % maximum value
-            dist = min(dist, f(N));
-            for i = 3:K
-                [~,k] = max(dist);
-                I(i) = k;
-                dist = min(dist, f(k));
+            if K == 1
+                I = N; % maximum value only
+            else
+                I = zeros(1,K);
+                I(1) = 1; % minimum value
+                dist = f(1);
+                I(2) = N; % maximum value
+                dist = min(dist, f(N));
+                for i = 3:K
+                    [~,k] = max(dist);
+                    I(i) = k;
+                    dist = min(dist, f(k));
+                end
+                I = sort(I);
             end
-            I = sort(I);
             
             XYZ = XYZ(I,:);
             Val = Val(I);
