@@ -252,7 +252,7 @@ object Linux_LnxDetermineGitProperties : BuildType({
                 echo "-- Checking build branch and triggered by --"
                 echo "##teamcity[testStarted name='checking build branch']"
                 if [[ "${'$'}trigger" == Git ]]; then
-                   if [[ "${'$'}branch" != pull/* && "${'$'}branch" != main ]]; then
+                   if [[ "${'$'}branch" != pull/* && "${'$'}branch" != refs/heads/main ]]; then
                       echo "##teamcity[testFailed name='checking build branch' message='Git trigger only accepted for main and pull requests.']"
                    else
                       echo "##teamcity[testFinished name='checking build branch']"
