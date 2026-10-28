@@ -560,7 +560,7 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
 
     triggers {
         finishBuildTrigger {
-            buildType = "${Linux_LnxDetermineGitProperties.id}"
+            buildType = "${Linux_LnxBuildMexFiles.id}"
             successfulOnly = true
             branchFilter = "+:*"
         }
