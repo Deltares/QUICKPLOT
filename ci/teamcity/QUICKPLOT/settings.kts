@@ -907,6 +907,14 @@ object Windows_WinLatexManualGeneration : BuildType({
         }
     }
 
+    triggers {
+        finishBuildTrigger {
+            buildType = "${Linux_LnxDetermineGitProperties.id}"
+            successfulOnly = true
+            branchFilter = "+:*"
+        }
+    }
+
     failureConditions {
         failOnText {
             conditionType = BuildFailureOnText.ConditionType.REGEXP
