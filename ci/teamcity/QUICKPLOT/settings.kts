@@ -454,7 +454,7 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
         testbench/**/*.tex => tex.zip
         testbench/**/work/* => diff.zip
     """.trimIndent()
-    buildNumberPattern = "${Windows_WinCompileQuickplot.depParamRefs.buildNumber}"
+    buildNumberPattern = "Tests %build.vcs.number.Quickplot_DSCTestbenchTestsQuickplot%: QP %build.vcs.number.MatlabTools_GithubQuickplot%"
     maxRunningBuildsPerBranch = "*:1"
     runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
 
@@ -1310,7 +1310,7 @@ object Windows_WinRunQuickplotTestBenchStandalone : BuildType({
         testbench/**/*.tex => tex.zip
         testbench/**/work/* => diff.zip
     """.trimIndent()
-    buildNumberPattern = "${Windows_WinCompileQuickplot.depParamRefs.buildNumber}"
+    buildNumberPattern = "Tests %build.vcs.number.Quickplot_DSCTestbenchTestsQuickplot%: QP %build.vcs.number.MatlabTools_GithubQuickplot%"
     maxRunningBuildsPerBranch = "*:1"
     runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
 
