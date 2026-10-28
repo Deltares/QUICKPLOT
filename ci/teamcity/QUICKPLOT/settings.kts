@@ -282,16 +282,6 @@ object Linux_LnxDetermineGitProperties : BuildType({
         }
     }
 
-    triggers {
-        vcs {
-            branchFilter = """
-                -:*
-                +pr: sourceRepo=same github_role=member draft=false
-                +:<default>
-            """.trimIndent()
-        }
-    }
-
     features {
         perfmon {
         }
@@ -557,12 +547,13 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
         }
     }
 
-
     triggers {
-        finishBuildTrigger {
-            buildType = "${Linux_LnxBuildMexFiles.id}"
-            successfulOnly = true
-            branchFilter = "+:*"
+        vcs {
+            branchFilter = """
+                -:*
+                +pr: sourceRepo=same github_role=member draft=false
+                +:<default>
+            """.trimIndent()
         }
     }
 
@@ -1430,7 +1421,7 @@ object Windows_WinRunQuickplotTestBenchStandalone : BuildType({
 
     triggers {
         finishBuildTrigger {
-            buildType = "${Linux_LnxDetermineGitProperties.id}"
+            buildType = "${Windows_WinCompileQuickplot.id}"
             successfulOnly = true
             branchFilter = "+:*"
         }
