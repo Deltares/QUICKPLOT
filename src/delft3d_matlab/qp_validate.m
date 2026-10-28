@@ -774,7 +774,11 @@ try
                         %
                         CmpFile = [logfile,'_messages.txt'];
                         reference_files = strike_reference_entry(reference_files,CmpFile);
-                        old_messages = read_messages([reference_folder fs CmpFile]);
+                        old_messages = read_messages([reference_folder,fs,sref_platform_prefix,CmpFile]);
+                        if isempty(old_messages) && ~isempty(sref_platform_prefix)
+                           % the messages are not always platform specific
+                           old_messages = read_messages([reference_folder,fs,CmpFile]);
+                        end
                         if length(m2)>length(m1)
                             new_messages = m2(length(m1)+2:length(m2));
                         else
