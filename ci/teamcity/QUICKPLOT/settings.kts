@@ -449,9 +449,9 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
     runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
 
     vcs {
-        root(DslContext.settingsRoot, "+:. => code")
-        root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:. => testbench")
-        root(AbsoluteId("Quickplot_ReposDsCommon"), "+:. => common")
+        root(DslContext.settingsRoot, "+:.=>delft3d_matlab")
+        root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:.=>testbench")
+        root(AbsoluteId("Quickplot_ReposDsCommon"), "+:.=>common")
 
         checkoutMode = CheckoutMode.ON_SERVER
         cleanCheckout = true
@@ -1314,7 +1314,7 @@ object Windows_WinRunQuickplotTestBenchStandalone : BuildType({
     runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
 
     vcs {
-        root(DslContext.settingsRoot, "+:.=>code")
+        root(DslContext.settingsRoot, "+:.=>delft3d_matlab")
         root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:.=>testbench")
         root(AbsoluteId("Quickplot_ReposDsCommon"), "+:. => common")
 
