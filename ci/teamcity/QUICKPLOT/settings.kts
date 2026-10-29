@@ -449,7 +449,7 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
     runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
 
     vcs {
-        root(DslContext.settingsRoot, "+:.=>delft3d_matlab")
+        root(DslContext.settingsRoot, "+:.=>code")
         root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:.=>testbench")
         root(AbsoluteId("Quickplot_ReposDsCommon"), "+:.=>common")
 
@@ -465,18 +465,24 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
                 #!/bin/bash
                 echo Running in `pwd`
                 
+                echo ----- Copy code to delft3d_matlab such that executable can locate it for error messages ------------
+                /bin/cp -rf code/src/delft3d_matlab delft3d_matlab
+                
                 echo ----- Listing of root folder -----------------------------------------------------------------------
                 ls -l
+                
+                echo ----- Listing of delft3d_matlab folder -------------------------------------------------------------
+                ls -l delft3d_matlab
                 
                 echo ----- Listing of QUICKPLOT folder ------------------------------------------------------------------
                 ls -l quickplot
                 
-                echo ----- Listing of QUICKPLOT x64 folder --------------------------------------------------------------
-                cd quickplot/x64
+                echo ----- Listing of QUICKPLOT bin folder --------------------------------------------------------------
+                cd quickplot/bin
                 chmod +x *.sh
                 chmod +x d3d_qp delwaq2raster ecoplot sim2ugrid hello_world matlab_sysinfo graphics_test
                 cd ../..
-                ls -l quickplot/x64
+                ls -l quickplot/bin
                 
                 echo ----- Copy common to testbench\common --------------------------------------------------------------
                 /bin/cp -rf common testbench/common
@@ -490,7 +496,7 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
         script {
             name = "Run system tests"
             id = "Run_system_tests"
-            workingDir = "quickplot/x64"
+            workingDir = "quickplot/bin"
             scriptContent = """
                 #!/bin/bash
                 echo The PATH is set to `pwd`
@@ -509,7 +515,7 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
         script {
             name = "Run QUICKPLOT test bench"
             id = "Run_QUICKPLOT_test_bench"
-            workingDir = "quickplot/x64"
+            workingDir = "quickplot/bin"
             scriptContent = """
                 #!/bin/bash
                 echo The PATH is set to `pwd`
@@ -590,7 +596,7 @@ object Linux_LnxRunQuickplotTestBenchStandalone : BuildType({
             }
 
             artifacts {
-                artifactRules = "64bit/**=>quickplot/x64"
+                artifactRules = "64bit/**=>quickplot/bin"
             }
         }
         dependency(Windows_WinCompileQuickplot) {
@@ -1314,7 +1320,7 @@ object Windows_WinRunQuickplotTestBenchStandalone : BuildType({
     runningBuildsLimitingMode = BuildsLimitingMode.CANCEL_OLDEST_RUNNING_BUILD
 
     vcs {
-        root(DslContext.settingsRoot, "+:.=>delft3d_matlab")
+        root(DslContext.settingsRoot, "+:.=>code")
         root(AbsoluteId("Quickplot_DSCTestbenchTestsQuickplot"), "+:.=>testbench")
         root(AbsoluteId("Quickplot_ReposDsCommon"), "+:. => common")
 
@@ -1326,11 +1332,15 @@ object Windows_WinRunQuickplotTestBenchStandalone : BuildType({
             name = "Verify checkout and copy common"
             scriptContent = """
                 echo Running in %%cd%%
+                echo ----- Copy code to delft3d_matlab such that executable can locate it for error messages ------------
+                xcopy code\src\delft3d_matlab delft3d_matlab\ /f /s /e
                 echo ----- Listing of root folder -----------------------------------------------------------------------
                 dir .
+                echo ----- Listing of delft3d_matlab folder -------------------------------------------------------------
+                dir delft3d_matlab
                 echo ----- Listing of QUICKPLOT folder ------------------------------------------------------------------
                 dir quickplot
-                echo ----- Listing of QUICKPLOT x64 folder --------------------------------------------------------------
+                echo ----- Listing of QUICKPLOT 64bit folder ------------------------------------------------------------
                 dir quickplot\64bit
                 echo ----- Copy common to testbench\common --------------------------------------------------------------
                 xcopy common testbench\common\ /f /s /e
