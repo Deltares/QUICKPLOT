@@ -122,7 +122,7 @@ if isempty(Props.SubFld)
     subf = {};
     nSubf = 0;
 else % subfld index is the first index of varargin, so pass that one ...
-    subf = varargin{1};
+    subf = varargin(1);
     nSubf = 1;
 end
 if Props.NVal>0 && check_grids
